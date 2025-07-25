@@ -251,7 +251,7 @@ public final class ValueTypeMapping {
         ValueType.PROCESS_INSTANCE_BATCH,
         new Mapping<>(ProcessInstanceBatchRecordValue.class, ProcessInstanceBatchIntent.class));
     mapping.put(
-        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
+        ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
         new Mapping<>(
             AdHocSubProcessInstructionRecordValue.class, AdHocSubProcessInstructionIntent.class));
     mapping.put(ValueType.FORM, new Mapping<>(Form.class, FormIntent.class));

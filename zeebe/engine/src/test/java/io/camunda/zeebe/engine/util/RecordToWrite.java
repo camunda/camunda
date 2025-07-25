@@ -186,10 +186,10 @@ public final class RecordToWrite implements LogAppendEntry {
     return this;
   }
 
-  public RecordToWrite adHocSubProcessActivityActivation(
+  public RecordToWrite adHocSubProcessInstruction(
       final AdHocSubProcessInstructionRecordValue value) {
     recordMetadata
-        .valueType(ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION)
+        .valueType(ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION)
         .intent(AdHocSubProcessInstructionIntent.ACTIVATE);
     unifiedRecordValue = (AdHocSubProcessInstructionRecord) value;
     return this;

@@ -79,7 +79,7 @@ public class CommandApiRequestReader implements RequestReader {
     RECORDS_BY_TYPE.put(ValueType.USER_TASK, UserTaskRecord::new);
     RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE_MIGRATION, ProcessInstanceMigrationRecord::new);
     RECORDS_BY_TYPE.put(
-        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION, AdHocSubProcessInstructionRecord::new);
+        ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, AdHocSubProcessInstructionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.MESSAGE_CORRELATION, MessageCorrelationRecord::new);
     RECORDS_BY_TYPE.put(ValueType.USER, UserRecord::new);

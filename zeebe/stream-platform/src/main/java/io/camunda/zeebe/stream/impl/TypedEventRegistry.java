@@ -102,8 +102,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.DECISION_REQUIREMENTS, DecisionRequirementsRecord.class);
     registry.put(ValueType.DECISION_EVALUATION, DecisionEvaluationRecord.class);
     registry.put(ValueType.RESOURCE_DELETION, ResourceDeletionRecord.class);
-    registry.put(
-        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION, AdHocSubProcessInstructionRecord.class);
+    registry.put(ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, AdHocSubProcessInstructionRecord.class);
     registry.put(ValueType.COMMAND_DISTRIBUTION, CommandDistributionRecord.class);
 
     registry.put(ValueType.CHECKPOINT, CheckpointRecord.class);

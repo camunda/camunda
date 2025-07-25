@@ -466,8 +466,7 @@ public final class RecordingExporter implements Exporter {
       adHocSubProcessActivityActivationRecords() {
     return new AdHocSubProcessActivityActivationRecordStream(
         records(
-            ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
-            AdHocSubProcessInstructionRecordValue.class));
+            ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, AdHocSubProcessInstructionRecordValue.class));
   }
 
   public static FormRecordStream formRecords() {
