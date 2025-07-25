@@ -11,6 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.authentication.entity.OAuthContext;
+import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.NoDBMembershipService;
+import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -22,7 +25,8 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 
 public class CamundaOAuthPrincipalServiceNoDbTest {
 
-  private CamundaOAuthPrincipalServiceNoDbImpl service;
+  private CamundaOAuthPrincipalService camundaOAuthPrincipalService;
+  private MembershipService membershipService;
   private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
@@ -36,7 +40,9 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
     authConfig.setOidc(oidcConfig);
     securityConfiguration.setAuthentication(authConfig);
 
-    service = new CamundaOAuthPrincipalServiceNoDbImpl(securityConfiguration);
+    membershipService = new NoDBMembershipService(new OidcGroupsLoader("groups"));
+    camundaOAuthPrincipalService =
+        new CamundaOAuthPrincipalServiceImpl(securityConfiguration, membershipService);
   }
 
   @Test
@@ -45,7 +51,7 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
     final Map<String, Object> claims = Map.of("preferred_username", "testuser");
 
     // when
-    final OAuthContext result = service.loadOAuthContext(claims);
+    final OAuthContext result = camundaOAuthPrincipalService.loadOAuthContext(claims);
 
     // then
     assertThat(result).isNotNull();
@@ -64,7 +70,7 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
     final Map<String, Object> claims = Map.of("azp", "test-client");
 
     // when
-    final OAuthContext result = service.loadOAuthContext(claims);
+    final OAuthContext result = camundaOAuthPrincipalService.loadOAuthContext(claims);
 
     // then
     assertThat(result).isNotNull();
@@ -84,7 +90,7 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
         Map.of("preferred_username", "testuser", "groups", List.of("group1", "group2"));
 
     // when
-    final OAuthContext result = service.loadOAuthContext(claims);
+    final OAuthContext result = camundaOAuthPrincipalService.loadOAuthContext(claims);
 
     // then
     assertThat(result).isNotNull();
@@ -106,7 +112,7 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
         Map.of("preferred_username", "testuser", "groups", List.of());
 
     // when
-    final OAuthContext result = service.loadOAuthContext(claims);
+    final OAuthContext result = camundaOAuthPrincipalService.loadOAuthContext(claims);
 
     // then
     assertThat(result).isNotNull();
@@ -122,7 +128,9 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
 
     // when & then
     final OAuth2AuthenticationException exception =
-        assertThrows(OAuth2AuthenticationException.class, () -> service.loadOAuthContext(claims));
+        assertThrows(
+            OAuth2AuthenticationException.class,
+            () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
 
     assertThat(exception.getError().getErrorCode()).isEqualTo("invalid_client");
     assertThat(exception.getMessage()).contains("Neither username claim");
@@ -141,7 +149,7 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
     final var config = new SecurityConfiguration();
     config.setAuthentication(authConfig);
 
-    final var serviceNoGroups = new CamundaOAuthPrincipalServiceNoDbImpl(config);
+    final var serviceNoGroups = new CamundaOAuthPrincipalServiceImpl(config, membershipService);
     final Map<String, Object> claims = Map.of("preferred_username", "testuser");
 
     // when

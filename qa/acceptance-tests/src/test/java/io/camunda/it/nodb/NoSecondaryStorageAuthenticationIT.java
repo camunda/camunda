@@ -12,8 +12,10 @@ import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.authentication.CamundaOAuthPrincipalServiceNoDbImpl;
+import io.camunda.authentication.CamundaOAuthPrincipalServiceImpl;
 import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.service.NoDBMembershipService;
+import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -77,7 +79,7 @@ public class NoSecondaryStorageAuthenticationIT {
     context.refresh();
 
     // then - should have the no-db OIDC service implementation
-    final var oidcService = context.getBean(CamundaOAuthPrincipalServiceNoDbImpl.class);
+    final var oidcService = context.getBean(CamundaOAuthPrincipalServiceImpl.class);
     assertThat(oidcService).isNotNull();
 
     // and - the service should work with limited functionality
@@ -131,9 +133,15 @@ public class NoSecondaryStorageAuthenticationIT {
     }
 
     @Bean
-    public CamundaOAuthPrincipalServiceNoDbImpl camundaOAuthPrincipalServiceNoDb(
-        final SecurityConfiguration securityConfiguration) {
-      return new CamundaOAuthPrincipalServiceNoDbImpl(securityConfiguration);
+    public NoDBMembershipService noDBMembershipService() {
+      return new NoDBMembershipService(new OidcGroupsLoader("groups"));
+    }
+
+    @Bean
+    public CamundaOAuthPrincipalServiceImpl camundaOAuthPrincipalServiceNoDb(
+        final SecurityConfiguration securityConfiguration,
+        final NoDBMembershipService noDBMembershipService) {
+      return new CamundaOAuthPrincipalServiceImpl(securityConfiguration, noDBMembershipService);
     }
   }
 }
