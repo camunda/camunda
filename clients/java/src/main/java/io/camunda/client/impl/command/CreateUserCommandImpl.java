@@ -56,7 +56,7 @@ public final class CreateUserCommandImpl implements CreateUserCommandStep1 {
     ArgumentUtil.ensureNotNull("name", request.getName());
     ArgumentUtil.ensureNotNull("password", request.getPassword());
     final HttpCamundaFuture<CreateUserResponse> result = new HttpCamundaFuture<>();
-    final CreateUserResponseImpl response = new CreateUserResponseImpl(jsonMapper);
+    final CreateUserResponseImpl response = new CreateUserResponseImpl();
     httpClient.post(
         "/users",
         jsonMapper.toJson(request),
