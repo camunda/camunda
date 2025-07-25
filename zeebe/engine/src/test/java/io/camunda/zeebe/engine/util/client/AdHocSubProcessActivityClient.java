@@ -20,14 +20,14 @@ public class AdHocSubProcessActivityClient {
   private static final Function<Long, Record<AdHocSubProcessInstructionRecordValue>>
       SUCCESS_EXPECTATION =
           (position) ->
-              RecordingExporter.adHocSubProcessActivityActivationRecords()
+              RecordingExporter.adHocSubProcessInstructionRecords()
                   .withIntent(AdHocSubProcessInstructionIntent.ACTIVATED)
                   .withSourceRecordPosition(position)
                   .getFirst();
   private static final Function<Long, Record<AdHocSubProcessInstructionRecordValue>>
       REJECTION_EXPECTATION =
           (position) ->
-              RecordingExporter.adHocSubProcessActivityActivationRecords()
+              RecordingExporter.adHocSubProcessInstructionRecords()
                   .onlyCommandRejections()
                   .withIntent(AdHocSubProcessInstructionIntent.ACTIVATE)
                   .withSourceRecordPosition(position)

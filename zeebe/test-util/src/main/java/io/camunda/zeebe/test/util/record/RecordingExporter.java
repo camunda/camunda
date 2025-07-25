@@ -462,9 +462,8 @@ public final class RecordingExporter implements Exporter {
     return resourceDeletionRecords().withIntent(intent);
   }
 
-  public static AdHocSubProcessActivityActivationRecordStream
-      adHocSubProcessActivityActivationRecords() {
-    return new AdHocSubProcessActivityActivationRecordStream(
+  public static AdHocSubProcessInstructionRecordStream adHocSubProcessInstructionRecords() {
+    return new AdHocSubProcessInstructionRecordStream(
         records(
             ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, AdHocSubProcessInstructionRecordValue.class));
   }

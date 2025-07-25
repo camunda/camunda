@@ -160,7 +160,7 @@ public class ActivateAdHocSubProcessActivityTest {
         .activate();
 
     assertThat(
-            RecordingExporter.adHocSubProcessActivityActivationRecords()
+            RecordingExporter.adHocSubProcessInstructionRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
                 .limit(record -> record.getIntent() == AdHocSubProcessInstructionIntent.ACTIVATED))
         .extracting(
@@ -209,7 +209,7 @@ public class ActivateAdHocSubProcessActivityTest {
                 .formatted(adHocSubProcessInstanceKey, nonExistingActivities));
 
     assertThat(
-            RecordingExporter.adHocSubProcessActivityActivationRecords()
+            RecordingExporter.adHocSubProcessInstructionRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
                 .limit(2))
         .extracting(Record::getRecordType, Record::getIntent)
@@ -239,7 +239,7 @@ public class ActivateAdHocSubProcessActivityTest {
                 .formatted(nonExistingAdHocSubProcessInstanceKey));
 
     assertThat(
-            RecordingExporter.adHocSubProcessActivityActivationRecords()
+            RecordingExporter.adHocSubProcessInstructionRecords()
                 .withAdHocSubProcessInstanceKey(nonExistingAdHocSubProcessInstanceKey)
                 .limit(2))
         .extracting(Record::getRecordType, Record::getIntent)
@@ -308,7 +308,7 @@ public class ActivateAdHocSubProcessActivityTest {
                 .formatted(adHocSubProcessInstanceKey));
 
     assertThat(
-            RecordingExporter.adHocSubProcessActivityActivationRecords()
+            RecordingExporter.adHocSubProcessInstructionRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
                 .limit(2))
         .extracting(Record::getRecordType, Record::getIntent)

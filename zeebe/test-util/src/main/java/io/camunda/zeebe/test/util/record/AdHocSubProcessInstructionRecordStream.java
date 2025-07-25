@@ -12,28 +12,28 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import java.util.stream.Stream;
 
-public class AdHocSubProcessActivityActivationRecordStream
+public class AdHocSubProcessInstructionRecordStream
     extends ExporterRecordStream<
-        AdHocSubProcessInstructionRecordValue, AdHocSubProcessActivityActivationRecordStream> {
+        AdHocSubProcessInstructionRecordValue, AdHocSubProcessInstructionRecordStream> {
 
-  public AdHocSubProcessActivityActivationRecordStream(
+  public AdHocSubProcessInstructionRecordStream(
       final Stream<Record<AdHocSubProcessInstructionRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected AdHocSubProcessActivityActivationRecordStream supply(
+  protected AdHocSubProcessInstructionRecordStream supply(
       final Stream<Record<AdHocSubProcessInstructionRecordValue>> wrappedStream) {
-    return new AdHocSubProcessActivityActivationRecordStream(wrappedStream);
+    return new AdHocSubProcessInstructionRecordStream(wrappedStream);
   }
 
-  public AdHocSubProcessActivityActivationRecordStream withAdHocSubProcessInstanceKey(
+  public AdHocSubProcessInstructionRecordStream withAdHocSubProcessInstanceKey(
       final String adHocSubProcessInstanceKey) {
     return valueFilter(
         record -> record.getAdHocSubProcessInstanceKey().equals(adHocSubProcessInstanceKey));
   }
 
-  public AdHocSubProcessActivityActivationRecordStream limitToAdHocSubProcessInstanceCompleted() {
+  public AdHocSubProcessInstructionRecordStream limitToAdHocSubProcessInstanceCompleted() {
     return limit(
         r ->
             r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
