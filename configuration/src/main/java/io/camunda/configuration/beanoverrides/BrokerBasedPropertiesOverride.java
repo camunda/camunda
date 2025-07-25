@@ -10,12 +10,14 @@ package io.camunda.configuration.beanoverrides;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import org.springframework.beans.BeanUtils;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
+@EnableConfigurationProperties(BrokerBasedProperties.class)
 @Profile(value = {"broker", "restore"})
 public class BrokerBasedPropertiesOverride {
 
@@ -23,9 +25,9 @@ public class BrokerBasedPropertiesOverride {
   private final BrokerBasedProperties legacyBrokerBasedProperties;
 
   public BrokerBasedPropertiesOverride(
-      UnifiedConfiguration unifiedConfiguration, BrokerBasedProperties properties) {
+      final UnifiedConfiguration unifiedConfiguration, final BrokerBasedProperties properties) {
     this.unifiedConfiguration = unifiedConfiguration;
-    this.legacyBrokerBasedProperties = properties;
+    legacyBrokerBasedProperties = properties;
   }
 
   @Bean
