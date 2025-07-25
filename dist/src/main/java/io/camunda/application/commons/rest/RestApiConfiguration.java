@@ -13,10 +13,15 @@ import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.DefaultCamundaAuthenticationConverter;
 import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
 import io.camunda.authentication.UnprotectedCamundaAuthenticationConverter;
+import io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder;
+import io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder;
+import io.camunda.authentication.holder.RequestContextBasedAuthenticationHolder;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
+import io.camunda.security.auth.CamundaAuthenticationHolder;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -38,14 +43,28 @@ public class RestApiConfiguration {
   }
 
   @Bean
+  public CamundaAuthenticationHolder requestContextBasedAuthenticationHolder(
+      final HttpServletRequest request) {
+    return new RequestContextBasedAuthenticationHolder(request);
+  }
+
+  @Bean
+  public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder(
+      final HttpServletRequest request) {
+    return new HttpSessionBasedAuthenticationHolder(request);
+  }
+
+  @Bean
   public CamundaAuthenticationConverter<Authentication> camundaAuthenticationConverter() {
     return new DefaultCamundaAuthenticationConverter();
   }
 
   @Bean
   public CamundaAuthenticationProvider camundaAuthenticationProvider(
+      final List<CamundaAuthenticationHolder> holders,
       final List<CamundaAuthenticationConverter<Authentication>> converters) {
     return new DefaultCamundaAuthenticationProvider(
+        new CamundaAuthenticationDelegatingHolder(holders),
         new CamundaAuthenticationDelegatingConverter(converters));
   }
 
