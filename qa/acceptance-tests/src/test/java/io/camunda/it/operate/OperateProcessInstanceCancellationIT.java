@@ -14,8 +14,12 @@ import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INS
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
+import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
+import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
+import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -39,17 +43,32 @@ import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.client.api.command.MigrationPlan;
+import java.lang.reflect.Method;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class OperateProcessInstanceCancellationIT {
   @MultiDbTestApplication
   static final TestCamundaApplication CAMUNDA_APPLICATION =
-      new TestCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
+      new TestCamundaApplication()
+          // Enable the StartupBean which enables the operation executor
+          .withAdditionalProfile("test-executor")
+          .withAuthorizationsDisabled()
+          .withMultiTenancyDisabled()
+          .withBasicAuth();
 
   private static final String SUPER_USER_USERNAME = "super";
 
@@ -66,6 +85,7 @@ public class OperateProcessInstanceCancellationIT {
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
 
   private static TestRestOperateClient operateClient;
+  final List<ProcessInstanceEvent> activeProcessInstances = new ArrayList<>();
 
   @BeforeAll
   public static void beforeAll(
@@ -76,16 +96,29 @@ public class OperateProcessInstanceCancellationIT {
 
   @Test
   void shouldCancelProcess(
-      @Authenticated(SUPER_USER_USERNAME) final CamundaClient client) {
+      @Authenticated(SUPER_USER_USERNAME) final CamundaClient client, final TestInfo testInfo) {
+    final var testScopeId =
+        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
+    final int processInstanceCount = 10;
+
     // given
     // process instances that are running
     deployProcess(client, "process/service_tasks_v1.bpmn");
-    final long processInstanceKey = createProcessInstance(client, "service_tasks_v1");
+    final List<Long> processInstanceKeys = createProcessInstances(client, "service_tasks_v1", processInstanceCount, testScopeId);
 
     // when
     // execute CANCEL_PROCESS_INSTANCE
     final var batchOperationEntity = operateClient.cancelProcessInstancesBatchOperationRequest(
-        new ListViewQueryDto().setIds(List.of(String.valueOf(processInstanceKey)))
+        new ListViewQueryDto()
+            .setRunning(true)
+            .setActive(true)
+            .setIncidents(true)
+            .setFinished(false)
+            .setCompleted(false)
+            .setCanceled(false)
+            .setRetriesLeft(false)
+            .setIds(emptyList())
+            .setExcludeIds(emptyList())
     );
 
     // then
@@ -102,9 +135,11 @@ public class OperateProcessInstanceCancellationIT {
         .isTrue();
     final var batchOperationId = batchOperationEntity.get().getId();
 
-    waitForBatchOperationWithCorrectTotalCount(client, batchOperationId, 1);
+    waitForBatchOperationWithCorrectTotalCount(client, batchOperationId, processInstanceCount);
 
-    waitForProcessCancelledState(client, processInstanceKey);
+    for (final Long key : processInstanceKeys) {
+      waitForProcessInstanceToBeTerminated(client, key);
+    }
   }
 
   private static long deployProcess(final CamundaClient client, final String path) {
@@ -131,91 +166,20 @@ public class OperateProcessInstanceCancellationIT {
     return processDefinitionKey;
   }
 
-  private static long waitForProcessCancelledState(
-      final CamundaClient client, final long processInstanceKey) {
-    Awaitility.await("should wait until flow node instance is in given state")
-        .atMost(Duration.ofSeconds(60))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var result =
-                  client
-                      .newProcessInstanceGetRequest(processInstanceKey)
-                      .send()
-                      .join();
+  private List<Long> createProcessInstances(
+      final CamundaClient client, final String bpmnProcessId, final int amount, final String testScopeId) {
 
-              assertThat(result.getState()).isEqualTo(ProcessInstanceState.TERMINATED);
-            });
+    IntStream.range(0, amount)
+        .forEach(
+            i ->
+                activeProcessInstances.add(
+                    startScopedProcessInstance(
+                        client, bpmnProcessId, testScopeId, Map.of())));
 
-    return processInstanceKey;
-  }
+    waitForScopedProcessInstancesToStart(client, testScopeId, activeProcessInstances.size());
 
-  private static long createProcessInstance(
-      final CamundaClient client, final String bpmnProcessId) {
-
-    final ProcessInstanceEvent processInstanceEvent =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(bpmnProcessId)
-            .latestVersion()
-            .send()
-            .join();
-    final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
-
-    TestHelper.waitForProcessInstancesToStart(
-        client,
-        b -> b
-            .processInstanceKey(processInstanceKey)
-            .state(ProcessInstanceState.ACTIVE),
-        1
-    );
-
-    Awaitility.await("operate should find the process instance")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              // and
-              final var processEither = operateClient.getProcessInstanceWith(processInstanceKey);
-              assertThat(processEither.isRight()).isTrue();
-              assertThat(processEither.get().processInstances().getFirst().getState()).isEqualTo("ACTIVE");
-            });
-
-    try {
-      Thread.sleep(30000);
-    } catch (final InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-
-    Awaitility.await("operate should find the process instance")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              // and
-              final var processEither = operateClient.getProcessInstanceWith(processInstanceKey);
-              assertThat(processEither.isRight()).isTrue();
-              assertThat(processEither.get().processInstances().getFirst().getState()).isEqualTo("ACTIVE");
-            });
-
-    Awaitility.await("operate should find the process instance")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              // and
-              final var processEither = operateClient.searchProcessInstances(
-                  new ListViewRequestDto().setQuery(
-                      new ListViewQueryDto()
-                          .setIds(List.of(String.valueOf(processInstanceKey)))
-                  )
-              );
-              assertThat(processEither.isRight()).isTrue();
-              assertThat(processEither.get().getProcessInstances().getFirst().getState()).isEqualTo(
-                  ProcessInstanceStateDto.ACTIVE);
-            });
-
-    return processInstanceKey;
+    return activeProcessInstances.stream().map(ProcessInstanceEvent::getProcessInstanceKey).collect(
+        Collectors.toList());
   }
 
 }
