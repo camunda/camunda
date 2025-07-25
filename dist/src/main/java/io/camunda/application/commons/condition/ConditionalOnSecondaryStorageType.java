@@ -8,8 +8,8 @@
 package io.camunda.application.commons.condition;
 
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType.OnSecondaryStorageTypeCondition;
-import io.camunda.application.commons.utils.DatabaseTypeUtils;
 import io.camunda.search.connect.configuration.DatabaseConfig;
+import io.camunda.search.util.DatabaseTypeUtils;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

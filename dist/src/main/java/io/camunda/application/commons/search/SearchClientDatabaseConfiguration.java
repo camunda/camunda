@@ -8,8 +8,6 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
-import io.camunda.authentication.ConditionalOnSecondaryStorageDisabled;
-import io.camunda.authentication.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
@@ -48,6 +46,8 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
+import io.camunda.search.util.ConditionalOnSecondaryStorageDisabled;
+import io.camunda.search.util.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.util.List;

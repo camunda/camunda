@@ -12,6 +12,7 @@ import static io.camunda.authentication.service.PrincipalExtractionHelper.extrac
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.authentication.service.NoDBMembershipService;
+import io.camunda.search.util.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;

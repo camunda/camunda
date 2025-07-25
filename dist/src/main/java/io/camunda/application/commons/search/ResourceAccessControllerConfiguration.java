@@ -8,7 +8,6 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
-import io.camunda.authentication.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.db.rdbms.read.security.RdbmsResourceAccessController;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
 import io.camunda.search.clients.auth.DefaultResourceAccessProvider;
@@ -17,6 +16,7 @@ import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
 import io.camunda.search.clients.auth.DocumentBasedResourceAccessController;
 import io.camunda.search.connect.configuration.DatabaseConfig;
+import io.camunda.search.util.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.security.reader.ResourceAccessProvider;

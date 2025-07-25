@@ -7,7 +7,7 @@
  */
 package io.camunda.application.commons.backup;
 
-import io.camunda.application.commons.utils.DatabaseTypeUtils;
+import io.camunda.search.util.DatabaseTypeUtils;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

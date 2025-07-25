@@ -5,7 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication;
+package io.camunda.search.util;
+
+import static io.camunda.search.util.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -28,9 +31,6 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 public @interface ConditionalOnSecondaryStorageEnabled {
 
   class NoSecondaryStorageCondition implements Condition {
-
-    public static final String PROPERTY_CAMUNDA_DATABASE_TYPE = "camunda.database.type";
-    public static final String CAMUNDA_DATABASE_TYPE_NONE = "none";
 
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
