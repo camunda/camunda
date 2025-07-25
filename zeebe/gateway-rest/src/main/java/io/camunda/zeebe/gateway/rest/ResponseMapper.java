@@ -632,7 +632,6 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toTenantUpdateResponse(final TenantRecord record) {
     final var response =
         new TenantUpdateResult()
-            .tenantKey(KeyUtil.keyToString(record.getTenantKey()))
             .tenantId(record.getTenantId())
             .name(record.getName())
             .description(record.getDescription());

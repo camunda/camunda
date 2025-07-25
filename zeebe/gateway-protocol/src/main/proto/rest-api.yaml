@@ -5450,9 +5450,6 @@ components:
         description:
           type: string
           description: The description of the tenant.
-        tenantKey:
-          type: string
-          description: The unique system-generated internal tenant ID.
 
     TenantResult:
       description: Tenant search response item.
