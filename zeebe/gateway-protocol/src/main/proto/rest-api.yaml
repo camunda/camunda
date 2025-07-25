@@ -7547,9 +7547,6 @@ components:
         email:
           description: The email of the user.
           type: "string"
-        userKey:
-          description: The key of the created user
-          type: "string"
     UserUpdateResult:
       type: object
       properties:
