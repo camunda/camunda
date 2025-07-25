@@ -76,7 +76,7 @@
     <version.msgpack>0.9.10</version.msgpack>
     <version.netty>4.1.123.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
-    <version.opensearch>2.9.0</version.opensearch>
+    <version.opensearch>2.9.1</version.opensearch>
     <version.opensearch.testcontainers>2.1.4</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.8</version.protobuf>
