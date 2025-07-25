@@ -94,7 +94,9 @@ export class IdentityRolesPage {
     );
     this.deleteRoleModalDeleteButton = this.deleteRoleModal.getByRole(
       'button',
-      {name: 'Delete role'},
+      {
+        name: 'Delete role',
+      },
     );
     this.roleCell = (roleID: string) =>
       this.rolesList.getByRole('cell', {name: roleID, exact: true});
@@ -124,5 +126,12 @@ export class IdentityRolesPage {
   async clickRole(roleID: string) {
     await expect(this.roleCell(roleID)).toBeVisible({timeout: 60000});
     await this.roleCell(roleID).click();
+  }
+
+  async deleteRole(roleName: string) {
+    await this.deleteRoleButton(roleName).click();
+    await expect(this.deleteRoleModal).toBeVisible();
+    await this.deleteRoleModalDeleteButton.click();
+    await expect(this.deleteRoleModal).toBeHidden();
   }
 }
