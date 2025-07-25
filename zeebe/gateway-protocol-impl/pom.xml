@@ -22,7 +22,7 @@
 
   <properties>
     <version.java>8</version.java>
-    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+    <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
     <proto.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto</proto.dir>
   </properties>
 

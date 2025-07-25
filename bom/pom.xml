@@ -39,7 +39,7 @@
     <nexus.release.repository>https://artifacts.camunda.com/artifactory/zeebe-io/</nexus.release.repository>
 
     <!-- Camunda License v1.0 header -->
-    <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
+    <license.header.file>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header.file>
 
     <plugin.version.flatten>1.7.1</plugin.version.flatten>
     <plugin.version.javadoc>3.11.2</plugin.version.javadoc>
@@ -198,20 +198,24 @@
           <artifactId>license-maven-plugin</artifactId>
           <version>${plugin.version.license}</version>
           <configuration>
-            <header>${license.header}</header>
-            <properties>
-              <owner>camunda services GmbH</owner>
-              <email>info@camunda.com</email>
-            </properties>
-            <includes>
-              <include>**/*.java</include>
-              <include>**/*.scala</include>
-            </includes>
-            <excludes>
-              <exclude>zeebe/benchmarks/project/**/*</exclude>
-              <exclude>operate/**/*</exclude>
-              <exclude>tasklist/**/*</exclude>
-            </excludes>
+            <licenseSets>
+              <licenseSet>
+                <header>${license.header.file}</header>
+                <properties>
+                  <owner>camunda services GmbH</owner>
+                  <email>info@camunda.com</email>
+                </properties>
+                <includes>
+                  <include>**/*.java</include>
+                  <include>**/*.scala</include>
+                </includes>
+                <excludes>
+                  <exclude>zeebe/benchmarks/project/**/*</exclude>
+                  <exclude>operate/**/*</exclude>
+                  <exclude>tasklist/**/*</exclude>
+                </excludes>
+              </licenseSet>
+            </licenseSets>
             <mapping>
               <java>SLASHSTAR_STYLE</java>
             </mapping>
