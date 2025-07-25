@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.container.AdHocSubProcessInnerInstanceProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.container.AdHocSubProcessProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.container.CallActivityProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.container.EventSubProcessProcessor;
@@ -106,6 +107,9 @@ public final class BpmnElementProcessors {
     processors.put(
         BpmnElementType.AD_HOC_SUB_PROCESS,
         new AdHocSubProcessProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE,
+        new AdHocSubProcessInnerInstanceProcessor(bpmnBehaviors, stateTransitionBehavior));
 
     // events
     processors.put(
