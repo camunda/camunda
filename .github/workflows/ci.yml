@@ -997,6 +997,7 @@ jobs:
           version: ${{ steps.build-camunda-docker.outputs.version }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           goldenfile: camunda-docker-labels.golden.json
+          dockerfile: camunda.Dockerfile
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Run Docker tests
