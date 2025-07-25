@@ -8,7 +8,7 @@
 package io.camunda.search.os.transformers.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
@@ -69,12 +69,14 @@ public class SearchGetRequestTransformerTest {
 
   @Test
   public void shouldFailToBuildGetRequestWhenIdNotPresent() {
-    assertThrows(NullPointerException.class, () -> SearchGetRequest.of(b -> b.index("bar")));
+    assertThatExceptionOfType(NullPointerException.class)
+        .isThrownBy(() -> SearchGetRequest.of(b -> b.index("bar")));
   }
 
   @Test
   public void shouldFailToBuildGetRequestWhenIndexNotPresent() {
-    assertThrows(NullPointerException.class, () -> SearchGetRequest.of(b -> b.id("foo")));
+    assertThatExceptionOfType(NullPointerException.class)
+        .isThrownBy(() -> SearchGetRequest.of(b -> b.id("foo")));
   }
 
   record TestDocument(String id) {}
