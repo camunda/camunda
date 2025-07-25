@@ -9,89 +9,96 @@ package io.camunda.tasklist.webapp.tenant;
 
 import static org.mockito.Mockito.*;
 
-import io.camunda.authentication.entity.AuthenticationContext;
-import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.security.reader.TenantAccess;
+import io.camunda.security.reader.TenantAccessProvider;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 public class TenantServiceTest {
 
+  @Mock private CamundaAuthenticationProvider authenticationProvider;
+  @Mock private TenantAccessProvider tenantAccessProvider;
   @Spy private SecurityConfiguration securityConfiguration;
-  @InjectMocks private TenantServiceImpl instance;
+  @InjectMocks private TenantService instance;
 
   @Test
   void getAuthenticatedTenantsWhenMultiTenancyIsOff() {
     RequestContextHolder.setRequestAttributes(null);
-    Assertions.assertThat(instance.getAuthenticatedTenants())
-        .isEqualTo(TenantService.AuthenticatedTenants.allTenants());
+    Assertions.assertThat(instance.getAuthenticatedTenants().wildcard()).isTrue();
   }
 
   @Test
   void getAuthenticatedTenantsWhenMultiTenancyIsOn() {
+    // given
     RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
-    securityConfiguration.getMultiTenancy().setChecksEnabled(true);
-    prepareMocksTenants();
-
-    final List<String> expectedListOfTenants = new ArrayList<String>();
-    expectedListOfTenants.add("A");
-    expectedListOfTenants.add("B");
-
-    final TenantService.AuthenticatedTenants result = instance.getAuthenticatedTenants();
-    Assertions.assertThat(result.getTenantIds()).isEqualTo(expectedListOfTenants);
-    Assertions.assertThat(result.getTenantAccessType())
-        .isEqualTo(TenantService.TenantAccessType.TENANT_ACCESS_ASSIGNED);
-  }
-
-  @Test
-  void invalidTenant() {
-    RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
-    final String tenantId = "C";
-    securityConfiguration.getMultiTenancy().setChecksEnabled(true);
-    prepareMocksTenants();
-    Assertions.assertThat(instance.isTenantValid(tenantId)).isFalse();
-  }
-
-  @Test
-  void validTenant() {
-    RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
-    final String tenantId = "A";
-    securityConfiguration.getMultiTenancy().setChecksEnabled(true);
-    prepareMocksTenants();
-    Assertions.assertThat(instance.isTenantValid(tenantId)).isTrue();
-  }
-
-  private void prepareMocksTenants() {
     // prepare list of tenant IDs
     final List<String> listOfTenants = new ArrayList<>();
     listOfTenants.add("A");
     listOfTenants.add("B");
 
-    // Mock Authentication
-    final Authentication auth = mock(Authentication.class);
-    final CamundaUser camundaUser = mock(CamundaUser.class);
-    final AuthenticationContext authenticationContext = mock(AuthenticationContext.class);
-    when(auth.getPrincipal()).thenReturn(camundaUser);
-    when(camundaUser.getAuthenticationContext()).thenReturn(authenticationContext);
-    when(authenticationContext.tenants())
-        .thenReturn(
-            listOfTenants.stream().map(tenantId -> new TenantDTO(1L, tenantId, "", "")).toList());
+    securityConfiguration.getMultiTenancy().setChecksEnabled(true);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
+    when(tenantAccessProvider.resolveTenantAccess(any(CamundaAuthentication.class)))
+        .thenReturn(TenantAccess.allowed(listOfTenants));
 
-    // Mock SecurityContextHolder
-    final SecurityContext securityContext = mock(SecurityContext.class);
-    SecurityContextHolder.getContext().setAuthentication(auth);
+    final List<String> expectedListOfTenants = new ArrayList<String>();
+    expectedListOfTenants.add("A");
+    expectedListOfTenants.add("B");
+
+    // when
+    final var result = instance.getAuthenticatedTenants();
+
+    // then
+    Assertions.assertThat(result.tenantIds()).isEqualTo(expectedListOfTenants);
+    Assertions.assertThat(result.allowed()).isTrue();
+    Assertions.assertThat(result.wildcard()).isFalse();
+  }
+
+  @Test
+  void invalidTenant() {
+    // given
+    RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
+    final String tenantId = "C";
+
+    securityConfiguration.getMultiTenancy().setChecksEnabled(true);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
+    when(tenantAccessProvider.hasTenantAccessByTenantId(
+            any(CamundaAuthentication.class), eq(tenantId)))
+        .thenReturn(TenantAccess.denied(List.of(tenantId)));
+
+    // when / then
+    Assertions.assertThat(instance.isTenantValid(tenantId)).isFalse();
+  }
+
+  @Test
+  void validTenant() {
+    // given
+    RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
+    final String tenantId = "A";
+
+    securityConfiguration.getMultiTenancy().setChecksEnabled(true);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
+    when(tenantAccessProvider.hasTenantAccessByTenantId(
+            any(CamundaAuthentication.class), eq(tenantId)))
+        .thenReturn(TenantAccess.allowed(List.of(tenantId)));
+
+    // when / then
+    Assertions.assertThat(instance.isTenantValid(tenantId)).isTrue();
   }
 }

@@ -77,7 +77,7 @@ public class ProcessService {
 
     final boolean isMultiTenancyEnabled = tenantService.isMultiTenancyEnabled();
 
-    if (isMultiTenancyEnabled && !tenantService.getAuthenticatedTenants().contains(tenantId)) {
+    if (isMultiTenancyEnabled && !tenantService.isTenantValid(tenantId)) {
       throw new InvalidRequestException("Invalid tenant.");
     }
 

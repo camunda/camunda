@@ -49,16 +49,9 @@ public class ProcessServiceTest {
   void startProcessInstanceInvalidTenant() {
     final String processDefinitionKey = "processDefinitionKey";
     final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
-    final String tenantId = "tenantA";
-
-    final List<String> tenantIds = new ArrayList<String>();
-    tenantIds.add("TenantB");
-    tenantIds.add("TenantC");
-    final TenantService.AuthenticatedTenants authenticatedTenants =
-        TenantService.AuthenticatedTenants.assignedTenants(tenantIds);
 
     when(tenantService.isMultiTenancyEnabled()).thenReturn(true);
-    when(tenantService.getAuthenticatedTenants()).thenReturn(authenticatedTenants);
+    when(tenantService.isTenantValid(any(String.class))).thenReturn(false);
 
     assertThatThrownBy(
             () -> instance.startProcessInstance(processDefinitionKey, variableInputDTOList, ""))

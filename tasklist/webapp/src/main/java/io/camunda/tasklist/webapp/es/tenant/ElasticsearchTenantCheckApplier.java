@@ -10,17 +10,19 @@ package io.camunda.tasklist.webapp.es.tenant;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import io.camunda.security.reader.TenantAccess;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.tenant.TenantCheckApplier;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.webapp.tenant.TenantService;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -33,50 +35,41 @@ public class ElasticsearchTenantCheckApplier implements TenantCheckApplier<Searc
 
   @Override
   public void apply(final SearchRequest searchRequest) {
-    final var tenants = tenantService.getAuthenticatedTenants();
-    final var tenantCheckQueryType = tenants.getTenantAccessType();
-    final var searchByTenantIds = tenants.getTenantIds();
-
-    applyTenantCheckOnQuery(searchRequest, tenantCheckQueryType, searchByTenantIds);
+    final var tenantAccess = tenantService.getAuthenticatedTenants();
+    applyTenantCheckOnQuery(searchRequest, tenantAccess, tenantAccess.tenantIds());
   }
 
   @Override
   public void apply(final SearchRequest searchRequest, final Collection<String> tenantIds) {
-    final var tenants = tenantService.getAuthenticatedTenants();
-    final var tenantCheckQueryType = tenants.getTenantAccessType();
-    final var authorizedTenantIds = Set.copyOf(tenants.getTenantIds());
+    final var tenantAccess = tenantService.getAuthenticatedTenants();
+    final var authorizedTenantIds =
+        Optional.ofNullable(tenantAccess.tenantIds()).map(Set::copyOf).orElseGet(HashSet::new);
     final var searchByTenantIds =
         tenantIds.stream().filter(authorizedTenantIds::contains).collect(Collectors.toSet());
 
-    applyTenantCheckOnQuery(searchRequest, tenantCheckQueryType, searchByTenantIds);
+    applyTenantCheckOnQuery(searchRequest, tenantAccess, searchByTenantIds);
   }
 
   private static void applyTenantCheckOnQuery(
       final SearchRequest searchRequest,
-      final TenantService.TenantAccessType tenantCheckQueryType,
+      final TenantAccess tenantAccess,
       final Collection<String> searchByTenantIds) {
     final var actualQuery = searchRequest.source().query();
 
-    switch (tenantCheckQueryType) {
-      case TENANT_ACCESS_ASSIGNED -> {
-        final QueryBuilder finalQuery;
-        if (CollectionUtils.isEmpty(searchByTenantIds)) {
-          // no data must be returned
-          finalQuery = ElasticsearchUtil.createMatchNoneQuery();
-        } else {
-          final var tenantTermsQuery = termsQuery(TENANT_ID, searchByTenantIds);
-          finalQuery = ElasticsearchUtil.joinWithAnd(tenantTermsQuery, actualQuery);
-        }
-        searchRequest.source().query(finalQuery);
-      }
-      case TENANT_ACCESS_NONE -> // no data must be returned
-          searchRequest.source().query(ElasticsearchUtil.createMatchNoneQuery());
-      case TENANT_ACCESS_ALL -> searchRequest.source().query(actualQuery);
-      default -> {
-        final var message =
-            String.format("Unexpected tenant check query type %s", tenantCheckQueryType);
-        throw new TasklistRuntimeException(message);
-      }
+    if (tenantAccess.wildcard()) {
+      searchRequest.source().query(actualQuery);
+
+    } else if (tenantAccess.denied() || CollectionUtils.isEmpty(searchByTenantIds)) {
+      searchRequest.source().query(ElasticsearchUtil.createMatchNoneQuery());
+
+    } else if (tenantAccess.allowed()) {
+      final var tenantTermsQuery = termsQuery(TENANT_ID, searchByTenantIds);
+      final var finalQuery = ElasticsearchUtil.joinWithAnd(tenantTermsQuery, actualQuery);
+      searchRequest.source().query(finalQuery);
+
+    } else {
+      final var message = String.format("Unexpected tenant access type %s", tenantAccess);
+      throw new TasklistRuntimeException(message);
     }
   }
 }
