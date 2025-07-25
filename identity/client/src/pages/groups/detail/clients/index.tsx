@@ -10,7 +10,7 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api";
 import { getClientsByGroupId, Group } from "src/utility/api/groups";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
@@ -24,9 +24,10 @@ type ClientsProps = {
 const Clients: FC<ClientsProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
 
-  const { data, loading, success, reload } = useApi(getClientsByGroupId, {
-    groupId,
-  });
+  const { data, loading, success, reload, ...paginationProps } =
+    usePaginatedApi(getClientsByGroupId, {
+      groupId,
+    });
 
   const assignedClients = data && Array.isArray(data.items) ? data.items : [];
 
@@ -73,8 +74,7 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
     <>
       <EntityList
         data={assignedClients}
-        headers={[{ header: t("clientId"), key: "clientId" }]}
-        sortProperty="clientId"
+        headers={[{ header: t("clientId"), key: "clientId", isSortable: true }]}
         loading={loading}
         addEntityLabel={t("assignClient")}
         onAddEntity={openAssignModal}
@@ -87,6 +87,7 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
             onClick: unassignClient,
           },
         ]}
+        {...paginationProps}
       />
       {assignClientModal}
       {unassignClientModal}

@@ -10,7 +10,7 @@ import { FC, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApi, useApiCall } from "src/utility/api/hooks";
+import { useApi, useApiCall } from "src/utility/api";
 import { searchMappingRule, MappingRule } from "src/utility/api/mapping-rules";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";

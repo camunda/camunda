@@ -8,7 +8,7 @@
 
 import { FC, useEffect, useState } from "react";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api/hooks";
+import { useApiCall } from "src/utility/api";
 import { Client } from "src/utility/api/tenants";
 import FormModal from "src/components/modal/FormModal";
 import { assignTenantClient, Tenant } from "src/utility/api/tenants";

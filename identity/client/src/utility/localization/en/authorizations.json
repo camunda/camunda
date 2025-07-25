@@ -46,6 +46,7 @@
   "ownerType": "Owner type",
   "ownerId": "Owner ID",
   "selectOwner": "Select an owner",
+  "searchByOwnerId": "Search by Owner ID",
   "resourceId": "Resource ID",
   "permissionTypes": "Permissions",
   "createAuthorization": "Create authorization",

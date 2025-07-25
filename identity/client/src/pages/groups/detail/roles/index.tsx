@@ -10,7 +10,7 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api";
 import { searchRolesByGroupId } from "src/utility/api/groups";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
@@ -29,7 +29,8 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
     loading,
     success,
     reload,
-  } = useApi(searchRolesByGroupId, {
+    ...paginationProps
+  } = usePaginatedApi(searchRolesByGroupId, {
     groupId: groupId,
   });
 
@@ -87,7 +88,6 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
           { header: t("roleId"), key: "roleId" },
           { header: t("roleName"), key: "name" },
         ]}
-        sortProperty="roleId"
         loading={loading}
         addEntityLabel={t("assignRole")}
         onAddEntity={openAssignModal}
@@ -100,6 +100,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
             onClick: unassignRole,
           },
         ]}
+        {...paginationProps}
       />
       {assignRolesModal}
       {unassignRoleModal}

@@ -18,6 +18,7 @@ import { EntityData } from "src/components/entityList/EntityList";
 import { Group } from "src/utility/api/groups";
 import { Role } from "src/utility/api/roles";
 import { MappingRule } from "src/utility/api/mapping-rules";
+import { PageSearchParams } from "../hooks/usePagination";
 
 export const TENANTS_ENDPOINT = "/tenants";
 
@@ -28,8 +29,10 @@ export type Tenant = EntityData & {
   description: string;
 };
 
-export const searchTenant: ApiDefinition<SearchResponse<Tenant>> = () =>
-  apiPost(`${TENANTS_ENDPOINT}/search`);
+export const searchTenant: ApiDefinition<
+  SearchResponse<Tenant>,
+  PageSearchParams
+> = (params) => apiPost(`${TENANTS_ENDPOINT}/search`, params);
 
 type GetTenantParams = {
   tenantId?: string;
@@ -73,7 +76,8 @@ export type GetTenantGroupsParams = {
 export const getGroupsByTenantId: ApiDefinition<
   SearchResponse<Group>,
   GetTenantGroupsParams
-> = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/groups/search`);
+> = ({ tenantId, ...body }) =>
+  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/groups/search`, body);
 
 type AssignTenantGroupParams = GetTenantGroupsParams & { groupId: string };
 export const assignTenantGroup: ApiDefinition<
@@ -98,7 +102,8 @@ export type GetTenantRolesParams = {
 export const getRolesByTenantId: ApiDefinition<
   SearchResponse<Role>,
   GetTenantRolesParams
-> = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/roles/search`);
+> = ({ tenantId, ...body }) =>
+  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/roles/search`, body);
 
 type AssignTenantRoleParams = GetTenantRolesParams & { roleId: string };
 export const assignTenantRole: ApiDefinition<
@@ -123,8 +128,10 @@ export type GetTenantMappingRulesParams = {
 export const getMappingRulesByTenantId: ApiDefinition<
   SearchResponse<MappingRule>,
   GetTenantMappingRulesParams
-> = ({ tenantId }) =>
-  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/search`);
+> = (params) => {
+  const { tenantId, ...body } = params;
+  return apiPost(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/search`, body);
+};
 
 type AssignTenantMappingRuleParams = GetTenantMappingRulesParams & {
   mappingRuleId: string;
@@ -156,14 +163,15 @@ export type Client = {
 export const getClientsByTenantId: ApiDefinition<
   SearchResponse<Client>,
   GetTenantClientsParams
-> = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/clients/search`);
+> = ({ tenantId, ...body }) =>
+  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/clients/search`, body);
 
 type AssignTenantClientParams = GetTenantClientsParams & Client;
 export const assignTenantClient: ApiDefinition<
   undefined,
   AssignTenantClientParams
-> = ({ tenantId, clientId }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/clients/${clientId}`);
+> = ({ tenantId, clientId, ...body }) => {
+  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/clients/${clientId}`, body);
 };
 
 type UnassignTenantClientParams = AssignTenantClientParams;

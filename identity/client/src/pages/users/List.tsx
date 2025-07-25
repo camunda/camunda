@@ -11,7 +11,7 @@ import { useNavigate } from "react-router";
 import { Add, Edit, TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import {
@@ -33,7 +33,9 @@ const List: FC = () => {
     loading,
     reload,
     success,
-  } = useApi(searchUser);
+    search,
+    ...paginationProps
+  } = usePaginatedApi(searchUser);
   const [addUser, addUserModal] = useModal(AddModal, reload);
   const [editUser, editUserModal] = useEntityModal(EditModal, reload);
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, reload);
@@ -44,7 +46,7 @@ const List: FC = () => {
     <PageHeader title={t("users")} linkText="users" linkUrl="" />
   );
 
-  if (success && !userSearchResults?.items.length) {
+  if (success && !search && !userSearchResults?.items.length) {
     return (
       <Page>
         {pageHeader}
@@ -80,9 +82,13 @@ const List: FC = () => {
       <EntityList
         data={userSearchResults == null ? [] : userSearchResults.items}
         headers={[
-          { header: t("username"), key: "username" },
-          { header: t("name"), key: "name" },
-          { header: t("email"), key: "email" },
+          {
+            header: t("username"),
+            key: "username",
+            isSortable: true,
+          },
+          { header: t("name"), key: "name", isSortable: true },
+          { header: t("email"), key: "email", isSortable: true },
         ]}
         menuItems={[
           {
@@ -97,12 +103,13 @@ const List: FC = () => {
             isDangerous: true,
           },
         ]}
-        sortProperty="username"
         onEntityClick={showDetails}
         addEntityLabel={t("createUser")}
         onAddEntity={addUser}
         loading={loading}
         searchPlaceholder={t("searchByUsername")}
+        searchKey="username"
+        {...paginationProps}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification

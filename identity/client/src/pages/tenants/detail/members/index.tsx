@@ -27,7 +27,7 @@ type MembersProps = {
 const Members: FC<MembersProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
 
-  const { users, loading, success, reload } = useEnrichedUsers(
+  const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
     getMembersByTenantId,
     {
       tenantId,
@@ -80,12 +80,13 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
   type MembersListHeaders = {
     header: string;
     key: UserKeys;
+    isSortable?: boolean;
   }[];
 
   const membersListHeaders: MembersListHeaders = isOIDC
-    ? [{ header: t("username"), key: "username" }]
+    ? [{ header: t("username"), key: "username", isSortable: true }]
     : [
-        { header: t("username"), key: "username" },
+        { header: t("username"), key: "username", isSortable: true },
         { header: t("name"), key: "name" },
         { header: t("email"), key: "email" },
       ];
@@ -95,7 +96,6 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
       <EntityList
         data={users}
         headers={membersListHeaders}
-        sortProperty="username"
         loading={loading}
         addEntityLabel={t("assignUser")}
         onAddEntity={openAssignModal}
@@ -108,6 +108,7 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
             onClick: unassignMember,
           },
         ]}
+        {...paginationProps}
       />
       {assignUsersModal}
       {unassignMemberModal}

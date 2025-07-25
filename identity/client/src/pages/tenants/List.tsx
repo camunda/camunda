@@ -11,7 +11,7 @@ import { TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { useNavigate } from "react-router";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { documentationHref } from "src/components/documentation";
@@ -29,7 +29,9 @@ const List: FC = () => {
     loading,
     reload,
     success,
-  } = useApi(searchTenant);
+    search,
+    ...paginationProps
+  } = usePaginatedApi(searchTenant);
 
   const [addTenant, addTenantModal] = useModal(AddModal, reload);
   const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, reload);
@@ -40,7 +42,7 @@ const List: FC = () => {
     <PageHeader title="Tenants" linkText="tenants" linkUrl="" />
   );
 
-  if (success && !tenantSearchResults?.items.length) {
+  if (success && !search && !tenantSearchResults?.items.length) {
     return (
       <Page>
         {pageHeader}
@@ -67,10 +69,9 @@ const List: FC = () => {
       <EntityList
         data={tenantSearchResults == null ? [] : tenantSearchResults.items}
         headers={[
-          { header: t("tenantId"), key: "tenantId" },
-          { header: t("name"), key: "name" },
+          { header: t("tenantId"), key: "tenantId", isSortable: true },
+          { header: t("name"), key: "name", isSortable: true },
         ]}
-        sortProperty="name"
         onEntityClick={showDetails}
         addEntityLabel={t("createTenant")}
         onAddEntity={addTenant}
@@ -88,6 +89,9 @@ const List: FC = () => {
               }),
           },
         ]}
+        searchPlaceholder={t("Search by Tenant ID")}
+        searchKey="tenantId"
+        {...paginationProps}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification

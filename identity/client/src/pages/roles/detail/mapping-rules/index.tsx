@@ -10,7 +10,7 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api";
 import { getMappingRulesByRoleId } from "src/utility/api/roles";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
@@ -29,7 +29,8 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
     loading,
     success,
     reload,
-  } = useApi(getMappingRulesByRoleId, {
+    ...paginationProps
+  } = usePaginatedApi(getMappingRulesByRoleId, {
     roleId: roleId,
   });
 
@@ -85,12 +86,15 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
       <EntityList
         data={mappingRules?.items}
         headers={[
-          { header: t("mappingRuleId"), key: "mappingRuleId" },
-          { header: t("mappingRuleName"), key: "name" },
-          { header: t("claimName"), key: "claimName" },
-          { header: t("claimValue"), key: "claimValue" },
+          {
+            header: t("mappingRuleId"),
+            key: "mappingRuleId",
+            isSortable: true,
+          },
+          { header: t("mappingRuleName"), key: "name", isSortable: true },
+          { header: t("claimName"), key: "claimName", isSortable: true },
+          { header: t("claimValue"), key: "claimValue", isSortable: true },
         ]}
-        sortProperty="mappingRuleId"
         loading={loading}
         addEntityLabel={t("assignMappingRule")}
         onAddEntity={openAssignModal}
@@ -103,6 +107,7 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
             onClick: unassignMappingRule,
           },
         ]}
+        {...paginationProps}
       />
       {assignMappingRulesModal}
       {unassignMappingRuleModal}

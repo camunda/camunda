@@ -10,7 +10,7 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { Edit, TrashCan, Add } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { documentationHref } from "src/components/documentation";
@@ -31,7 +31,10 @@ const List: FC = () => {
     loading,
     reload,
     success,
-  } = useApi(searchGroups);
+    search,
+    ...paginationProps
+  } = usePaginatedApi(searchGroups);
+
   const [addGroup, addModal] = useModal(AddModal, reload);
   const [updateGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, reload);
@@ -39,7 +42,7 @@ const List: FC = () => {
 
   const pageHeader = <PageHeader title="Groups" linkText="groups" linkUrl="" />;
 
-  if (success && !groupSearchResults?.items.length) {
+  if (success && !search && !groupSearchResults?.items.length) {
     return (
       <Page>
         {pageHeader}
@@ -66,10 +69,9 @@ const List: FC = () => {
       <EntityList
         data={groupSearchResults == null ? [] : groupSearchResults.items}
         headers={[
-          { header: t("groupId"), key: "groupId" },
-          { header: t("groupName"), key: "name" },
+          { header: t("groupId"), key: "groupId", isSortable: true },
+          { header: t("groupName"), key: "name", isSortable: true },
         ]}
-        sortProperty="name"
         onEntityClick={showDetails}
         addEntityLabel={t("createGroup")}
         onAddEntity={addGroup}
@@ -84,6 +86,8 @@ const List: FC = () => {
           },
         ]}
         searchPlaceholder={t("searchByGroupId")}
+        searchKey="groupId"
+        {...paginationProps}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification

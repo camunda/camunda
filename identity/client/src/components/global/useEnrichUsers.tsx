@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { isOIDC } from "src/configuration";
 import { SearchResponse } from "src/utility/api";
-import { useApiCall } from "src/utility/api/hooks";
+import { useApiCall, usePaginatedApiCall } from "src/utility/api";
 import { MemberUser } from "src/utility/api/membership";
 import { ApiDefinition } from "src/utility/api/request";
 import { searchUser, User } from "src/utility/api/users";
@@ -19,13 +19,15 @@ type UseEnrichedUsersResult = {
   loading: boolean;
   success: boolean;
   reload: () => void;
+  paginationProps: ReturnType<typeof usePaginatedApiCall>[1];
 };
 
 export function useEnrichedUsers<P>(
   apiDefinition: ApiDefinition<SearchResponse<MemberUser>, P>,
   params: P,
 ): UseEnrichedUsersResult {
-  const [callSearchMembers] = useApiCall(apiDefinition);
+  const [callSearchMembers, paginationProps] =
+    usePaginatedApiCall(apiDefinition);
   const [callSearchUser] = useApiCall(searchUser);
 
   const [users, setUsers] = useState<User[]>([]);
@@ -79,5 +81,6 @@ export function useEnrichedUsers<P>(
     loading,
     success,
     reload: fetch,
+    paginationProps,
   };
 }

@@ -10,6 +10,7 @@ import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
 import { Role, ROLES_ENDPOINT } from "src/utility/api/roles";
 import { MappingRule } from "src/utility/api/mapping-rules";
+import { PageSearchParams } from "../hooks/usePagination";
 
 export const GROUPS_ENDPOINT = "/groups";
 
@@ -29,12 +30,15 @@ type SearchGroupsParams = {
 
 export const searchGroups: ApiDefinition<
   SearchResponse<Group>,
-  SearchGroupsParams | undefined
-> = (filterParams) => {
-  const params = filterParams?.groupIds
-    ? { filter: { groupId: { $in: filterParams.groupIds } } }
+  Partial<SearchGroupsParams & PageSearchParams> | undefined
+> = (filterParams = {}) => {
+  const { groupIds, ...pageParams } = filterParams;
+
+  const params = groupIds
+    ? { filter: { groupId: { $in: groupIds } } }
     : undefined;
-  return apiPost(`${GROUPS_ENDPOINT}/search`, params);
+
+  return apiPost(`${GROUPS_ENDPOINT}/search`, { ...params, ...pageParams });
 };
 
 export type GetGroupParams = {
@@ -70,7 +74,8 @@ export type GetGroupRolesParams = {
 export const searchRolesByGroupId: ApiDefinition<
   SearchResponse<Role>,
   GetGroupRolesParams
-> = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/roles/search`);
+> = ({ groupId, ...body }) =>
+  apiPost(`${GROUPS_ENDPOINT}/${groupId}/roles/search`, body);
 
 type AssignGroupRoleParams = GetGroupRolesParams & { roleId: string };
 export const assignGroupRole: ApiDefinition<
@@ -95,8 +100,10 @@ export type GetGroupMappingRulesParams = {
 export const getMappingRulesByGroupId: ApiDefinition<
   SearchResponse<MappingRule>,
   GetGroupMappingRulesParams
-> = ({ groupId }) =>
-  apiPost(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/search`);
+> = (params) => {
+  const { groupId, ...body } = params;
+  return apiPost(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/search`, body);
+};
 
 type AssignGroupMappingRuleParams = GetGroupMappingRulesParams & {
   mappingRuleId: string;
@@ -126,7 +133,10 @@ export type Client = {
 export const getClientsByGroupId: ApiDefinition<
   SearchResponse<Client>,
   GetGroupClientsParams
-> = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/clients/search`);
+> = (args) => {
+  const { groupId, ...body } = args;
+  return apiPost(`${GROUPS_ENDPOINT}/${groupId}/clients/search`, body);
+};
 
 type AssignGroupClientParams = GetGroupClientsParams & Client;
 export const assignGroupClient: ApiDefinition<
