@@ -9,8 +9,7 @@ package io.camunda.authentication.csrf;
 
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.REFERER;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.security.configuration.AuthenticationConfiguration;
@@ -41,7 +40,7 @@ class CsrfProtectionRequestMatcherTest {
   void safeMethodsDoNotMatchForCsrf(final String method) {
     final var request = prepareMockRequest();
     request.setMethod(method);
-    assertFalse(matcher.matches(request));
+    assertThat(matcher.matches(request)).isFalse();
   }
 
   @ParameterizedTest
@@ -50,7 +49,7 @@ class CsrfProtectionRequestMatcherTest {
     final var request = prepareMockRequest();
     request.getSession(true);
     request.setMethod(method);
-    assertTrue(matcher.matches(request));
+    assertThat(matcher.matches(request)).isTrue();
   }
 
   @ParameterizedTest
@@ -58,7 +57,7 @@ class CsrfProtectionRequestMatcherTest {
   void whenUnprotectedApiIsOffAndApiCalledFromNonBrowser(final String method) {
     final var request = prepareMockRequest();
     request.setMethod(method);
-    assertFalse(matcher.matches(request));
+    assertThat(matcher.matches(request)).isFalse();
   }
 
   @ParameterizedTest
@@ -76,7 +75,7 @@ class CsrfProtectionRequestMatcherTest {
     final var request = prepareMockRequest();
     request.getSession(true);
     request.setServletPath(protectedUrls);
-    assertTrue(unprotectedApiMatcher.matches(request));
+    assertThat(unprotectedApiMatcher.matches(request)).isTrue();
   }
 
   @ParameterizedTest
@@ -90,7 +89,7 @@ class CsrfProtectionRequestMatcherTest {
   void whenUnprotectedApiIsOnAndApiCalledFromNonBrowser(final String protectedUrls) {
     final var request = prepareMockRequest();
     request.setServletPath(protectedUrls);
-    assertFalse(matcher.matches(request));
+    assertThat(matcher.matches(request)).isFalse();
   }
 
   @Test
@@ -98,7 +97,7 @@ class CsrfProtectionRequestMatcherTest {
     final var request = prepareMockRequest();
     request.addHeader(REFERER, "http://localhost/swagger-ui/index.html");
     request.getSession(true);
-    assertFalse(matcher.matches(request));
+    assertThat(matcher.matches(request)).isFalse();
   }
 
   @Test
@@ -106,21 +105,21 @@ class CsrfProtectionRequestMatcherTest {
     final var request = prepareMockRequest();
     request.addHeader(REFERER, "http://localhost/fake-swagger/index.html");
     request.getSession(true);
-    assertTrue(matcher.matches(request));
+    assertThat(matcher.matches(request)).isTrue();
   }
 
   @Test
   void bearerAuthorizedDoesNotMatchForCsrf() {
     final var request = prepareMockRequest();
     request.addHeader(AUTHORIZATION, "Bearer some-token");
-    assertFalse(matcher.matches(request));
+    assertThat(matcher.matches(request)).isFalse();
   }
 
   @Test
   void basicAuthorizedDoesNotMatchForCsrf() {
     final var request = prepareMockRequest();
     request.addHeader(AUTHORIZATION, "Basic some-creds");
-    assertFalse(matcher.matches(request));
+    assertThat(matcher.matches(request)).isFalse();
   }
 
   @ParameterizedTest
@@ -128,7 +127,7 @@ class CsrfProtectionRequestMatcherTest {
   void unprotectedPathsDoNotMatchForCsrf(final String path) {
     final var request = prepareMockRequest();
     request.setServletPath(path.replace("**", "/some/path").replace("*", "/some-path"));
-    assertFalse(matcher.matches(request));
+    assertThat(matcher.matches(request)).isFalse();
   }
 
   @ParameterizedTest
@@ -137,7 +136,7 @@ class CsrfProtectionRequestMatcherTest {
     final var request = prepareMockRequest();
     request.getSession(true);
     request.setServletPath(path.replace("**", "/some/path").replace("*", "/some-path"));
-    assertTrue(matcher.matches(request));
+    assertThat(matcher.matches(request)).isTrue();
   }
 
   @ParameterizedTest
@@ -145,7 +144,7 @@ class CsrfProtectionRequestMatcherTest {
   void protectedPathsDontMatchForCsrfFromBrowser(final String path) {
     final var request = prepareMockRequest();
     request.setServletPath(path.replace("**", "/some/path").replace("*", "/some-path"));
-    assertFalse(matcher.matches(request));
+    assertThat(matcher.matches(request)).isFalse();
   }
 
   private static Stream<Arguments> unprotectedPaths() {

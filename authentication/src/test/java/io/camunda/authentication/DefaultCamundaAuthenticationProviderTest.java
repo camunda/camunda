@@ -10,7 +10,6 @@ package io.camunda.authentication;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -73,7 +72,7 @@ public class DefaultCamundaAuthenticationProviderTest {
     final var claims = authenticationProvider.getCamundaAuthentication().claims();
 
     // then
-    assertNotNull(claims);
+    assertThat(claims).isNotNull();
     assertThat(claims).containsKey(Authorization.AUTHORIZED_USERNAME);
     assertThat(claims.get(Authorization.AUTHORIZED_USERNAME)).isEqualTo(username);
   }
@@ -107,7 +106,7 @@ public class DefaultCamundaAuthenticationProviderTest {
             authenticationProvider.getCamundaAuthentication().claims().get(USER_TOKEN_CLAIMS);
 
     // then
-    assertNotNull(claims);
+    assertThat(claims).isNotNull();
     assertThat(claims).containsKey("sub");
     assertThat(claims).containsKey("aud");
     assertThat(claims).containsKey("groups");

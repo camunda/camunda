@@ -9,7 +9,7 @@ package io.camunda.authentication;
 
 import static io.camunda.security.auth.OidcGroupsLoader.DERIVED_GROUPS_ARE_NOT_STRING_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -99,9 +99,9 @@ public class CamundaOAuthPrincipalServiceTest {
 
       // when
       final var exception =
-          assertThrows(
-              OAuth2AuthenticationException.class,
-              () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
+          assertThatExceptionOfType(OAuth2AuthenticationException.class)
+              .isThrownBy(() -> camundaOAuthPrincipalService.loadOAuthContext(claims))
+              .actual();
 
       assertThat(exception.getMessage())
           .isEqualTo(
@@ -118,9 +118,9 @@ public class CamundaOAuthPrincipalServiceTest {
 
       // when
       final var exception =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
+          assertThatExceptionOfType(IllegalArgumentException.class)
+              .isThrownBy(() -> camundaOAuthPrincipalService.loadOAuthContext(claims))
+              .actual();
 
       assertThat(exception.getMessage())
           .isEqualTo(
@@ -191,9 +191,9 @@ public class CamundaOAuthPrincipalServiceTest {
 
       // when
       final var exception =
-          assertThrows(
-              OAuth2AuthenticationException.class,
-              () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
+          assertThatExceptionOfType(OAuth2AuthenticationException.class)
+              .isThrownBy(() -> camundaOAuthPrincipalService.loadOAuthContext(claims))
+              .actual();
 
       assertThat(exception.getMessage())
           .isEqualTo(
@@ -208,9 +208,9 @@ public class CamundaOAuthPrincipalServiceTest {
 
       // when
       final var exception =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
+          assertThatExceptionOfType(IllegalArgumentException.class)
+              .isThrownBy(() -> camundaOAuthPrincipalService.loadOAuthContext(claims))
+              .actual();
 
       assertThat(exception.getMessage())
           .isEqualTo("Value for $['email'] is not a string. Please check your OIDC configuration.");
@@ -471,9 +471,9 @@ public class CamundaOAuthPrincipalServiceTest {
               "user1");
       // when
       final var exception =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
+          assertThatExceptionOfType(IllegalArgumentException.class)
+              .isThrownBy(() -> camundaOAuthPrincipalService.loadOAuthContext(claims))
+              .actual();
 
       assertThat(exception.getMessage())
           .isEqualTo(DERIVED_GROUPS_ARE_NOT_STRING_ARRAY.formatted(GROUPS_CLAIM));
