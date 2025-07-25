@@ -52,6 +52,8 @@ public class Metrics {
   public static final String COUNTER_NAME_ARCHIVED = "archived.process.instances";
   public static final String COUNTER_NAME_IMPORT_FNI_TREE_PATH_CACHE_RESULT =
       "import.fni.tree.path.cache.result";
+  public static final String COUNTER_NAME_REINDEX_FAILURES = "archival.reindex.failures";
+  public static final String COUNTER_NAME_DELETE_FAILURES = "archival.delete.failures";
 
   // Gauges:
   public static final String GAUGE_IMPORT_QUEUE_SIZE = OPERATE_NAMESPACE + "import.queue.size";
