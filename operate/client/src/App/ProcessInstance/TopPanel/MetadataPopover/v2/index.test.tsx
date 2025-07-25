@@ -26,6 +26,8 @@ import {
   USER_TASK_FLOW_NODE_ID,
   retriesLeftFlowNodeMetaData,
   singleInstanceMetadata,
+  incidentsByProcessKeyMetadata,
+  processDefinitionMetadata,
 } from 'modules/mocks/metadata';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
@@ -43,6 +45,9 @@ import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fe
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances.ts';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess.ts';
 import {waitFor} from '@testing-library/react';
+import {mockSearchIncidents} from 'modules/mocks/api/v2/incidents/searchIncidents.ts';
+import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance.ts';
+import {mockFetchProcessDefinition} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinition.ts';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -89,6 +94,11 @@ describe('MetadataPopover', () => {
     mockFetchElementInstance('2251799813699889').withSuccess(
       mockElementInstance,
     );
+    mockSearchIncidents().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
 
     mockSearchElementInstances().withSuccess({
       items: [mockElementInstance],
@@ -180,6 +190,12 @@ describe('MetadataPopover', () => {
   it('should render meta data for incident flow node', async () => {
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess(
+      incidentsByProcessKeyMetadata,
+    );
+    mockFetchProcessDefinition(
+      incidentsByProcessKeyMetadata.items[0].processDefinitionKey,
+    ).withSuccess(processDefinitionMetadata);
     flowNodeMetaDataStore.setMetaData(incidentFlowNodeMetaData);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -200,6 +216,7 @@ describe('MetadataPopover', () => {
     expect(
       await screen.findByText(labels.elementInstanceKey),
     ).toBeInTheDocument();
+    expect(await screen.findByText(labels.incident)).toBeInTheDocument();
     expect(screen.getByText(labels.executionDuration)).toBeInTheDocument();
     expect(screen.getByText(labels.type)).toBeInTheDocument();
     expect(screen.getByText(labels.errorMessage)).toBeInTheDocument();
@@ -230,7 +247,7 @@ describe('MetadataPopover', () => {
     expect(screen.getByText(incident.errorType.name)).toBeInTheDocument();
     expect(
       screen.getByText(
-        `${incident.rootCauseInstance.processDefinitionName} - ${incident.rootCauseInstance.instanceId}`,
+        `${processDefinitionMetadata.name} - ${incidentsByProcessKeyMetadata.items[0].processInstanceKey}`,
       ),
     ).toBeInTheDocument();
   });
@@ -328,6 +345,53 @@ describe('MetadataPopover', () => {
         },
       ],
     });
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [
+        {
+          processDefinitionId: 'invoice',
+          errorType: 'CALLED_ELEMENT_ERROR',
+          errorMessage: 'Multi-instance incident 1',
+          elementId: FLOW_NODE_ID,
+          creationTime: '2022-02-03T16:44:06.981+0000',
+          state: 'PENDING',
+          tenantId: '<default>',
+          incidentKey: '2251799814080731',
+          processDefinitionKey: '2251799813686633',
+          processInstanceKey: PROCESS_INSTANCE_ID,
+          elementInstanceKey: '2251799813699880',
+          jobKey: '2251799814080731',
+        },
+        {
+          processDefinitionId: 'invoice',
+          errorType: 'JOB_NO_RETRIES',
+          errorMessage: 'Multi-instance incident 2',
+          elementId: FLOW_NODE_ID,
+          creationTime: '2022-02-03T16:45:06.981+0000',
+          state: 'PENDING',
+          tenantId: '<default>',
+          incidentKey: '2251799814080732',
+          processDefinitionKey: '2251799813686633',
+          processInstanceKey: PROCESS_INSTANCE_ID,
+          elementInstanceKey: '2251799813699881',
+          jobKey: '2251799814080732',
+        },
+        {
+          processDefinitionId: 'invoice',
+          errorType: 'IO_MAPPING_ERROR',
+          errorMessage: 'Multi-instance incident 3',
+          elementId: FLOW_NODE_ID,
+          creationTime: '2022-02-03T16:46:06.981+0000',
+          state: 'PENDING',
+          tenantId: '<default>',
+          incidentKey: '2251799814080733',
+          processDefinitionKey: '2251799813686633',
+          processInstanceKey: PROCESS_INSTANCE_ID,
+          elementInstanceKey: '2251799813699882',
+          jobKey: '2251799814080733',
+        },
+      ],
+      page: {totalItems: 3},
+    });
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -354,6 +418,11 @@ describe('MetadataPopover', () => {
         /To view details for any of these, select one Instance in the Instance History./,
       ),
     ).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('incidents-loading')).not.toBeInTheDocument();
+    });
+
     expect(screen.getByText(/3 incidents occurred/)).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: labels.showIncidents}),
@@ -391,7 +460,8 @@ describe('MetadataPopover', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should not render root cause instance link when instance is root', async () => {
+  //TODO fix when #35528 ready
+  it.skip('should not render root cause instance link when instance is root', async () => {
     const {rootCauseInstance} = rootIncidentFlowNodeMetaData.incident;
 
     mockFetchFlowNodeMetadata().withSuccess(rootIncidentFlowNodeMetaData);

@@ -193,6 +193,35 @@ const retriesLeftFlowNodeMetaData = {
   instanceMetadata: {...baseInstanceMetadata, jobRetries: 2},
 };
 
+const incidentsByProcessKeyMetadata = {
+  items: [
+    {
+      processDefinitionId: 'invoice',
+      errorType: 'JOB_NO_RETRIES' as const,
+      errorMessage: 'There are no more retries left.',
+      elementId: 'call-order-process',
+      creationTime: '2022-02-03T16:44:06.981+0000',
+      state: 'PENDING' as const,
+      tenantId: '<default>',
+      incidentKey: '2251799814080730',
+      processDefinitionKey: '2251799813686633',
+      processInstanceKey: '2251799813685593',
+      elementInstanceKey: FLOW_NODE_INSTANCE_ID,
+      jobKey: '2251799814080730',
+    },
+  ],
+  page: {totalItems: 1},
+};
+
+const processDefinitionMetadata = {
+  name: 'DMN invoice',
+  processDefinitionId: 'invoice',
+  processDefinitionKey: '2251799813686633',
+  resourceName: 'usertest/invoice.bpmn',
+  tenantId: '<default>',
+  version: 1,
+};
+
 export {
   baseMetadata as singleInstanceMetadata,
   incidentFlowNodeMetaData,
@@ -205,9 +234,12 @@ export {
   rootIncidentFlowNodeMetaData,
   userTaskFlowNodeMetaData,
   retriesLeftFlowNodeMetaData,
+  incidentsByProcessKeyMetadata,
+  processDefinitionMetadata,
   PROCESS_INSTANCE_ID,
   CALL_ACTIVITY_FLOW_NODE_ID,
   FLOW_NODE_ID,
   USER_TASK_FLOW_NODE_ID,
   BUSSINESS_RULE_FLOW_NODE_ID,
+  FLOW_NODE_INSTANCE_ID,
 };
