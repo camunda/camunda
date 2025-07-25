@@ -18,7 +18,6 @@ package io.camunda.zeebe.client.impl.response;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.api.response.UserTaskProperties;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -30,8 +29,8 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
   private final List<String> candidateGroups;
   private final List<String> candidateUsers;
   private final List<String> changedAttributes;
-  private final OffsetDateTime dueDate;
-  private final OffsetDateTime followUpDate;
+  private final String dueDate;
+  private final String followUpDate;
   private final Long formKey;
   private final Integer priority;
   private final Long userTaskKey;
@@ -42,8 +41,8 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
     candidateGroups = props.getCandidateGroupsList();
     candidateUsers = props.getCandidateUsersList();
     changedAttributes = props.getChangedAttributesList();
-    dueDate = props.hasDueDate() ? OffsetDateTime.parse(props.getDueDate()) : null;
-    followUpDate = props.hasFollowUpDate() ? OffsetDateTime.parse(props.getFollowUpDate()) : null;
+    dueDate = orNull(props::hasDueDate, props::getDueDate);
+    followUpDate = orNull(props::hasFollowUpDate, props::getFollowUpDate);
     formKey = orNull(props::hasFormKey, props::getFormKey);
     priority = orNull(props::hasPriority, props::getPriority);
     userTaskKey = orNull(props::hasUserTaskKey, props::getUserTaskKey);
@@ -55,8 +54,8 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
     candidateGroups = props.getCandidateGroups();
     candidateUsers = props.getCandidateUsers();
     changedAttributes = props.getChangedAttributes();
-    dueDate = props.getDueDate();
-    followUpDate = props.getFollowUpDate();
+    dueDate = props.getDueDate() != null ? props.getDueDate().toString() : null;
+    followUpDate = props.getFollowUpDate() != null ? props.getFollowUpDate().toString() : null;
     formKey = ParseUtil.parseLongOrNull(props.getFormKey());
     priority = props.getPriority();
     userTaskKey = ParseUtil.parseLongOrNull(props.getUserTaskKey());
@@ -88,12 +87,12 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
   }
 
   @Override
-  public OffsetDateTime getDueDate() {
+  public String getDueDate() {
     return dueDate;
   }
 
   @Override
-  public OffsetDateTime getFollowUpDate() {
+  public String getFollowUpDate() {
     return followUpDate;
   }
 

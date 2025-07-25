@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.api.response;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -55,12 +54,12 @@ public interface UserTaskProperties {
   /**
    * @return the due date of the user task in ISO 8601 format.
    */
-  OffsetDateTime getDueDate();
+  String getDueDate();
 
   /**
    * @return the follow-up date of the user task in ISO 8601 format.
    */
-  OffsetDateTime getFollowUpDate();
+  String getFollowUpDate();
 
   /**
    * @return the key of the form associated with the user task.
