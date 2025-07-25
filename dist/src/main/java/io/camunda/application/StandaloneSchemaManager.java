@@ -11,7 +11,7 @@ import static io.camunda.zeebe.protocol.impl.record.RecordMetadata.CURRENT_BROKE
 
 import io.camunda.application.initializers.StandaloneSchemaManagerInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
-import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
@@ -51,9 +51,9 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 public class StandaloneSchemaManager implements CommandLineRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneSchemaManager.class);
-  private final BrokerBasedProperties brokerProperties;
+  private final LegacyBrokerBasedProperties brokerProperties;
 
-  public StandaloneSchemaManager(final BrokerBasedProperties brokerProperties) {
+  public StandaloneSchemaManager(final LegacyBrokerBasedProperties brokerProperties) {
     this.brokerProperties = brokerProperties;
   }
 
@@ -101,7 +101,8 @@ public class StandaloneSchemaManager implements CommandLineRunner {
   }
 
   @EnableAutoConfiguration
-  @EnableConfigurationProperties(BrokerBasedProperties.class)
+  // TODO: Use unified configuration when it is available
+  @EnableConfigurationProperties(LegacyBrokerBasedProperties.class)
   @ComponentScan(
       basePackages = "io.camunda.application.commons.search",
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
