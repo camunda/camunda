@@ -240,7 +240,7 @@ public final class MsgPackReader {
    *
    * @return the value
    */
-  public strictfp double readFloat() {
+  public double readFloat() {
     final byte headerByte = buffer.getByte(offset);
     ++offset;
     final double value;
@@ -265,29 +265,16 @@ public final class MsgPackReader {
     final byte headerByte = buffer.getByte(offset);
     ++offset;
 
-    final boolean theBool;
-
-    switch (headerByte) {
-      case TRUE:
-        theBool = true;
-        break;
-
-      case FALSE:
-        theBool = false;
-        break;
-
-      default:
-        throw exceptionOnUnknownHeader("boolean", headerByte);
-    }
-
-    return theBool;
+    return switch (headerByte) {
+      case TRUE -> true;
+      case FALSE -> false;
+      default -> throw exceptionOnUnknownHeader("boolean", headerByte);
+    };
   }
 
   public MsgPackToken readToken() {
     final byte b = buffer.getByte(offset);
     final MsgPackFormat format = MsgPackFormat.valueOf(b);
-
-    final int currentOffset = offset;
 
     switch (format.type) {
       case INTEGER:
@@ -332,8 +319,6 @@ public final class MsgPackReader {
         throw new MsgpackReaderException(
             String.format("Unknown token format '%s'", format.getType().name()));
     }
-
-    token.setTotalLength(offset - currentOffset);
 
     return token;
   }
