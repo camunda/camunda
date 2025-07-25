@@ -48,6 +48,17 @@ export type SearchConfig = {
   filter?: Record<string, string>;
 };
 
+export type UsePaginationResult = {
+  pageParams: PaginationRequestParams;
+  page: Page;
+  setPage: (newPage: number) => void;
+  setPageSize: (newPageSize: number) => void;
+  setSort: (sort: SortConfig[] | undefined) => void;
+  setSearch: (search: Record<string, string> | undefined) => void;
+  search?: Record<string, string>;
+  resetPagination: () => void; // Needed to influence empty state
+};
+
 const useSearch = (
   reset = () => {},
 ): [
@@ -77,7 +88,9 @@ const useSorting = (
   return [sort, setSort];
 };
 
-const usePagination = (config: Page = DEFAULT_PAGINATION_CONFIG) => {
+const usePagination = (
+  config: Page = DEFAULT_PAGINATION_CONFIG,
+): UsePaginationResult => {
   const [pageState, setPageState] = useState<Page>(() => config);
 
   const resetPageState = useCallback(() => {

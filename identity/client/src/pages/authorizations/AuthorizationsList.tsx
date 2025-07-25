@@ -10,20 +10,22 @@ import { FC } from "react";
 import { Add, TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { Authorization, ResourceType } from "src/utility/api/authorizations";
-import { SearchResponse } from "src/utility/api";
+import { SearchResponse, usePagination } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "./modals/AddModal";
 import DeleteModal from "./modals/DeleteModal";
-import { usePaginatedApi } from "src/utility/api";
 
 type AuthorizationListProps = {
   tab: ResourceType;
   data: SearchResponse<Authorization> | null;
   loading: boolean;
   reload: () => unknown;
-  paginationProps: Partial<Omit<ReturnType<typeof usePaginatedApi>, "data">>;
+  paginationProps: Omit<
+    ReturnType<typeof usePagination>,
+    "pageParams" | "resetPagination"
+  >;
 };
 
 const AuthorizationList: FC<AuthorizationListProps> = ({
