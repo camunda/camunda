@@ -284,7 +284,7 @@ final class SegmentsManager implements AutoCloseable {
       if (previousSegment != null && previousSegment.lastIndex() >= segment.index()) {
         // Segments are overlapping, remove the journal index entries in the segment's index range.
         // This is to avoid having an index lookup point to a position in the previous segment.
-        journalIndex.deleteInRange(segment.index(), segment.lastIndex() - 1);
+        journalIndex.deleteInRange(segment.index(), previousSegment.lastIndex());
       }
       previousSegment = segment;
       final Segment replacedSegment = segments.put(segment.descriptor().index(), segment);
