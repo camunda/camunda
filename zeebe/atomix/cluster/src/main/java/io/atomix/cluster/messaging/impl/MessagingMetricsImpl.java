@@ -34,9 +34,9 @@ final class MessagingMetricsImpl implements MessagingMetrics {
    *
    * <p>Using two maps avoid another level of nesting
    */
-  private final Table<String, String, Counter> requestMessageCounter;
+  private final Map3D<String, String, String, Counter> requestMessageCounter;
 
-  private final Table<String, String, Counter> requestRespCounter;
+  private final Map3D<String, String, String, Counter> requestRespCounter;
   private final Map3D<String, String, String, Counter> responseCounter;
   private final Table<String, String, Counter> inFlightCounter;
 
@@ -44,8 +44,8 @@ final class MessagingMetricsImpl implements MessagingMetrics {
     this.registry = registry;
     requestResponseLatency = new ConcurrentHashMap<>();
     requestSize = Table.concurrent();
-    requestMessageCounter = Table.concurrent();
-    requestRespCounter = Table.concurrent();
+    requestMessageCounter = Map3D.concurrent();
+    requestRespCounter = Map3D.concurrent();
     responseCounter = Map3D.concurrent();
     inFlightCounter = Table.concurrent();
   }
@@ -62,16 +62,18 @@ final class MessagingMetricsImpl implements MessagingMetrics {
   }
 
   @Override
-  public void countMessage(final String to, final String name) {
+  public void countMessage(final String to, final String name, final String channelId) {
     requestMessageCounter
-        .computeIfAbsent(to, name, (t, n) -> registerRequestCounter(MessageType.MESSAGE, t, n))
+        .computeIfAbsent(
+            to, name, channelId, (t, n, c) -> registerRequestCounter(MessageType.MESSAGE, t, n, c))
         .increment();
   }
 
   @Override
-  public void countRequestResponse(final String to, final String name) {
+  public void countRequestResponse(final String to, final String name, final String channelId) {
     requestRespCounter
-        .computeIfAbsent(to, name, (t, n) -> registerRequestCounter(MessageType.REQ_RESP, t, n))
+        .computeIfAbsent(
+            to, name, channelId, (t, n, c) -> registerRequestCounter(MessageType.REQ_RESP, t, n, c))
         .increment();
   }
 
@@ -127,7 +129,7 @@ final class MessagingMetricsImpl implements MessagingMetrics {
   }
 
   private Counter registerRequestCounter(
-      final MessageType type, final String address, final String topic) {
+      final MessageType type, final String address, final String topic, final String channelId) {
     return Counter.builder(REQUEST_COUNT.getName())
         .description(REQUEST_COUNT.getDescription())
         .tags(
@@ -136,7 +138,9 @@ final class MessagingMetricsImpl implements MessagingMetrics {
             MessagingKeyNames.ADDRESS.asString(),
             address,
             MessagingKeyNames.TOPIC.asString(),
-            topic)
+            topic,
+            MessagingKeyNames.CHANNEL_ID.asString(),
+            channelId)
         .register(registry);
   }
 

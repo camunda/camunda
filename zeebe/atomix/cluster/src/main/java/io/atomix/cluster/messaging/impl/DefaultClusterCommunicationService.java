@@ -109,9 +109,11 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
       final Function<M, byte[]> encoder,
       final Function<byte[], R> decoder,
       final MemberId toMemberId,
-      final Duration timeout) {
+      final Duration timeout,
+      final boolean dedicatedConnection) {
     try {
-      return sendAndReceive(subject, encoder.apply(message), toMemberId, timeout)
+      return sendAndReceive(
+              subject, encoder.apply(message), toMemberId, timeout, dedicatedConnection)
           .thenApply(decoder);
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
@@ -208,13 +210,15 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
       final String subject,
       final byte[] payload,
       final MemberId toMemberId,
-      final Duration timeout) {
+      final Duration timeout,
+      final boolean dedicatedConnection) {
     final Member member = membershipService.getMember(toMemberId);
     if (member == null) {
       return failOnMemberNotKnown(subject, toMemberId);
     }
 
-    return messagingService.sendAndReceive(member.address(), subject, payload, timeout);
+    return messagingService.sendAndReceive(
+        member.address(), subject, dedicatedConnection, payload, timeout);
   }
 
   private <T> CompletableFuture<T> failOnMemberNotKnown(
