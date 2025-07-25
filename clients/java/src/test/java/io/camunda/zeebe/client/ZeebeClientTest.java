@@ -18,6 +18,7 @@ package io.camunda.zeebe.client;
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
@@ -998,5 +999,20 @@ public final class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void shouldSetRequestTimeoutOffsetInMillis() {
+    // given
+    final Properties properties = new Properties();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    properties.setProperty(DEFAULT_REQUEST_TIMEOUT_OFFSET, "100");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofMillis(100));
   }
 }
