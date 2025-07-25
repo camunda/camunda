@@ -64,9 +64,8 @@ public class UnifiedConfigurationHelper {
     final Set<String> legacyProperties = legacyPropertiesDict.get(newProperty);
 
     return switch (backwardsCompatibilityMode) {
-      case NOT_SUPPORTED -> {
-        yield backwardsCompatibilityNotSupported(legacyProperties, newProperty, newValue);
-      }
+      case NOT_SUPPORTED ->
+          backwardsCompatibilityNotSupported(legacyProperties, newProperty, newValue);
       case SUPPORTED_ONLY_IF_VALUES_MATCH -> {
         final T legacyValue = getLegacyValue(legacyProperties, expectedType);
         yield backwardsCompatibilitySupportedOnlyIfValuesMatch(
@@ -93,7 +92,7 @@ public class UnifiedConfigurationHelper {
       throw new UnifiedConfigurationException(
           String.format(
               "Ambiguous legacy configuration. Legacy properties: %s; Legacy values: %s",
-              String.join(", ", legacyProperties), legacyValues.toString()));
+              String.join(", ", legacyProperties), legacyValues));
     }
 
     return legacyValues.iterator().next();
@@ -113,7 +112,7 @@ public class UnifiedConfigurationHelper {
       // Legacy config: not present
       // We can return the newValue or default value
       return newValue;
-    } else if (legacyPresent && !newPresent) {
+    } else if (!newPresent) {
       // Legacy config: present
       // New config...: not present
       // The legacy configuration is no longer allowed -> error
@@ -137,14 +136,13 @@ public class UnifiedConfigurationHelper {
       final String newProperty,
       final T newValue) {
     final boolean legacyPresent = legacyConfigPresent(legacyProperties);
-    final boolean newPresent = newConfigPresent(newProperty);
 
     final String warningMessage =
         String.format(
             "The following legacy properties are no longer supported and should be removed in favor of '%s': %s",
             newProperty, String.join(", ", legacyProperties));
 
-    if ((!legacyPresent && !newPresent) || (!legacyPresent && newPresent)) {
+    if (!legacyPresent) {
       // Legacy config: not present
       // New config...: not present
       // or
@@ -187,12 +185,12 @@ public class UnifiedConfigurationHelper {
             "The following legacy configuration properties should be removed in favor of '%s': %s",
             newProperty, String.join(", ", legacyProperties));
 
-    if ((!legacyPresent && !newPresent) || (!legacyPresent && newPresent)) {
+    if (!legacyPresent) {
       // Legacy config: not present
       // New config...: not present
       // We can retrun the new default value
       return newValue;
-    } else if (legacyPresent && !newPresent) {
+    } else if (!newPresent) {
       // Legacy config: present
       // New config...: not present
       // We can return the legacy value
