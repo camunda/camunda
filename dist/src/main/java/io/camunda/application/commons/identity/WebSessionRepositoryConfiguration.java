@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.identity;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.session.ConditionalOnPersistentWebSessionEnabled;
 import io.camunda.authentication.session.WebSessionDeletionTask;
 import io.camunda.authentication.session.WebSessionMapper;
@@ -67,7 +68,8 @@ public class WebSessionRepositoryConfiguration {
       final HttpServletRequest request) {
     final var webSessionAttributeConverter =
         new SpringBasedWebSessionAttributeConverter(conversionService);
-    final var webSessionMapper = new WebSessionMapper(webSessionAttributeConverter);
+    final var webSessionMapper =
+        new WebSessionMapper(webSessionAttributeConverter, new ObjectMapper());
     return new WebSessionRepository(persistentWebSessionClient, webSessionMapper, request);
   }
 

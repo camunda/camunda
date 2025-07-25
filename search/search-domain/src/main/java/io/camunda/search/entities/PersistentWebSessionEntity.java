@@ -8,7 +8,6 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record PersistentWebSessionEntity(
@@ -16,4 +15,4 @@ public record PersistentWebSessionEntity(
     Long creationTime,
     Long lastAccessedTime,
     Long maxInactiveIntervalInSeconds,
-    Map<String, byte[]> attributes) {}
+    String attributesAsJson) {}
