@@ -93,8 +93,7 @@ class SetupControllerTest extends RestControllerTest {
           {
             "username": "%s",
             "name": "%s",
-            "email": "%s",
-            "userKey": "-1"
+            "email": "%s"
           }
         """
                 .formatted(dto.username(), dto.name(), dto.email()),
@@ -260,8 +259,7 @@ class SetupControllerTest extends RestControllerTest {
           {
             "username": "%s",
             "name": "",
-            "email": "",
-            "userKey": "-1"
+            "email": ""
           }
         """
                 .formatted(dto.username()),
