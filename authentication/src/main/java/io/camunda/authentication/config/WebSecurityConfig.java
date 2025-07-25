@@ -20,6 +20,7 @@ import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -442,6 +443,7 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final SecurityConfiguration securityConfiguration,
+        final CamundaAuthenticationProvider authenticationProvider,
         final RoleServices roleServices,
         final CookieCsrfTokenRepository csrfTokenRepository)
         throws Exception {
@@ -485,7 +487,8 @@ public class WebSecurityConfig {
                           .authenticationEntryPoint(authFailureHandler)
                           .accessDeniedHandler(authFailureHandler))
               .addFilterAfter(
-                  new WebApplicationAuthorizationCheckFilter(securityConfiguration),
+                  new WebApplicationAuthorizationCheckFilter(
+                      securityConfiguration, authenticationProvider),
                   AuthorizationFilter.class)
               .addFilterBefore(
                   new AdminUserCheckFilter(securityConfiguration, roleServices),
@@ -617,6 +620,7 @@ public class WebSecurityConfig {
         final JwtDecoder jwtDecoder,
         final CamundaJwtAuthenticationConverter converter,
         final SecurityConfiguration securityConfiguration,
+        final CamundaAuthenticationProvider authenticationProvider,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager)
@@ -666,7 +670,8 @@ public class WebSecurityConfig {
                           .logoutSuccessHandler(new NoContentResponseHandler())
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
               .addFilterAfter(
-                  new WebApplicationAuthorizationCheckFilter(securityConfiguration),
+                  new WebApplicationAuthorizationCheckFilter(
+                      securityConfiguration, authenticationProvider),
                   AuthorizationFilter.class);
 
       applyOauth2RefreshTokenFilter(
@@ -730,14 +735,18 @@ public class WebSecurityConfig {
 
     @Override
     public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       response.setStatus(HttpStatus.NO_CONTENT.value());
     }
 
     @Override
     public void onLogoutSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       onAuthenticationSuccess(request, response, authentication);
     }
@@ -746,7 +755,9 @@ public class WebSecurityConfig {
   protected static class NoContentWithCsrfTokenSuccessHandler extends NoContentResponseHandler {
     @Override
     public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       super.onAuthenticationSuccess(request, response, authentication);
 

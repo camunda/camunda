@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.filters;
 
-import io.camunda.authentication.entity.CamundaPrincipal;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -31,9 +31,13 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
       List.of(".css", ".js", ".jpg", ".png", "woff2", ".ico", ".svg");
   final UrlPathHelper urlPathHelper = new UrlPathHelper();
   private final SecurityConfiguration securityConfig;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public WebApplicationAuthorizationCheckFilter(final SecurityConfiguration securityConfig) {
+  public WebApplicationAuthorizationCheckFilter(
+      final SecurityConfiguration securityConfig,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.securityConfig = securityConfig;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @Override
@@ -71,10 +75,14 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
       return true;
     }
 
-    final CamundaPrincipal principal = findCurrentCamundaPrincipal();
-    return principal == null
-        || principal.getAuthenticationContext().authorizedApplications().contains(application)
-        || principal.getAuthenticationContext().authorizedApplications().contains("*");
+    if (!isCurrentPrincipalAuthenticated()) {
+      return true;
+    }
+
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return authentication == null
+        || authentication.authenticatedApplications().contains(application)
+        || authentication.authenticatedApplications().contains("*");
   }
 
   private boolean isStaticResource(final HttpServletRequest request) {
@@ -88,13 +96,8 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
     return WEB_APPLICATIONS.stream().filter(applicationPath::equals).findFirst().orElse(null);
   }
 
-  private CamundaPrincipal findCurrentCamundaPrincipal() {
+  private boolean isCurrentPrincipalAuthenticated() {
     final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth != null
-        && auth.isAuthenticated()
-        && auth.getPrincipal() instanceof final CamundaPrincipal principal) {
-      return principal;
-    }
-    return null;
+    return auth != null && auth.isAuthenticated();
   }
 }

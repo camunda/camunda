@@ -82,6 +82,7 @@ public class OperationReaderIT extends OperateAbstractIT {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
+                Collections.emptyList(),
                 Collections.emptyMap()));
 
     final ListViewRequestDto processInstanceQueryDto = createGetAllRunningRequest();
@@ -109,6 +110,7 @@ public class OperationReaderIT extends OperateAbstractIT {
             new CamundaAuthentication(
                 USER_1,
                 null,
+                Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
@@ -143,6 +145,7 @@ public class OperationReaderIT extends OperateAbstractIT {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
+                Collections.emptyList(),
                 Collections.emptyMap()));
     final MvcResult mvcResult = getVariables(processInstanceId2);
     final List<VariableDto> variables =
@@ -164,6 +167,7 @@ public class OperationReaderIT extends OperateAbstractIT {
             new CamundaAuthentication(
                 USER_4,
                 null,
+                Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),

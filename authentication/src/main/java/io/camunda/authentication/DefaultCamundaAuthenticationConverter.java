@@ -85,6 +85,11 @@ public class DefaultCamundaAuthenticationConverter
       authenticationBuilder.mapping(principal.getOAuthContext().mappingIds().stream().toList());
     }
 
+    final var authorizedApplications = authenticationContext.authorizedApplications();
+    if (authorizedApplications != null && !authorizedApplications.isEmpty()) {
+      authenticationBuilder.application(authorizedApplications);
+    }
+
     return authenticationBuilder.claims(claims).build();
   }
 }

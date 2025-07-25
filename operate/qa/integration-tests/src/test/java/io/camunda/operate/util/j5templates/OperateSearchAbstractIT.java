@@ -79,6 +79,7 @@ public class OperateSearchAbstractIT {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
+                Collections.emptyList(),
                 Collections.emptyMap()));
     doReturn(TenantService.AuthenticatedTenants.allTenants())
         .when(tenantService)
@@ -103,6 +104,7 @@ public class OperateSearchAbstractIT {
             new CamundaAuthentication(
                 DEFAULT_USER,
                 null,
+                Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),

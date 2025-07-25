@@ -74,6 +74,7 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
+                Collections.emptyList(),
                 Collections.emptyMap()));
 
     final BatchOperationDto op1 = assert3Pages();
@@ -132,6 +133,7 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
             new CamundaAuthentication(
                 USER_2,
                 null,
+                Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),

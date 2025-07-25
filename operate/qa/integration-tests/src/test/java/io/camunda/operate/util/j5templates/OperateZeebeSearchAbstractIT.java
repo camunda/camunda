@@ -100,6 +100,7 @@ public class OperateZeebeSearchAbstractIT {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
+                Collections.emptyList(),
                 Collections.emptyMap()));
     doReturn(TenantService.AuthenticatedTenants.allTenants())
         .when(tenantService)
@@ -146,6 +147,7 @@ public class OperateZeebeSearchAbstractIT {
             new CamundaAuthentication(
                 DEFAULT_USER,
                 null,
+                Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),

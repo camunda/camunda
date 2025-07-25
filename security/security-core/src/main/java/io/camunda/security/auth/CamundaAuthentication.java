@@ -26,6 +26,7 @@ public record CamundaAuthentication(
     @JsonProperty("authenticated_role_ids") List<String> authenticatedRoleIds,
     @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
     @JsonProperty("authenticated_mapping_ids") List<String> authenticatedMappingIds,
+    @JsonProperty("authenticated_applications") List<String> authenticatedApplications,
     @JsonProperty("claims") Map<String, Object> claims) {
 
   public static CamundaAuthentication none() {
@@ -48,6 +49,7 @@ public record CamundaAuthentication(
     private final List<String> roleIds = new ArrayList<>();
     private final List<String> tenants = new ArrayList<>();
     private final List<String> mappings = new ArrayList<>();
+    private final List<String> applications = new ArrayList<>();
     private Map<String, Object> claims;
 
     public Builder user(final String value) {
@@ -104,6 +106,13 @@ public record CamundaAuthentication(
       return this;
     }
 
+    public Builder application(final List<String> values) {
+      if (values != null) {
+        applications.addAll(values);
+      }
+      return this;
+    }
+
     public Builder claims(final Map<String, Object> value) {
       claims = value;
       return this;
@@ -117,6 +126,7 @@ public record CamundaAuthentication(
           unmodifiableList(roleIds),
           unmodifiableList(tenants),
           unmodifiableList(mappings),
+          unmodifiableList(applications),
           claims);
     }
   }
