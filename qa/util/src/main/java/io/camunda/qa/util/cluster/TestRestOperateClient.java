@@ -11,9 +11,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.zeebe.client.api.command.MigrationPlan;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.util.Either;
@@ -32,12 +40,16 @@ import org.testcontainers.containers.GenericContainer;
 
 public class TestRestOperateClient implements AutoCloseable {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+      .registerModule(new Jdk8Module())
+      .registerModule(new JavaTimeModule());
 
   private final URI endpoint;
   private final HttpClient httpClient;
   private String username;
   private String password;
+
+  private final String batchOperationEndpoint;
 
   public TestRestOperateClient(final URI endpoint, final String username, final String password) {
     this(endpoint);
@@ -57,6 +69,8 @@ public class TestRestOperateClient implements AutoCloseable {
   public TestRestOperateClient(final URI endpoint) {
     this.endpoint = endpoint;
     httpClient = HttpClient.newBuilder().cookieHandler(new CookieManager()).build();
+
+    batchOperationEndpoint = String.format("%sapi/process-instances/batch-operation", endpoint);
   }
 
   private HttpRequest loginRequest() {
@@ -189,6 +203,26 @@ public class TestRestOperateClient implements AutoCloseable {
     return Either.right(request);
   }
 
+  public Either<Exception, ListViewResponseDto> searchProcessInstances(final ListViewRequestDto listViewQueryDto) {
+    return createSearchProcessInstancesRequest(listViewQueryDto)
+        .flatMap(this::sendRequest)
+        .flatMap(r -> mapResult(r, ListViewResponseDto.class));
+  }
+
+  public Either<Exception, HttpRequest> createSearchProcessInstancesRequest(
+      final ListViewRequestDto listViewQueryDto) {
+    final HttpRequest request;
+    try {
+      final String jsonBody = new ObjectMapper().writeValueAsString(listViewQueryDto);
+      request = createBuilder(String.format("%sapi/process-instances", endpoint))
+          .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+          .build();
+    } catch (final URISyntaxException | JsonProcessingException e) {
+      return Either.left(e);
+    }
+    return Either.right(request);
+  }
+
   private Builder createBuilder(final String uri) throws URISyntaxException {
     final HttpRequest.Builder builder =
         HttpRequest.newBuilder().uri(new URI(uri)).header("content-type", "application/json");
@@ -258,6 +292,63 @@ public class TestRestOperateClient implements AutoCloseable {
     return endpoint;
   }
 
+  public Either<Exception, BatchOperationEntity> migrateProcessInstanceBatchOperationWith(
+      final long targetDefinitionKey, final MigrationPlan migrationPlan) {
+    return migrateProcessInstanceBatchOperationRequest(targetDefinitionKey, migrationPlan)
+        .flatMap(this::sendRequest)
+        .flatMap(r -> mapResult(r, BatchOperationEntity.class));
+  }
+
+  public Either<Exception, BatchOperationEntity> cancelProcessInstancesBatchOperationRequest(final ListViewQueryDto query) {
+    final CreateBatchOperationRequestDto createBatchOperation = new CreateBatchOperationRequestDto();
+
+    createBatchOperation.setOperationType(OperationType.CANCEL_PROCESS_INSTANCE);
+    createBatchOperation.setQuery(query);
+
+    return createBatchOperation(createBatchOperation)
+        .flatMap(this::sendRequest)
+        .flatMap(r -> mapResult(r, BatchOperationEntity.class));
+  }
+
+  private Either<Exception, HttpRequest> migrateProcessInstanceBatchOperationRequest(
+      final long targetDefinitionKey, final MigrationPlan migrationPlan) {
+    final CreateBatchOperationRequestDto createBatchOperation = new CreateBatchOperationRequestDto();
+
+    final ListViewQueryDto listViewQueryDto = new ListViewQueryDto();
+    //    createBatchOperation.setName("migration");
+    createBatchOperation.setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE);
+    createBatchOperation.setQuery(listViewQueryDto);
+
+    final MigrationPlanDto migrationPlanDto = new MigrationPlanDto();
+    migrationPlanDto.setTargetProcessDefinitionKey(Long.toString(targetDefinitionKey));
+    migrationPlanDto.setMappingInstructions(
+        migrationPlan.getMappingInstructions().stream()
+            .map(
+                mappingInstruction ->
+                    new MigrationPlanDto.MappingInstruction()
+                        .setSourceElementId(mappingInstruction.getSourceElementId())
+                        .setTargetElementId(mappingInstruction.getTargetElementId()))
+            .toList());
+
+    createBatchOperation.setMigrationPlan(migrationPlanDto);
+
+    return createBatchOperation(createBatchOperation);
+  }
+
+  private Either<Exception, HttpRequest> createBatchOperation(
+      final CreateBatchOperationRequestDto createBatchOperationRequestDto) {
+    final HttpRequest request;
+    try {
+      final String jsonBody = new ObjectMapper().writeValueAsString(createBatchOperationRequestDto);
+      request = createBuilder(batchOperationEndpoint)
+              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+              .build();
+    } catch (final URISyntaxException | JsonProcessingException e) {
+      return Either.left(e);
+    }
+    return Either.right(request);
+  }
+
   @Override
   public void close() {
     httpClient.close();
@@ -267,4 +358,6 @@ public class TestRestOperateClient implements AutoCloseable {
   public record ProcessInstanceResult(
       @JsonProperty("items") List<ProcessInstance> processInstances,
       @JsonProperty("total") long total) {}
+
+
 }
