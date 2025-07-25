@@ -8,26 +8,30 @@
 
 import {Loading} from '@carbon/react';
 import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {useTranslation} from 'react-i18next';
 import styles from './TaskStateLoadingText.module.scss';
-import {t} from 'i18next';
 
 type TaskStateLoadingTextProps = {taskState: UserTask['state']};
-
-const statusLoadingMessage = {
-  CREATED: null,
-  ASSIGNING: null,
-  COMPLETED: null,
-  CANCELED: null,
-  FAILED: null,
-  UPDATING: t('Please wait while the task is being updated...'),
-  CANCELING: t('The task is being cancelled. Please wait...'),
-  COMPLETING: t('Completing...'),
-};
 
 const TaskStateLoadingText: React.FC<TaskStateLoadingTextProps> = ({
   taskState,
 }) => {
-  if (statusLoadingMessage[taskState] === null) return null;
+  const {t} = useTranslation();
+
+  const statusLoadingMessage = {
+    CREATED: null,
+    ASSIGNING: null,
+    COMPLETED: null,
+    CANCELED: null,
+    FAILED: null,
+    UPDATING: t('taskStateUpdatingMessage'),
+    CANCELING: t('taskStateCancelingMessage'),
+    COMPLETING: t('taskStateCompletingMessage'),
+  };
+
+  if (statusLoadingMessage[taskState] === null) {
+    return null;
+  }
 
   return (
     <div className={styles.container}>
