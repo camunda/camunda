@@ -47,26 +47,30 @@ type PageHeaderProps = {
   title: string;
   linkText: string;
   linkUrl: string;
+  shouldShowDocumentationLink?: boolean;
 };
 
 export const PageHeader: FC<PageHeaderProps> = ({
   title,
   linkText,
   linkUrl,
+  shouldShowDocumentationLink = true,
 }) => {
   const { Translate } = useTranslate();
 
   return (
     <StackWithMargin gap={spacing04}>
       <PageTitle>{title}</PageTitle>
-      <PageSubTitle>
-        <Translate i18nKey="moreInfo" values={{ linkText }}>
-          For more information, see documentation on{" "}
-          <DocumentationLink path={linkUrl} withIcon>
-            {linkText}
-          </DocumentationLink>
-        </Translate>
-      </PageSubTitle>
+      {shouldShowDocumentationLink && (
+        <PageSubTitle>
+          <Translate i18nKey="moreInfo" values={{ linkText }}>
+            For more information, see documentation on{" "}
+            <DocumentationLink path={linkUrl} withIcon>
+              {linkText}
+            </DocumentationLink>
+          </Translate>
+        </PageSubTitle>
+      )}
     </StackWithMargin>
   );
 };

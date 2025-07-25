@@ -31,11 +31,18 @@ const List: FC = () => {
 
   const showDetails = ({ roleId }: Role) => navigate(roleId);
 
+  const shouldShowEmptyState = success && !roles?.items.length;
+
   const pageHeader = (
-    <PageHeader title={t("roles")} linkText="roles" linkUrl="" />
+    <PageHeader
+      title={t("roles")}
+      linkText="roles"
+      linkUrl=""
+      shouldShowDocumentationLink={!shouldShowEmptyState}
+    />
   );
 
-  if (success && !roles?.items.length) {
+  if (shouldShowEmptyState) {
     return (
       <Page>
         {pageHeader}
