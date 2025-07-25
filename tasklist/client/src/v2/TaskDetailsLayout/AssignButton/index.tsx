@@ -7,7 +7,7 @@
  */
 
 import {t as _t} from 'i18next';
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {AsyncActionButton} from 'common/components/AsyncActionButton';
@@ -49,8 +49,9 @@ const AssignButton: React.FC<Props> = ({
 }) => {
   const isAssigned = typeof assignee === 'string';
   const {t} = useTranslation();
-  const [assignmentStatus, setAssignmentStatus] =
-    useState<AssignmentStatus>('off');
+  const [assignmentStatus, setAssignmentStatus] = useState<AssignmentStatus>(
+    () => (taskState === 'ASSIGNING' ? 'assigning' : 'off'),
+  );
   const {mutateAsync: pollForAssignmentResult} = usePollForAssignmentResult();
   const {mutateAsync: assignTask, isPending: assignIsPending} = useAssignTask();
   const {mutateAsync: unassignTask, isPending: unassignIsPending} =
@@ -154,12 +155,6 @@ const AssignButton: React.FC<Props> = ({
       handleAssignmentClick();
     }
   };
-
-  useEffect(() => {
-    if (taskState === 'ASSIGNING') {
-      setAssignmentStatus('assigning');
-    }
-  }, [taskState, setAssignmentStatus]);
 
   return (
     <AsyncActionButton
