@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 
 /**
@@ -40,10 +41,15 @@ public interface AdHocSubProcessInstructionRecordValue extends RecordValue, Tena
    */
   List<AdHocSubProcessActivateElementInstructionValue> getActivateElements();
 
+  boolean isCancelRemainingInstances();
+
   @Value.Immutable
   @ImmutableProtocol(
       builder = ImmutableAdHocSubProcessActivateElementInstructionValue.Builder.class)
   interface AdHocSubProcessActivateElementInstructionValue {
     String getElementId();
+
+    /** Returns the variables of this instruction. Can be empty. */
+    Map<String, Object> getVariables();
   }
 }
