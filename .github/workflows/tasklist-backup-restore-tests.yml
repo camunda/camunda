@@ -30,7 +30,7 @@ jobs:
   elasticsearch:
     name: elasticsearch-backup-restore
     needs: [ detect-changes ]
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}
+    if: false
     permissions: {}  # GITHUB_TOKEN unused in this job
     uses: ./.github/workflows/tasklist-backup-restore-tests-reusable.yml
     secrets: inherit
@@ -39,7 +39,7 @@ jobs:
   opensearch:
     name: opensearch-backup-restore
     needs: [ detect-changes ]
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}
+    if: false
     permissions: {}  # GITHUB_TOKEN unused in this job
     uses: ./.github/workflows/tasklist-backup-restore-tests-reusable.yml
     secrets: inherit

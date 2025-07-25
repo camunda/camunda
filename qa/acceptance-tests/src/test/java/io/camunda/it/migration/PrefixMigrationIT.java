@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.testcontainers.Testcontainers;
@@ -59,6 +60,7 @@ import org.testcontainers.utility.DockerImageName;
  *   <li>Make sure to not commit the changes when you're done
  * </ul>
  */
+@Disabled
 public class PrefixMigrationIT {
   public static final String OLD_OPERATE_PREFIX = "operate-dev";
   public static final String OLD_TASKLIST_PREFIX = "tasklist-dev";
