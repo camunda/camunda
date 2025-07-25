@@ -224,7 +224,7 @@ public class UserStateTest {
 
       assertThat(userState.getUser(username)).isNotEmpty();
 
-      userState.delete(username);
+      userState.deleteByUsername(username);
 
       assertThat(userState.getUser(username)).isEmpty();
     }
@@ -249,7 +249,7 @@ public class UserStateTest {
 
       assertThat(userState.getUser(userKey)).isNotEmpty();
 
-      userState.delete(username);
+      userState.deleteByUsername(username);
 
       assertThat(userState.getUser(userKey)).isEmpty();
     }
@@ -270,7 +270,7 @@ public class UserStateTest {
       assertThat(userState.getUser(user.getUserKey())).isNotEmpty();
 
       // when
-      userState.delete(user.getUsername());
+      userState.deleteByUsername(user.getUsername());
 
       // then
       final var dbUserState = (DbUserState) userState;
