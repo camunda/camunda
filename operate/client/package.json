@@ -65,7 +65,7 @@
   },
   "devDependencies": {
     "@camunda8/sdk": "8.7.18",
-    "@eslint/js": "9.31.0",
+    "@eslint/js": "9.32.0",
     "@playwright/test": "1.54.0",
     "@testing-library/dom": "10.4.0",
     "@testing-library/jest-dom": "6.6.3",
@@ -90,7 +90,7 @@
     "browserslist": "4.25.1",
     "browserslist-to-esbuild": "2.1.1",
     "cross-env": "7.0.3",
-    "eslint": "9.31.0",
+    "eslint": "9.32.0",
     "eslint-config-prettier": "10.1.5",
     "eslint-plugin-license-header": "0.8.0",
     "eslint-plugin-prettier": "5.5.1",
