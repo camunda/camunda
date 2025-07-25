@@ -26,12 +26,28 @@
     <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
     <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto</openapi.dir>
+    <!-- needed as newer model releases don't support jdk 8 -->
+    <dependency.camundamodel.version>7.19.0</dependency.camundamodel.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
+      <exclusions>
+        <!-- we override the model version explicitly to maintain jdk 8 compatibility -->
+        <exclusion>
+          <groupId>org.camunda.bpm.model</groupId>
+          <artifactId>camunda-xml-model</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- we override the model version explicitly to maintain jdk 8 compatibility -->
+    <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-xml-model</artifactId>
+      <version>${dependency.camundamodel.version}</version>
     </dependency>
 
     <dependency>
