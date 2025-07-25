@@ -17,6 +17,7 @@ import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
+import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
@@ -29,7 +30,6 @@ import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
-import io.camunda.exporter.tasks.util.ElasticsearchArchiverQueries;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -178,6 +178,35 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .thenApplyAsync(ignored -> null, executor);
   }
 
+  @Override
+  public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
+    final var countRequest =
+        CountRequest.of(
+            cr ->
+                cr.index(processInstanceIndex)
+                    .query(
+                        finishedProcessInstancesQuery(
+                            config.getArchivingTimePoint(), partitionId)));
+
+    return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  }
+
+  private Query finishedProcessInstancesQuery(
+      final String archivingTimePoint, final int partitionId) {
+    final var endDateQ =
+        QueryBuilders.range(
+            q -> q.date(d -> d.field(ListViewTemplate.END_DATE).lte(archivingTimePoint)));
+    final var isProcessInstanceQ =
+        QueryBuilders.term(
+            q ->
+                q.field(ListViewTemplate.JOIN_RELATION)
+                    .value(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
+    final var partitionQ =
+        QueryBuilders.term(q -> q.field(ListViewTemplate.PARTITION_ID).value(partitionId));
+    return QueryBuilders.bool(
+        q -> q.filter(endDateQ).filter(isProcessInstanceQ).filter(partitionQ));
+  }
+
   private CompletableFuture<List<String>> fetchMatchingIndexes(final String indexWildcard) {
     final Pattern indexNamePattern = Pattern.compile(indexWildcard);
     return client
@@ -194,8 +223,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private SearchRequest createFinishedInstancesSearchRequest() {
     return createSearchRequest(
         processInstanceIndex,
-        ElasticsearchArchiverQueries.finishedProcessInstancesQuery(
-            config.getArchivingTimePoint(), partitionId),
+        finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
         ListViewTemplate.END_DATE);
   }
 

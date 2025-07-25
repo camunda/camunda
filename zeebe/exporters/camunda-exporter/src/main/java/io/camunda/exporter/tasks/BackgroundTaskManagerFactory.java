@@ -127,17 +127,8 @@ public final class BackgroundTaskManagerFactory {
   }
 
   private ReschedulingTask buildProcessInstanceToBeArchivedCountJob() {
-    final var connector = new ElasticsearchConnector(config.getConnect());
     final var processInstanceToBeArchivedCountJob =
-        new ProcessInstanceToBeArchivedCountJob(
-            metrics,
-            connector.createAsyncClient(),
-            partitionId,
-            config.getHistory().getArchivingTimePoint(),
-            resourceProvider
-                .getIndexTemplateDescriptor(ListViewTemplate.class)
-                .getFullQualifiedName(),
-            logger);
+        new ProcessInstanceToBeArchivedCountJob(metrics, archiverRepository, logger);
 
     return new ReschedulingTask(
         processInstanceToBeArchivedCountJob,
