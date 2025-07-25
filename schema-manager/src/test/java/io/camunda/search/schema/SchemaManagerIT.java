@@ -16,7 +16,7 @@ import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -937,7 +937,8 @@ public class SchemaManagerIT {
             .withMetrics(new SchemaManagerMetrics(registry));
 
     // when
-    assertThrows(SearchEngineException.class, () -> schemaManager.startup());
+    assertThatExceptionOfType(SearchEngineException.class)
+        .isThrownBy(() -> schemaManager.startup());
 
     // then
     final var measuredTime = registry.find("camunda.schema.init.time").timer();
