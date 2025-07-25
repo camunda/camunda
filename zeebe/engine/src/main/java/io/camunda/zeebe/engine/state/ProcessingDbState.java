@@ -43,6 +43,7 @@ import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.metrics.DbUsageMetricState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
+import io.camunda.zeebe.engine.state.multiinstance.DbMultiInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableAsyncRequestState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
@@ -65,6 +66,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptio
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
+import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -128,6 +130,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableMembershipState membershipState;
   private final MutableUsageMetricState usageMetricState;
   private final MutableAsyncRequestState asyncRequestState;
+  private final MutableMultiInstanceState multiInstanceState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final int partitionId;
 
@@ -185,6 +188,7 @@ public class ProcessingDbState implements MutableProcessingState {
     membershipState = new DbMembershipState(zeebeDb, transactionContext);
     usageMetricState =
         new DbUsageMetricState(zeebeDb, transactionContext, config.getUsageMetricsExportInterval());
+    multiInstanceState = new DbMultiInstanceState(zeebeDb, transactionContext);
     asyncRequestState = new DbAsyncRequestState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
@@ -365,6 +369,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableAsyncRequestState getAsyncRequestState() {
     return asyncRequestState;
+  }
+
+  @Override
+  public MutableMultiInstanceState getMultiInstanceState() {
+    return multiInstanceState;
   }
 
   @Override

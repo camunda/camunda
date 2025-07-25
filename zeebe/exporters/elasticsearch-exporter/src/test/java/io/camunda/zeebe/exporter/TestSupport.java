@@ -124,7 +124,8 @@ final class TestSupport {
             ValueType.BATCH_OPERATION_EXECUTION,
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
-            ValueType.USAGE_METRIC);
+            ValueType.USAGE_METRIC,
+            ValueType.MULTI_INSTANCE);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }

@@ -73,6 +73,7 @@
       <validValue name="BATCH_OPERATION_PARTITION_LIFECYCLE">55</validValue>
       <validValue name="ASYNC_REQUEST">56</validValue>
       <validValue name="USAGE_METRIC">57</validValue>
+      <validValue name="MULTI_INSTANCE">58</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->

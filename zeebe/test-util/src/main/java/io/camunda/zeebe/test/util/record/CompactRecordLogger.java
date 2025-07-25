@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
@@ -122,7 +123,9 @@ public class CompactRecordLogger {
           entry("ROLE", "RL"),
           entry("GROUP", "GR"),
           entry("MAPPING", "MAP"),
-          entry("ASYNC_REQUEST", "ASYNC"));
+          entry("ASYNC_REQUEST", "ASYNC"),
+          entry("MULTI_INSTANCE", "MI"),
+          entry("INPUT_COLLECTION_EVALUATED", "IN_COL_EVAL"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -181,6 +184,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
     valueLoggers.put(ValueType.MAPPING_RULE, this::summarizeMappingRule);
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
+    valueLoggers.put(ValueType.MULTI_INSTANCE, this::summarizeMultiInstance);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1097,6 +1101,14 @@ public class CompactRecordLogger {
         .append(" at [")
         .append(shortenKey(value.getScopeKey()))
         .append("]")
+        .toString();
+  }
+
+  private String summarizeMultiInstance(final Record<?> record) {
+    final var value = (MultiInstanceRecordValue) record.getValue();
+    return new StringBuilder()
+        .append("inputCollection: ")
+        .append(value.getInputCollection())
         .toString();
   }
 
