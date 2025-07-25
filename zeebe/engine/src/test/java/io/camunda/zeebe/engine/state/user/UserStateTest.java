@@ -153,9 +153,9 @@ public class UserStateTest {
     assertThat(persistedUserAfterUpdate.getEmail()).isEqualTo(updatedEmail);
   }
 
-  @DisplayName("should delete a user")
+  @DisplayName("a deleted user should not be found by username")
   @Test
-  void shouldDeleteAUser() {
+  void shouldNotFindUserByUsernameAfterDelete() {
     final var userKey = 1L;
     final var username = "username" + UUID.randomUUID();
     final var name = "name" + UUID.randomUUID();
@@ -172,11 +172,34 @@ public class UserStateTest {
     userState.create(user);
 
     assertThat(userState.getUser(username)).isNotEmpty();
-    assertThat(userState.getUser(userKey)).isNotEmpty();
 
     userState.delete(username);
 
     assertThat(userState.getUser(username)).isEmpty();
+  }
+
+  @DisplayName("a deleted user should not be found by key")
+  @Test
+  void shouldNotFindUserByKeyAfterDelete() {
+    final var userKey = 1L;
+    final var username = "username" + UUID.randomUUID();
+    final var name = "name" + UUID.randomUUID();
+    final var password = "password" + UUID.randomUUID();
+    final var email = "email" + UUID.randomUUID();
+
+    final UserRecord user =
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setPassword(password)
+            .setEmail(email);
+    userState.create(user);
+
+    assertThat(userState.getUser(userKey)).isNotEmpty();
+
+    userState.delete(username);
+
     assertThat(userState.getUser(userKey)).isEmpty();
   }
 
