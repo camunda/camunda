@@ -24,6 +24,7 @@ import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.WorkerCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.Tags;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -111,7 +112,7 @@ public class Worker extends App {
             : workerCfg.getCompletionDelay().multipliedBy(6);
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
-            .gatewayAddress(appCfg.getBrokerUrl())
+            .grpcAddress(URI.create(appCfg.getBrokerUrl()))
             .numJobWorkerExecutionThreads(workerCfg.getThreads())
             .defaultJobWorkerName(workerCfg.getWorkerName())
             .defaultJobTimeout(timeout)
