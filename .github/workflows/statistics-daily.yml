@@ -95,7 +95,7 @@ jobs:
 
               printf "• %sx \`%s.%s\`%s\n\n" "$NUMBER_OF_FLAKES" "$TEST_CLASS_NAME" "$TEST_NAME" "$SUFFIX"
               # only print if the owner is a team name
-              if [ ${#$TEST_OWNER} -lt 20 ]; then
+              if [ ${#TEST_OWNER} -lt 20 ]; then
                 if [[ -n "${lookup[$key]}" ]]; then
                   printf "\t• ${lookup[TEST_OWNER]}\n"
                 fi
