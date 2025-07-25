@@ -55,6 +55,7 @@ describe('AssignButton', () => {
       <AssignButton
         id={mockUnassignedTask.userTaskKey}
         assignee={undefined}
+        taskState={mockUnassignedTask.state}
         currentUser={currentUser.userId}
       />,
       {wrapper: getWrapper()},
@@ -67,6 +68,7 @@ describe('AssignButton', () => {
       <AssignButton
         id={mockAssignedTask.userTaskKey}
         assignee={currentUser.userId}
+        taskState={mockAssignedTask.state}
         currentUser={currentUser.userId}
       />,
     );
@@ -94,6 +96,7 @@ describe('AssignButton', () => {
       <AssignButton
         id={mockAssignedTask.userTaskKey}
         assignee={currentUser.userId}
+        taskState={mockAssignedTask.state}
         currentUser={currentUser.userId}
       />,
       {wrapper: getWrapper()},
@@ -107,6 +110,7 @@ describe('AssignButton', () => {
       <AssignButton
         id={mockUnassignedTask.userTaskKey}
         assignee={undefined}
+        taskState={mockUnassignedTask.state}
         currentUser={currentUser.userId}
       />,
     );
@@ -132,6 +136,7 @@ describe('AssignButton', () => {
       <AssignButton
         id={mockUnassignedTask.userTaskKey}
         assignee={undefined}
+        taskState={mockUnassignedTask.state}
         currentUser={currentUser.userId}
       />,
       {wrapper: getWrapper()},
@@ -164,6 +169,7 @@ describe('AssignButton', () => {
       <AssignButton
         id={mockUnassignedTask.userTaskKey}
         assignee={currentUser.userId}
+        taskState={mockUnassignedTask.state}
         currentUser={currentUser.userId}
       />,
       {wrapper: getWrapper()},

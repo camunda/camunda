@@ -6,14 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
+@use '@carbon/type';
 
-function isForbidden(user: CurrentUser | undefined) {
-  return (
-    Array.isArray(user?.authorizedApplications) &&
-    !user.authorizedApplications.includes('tasklist') &&
-    !user.authorizedApplications.includes('*')
-  );
+.container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: var(--cds-spacing-03);
 }
 
-export {isForbidden};
+.message {
+  @include type.type-style('label-02');
+  color: var(--cds-text-secondary);
+}

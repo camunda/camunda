@@ -7,11 +7,12 @@
  */
 
 import {t as _t} from 'i18next';
+import {useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {AsyncActionButton} from 'common/components/AsyncActionButton';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {tracking} from 'common/tracking';
-import {useState} from 'react';
-import {useTranslation} from 'react-i18next';
 import {useAssignTask} from 'v2/api/useAssignTask.mutation';
 import {useUnassignTask} from 'v2/api/useUnassignTask.mutation';
 import {usePollForAssignmentResult} from 'v2/api/usePollForAssignmentResult.mutation';
@@ -36,25 +37,37 @@ const getAssignmentToggleLabels = () =>
 type Props = {
   id: string;
   assignee: string | undefined;
+  taskState: UserTask['state'];
   currentUser: string;
 };
 
-const AssignButton: React.FC<Props> = ({id, assignee, currentUser}) => {
+const AssignButton: React.FC<Props> = ({
+  id,
+  assignee,
+  taskState,
+  currentUser,
+}) => {
   const isAssigned = typeof assignee === 'string';
   const {t} = useTranslation();
-  const [assignmentStatus, setAssignmentStatus] =
-    useState<AssignmentStatus>('off');
+  const [assignmentStatus, setAssignmentStatus] = useState<AssignmentStatus>(
+    () => (taskState === 'ASSIGNING' ? 'assigning' : 'off'),
+  );
   const {mutateAsync: pollForAssignmentResult} = usePollForAssignmentResult();
   const {mutateAsync: assignTask, isPending: assignIsPending} = useAssignTask();
   const {mutateAsync: unassignTask, isPending: unassignIsPending} =
     useUnassignTask();
-  const isLoading = (assignIsPending || unassignIsPending) ?? false;
+  const isLoading =
+    (assignIsPending || unassignIsPending || taskState === 'ASSIGNING') ??
+    false;
 
   function getAsyncActionButtonStatus() {
     if (isLoading || assignmentStatus !== 'off') {
       const ACTIVE_STATES: AssignmentStatus[] = ['assigning', 'unassigning'];
 
-      return ACTIVE_STATES.includes(assignmentStatus) ? 'active' : 'finished';
+      return ACTIVE_STATES.includes(assignmentStatus) ||
+        taskState === 'ASSIGNING'
+        ? 'active'
+        : 'finished';
     }
 
     return 'inactive';
