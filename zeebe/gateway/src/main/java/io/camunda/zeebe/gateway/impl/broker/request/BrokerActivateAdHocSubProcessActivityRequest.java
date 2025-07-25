@@ -20,9 +20,7 @@ public class BrokerActivateAdHocSubProcessActivityRequest
       new AdHocSubProcessInstructionRecord();
 
   public BrokerActivateAdHocSubProcessActivityRequest() {
-    super(
-        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
-        AdHocSubProcessInstructionIntent.ACTIVATE);
+    super(ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, AdHocSubProcessInstructionIntent.ACTIVATE);
   }
 
   public BrokerActivateAdHocSubProcessActivityRequest setAdHocSubProcessInstanceKey(

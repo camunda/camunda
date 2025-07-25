@@ -344,7 +344,7 @@ public final class BpmnProcessors {
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator) {
     typedRecordProcessors.onCommand(
-        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
+        ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
         AdHocSubProcessInstructionIntent.ACTIVATE,
         new AdHocSubProcessActivityActivateProcessor(
             writers, processingState, authCheckBehavior, keyGenerator));
