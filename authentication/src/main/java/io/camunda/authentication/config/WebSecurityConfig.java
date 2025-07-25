@@ -20,6 +20,7 @@ import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -62,11 +63,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
@@ -77,6 +81,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -110,7 +115,6 @@ public class WebSecurityConfig {
       Set.of(
           "/login/**",
           "/logout",
-          "/identity/**",
           "/operate/**",
           "/tasklist/**",
           "/",
@@ -126,6 +130,7 @@ public class WebSecurityConfig {
           "/decisions/*",
           "/instances",
           "/instances/*");
+  public static final Set<String> IDENTITY_PATHS = Set.of("/identity/**");
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -373,6 +378,31 @@ public class WebSecurityConfig {
     }
   }
 
+  @Bean
+  @Order(ORDER_WEBAPP_API)
+  public SecurityFilterChain x509IdentitySecurityFilterChain(
+      final HttpSecurity httpSecurity,
+      final SecurityConfiguration securityConfiguration,
+      final InMemoryUserDetailsManager x509UserDetailsService)
+      throws Exception {
+    // Require client certificate authentication for /identity/**
+    return httpSecurity
+        .securityMatcher(IDENTITY_PATHS.toArray(String[]::new))
+        .x509(
+            x509 ->
+                x509.subjectPrincipalRegex("CN=(.*?)(?:,|$)")
+                    .userDetailsService(x509UserDetailsService))
+        .authorizeHttpRequests(authz -> authz.anyRequest().authenticated())
+        .headers(
+            headers ->
+                setupSecureHeaders(
+                    headers,
+                    securityConfiguration.getHttpHeaders(),
+                    securityConfiguration.getSaas().isConfigured()))
+        .csrf(AbstractHttpConfigurer::disable)
+        .build();
+  }
+
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   public static class BasicConfiguration {
@@ -500,6 +530,48 @@ public class WebSecurityConfig {
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
   public static class OidcConfiguration {
+
+    @Bean
+    public CertificateClientAssertionService certificateClientAssertionService() {
+      return new CertificateClientAssertionService();
+    }
+
+    @Bean
+    public CertificateOidcProperties certificateOidcProperties() {
+      return new CertificateOidcProperties();
+    }
+
+    /**
+     * Maps certificate properties from Spring Boot configuration to OIDC authentication
+     * configuration.
+     */
+    @Bean
+    public OidcAuthenticationConfiguration enhancedOidcConfiguration(
+        final SecurityConfiguration securityConfiguration,
+        final CertificateOidcProperties certificateProperties) {
+      final var oidcConfig = securityConfiguration.getAuthentication().getOidc();
+
+      // Map certificate properties if they exist
+      if (certificateProperties.getClientAssertionKeystorePath() != null) {
+        oidcConfig.setClientAssertionKeystorePath(
+            certificateProperties.getClientAssertionKeystorePath());
+      }
+      if (certificateProperties.getClientAssertionKeystorePassword() != null) {
+        oidcConfig.setClientAssertionKeystorePassword(
+            certificateProperties.getClientAssertionKeystorePassword());
+      }
+      if (certificateProperties.getClientAssertionKeystoreKeyAlias() != null) {
+        oidcConfig.setClientAssertionKeystoreKeyAlias(
+            certificateProperties.getClientAssertionKeystoreKeyAlias());
+      }
+      if (certificateProperties.getClientAssertionKeystoreKeyPassword() != null) {
+        oidcConfig.setClientAssertionKeystoreKeyPassword(
+            certificateProperties.getClientAssertionKeystoreKeyPassword());
+      }
+
+      return oidcConfig;
+    }
+
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
         final SecurityConfiguration securityConfiguration) {
@@ -557,6 +629,36 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public OAuth2AuthorizedClientManager authorizedClientManager(
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final OAuth2AuthorizedClientRepository authorizedClientRepository,
+        final CertificateClientAssertionService certificateClientAssertionService,
+        final SecurityConfiguration securityConfiguration) {
+
+      // Configure OAuth2 provider for Client Credentials flow
+      final var clientCredentialsTokenResponseClient =
+          new CertificateBasedClientCredentialsTokenResponseClient(
+              certificateClientAssertionService,
+              securityConfiguration.getAuthentication().getOidc());
+
+      final OAuth2AuthorizedClientProvider authorizedClientProvider =
+          OAuth2AuthorizedClientProviderBuilder.builder()
+              .authorizationCode() // Keep authorization code for user flows
+              .refreshToken()
+              .clientCredentials(
+                  configurer ->
+                      configurer.accessTokenResponseClient(clientCredentialsTokenResponseClient))
+              .build();
+
+      final var authorizedClientManager =
+          new DefaultOAuth2AuthorizedClientManager(
+              clientRegistrationRepository, authorizedClientRepository);
+      authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
+
+      return authorizedClientManager;
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
     public SecurityFilterChain oidcApiSecurity(
@@ -609,6 +711,42 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnUnprotectedApi
+    @Order(ORDER_UNPROTECTED)
+    public SecurityFilterChain unprotectedIdentityAuthSecurityFilterChain(
+        final HttpSecurity httpSecurity,
+        final SecurityConfiguration securityConfiguration,
+        final AuthFailureHandler authFailureHandler,
+        final CookieCsrfTokenRepository csrfTokenRepository)
+        throws Exception {
+      LOG.warn(
+          "The Identity endpoint is unprotected. Please disable {} for any deployment.",
+          AuthenticationProperties.API_UNPROTECTED);
+      final var filterChainBuilder =
+          httpSecurity
+              .securityMatcher(IDENTITY_PATHS.toArray(String[]::new))
+              .authorizeHttpRequests(
+                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
+              .headers(
+                  headers ->
+                      setupSecureHeaders(
+                          headers,
+                          securityConfiguration.getHttpHeaders(),
+                          securityConfiguration.getSaas().isConfigured()))
+              .cors(AbstractHttpConfigurer::disable)
+              .exceptionHandling(
+                  // this prevents the usage of the default BasicAuthenticationEntryPoint returning
+                  // a WWW-Authenticate header that causes browsers to prompt for basic login
+                  exceptionHandling -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+              .formLogin(AbstractHttpConfigurer::disable)
+              .anonymous(AbstractHttpConfigurer::disable);
+
+      applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+
+      return filterChainBuilder.build();
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     public SecurityFilterChain oidcWebappSecurity(
         final HttpSecurity httpSecurity,
@@ -619,21 +757,29 @@ public class WebSecurityConfig {
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final OAuth2AuthorizedClientManager authorizedClientManager)
+        final OAuth2AuthorizedClientManager authorizedClientManager,
+        final CertificateClientAssertionService certificateClientAssertionService)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
               .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
               .authorizeHttpRequests(
-                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().authenticated())
+                  (authorizeHttpRequests) -> {
+                    // If using client credentials flow, allow access without interactive login
+                    if ("client_credentials"
+                        .equals(
+                            securityConfiguration.getAuthentication().getOidc().getGrantType())) {
+                      authorizeHttpRequests.anyRequest().permitAll();
+                    } else {
+                      authorizeHttpRequests.anyRequest().authenticated();
+                    }
+                  })
               .headers(
                   headers ->
                       setupSecureHeaders(
                           headers,
                           securityConfiguration.getHttpHeaders(),
                           securityConfiguration.getSaas().isConfigured()))
-              .exceptionHandling(
-                  (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
               .cors(AbstractHttpConfigurer::disable)
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
@@ -657,6 +803,20 @@ public class WebSecurityConfig {
                                 authorization.authorizationRequestResolver(
                                     authorizationRequestResolver(
                                         clientRegistrationRepository, securityConfiguration)));
+
+                    if (securityConfiguration
+                        .getAuthentication()
+                        .getOidc()
+                        .isClientAssertionEnabled()) {
+                      final var certificateTokenResponseClient =
+                          new CertificateBasedOAuth2AccessTokenResponseClient(
+                              certificateClientAssertionService,
+                              securityConfiguration.getAuthentication().getOidc());
+                      oauthLoginConfigurer.tokenEndpoint(
+                          tokenEndpointConfig ->
+                              tokenEndpointConfig.accessTokenResponseClient(
+                                  certificateTokenResponseClient));
+                    }
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
               .logout(
@@ -730,14 +890,18 @@ public class WebSecurityConfig {
 
     @Override
     public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       response.setStatus(HttpStatus.NO_CONTENT.value());
     }
 
     @Override
     public void onLogoutSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       onAuthenticationSuccess(request, response, authentication);
     }
@@ -746,7 +910,9 @@ public class WebSecurityConfig {
   protected static class NoContentWithCsrfTokenSuccessHandler extends NoContentResponseHandler {
     @Override
     public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       super.onAuthenticationSuccess(request, response, authentication);
 
