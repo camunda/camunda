@@ -7,7 +7,6 @@
  */
 package io.camunda.configuration;
 
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -15,6 +14,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.convert.DurationStyle;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -231,7 +231,7 @@ public class UnifiedConfigurationHelper {
       case "String" -> (T) strValue;
       case "Integer" -> (T) Integer.valueOf(strValue);
       case "Boolean" -> (T) Boolean.valueOf(strValue);
-      case "Duration" -> (T) Duration.parse(strValue);
+      case "Duration" -> (T) DurationStyle.detectAndParse(strValue);
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }
