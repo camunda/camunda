@@ -12,7 +12,7 @@ import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivat
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubProcessActivityRequest;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -32,7 +32,7 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
         brokerClient, securityContextProvider, authentication);
   }
 
-  public CompletableFuture<AdHocSubProcessActivityActivationRecord> activateActivities(
+  public CompletableFuture<AdHocSubProcessInstructionRecord> activateActivities(
       final AdHocSubProcessActivateActivitiesRequest request) {
     final var brokerRequest =
         new BrokerActivateAdHocSubProcessActivityRequest()

@@ -15,13 +15,13 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
-public enum AdHocSubProcessActivityActivationIntent implements Intent {
+public enum AdHocSubProcessInstructionIntent implements Intent {
   ACTIVATE(0),
   ACTIVATED(1);
 
   private final short value;
 
-  AdHocSubProcessActivityActivationIntent(final int value) {
+  AdHocSubProcessInstructionIntent(final int value) {
     this.value = (short) value;
   }
 
