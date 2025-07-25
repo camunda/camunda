@@ -8,7 +8,7 @@
 package io.camunda.tasklist.modules;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.tasklist.ImportModuleConfiguration;
 import io.camunda.tasklist.WebappModuleConfiguration;
@@ -33,8 +33,7 @@ public class OnlyWebappIT extends ModuleIntegrationTest {
 
   @Test
   public void testImportModuleIsNotPresent() {
-    assertThrows(
-        NoSuchBeanDefinitionException.class,
-        () -> applicationContext.getBean(ImportModuleConfiguration.class));
+    assertThatExceptionOfType(NoSuchBeanDefinitionException.class)
+        .isThrownBy(() -> applicationContext.getBean(ImportModuleConfiguration.class));
   }
 }

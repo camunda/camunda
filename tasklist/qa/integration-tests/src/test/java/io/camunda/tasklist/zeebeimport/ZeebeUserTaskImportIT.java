@@ -9,9 +9,6 @@ package io.camunda.tasklist.zeebeimport;
 
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -70,16 +67,22 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
             .getTaskId();
 
     // then
-    assertNotNull(taskId);
+    org.assertj.core.api.Assertions.assertThat(taskId).isNotNull();
     final TaskEntity taskEntity = taskStore.getTask(taskId);
-    assertEquals(TaskImplementation.ZEEBE_USER_TASK, taskEntity.getImplementation());
-    assertEquals(TaskState.CREATED, taskEntity.getState());
-    assertNotNull(taskEntity.getCreationTime());
-    assertEquals(bpmnProcessId, taskEntity.getBpmnProcessId());
-    assertEquals(flowNodeBpmnId, taskEntity.getFlowNodeBpmnId());
-    assertEquals(tester.getProcessDefinitionKey(), taskEntity.getProcessDefinitionId());
-    assertEquals(tester.getProcessInstanceId(), taskEntity.getProcessInstanceId());
-    assertEquals(taskEntity.getPriority(), Integer.valueOf(TaskStore.DEFAULT_PRIORITY));
+    org.assertj.core.api.Assertions.assertThat(taskEntity.getImplementation())
+        .isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+    org.assertj.core.api.Assertions.assertThat(taskEntity.getState()).isEqualTo(TaskState.CREATED);
+    org.assertj.core.api.Assertions.assertThat(taskEntity.getCreationTime()).isNotNull();
+    org.assertj.core.api.Assertions.assertThat(taskEntity.getBpmnProcessId())
+        .isEqualTo(bpmnProcessId);
+    org.assertj.core.api.Assertions.assertThat(taskEntity.getFlowNodeBpmnId())
+        .isEqualTo(flowNodeBpmnId);
+    org.assertj.core.api.Assertions.assertThat(taskEntity.getProcessDefinitionId())
+        .isEqualTo(tester.getProcessDefinitionKey());
+    org.assertj.core.api.Assertions.assertThat(taskEntity.getProcessInstanceId())
+        .isEqualTo(tester.getProcessInstanceId());
+    org.assertj.core.api.Assertions.assertThat(Integer.valueOf(TaskStore.DEFAULT_PRIORITY))
+        .isEqualTo(taskEntity.getPriority());
   }
 
   @Test
@@ -121,7 +124,7 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
             .taskIsCreated(flowNodeBpmnId2)
             .getTaskId();
 
-    assertNotNull(taskId2);
+    org.assertj.core.api.Assertions.assertThat(taskId2).isNotNull();
 
     final var result =
         mockMvcHelper.doRequest(
@@ -158,11 +161,14 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
             .taskIsCreated(flowNodeBpmnId)
             .getTaskId();
     // then
-    assertNotNull(taskId);
+    org.assertj.core.api.Assertions.assertThat(taskId).isNotNull();
     final TaskEntity taskEntity = taskStore.getTask(taskId);
-    assertEquals(TaskImplementation.ZEEBE_USER_TASK, taskEntity.getImplementation());
-    assertTrue(taskEntity.getCustomHeaders().containsKey("testKey"));
-    assertEquals("testValue", taskEntity.getCustomHeaders().get("testKey"));
+    org.assertj.core.api.Assertions.assertThat(taskEntity.getImplementation())
+        .isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+    org.assertj.core.api.Assertions.assertThat(taskEntity.getCustomHeaders().containsKey("testKey"))
+        .isTrue();
+    org.assertj.core.api.Assertions.assertThat(taskEntity.getCustomHeaders().get("testKey"))
+        .isEqualTo("testValue");
   }
 
   private static Stream<Arguments> priorityOptions() {
@@ -189,9 +195,11 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
             .taskIsCreated(flowNodeBpmnId)
             .getTaskId();
     // then
-    assertNotNull(taskId);
+    org.assertj.core.api.Assertions.assertThat(taskId).isNotNull();
     final TaskEntity taskEntity = taskStore.getTask(taskId);
-    assertEquals(TaskImplementation.ZEEBE_USER_TASK, taskEntity.getImplementation());
-    assertEquals(taskEntity.getPriority(), taskEntityPriority);
+    org.assertj.core.api.Assertions.assertThat(taskEntity.getImplementation())
+        .isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+    org.assertj.core.api.Assertions.assertThat(taskEntityPriority)
+        .isEqualTo(taskEntity.getPriority());
   }
 }

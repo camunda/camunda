@@ -8,10 +8,8 @@
 package io.camunda.tasklist.zeebeimport;
 
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -62,9 +60,9 @@ public class ZeebeImportAdHocSubProcessIT extends TasklistZeebeIntegrationTest {
             .getProcessInstanceId();
 
     // then
-    assertNotNull(processInstanceId);
+    org.assertj.core.api.Assertions.assertThat(processInstanceId).isNotNull();
     final List<String> taskIds = taskStore.getTaskIdsByProcessInstanceId(processInstanceId);
-    assertEquals(3, taskIds.size());
+    org.assertj.core.api.Assertions.assertThat(taskIds.size()).isEqualTo(3);
 
     for (final String taskId : taskIds) {
       final TaskEntity entity = taskStore.getTask(taskId);

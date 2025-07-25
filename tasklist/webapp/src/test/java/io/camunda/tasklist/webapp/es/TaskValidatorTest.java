@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.webapp.es;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -125,7 +125,8 @@ public class TaskValidatorTest {
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
     // when - then
-    assertDoesNotThrow(() -> instance.validateCanPersistDraftTaskVariables(task));
+    assertThatCode(() -> instance.validateCanPersistDraftTaskVariables(task))
+        .doesNotThrowAnyException();
   }
 
   @Test
@@ -136,7 +137,8 @@ public class TaskValidatorTest {
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
 
     // when - then
-    assertDoesNotThrow(() -> instance.validateCanPersistDraftTaskVariables(task));
+    assertThatCode(() -> instance.validateCanPersistDraftTaskVariables(task))
+        .doesNotThrowAnyException();
   }
 
   @ParameterizedTest
@@ -210,7 +212,7 @@ public class TaskValidatorTest {
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
     // when - then
-    assertDoesNotThrow(() -> instance.validateCanComplete(task));
+    assertThatCode(() -> instance.validateCanComplete(task)).doesNotThrowAnyException();
   }
 
   @Test
@@ -225,7 +227,7 @@ public class TaskValidatorTest {
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
     // when - then
-    assertDoesNotThrow(() -> instance.validateCanComplete(task));
+    assertThatCode(() -> instance.validateCanComplete(task)).doesNotThrowAnyException();
   }
 
   @Test
@@ -236,7 +238,7 @@ public class TaskValidatorTest {
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
 
     // when - then
-    assertDoesNotThrow(() -> instance.validateCanComplete(task));
+    assertThatCode(() -> instance.validateCanComplete(task)).doesNotThrowAnyException();
   }
 
   @Test
@@ -246,7 +248,7 @@ public class TaskValidatorTest {
     final TaskEntity taskBefore = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
 
     // when - then
-    assertDoesNotThrow(() -> instance.validateCanAssign(taskBefore, true));
+    assertThatCode(() -> instance.validateCanAssign(taskBefore, true)).doesNotThrowAnyException();
   }
 
   @Test
@@ -257,7 +259,7 @@ public class TaskValidatorTest {
         new TaskEntity().setAssignee("previously assigned user").setState(TaskState.CREATED);
 
     // when - then
-    assertDoesNotThrow(() -> instance.validateCanAssign(taskBefore, true));
+    assertThatCode(() -> instance.validateCanAssign(taskBefore, true)).doesNotThrowAnyException();
   }
 
   @Test
@@ -268,7 +270,7 @@ public class TaskValidatorTest {
         new TaskEntity().setAssignee("previously assigned user").setState(TaskState.CREATED);
 
     // when - then
-    assertDoesNotThrow(() -> instance.validateCanAssign(taskBefore, true));
+    assertThatCode(() -> instance.validateCanAssign(taskBefore, true)).doesNotThrowAnyException();
   }
 
   @Test

@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.tasklist.webapp.rest.CustomCssRestService;
@@ -46,7 +46,7 @@ public class CustomCssRestServiceTest {
 
     customCssRestService.init();
 
-    assertEquals(cssContent, customCssRestService.getClientConfig());
+    assertThat(customCssRestService.getClientConfig()).isEqualTo(cssContent);
   }
 
   @Test
@@ -55,6 +55,6 @@ public class CustomCssRestServiceTest {
     final String result = customCssRestService.getClientConfig();
 
     // Assert
-    assertNull(result);
+    assertThat(result).isNull();
   }
 }

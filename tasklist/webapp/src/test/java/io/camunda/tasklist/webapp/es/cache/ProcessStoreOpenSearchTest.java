@@ -9,10 +9,7 @@ package io.camunda.tasklist.webapp.es.cache;
 
 import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
@@ -100,8 +97,8 @@ class ProcessStoreOpenSearchTest {
     final ProcessEntity result = processStore.getProcessByBpmnProcessId("bpmnProcessId");
 
     // then
-    assertNotNull(result);
-    assertEquals("1", result.getId());
+    assertThat(result).isNotNull();
+    assertThat(result.getId()).isEqualTo("1");
   }
 
   @Test
@@ -110,9 +107,8 @@ class ProcessStoreOpenSearchTest {
     mockOpenSearchNotFound();
 
     // when and then
-    assertThrows(
-        NotFoundException.class,
-        () -> processStore.getProcessByBpmnProcessId("bpmnProcessId_not_exist"));
+    assertThatExceptionOfType(NotFoundException.class)
+        .isThrownBy(() -> processStore.getProcessByBpmnProcessId("bpmnProcessId_not_exist"));
   }
 
   @Test
@@ -124,17 +120,18 @@ class ProcessStoreOpenSearchTest {
 
     // when
     final TasklistRuntimeException thrown =
-        assertThrows(
-            TasklistRuntimeException.class,
-            () -> processStore.getProcessByBpmnProcessId("bpmnProcessId"));
+        assertThatExceptionOfType(TasklistRuntimeException.class)
+            .isThrownBy(() -> processStore.getProcessByBpmnProcessId("bpmnProcessId"))
+            .actual();
 
     // then
-    assertTrue(
-        thrown
-            .getMessage()
-            .contains(
-                "Exception occurred, while obtaining the process: "
-                    + mockedException.getMessage()));
+    assertThat(
+            thrown
+                .getMessage()
+                .contains(
+                    "Exception occurred, while obtaining the process: "
+                        + mockedException.getMessage()))
+        .isTrue();
   }
 
   // ** Test Get Process by Process Id ** //
@@ -147,7 +144,7 @@ class ProcessStoreOpenSearchTest {
     final ProcessEntity result = processStore.getProcess("1");
 
     // then
-    assertNotNull(result);
+    assertThat(result).isNotNull();
   }
 
   @Test
@@ -156,7 +153,8 @@ class ProcessStoreOpenSearchTest {
     mockOpenSearchNotFound();
 
     // given and then
-    assertThrows(TasklistRuntimeException.class, () -> processStore.getProcess("processId"));
+    assertThatExceptionOfType(TasklistRuntimeException.class)
+        .isThrownBy(() -> processStore.getProcess("processId"));
   }
 
   @Test
@@ -171,8 +169,10 @@ class ProcessStoreOpenSearchTest {
 
     // given and then
     final TasklistRuntimeException thrown =
-        assertThrows(TasklistRuntimeException.class, () -> processStore.getProcess(processId));
-    assertTrue(thrown.getMessage().contains(errorMessage));
+        assertThatExceptionOfType(TasklistRuntimeException.class)
+            .isThrownBy(() -> processStore.getProcess(processId))
+            .actual();
+    assertThat(thrown.getMessage().contains(errorMessage)).isTrue();
   }
 
   // ** Test get processes && And get processes with search condition ** //
@@ -226,8 +226,8 @@ class ProcessStoreOpenSearchTest {
         processStore.getProcesses("*", authorizations, DEFAULT_TENANT_IDENTIFIER, null);
 
     // then
-    assertNotNull(processes);
-    assertNotNull(processesWithCondition);
+    assertThat(processes).isNotNull();
+    assertThat(processesWithCondition).isNotNull();
   }
 
   @Test
@@ -248,8 +248,8 @@ class ProcessStoreOpenSearchTest {
         processStore.getProcesses("*", authorizations, DEFAULT_TENANT_IDENTIFIER, null);
 
     // then
-    assertNotNull(processes);
-    assertNotNull(processesWithCondition);
+    assertThat(processes).isNotNull();
+    assertThat(processesWithCondition).isNotNull();
   }
 
   private void mockAuthenticationOverIdentity(final Boolean isAuthorizated) {
