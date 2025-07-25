@@ -47,6 +47,16 @@ public class SequenceFlowWriter {
             sequenceFlow));
   }
 
+  public void delete(final SequenceFlowDbModel sequenceFlow) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.SEQUENCE_FLOW,
+            WriteStatementType.DELETE,
+            sequenceFlow.sequenceFlowId(),
+            "io.camunda.db.rdbms.sql.SequenceFlowMapper.delete",
+            sequenceFlow));
+  }
+
   public void scheduleForHistoryCleanup(
       final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
     executionQueue.executeInQueue(

@@ -14,8 +14,17 @@ import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SequenceFlowExportHandler implements RdbmsExportHandler<ProcessInstanceRecordValue> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(GroupExportHandler.class);
+
+  private static final Set<ProcessInstanceIntent> EXPORTABLE_INTENTS =
+      Set.of(
+          ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, ProcessInstanceIntent.SEQUENCE_FLOW_DELETED);
 
   private final SequenceFlowWriter sequenceFlowWriter;
 
@@ -26,13 +35,19 @@ public class SequenceFlowExportHandler implements RdbmsExportHandler<ProcessInst
   @Override
   public boolean canExport(final Record<ProcessInstanceRecordValue> record) {
     return record.getIntent() != null
-        && record.getIntent() instanceof ProcessInstanceIntent
-        && record.getIntent().equals(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
+        && record.getIntent() instanceof final ProcessInstanceIntent intent
+        && EXPORTABLE_INTENTS.contains(intent);
   }
 
   @Override
   public void export(final Record<ProcessInstanceRecordValue> record) {
-    sequenceFlowWriter.createIfNotExists(map(record));
+    final ProcessInstanceRecordValue value = record.getValue();
+    switch (record.getIntent()) {
+      case ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN ->
+          sequenceFlowWriter.createIfNotExists(map(record));
+      case ProcessInstanceIntent.SEQUENCE_FLOW_DELETED -> sequenceFlowWriter.delete(map(record));
+      default -> LOG.warn("Unexpected intent {} for sequence flow record", record.getIntent());
+    }
   }
 
   private SequenceFlowDbModel map(final Record<ProcessInstanceRecordValue> record) {
