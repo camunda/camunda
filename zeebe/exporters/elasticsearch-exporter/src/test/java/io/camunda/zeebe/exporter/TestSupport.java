@@ -68,8 +68,7 @@ final class TestSupport {
       case BATCH_OPERATION_EXECUTION -> config.batchOperationExecution = value;
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT -> config.batchOperationLifecycleManagement = value;
       case BATCH_OPERATION_PARTITION_LIFECYCLE -> config.batchOperationPartitionLifecycle = value;
-      case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
-          config.adHocSubProcessActivityActivation = value;
+      case AD_HOC_SUB_PROCESS_INSTRUCTION -> config.adHocSubProcessInstruction = value;
       case ASYNC_REQUEST -> config.asyncRequest = value;
       case USAGE_METRIC -> config.usageMetrics = value;
       default ->

@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
+import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -160,13 +160,12 @@ public class ActivateAdHocSubProcessActivityTest {
         .activate();
 
     assertThat(
-            RecordingExporter.adHocSubProcessActivityActivationRecords()
+            RecordingExporter.adHocSubProcessInstructionRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
-                .limit(
-                    record ->
-                        record.getIntent() == AdHocSubProcessActivityActivationIntent.ACTIVATED))
-        .extracting(r -> r.getValue().getElements().getFirst().getElementId(), Record::getIntent)
-        .contains(tuple("A", AdHocSubProcessActivityActivationIntent.ACTIVATED));
+                .limit(record -> record.getIntent() == AdHocSubProcessInstructionIntent.ACTIVATED))
+        .extracting(
+            r -> r.getValue().getActivateElements().getFirst().getElementId(), Record::getIntent)
+        .contains(tuple("A", AdHocSubProcessInstructionIntent.ACTIVATED));
   }
 
   @Test
@@ -210,14 +209,14 @@ public class ActivateAdHocSubProcessActivityTest {
                 .formatted(adHocSubProcessInstanceKey, nonExistingActivities));
 
     assertThat(
-            RecordingExporter.adHocSubProcessActivityActivationRecords()
+            RecordingExporter.adHocSubProcessInstructionRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
                 .limit(2))
         .extracting(Record::getRecordType, Record::getIntent)
         .contains(
-            tuple(RecordType.COMMAND, AdHocSubProcessActivityActivationIntent.ACTIVATE),
-            tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessActivityActivationIntent.ACTIVATE))
-        .doesNotContain(tuple(RecordType.EVENT, AdHocSubProcessActivityActivationIntent.ACTIVATED));
+            tuple(RecordType.COMMAND, AdHocSubProcessInstructionIntent.ACTIVATE),
+            tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessInstructionIntent.ACTIVATE))
+        .doesNotContain(tuple(RecordType.EVENT, AdHocSubProcessInstructionIntent.ACTIVATED));
   }
 
   @Test
@@ -240,13 +239,13 @@ public class ActivateAdHocSubProcessActivityTest {
                 .formatted(nonExistingAdHocSubProcessInstanceKey));
 
     assertThat(
-            RecordingExporter.adHocSubProcessActivityActivationRecords()
+            RecordingExporter.adHocSubProcessInstructionRecords()
                 .withAdHocSubProcessInstanceKey(nonExistingAdHocSubProcessInstanceKey)
                 .limit(2))
         .extracting(Record::getRecordType, Record::getIntent)
         .contains(
-            tuple(RecordType.COMMAND, AdHocSubProcessActivityActivationIntent.ACTIVATE),
-            tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessActivityActivationIntent.ACTIVATE));
+            tuple(RecordType.COMMAND, AdHocSubProcessInstructionIntent.ACTIVATE),
+            tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessInstructionIntent.ACTIVATE));
   }
 
   @Test
@@ -309,14 +308,14 @@ public class ActivateAdHocSubProcessActivityTest {
                 .formatted(adHocSubProcessInstanceKey));
 
     assertThat(
-            RecordingExporter.adHocSubProcessActivityActivationRecords()
+            RecordingExporter.adHocSubProcessInstructionRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
                 .limit(2))
         .extracting(Record::getRecordType, Record::getIntent)
         .contains(
-            tuple(RecordType.COMMAND, AdHocSubProcessActivityActivationIntent.ACTIVATE),
-            tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessActivityActivationIntent.ACTIVATE))
-        .doesNotContain(tuple(RecordType.EVENT, AdHocSubProcessActivityActivationIntent.ACTIVATED));
+            tuple(RecordType.COMMAND, AdHocSubProcessInstructionIntent.ACTIVATE),
+            tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessInstructionIntent.ACTIVATE))
+        .doesNotContain(tuple(RecordType.EVENT, AdHocSubProcessInstructionIntent.ACTIVATED));
   }
 
   private ProcessInstanceRecordStream recordsUntilSignal(final String signalName) {
