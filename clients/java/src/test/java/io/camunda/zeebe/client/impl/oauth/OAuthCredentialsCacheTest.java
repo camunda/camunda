@@ -17,7 +17,6 @@ package io.camunda.zeebe.client.impl.oauth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertTrue;
 
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
 import java.io.File;
@@ -148,7 +147,7 @@ public final class OAuthCredentialsCacheTest {
 
     // now /some/root/.camunda -> /some/root/target
     // we will delete target, creating a dead link.
-    assertTrue(target.delete());
+    assertThat(target.delete()).isTrue();
 
     final File fileInContainer = new File(container, "/credentials");
     final OAuthCredentialsCache cache = new OAuthCredentialsCache(fileInContainer);

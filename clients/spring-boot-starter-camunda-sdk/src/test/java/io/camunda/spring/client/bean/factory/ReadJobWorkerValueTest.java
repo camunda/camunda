@@ -16,8 +16,6 @@
 package io.camunda.spring.client.bean.factory;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.spring.client.annotation.AnnotationUtil;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
@@ -44,17 +42,17 @@ public class ReadJobWorkerValueTest {
     final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
 
     // then
-    assertTrue(jobWorkerValue.isPresent());
-    assertEquals("bar", jobWorkerValue.get().getType());
-    assertEquals("kermit", jobWorkerValue.get().getName());
-    assertEquals(Duration.ofMillis(100), jobWorkerValue.get().getTimeout());
-    assertEquals(-1, jobWorkerValue.get().getMaxJobsActive());
-    assertEquals(Duration.ofSeconds(-1), jobWorkerValue.get().getRequestTimeout());
-    assertEquals(Duration.ofMillis(-1), jobWorkerValue.get().getPollInterval());
-    assertEquals(false, jobWorkerValue.get().getAutoComplete());
-    assertEquals(List.of(), jobWorkerValue.get().getFetchVariables());
-    assertEquals(methodInfo, jobWorkerValue.get().getMethodInfo());
-    assertEquals(Duration.ofHours(1), jobWorkerValue.get().getStreamTimeout());
+    assertThat(jobWorkerValue.isPresent()).isTrue();
+    assertThat(jobWorkerValue.get().getType()).isEqualTo("bar");
+    assertThat(jobWorkerValue.get().getName()).isEqualTo("kermit");
+    assertThat(jobWorkerValue.get().getTimeout()).isEqualTo(Duration.ofMillis(100));
+    assertThat(jobWorkerValue.get().getMaxJobsActive()).isEqualTo(-1);
+    assertThat(jobWorkerValue.get().getRequestTimeout()).isEqualTo(Duration.ofSeconds(-1));
+    assertThat(jobWorkerValue.get().getPollInterval()).isEqualTo(Duration.ofMillis(-1));
+    assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(false);
+    assertThat(jobWorkerValue.get().getFetchVariables()).isEqualTo(List.of());
+    assertThat(jobWorkerValue.get().getMethodInfo()).isEqualTo(methodInfo);
+    assertThat(jobWorkerValue.get().getStreamTimeout()).isEqualTo(Duration.ofHours(1));
   }
 
   @Test
@@ -66,7 +64,7 @@ public class ReadJobWorkerValueTest {
     final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
 
     // then
-    assertTrue(jobWorkerValue.isPresent());
+    assertThat(jobWorkerValue.isPresent()).isTrue();
     assertThat(jobWorkerValue.get().getTenantIds()).containsOnly("tenant-1");
   }
 
@@ -79,16 +77,16 @@ public class ReadJobWorkerValueTest {
     final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
 
     // then
-    assertTrue(jobWorkerValue.isPresent());
-    assertEquals("bar", jobWorkerValue.get().getType());
-    assertEquals("kermit", jobWorkerValue.get().getName());
-    assertEquals(Duration.ofMillis(100L), jobWorkerValue.get().getTimeout());
-    assertEquals(3, jobWorkerValue.get().getMaxJobsActive());
-    assertEquals(Duration.ofSeconds(500L), jobWorkerValue.get().getRequestTimeout());
-    assertEquals(Duration.ofSeconds(1L), jobWorkerValue.get().getPollInterval());
-    assertEquals(true, jobWorkerValue.get().getAutoComplete());
-    assertEquals(List.of("foo"), jobWorkerValue.get().getFetchVariables());
-    assertEquals(methodInfo, jobWorkerValue.get().getMethodInfo());
+    assertThat(jobWorkerValue.isPresent()).isTrue();
+    assertThat(jobWorkerValue.get().getType()).isEqualTo("bar");
+    assertThat(jobWorkerValue.get().getName()).isEqualTo("kermit");
+    assertThat(jobWorkerValue.get().getTimeout()).isEqualTo(Duration.ofMillis(100L));
+    assertThat(jobWorkerValue.get().getMaxJobsActive()).isEqualTo(3);
+    assertThat(jobWorkerValue.get().getRequestTimeout()).isEqualTo(Duration.ofSeconds(500L));
+    assertThat(jobWorkerValue.get().getPollInterval()).isEqualTo(Duration.ofSeconds(1L));
+    assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(true);
+    assertThat(jobWorkerValue.get().getFetchVariables()).isEqualTo(List.of("foo"));
+    assertThat(jobWorkerValue.get().getMethodInfo()).isEqualTo(methodInfo);
   }
 
   private MethodInfo extract(final Class<?> clazz) {

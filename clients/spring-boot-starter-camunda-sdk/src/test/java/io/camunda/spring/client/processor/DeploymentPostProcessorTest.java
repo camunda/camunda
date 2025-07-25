@@ -15,7 +15,7 @@
  */
 package io.camunda.spring.client.processor;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -169,17 +169,17 @@ public class DeploymentPostProcessorTest {
 
   @Test
   public void shouldThrowExceptionOnNoResourcesToDeploy() {
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> {
-          // given
-          final ClassInfo classInfo =
-              ClassInfo.builder().bean(new WithNoClassPathResource()).build();
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(
+            () -> {
+              // given
+              final ClassInfo classInfo =
+                  ClassInfo.builder().bean(new WithNoClassPathResource()).build();
 
-          // when
-          deploymentPostProcessor.configureFor(classInfo);
-          deploymentPostProcessor.start(client);
-        });
+              // when
+              deploymentPostProcessor.configureFor(classInfo);
+              deploymentPostProcessor.start(client);
+            });
   }
 
   private Process getProcess() {

@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
@@ -71,7 +71,7 @@ class ApiCallbackTest {
 
     // then
     verifyNoInteractions(retryAction);
-    assertTrue(response.isCompletedExceptionally());
+    assertThat(response.isCompletedExceptionally()).isTrue();
   }
 
   @Test
@@ -91,7 +91,7 @@ class ApiCallbackTest {
 
     // then: no new retry, future is exceptionally completed
     verify(retryAction, times(DEFAULT_REMAINING_RETRIES)).run();
-    assertTrue(response.isCompletedExceptionally());
+    assertThat(response.isCompletedExceptionally()).isTrue();
   }
 
   @Test
@@ -113,7 +113,7 @@ class ApiCallbackTest {
     // No retries left - should NOT call retryAction again
     apiCallback.completed(apiResponse);
     verifyNoInteractions(retryAction);
-    assertTrue(response.isCompletedExceptionally());
+    assertThat(response.isCompletedExceptionally()).isTrue();
   }
 
   @Test
@@ -129,6 +129,6 @@ class ApiCallbackTest {
 
     // Final attempt - should complete exceptionally, no further retry
     apiCallback.completed(apiResponse);
-    assertTrue(response.isCompletedExceptionally());
+    assertThat(response.isCompletedExceptionally()).isTrue();
   }
 }
