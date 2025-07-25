@@ -6858,6 +6858,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AdHocSubProcessActivateActivityReference"
+        cancelRemainingInstances:
+          description: Whether to cancel remaining instances of the ad-hoc sub-process.
+          type: boolean
+          default: false
       required:
         - elements
     AdHocSubProcessActivateActivityReference:

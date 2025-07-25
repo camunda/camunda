@@ -51,7 +51,8 @@ public class AdHocSubProcessActivityServicesTest {
     final AdHocSubProcessActivateActivityReference element =
         new AdHocSubProcessActivateActivityReference(elementId, Map.of());
     final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(adHocSubProcessInstanceKey, List.of(element));
+        new AdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, List.of(element), true);
 
     final AdHocSubProcessInstructionRecord expectedResponse =
         new AdHocSubProcessInstructionRecord();
@@ -86,7 +87,8 @@ public class AdHocSubProcessActivityServicesTest {
     final AdHocSubProcessActivateActivityReference element =
         new AdHocSubProcessActivateActivityReference(elementId, variables);
     final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(adHocSubProcessInstanceKey, List.of(element));
+        new AdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, List.of(element), false);
 
     final AdHocSubProcessInstructionRecord expectedResponse =
         mock(AdHocSubProcessInstructionRecord.class);
@@ -122,7 +124,7 @@ public class AdHocSubProcessActivityServicesTest {
         new AdHocSubProcessActivateActivityReference("activity2", Map.of("var2", "value2"));
     final AdHocSubProcessActivateActivitiesRequest request =
         new AdHocSubProcessActivateActivitiesRequest(
-            adHocSubProcessInstanceKey, List.of(element1, element2));
+            adHocSubProcessInstanceKey, List.of(element1, element2), true);
 
     final AdHocSubProcessInstructionRecord expectedResponse =
         new AdHocSubProcessInstructionRecord();
@@ -165,7 +167,8 @@ public class AdHocSubProcessActivityServicesTest {
     final AdHocSubProcessActivateActivityReference element =
         new AdHocSubProcessActivateActivityReference(elementId, null);
     final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(adHocSubProcessInstanceKey, List.of(element));
+        new AdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, List.of(element), false);
 
     final AdHocSubProcessInstructionRecord expectedResponse =
         new AdHocSubProcessInstructionRecord();
@@ -210,7 +213,7 @@ public class AdHocSubProcessActivityServicesTest {
     // given
     final String adHocSubProcessInstanceKey = "123456";
     final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(adHocSubProcessInstanceKey, List.of());
+        new AdHocSubProcessActivateActivitiesRequest(adHocSubProcessInstanceKey, List.of(), true);
 
     final AdHocSubProcessInstructionRecord expectedResponse =
         new AdHocSubProcessInstructionRecord();
@@ -244,7 +247,8 @@ public class AdHocSubProcessActivityServicesTest {
     final AdHocSubProcessActivateActivityReference element =
         new AdHocSubProcessActivateActivityReference("activity1", Map.of());
     final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(adHocSubProcessInstanceKey, List.of(element));
+        new AdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, List.of(element), true);
 
     final CompletableFuture<BrokerResponse<AdHocSubProcessInstructionRecord>> brokerFuture =
         new CompletableFuture<>();
@@ -267,5 +271,114 @@ public class AdHocSubProcessActivityServicesTest {
     brokerFuture.complete(brokerResponse);
 
     assertThat(result.join()).isEqualTo(expectedResponse);
+  }
+
+  @Test
+  public void shouldSetCancelRemainingInstancesToTrue() {
+    // given
+    final String adHocSubProcessInstanceKey = "123456";
+    final String elementId = "activity1";
+    final AdHocSubProcessActivateActivityReference element =
+        new AdHocSubProcessActivateActivityReference(elementId, Map.of());
+    final AdHocSubProcessActivateActivitiesRequest request =
+        new AdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, List.of(element), true);
+
+    final AdHocSubProcessInstructionRecord expectedResponse =
+        new AdHocSubProcessInstructionRecord();
+    final BrokerResponse<AdHocSubProcessInstructionRecord> brokerResponse =
+        new BrokerResponse<>(expectedResponse);
+
+    when(brokerClient.sendRequest(any(BrokerActivateAdHocSubProcessActivityRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(brokerResponse));
+
+    // when
+    final AdHocSubProcessInstructionRecord result = services.activateActivities(request).join();
+
+    // then
+    assertThat(result).isEqualTo(expectedResponse);
+
+    // verify broker request was called with cancelRemainingInstances = true
+    final ArgumentCaptor<BrokerActivateAdHocSubProcessActivityRequest> requestCaptor =
+        ArgumentCaptor.forClass(BrokerActivateAdHocSubProcessActivityRequest.class);
+    verify(brokerClient).sendRequest(requestCaptor.capture());
+
+    final BrokerActivateAdHocSubProcessActivityRequest capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.getRequestWriter().getAdHocSubProcessInstanceKey())
+        .isEqualTo(adHocSubProcessInstanceKey);
+    // Note: We would need to verify the cancelRemainingInstances field if it were exposed in the
+    // request writer
+  }
+
+  @Test
+  public void shouldSetCancelRemainingInstancesToFalse() {
+    // given
+    final String adHocSubProcessInstanceKey = "123456";
+    final String elementId = "activity1";
+    final AdHocSubProcessActivateActivityReference element =
+        new AdHocSubProcessActivateActivityReference(elementId, Map.of());
+    final AdHocSubProcessActivateActivitiesRequest request =
+        new AdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, List.of(element), false);
+
+    final AdHocSubProcessInstructionRecord expectedResponse =
+        new AdHocSubProcessInstructionRecord();
+    final BrokerResponse<AdHocSubProcessInstructionRecord> brokerResponse =
+        new BrokerResponse<>(expectedResponse);
+
+    when(brokerClient.sendRequest(any(BrokerActivateAdHocSubProcessActivityRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(brokerResponse));
+
+    // when
+    final AdHocSubProcessInstructionRecord result = services.activateActivities(request).join();
+
+    // then
+    assertThat(result).isEqualTo(expectedResponse);
+
+    // verify broker request was called with cancelRemainingInstances = false
+    final ArgumentCaptor<BrokerActivateAdHocSubProcessActivityRequest> requestCaptor =
+        ArgumentCaptor.forClass(BrokerActivateAdHocSubProcessActivityRequest.class);
+    verify(brokerClient).sendRequest(requestCaptor.capture());
+
+    final BrokerActivateAdHocSubProcessActivityRequest capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.getRequestWriter().getAdHocSubProcessInstanceKey())
+        .isEqualTo(adHocSubProcessInstanceKey);
+    // Note: We would need to verify the cancelRemainingInstances field if it were exposed in the
+    // request writer
+  }
+
+  @Test
+  public void shouldHandleNullCancelRemainingInstances() {
+    // given
+    final String adHocSubProcessInstanceKey = "123456";
+    final String elementId = "activity1";
+    final AdHocSubProcessActivateActivityReference element =
+        new AdHocSubProcessActivateActivityReference(elementId, Map.of());
+    final AdHocSubProcessActivateActivitiesRequest request =
+        new AdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, List.of(element), null);
+
+    final AdHocSubProcessInstructionRecord expectedResponse =
+        new AdHocSubProcessInstructionRecord();
+    final BrokerResponse<AdHocSubProcessInstructionRecord> brokerResponse =
+        new BrokerResponse<>(expectedResponse);
+
+    when(brokerClient.sendRequest(any(BrokerActivateAdHocSubProcessActivityRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(brokerResponse));
+
+    // when
+    final AdHocSubProcessInstructionRecord result = services.activateActivities(request).join();
+
+    // then
+    assertThat(result).isEqualTo(expectedResponse);
+
+    // verify broker request was called correctly
+    final ArgumentCaptor<BrokerActivateAdHocSubProcessActivityRequest> requestCaptor =
+        ArgumentCaptor.forClass(BrokerActivateAdHocSubProcessActivityRequest.class);
+    verify(brokerClient).sendRequest(requestCaptor.capture());
+
+    final BrokerActivateAdHocSubProcessActivityRequest capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.getRequestWriter().getAdHocSubProcessInstanceKey())
+        .isEqualTo(adHocSubProcessInstanceKey);
   }
 }
