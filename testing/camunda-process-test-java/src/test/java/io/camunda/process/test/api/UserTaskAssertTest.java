@@ -25,12 +25,11 @@ import io.camunda.client.protocol.rest.UserTaskResult;
 import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import java.time.Duration;
+import io.camunda.process.test.utils.CamundaAssertExtension;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,21 +37,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({CamundaAssertExtension.class, MockitoExtension.class})
 public class UserTaskAssertTest {
   @Mock private CamundaDataSource camundaDataSource;
 
   @BeforeEach
   void configureAssertions() {
     CamundaAssert.initialize(camundaDataSource);
-    CamundaAssert.setAssertionInterval(Duration.ZERO);
-    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(1));
-  }
-
-  @AfterEach
-  void resetAssertions() {
-    CamundaAssert.setAssertionInterval(CamundaAssert.DEFAULT_ASSERTION_INTERVAL);
-    CamundaAssert.setAssertionTimeout(CamundaAssert.DEFAULT_ASSERTION_TIMEOUT);
   }
 
   @Test

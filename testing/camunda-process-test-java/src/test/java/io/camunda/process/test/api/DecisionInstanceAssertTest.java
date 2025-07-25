@@ -31,7 +31,7 @@ import io.camunda.client.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.client.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import java.time.Duration;
+import io.camunda.process.test.utils.CamundaAssertExtension;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,7 +47,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({CamundaAssertExtension.class, MockitoExtension.class})
 public class DecisionInstanceAssertTest {
 
   private static final String NAME = "name";
@@ -69,14 +68,6 @@ public class DecisionInstanceAssertTest {
   @BeforeEach
   void configureAssertions() {
     CamundaAssert.initialize(camundaDataSource);
-    CamundaAssert.setAssertionInterval(Duration.ZERO);
-    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(3));
-  }
-
-  @AfterEach
-  void resetAssertions() {
-    CamundaAssert.setAssertionInterval(CamundaAssert.DEFAULT_ASSERTION_INTERVAL);
-    CamundaAssert.setAssertionTimeout(CamundaAssert.DEFAULT_ASSERTION_TIMEOUT);
   }
 
   private void mockDecisionInstanceSearch(final DecisionInstance mockedResult) {
