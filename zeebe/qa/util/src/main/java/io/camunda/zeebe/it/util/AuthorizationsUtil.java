@@ -66,24 +66,22 @@ public class AuthorizationsUtil implements CloseableSilently {
     return authorizationUtil;
   }
 
-  public long createUser(final String username, final String password) {
-    return createUserWithPermissions(username, password);
+  public void createUser(final String username, final String password) {
+    createUserWithPermissions(username, password);
   }
 
-  public long createUserWithPermissions(
+  public void createUserWithPermissions(
       final String username, final String password, final Permissions... permissions) {
-    final var userCreateResponse =
-        client
-            .newCreateUserCommand()
-            .username(username)
-            .password(password)
-            .name("name")
-            .email("foo@bar.com")
-            .send()
-            .join();
+    client
+        .newCreateUserCommand()
+        .username(username)
+        .password(password)
+        .name("name")
+        .email("foo@bar.com")
+        .send()
+        .join();
     awaitUserExistsInElasticsearch(username);
     createPermissions(username, permissions);
-    return userCreateResponse.getUserKey();
   }
 
   public void createPermissions(final String username, final Permissions... permissions) {
@@ -111,12 +109,6 @@ public class AuthorizationsUtil implements CloseableSilently {
 
   public CamundaClient createClientGrpc(final String username, final String password) {
     return createClientGrpc(gateway, username, password);
-  }
-
-  public CamundaClient createUserAndClient(
-      final String username, final String password, final Permissions... permissions) {
-    createUserWithPermissions(username, password, permissions);
-    return createClient(gateway, username, password);
   }
 
   public static CamundaClient createClient(

@@ -19,22 +19,14 @@ import io.camunda.client.api.search.response.User;
 
 public class UserImpl implements User {
 
-  private final long userKey;
   private final String username;
   private final String name;
   private final String email;
 
-  public UserImpl(
-      final Long userKey, final String username, final String name, final String email) {
-    this.userKey = userKey;
+  public UserImpl(final String username, final String name, final String email) {
     this.username = username;
     this.name = name;
     this.email = email;
-  }
-
-  @Override
-  public Long getUserKey() {
-    return userKey;
   }
 
   @Override

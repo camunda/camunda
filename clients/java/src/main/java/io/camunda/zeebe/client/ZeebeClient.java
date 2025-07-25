@@ -27,7 +27,6 @@ import io.camunda.zeebe.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -855,27 +854,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   IncidentQuery newIncidentQuery();
-
-  /**
-   * Command to create a user.
-   *
-   * <pre>
-   *
-   *
-   * zeebeClient
-   *  .newUserCreateCommand()
-   *  .username(username)
-   *  .email(email)
-   *  .name(name)
-   *  .password(password)
-   *  .send();
-   * </pre>
-   *
-   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
-   *
-   * @return a builder for the command
-   */
-  CreateUserCommandStep1 newUserCreateCommand();
 
   /**
    * Command to create a document.

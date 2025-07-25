@@ -77,19 +77,16 @@ public class TenantQueryControllerTest extends RestControllerTest {
       {
          "items": [
            {
-             "tenantKey": %s,
              "name": "%s",
              "description": "%s",
              "tenantId": "%s"
            },
            {
-             "tenantKey": %s,
              "name": "%s",
              "description": "%s",
              "tenantId": "%s"
            },
            {
-             "tenantKey": %s,
              "name": "%s",
              "description": "%s",
              "tenantId": "%s"
@@ -105,15 +102,12 @@ public class TenantQueryControllerTest extends RestControllerTest {
       """;
   private static final String EXPECTED_RESPONSE =
       RESPONSE.formatted(
-          "\"%s\"".formatted(TENANT_ENTITIES.get(0).key()),
           TENANT_ENTITIES.get(0).name(),
           TENANT_ENTITIES.get(0).description(),
           TENANT_ENTITIES.get(0).tenantId(),
-          "\"%s\"".formatted(TENANT_ENTITIES.get(1).key()),
           TENANT_ENTITIES.get(1).name(),
           TENANT_ENTITIES.get(1).description(),
           TENANT_ENTITIES.get(1).tenantId(),
-          "\"%s\"".formatted(TENANT_ENTITIES.get(2).key()),
           TENANT_ENTITIES.get(2).name(),
           TENANT_ENTITIES.get(2).description(),
           TENANT_ENTITIES.get(2).tenantId(),
@@ -265,13 +259,12 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "tenantKey": "%d",
               "name": "%s",
               "description": "%s",
               "tenantId": "%s"
             }
             """
-                .formatted(tenant.key(), tenantName, tenantDescription, tenantId),
+                .formatted(tenantName, tenantDescription, tenantId),
             JsonCompareMode.STRICT);
 
     // then

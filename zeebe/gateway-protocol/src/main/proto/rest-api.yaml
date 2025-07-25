@@ -5450,9 +5450,6 @@ components:
         description:
           type: string
           description: The description of the tenant.
-        tenantKey:
-          type: string
-          description: The unique system-generated internal tenant ID.
 
     TenantResult:
       description: Tenant search response item.
@@ -5467,9 +5464,6 @@ components:
         description:
           type: string
           description: The tenant description.
-        tenantKey:
-          type: string
-          description: The unique system-generated internal tenant ID.
     TenantSearchQuerySortRequest:
       type: object
       properties:
@@ -7550,9 +7544,6 @@ components:
         email:
           description: The email of the user.
           type: "string"
-        userKey:
-          description: The key of the created user
-          type: "string"
     UserUpdateResult:
       type: object
       properties:
@@ -7725,9 +7716,6 @@ components:
           type: "string"
         email:
           description: The email of the user.
-          type: "string"
-        userKey:
-          description: The key of the user.
           type: "string"
     UserSearchResult:
       type: object

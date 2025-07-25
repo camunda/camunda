@@ -57,8 +57,7 @@ class AssignUserToTenantTest {
         .email("email@example.com")
         .password("password")
         .send()
-        .join()
-        .getUserKey();
+        .join();
   }
 
   @Test

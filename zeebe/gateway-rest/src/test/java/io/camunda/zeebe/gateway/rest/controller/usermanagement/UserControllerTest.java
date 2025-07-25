@@ -84,7 +84,6 @@ public class UserControllerTest extends RestControllerTest {
         .json(
             """
           {
-            "userKey": "-1",
             "username": "%s",
             "name": "Foo Bar",
             "email": "bar@baz.com"
@@ -229,7 +228,6 @@ public class UserControllerTest extends RestControllerTest {
         .json(
             """
           {
-            "userKey": "-1",
             "username": "%s",
             "name": "",
             "email": ""

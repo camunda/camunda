@@ -36,7 +36,6 @@ import io.camunda.zeebe.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -79,7 +78,6 @@ import io.camunda.zeebe.client.impl.command.CreateDocumentBatchCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
-import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
@@ -635,11 +633,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public IncidentQuery newIncidentQuery() {
     throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
-  }
-
-  @Override
-  public CreateUserCommandStep1 newUserCreateCommand() {
-    return new CreateUserCommandImpl(httpClient, jsonMapper);
   }
 
   @Override

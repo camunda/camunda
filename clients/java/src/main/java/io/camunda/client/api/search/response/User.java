@@ -17,8 +17,6 @@ package io.camunda.client.api.search.response;
 
 public interface User {
 
-  Long getUserKey();
-
   String getUsername();
 
   String getName();
