@@ -37,7 +37,7 @@ import { DocumentationLink } from "src/components/documentation";
 import Flex from "src/components/layout/Flex";
 import useTranslate from "src/utility/localization";
 import { StyledTableContainer } from "./components";
-import { PageResult, SortConfig } from "src/utility/api/hooks/usePagination";
+import { PageResult, SortConfig } from "src/utility/api";
 
 const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
   cursor: ${({ $isClickable }) => ($isClickable ? "pointer" : "auto")};

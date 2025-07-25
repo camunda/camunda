@@ -14,3 +14,9 @@ export type SearchResponse<R> = {
   items: R[];
   page?: PageResult;
 };
+
+export type {
+  PageSearchParams,
+  PageResult,
+  SortConfig,
+} from "./hooks/usePagination";
