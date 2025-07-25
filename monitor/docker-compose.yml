@@ -31,6 +31,8 @@ services:
       - ./grafana/dashboards/:/var/lib/grafana/dashboards/
       - ./grafana/zeebe.json/:/var/lib/grafana/dashboards/zeebe.json
       - ./grafana/zeebe-overview.json/:/var/lib/grafana/dashboards/zeebe-overview.json
+      - ./grafana/dashboards/core-features/overview.json:/var/lib/grafana/dashboards/overview.json
+      - ./grafana/dashboards/core-features/rest.json:/var/lib/grafana/dashboards/rest.json
       - ./grafana/provisioning/:/etc/grafana/provisioning/
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=camunda
@@ -41,6 +43,3 @@ services:
     container_name: zeebe
     ports:
       - 9600:9600
-
-
-

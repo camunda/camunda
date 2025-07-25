@@ -7,34 +7,6 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
-    },
-    {
-      "name": "VAR_CONTAINER",
-      "type": "constant",
-      "label": "container",
-      "value": "${VAR_CONTAINER}",
-      "description": ""
-    },
-    {
-      "name": "VAR_REGION",
-      "type": "constant",
-      "label": "region",
-      "value": "${VAR_REGION}",
-      "description": ""
-    },
-    {
-      "name": "VAR_URI",
-      "type": "constant",
-      "label": "uri",
-      "value": "${VAR_URI}",
-      "description": ""
-    },
-    {
-      "name": "VAR_GRPC_METHOD",
-      "type": "constant",
-      "label": "grpc_method",
-      "value": "${VAR_GRPC_METHOD}",
-      "description": ""
     }
   ],
   "__elements": {},
@@ -25355,86 +25327,6 @@
         ],
         "query": "committed, reserved",
         "type": "custom"
-      },
-      {
-        "hide": 2,
-        "label": "container",
-        "name": "container",
-        "query": "${VAR_CONTAINER}",
-        "skipUrlSync": true,
-        "type": "constant",
-        "current": {
-          "value": "${VAR_CONTAINER}",
-          "text": "${VAR_CONTAINER}",
-          "selected": false
-        },
-        "options": [
-          {
-            "value": "${VAR_CONTAINER}",
-            "text": "${VAR_CONTAINER}",
-            "selected": false
-          }
-        ]
-      },
-      {
-        "hide": 2,
-        "label": "region",
-        "name": "region",
-        "query": "${VAR_REGION}",
-        "skipUrlSync": true,
-        "type": "constant",
-        "current": {
-          "value": "${VAR_REGION}",
-          "text": "${VAR_REGION}",
-          "selected": false
-        },
-        "options": [
-          {
-            "value": "${VAR_REGION}",
-            "text": "${VAR_REGION}",
-            "selected": false
-          }
-        ]
-      },
-      {
-        "hide": 2,
-        "label": "uri",
-        "name": "uri",
-        "query": "${VAR_URI}",
-        "skipUrlSync": true,
-        "type": "constant",
-        "current": {
-          "value": "${VAR_URI}",
-          "text": "${VAR_URI}",
-          "selected": false
-        },
-        "options": [
-          {
-            "value": "${VAR_URI}",
-            "text": "${VAR_URI}",
-            "selected": false
-          }
-        ]
-      },
-      {
-        "hide": 2,
-        "label": "grpc_method",
-        "name": "grpc_method",
-        "query": "${VAR_GRPC_METHOD}",
-        "skipUrlSync": true,
-        "type": "constant",
-        "current": {
-          "value": "${VAR_GRPC_METHOD}",
-          "text": "${VAR_GRPC_METHOD}",
-          "selected": false
-        },
-        "options": [
-          {
-            "value": "${VAR_GRPC_METHOD}",
-            "text": "${VAR_GRPC_METHOD}",
-            "selected": false
-          }
-        ]
       }
     ]
   },
