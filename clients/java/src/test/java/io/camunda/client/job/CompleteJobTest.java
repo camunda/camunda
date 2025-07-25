@@ -665,7 +665,9 @@ public final class CompleteJobTest extends ClientTest {
                     .addActivateElements(
                         GatewayOuterClass.JobResultActivateElement.newBuilder()
                             .setElementId(elementId)
-                            .build()))
+                            .build())
+                    .setIsCompletionConditionFulfilled(false)
+                    .setIsCancelRemainingInstances(false))
             .build();
 
     assertThat(request).isEqualTo(expectedRequest);
@@ -699,7 +701,9 @@ public final class CompleteJobTest extends ClientTest {
                         GatewayOuterClass.JobResultActivateElement.newBuilder()
                             .setElementId(elementId)
                             .setVariables(variables)
-                            .build()))
+                            .build())
+                    .setIsCompletionConditionFulfilled(false)
+                    .setIsCancelRemainingInstances(false))
             .build();
 
     assertThat(request).isEqualTo(expectedRequest);
@@ -750,7 +754,67 @@ public final class CompleteJobTest extends ClientTest {
                     .addActivateElements(
                         GatewayOuterClass.JobResultActivateElement.newBuilder()
                             .setElementId(elementId3)
-                            .build()))
+                            .build())
+                    .setIsCompletionConditionFulfilled(false)
+                    .setIsCancelRemainingInstances(false))
+            .build();
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  public void shouldCompleteAdHocSubProcessWithCompletionConditionFulfilled() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(r -> r.forAdHocSubProcess().completionConditionFulfilled(true))
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    final CompleteJobRequest expectedRequest =
+        CompleteJobRequest.newBuilder()
+            .setJobKey(job.getKey())
+            .setResult(
+                JobResult.newBuilder()
+                    .setType(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
+                    .setIsCompletionConditionFulfilled(true)
+                    .setIsCancelRemainingInstances(false))
+            .build();
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  public void shouldCompleteAdHocSubProcessWithCancelRemainingInstances() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(r -> r.forAdHocSubProcess().cancelRemainingInstances(true))
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    final CompleteJobRequest expectedRequest =
+        CompleteJobRequest.newBuilder()
+            .setJobKey(job.getKey())
+            .setResult(
+                JobResult.newBuilder()
+                    .setType(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
+                    .setIsCompletionConditionFulfilled(false)
+                    .setIsCancelRemainingInstances(true))
             .build();
 
     assertThat(request).isEqualTo(expectedRequest);

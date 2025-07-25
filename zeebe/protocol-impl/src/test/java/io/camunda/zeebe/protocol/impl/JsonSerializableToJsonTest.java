@@ -730,7 +730,9 @@ final class JsonSerializableToJsonTest {
                                   .setVariables(VARIABLES_MSGPACK),
                               new JobResultActivateElement()
                                   .setElementId("sauron")
-                                  .setVariables(VARIABLES_MSGPACK)));
+                                  .setVariables(VARIABLES_MSGPACK)))
+                      .setCompletionConditionFulfilled(true)
+                      .setCancelRemainingInstances(true);
 
               jobRecord
                   .setWorker(wrapString(worker))
@@ -820,7 +822,9 @@ final class JsonSerializableToJsonTest {
                       "foo": "bar"
                     }
                   }
-                ]
+                ],
+                "completionConditionFulfilled": true,
+                "cancelRemainingInstances": true
               }
             }
           ],
@@ -900,7 +904,9 @@ final class JsonSerializableToJsonTest {
                                   .setVariables(VARIABLES_MSGPACK),
                               new JobResultActivateElement()
                                   .setElementId("sauron")
-                                  .setVariables(VARIABLES_MSGPACK)));
+                                  .setVariables(VARIABLES_MSGPACK)))
+                      .setCompletionConditionFulfilled(true)
+                      .setCancelRemainingInstances(true);
 
               final Map<String, String> customHeaders =
                   Collections.singletonMap("workerVersion", "42");
@@ -989,7 +995,9 @@ final class JsonSerializableToJsonTest {
                   "foo": "bar"
                 }
               }
-            ]
+            ],
+            "completionConditionFulfilled": true,
+            "cancelRemainingInstances": true
           }
         }
         """
@@ -1037,7 +1045,9 @@ final class JsonSerializableToJsonTest {
               "candidateUsersList": [],
               "priority": -1
             },
-            "activateElements": []
+            "activateElements": [],
+            "completionConditionFulfilled": false,
+            "cancelRemainingInstances": false
           }
         }
         """
@@ -1090,7 +1100,9 @@ final class JsonSerializableToJsonTest {
               "candidateUsersList": [],
               "priority": -1
             },
-            "activateElements": []
+            "activateElements": [],
+            "completionConditionFulfilled": false,
+            "cancelRemainingInstances": false
           }
         }
         """

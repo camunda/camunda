@@ -616,4 +616,55 @@ class CompleteJobRestTest extends ClientRestTest {
 
     assertThat(request).isEqualTo(expectedRequest);
   }
+
+  @Test
+  void shouldCompleteAdHocSubProcessWithCompletionConditionFulfilled() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(r -> r.forAdHocSubProcess().completionConditionFulfilled(true))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResultAdHocSubProcess()
+                    .type(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
+                    .isCompletionConditionFulfilled(true)
+                    .isCancelRemainingInstances(false));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteAdHocSubProcessWithCancelRemainingInstances() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(r -> r.forAdHocSubProcess().cancelRemainingInstances(true))
+        .send()
+        .join();
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResultAdHocSubProcess()
+                    .type(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
+                    .isCompletionConditionFulfilled(false)
+                    .isCancelRemainingInstances(true));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
 }

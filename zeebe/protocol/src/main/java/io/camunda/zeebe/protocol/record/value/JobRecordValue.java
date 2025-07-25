@@ -174,6 +174,17 @@ public interface JobRecordValue
      *     well as variables that need to be set on the scope of each of these elements.
      */
     List<JobResultActivateElementValue> getActivateElements();
+
+    /**
+     * @return whether the completion condition is fulfilled. This is used to determine if the
+     *     ad-hoc sub-process should be completed.
+     */
+    boolean isCompletionConditionFulfilled();
+
+    /**
+     * @return whether the remaining instances of the ad-hoc sub-process should be canceled.
+     */
+    boolean isCancelRemainingInstances();
   }
 
   /**

@@ -8877,6 +8877,16 @@ components:
               description: Indicates which elements need to be activated in the ad-hoc subprocess.
               items:
                 $ref: "#/components/schemas/JobResultActivateElement"
+            isCompletionConditionFulfilled:
+              type: boolean
+              description: Indicates whether the completion condition of the ad-hoc subprocess is fulfilled.
+              default: false
+              nullable: false
+            isCancelRemainingInstances:
+              type: boolean
+              description: Indicates whether the remaining instances of the ad-hoc subprocess should be canceled.
+              default: false
+              nullable: false
     JobResultActivateElement:
       type: object
       properties:

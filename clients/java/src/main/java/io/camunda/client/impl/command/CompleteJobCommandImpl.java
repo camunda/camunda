@@ -205,13 +205,20 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
                   return activateElement;
                 })
             .collect(Collectors.toList());
-    resultRest.type(jobResult.getType()).activateElements(activateElements);
+    resultRest
+        .type(jobResult.getType())
+        .activateElements(activateElements)
+        .isCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled())
+        .isCancelRemainingInstances(jobResult.isCancelRemainingInstances());
     httpRequestObject.setResult(resultRest);
   }
 
   private void setGrpcJobResult(final CompleteAdHocSubProcessJobResultImpl jobResult) {
     final JobResult.Builder resultGrpc = JobResult.newBuilder();
-    resultGrpc.setType(jobResult.getType().getValue());
+    resultGrpc
+        .setType(jobResult.getType().getValue())
+        .setIsCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled())
+        .setIsCancelRemainingInstances(jobResult.isCancelRemainingInstances());
     jobResult.getActivateElements().stream()
         .map(
             element -> {
