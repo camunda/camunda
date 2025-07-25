@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.util;
 
-import static org.junit.Assume.assumeTrue;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import org.junit.BeforeClass;
@@ -15,6 +15,6 @@ import org.junit.BeforeClass;
 public abstract class OpensearchOperateAbstractIT extends OperateAbstractIT {
   @BeforeClass
   public static void beforeClass() {
-    assumeTrue(DatabaseInfo.isOpensearch());
+    assumeThat(DatabaseInfo.isOpensearch()).isTrue();
   }
 }

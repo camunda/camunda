@@ -28,7 +28,6 @@ import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.USER_TASK_ID;
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
-import static org.junit.Assert.assertEquals;
 
 import io.camunda.zeebe.model.bpmn.AssociationDirection;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -2148,10 +2147,10 @@ public class ProcessBuilderTest {
             .done();
 
     final String startName = ((FlowElement) instance.getModelElementById("start")).getName();
-    assertEquals("start", startName);
+    assertThat(startName).isEqualTo("start");
     final String userName = ((FlowElement) instance.getModelElementById("user")).getName();
-    assertEquals("user", userName);
+    assertThat(userName).isEqualTo("user");
     final String endName = ((FlowElement) instance.getModelElementById("end")).getName();
-    assertEquals("name", endName);
+    assertThat(endName).isEqualTo("name");
   }
 }

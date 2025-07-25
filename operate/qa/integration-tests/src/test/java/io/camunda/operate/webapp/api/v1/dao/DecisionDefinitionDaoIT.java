@@ -13,7 +13,7 @@ import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION
 import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.VERSION;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.DecisionDefinition;
@@ -264,6 +264,6 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldThrowWhenKeyNotExists() {
-    assertThrows(ResourceNotFoundException.class, () -> dao.byKey(1L));
+    assertThatExceptionOfType(ResourceNotFoundException.class).isThrownBy(() -> dao.byKey(1L));
   }
 }

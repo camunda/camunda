@@ -9,8 +9,9 @@ package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.instancio.Select.field;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -37,11 +38,11 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.Map;
 import java.util.Set;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 
 public class UserTaskServiceTest {
 
@@ -93,12 +94,14 @@ public class UserTaskServiceTest {
               new ResourceAccessDeniedException(Authorizations.USER_TASK_READ_AUTHORIZATION));
 
       // when
-      final Executable executable =
+      final ThrowingCallable executable =
           () -> services.searchUserTaskVariables(1L, variableSearchQuery().build());
 
       // then
-      assertThat(assertThrows(ServiceException.class, executable).getStatus())
-          .isEqualTo(Status.FORBIDDEN);
+      final var exception =
+          (ServiceException)
+              assertThatThrownBy(executable).isInstanceOf(ServiceException.class).actual();
+      assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
       verify(client).getUserTask(any(Long.class));
       verify(elementInstanceServices, never()).search(any());
       verify(variableServices, never()).search(any());
@@ -217,10 +220,12 @@ public class UserTaskServiceTest {
           .thenThrow(
               new ResourceAccessDeniedException(Authorizations.USER_TASK_READ_AUTHORIZATION));
 
-      final Executable executable = () -> services.getByKey(entity.userTaskKey());
+      final ThrowingCallable executable = () -> services.getByKey(entity.userTaskKey());
 
-      assertThat(assertThrows(ServiceException.class, executable).getStatus())
-          .isEqualTo(Status.FORBIDDEN);
+      final var exception =
+          (ServiceException)
+              assertThatCode(executable).isInstanceOf(ServiceException.class).actual();
+      assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
       verify(client).getUserTask(any(Long.class));
     }
   }

@@ -8,7 +8,7 @@
 package io.camunda.operate.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
@@ -100,13 +100,13 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testGetProcessInstanceWithInvalidKey() {
-    assertThrows(NotFoundException.class, () -> processInstanceReader.getProcessInstanceByKey(1L));
+    assertThatExceptionOfType(NotFoundException.class)
+        .isThrownBy(() -> processInstanceReader.getProcessInstanceByKey(1L));
   }
 
   @Test
   public void testGetProcessInstanceWithOperationsWithInvalidKey() {
-    assertThrows(
-        NotFoundException.class,
-        () -> processInstanceReader.getProcessInstanceWithOperationsByKey(1L));
+    assertThatExceptionOfType(NotFoundException.class)
+        .isThrownBy(() -> processInstanceReader.getProcessInstanceWithOperationsByKey(1L));
   }
 }

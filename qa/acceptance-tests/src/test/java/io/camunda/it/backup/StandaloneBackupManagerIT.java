@@ -9,7 +9,7 @@ package io.camunda.it.backup;
 
 import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Fail.fail;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.application.Profile;

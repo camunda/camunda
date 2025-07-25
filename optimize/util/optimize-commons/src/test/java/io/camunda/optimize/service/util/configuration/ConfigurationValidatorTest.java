@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,6 +40,7 @@ public class ConfigurationValidatorTest {
     final ConfigurationValidator validator = new ConfigurationValidator();
 
     // when / then
-    assertThrows(NullPointerException.class, () -> validator.validate(configurationService));
+    assertThatExceptionOfType(NullPointerException.class)
+        .isThrownBy(() -> validator.validate(configurationService));
   }
 }

@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -81,12 +81,13 @@ final class ForeignKeyCheckerTest {
     when(tx.get(anyLong(), anyLong(), any(), anyInt())).thenReturn(null);
 
     // then
-    assertDoesNotThrow(
-        () ->
-            check.assertExists(
-                tx,
-                new DbForeignKey<>(
-                    key, TestColumnFamilies.TEST_COLUMN_FAMILY, MatchType.Full, (k) -> true)));
+    assertThatCode(
+            () ->
+                check.assertExists(
+                    tx,
+                    new DbForeignKey<>(
+                        key, TestColumnFamilies.TEST_COLUMN_FAMILY, MatchType.Full, (k) -> true)))
+        .doesNotThrowAnyException();
     assertThatThrownBy(
             () ->
                 check.assertExists(
@@ -144,11 +145,12 @@ final class ForeignKeyCheckerTest {
     cf1.insert(cf1Key, DbNil.INSTANCE);
 
     // then -- referring to key 1 does not throw
-    assertDoesNotThrow(
-        () ->
-            check.assertExists(
-                (ZeebeTransaction) txContext.getCurrentTransaction(),
-                new DbForeignKey<>(cf1Key, TestColumnFamilies.TEST_COLUMN_FAMILY)));
+    assertThatCode(
+            () ->
+                check.assertExists(
+                    (ZeebeTransaction) txContext.getCurrentTransaction(),
+                    new DbForeignKey<>(cf1Key, TestColumnFamilies.TEST_COLUMN_FAMILY)))
+        .doesNotThrowAnyException();
 
     db.close();
   }
@@ -178,8 +180,9 @@ final class ForeignKeyCheckerTest {
         new DbForeignKey<>(
             new DbLong(), TestColumnFamilies.TEST_COLUMN_FAMILY, MatchType.Prefix, (any) -> false);
     fk.inner().wrapLong(cf1Key.first().getValue());
-    assertDoesNotThrow(
-        () -> check.assertExists((ZeebeTransaction) txContext.getCurrentTransaction(), fk));
+    assertThatCode(
+            () -> check.assertExists((ZeebeTransaction) txContext.getCurrentTransaction(), fk))
+        .doesNotThrowAnyException();
 
     db.close();
   }

@@ -15,10 +15,10 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.client.api.response.ActivatedJob;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class DefaultResultProcessorTest {
@@ -34,6 +34,6 @@ class DefaultResultProcessorTest {
     // When
     final Object resultValue = defaultResultProcessor.process(context);
     // Then
-    Assertions.assertEquals(inputValue, resultValue);
+    assertThat(resultValue).isEqualTo(inputValue);
   }
 }

@@ -17,9 +17,6 @@
 package io.atomix.cluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
@@ -31,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -68,11 +66,11 @@ public class AtomixClusterTest {
     // when
     try {
       atomix.start().get(TIMEOUT_IN_S, TimeUnit.SECONDS);
-      fail("Expected ExecutionException");
+      Assertions.fail("Expected ExecutionException");
     } catch (final ExecutionException ex) {
       // then
-      assertTrue(ex.getCause() instanceof IllegalStateException);
-      assertEquals("Cluster instance is shutdown", ex.getCause().getMessage());
+      assertThat(ex.getCause() instanceof IllegalStateException).isTrue();
+      assertThat(ex.getCause().getMessage()).isEqualTo("Cluster instance is shutdown");
     }
   }
 
@@ -94,7 +92,7 @@ public class AtomixClusterTest {
             .build();
     cluster1.start().join();
 
-    assertEquals("foo", cluster1.getMembershipService().getLocalMember().id().id());
+    assertThat(cluster1.getMembershipService().getLocalMember().id().id()).isEqualTo("foo");
 
     final AtomixCluster cluster2 =
         AtomixCluster.builder(atomixClusterRule.registry)
@@ -106,7 +104,7 @@ public class AtomixClusterTest {
             .build();
     cluster2.start().join();
 
-    assertEquals("bar", cluster2.getMembershipService().getLocalMember().id().id());
+    assertThat(cluster2.getMembershipService().getLocalMember().id().id()).isEqualTo("bar");
 
     final AtomixCluster cluster3 =
         AtomixCluster.builder(atomixClusterRule.registry)
@@ -118,7 +116,7 @@ public class AtomixClusterTest {
             .build();
     cluster3.start().join();
 
-    assertEquals("baz", cluster3.getMembershipService().getLocalMember().id().id());
+    assertThat(cluster3.getMembershipService().getLocalMember().id().id()).isEqualTo("baz");
 
     final List<CompletableFuture<Void>> futures =
         Stream.of(cluster1, cluster2, cluster3)

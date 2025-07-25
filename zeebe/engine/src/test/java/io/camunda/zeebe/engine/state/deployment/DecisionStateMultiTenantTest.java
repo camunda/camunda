@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
@@ -200,8 +200,9 @@ public class DecisionStateMultiTenantTest {
 
     // when then
     final var exception =
-        assertThrows(
-            ZeebeDbInconsistentException.class, () -> decisionState.storeDecisionRecord(decision));
+        assertThatExceptionOfType(ZeebeDbInconsistentException.class)
+            .isThrownBy(() -> decisionState.storeDecisionRecord(decision))
+            .actual();
     assertThat(exception)
         .hasMessage(
             """

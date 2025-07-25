@@ -9,7 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -308,9 +308,9 @@ class VariableSearchTest {
     // when
     final long variableKey = new Random().nextLong();
     final var problemException =
-        assertThrows(
-            ProblemException.class,
-            () -> camundaClient.newVariableGetRequest(variableKey).send().join());
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(() -> camundaClient.newVariableGetRequest(variableKey).send().join())
+            .actual();
 
     // then
     assertThat(problemException.code()).isEqualTo(404);

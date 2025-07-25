@@ -16,7 +16,7 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.STATE;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
@@ -251,7 +251,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldThrowWhenIdNotExists() {
-    assertThrows(ResourceNotFoundException.class, () -> dao.byId("test"));
+    assertThatExceptionOfType(ResourceNotFoundException.class).isThrownBy(() -> dao.byId("test"));
   }
 
   @Test

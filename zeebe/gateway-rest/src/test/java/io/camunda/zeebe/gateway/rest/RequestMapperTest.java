@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
@@ -45,7 +44,7 @@ class RequestMapperTest {
         RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationInstruction);
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
     final var request = result.get();
     assertThat(request.targetProcessDefinitionKey()).isEqualTo(123L);
     assertThat(request.mappingInstructions())
@@ -78,7 +77,7 @@ class RequestMapperTest {
         RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationRequest);
 
     // then
-    assertTrue(result.isLeft());
+    assertThat(result.isLeft()).isTrue();
     final var problemDetail = result.getLeft();
     assertThat(problemDetail.getStatus()).isEqualTo(400); // Bad Request
     assertThat(problemDetail.getDetail()).contains("are required");
@@ -101,7 +100,7 @@ class RequestMapperTest {
         RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationRequest);
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
     final var request = result.get();
     assertThat(request.moveInstructions())
         .hasSize(1)
@@ -128,7 +127,7 @@ class RequestMapperTest {
         RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationRequest);
 
     // then
-    assertTrue(result.isLeft());
+    assertThat(result.isLeft()).isTrue();
     final var problemDetail = result.getLeft();
     assertThat(problemDetail.getStatus()).isEqualTo(400);
     assertThat(problemDetail.getDetail()).isEqualTo("No targetElementId provided.");

@@ -10,7 +10,6 @@ package io.camunda.zeebe.it.startup;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.junit.Assert.fail;
 
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
@@ -38,6 +37,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
@@ -640,7 +640,7 @@ public final class BrokerReprocessingTest {
       brokerRule.purgeSnapshots();
     } catch (final Exception e) {
       e.printStackTrace();
-      fail(e.getMessage());
+      Assertions.fail(e.getMessage());
     }
 
     restartAction.run();

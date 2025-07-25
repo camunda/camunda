@@ -8,7 +8,7 @@
 package io.camunda.migration.process.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.process.ProcessMigrator;
@@ -386,7 +386,8 @@ public class ProcessMigratorIT extends AdapterTest {
     properties.getRetry().setMaxRetries(2);
     properties.getRetry().setMinRetryDelay(Duration.ofSeconds(1));
 
-    final var ex = assertThrows(MigrationException.class, migrator::call);
+    final var ex =
+        assertThatExceptionOfType(MigrationException.class).isThrownBy(migrator::call).actual();
     assertThat(ex.getMessage()).isEqualTo("Failed to fetch last migrated process");
   }
 

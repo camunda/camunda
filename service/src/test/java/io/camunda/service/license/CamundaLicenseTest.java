@@ -7,9 +7,7 @@
  */
 package io.camunda.service.license;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -48,7 +46,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertTrue(testLicense.isValid());
+    assertThat(testLicense.isValid()).isTrue();
   }
 
   @Test
@@ -63,7 +61,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertFalse(testLicense.isValid());
+    assertThat(testLicense.isValid()).isFalse();
   }
 
   @Test
@@ -83,7 +81,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(LicenseType.PRODUCTION, testLicense.getLicenseType());
+    assertThat(testLicense.getLicenseType()).isEqualTo(LicenseType.PRODUCTION);
   }
 
   @Test
@@ -101,7 +99,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(LicenseType.UNKNOWN, testLicense.getLicenseType());
+    assertThat(testLicense.getLicenseType()).isEqualTo(LicenseType.UNKNOWN);
   }
 
   @Test
@@ -121,8 +119,8 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(LicenseType.SAAS, testLicense.getLicenseType());
-    assertTrue(testLicense.isValid());
+    assertThat(testLicense.getLicenseType()).isEqualTo(LicenseType.SAAS);
+    assertThat(testLicense.isValid()).isTrue();
   }
 
   @Test
@@ -143,7 +141,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(true, testLicense.isCommercial());
+    assertThat(testLicense.isCommercial()).isTrue();
   }
 
   @Test
@@ -164,7 +162,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(false, testLicense.isCommercial());
+    assertThat(testLicense.isCommercial()).isFalse();
   }
 
   @Test
@@ -186,7 +184,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(testDate.toInstant().atOffset(ZoneOffset.UTC), testLicense.expiresAt());
+    assertThat(testLicense.expiresAt()).isEqualTo(testDate.toInstant().atOffset(ZoneOffset.UTC));
   }
 
   @Test
@@ -207,6 +205,6 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(null, testLicense.expiresAt());
+    assertThat(testLicense.expiresAt()).isNull();
   }
 }

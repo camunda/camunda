@@ -8,12 +8,13 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -38,17 +39,17 @@ public class CreateDocumentLinkTest {
 
     // when
     final var exception =
-        assertThrowsExactly(
-            ProblemException.class,
-            () ->
-                camundaClient
-                    .newCreateDocumentLinkCommand(documentReference)
-                    .storeId(storeId)
-                    .send()
-                    .join());
-
-    // then
-    assertThat(exception.getMessage()).startsWith("Failed with code 400");
+        assertThatThrownBy(
+                () ->
+                    camundaClient
+                        .newCreateDocumentLinkCommand(documentReference)
+                        .storeId(storeId)
+                        .send()
+                        .join())
+            .isInstanceOf(ProblemException.class)
+            .hasMessageStartingWith("Failed with code 400")
+            .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+            .actual();
     assertThat(exception.details().getStatus()).isEqualTo(400);
     assertThat(exception.details().getDetail())
         .contains("Document store with id 'invalid-document-store-id' does not exist");
@@ -62,15 +63,18 @@ public class CreateDocumentLinkTest {
 
     // when
     final var exception =
-        assertThrowsExactly(
-            ProblemException.class,
-            () ->
-                camundaClient
-                    .newCreateDocumentLinkCommand(documentId)
-                    .storeId(storeId)
-                    .contentHash(documentReference.getContentHash())
-                    .send()
-                    .join());
+        assertThatThrownBy(
+                () ->
+                    camundaClient
+                        .newCreateDocumentLinkCommand(documentId)
+                        .storeId(storeId)
+                        .contentHash(documentReference.getContentHash())
+                        .send()
+                        .join())
+            .isInstanceOf(ProblemException.class)
+            .hasMessageStartingWith("Failed with code 403")
+            .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+            .actual();
 
     // then
     assertThat(exception.getMessage()).startsWith("Failed with code 403");

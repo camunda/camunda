@@ -8,7 +8,6 @@
 package io.camunda.tasklist.zeebeimport;
 
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -143,7 +142,7 @@ public class ZeebeImportMigrateProcessTaskIT extends TasklistZeebeIntegrationTes
 
     final String newProcessDefKey = tester.getProcessDefinitionKey();
 
-    assertNotEquals(newProcessDefKey, oldProcessDefKey);
+    org.assertj.core.api.Assertions.assertThat(oldProcessDefKey).isNotEqualTo(newProcessDefKey);
 
     final var result =
         mockMvcHelper.doRequest(get(TasklistURIs.TASKS_URL_V1.concat("/{taskId}"), taskId));

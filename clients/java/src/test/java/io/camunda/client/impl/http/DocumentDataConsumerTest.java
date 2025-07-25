@@ -16,7 +16,7 @@
 package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -100,7 +100,7 @@ public class DocumentDataConsumerTest {
 
     assertThat(reportedCapacity.get()).isEqualTo(data.length - 1);
     // error is thrown when data exceeds buffer capacity
-    assertThrows(IOException.class, () -> consumer.consume(ByteBuffer.wrap(data)));
+    assertThatCode(() -> consumer.consume(ByteBuffer.wrap(data))).isInstanceOf(IOException.class);
 
     final byte[] partialData = Arrays.copyOf(data, reportedCapacity.get());
     consumer.consume(ByteBuffer.wrap(partialData));

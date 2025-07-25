@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.junit.jupiter.api.Test;
@@ -25,14 +25,16 @@ public class ProxyConfigurationTest {
   public void testValidateFailOnMissingHost() {
     final ProxyConfiguration proxyConfiguration = new ProxyConfiguration(true, null, 80, false);
 
-    assertThrows(OptimizeConfigurationException.class, () -> proxyConfiguration.validate());
+    assertThatExceptionOfType(OptimizeConfigurationException.class)
+        .isThrownBy(() -> proxyConfiguration.validate());
   }
 
   @Test
   public void testValidateFailOnEmptyHost() {
     final ProxyConfiguration proxyConfiguration = new ProxyConfiguration(true, "", 80, false);
 
-    assertThrows(OptimizeConfigurationException.class, () -> proxyConfiguration.validate());
+    assertThatExceptionOfType(OptimizeConfigurationException.class)
+        .isThrownBy(() -> proxyConfiguration.validate());
   }
 
   @Test
@@ -40,6 +42,7 @@ public class ProxyConfigurationTest {
     final ProxyConfiguration proxyConfiguration =
         new ProxyConfiguration(true, "localhost", null, false);
 
-    assertThrows(OptimizeConfigurationException.class, () -> proxyConfiguration.validate());
+    assertThatExceptionOfType(OptimizeConfigurationException.class)
+        .isThrownBy(() -> proxyConfiguration.validate());
   }
 }

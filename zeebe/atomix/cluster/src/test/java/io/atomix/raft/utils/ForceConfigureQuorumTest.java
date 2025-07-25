@@ -8,7 +8,6 @@
 package io.atomix.raft.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import io.atomix.cluster.MemberId;
 import java.util.Set;

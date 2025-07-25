@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -23,9 +23,9 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 
 public final class IncidentServiceTest {
 
@@ -79,9 +79,11 @@ public final class IncidentServiceTest {
     when(client.getIncident(any(Long.class)))
         .thenThrow(new ResourceAccessDeniedException(Authorizations.INCIDENT_READ_AUTHORIZATION));
     // when
-    final Executable executeGetByKey = () -> services.getByKey(1L);
+    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L);
     // then
-    final var exception = assertThrowsExactly(ServiceException.class, executeGetByKey);
+    final var exception =
+        (ServiceException)
+            assertThatThrownBy(executeGetByKey).isInstanceOf(ServiceException.class).actual();
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");

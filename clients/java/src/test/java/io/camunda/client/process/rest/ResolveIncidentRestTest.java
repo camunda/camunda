@@ -22,7 +22,6 @@ import io.camunda.client.protocol.rest.JobUpdateRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class ResolveIncidentRestTest extends ClientRestTest {
@@ -61,7 +60,8 @@ public class ResolveIncidentRestTest extends ClientRestTest {
         .hasBodySatisfying(
             JobUpdateRequest.class,
             r -> {
-              Assertions.assertEquals(operationReference, r.getOperationReference());
+              org.assertj.core.api.Assertions.assertThat(r.getOperationReference())
+                  .isEqualTo(operationReference);
             });
   }
 }

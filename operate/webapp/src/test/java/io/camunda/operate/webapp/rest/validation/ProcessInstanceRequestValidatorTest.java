@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.validation;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
@@ -36,27 +36,27 @@ public class ProcessInstanceRequestValidatorTest {
   public void validateFlowNodeStatisticsRequestWithNoProcessId() {
     final ListViewQueryDto request = new ListViewQueryDto();
 
-    assertThrows(
-        InvalidRequestException.class,
-        () -> processInstanceRequestValidator.validateFlowNodeStatisticsRequest(request));
+    assertThatExceptionOfType(InvalidRequestException.class)
+        .isThrownBy(
+            () -> processInstanceRequestValidator.validateFlowNodeStatisticsRequest(request));
   }
 
   @Test
   public void validateFlowNodeStatisticsRequestWithBpmnProcessIdButNoVersion() {
     final ListViewQueryDto request = new ListViewQueryDto().setBpmnProcessId("demoProcess");
 
-    assertThrows(
-        InvalidRequestException.class,
-        () -> processInstanceRequestValidator.validateFlowNodeStatisticsRequest(request));
+    assertThatExceptionOfType(InvalidRequestException.class)
+        .isThrownBy(
+            () -> processInstanceRequestValidator.validateFlowNodeStatisticsRequest(request));
   }
 
   @Test
   public void validateFlowNodeStatisticsRequestWithMoreThanOneProcessDefinitionKey() {
     final ListViewQueryDto request = new ListViewQueryDto().setProcessIds(List.of("1", "2"));
 
-    assertThrows(
-        InvalidRequestException.class,
-        () -> processInstanceRequestValidator.validateFlowNodeStatisticsRequest(request));
+    assertThatExceptionOfType(InvalidRequestException.class)
+        .isThrownBy(
+            () -> processInstanceRequestValidator.validateFlowNodeStatisticsRequest(request));
   }
 
   @Test
@@ -67,8 +67,8 @@ public class ProcessInstanceRequestValidatorTest {
             .setProcessVersion(1)
             .setProcessIds(List.of("1"));
 
-    assertThrows(
-        InvalidRequestException.class,
-        () -> processInstanceRequestValidator.validateFlowNodeStatisticsRequest(request));
+    assertThatExceptionOfType(InvalidRequestException.class)
+        .isThrownBy(
+            () -> processInstanceRequestValidator.validateFlowNodeStatisticsRequest(request));
   }
 }

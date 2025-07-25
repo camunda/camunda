@@ -8,8 +8,8 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -57,16 +57,12 @@ public class CreateDocumentTest {
   public void shouldThrowIfContentIsNull() {
     // given
 
-    // when
-    final var exception =
-        assertThrowsExactly(
-            IllegalArgumentException.class,
+    // when/then
+    assertThatThrownBy(
             () ->
-                camundaClient.newCreateDocumentCommand().content((InputStream) null).send().join());
-
-    // then
-    assertThat(exception).isInstanceOf(IllegalArgumentException.class);
-    assertThat(exception.getMessage()).isEqualTo("content must not be null");
+                camundaClient.newCreateDocumentCommand().content((InputStream) null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("content must not be null");
   }
 
   @Test
@@ -97,7 +93,12 @@ public class CreateDocumentTest {
             .documentId(documentId)
             .send();
 
-    final var exception = assertThrowsExactly(ProblemException.class, duplicateIdCommand::join);
+    final var exception =
+        (ProblemException)
+            assertThatThrownBy(duplicateIdCommand::join)
+                .isInstanceOf(ProblemException.class)
+                .isInstanceOf(ProblemException.class)
+                .actual();
 
     assertThat(exception.getMessage()).startsWith("Failed with code 409");
     assertThat(exception.details()).isNotNull();
@@ -134,7 +135,12 @@ public class CreateDocumentTest {
     // when
     final var createDocumentCommand =
         camundaClient.newCreateDocumentCommand().content(documentContent).storeId(storeId).send();
-    final var exception = assertThrowsExactly(ProblemException.class, createDocumentCommand::join);
+    final var exception =
+        (ProblemException)
+            assertThatThrownBy(createDocumentCommand::join)
+                .isInstanceOf(ProblemException.class)
+                .isInstanceOf(ProblemException.class)
+                .actual();
 
     // then
     assertThat(exception.getMessage()).startsWith("Failed with code 400");

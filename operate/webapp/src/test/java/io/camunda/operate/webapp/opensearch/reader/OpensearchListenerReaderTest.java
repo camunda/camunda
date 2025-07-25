@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -36,15 +36,16 @@ public class OpensearchListenerReaderTest {
     when(jobTemplate.getAlias()).thenReturn("operate-job-8.6.0");
 
     final Exception exception =
-        assertThrows(
-            RuntimeException.class,
-            () ->
-                underTest.getListenerExecutions(
-                    "1",
-                    new ListenerRequestDto()
-                        .setFlowNodeId("1")
-                        .setPageSize(10)
-                        .setSorting(new SortingDto().setSortBy(JobTemplate.TIME))));
-    assertTrue(exception.getMessage().equals("Exception to test exception handling."));
+        assertThatExceptionOfType(RuntimeException.class)
+            .isThrownBy(
+                () ->
+                    underTest.getListenerExecutions(
+                        "1",
+                        new ListenerRequestDto()
+                            .setFlowNodeId("1")
+                            .setPageSize(10)
+                            .setSorting(new SortingDto().setSortBy(JobTemplate.TIME))))
+            .actual();
+    assertThat(exception.getMessage().equals("Exception to test exception handling.")).isTrue();
   }
 }

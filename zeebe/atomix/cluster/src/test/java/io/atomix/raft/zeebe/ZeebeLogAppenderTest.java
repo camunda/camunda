@@ -15,8 +15,7 @@
  */
 package io.atomix.raft.zeebe;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.base.Stopwatch;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
@@ -77,8 +76,8 @@ public class ZeebeLogAppenderTest {
 
     // then
     final IndexedRaftLogEntry appended = appenderListener.pollWritten();
-    assertNotNull(appended);
-    assertEquals(0, appenderListener.getErrors().size());
+    assertThat(appended).isNotNull();
+    assertThat(appenderListener.getErrors().size()).isEqualTo(0);
   }
 
   @Test
@@ -88,8 +87,8 @@ public class ZeebeLogAppenderTest {
 
     // then
     final var committed = appenderListener.pollCommitted();
-    assertNotNull(committed);
-    assertEquals(0, appenderListener.getErrors().size());
+    assertThat(committed).isNotNull();
+    assertThat(appenderListener.getErrors().size()).isEqualTo(0);
   }
 
   @Test
@@ -102,9 +101,9 @@ public class ZeebeLogAppenderTest {
 
     // then
     final Throwable error = appenderListener.pollError();
-    assertNotNull(error);
-    assertEquals(0L, appenderListener.getWritten().size());
-    assertEquals(0L, appenderListener.getCommitted().size());
+    assertThat(error).isNotNull();
+    assertThat(appenderListener.getWritten().size()).isEqualTo(0L);
+    assertThat(appenderListener.getCommitted().size()).isEqualTo(0L);
   }
 
   private void append() {

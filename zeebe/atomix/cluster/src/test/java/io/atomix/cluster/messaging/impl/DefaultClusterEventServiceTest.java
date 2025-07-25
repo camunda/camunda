@@ -18,7 +18,6 @@ package io.atomix.cluster.messaging.impl;
 
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import io.atomix.cluster.BootstrapService;
@@ -151,7 +150,7 @@ public class DefaultClusterEventServiceTest {
             topic,
             SERIALIZER::decode,
             message -> {
-              assertEquals("Hello world!", message);
+              assertThat(message).isEqualTo("Hello world!");
               events.add(1);
               latch.countDown();
             },
@@ -163,7 +162,7 @@ public class DefaultClusterEventServiceTest {
             topic,
             SERIALIZER::decode,
             message -> {
-              assertEquals("Hello world!", message);
+              assertThat(message).isEqualTo("Hello world!");
               events.add(2);
               latch.countDown();
             },
@@ -175,7 +174,7 @@ public class DefaultClusterEventServiceTest {
             topic,
             SERIALIZER::decode,
             message -> {
-              assertEquals("Hello world!", message);
+              assertThat(message).isEqualTo("Hello world!");
               events.add(3);
               latch.countDown();
             },
@@ -193,7 +192,7 @@ public class DefaultClusterEventServiceTest {
 
     // then
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
-    assertEquals(3, events.size());
+    assertThat(events.size()).isEqualTo(3);
   }
 
   @Test
@@ -214,7 +213,7 @@ public class DefaultClusterEventServiceTest {
             topic1,
             SERIALIZER::decode,
             message -> {
-              assertEquals("Hello world!", message);
+              assertThat(message).isEqualTo("Hello world!");
               events.add(1);
               latch.countDown();
             },
@@ -226,7 +225,7 @@ public class DefaultClusterEventServiceTest {
             topic2,
             SERIALIZER::decode,
             message -> {
-              assertEquals("Hello world!", message);
+              assertThat(message).isEqualTo("Hello world!");
               events.add(2);
               latch.countDown();
             },
@@ -242,7 +241,7 @@ public class DefaultClusterEventServiceTest {
 
     // then
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
-    assertEquals(2, events.size());
+    assertThat(events.size()).isEqualTo(2);
   }
 
   @Test
@@ -263,7 +262,7 @@ public class DefaultClusterEventServiceTest {
             topic,
             SERIALIZER::decode,
             message -> {
-              assertEquals("Hello world!", message);
+              assertThat(message).isEqualTo("Hello world!");
               events.add(1);
               latch.countDown();
             },
@@ -275,7 +274,7 @@ public class DefaultClusterEventServiceTest {
             topic,
             SERIALIZER::decode,
             message -> {
-              assertEquals("Hello world!", message);
+              assertThat(message).isEqualTo("Hello world!");
               events.add(2);
               latch.countDown();
             },
@@ -287,7 +286,7 @@ public class DefaultClusterEventServiceTest {
 
     // then
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
-    assertEquals(2, events.size());
+    assertThat(events.size()).isEqualTo(2);
     assertThat(events).containsExactlyInAnyOrder(1, 2);
   }
 
@@ -314,7 +313,7 @@ public class DefaultClusterEventServiceTest {
             topic,
             SERIALIZER::decode,
             message -> {
-              assertEquals("Hello world!", message);
+              assertThat(message).isEqualTo("Hello world!");
               events.add(2);
               latch.countDown();
             },
@@ -327,7 +326,7 @@ public class DefaultClusterEventServiceTest {
 
     // then
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
-    assertEquals(1, events.size());
+    assertThat(events.size()).isEqualTo(1);
   }
 
   @Test
@@ -347,7 +346,7 @@ public class DefaultClusterEventServiceTest {
             topic,
             SERIALIZER::decode,
             message -> {
-              assertEquals("Hello world!", message);
+              assertThat(message).isEqualTo("Hello world!");
               events.add(1);
               latch.countDown();
             },
@@ -368,7 +367,7 @@ public class DefaultClusterEventServiceTest {
     eventService2Restarted.broadcast(topic, "Hello world!", SERIALIZER::encode);
 
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
-    assertEquals(1, events.size());
+    assertThat(events.size()).isEqualTo(1);
   }
 
   @Test
@@ -397,6 +396,6 @@ public class DefaultClusterEventServiceTest {
     eventService1.broadcast("test", "foo");
     eventService1.broadcast("test", "bar");
     awaitCompletion.await(10, TimeUnit.SECONDS);
-    assertEquals("bar", received.get());
+    assertThat(received.get()).isEqualTo("bar");
   }
 }

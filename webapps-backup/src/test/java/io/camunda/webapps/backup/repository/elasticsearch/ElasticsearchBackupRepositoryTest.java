@@ -9,7 +9,7 @@ package io.camunda.webapps.backup.repository.elasticsearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -384,10 +384,9 @@ public class ElasticsearchBackupRepositoryTest {
         .thenReturn(snapshotResponse);
 
     // Test
-    assertThrows(
-        ResourceNotFoundException.class,
-        () -> backupRepository.findSnapshots("repository-name", 5L),
-        "No backup with id [5] found.");
+    assertThatExceptionOfType(ResourceNotFoundException.class)
+        .as("No backup with id [5] found.")
+        .isThrownBy(() -> backupRepository.findSnapshots("repository-name", 5L));
   }
 
   @Test

@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.rest.dto.listview;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -160,9 +160,8 @@ public class SortValuesWrapperTest {
       new SortValuesWrapper(objectMapper.writeValueAsString(tupleVal), Tuple.class)
     };
 
-    assertThrows(
-        OperateRuntimeException.class,
-        () -> SortValuesWrapper.convertSortValues(sortValuesWrappers, objectMapper));
+    assertThatExceptionOfType(OperateRuntimeException.class)
+        .isThrownBy(() -> SortValuesWrapper.convertSortValues(sortValuesWrappers, objectMapper));
   }
 
   @Test
@@ -172,9 +171,8 @@ public class SortValuesWrapperTest {
       new SortValuesWrapper(objectMapper.writeValueAsString(new Result("foo")), Result.class)
     };
 
-    assertThrows(
-        OperateRuntimeException.class,
-        () -> SortValuesWrapper.convertSortValues(sortValuesWrappers, objectMapper));
+    assertThatExceptionOfType(OperateRuntimeException.class)
+        .isThrownBy(() -> SortValuesWrapper.convertSortValues(sortValuesWrappers, objectMapper));
   }
 
   @Test

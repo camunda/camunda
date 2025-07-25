@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
 import static io.camunda.zeebe.engine.processing.deployment.model.validation.ExpectedValidationResult.expect;
-import static org.junit.Assert.fail;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
@@ -39,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.xml.validation.ValidationResult;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.junit.Before;
@@ -580,7 +580,7 @@ public final class ZeebeRuntimeValidationTest {
     describeUnmatchedExpectations(sb, unmatchedExpectations);
     sb.append("\n");
     describeUnmatchedResults(sb, unmatchedResults);
-    fail(sb.toString());
+    Assertions.fail(sb.toString());
   }
 
   private static void describeUnmatchedResults(

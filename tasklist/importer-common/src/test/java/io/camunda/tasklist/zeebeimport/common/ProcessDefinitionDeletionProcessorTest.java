@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.zeebeimport.common;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.store.DraftVariableStore;
@@ -83,15 +83,15 @@ class ProcessDefinitionDeletionProcessorTest {
         processDefinitionDeletionProcessor.createProcessDefinitionDeleteRequests(
             processDefinitionId, Pair::of);
 
-    assertEquals(
-        List.of(
-            Pair.of(variableIndexName, variableTaskId1),
-            Pair.of(variableIndexName + "_06-10-2023", variableTaskId2),
-            Pair.of(draftVariableIndexName, draftVariableId),
-            Pair.of(taskIndexName, taskId1),
-            Pair.of(taskIndexName + "_06-10-2023", taskId2),
-            Pair.of(formIndexName, formId),
-            Pair.of(processIndexName, processDefinitionId)),
-        result);
+    assertThat(result)
+        .isEqualTo(
+            List.of(
+                Pair.of(variableIndexName, variableTaskId1),
+                Pair.of(variableIndexName + "_06-10-2023", variableTaskId2),
+                Pair.of(draftVariableIndexName, draftVariableId),
+                Pair.of(taskIndexName, taskId1),
+                Pair.of(taskIndexName + "_06-10-2023", taskId2),
+                Pair.of(formIndexName, formId),
+                Pair.of(processIndexName, processDefinitionId)));
   }
 }

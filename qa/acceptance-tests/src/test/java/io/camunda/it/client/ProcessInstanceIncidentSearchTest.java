@@ -14,7 +14,7 @@ import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -94,13 +94,15 @@ class ProcessInstanceIncidentSearchTest {
 
     // when
     final var exception =
-        assertThrowsExactly(
-            ProblemException.class,
-            () ->
-                camundaClient
-                    .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
-                    .send()
-                    .join());
+        (ProblemException)
+            assertThatThrownBy(
+                    () ->
+                        camundaClient
+                            .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
+                            .send()
+                            .join())
+                .isInstanceOf(ProblemException.class)
+                .actual();
 
     // then
     assertThat(exception.getMessage()).startsWith("Failed with code 404");

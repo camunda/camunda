@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.connect;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -85,7 +85,7 @@ public class OpensearchConnectorTest {
     final OpenSearchAsyncClient client =
         opensearchConnector.createAsyncOsClient(opensearchProperties, new PluginRepository());
 
-    assertEquals(AwsSdk2Transport.class, client._transport().getClass());
+    assertThat(client._transport().getClass()).isEqualTo(AwsSdk2Transport.class);
   }
 
   @Test
@@ -102,7 +102,7 @@ public class OpensearchConnectorTest {
     final OpenSearchAsyncClient client =
         spyConnector.createAsyncOsClient(opensearchProperties, new PluginRepository());
 
-    assertEquals(ApacheHttpClient5Transport.class, client._transport().getClass());
+    assertThat(client._transport().getClass()).isEqualTo(ApacheHttpClient5Transport.class);
   }
 
   @Test
@@ -155,7 +155,7 @@ public class OpensearchConnectorTest {
     final OpenSearchClient client =
         opensearchConnector.createOsClient(opensearchProperties, new PluginRepository());
 
-    assertEquals(AwsSdk2Transport.class, client._transport().getClass());
+    assertThat(client._transport().getClass()).isEqualTo(AwsSdk2Transport.class);
   }
 
   @Test
@@ -172,7 +172,7 @@ public class OpensearchConnectorTest {
     final OpenSearchClient client =
         spyConnector.createOsClient(opensearchProperties, new PluginRepository());
 
-    assertEquals(ApacheHttpClient5Transport.class, client._transport().getClass());
+    assertThat(client._transport().getClass()).isEqualTo(ApacheHttpClient5Transport.class);
   }
 
   @Test

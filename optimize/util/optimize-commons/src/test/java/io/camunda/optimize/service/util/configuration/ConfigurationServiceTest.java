@@ -11,7 +11,7 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import com.jayway.jsonpath.spi.mapper.MappingException;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -537,7 +537,9 @@ public class ConfigurationServiceTest {
 
     // then
     final OptimizeConfigurationException exception =
-        assertThrows(OptimizeConfigurationException.class, () -> createConfiguration(locations));
+        assertThatExceptionOfType(OptimizeConfigurationException.class)
+            .isThrownBy(() -> createConfiguration(locations))
+            .actual();
     assertThat(exception).isNotNull();
     assertThat(exception.getMessage()).contains("Could not resolve system/environment variable");
   }

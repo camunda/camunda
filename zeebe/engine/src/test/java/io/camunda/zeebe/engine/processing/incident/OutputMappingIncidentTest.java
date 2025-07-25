@@ -11,7 +11,6 @@ import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.RESOLVED;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
@@ -205,12 +204,13 @@ public class OutputMappingIncidentTest {
         .hasElementId(elementId);
     assertThat(resolvedIncidentRecord.getValue().getErrorMessage())
         .contains("Assertion failure on evaluate the expression");
-    assertTrue(
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.PROCESS)
-            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .exists());
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .exists())
+        .isTrue();
     final Map<String, String> variables = ProcessInstances.getCurrentVariables(processInstanceKey);
     assertThat(variables).contains(entry("foo", "1"));
     assertThat(variables).contains(entry("bar", "1"));
@@ -250,11 +250,12 @@ public class OutputMappingIncidentTest {
         .hasElementId(elementId);
     assertThat(resolvedIncidentRecord.getValue().getErrorMessage())
         .contains("Assertion failure on evaluate the expression");
-    assertTrue(
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.PROCESS)
-            .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
-            .exists());
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .exists())
+        .isTrue();
   }
 }

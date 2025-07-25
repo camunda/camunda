@@ -10,8 +10,7 @@ package io.camunda.operate.webapp.api.v1.rest;
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.VERSION;
 import static io.camunda.operate.webapp.api.v1.rest.ProcessInstanceController.URI;
 import static io.camunda.operate.webapp.api.v1.rest.SearchController.SEARCH;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -136,8 +135,8 @@ public class ProcessInstanceQueryControllerIT {
     processInstance.setProcessVersion(5);
 
     final String jsonResult = springObjectMapper.writeValueAsString(processInstance);
-    assertFalse(jsonResult.contains("parentProcessInstanceKey"));
-    assertTrue(jsonResult.contains("parentKey"));
+    assertThat(jsonResult.contains("parentProcessInstanceKey")).isFalse();
+    assertThat(jsonResult.contains("parentKey")).isTrue();
   }
 
   @Test

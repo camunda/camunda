@@ -8,7 +8,6 @@
 package io.camunda.zeebe.msgpack;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
@@ -40,8 +39,8 @@ final class DeltaEncodedLongArrayValueRandomizedPropertyTest {
     result.read(reader);
 
     // then
-    assertArrayEquals(array, input.getValues());
-    assertArrayEquals(array, result.getValues());
+    assertThat(input.getValues()).containsExactly(array);
+    assertThat(result.getValues()).containsExactly(array);
   }
 
   @Property

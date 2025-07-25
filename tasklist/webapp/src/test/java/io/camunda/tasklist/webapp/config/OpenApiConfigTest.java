@@ -8,7 +8,6 @@
 package io.camunda.tasklist.webapp.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,13 +22,13 @@ class OpenApiConfigTest {
   @Test
   void testInternalApiPaths() {
     final GroupedOpenApi result = openApiConfig.internalApiV1();
-    assertTrue(result.getPathsToMatch().contains("/v1/internal/**"));
+    assertThat(result.getPathsToMatch().contains("/v1/internal/**")).isTrue();
   }
 
   @Test
   void testExternalApiPaths() {
     final GroupedOpenApi result = openApiConfig.externalApiV1();
-    assertTrue(result.getPathsToMatch().contains("/v1/external/**"));
+    assertThat(result.getPathsToMatch().contains("/v1/external/**")).isTrue();
   }
 
   @Test

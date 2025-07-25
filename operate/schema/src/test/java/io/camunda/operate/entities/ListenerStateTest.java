@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.entities;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.webapps.schema.entities.listener.ListenerState;
 import org.junit.jupiter.api.Test;
@@ -17,20 +17,20 @@ public class ListenerStateTest {
   @Test
   public void convertStatesFromZeebeJobs() {
     final ListenerState actual1 = ListenerState.fromZeebeJobIntent("MIGRATED");
-    assertEquals(actual1, ListenerState.ACTIVE);
+    assertThat(ListenerState.ACTIVE).isEqualTo(actual1);
     final ListenerState actual2 = ListenerState.fromZeebeJobIntent("FAILED");
-    assertEquals(actual2, ListenerState.FAILED);
+    assertThat(ListenerState.FAILED).isEqualTo(actual2);
     final ListenerState actual3 = ListenerState.fromZeebeJobIntent("COMPLETED");
-    assertEquals(actual3, ListenerState.COMPLETED);
+    assertThat(ListenerState.COMPLETED).isEqualTo(actual3);
     final ListenerState actual4 = ListenerState.fromZeebeJobIntent("TIMED_OUT");
-    assertEquals(actual4, ListenerState.TIMED_OUT);
+    assertThat(ListenerState.TIMED_OUT).isEqualTo(actual4);
     final ListenerState actual5 = ListenerState.fromZeebeJobIntent("CANCELED");
-    assertEquals(actual5, ListenerState.CANCELED);
+    assertThat(ListenerState.CANCELED).isEqualTo(actual5);
     final ListenerState actual6 = ListenerState.fromZeebeJobIntent("ERROR_THROWN");
-    assertEquals(actual6, ListenerState.FAILED);
+    assertThat(ListenerState.FAILED).isEqualTo(actual6);
     final ListenerState actual7 = ListenerState.fromZeebeJobIntent("TEST");
-    assertEquals(actual7, ListenerState.UNKNOWN);
+    assertThat(ListenerState.UNKNOWN).isEqualTo(actual7);
     final ListenerState actual8 = ListenerState.fromZeebeJobIntent(null);
-    assertEquals(actual8, ListenerState.UNKNOWN);
+    assertThat(ListenerState.UNKNOWN).isEqualTo(actual8);
   }
 }

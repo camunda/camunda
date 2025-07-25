@@ -19,7 +19,6 @@ import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byId;
 import static io.camunda.process.test.api.assertions.UserTaskSelectors.byElementId;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -89,7 +88,8 @@ public class InvoiceApprovalTest {
             (jobClient, job) -> {
               addInvoiceJobWorkerCalled.set(true);
               // check input mapping
-              assertEquals("INV-1001", job.getVariablesAsMap().get("invoiceId"));
+              org.assertj.core.api.Assertions.assertThat(job.getVariablesAsMap().get("invoiceId"))
+                  .isEqualTo("INV-1001");
               jobClient
                   .newCompleteCommand(job)
                   // .variables(null) //  We could now also simulate setting some response values
@@ -125,7 +125,7 @@ public class InvoiceApprovalTest {
 
     // verify that side effects have happened
     Mockito.verify(archiveService).archiveInvoice("INV-1001", objectMapper.readTree(invoiceJson));
-    assertThat(addInvoiceJobWorkerCalled.get())
+    org.assertj.core.api.Assertions.assertThat(addInvoiceJobWorkerCalled.get())
         .as("add-invoice-to-accounting job worker called")
         .isTrue();
   }

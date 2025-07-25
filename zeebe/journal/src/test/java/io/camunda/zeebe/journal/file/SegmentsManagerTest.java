@@ -26,7 +26,6 @@ import java.util.Objects;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -440,14 +439,14 @@ class SegmentsManagerTest {
 
     // First segment should be the one from the first journal
     final var firstSegment = segments.getFirstSegment();
-    Assertions.assertNotNull(firstSegment);
+    assertThat(firstSegment).isNotNull();
     assertThat(firstSegment.lastIndex()).isEqualTo(journal.getFirstSegment().lastIndex());
     assertThat(firstSegment.lastAsqn()).isEqualTo(journal.getFirstSegment().lastAsqn());
     assertThat(firstSegment.file().name()).isEqualTo("journal-1.log");
 
     // Last segment should be the one from the third journal
     final var lastSegment = segments.getLastSegment();
-    Assertions.assertNotNull(lastSegment);
+    assertThat(lastSegment).isNotNull();
     assertThat(lastSegment.lastIndex()).isEqualTo(secondaryJournal.getFirstSegment().lastIndex());
     assertThat(lastSegment.lastAsqn()).isEqualTo(secondaryJournal.getFirstSegment().lastAsqn());
     assertThat(lastSegment.file().name()).isEqualTo("journal-2.log");

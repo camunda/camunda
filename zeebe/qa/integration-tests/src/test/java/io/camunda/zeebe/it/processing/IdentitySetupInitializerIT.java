@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.client.CamundaClient;
@@ -79,7 +78,7 @@ final class IdentitySetupInitializerIT {
         .hasName(name)
         .hasEmail(email);
     final var passwordMatches = passwordEncoder.matches(password, createdUser.getPassword());
-    assertTrue(passwordMatches);
+    assertThat(passwordMatches).isTrue();
 
     assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).limit(4))
         .extracting(record -> record.getValue().getName())
@@ -147,7 +146,7 @@ final class IdentitySetupInitializerIT {
         .hasUsername(user1.getUsername())
         .hasName(user1.getName())
         .hasEmail(user1.getEmail());
-    assertTrue(passwordEncoder.matches(user1.getPassword(), firstUser.getPassword()));
+    assertThat(passwordEncoder.matches(user1.getPassword(), firstUser.getPassword())).isTrue();
 
     final var secondUser = record.getUsers().getLast();
     Assertions.assertThat(secondUser)
@@ -155,7 +154,7 @@ final class IdentitySetupInitializerIT {
         .hasUsername(user2.getUsername())
         .hasName(user2.getName())
         .hasEmail(user2.getEmail());
-    assertTrue(passwordEncoder.matches(user2.getPassword(), secondUser.getPassword()));
+    assertThat(passwordEncoder.matches(user2.getPassword(), secondUser.getPassword())).isTrue();
   }
 
   private void createBroker(

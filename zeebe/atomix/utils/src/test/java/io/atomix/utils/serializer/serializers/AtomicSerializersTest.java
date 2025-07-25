@@ -16,8 +16,7 @@
  */
 package io.atomix.utils.serializer.serializers;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.ByteBufferInput;
@@ -75,7 +74,7 @@ public class AtomicSerializersTest {
     final AtomicLong deserialized = KRYO.readObject(input, AtomicLong.class);
 
     // then
-    assertEquals(32L, deserialized.get());
+    assertThat(deserialized.get()).isEqualTo(32L);
   }
 
   @Test
@@ -90,7 +89,7 @@ public class AtomicSerializersTest {
     final AtomicInteger deserialized = KRYO.readObject(input, AtomicInteger.class);
 
     // then
-    assertEquals(1000, deserialized.get());
+    assertThat(deserialized.get()).isEqualTo(1000);
   }
 
   @Test
@@ -105,6 +104,6 @@ public class AtomicSerializersTest {
     final AtomicBoolean deserialized = KRYO.readObject(input, AtomicBoolean.class);
 
     // then
-    assertTrue(deserialized.get());
+    assertThat(deserialized.get()).isTrue();
   }
 }

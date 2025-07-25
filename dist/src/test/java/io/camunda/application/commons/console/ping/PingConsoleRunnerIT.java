@@ -12,8 +12,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -116,6 +116,6 @@ public class PingConsoleRunnerIT {
     final JsonNode expected = mapper.readTree(expectedBody);
     final JsonNode actual = mapper.readTree(actualBody);
 
-    assertEquals(expected, actual, "JSON payload did not match expected structure");
+    assertThat(actual).as("JSON payload did not match expected structure").isEqualTo(expected);
   }
 }

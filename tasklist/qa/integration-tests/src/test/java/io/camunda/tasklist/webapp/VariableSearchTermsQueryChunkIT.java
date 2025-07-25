@@ -8,7 +8,6 @@
 package io.camunda.tasklist.webapp;
 
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,8 +60,9 @@ public class VariableSearchTermsQueryChunkIT extends TasklistZeebeIntegrationTes
 
     databaseTestExtension.setIndexMaxTermsCount(variableTemplate.getFullQualifiedName(), 5);
 
-    assertEquals(
-        5, databaseTestExtension.getIndexMaxTermsCount(variableTemplate.getFullQualifiedName()));
+    org.assertj.core.api.Assertions.assertThat(
+            databaseTestExtension.getIndexMaxTermsCount(variableTemplate.getFullQualifiedName()))
+        .isEqualTo(5);
 
     variableStore.refreshMaxTermsCount();
   }

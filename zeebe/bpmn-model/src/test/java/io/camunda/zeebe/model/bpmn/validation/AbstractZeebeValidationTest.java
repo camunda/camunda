@@ -15,8 +15,6 @@
  */
 package io.camunda.zeebe.model.bpmn.validation;
 
-import static org.junit.Assert.fail;
-
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
@@ -28,6 +26,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.xml.validation.ValidationResult;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.junit.Before;
@@ -118,7 +117,7 @@ public abstract class AbstractZeebeValidationTest {
     describeUnmatchedExpectations(sb, unmatchedExpectations);
     sb.append("\n");
     describeUnmatchedResults(sb, unmatchedResults);
-    fail(sb.toString());
+    Assertions.fail(sb.toString());
   }
 
   private static void describeUnmatchedResults(

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.test.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNotNull;
 
 import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -75,7 +74,7 @@ public final class MsgPackUtil {
   }
 
   public static void assertEquality(final byte[] actualMsgPack, final String expectedJson) {
-    assertNotNull("actual msg pack is null", actualMsgPack);
+    assertThat(actualMsgPack).as("actual msg pack is null").isNotNull();
     try {
       assertThat(MSGPACK_MAPPER.readTree(actualMsgPack))
           .isEqualTo(JsonUtil.JSON_MAPPER.readTree(expectedJson));
@@ -85,7 +84,7 @@ public final class MsgPackUtil {
   }
 
   public static void assertEquality(final DirectBuffer actualMsgPack, final String expectedJson) {
-    assertNotNull("actual msg pack is null", actualMsgPack);
+    assertThat(actualMsgPack).as("actual msg pack is null").isNotNull();
     final byte[] msgPackArray = new byte[actualMsgPack.capacity()];
     actualMsgPack.getBytes(0, msgPackArray);
     assertEquality(msgPackArray, expectedJson);
@@ -95,7 +94,7 @@ public final class MsgPackUtil {
       final DirectBuffer actualMsgPack,
       final String expectedJson,
       final String... excludedProperties) {
-    assertNotNull("actual msg pack is null", actualMsgPack);
+    assertThat(actualMsgPack).as("actual msg pack is null").isNotNull();
     final byte[] msgPackArray = new byte[actualMsgPack.capacity()];
     actualMsgPack.getBytes(0, msgPackArray);
     assertEqualityExcluding(msgPackArray, expectedJson, excludedProperties);
@@ -104,7 +103,7 @@ public final class MsgPackUtil {
   public static void assertEqualityExcluding(
       final byte[] actualMsgPack, final String expectedJson, final String... excludedProperties) {
 
-    assertNotNull("actual msg pack is null", actualMsgPack);
+    assertThat(actualMsgPack).as("actual msg pack is null").isNotNull();
 
     final JsonNode msgPackNode;
     final JsonNode jsonNode;

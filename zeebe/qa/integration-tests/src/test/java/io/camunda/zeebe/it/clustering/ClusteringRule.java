@@ -103,8 +103,8 @@ import java.util.stream.IntStream;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -615,7 +615,7 @@ public class ClusteringRule extends ExternalResource {
           assertion -> assertion.isComplete(clusterSize, partitionCount, replicationFactor));
     } catch (final Exception e) {
       LOG.error("Failed to restart cluster", e);
-      Assert.fail("Failed to restart cluster");
+      Assertions.fail("Failed to restart cluster");
     }
   }
 

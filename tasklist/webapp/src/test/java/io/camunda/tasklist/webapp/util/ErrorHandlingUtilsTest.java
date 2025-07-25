@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.util;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.client.api.ProblemDetail;
@@ -47,7 +47,7 @@ class ErrorHandlingUtilsTest {
             "detail": "Task is already in progress."
           }
           """;
-    assertEquals(expectedMessage, result);
+    assertThat(result).isEqualTo(expectedMessage);
   }
 
   @Test
@@ -70,7 +70,7 @@ class ErrorHandlingUtilsTest {
           }
           """
             .formatted(serviceException.getMessage());
-    assertEquals(expectedMessage, result);
+    assertThat(result).isEqualTo(expectedMessage);
   }
 
   @Test
@@ -90,7 +90,7 @@ class ErrorHandlingUtilsTest {
             "detail": "The request timed out while processing the task."
           }
           """;
-    assertEquals(expectedMessage, result);
+    assertThat(result).isEqualTo(expectedMessage);
   }
 
   @Test
@@ -109,7 +109,7 @@ class ErrorHandlingUtilsTest {
             "detail": "The request timed out while processing the task."
           }
           """;
-    assertEquals(expectedMessage, result);
+    assertThat(result).isEqualTo(expectedMessage);
   }
 
   @Test
@@ -121,7 +121,7 @@ class ErrorHandlingUtilsTest {
     final String result = ErrorHandlingUtils.getErrorMessageFromClientException(genericException);
 
     // Then
-    assertEquals("Generic error occurred", result);
+    assertThat(result).isEqualTo("Generic error occurred");
   }
 
   @Test
@@ -134,7 +134,7 @@ class ErrorHandlingUtilsTest {
     final String result = ErrorHandlingUtils.getErrorMessageFromServiceException(genericException);
 
     // Then
-    assertEquals("Generic error occurred", result);
+    assertThat(result).isEqualTo("Generic error occurred");
   }
 
   @Test
@@ -153,6 +153,6 @@ class ErrorHandlingUtilsTest {
             "detail": "An unexpected error occurred."
           }
           """;
-    assertEquals(expectedMessage, result);
+    assertThat(result).isEqualTo(expectedMessage);
   }
 }

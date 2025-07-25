@@ -13,7 +13,7 @@ import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceIsEnded;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -398,9 +398,10 @@ class DecisionInstanceSearchTest {
     // when
     final var decisionInstanceId = "not-existing";
     final var problemException =
-        assertThrows(
-            ProblemException.class,
-            () -> camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join());
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () -> camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join())
+            .actual();
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())

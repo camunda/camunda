@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -26,19 +24,19 @@ public class RestErrorMapperTest {
   void testGetResponseWithServiceException() {
     final Throwable error = new TestServiceException("Something went wrong", Status.NOT_FOUND);
     final Optional<ResponseEntity<Object>> response = RestErrorMapper.getResponse(error);
-    assertTrue(response.isPresent());
+    assertThat(response.isPresent()).isTrue();
 
     final ProblemDetail pd = (ProblemDetail) response.get().getBody();
-    assertNotNull(pd);
-    assertEquals("NOT_FOUND", pd.getTitle());
-    assertEquals("Something went wrong", pd.getDetail());
-    assertEquals(HttpStatus.NOT_FOUND.value(), pd.getStatus());
+    assertThat(pd).isNotNull();
+    assertThat(pd.getTitle()).isEqualTo("NOT_FOUND");
+    assertThat(pd.getDetail()).isEqualTo("Something went wrong");
+    assertThat(pd.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
   }
 
   @Test
   void testGetResponseWithNullError() {
     final Optional<ResponseEntity<Object>> response = RestErrorMapper.getResponse(null);
-    assertTrue(response.isEmpty());
+    assertThat(response.isEmpty()).isTrue();
   }
 
   @Test
@@ -47,10 +45,10 @@ public class RestErrorMapperTest {
         new CompletionException(new TestServiceException("Wrapped error", Status.FORBIDDEN));
     final ProblemDetail pd = RestErrorMapper.mapErrorToProblem(error);
 
-    assertNotNull(pd);
-    assertEquals("FORBIDDEN", pd.getTitle());
-    assertEquals("Wrapped error", pd.getDetail());
-    assertEquals(HttpStatus.FORBIDDEN.value(), pd.getStatus());
+    assertThat(pd).isNotNull();
+    assertThat(pd.getTitle()).isEqualTo("FORBIDDEN");
+    assertThat(pd.getDetail()).isEqualTo("Wrapped error");
+    assertThat(pd.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
   }
 
   @Test
@@ -58,10 +56,10 @@ public class RestErrorMapperTest {
     final Throwable error = new RuntimeException("Generic failure");
     final ProblemDetail pd = RestErrorMapper.mapErrorToProblem(error);
 
-    assertNotNull(pd);
-    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), pd.getStatus());
-    assertTrue(pd.getDetail().contains("Generic failure"));
-    assertEquals(RuntimeException.class.getName(), pd.getTitle());
+    assertThat(pd).isNotNull();
+    assertThat(pd.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+    assertThat(pd.getDetail().contains("Generic failure")).isTrue();
+    assertThat(pd.getTitle()).isEqualTo(RuntimeException.class.getName());
   }
 
   @Test
@@ -69,9 +67,9 @@ public class RestErrorMapperTest {
     final ProblemDetail pd =
         RestErrorMapper.createProblemDetail(
             HttpStatus.BAD_REQUEST, "Bad request", "INVALID_ARGUMENT");
-    assertEquals("INVALID_ARGUMENT", pd.getTitle());
-    assertEquals("Bad request", pd.getDetail());
-    assertEquals(HttpStatus.BAD_REQUEST.value(), pd.getStatus());
+    assertThat(pd.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(pd.getDetail()).isEqualTo("Bad request");
+    assertThat(pd.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -80,9 +78,9 @@ public class RestErrorMapperTest {
         RestErrorMapper.createProblemDetail(HttpStatus.CONFLICT, "Conflict happened", "CONFLICT");
     final ResponseEntity<Object> response = RestErrorMapper.mapProblemToResponse(pd);
 
-    assertNotNull(response);
-    assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
-    assertEquals(pd, response.getBody());
+    assertThat(response).isNotNull();
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    assertThat(response.getBody()).isEqualTo(pd);
   }
 
   @Test
@@ -92,24 +90,28 @@ public class RestErrorMapperTest {
             HttpStatus.SERVICE_UNAVAILABLE, "Unavailable", "UNAVAILABLE");
     final ResponseEntity<Object> response = RestErrorMapper.mapProblemToCompletedResponse(pd).get();
 
-    assertNotNull(response);
-    assertEquals(pd, response.getBody());
-    assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
+    assertThat(response).isNotNull();
+    assertThat(response.getBody()).isEqualTo(pd);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
   }
 
   @Test
   void testMapStatus() {
-    assertEquals(HttpStatus.BAD_GATEWAY, RestErrorMapper.mapStatus(Status.ABORTED));
-    assertEquals(HttpStatus.SERVICE_UNAVAILABLE, RestErrorMapper.mapStatus(Status.UNAVAILABLE));
-    assertEquals(
-        HttpStatus.SERVICE_UNAVAILABLE, RestErrorMapper.mapStatus(Status.RESOURCE_EXHAUSTED));
-    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, RestErrorMapper.mapStatus(Status.UNKNOWN));
-    assertEquals(HttpStatus.FORBIDDEN, RestErrorMapper.mapStatus(Status.FORBIDDEN));
-    assertEquals(HttpStatus.NOT_FOUND, RestErrorMapper.mapStatus(Status.NOT_FOUND));
-    assertEquals(HttpStatus.UNAUTHORIZED, RestErrorMapper.mapStatus(Status.UNAUTHORIZED));
-    assertEquals(HttpStatus.CONFLICT, RestErrorMapper.mapStatus(Status.ALREADY_EXISTS));
-    assertEquals(HttpStatus.BAD_REQUEST, RestErrorMapper.mapStatus(Status.INVALID_ARGUMENT));
-    assertEquals(HttpStatus.GATEWAY_TIMEOUT, RestErrorMapper.mapStatus(Status.DEADLINE_EXCEEDED));
+    assertThat(RestErrorMapper.mapStatus(Status.ABORTED)).isEqualTo(HttpStatus.BAD_GATEWAY);
+    assertThat(RestErrorMapper.mapStatus(Status.UNAVAILABLE))
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+    assertThat(RestErrorMapper.mapStatus(Status.RESOURCE_EXHAUSTED))
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+    assertThat(RestErrorMapper.mapStatus(Status.UNKNOWN))
+        .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    assertThat(RestErrorMapper.mapStatus(Status.FORBIDDEN)).isEqualTo(HttpStatus.FORBIDDEN);
+    assertThat(RestErrorMapper.mapStatus(Status.NOT_FOUND)).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(RestErrorMapper.mapStatus(Status.UNAUTHORIZED)).isEqualTo(HttpStatus.UNAUTHORIZED);
+    assertThat(RestErrorMapper.mapStatus(Status.ALREADY_EXISTS)).isEqualTo(HttpStatus.CONFLICT);
+    assertThat(RestErrorMapper.mapStatus(Status.INVALID_ARGUMENT))
+        .isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(RestErrorMapper.mapStatus(Status.DEADLINE_EXCEEDED))
+        .isEqualTo(HttpStatus.GATEWAY_TIMEOUT);
   }
 
   // Sample custom ServiceException for testing

@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -26,9 +26,9 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 
 class DecisionInstanceServiceTest {
 
@@ -114,10 +114,11 @@ class DecisionInstanceServiceTest {
             new ResourceAccessDeniedException(Authorizations.DECISION_INSTANCE_READ_AUTHORIZATION));
 
     // when
-    final Executable executable = () -> services.getById(decisionInstanceId);
+    final ThrowingCallable executable = () -> services.getById(decisionInstanceId);
 
     // then
-    final var exception = assertThrows(ServiceException.class, executable);
+    final var exception =
+        assertThatExceptionOfType(ServiceException.class).isThrownBy(executable).actual();
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'");

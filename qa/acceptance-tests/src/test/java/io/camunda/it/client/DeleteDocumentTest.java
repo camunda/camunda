@@ -8,7 +8,7 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -75,11 +75,11 @@ public class DeleteDocumentTest {
 
     // when
     final var exception =
-        assertThrowsExactly(
-            ProblemException.class,
-            () -> {
-              camundaClient.newDeleteDocumentCommand(documentId).send().join();
-            });
+        (ProblemException)
+            assertThatThrownBy(
+                    () -> camundaClient.newDeleteDocumentCommand(documentId).send().join())
+                .isInstanceOf(ProblemException.class)
+                .actual();
 
     // then
     assertThat(exception.details().getStatus()).isEqualTo(404);
@@ -98,7 +98,9 @@ public class DeleteDocumentTest {
         camundaClient.newCreateDocumentCommand().content(documentContent).storeId(storeId).send();
 
     // then
-    final var exception = assertThrowsExactly(ProblemException.class, command::join);
+    final var exception =
+        (ProblemException)
+            assertThatThrownBy(command::join).isInstanceOf(ProblemException.class).actual();
     assertThat(exception.getMessage()).startsWith("Failed with code 400");
     assertThat(exception.details()).isNotNull();
     assertThat(exception.details().getStatus()).isEqualTo(400);
@@ -108,9 +110,11 @@ public class DeleteDocumentTest {
 
   private void assertDocumentIsDeleted(final String documentId) {
     final var exception =
-        assertThrowsExactly(
-            ProblemException.class,
-            () -> camundaClient.newDocumentContentGetRequest(documentId).send().join());
+        (ProblemException)
+            assertThatThrownBy(
+                    () -> camundaClient.newDocumentContentGetRequest(documentId).send().join())
+                .isInstanceOf(ProblemException.class)
+                .actual();
     assertThat(exception.details().getStatus()).isEqualTo(404);
   }
 }

@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.rest.validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
@@ -43,7 +43,9 @@ public class ModifyProcessInstanceRequestValidatorTest {
         .thenReturn(null);
 
     final InvalidRequestException exception =
-        assertThrows(InvalidRequestException.class, () -> underTest.validate(request));
+        assertThatExceptionOfType(InvalidRequestException.class)
+            .isThrownBy(() -> underTest.validate(request))
+            .actual();
 
     assertThat(exception.getMessage())
         .isEqualTo(
@@ -60,7 +62,9 @@ public class ModifyProcessInstanceRequestValidatorTest {
         .thenReturn(new ProcessInstanceForListViewEntity());
 
     final InvalidRequestException exception =
-        assertThrows(InvalidRequestException.class, () -> underTest.validate(request));
+        assertThatExceptionOfType(InvalidRequestException.class)
+            .isThrownBy(() -> underTest.validate(request))
+            .actual();
 
     assertThat(exception.getMessage())
         .isEqualTo(
@@ -80,7 +84,9 @@ public class ModifyProcessInstanceRequestValidatorTest {
         .thenReturn(new ProcessInstanceForListViewEntity());
 
     final InvalidRequestException exception =
-        assertThrows(InvalidRequestException.class, () -> underTest.validate(request));
+        assertThatExceptionOfType(InvalidRequestException.class)
+            .isThrownBy(() -> underTest.validate(request))
+            .actual();
 
     assertThat(exception.getMessage())
         .isEqualTo(

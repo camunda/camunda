@@ -10,7 +10,9 @@ package io.camunda.operate.webapp.api.v1.dao;
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
@@ -34,7 +36,6 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -125,7 +126,7 @@ public class ProcessInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldThrowForDeleteWhenKeyNotExists() {
-    assertThrows(ResourceNotFoundException.class, () -> dao.delete(1L));
+    assertThatCode(() -> dao.delete(1L)).isInstanceOf(ResourceNotFoundException.class);
   }
 
   @Test
@@ -140,7 +141,7 @@ public class ProcessInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldThrowWhenByKeyNotExists() {
-    assertThrows(ResourceNotFoundException.class, () -> dao.byKey(1L));
+    assertThatThrownBy(() -> dao.byKey(1L)).isInstanceOf(ResourceNotFoundException.class);
   }
 
   @Test
@@ -305,8 +306,8 @@ public class ProcessInstanceDaoIT extends OperateSearchAbstractIT {
 
     searchContainerManager.refreshIndices("*operate*");
 
-    Assertions.assertThrows(
-        ResourceNotFoundException.class, () -> dao.byKey(processInstance.getProcessInstanceKey()));
+    assertThatExceptionOfType(ResourceNotFoundException.class)
+        .isThrownBy(() -> dao.byKey(processInstance.getProcessInstanceKey()));
     assertThatDependantsAreAlsoDeleted(processInstanceKey);
   }
 

@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;

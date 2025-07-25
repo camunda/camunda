@@ -33,11 +33,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.xml.ModelParseException;
 import org.camunda.bpm.model.xml.ModelReferenceException;
 import org.camunda.bpm.model.xml.ModelValidationException;
 import org.camunda.bpm.model.xml.impl.util.IoUtil;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -75,7 +75,7 @@ public class DefinitionsTest extends BpmnModelTest {
       Bpmn.readModelFromStream(
           getClass()
               .getResourceAsStream("DefinitionsTest.shouldNotImportWrongOrderedSequence.bpmn"));
-      Assert.fail("Model is invalid and should not pass the validation");
+      Assertions.fail("Model is invalid and should not pass the validation");
     } catch (final Exception e) {
       assertThat(e).isInstanceOf(ModelParseException.class);
     }
@@ -119,7 +119,7 @@ public class DefinitionsTest extends BpmnModelTest {
     try {
       Bpmn.validateModel(bpmnModelInstance);
     } catch (final ModelValidationException e) {
-      Assert.fail();
+      Assertions.fail();
     }
   }
 
@@ -145,7 +145,7 @@ public class DefinitionsTest extends BpmnModelTest {
     try {
       Bpmn.validateModel(bpmnModelInstance);
     } catch (final ModelValidationException e) {
-      Assert.fail();
+      Assertions.fail();
     }
 
     // convert the model to the XML string representation
@@ -217,7 +217,7 @@ public class DefinitionsTest extends BpmnModelTest {
         bpmnModelInstance.newInstance(MessageEventDefinition.class);
     try {
       anotherMessageEventDefinition.setMessage(anotherMessage);
-      Assert.fail(
+      Assertions.fail(
           "Message should not be added to message event definition, cause it is not part of the model");
     } catch (final Exception e) {
       assertThat(e).isInstanceOf(ModelReferenceException.class);
@@ -236,7 +236,7 @@ public class DefinitionsTest extends BpmnModelTest {
     try {
       Bpmn.validateModel(bpmnModelInstance);
     } catch (final ModelValidationException e) {
-      Assert.fail();
+      Assertions.fail();
     }
   }
 
@@ -284,7 +284,7 @@ public class DefinitionsTest extends BpmnModelTest {
     try {
       Bpmn.validateModel(bpmnModelInstance);
     } catch (final ModelValidationException e) {
-      Assert.fail();
+      Assertions.fail();
     }
   }
 }

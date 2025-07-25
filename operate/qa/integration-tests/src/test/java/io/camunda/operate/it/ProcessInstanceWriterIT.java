@@ -8,7 +8,7 @@
 package io.camunda.operate.it;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
@@ -79,10 +79,11 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
 
     searchContainerManager.refreshIndices("*operate*");
 
-    assertThrows(
-        NotFoundException.class,
-        () ->
-            processInstanceReader.getProcessInstanceByKey(processInstance.getProcessInstanceKey()));
+    assertThatExceptionOfType(NotFoundException.class)
+        .isThrownBy(
+            () ->
+                processInstanceReader.getProcessInstanceByKey(
+                    processInstance.getProcessInstanceKey()));
     assertThatDependantsAreAlsoDeleted(processInstanceKey);
   }
 
@@ -122,9 +123,8 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
 
     searchContainerManager.refreshIndices("*operate*");
 
-    assertThrows(
-        NotFoundException.class,
-        () -> processInstanceReader.getProcessInstanceByKey(processInstanceKey));
+    assertThatExceptionOfType(NotFoundException.class)
+        .isThrownBy(() -> processInstanceReader.getProcessInstanceByKey(processInstanceKey));
     assertThatDependantsAreAlsoDeleted(processInstanceKey);
   }
 
@@ -150,9 +150,8 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
 
     searchContainerManager.refreshIndices("*operate*");
 
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> processInstanceWriter.deleteInstanceById(processInstanceKey));
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> processInstanceWriter.deleteInstanceById(processInstanceKey));
 
     // Cleanup so as not to interfere with other tests
     processInstance.setState(ProcessInstanceState.COMPLETED);

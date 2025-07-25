@@ -17,8 +17,6 @@
 package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.util.TestJournalRecord;
@@ -36,7 +34,7 @@ class SparseJournalIndexTest {
     final IndexInfo position = index.lookup(1);
 
     // then
-    assertNull(position);
+    assertThat(position).isNull();
   }
 
   public static JournalRecord asJournalRecord(final long index, final long asqn) {
@@ -56,9 +54,9 @@ class SparseJournalIndexTest {
     index.index(asJournalRecord(5, 5), 10);
 
     // then
-    assertEquals(5, index.lookup(5).index());
-    assertEquals(10, index.lookup(5).position());
-    assertEquals(5, index.lookupAsqn(5));
+    assertThat(index.lookup(5).index()).isEqualTo(5);
+    assertThat(index.lookup(5).position()).isEqualTo(10);
+    assertThat(index.lookupAsqn(5)).isEqualTo(5);
   }
 
   @Test
@@ -78,9 +76,9 @@ class SparseJournalIndexTest {
     index.index(asJournalRecord(8, 8), 16);
 
     // then
-    assertEquals(5, index.lookup(8).index());
-    assertEquals(10, index.lookup(8).position());
-    assertEquals(5, index.lookupAsqn(8));
+    assertThat(index.lookup(8).index()).isEqualTo(5);
+    assertThat(index.lookup(8).position()).isEqualTo(10);
+    assertThat(index.lookupAsqn(8)).isEqualTo(5);
   }
 
   @Test
@@ -102,9 +100,9 @@ class SparseJournalIndexTest {
     index.index(asJournalRecord(10, 10), 20);
 
     // then
-    assertEquals(10, index.lookup(10).index());
-    assertEquals(20, index.lookup(10).position());
-    assertEquals(10, index.lookupAsqn(10));
+    assertThat(index.lookup(10).index()).isEqualTo(10);
+    assertThat(index.lookup(10).position()).isEqualTo(20);
+    assertThat(index.lookupAsqn(10)).isEqualTo(10);
   }
 
   @Test
@@ -127,12 +125,12 @@ class SparseJournalIndexTest {
     index.deleteAfter(8);
 
     // then
-    assertEquals(5, index.lookup(8).index());
-    assertEquals(10, index.lookup(8).position());
-    assertEquals(5, index.lookup(10).index());
-    assertEquals(10, index.lookup(10).position());
-    assertEquals(5, index.lookupAsqn(80));
-    assertEquals(5, index.lookupAsqn(90));
+    assertThat(index.lookup(8).index()).isEqualTo(5);
+    assertThat(index.lookup(8).position()).isEqualTo(10);
+    assertThat(index.lookup(10).index()).isEqualTo(5);
+    assertThat(index.lookup(10).position()).isEqualTo(10);
+    assertThat(index.lookupAsqn(80)).isEqualTo(5);
+    assertThat(index.lookupAsqn(90)).isEqualTo(5);
   }
 
   @Test
@@ -156,14 +154,14 @@ class SparseJournalIndexTest {
     index.deleteAfter(4);
 
     // then
-    assertNull(index.lookup(4));
-    assertNull(index.lookup(5));
-    assertNull(index.lookup(8));
-    assertNull(index.lookup(10));
-    assertNull(index.lookupAsqn(40));
-    assertNull(index.lookupAsqn(50));
-    assertNull(index.lookupAsqn(80));
-    assertNull(index.lookupAsqn(100));
+    assertThat(index.lookup(4)).isNull();
+    assertThat(index.lookup(5)).isNull();
+    assertThat(index.lookup(8)).isNull();
+    assertThat(index.lookup(10)).isNull();
+    assertThat(index.lookupAsqn(40)).isNull();
+    assertThat(index.lookupAsqn(50)).isNull();
+    assertThat(index.lookupAsqn(80)).isNull();
+    assertThat(index.lookupAsqn(100)).isNull();
   }
 
   @Test
@@ -186,9 +184,9 @@ class SparseJournalIndexTest {
     index.deleteUntil(8);
 
     // then
-    assertNull(index.lookup(8));
-    assertEquals(10, index.lookup(10).index());
-    assertEquals(20, index.lookup(10).position());
+    assertThat(index.lookup(8)).isNull();
+    assertThat(index.lookup(10).index()).isEqualTo(10);
+    assertThat(index.lookup(10).position()).isEqualTo(20);
   }
 
   @Test
@@ -210,12 +208,12 @@ class SparseJournalIndexTest {
     index.deleteUntil(11);
 
     // then
-    assertNull(index.lookup(4));
-    assertNull(index.lookup(5));
-    assertNull(index.lookup(8));
-    assertNull(index.lookupAsqn(40));
-    assertNull(index.lookupAsqn(50));
-    assertNull(index.lookupAsqn(80));
+    assertThat(index.lookup(4)).isNull();
+    assertThat(index.lookup(5)).isNull();
+    assertThat(index.lookup(8)).isNull();
+    assertThat(index.lookupAsqn(40)).isNull();
+    assertThat(index.lookupAsqn(50)).isNull();
+    assertThat(index.lookupAsqn(80)).isNull();
   }
 
   @Test
@@ -232,13 +230,13 @@ class SparseJournalIndexTest {
     index.index(asJournalRecord(6, 6), 10);
 
     // then
-    assertNull(index.lookupAsqn(5, 1));
-    assertEquals(2, index.lookupAsqn(5, 3));
-    assertEquals(2, index.lookupAsqn(5, 3));
-    assertEquals(4, index.lookupAsqn(5, 4));
-    assertEquals(4, index.lookupAsqn(5, 5));
-    assertEquals(4, index.lookupAsqn(Long.MAX_VALUE, 5));
-    assertEquals(6, index.lookupAsqn(Long.MAX_VALUE, 6));
+    assertThat(index.lookupAsqn(5, 1)).isNull();
+    assertThat(index.lookupAsqn(5, 3)).isEqualTo(2);
+    assertThat(index.lookupAsqn(5, 3)).isEqualTo(2);
+    assertThat(index.lookupAsqn(5, 4)).isEqualTo(4);
+    assertThat(index.lookupAsqn(5, 5)).isEqualTo(4);
+    assertThat(index.lookupAsqn(Long.MAX_VALUE, 5)).isEqualTo(4);
+    assertThat(index.lookupAsqn(Long.MAX_VALUE, 6)).isEqualTo(6);
   }
 
   @Test

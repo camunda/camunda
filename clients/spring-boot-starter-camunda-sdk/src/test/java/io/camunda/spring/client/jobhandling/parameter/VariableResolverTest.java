@@ -15,7 +15,7 @@
  */
 package io.camunda.spring.client.jobhandling.parameter;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ActivatedJob;
@@ -46,7 +46,7 @@ class VariableResolverTest {
 
     final Object resolvedValue = resolver.resolve(jobClient, job);
 
-    assertNull(resolvedValue);
+    assertThat(resolvedValue).isNull();
   }
 
   @Test
@@ -55,6 +55,6 @@ class VariableResolverTest {
 
     final Object resolvedValue = resolver.resolve(jobClient, job);
 
-    assertEquals("test value", resolvedValue);
+    assertThat(resolvedValue).isEqualTo("test value");
   }
 }

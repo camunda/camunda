@@ -8,7 +8,6 @@
 package io.camunda.zeebe.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;

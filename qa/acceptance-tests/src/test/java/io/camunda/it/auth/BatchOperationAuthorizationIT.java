@@ -21,7 +21,7 @@ import static io.camunda.it.util.TestHelper.getScopedVariables;
 import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -40,11 +40,11 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.function.Executable;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
@@ -306,7 +306,7 @@ class BatchOperationAuthorizationIT {
   void shouldReturnForbiddenForUnauthorizedBatchOperation(
       @Authenticated(FORBIDDEN) final CamundaClient camundaClient) {
     // when
-    final Executable executeGet =
+    final ThrowingCallable executeGet =
         () ->
             camundaClient
                 .newCreateBatchOperationCommand()
@@ -316,7 +316,8 @@ class BatchOperationAuthorizationIT {
                 .join();
 
     // then
-    final var problemException = assertThrows(ProblemException.class, executeGet);
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(

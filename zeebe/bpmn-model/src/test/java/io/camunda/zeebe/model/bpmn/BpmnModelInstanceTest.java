@@ -15,9 +15,7 @@
  */
 package io.camunda.zeebe.model.bpmn;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.model.bpmn.instance.Definitions;
 import org.junit.Test;
@@ -36,7 +34,7 @@ public class BpmnModelInstanceTest {
     final BpmnModelInstance cloneInstance = modelInstance.clone();
     cloneInstance.getDefinitions().setId("TestId2");
 
-    assertThat(modelInstance.getDefinitions().getId(), is(equalTo("TestId")));
-    assertThat(cloneInstance.getDefinitions().getId(), is(equalTo("TestId2")));
+    assertThat(modelInstance.getDefinitions().getId()).isEqualTo("TestId");
+    assertThat(cloneInstance.getDefinitions().getId()).isEqualTo("TestId2");
   }
 }

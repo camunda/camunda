@@ -9,7 +9,7 @@ package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -184,7 +184,10 @@ public class CreateDocumentBatchTest {
     final var command = camundaClient.newCreateDocumentBatchCommand().addDocument().done();
 
     // then
-    final var exception = assertThrows(IllegalArgumentException.class, command::send);
+    final var exception =
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(command::send)
+            .actual();
     assertThat(exception).hasMessageContaining("content");
   }
 
@@ -263,7 +266,8 @@ public class CreateDocumentBatchTest {
             .send();
 
     // then
-    final var exception = assertThrows(Exception.class, command::join);
+    final var exception =
+        assertThatExceptionOfType(Exception.class).isThrownBy(command::join).actual();
     assertThat(exception).hasMessageContaining("non-existing-store");
   }
 

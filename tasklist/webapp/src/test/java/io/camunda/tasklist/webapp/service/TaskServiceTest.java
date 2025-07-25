@@ -11,8 +11,7 @@ import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -141,12 +140,14 @@ class TaskServiceTest {
     // When and Then
     // When / Then
     final InvalidRequestException exception =
-        assertThrows(InvalidRequestException.class, () -> instance.getTasks(taskQuery));
+        assertThatExceptionOfType(InvalidRequestException.class)
+            .isThrownBy(() -> instance.getTasks(taskQuery))
+            .actual();
 
     // Validate the exception message if needed
-    assertEquals(
-        "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.",
-        exception.getMessage());
+    assertThat(exception.getMessage())
+        .isEqualTo(
+            "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.");
   }
 
   @Test

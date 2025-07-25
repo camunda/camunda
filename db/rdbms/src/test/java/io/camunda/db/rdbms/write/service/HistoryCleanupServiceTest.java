@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -97,7 +97,7 @@ class HistoryCleanupServiceTest {
         historyCleanupService.cleanupHistory(PARTITION_ID, CLEANUP_DATE);
 
     // then
-    assertEquals(Duration.ofHours(1), nextCleanupInterval);
+    assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
     verify(processInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
     verify(flowNodeInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
     verify(incidentWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
@@ -127,7 +127,8 @@ class HistoryCleanupServiceTest {
         historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
 
     // then
-    assertEquals(Duration.ofHours(8), nextDuration); // assuming minCleanupInterval is 1 hour
+    assertThat(nextDuration)
+        .isEqualTo(Duration.ofHours(8)); // assuming minCleanupInterval is 1 hour
   }
 
   @Test
@@ -149,7 +150,8 @@ class HistoryCleanupServiceTest {
         historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
 
     // then
-    assertEquals(Duration.ofHours(2), nextDuration); // assuming minCleanupInterval is 1 hour
+    assertThat(nextDuration)
+        .isEqualTo(Duration.ofHours(2)); // assuming minCleanupInterval is 1 hour
   }
 
   @Test
@@ -171,6 +173,7 @@ class HistoryCleanupServiceTest {
         historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
 
     // then
-    assertEquals(Duration.ofHours(4), nextDuration); // assuming minCleanupInterval is 1 hour
+    assertThat(nextDuration)
+        .isEqualTo(Duration.ofHours(4)); // assuming minCleanupInterval is 1 hour
   }
 }

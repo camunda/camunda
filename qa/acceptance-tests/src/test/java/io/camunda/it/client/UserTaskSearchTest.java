@@ -10,7 +10,7 @@ package io.camunda.it.client;
 import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -250,14 +250,16 @@ class UserTaskSearchTest {
 
     // when
     final var exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () ->
-                camundaClient
-                    .newUserTaskSearchRequest()
-                    .filter(f -> f.processInstanceVariables(List.of(vf -> vf.name("process01"))))
-                    .send()
-                    .join());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newUserTaskSearchRequest()
+                        .filter(
+                            f -> f.processInstanceVariables(List.of(vf -> vf.name("process01"))))
+                        .send()
+                        .join())
+            .actual();
     // then
     assertThat(exception.getMessage())
         .contains("Variable value cannot be null for variable 'process01'");
@@ -271,14 +273,15 @@ class UserTaskSearchTest {
 
     // when
     final var exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () ->
-                camundaClient
-                    .newUserTaskSearchRequest()
-                    .filter(f -> f.processInstanceVariables(variables))
-                    .send()
-                    .join());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newUserTaskSearchRequest()
+                        .filter(f -> f.processInstanceVariables(variables))
+                        .send()
+                        .join())
+            .actual();
     // then
     assertThat(exception.getMessage())
         .contains("Variable value cannot be null for variable 'process01'");
@@ -288,17 +291,18 @@ class UserTaskSearchTest {
   public void shouldThrowExceptionIfVariableValueEmptyFilter() {
     // when
     final var exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () ->
-                camundaClient
-                    .newUserTaskSearchRequest()
-                    .filter(
-                        f ->
-                            f.processInstanceVariables(
-                                List.of(vf -> vf.name("process01").value(v -> {}))))
-                    .send()
-                    .join());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newUserTaskSearchRequest()
+                        .filter(
+                            f ->
+                                f.processInstanceVariables(
+                                    List.of(vf -> vf.name("process01").value(v -> {}))))
+                        .send()
+                        .join())
+            .actual();
     // then
     assertThat(exception.getMessage())
         .contains("Variable value cannot be null for variable 'process01'");
@@ -613,9 +617,9 @@ class UserTaskSearchTest {
     // when
     final long userTaskKey = new Random().nextLong();
     final var problemException =
-        assertThrows(
-            ProblemException.class,
-            () -> camundaClient.newUserTaskGetRequest(userTaskKey).send().join());
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(() -> camundaClient.newUserTaskGetRequest(userTaskKey).send().join())
+            .actual();
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())

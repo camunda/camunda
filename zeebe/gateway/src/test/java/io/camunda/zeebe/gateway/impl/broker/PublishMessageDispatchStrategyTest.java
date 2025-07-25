@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.broker;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
@@ -40,10 +40,10 @@ final class PublishMessageDispatchStrategyTest {
             new TestBrokerClusterState(partitionCount), ClusterConfiguration.uninitialized());
 
     // then - the request is dispatched based on the partition count from the topology
-    assertEquals(
-        SubscriptionUtil.getSubscriptionPartitionId(
-            BufferUtil.wrapString(correlationKey), partitionCount),
-        dispatchStrategy.determinePartition(topologyManager));
+    assertThat(dispatchStrategy.determinePartition(topologyManager))
+        .isEqualTo(
+            SubscriptionUtil.getSubscriptionPartitionId(
+                BufferUtil.wrapString(correlationKey), partitionCount));
   }
 
   @Test
@@ -64,10 +64,10 @@ final class PublishMessageDispatchStrategyTest {
         new TestTopologyManager(new TestBrokerClusterState(partitionCount), clusterConfiguration);
 
     // then - the request is dispatched based on the routing state
-    assertEquals(
-        SubscriptionUtil.getSubscriptionPartitionId(
-            BufferUtil.wrapString(correlationKey), messagePartitionCount),
-        dispatchStrategy.determinePartition(topologyManager));
+    assertThat(dispatchStrategy.determinePartition(topologyManager))
+        .isEqualTo(
+            SubscriptionUtil.getSubscriptionPartitionId(
+                BufferUtil.wrapString(correlationKey), messagePartitionCount));
   }
 
   private record TestBrokerClusterState(int partitionCount) implements BrokerClusterState {

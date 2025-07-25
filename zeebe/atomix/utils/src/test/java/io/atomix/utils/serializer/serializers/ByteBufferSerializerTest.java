@@ -16,9 +16,7 @@
  */
 package io.atomix.utils.serializer.serializers;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.ByteBufferInput;
@@ -77,9 +75,9 @@ public class ByteBufferSerializerTest {
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
-    assertEquals(capacity, deserialized.remaining());
-    assertEquals(capacity, deserialized.capacity());
-    assertEquals(value, deserialized.getLong(0));
+    assertThat(deserialized.remaining()).isEqualTo(capacity);
+    assertThat(deserialized.capacity()).isEqualTo(capacity);
+    assertThat(deserialized.getLong(0)).isEqualTo(value);
   }
 
   @Test
@@ -95,10 +93,10 @@ public class ByteBufferSerializerTest {
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
-    assertEquals(capacity, deserialized.remaining());
-    assertEquals(capacity, deserialized.capacity());
-    assertTrue(deserialized.isDirect());
-    assertEquals(value, deserialized.getLong(0));
+    assertThat(deserialized.remaining()).isEqualTo(capacity);
+    assertThat(deserialized.capacity()).isEqualTo(capacity);
+    assertThat(deserialized.isDirect()).isTrue();
+    assertThat(deserialized.getLong(0)).isEqualTo(value);
   }
 
   @Test
@@ -114,10 +112,10 @@ public class ByteBufferSerializerTest {
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
-    assertEquals(capacity, deserialized.remaining());
-    assertEquals(capacity, deserialized.capacity());
-    assertFalse(deserialized.isDirect());
-    assertEquals(value, deserialized.getLong(0));
+    assertThat(deserialized.remaining()).isEqualTo(capacity);
+    assertThat(deserialized.capacity()).isEqualTo(capacity);
+    assertThat(deserialized.isDirect()).isFalse();
+    assertThat(deserialized.getLong(0)).isEqualTo(value);
   }
 
   @Test
@@ -134,8 +132,8 @@ public class ByteBufferSerializerTest {
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
-    assertEquals(ByteOrder.LITTLE_ENDIAN, deserialized.order());
-    assertEquals(value, deserialized.getLong(0));
+    assertThat(deserialized.order()).isEqualTo(ByteOrder.LITTLE_ENDIAN);
+    assertThat(deserialized.getLong(0)).isEqualTo(value);
   }
 
   @Test
@@ -152,8 +150,8 @@ public class ByteBufferSerializerTest {
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
-    assertEquals(ByteOrder.BIG_ENDIAN, deserialized.order());
-    assertEquals(value, deserialized.getLong(0));
+    assertThat(deserialized.order()).isEqualTo(ByteOrder.BIG_ENDIAN);
+    assertThat(deserialized.getLong(0)).isEqualTo(value);
   }
 
   @Test
@@ -177,8 +175,8 @@ public class ByteBufferSerializerTest {
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
-    assertEquals(ByteOrder.BIG_ENDIAN, deserialized.order());
-    assertEquals(secondValue, deserialized.getInt(0));
+    assertThat(deserialized.order()).isEqualTo(ByteOrder.BIG_ENDIAN);
+    assertThat(deserialized.getInt(0)).isEqualTo(secondValue);
   }
 
   @Test
@@ -196,7 +194,7 @@ public class ByteBufferSerializerTest {
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
-    assertEquals(ByteOrder.BIG_ENDIAN, deserialized.order());
-    assertEquals(0, deserialized.capacity());
+    assertThat(deserialized.order()).isEqualTo(ByteOrder.BIG_ENDIAN);
+    assertThat(deserialized.capacity()).isEqualTo(0);
   }
 }

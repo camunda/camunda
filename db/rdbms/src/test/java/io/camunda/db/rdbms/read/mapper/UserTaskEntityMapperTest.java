@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.read.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.Builder;
@@ -110,8 +109,8 @@ public class UserTaskEntityMapperTest {
     assertThat(entity.customHeaders()).isEqualTo(Map.of("key", "value"));
     assertThat(entity.creationDate())
         .isCloseTo(dbModel.creationDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertNull(entity.completionDate());
-    assertNull(entity.dueDate());
-    assertNull(entity.followUpDate());
+    assertThat(entity.completionDate()).isNull();
+    assertThat(entity.dueDate()).isNull();
+    assertThat(entity.followUpDate()).isNull();
   }
 }

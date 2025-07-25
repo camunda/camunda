@@ -7,7 +7,8 @@
  */
 package io.camunda.util;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.search.entities.ValueTypeEnum;
 import org.junit.jupiter.api.Test;
@@ -16,111 +17,112 @@ public class ValueTypeUtilTest {
 
   @Test
   public void shouldReturnNullForNullValue() {
-    assertEquals(ValueTypeEnum.NULL, ValueTypeUtil.getValueType(null));
+    assertThat(ValueTypeUtil.getValueType(null)).isEqualTo(ValueTypeEnum.NULL);
   }
 
   @Test
   public void shouldReturnNullForStringNullValue() {
-    assertEquals(ValueTypeEnum.NULL, ValueTypeUtil.getValueType("null"));
+    assertThat(ValueTypeUtil.getValueType("null")).isEqualTo(ValueTypeEnum.NULL);
   }
 
   @Test
   public void shouldReturnStringForNonNumericString() {
-    assertEquals(ValueTypeEnum.STRING, ValueTypeUtil.getValueType("non-numeric"));
+    assertThat(ValueTypeUtil.getValueType("non-numeric")).isEqualTo(ValueTypeEnum.STRING);
   }
 
   @Test
   public void shouldReturnLongForIntegerString() {
-    assertEquals(ValueTypeEnum.LONG, ValueTypeUtil.getValueType("123456"));
+    assertThat(ValueTypeUtil.getValueType("123456")).isEqualTo(ValueTypeEnum.LONG);
   }
 
   @Test
   public void shouldReturnLongForBooleanLikeIntegerString() {
-    assertEquals(ValueTypeEnum.LONG, ValueTypeUtil.getValueType("1"));
+    assertThat(ValueTypeUtil.getValueType("1")).isEqualTo(ValueTypeEnum.LONG);
   }
 
   @Test
   public void shouldReturnStringForIntegerStringWithQuotes() {
-    assertEquals(ValueTypeEnum.STRING, ValueTypeUtil.getValueType("\"123456\""));
+    assertThat(ValueTypeUtil.getValueType("\"123456\"")).isEqualTo(ValueTypeEnum.STRING);
   }
 
   @Test
   public void shouldReturnDoubleForDoubleString() {
-    assertEquals(ValueTypeEnum.DOUBLE, ValueTypeUtil.getValueType("123.456"));
+    assertThat(ValueTypeUtil.getValueType("123.456")).isEqualTo(ValueTypeEnum.DOUBLE);
   }
 
   @Test
   public void shouldReturnStringForDoubleStringWithQuotes() {
-    assertEquals(ValueTypeEnum.STRING, ValueTypeUtil.getValueType("\"123.456\""));
+    assertThat(ValueTypeUtil.getValueType("\"123.456\"")).isEqualTo(ValueTypeEnum.STRING);
   }
 
   @Test
   public void shouldReturnLongForLongValue() {
-    assertEquals(ValueTypeEnum.LONG, ValueTypeUtil.getValueType(123456L));
+    assertThat(ValueTypeUtil.getValueType(123456L)).isEqualTo(ValueTypeEnum.LONG);
   }
 
   @Test
   public void shouldReturnDoubleForDoubleValue() {
-    assertEquals(ValueTypeEnum.DOUBLE, ValueTypeUtil.getValueType(123.456));
+    assertThat(ValueTypeUtil.getValueType(123.456)).isEqualTo(ValueTypeEnum.DOUBLE);
   }
 
   @Test
   public void shouldReturnBooleanForBooleanValue() {
-    assertEquals(ValueTypeEnum.BOOLEAN, ValueTypeUtil.getValueType(true));
+    assertThat(ValueTypeUtil.getValueType(true)).isEqualTo(ValueTypeEnum.BOOLEAN);
   }
 
   @Test
   public void shouldReturnBooleanForBooleanStringValue() {
-    assertEquals(ValueTypeEnum.BOOLEAN, ValueTypeUtil.getValueType("true"));
+    assertThat(ValueTypeUtil.getValueType("true")).isEqualTo(ValueTypeEnum.BOOLEAN);
   }
 
   @Test
   public void shouldReturnStringForBooleanStringValueWithQuotes() {
-    assertEquals(ValueTypeEnum.STRING, ValueTypeUtil.getValueType("\"true\""));
+    assertThat(ValueTypeUtil.getValueType("\"true\"")).isEqualTo(ValueTypeEnum.STRING);
   }
 
   @Test
   public void shouldMapStringToString() {
-    assertEquals("test", ValueTypeUtil.mapValueType("test", ValueTypeEnum.STRING));
+    assertThat(ValueTypeUtil.mapValueType("test", ValueTypeEnum.STRING)).isEqualTo("test");
   }
 
   @Test
   public void shouldMapStringToLong() {
-    assertEquals(123456L, ValueTypeUtil.mapValueType("123456", ValueTypeEnum.LONG));
+    assertThat(ValueTypeUtil.mapValueType("123456", ValueTypeEnum.LONG)).isEqualTo(123456L);
   }
 
   @Test
   public void shouldMapBooleanlikeStringToLong() {
-    assertEquals(123456L, ValueTypeUtil.mapValueType("123456", ValueTypeEnum.LONG));
+    assertThat(ValueTypeUtil.mapValueType("123456", ValueTypeEnum.LONG)).isEqualTo(123456L);
   }
 
   @Test
   public void shouldMapStringToDouble() {
-    assertEquals(123.456, ValueTypeUtil.mapValueType("123.456", ValueTypeEnum.DOUBLE));
+    assertThat(ValueTypeUtil.mapValueType("123.456", ValueTypeEnum.DOUBLE)).isEqualTo(123.456);
   }
 
   @Test
   public void shouldMapStringToBoolean() {
-    assertEquals("true", ValueTypeUtil.mapValueType("true", ValueTypeEnum.BOOLEAN));
+    assertThat(ValueTypeUtil.mapValueType("true", ValueTypeEnum.BOOLEAN)).isEqualTo("true");
   }
 
   @Test
   public void shouldMapLongToLong() {
-    assertEquals(123456L, ValueTypeUtil.mapValueType(123456L, ValueTypeEnum.LONG));
+    assertThat(ValueTypeUtil.mapValueType(123456L, ValueTypeEnum.LONG)).isEqualTo(123456L);
   }
 
   @Test
   public void shouldMapIntegerToLong() {
-    assertEquals(123456L, ValueTypeUtil.mapValueType(123456, ValueTypeEnum.LONG));
+    assertThat(ValueTypeUtil.mapValueType(123456, ValueTypeEnum.LONG)).isEqualTo(123456L);
   }
 
   @Test
   public void shouldMapDoubleToDouble() {
-    assertEquals(123.456, ValueTypeUtil.mapValueType(123.456, ValueTypeEnum.DOUBLE));
+    assertThat(ValueTypeUtil.mapValueType(123.456, ValueTypeEnum.DOUBLE)).isEqualTo(123.456);
   }
 
   @Test
   public void shouldReturnNullForUnsupportedType() {
-    assertThrows(IllegalArgumentException.class, () -> ValueTypeUtil.getValueType(new Object()));
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> ValueTypeUtil.getValueType(new Object()));
   }
 }

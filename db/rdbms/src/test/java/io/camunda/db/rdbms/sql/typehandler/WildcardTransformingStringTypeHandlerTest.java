@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.sql.typehandler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,7 +20,7 @@ class WildcardTransformingStringTypeHandlerTest {
   @MethodSource("provideElasticsearchQueries")
   void shouldTransformESWildcardToSQLWildcard(final String input, final String expected) {
     final String result = WildcardTransformingStringTypeHandler.transformParameter(input);
-    assertEquals(expected, result);
+    assertThat(result).isEqualTo(expected);
   }
 
   private static Stream<Arguments> provideElasticsearchQueries() {
@@ -47,6 +47,6 @@ class WildcardTransformingStringTypeHandlerTest {
   @MethodSource("provideSqlQueries")
   void shouldEscapeSqlWildcards(final String input, final String expected) {
     final String result = WildcardTransformingStringTypeHandler.transformParameter(input);
-    assertEquals(expected, result);
+    assertThat(result).isEqualTo(expected);
   }
 }

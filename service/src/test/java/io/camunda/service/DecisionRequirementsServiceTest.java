@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -103,7 +103,10 @@ public final class DecisionRequirementsServiceTest {
                 Authorizations.DECISION_REQUIREMENTS_READ_AUTHORIZATION));
 
     // then
-    final var exception = assertThrows(ServiceException.class, () -> services.getByKey(124L));
+    final var exception =
+        assertThatExceptionOfType(ServiceException.class)
+            .isThrownBy(() -> services.getByKey(124L))
+            .actual();
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ' on resource 'DECISION_REQUIREMENTS_DEFINITION'");
@@ -122,7 +125,9 @@ public final class DecisionRequirementsServiceTest {
 
     // then
     final var exception =
-        assertThrows(ServiceException.class, () -> services.getDecisionRequirementsXml(124L));
+        assertThatExceptionOfType(ServiceException.class)
+            .isThrownBy(() -> services.getDecisionRequirementsXml(124L))
+            .actual();
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ' on resource 'DECISION_REQUIREMENTS_DEFINITION'");

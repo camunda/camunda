@@ -14,7 +14,6 @@ import static io.camunda.zeebe.it.clustering.dynamic.Utils.deployProcessModel;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
@@ -439,7 +438,7 @@ public class ScaleUpPartitionsTest {
         .untilAsserted(
             () -> {
               final var topology = clusterActuator.getTopology();
-              assertNotNull(topology.getRouting());
+              assertThat(topology.getRouting()).isNotNull();
               assertThat(topology.getRouting().getRequestHandling())
                   .isEqualTo(routingState.getRequestHandling());
               assertThat(topology.getRouting().getMessageCorrelation())

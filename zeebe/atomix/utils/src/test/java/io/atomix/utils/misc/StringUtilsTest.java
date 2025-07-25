@@ -16,9 +16,7 @@
  */
 package io.atomix.utils.misc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 
@@ -26,14 +24,14 @@ public class StringUtilsTest {
 
   @Test
   public void testNull() {
-    assertNull(StringUtils.split(null, ","));
+    assertThat(StringUtils.split(null, ",")).isNull();
   }
 
   @Test
   public void testFilter() {
     final String[] result = StringUtils.split("1,  ,,", ",");
-    assertNotNull(result);
-    assertEquals(1, result.length);
-    assertEquals("1", result[0]);
+    assertThat(result).isNotNull();
+    assertThat(result.length).isEqualTo(1);
+    assertThat(result[0]).isEqualTo("1");
   }
 }

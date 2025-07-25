@@ -8,7 +8,8 @@
 package io.camunda.zeebe.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -49,12 +50,13 @@ public class JwtDecoderTest {
 
   @Test
   void shouldRaiseExceptionWhenTokenIsNull() {
-    assertThrows(IllegalArgumentException.class, () -> new JwtDecoder(null));
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> new JwtDecoder(null));
   }
 
   @Test
   void shouldRaiseExceptionWhenTokenIsEmpty() {
-    assertThrows(IllegalArgumentException.class, () -> new JwtDecoder(""));
+    assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> new JwtDecoder(""));
   }
 
   @Test
@@ -63,7 +65,7 @@ public class JwtDecoderTest {
     final var decoder = new JwtDecoder("invalid-token");
 
     // then
-    assertThrows(RuntimeException.class, decoder::decode);
+    assertThatThrownBy(decoder::decode).isInstanceOf(RuntimeException.class);
   }
 
   private String generateToken() {

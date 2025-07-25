@@ -8,7 +8,7 @@
 package io.camunda.db.rdbms.sql.columns;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -111,7 +111,7 @@ public class SearchColumnTest {
   @ParameterizedTest(name = "{0}#{1}")
   @MethodSource("provideSearchColumns")
   void testAllGetPropertyValue(final String className, final SearchColumn<?> column) {
-    assertDoesNotThrow(() -> column.getPropertyType());
+    assertThatCode(() -> column.getPropertyType()).doesNotThrowAnyException();
   }
 
   @ParameterizedTest(name = "{0}#{1}")

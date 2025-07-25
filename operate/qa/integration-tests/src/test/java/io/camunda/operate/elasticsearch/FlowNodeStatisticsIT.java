@@ -11,7 +11,6 @@ import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInst
 import static io.camunda.operate.util.TestUtil.createFlowNodeInstanceWithIncident;
 import static io.camunda.operate.util.TestUtil.createProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -124,9 +123,9 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
         mockMvcTestRule.fromResponse(
             getRequest(QUERY_PROCESS_CORE_STATISTICS_URL), ProcessInstanceCoreStatisticsDto.class);
     // then return zero statistics
-    assertEquals(coreStatistics.getActive().longValue(), 0L);
-    assertEquals(coreStatistics.getRunning().longValue(), 0L);
-    assertEquals(coreStatistics.getWithIncidents().longValue(), 0L);
+    assertThat(coreStatistics.getActive().longValue()).isEqualTo(0L);
+    assertThat(coreStatistics.getRunning().longValue()).isEqualTo(0L);
+    assertThat(coreStatistics.getWithIncidents().longValue()).isEqualTo(0L);
 
     // given test data
     createData(PROCESS_KEY_DEMO_PROCESS);
@@ -137,9 +136,9 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
         mockMvcTestRule.fromResponse(
             getRequest(QUERY_PROCESS_CORE_STATISTICS_URL), ProcessInstanceCoreStatisticsDto.class);
     // then return non-zero statistics
-    assertEquals(coreStatistics.getActive().longValue(), 6L);
-    assertEquals(coreStatistics.getRunning().longValue(), 12L);
-    assertEquals(coreStatistics.getWithIncidents().longValue(), 6L);
+    assertThat(coreStatistics.getActive().longValue()).isEqualTo(6L);
+    assertThat(coreStatistics.getRunning().longValue()).isEqualTo(12L);
+    assertThat(coreStatistics.getWithIncidents().longValue()).isEqualTo(6L);
   }
 
   @Test

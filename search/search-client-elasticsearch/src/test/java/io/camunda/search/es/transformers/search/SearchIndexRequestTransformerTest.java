@@ -8,7 +8,7 @@
 package io.camunda.search.es.transformers.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.WriteResponseBase;
@@ -80,14 +80,14 @@ public class SearchIndexRequestTransformerTest {
 
   @Test
   public void shouldFailToBuildIndexRequestWhenIndexNotPresent() {
-    assertThrows(
-        NullPointerException.class,
-        () -> SearchIndexRequest.of(b -> b.document(new TestDocument("test"))));
+    assertThatExceptionOfType(NullPointerException.class)
+        .isThrownBy(() -> SearchIndexRequest.of(b -> b.document(new TestDocument("test"))));
   }
 
   @Test
   public void shouldFailToBuildIndexRequestWhenDocumentNotPresent() {
-    assertThrows(NullPointerException.class, () -> SearchIndexRequest.of(b -> b.index("bar")));
+    assertThatExceptionOfType(NullPointerException.class)
+        .isThrownBy(() -> SearchIndexRequest.of(b -> b.index("bar")));
   }
 
   record TestDocument(String id) {}

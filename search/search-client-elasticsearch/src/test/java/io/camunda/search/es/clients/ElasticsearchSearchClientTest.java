@@ -7,7 +7,7 @@
  */
 package io.camunda.search.es.clients;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -44,8 +44,8 @@ class ElasticsearchSearchClientTest {
     when(client.search(any(SearchRequest.class), any())).thenThrow(IOException.class);
 
     // when & Assert
-    assertThrows(
-        CamundaSearchException.class, () -> searchClient.scroll(searchRequest, Object.class));
+    assertThatExceptionOfType(CamundaSearchException.class)
+        .isThrownBy(() -> searchClient.scroll(searchRequest, Object.class));
     verify(client, never()).scroll(any(Function.class), any());
     verify(client, never()).clearScroll(any(Function.class));
   }

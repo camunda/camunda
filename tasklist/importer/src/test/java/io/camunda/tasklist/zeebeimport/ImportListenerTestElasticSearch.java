@@ -7,9 +7,7 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -92,9 +90,9 @@ public class ImportListenerTestElasticSearch extends NoBeansTest {
     importJob.call();
 
     // then
-    assertTrue(importListener.isFinishedCalled());
-    assertFalse(importListener.isFailedCalled());
-    assertEquals(importListener.getImportBatch(), importBatchElasticSearch);
+    assertThat(importListener.isFinishedCalled()).isTrue();
+    assertThat(importListener.isFailedCalled()).isFalse();
+    assertThat(importBatchElasticSearch).isEqualTo(importListener.getImportBatch());
   }
 
   @Test
@@ -119,9 +117,9 @@ public class ImportListenerTestElasticSearch extends NoBeansTest {
     importJob.call();
 
     // then
-    assertTrue(importListener.isFailedCalled());
-    assertFalse(importListener.isFinishedCalled());
-    assertEquals(importListener.getImportBatch(), importBatchElasticSearch);
+    assertThat(importListener.isFailedCalled()).isTrue();
+    assertThat(importListener.isFinishedCalled()).isFalse();
+    assertThat(importBatchElasticSearch).isEqualTo(importListener.getImportBatch());
   }
 
   @Component

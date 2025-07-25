@@ -8,7 +8,7 @@
 package io.camunda.zeebe.util.retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -62,7 +62,9 @@ class RetryDecoratorTest {
 
     // when
     final var exception =
-        assertThrows(Exception.class, () -> retryDecorator.decorate("operation", runnable));
+        assertThatExceptionOfType(Exception.class)
+            .isThrownBy(() -> retryDecorator.decorate("operation", runnable))
+            .actual();
 
     // then
     verify(runnable, times(1)).run();

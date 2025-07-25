@@ -16,7 +16,6 @@
 package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.ClusterMembershipService;
@@ -500,7 +499,7 @@ public final class RaftRule extends ExternalResource {
       throw new RuntimeException(e);
     }
 
-    assertTrue(errorMessage.get(), condition.getAsBoolean());
+    assertThat(condition.getAsBoolean()).as(errorMessage.get()).isTrue();
   }
 
   public void awaitCommit(final long commitIndex) throws Exception {

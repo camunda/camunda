@@ -16,7 +16,7 @@
 package io.camunda.spring.client.bean.factory;
 
 import static io.camunda.spring.client.annotation.AnnotationUtil.getDeploymentValue;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.spring.client.annotation.Deployment;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
@@ -46,8 +46,8 @@ public class ReadZeebeDeploymentValueTest {
     final Optional<DeploymentValue> valueForClass = getDeploymentValue(classInfo);
 
     // then
-    assertTrue(valueForClass.isPresent());
-    assertEquals(expectedDeploymentValue, valueForClass.get());
+    assertThat(valueForClass.isPresent()).isTrue();
+    assertThat(valueForClass.get()).isEqualTo(expectedDeploymentValue);
   }
 
   @Test
@@ -66,8 +66,8 @@ public class ReadZeebeDeploymentValueTest {
     final Optional<DeploymentValue> valueForClass = getDeploymentValue(classInfo);
 
     // then
-    assertTrue(valueForClass.isPresent());
-    assertEquals(expectedDeploymentValue, valueForClass.get());
+    assertThat(valueForClass.isPresent()).isTrue();
+    assertThat(valueForClass.get()).isEqualTo(expectedDeploymentValue);
   }
 
   @Test
@@ -79,7 +79,7 @@ public class ReadZeebeDeploymentValueTest {
     final Optional<DeploymentValue> valueForClass = getDeploymentValue(classInfo);
 
     // then
-    assertFalse(valueForClass.isPresent());
+    assertThat(valueForClass.isPresent()).isFalse();
   }
 
   @Test
@@ -98,8 +98,8 @@ public class ReadZeebeDeploymentValueTest {
     final Optional<DeploymentValue> valueForClass = getDeploymentValue(classInfo);
 
     // then
-    assertTrue(valueForClass.isPresent());
-    assertEquals(expectedDeploymentValue, valueForClass.get());
+    assertThat(valueForClass.isPresent()).isTrue();
+    assertThat(valueForClass.get()).isEqualTo(expectedDeploymentValue);
   }
 
   @Test
@@ -118,8 +118,8 @@ public class ReadZeebeDeploymentValueTest {
     final Optional<DeploymentValue> valueForClass = getDeploymentValue(classInfo);
 
     // then
-    assertTrue(valueForClass.isPresent());
-    assertEquals(expectedDeploymentValue, valueForClass.get());
+    assertThat(valueForClass.isPresent()).isTrue();
+    assertThat(valueForClass.get()).isEqualTo(expectedDeploymentValue);
   }
 
   @Deployment(resources = "classpath*:/1.bpmn")
