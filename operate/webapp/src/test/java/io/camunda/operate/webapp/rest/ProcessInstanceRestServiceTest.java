@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -104,9 +104,9 @@ public class ProcessInstanceRestServiceTest {
         .thenReturn(false);
 
     final NotAuthorizedException exception =
-        assertThrows(
-            NotAuthorizedException.class,
-            () -> underTest.queryProcessInstanceById(processInstanceId));
+        assertThatExceptionOfType(NotAuthorizedException.class)
+            .isThrownBy(() -> underTest.queryProcessInstanceById(processInstanceId))
+            .actual();
 
     assertThat(exception.getMessage())
         .contains("No READ_PROCESS_INSTANCE permission for process instance");
@@ -125,9 +125,9 @@ public class ProcessInstanceRestServiceTest {
         .thenReturn(false);
 
     final NotAuthorizedException exception =
-        assertThrows(
-            NotAuthorizedException.class,
-            () -> underTest.queryIncidentsByProcessInstanceId(processInstanceId));
+        assertThatExceptionOfType(NotAuthorizedException.class)
+            .isThrownBy(() -> underTest.queryIncidentsByProcessInstanceId(processInstanceId))
+            .actual();
 
     assertThat(exception.getMessage())
         .contains("No READ_PROCESS_INSTANCE permission for process instance");
@@ -146,9 +146,9 @@ public class ProcessInstanceRestServiceTest {
         .thenReturn(false);
 
     final NotAuthorizedException exception =
-        assertThrows(
-            NotAuthorizedException.class,
-            () -> underTest.querySequenceFlowsByProcessInstanceId(processInstanceId));
+        assertThatExceptionOfType(NotAuthorizedException.class)
+            .isThrownBy(() -> underTest.querySequenceFlowsByProcessInstanceId(processInstanceId))
+            .actual();
 
     assertThat(exception.getMessage())
         .contains("No READ_PROCESS_INSTANCE permission for process instance");
@@ -167,9 +167,9 @@ public class ProcessInstanceRestServiceTest {
         .thenReturn(false);
 
     final NotAuthorizedException exception =
-        assertThrows(
-            NotAuthorizedException.class,
-            () -> underTest.getVariables(processInstanceId, new VariableRequestDto()));
+        assertThatExceptionOfType(NotAuthorizedException.class)
+            .isThrownBy(() -> underTest.getVariables(processInstanceId, new VariableRequestDto()))
+            .actual();
 
     assertThat(exception.getMessage())
         .contains("No READ_PROCESS_INSTANCE permission for process instance");
@@ -188,8 +188,9 @@ public class ProcessInstanceRestServiceTest {
         .thenReturn(false);
 
     final NotAuthorizedException exception =
-        assertThrows(
-            NotAuthorizedException.class, () -> underTest.getFlowNodeStates(processInstanceId));
+        assertThatExceptionOfType(NotAuthorizedException.class)
+            .isThrownBy(() -> underTest.getFlowNodeStates(processInstanceId))
+            .actual();
 
     assertThat(exception.getMessage())
         .contains("No READ_PROCESS_INSTANCE permission for process instance");
@@ -208,8 +209,9 @@ public class ProcessInstanceRestServiceTest {
         .thenReturn(false);
 
     final NotAuthorizedException exception =
-        assertThrows(
-            NotAuthorizedException.class, () -> underTest.getStatistics(processInstanceId));
+        assertThatExceptionOfType(NotAuthorizedException.class)
+            .isThrownBy(() -> underTest.getStatistics(processInstanceId))
+            .actual();
 
     assertThat(exception.getMessage())
         .contains("No READ_PROCESS_INSTANCE permission for process instance");
@@ -228,10 +230,12 @@ public class ProcessInstanceRestServiceTest {
         .thenReturn(false);
 
     final NotAuthorizedException exception =
-        assertThrows(
-            NotAuthorizedException.class,
-            () ->
-                underTest.getFlowNodeMetadata(processInstanceId, new FlowNodeMetadataRequestDto()));
+        assertThatExceptionOfType(NotAuthorizedException.class)
+            .isThrownBy(
+                () ->
+                    underTest.getFlowNodeMetadata(
+                        processInstanceId, new FlowNodeMetadataRequestDto()))
+            .actual();
 
     assertThat(exception.getMessage())
         .contains("No READ_PROCESS_INSTANCE permission for process instance");
@@ -250,13 +254,14 @@ public class ProcessInstanceRestServiceTest {
         .thenReturn(false);
 
     final NotAuthorizedException exception =
-        assertThrows(
-            NotAuthorizedException.class,
-            () ->
-                underTest.operation(
-                    processInstanceId,
-                    new CreateOperationRequestDto()
-                        .setOperationType(OperationType.DELETE_PROCESS_INSTANCE)));
+        assertThatExceptionOfType(NotAuthorizedException.class)
+            .isThrownBy(
+                () ->
+                    underTest.operation(
+                        processInstanceId,
+                        new CreateOperationRequestDto()
+                            .setOperationType(OperationType.DELETE_PROCESS_INSTANCE)))
+            .actual();
 
     assertThat(exception.getMessage())
         .contains("No DELETE_PROCESS_INSTANCE permission for process instance");
@@ -275,13 +280,14 @@ public class ProcessInstanceRestServiceTest {
         .thenReturn(false);
 
     final NotAuthorizedException exception =
-        assertThrows(
-            NotAuthorizedException.class,
-            () ->
-                underTest.operation(
-                    processInstanceId,
-                    new CreateOperationRequestDto()
-                        .setOperationType(OperationType.CANCEL_PROCESS_INSTANCE)));
+        assertThatExceptionOfType(NotAuthorizedException.class)
+            .isThrownBy(
+                () ->
+                    underTest.operation(
+                        processInstanceId,
+                        new CreateOperationRequestDto()
+                            .setOperationType(OperationType.CANCEL_PROCESS_INSTANCE)))
+            .actual();
 
     assertThat(exception.getMessage())
         .contains("No UPDATE_PROCESS_INSTANCE permission for process instance");
@@ -300,12 +306,14 @@ public class ProcessInstanceRestServiceTest {
         .thenReturn(false);
 
     final NotAuthorizedException exception =
-        assertThrows(
-            NotAuthorizedException.class,
-            () ->
-                underTest.operation(
-                    processInstanceId,
-                    new CreateOperationRequestDto().setOperationType(OperationType.ADD_VARIABLE)));
+        assertThatExceptionOfType(NotAuthorizedException.class)
+            .isThrownBy(
+                () ->
+                    underTest.operation(
+                        processInstanceId,
+                        new CreateOperationRequestDto()
+                            .setOperationType(OperationType.ADD_VARIABLE)))
+            .actual();
 
     assertThat(exception.getMessage())
         .contains("No UPDATE_PROCESS_INSTANCE permission for process instance");
@@ -324,8 +332,9 @@ public class ProcessInstanceRestServiceTest {
         .thenReturn(false);
 
     final NotAuthorizedException exception =
-        assertThrows(
-            NotAuthorizedException.class, () -> underTest.getVariable(processInstanceId, "var1"));
+        assertThatExceptionOfType(NotAuthorizedException.class)
+            .isThrownBy(() -> underTest.getVariable(processInstanceId, "var1"))
+            .actual();
 
     assertThat(exception.getMessage())
         .contains("No READ_PROCESS_INSTANCE permission for process instance");

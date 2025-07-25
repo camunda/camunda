@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.util;
 
-import static org.junit.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -62,8 +62,9 @@ public class MockMvcTestRule extends ExternalResource {
             .findAny()
             .orElse(null);
 
-    assertNotNull(
-        "the JSON message converter must not be null", this.mappingJackson2HttpMessageConverter);
+    assertThat(this.mappingJackson2HttpMessageConverter)
+        .as("the JSON message converter must not be null")
+        .isNotNull();
   }
 
   @Override

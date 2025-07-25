@@ -14,7 +14,6 @@ import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_
 import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.ACTIVE;
 import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.INCIDENT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.qa.util.RestAPITestUtil;
@@ -120,9 +119,9 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
         mockMvcTestRule.fromResponse(
             getRequest(QUERY_PROCESS_CORE_STATISTICS_URL), ProcessInstanceCoreStatisticsDto.class);
     // then return zero statistics
-    assertEquals(6L, coreStatistics.getRunning().longValue());
-    assertEquals(4L, coreStatistics.getActive().longValue());
-    assertEquals(2L, coreStatistics.getWithIncidents().longValue());
+    assertThat(coreStatistics.getRunning().longValue()).isEqualTo(6L);
+    assertThat(coreStatistics.getActive().longValue()).isEqualTo(4L);
+    assertThat(coreStatistics.getWithIncidents().longValue()).isEqualTo(2L);
   }
 
   @Test

@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
@@ -66,13 +66,13 @@ public class AuthorizationIT {
             processId, PermissionType.DELETE_PROCESS_INSTANCE))
         .thenReturn(false);
 
-    assertThrows(
-        NotAuthorizedException.class,
-        () ->
-            processInstanceRestService.operation(
-                "23",
-                new CreateOperationRequestDto()
-                    .setOperationType(OperationType.DELETE_PROCESS_INSTANCE)));
+    assertThatExceptionOfType(NotAuthorizedException.class)
+        .isThrownBy(
+            () ->
+                processInstanceRestService.operation(
+                    "23",
+                    new CreateOperationRequestDto()
+                        .setOperationType(OperationType.DELETE_PROCESS_INSTANCE)));
     verifyNoInteractions(batchOperationWriter);
   }
 

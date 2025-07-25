@@ -7,9 +7,7 @@
  */
 package io.camunda.operate.it;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -57,44 +55,44 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerResponseDto response = postListenerRequest("111", request);
     final List<ListenerDto> resultListeners = response.getListeners();
 
-    assertEquals(5L, response.getTotalCount());
-    assertEquals(5, resultListeners.size());
+    assertThat(response.getTotalCount()).isEqualTo(5L);
+    assertThat(resultListeners.size()).isEqualTo(5);
     // results should be ordered by finish date (latest first, but no date at the beginning)
     final ListenerDto actual4 = resultListeners.get(0);
-    assertEquals("22", actual4.getListenerKey());
-    assertEquals(ListenerType.TASK_LISTENER, actual4.getListenerType());
-    assertEquals(ListenerEventType.COMPLETING, actual4.getEvent());
-    assertEquals(ListenerState.FAILED, actual4.getState());
-    assertNull(actual4.getTime());
+    assertThat(actual4.getListenerKey()).isEqualTo("22");
+    assertThat(actual4.getListenerType()).isEqualTo(ListenerType.TASK_LISTENER);
+    assertThat(actual4.getEvent()).isEqualTo(ListenerEventType.COMPLETING);
+    assertThat(actual4.getState()).isEqualTo(ListenerState.FAILED);
+    assertThat(actual4.getTime()).isNull();
 
     final ListenerDto actual3 = resultListeners.get(1);
-    assertEquals("21", actual3.getListenerKey());
-    assertEquals(ListenerType.TASK_LISTENER, actual3.getListenerType());
-    assertEquals(ListenerEventType.UPDATING, actual3.getEvent());
-    assertEquals(ListenerState.ACTIVE, actual3.getState());
-    assertNull(actual3.getTime());
+    assertThat(actual3.getListenerKey()).isEqualTo("21");
+    assertThat(actual3.getListenerType()).isEqualTo(ListenerType.TASK_LISTENER);
+    assertThat(actual3.getEvent()).isEqualTo(ListenerEventType.UPDATING);
+    assertThat(actual3.getState()).isEqualTo(ListenerState.ACTIVE);
+    assertThat(actual3.getTime()).isNull();
 
     final ListenerDto actual0 = resultListeners.get(2);
-    assertEquals("12", actual0.getListenerKey());
-    assertEquals(ListenerType.EXECUTION_LISTENER, actual0.getListenerType());
-    assertEquals(ListenerEventType.END, actual0.getEvent());
-    assertEquals(ListenerState.COMPLETED, actual0.getState());
-    assertEquals("test_type", actual0.getJobType());
-    assertNotNull(actual0.getTime());
+    assertThat(actual0.getListenerKey()).isEqualTo("12");
+    assertThat(actual0.getListenerType()).isEqualTo(ListenerType.EXECUTION_LISTENER);
+    assertThat(actual0.getEvent()).isEqualTo(ListenerEventType.END);
+    assertThat(actual0.getState()).isEqualTo(ListenerState.COMPLETED);
+    assertThat(actual0.getJobType()).isEqualTo("test_type");
+    assertThat(actual0.getTime()).isNotNull();
 
     final ListenerDto actual1 = resultListeners.get(3);
-    assertEquals("11", actual1.getListenerKey());
-    assertEquals(ListenerType.EXECUTION_LISTENER, actual1.getListenerType());
-    assertEquals(ListenerEventType.START, actual1.getEvent());
-    assertEquals(ListenerState.COMPLETED, actual1.getState());
-    assertNotNull(actual1.getTime());
+    assertThat(actual1.getListenerKey()).isEqualTo("11");
+    assertThat(actual1.getListenerType()).isEqualTo(ListenerType.EXECUTION_LISTENER);
+    assertThat(actual1.getEvent()).isEqualTo(ListenerEventType.START);
+    assertThat(actual1.getState()).isEqualTo(ListenerState.COMPLETED);
+    assertThat(actual1.getTime()).isNotNull();
 
     final ListenerDto actual2 = resultListeners.get(4);
-    assertEquals("31", actual2.getListenerKey());
-    assertEquals(ListenerType.TASK_LISTENER, actual2.getListenerType());
-    assertEquals(ListenerEventType.ASSIGNING, actual2.getEvent());
-    assertEquals(ListenerState.UNKNOWN, actual2.getState());
-    assertNotNull(actual2.getTime());
+    assertThat(actual2.getListenerKey()).isEqualTo("31");
+    assertThat(actual2.getListenerType()).isEqualTo(ListenerType.TASK_LISTENER);
+    assertThat(actual2.getEvent()).isEqualTo(ListenerEventType.ASSIGNING);
+    assertThat(actual2.getState()).isEqualTo(ListenerState.UNKNOWN);
+    assertThat(actual2.getTime()).isNotNull();
   }
 
   @Test
@@ -104,30 +102,30 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerResponseDto response = postListenerRequest("111", request);
     final List<ListenerDto> resultListeners = response.getListeners();
 
-    assertEquals(3L, response.getTotalCount());
-    assertEquals(3, resultListeners.size());
+    assertThat(response.getTotalCount()).isEqualTo(3L);
+    assertThat(resultListeners.size()).isEqualTo(3);
     // results should only contain listeners with set flowNodeInstanceId == 1L
     final ListenerDto actual0 = resultListeners.get(0);
-    assertEquals("21", actual0.getListenerKey());
-    assertEquals(ListenerType.TASK_LISTENER, actual0.getListenerType());
-    assertEquals(ListenerEventType.UPDATING, actual0.getEvent());
-    assertEquals(ListenerState.ACTIVE, actual0.getState());
-    assertNull(actual0.getTime());
+    assertThat(actual0.getListenerKey()).isEqualTo("21");
+    assertThat(actual0.getListenerType()).isEqualTo(ListenerType.TASK_LISTENER);
+    assertThat(actual0.getEvent()).isEqualTo(ListenerEventType.UPDATING);
+    assertThat(actual0.getState()).isEqualTo(ListenerState.ACTIVE);
+    assertThat(actual0.getTime()).isNull();
 
     final ListenerDto actual1 = resultListeners.get(1);
-    assertEquals("12", actual1.getListenerKey());
-    assertEquals(ListenerType.EXECUTION_LISTENER, actual1.getListenerType());
-    assertEquals(ListenerEventType.END, actual1.getEvent());
-    assertEquals(ListenerState.COMPLETED, actual1.getState());
-    assertEquals("test_type", actual1.getJobType());
-    assertNotNull(actual1.getTime());
+    assertThat(actual1.getListenerKey()).isEqualTo("12");
+    assertThat(actual1.getListenerType()).isEqualTo(ListenerType.EXECUTION_LISTENER);
+    assertThat(actual1.getEvent()).isEqualTo(ListenerEventType.END);
+    assertThat(actual1.getState()).isEqualTo(ListenerState.COMPLETED);
+    assertThat(actual1.getJobType()).isEqualTo("test_type");
+    assertThat(actual1.getTime()).isNotNull();
 
     final ListenerDto actual2 = resultListeners.get(2);
-    assertEquals("11", actual2.getListenerKey());
-    assertEquals(ListenerType.EXECUTION_LISTENER, actual2.getListenerType());
-    assertEquals(ListenerEventType.START, actual2.getEvent());
-    assertEquals(ListenerState.COMPLETED, actual2.getState());
-    assertNotNull(actual2.getTime());
+    assertThat(actual2.getListenerKey()).isEqualTo("11");
+    assertThat(actual2.getListenerType()).isEqualTo(ListenerType.EXECUTION_LISTENER);
+    assertThat(actual2.getEvent()).isEqualTo(ListenerEventType.START);
+    assertThat(actual2.getState()).isEqualTo(ListenerState.COMPLETED);
+    assertThat(actual2.getTime()).isNotNull();
   }
 
   @Test
@@ -137,12 +135,12 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerResponseDto response1 = postListenerRequest("111", request1);
     final List<ListenerDto> resultListeners1 = response1.getListeners();
 
-    assertEquals(5L, response1.getTotalCount());
-    assertEquals(3, resultListeners1.size());
+    assertThat(response1.getTotalCount()).isEqualTo(5L);
+    assertThat(resultListeners1.size()).isEqualTo(3);
 
-    assertEquals("22", resultListeners1.get(0).getListenerKey());
-    assertEquals("21", resultListeners1.get(1).getListenerKey());
-    assertEquals("12", resultListeners1.get(2).getListenerKey());
+    assertThat(resultListeners1.get(0).getListenerKey()).isEqualTo("22");
+    assertThat(resultListeners1.get(1).getListenerKey()).isEqualTo("21");
+    assertThat(resultListeners1.get(2).getListenerKey()).isEqualTo("12");
 
     // next page - test searchAfter
     final SortValuesWrapper[] sortValuesAfter = resultListeners1.get(2).getSortValues();
@@ -154,11 +152,11 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerResponseDto response2 = postListenerRequest("111", request2);
     final List<ListenerDto> resultListeners2 = response2.getListeners();
 
-    assertEquals(5L, response2.getTotalCount());
-    assertEquals(2, resultListeners2.size());
+    assertThat(response2.getTotalCount()).isEqualTo(5L);
+    assertThat(resultListeners2.size()).isEqualTo(2);
 
-    assertEquals("11", resultListeners2.get(0).getListenerKey());
-    assertEquals("31", resultListeners2.get(1).getListenerKey());
+    assertThat(resultListeners2.get(0).getListenerKey()).isEqualTo("11");
+    assertThat(resultListeners2.get(1).getListenerKey()).isEqualTo("31");
 
     // test searchBefore (from last result)
     final SortValuesWrapper[] sortValuesBefore = resultListeners2.get(1).getSortValues();
@@ -170,12 +168,12 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerResponseDto response3 = postListenerRequest("111", request3);
     final List<ListenerDto> resultListeners3 = response3.getListeners();
 
-    assertEquals(5L, response3.getTotalCount());
-    assertEquals(3, resultListeners3.size());
+    assertThat(response3.getTotalCount()).isEqualTo(5L);
+    assertThat(resultListeners3.size()).isEqualTo(3);
 
-    assertEquals("21", resultListeners3.get(0).getListenerKey());
-    assertEquals("12", resultListeners3.get(1).getListenerKey());
-    assertEquals("11", resultListeners3.get(2).getListenerKey());
+    assertThat(resultListeners3.get(0).getListenerKey()).isEqualTo("21");
+    assertThat(resultListeners3.get(1).getListenerKey()).isEqualTo("12");
+    assertThat(resultListeners3.get(2).getListenerKey()).isEqualTo("11");
   }
 
   @Test
@@ -189,16 +187,16 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerResponseDto elResponse = postListenerRequest("111", elRequest);
     final List<ListenerDto> elResultListeners = elResponse.getListeners();
 
-    assertEquals(2L, elResponse.getTotalCount());
-    assertEquals(2, elResultListeners.size());
+    assertThat(elResponse.getTotalCount()).isEqualTo(2L);
+    assertThat(elResultListeners.size()).isEqualTo(2);
 
     final ListenerDto actual0 = elResultListeners.get(0);
-    assertEquals("12", actual0.getListenerKey());
-    assertEquals(ListenerType.EXECUTION_LISTENER, actual0.getListenerType());
+    assertThat(actual0.getListenerKey()).isEqualTo("12");
+    assertThat(actual0.getListenerType()).isEqualTo(ListenerType.EXECUTION_LISTENER);
 
     final ListenerDto actual1 = elResultListeners.get(1);
-    assertEquals("11", actual1.getListenerKey());
-    assertEquals(ListenerType.EXECUTION_LISTENER, actual1.getListenerType());
+    assertThat(actual1.getListenerKey()).isEqualTo("11");
+    assertThat(actual1.getListenerType()).isEqualTo(ListenerType.EXECUTION_LISTENER);
 
     // Request only Task Listeners
     final ListenerRequestDto tlRequest =
@@ -209,20 +207,20 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerResponseDto tlResponse = postListenerRequest("111", tlRequest);
     final List<ListenerDto> tlResultListeners = tlResponse.getListeners();
 
-    assertEquals(3L, tlResponse.getTotalCount());
-    assertEquals(3, tlResultListeners.size());
+    assertThat(tlResponse.getTotalCount()).isEqualTo(3L);
+    assertThat(tlResultListeners.size()).isEqualTo(3);
 
     final ListenerDto actual4 = tlResultListeners.get(0);
-    assertEquals("22", actual4.getListenerKey());
-    assertEquals(ListenerType.TASK_LISTENER, actual4.getListenerType());
+    assertThat(actual4.getListenerKey()).isEqualTo("22");
+    assertThat(actual4.getListenerType()).isEqualTo(ListenerType.TASK_LISTENER);
 
     final ListenerDto actual3 = tlResultListeners.get(1);
-    assertEquals("21", actual3.getListenerKey());
-    assertEquals(ListenerType.TASK_LISTENER, actual3.getListenerType());
+    assertThat(actual3.getListenerKey()).isEqualTo("21");
+    assertThat(actual3.getListenerType()).isEqualTo(ListenerType.TASK_LISTENER);
 
     final ListenerDto actual2 = tlResultListeners.get(2);
-    assertEquals("31", actual2.getListenerKey());
-    assertEquals(ListenerType.TASK_LISTENER, actual2.getListenerType());
+    assertThat(actual2.getListenerKey()).isEqualTo("31");
+    assertThat(actual2.getListenerType()).isEqualTo(ListenerType.TASK_LISTENER);
   }
 
   private void createData() throws IOException {

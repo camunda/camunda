@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.api.v1.dao;
 
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
@@ -244,7 +244,7 @@ public class IncidentDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldThrowWhenKeyNotExists() {
-    assertThrows(ResourceNotFoundException.class, () -> dao.byKey(1L));
+    assertThatExceptionOfType(ResourceNotFoundException.class).isThrownBy(() -> dao.byKey(1L));
   }
 
   @Test

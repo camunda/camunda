@@ -8,7 +8,7 @@
 package io.camunda.operate.connect;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -88,28 +88,25 @@ public class OperateDateTimeFormatterTest {
 
     // Validate the datetime formatters were created correctly
     assertThat(underTest.getGeneralDateTimeFormatter().parse(DEFAULT_DATETIMESTRING)).isNotNull();
-    assertThrows(
-        DateTimeParseException.class,
-        () -> underTest.getGeneralDateTimeFormatter().parse(RFC1339_DATETIMESTRING));
+    assertThatExceptionOfType(DateTimeParseException.class)
+        .isThrownBy(() -> underTest.getGeneralDateTimeFormatter().parse(RFC1339_DATETIMESTRING));
     assertThat(underTest.getApiDateTimeFormatter().parse(RFC1339_DATETIMESTRING)).isNotNull();
-    assertThrows(
-        DateTimeParseException.class,
-        () -> underTest.getApiDateTimeFormatter().parse(DEFAULT_DATETIMESTRING));
+    assertThatExceptionOfType(DateTimeParseException.class)
+        .isThrownBy(() -> underTest.getApiDateTimeFormatter().parse(DEFAULT_DATETIMESTRING));
 
     // Validate the parse functions
     assertThat(underTest.parseGeneralDateTime(DEFAULT_DATETIMESTRING)).isNotNull();
-    assertThrows(
-        DateTimeParseException.class, () -> underTest.parseGeneralDateTime(RFC1339_DATETIMESTRING));
+    assertThatExceptionOfType(DateTimeParseException.class)
+        .isThrownBy(() -> underTest.parseGeneralDateTime(RFC1339_DATETIMESTRING));
     assertThat(underTest.parseApiDateTime(RFC1339_DATETIMESTRING)).isNotNull();
-    assertThrows(
-        DateTimeParseException.class, () -> underTest.parseApiDateTime(DEFAULT_DATETIMESTRING));
+    assertThatExceptionOfType(DateTimeParseException.class)
+        .isThrownBy(() -> underTest.parseApiDateTime(DEFAULT_DATETIMESTRING));
 
     // Validate the convert function
     assertThat(underTest.convertGeneralToApiDateTime(DEFAULT_DATETIMESTRING))
         .isEqualTo(RFC1339_DATETIMESTRING);
-    assertThrows(
-        DateTimeParseException.class,
-        () -> underTest.convertGeneralToApiDateTime(RFC1339_DATETIMESTRING));
+    assertThatExceptionOfType(DateTimeParseException.class)
+        .isThrownBy(() -> underTest.convertGeneralToApiDateTime(RFC1339_DATETIMESTRING));
   }
 
   @Test
@@ -133,21 +130,19 @@ public class OperateDateTimeFormatterTest {
 
     // Validate the datetime formatters were created correctly
     assertThat(underTest.getGeneralDateTimeFormatter().parse(DEFAULT_DATETIMESTRING)).isNotNull();
-    assertThrows(
-        DateTimeParseException.class,
-        () -> underTest.getGeneralDateTimeFormatter().parse(RFC1339_DATETIMESTRING));
+    assertThatExceptionOfType(DateTimeParseException.class)
+        .isThrownBy(() -> underTest.getGeneralDateTimeFormatter().parse(RFC1339_DATETIMESTRING));
     assertThat(underTest.getApiDateTimeFormatter().parse(DEFAULT_DATETIMESTRING)).isNotNull();
-    assertThrows(
-        DateTimeParseException.class,
-        () -> underTest.getApiDateTimeFormatter().parse(RFC1339_DATETIMESTRING));
+    assertThatExceptionOfType(DateTimeParseException.class)
+        .isThrownBy(() -> underTest.getApiDateTimeFormatter().parse(RFC1339_DATETIMESTRING));
 
     // Validate the parse functions
     assertThat(underTest.parseGeneralDateTime(DEFAULT_DATETIMESTRING)).isNotNull();
-    assertThrows(
-        DateTimeParseException.class, () -> underTest.parseGeneralDateTime(RFC1339_DATETIMESTRING));
+    assertThatExceptionOfType(DateTimeParseException.class)
+        .isThrownBy(() -> underTest.parseGeneralDateTime(RFC1339_DATETIMESTRING));
     assertThat(underTest.parseApiDateTime(DEFAULT_DATETIMESTRING)).isNotNull();
-    assertThrows(
-        DateTimeParseException.class, () -> underTest.parseApiDateTime(RFC1339_DATETIMESTRING));
+    assertThatExceptionOfType(DateTimeParseException.class)
+        .isThrownBy(() -> underTest.parseApiDateTime(RFC1339_DATETIMESTRING));
 
     // Validate the convert function
     assertThat(underTest.convertGeneralToApiDateTime(DEFAULT_DATETIMESTRING))

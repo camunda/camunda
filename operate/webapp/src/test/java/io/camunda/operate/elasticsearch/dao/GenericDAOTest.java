@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.elasticsearch.dao;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,7 +21,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.xcontent.XContentType;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,35 +37,35 @@ public class GenericDAOTest {
 
   @Test
   public void instantiateWithoutObjectMapperThrowsException() {
-    Assertions.assertThrows(
-        IllegalStateException.class,
-        () ->
-            new GenericDAO.Builder<MetricEntity, MetricIndex>()
-                .esClient(esClient)
-                .index(index)
-                .build());
+    assertThatExceptionOfType(IllegalStateException.class)
+        .isThrownBy(
+            () ->
+                new GenericDAO.Builder<MetricEntity, MetricIndex>()
+                    .esClient(esClient)
+                    .index(index)
+                    .build());
   }
 
   @Test
   public void instantiateWithoutESClientThrowsException() {
-    Assertions.assertThrows(
-        IllegalStateException.class,
-        () ->
-            new GenericDAO.Builder<MetricEntity, MetricIndex>()
-                .objectMapper(objectMapper)
-                .index(index)
-                .build());
+    assertThatExceptionOfType(IllegalStateException.class)
+        .isThrownBy(
+            () ->
+                new GenericDAO.Builder<MetricEntity, MetricIndex>()
+                    .objectMapper(objectMapper)
+                    .index(index)
+                    .build());
   }
 
   @Test
   public void instantiateWithoutIndexThrowsException() {
-    Assertions.assertThrows(
-        IllegalStateException.class,
-        () ->
-            new GenericDAO.Builder<MetricEntity, MetricIndex>()
-                .objectMapper(objectMapper)
-                .esClient(esClient)
-                .build());
+    assertThatExceptionOfType(IllegalStateException.class)
+        .isThrownBy(
+            () ->
+                new GenericDAO.Builder<MetricEntity, MetricIndex>()
+                    .objectMapper(objectMapper)
+                    .esClient(esClient)
+                    .build());
   }
 
   @Test

@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.opensearch.transform;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -60,19 +60,16 @@ public class OpensearchDataAggregatorTest {
 
     final List<BatchOperationDto> actualBatchOperationDtos =
         underTest.enrichBatchEntitiesWithMetadata(testEntities);
-    assertEquals(
-        2,
-        actualBatchOperationDtos.size(),
-        "Two result entities expected but got " + actualBatchOperationDtos.size());
+    assertThat(actualBatchOperationDtos.size())
+        .as("Two result entities expected but got " + actualBatchOperationDtos.size())
+        .isEqualTo(2);
 
-    assertEquals(
-        actualBatchOperationDtos.get(0),
-        expectedDtos.get(0),
-        "actual1 is not equal to expected DTO.");
-    assertEquals(
-        actualBatchOperationDtos.get(1),
-        expectedDtos.get(1),
-        "actual2 is not equal to expected DTO.");
+    assertThat(expectedDtos.get(0))
+        .as("actual1 is not equal to expected DTO.")
+        .isEqualTo(actualBatchOperationDtos.get(0));
+    assertThat(expectedDtos.get(1))
+        .as("actual2 is not equal to expected DTO.")
+        .isEqualTo(actualBatchOperationDtos.get(1));
   }
 
   private SearchResponse<OperationEntity> mockBasicResponse() {

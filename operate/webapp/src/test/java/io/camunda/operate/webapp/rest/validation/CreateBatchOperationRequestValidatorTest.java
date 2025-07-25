@@ -8,8 +8,8 @@
 package io.camunda.operate.webapp.rest.validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -43,8 +43,9 @@ public class CreateBatchOperationRequestValidatorTest {
         new CreateBatchOperationRequestDto(null, OperationType.DELETE_PROCESS_INSTANCE);
 
     final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(batchOperationRequest));
+        assertThatExceptionOfType(InvalidRequestException.class)
+            .isThrownBy(() -> underTest.validate(batchOperationRequest))
+            .actual();
 
     assertThat(exception.getMessage()).isEqualTo("List view query must be defined.");
   }
@@ -55,8 +56,9 @@ public class CreateBatchOperationRequestValidatorTest {
         new CreateBatchOperationRequestDto(new ListViewQueryDto(), null);
 
     final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(batchOperationRequest));
+        assertThatExceptionOfType(InvalidRequestException.class)
+            .isThrownBy(() -> underTest.validate(batchOperationRequest))
+            .actual();
 
     assertThat(exception.getMessage()).isEqualTo("Operation type must be defined.");
   }
@@ -67,8 +69,9 @@ public class CreateBatchOperationRequestValidatorTest {
         new CreateBatchOperationRequestDto(new ListViewQueryDto(), OperationType.ADD_VARIABLE);
 
     final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(batchOperationRequest));
+        assertThatExceptionOfType(InvalidRequestException.class)
+            .isThrownBy(() -> underTest.validate(batchOperationRequest))
+            .actual();
 
     assertThat(exception.getMessage())
         .isEqualTo(
@@ -81,8 +84,9 @@ public class CreateBatchOperationRequestValidatorTest {
         new CreateBatchOperationRequestDto(new ListViewQueryDto(), OperationType.UPDATE_VARIABLE);
 
     final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(batchOperationRequest));
+        assertThatExceptionOfType(InvalidRequestException.class)
+            .isThrownBy(() -> underTest.validate(batchOperationRequest))
+            .actual();
 
     assertThat(exception.getMessage())
         .isEqualTo(
@@ -97,8 +101,9 @@ public class CreateBatchOperationRequestValidatorTest {
     batchOperationRequest.setMigrationPlan(null);
 
     final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(batchOperationRequest));
+        assertThatExceptionOfType(InvalidRequestException.class)
+            .isThrownBy(() -> underTest.validate(batchOperationRequest))
+            .actual();
 
     assertThat(exception.getMessage())
         .isEqualTo(
@@ -125,7 +130,7 @@ public class CreateBatchOperationRequestValidatorTest {
     final CreateBatchOperationRequestDto batchOperationRequest =
         new CreateBatchOperationRequestDto(new ListViewQueryDto(), OperationType.RESOLVE_INCIDENT);
 
-    assertDoesNotThrow(() -> underTest.validate(batchOperationRequest));
+    assertThatCode(() -> underTest.validate(batchOperationRequest)).doesNotThrowAnyException();
   }
 
   @Test
@@ -134,7 +139,7 @@ public class CreateBatchOperationRequestValidatorTest {
         new CreateBatchOperationRequestDto(
             new ListViewQueryDto(), OperationType.CANCEL_PROCESS_INSTANCE);
 
-    assertDoesNotThrow(() -> underTest.validate(batchOperationRequest));
+    assertThatCode(() -> underTest.validate(batchOperationRequest)).doesNotThrowAnyException();
   }
 
   @Test
@@ -143,7 +148,7 @@ public class CreateBatchOperationRequestValidatorTest {
         new CreateBatchOperationRequestDto(
             new ListViewQueryDto(), OperationType.DELETE_PROCESS_INSTANCE);
 
-    assertDoesNotThrow(() -> underTest.validate(batchOperationRequest));
+    assertThatCode(() -> underTest.validate(batchOperationRequest)).doesNotThrowAnyException();
   }
 
   @Test
@@ -152,7 +157,7 @@ public class CreateBatchOperationRequestValidatorTest {
         new CreateBatchOperationRequestDto(
             new ListViewQueryDto(), OperationType.DELETE_DECISION_DEFINITION);
 
-    assertDoesNotThrow(() -> underTest.validate(batchOperationRequest));
+    assertThatCode(() -> underTest.validate(batchOperationRequest)).doesNotThrowAnyException();
   }
 
   @Test
@@ -161,7 +166,7 @@ public class CreateBatchOperationRequestValidatorTest {
         new CreateBatchOperationRequestDto(
             new ListViewQueryDto(), OperationType.DELETE_PROCESS_DEFINITION);
 
-    assertDoesNotThrow(() -> underTest.validate(batchOperationRequest));
+    assertThatCode(() -> underTest.validate(batchOperationRequest)).doesNotThrowAnyException();
   }
 
   @Test
@@ -178,8 +183,9 @@ public class CreateBatchOperationRequestValidatorTest {
     for (final OperationType operationType : opTypes) {
       batchOperationRequest.setOperationType(operationType);
       final InvalidRequestException exception =
-          assertThrows(
-              InvalidRequestException.class, () -> underTest.validate(batchOperationRequest));
+          assertThatExceptionOfType(InvalidRequestException.class)
+              .isThrownBy(() -> underTest.validate(batchOperationRequest))
+              .actual();
       assertThat(exception.getMessage())
           .isEqualTo(
               String.format("Modifications field not supported for %s operation", operationType));
@@ -194,7 +200,7 @@ public class CreateBatchOperationRequestValidatorTest {
 
     batchOperationRequest.setModifications(List.of(new Modification()));
 
-    assertDoesNotThrow(() -> underTest.validate(batchOperationRequest));
+    assertThatCode(() -> underTest.validate(batchOperationRequest)).doesNotThrowAnyException();
     assertThat(batchOperationRequest.getModifications().size()).isEqualTo(1);
   }
 
@@ -210,7 +216,7 @@ public class CreateBatchOperationRequestValidatorTest {
                 new Modification().setModification(Type.ADD_TOKEN),
                 new Modification().setModification(Type.MOVE_TOKEN))));
 
-    assertDoesNotThrow(() -> underTest.validate(batchOperationRequest));
+    assertThatCode(() -> underTest.validate(batchOperationRequest)).doesNotThrowAnyException();
     assertThat(batchOperationRequest.getModifications().size()).isEqualTo(1);
     assertThat(batchOperationRequest.getModifications().get(0).getModification())
         .isEqualTo(Type.ADD_TOKEN);

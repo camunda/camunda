@@ -9,7 +9,7 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.componentTemplateRequestBuilder;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
@@ -78,10 +78,11 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
     final IndexState newTemplate =
         IndexState.of(t -> t.settings(newSettings).mappings(template.mappings()));
     final var requestBuilder = componentTemplateRequestBuilder(prefix).template(newTemplate);
-    assertTrue(
-        zeebeRichOpenSearchClient
-            .template()
-            .createComponentTemplateWithRetries(requestBuilder.build()));
+    assertThat(
+            zeebeRichOpenSearchClient
+                .template()
+                .createComponentTemplateWithRetries(requestBuilder.build()))
+        .isTrue();
   }
 
   @Override

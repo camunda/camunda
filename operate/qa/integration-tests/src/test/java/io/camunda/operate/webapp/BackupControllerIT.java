@@ -11,7 +11,6 @@ import static io.camunda.management.backups.HistoryStateCode.*;
 import static io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -472,7 +471,7 @@ public class BackupControllerIT {
             "No repository with name [%s] could be found.",
             operateProperties.getBackup().getRepositoryName());
     final String actualMessage = error.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertThat(actualMessage.contains(expectedMessage)).isTrue();
     verify(elasticsearchClient, times(1)).snapshot();
   }
 
@@ -491,7 +490,7 @@ public class BackupControllerIT {
             "No repository with name [%s] could be found.",
             operateProperties.getBackup().getRepositoryName());
     final String actualMessage = error.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertThat(actualMessage.contains(expectedMessage)).isTrue();
     verify(elasticsearchClient, times(1)).snapshot();
   }
 

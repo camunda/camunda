@@ -8,8 +8,8 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -109,14 +109,17 @@ public class OpensearchKeyFilteringDaoTest {
     // Set the mocked opensearch client to throw an exception
     when(mockOpensearchClient.doc()).thenThrow(new RuntimeException());
 
-    final Exception exception = assertThrows(ServerException.class, () -> underTest.byKey(1L));
+    final Exception exception =
+        assertThatExceptionOfType(ServerException.class)
+            .isThrownBy(() -> underTest.byKey(1L))
+            .actual();
 
     assertThat(exception.getMessage()).isEqualTo(underTest.getByKeyServerReadErrorMessage(1L));
   }
 
   @Test
   public void testByKeyWithNullKey() {
-    assertThrows(ServerException.class, () -> underTest.byKey(null));
+    assertThatExceptionOfType(ServerException.class).isThrownBy(() -> underTest.byKey(null));
   }
 
   @Test
@@ -138,7 +141,9 @@ public class OpensearchKeyFilteringDaoTest {
     when(mockDocumentOperations.searchValues(any(), any())).thenReturn(Collections.emptyList());
 
     final Exception exception =
-        assertThrows(ResourceNotFoundException.class, () -> underTest.byKey(1L));
+        assertThatExceptionOfType(ResourceNotFoundException.class)
+            .isThrownBy(() -> underTest.byKey(1L))
+            .actual();
 
     assertThat(exception.getMessage()).isEqualTo(underTest.getByKeyNoResultsErrorMessage(1L));
   }
@@ -187,7 +192,10 @@ public class OpensearchKeyFilteringDaoTest {
     when(mockDocumentOperations.searchValues(any(), any()))
         .thenReturn(List.of(new Object(), new Object()));
 
-    final Exception exception = assertThrows(ServerException.class, () -> underTest.byKey(1L));
+    final Exception exception =
+        assertThatExceptionOfType(ServerException.class)
+            .isThrownBy(() -> underTest.byKey(1L))
+            .actual();
 
     assertThat(exception.getMessage()).isEqualTo(underTest.getByKeyTooManyResultsErrorMessage(1L));
   }
@@ -219,7 +227,7 @@ public class OpensearchKeyFilteringDaoTest {
 
   @Test
   public void testValidateKeyWithNull() {
-    assertThrows(ServerException.class, () -> underTest.validateKey(null));
+    assertThatExceptionOfType(ServerException.class).isThrownBy(() -> underTest.validateKey(null));
   }
 
   @Test

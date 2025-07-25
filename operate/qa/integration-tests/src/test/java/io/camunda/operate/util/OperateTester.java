@@ -13,7 +13,6 @@ import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NO
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -942,7 +941,9 @@ public class OperateTester {
     final var start = System.currentTimeMillis();
     var deleted = false;
 
-    assertTrue(format("Index %s doesn't exist!", index), searchTestRule.indexExists(index));
+    assertThat(searchTestRule.indexExists(index))
+        .as(format("Index %s doesn't exist!", index))
+        .isTrue();
     LOGGER.info(format("Index exists %s", index));
 
     while (!deleted & System.currentTimeMillis() < start + maxWaitMillis) {
@@ -958,7 +959,9 @@ public class OperateTester {
       }
     }
 
-    assertTrue(format("Index %s was not deleted after %s ms!", index, maxWaitMillis), deleted);
+    assertThat(deleted)
+        .as(format("Index %s was not deleted after %s ms!", index, maxWaitMillis))
+        .isTrue();
   }
 
   public void performOneRoundOfImport() {

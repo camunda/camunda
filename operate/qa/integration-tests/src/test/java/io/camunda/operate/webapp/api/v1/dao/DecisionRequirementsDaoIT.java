@@ -13,7 +13,7 @@ import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIn
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
@@ -175,7 +175,7 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldThrowKeyNotExists() {
-    assertThrows(ResourceNotFoundException.class, () -> dao.byKey(1L));
+    assertThatExceptionOfType(ResourceNotFoundException.class).isThrownBy(() -> dao.byKey(1L));
   }
 
   @Test
@@ -242,6 +242,6 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldThrowXmlKeyNotExists() {
-    assertThrows(ResourceNotFoundException.class, () -> dao.xmlByKey(1L));
+    assertThatExceptionOfType(ResourceNotFoundException.class).isThrownBy(() -> dao.xmlByKey(1L));
   }
 }

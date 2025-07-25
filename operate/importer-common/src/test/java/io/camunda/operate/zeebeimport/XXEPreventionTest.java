@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.zeebeimport.util.XMLUtil;
 import java.io.ByteArrayInputStream;
@@ -49,6 +49,6 @@ public class XXEPreventionTest {
               }
             });
     // the file must not be read
-    assertEquals("", elementContent.toString());
+    assertThat(elementContent.toString()).isEqualTo("");
   }
 }

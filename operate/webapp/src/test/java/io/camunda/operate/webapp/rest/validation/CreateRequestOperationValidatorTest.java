@@ -9,8 +9,8 @@ package io.camunda.operate.webapp.rest.validation;
 
 import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -158,7 +158,7 @@ public class CreateRequestOperationValidatorTest {
         .thenReturn(List.of(failedOperation));
 
     // when - then
-    assertDoesNotThrow(() -> underTest.validate(request, "123"));
+    assertThatCode(() -> underTest.validate(request, "123")).doesNotThrowAnyException();
   }
 
   @ParameterizedTest(name = "should pass for {0} operation with valid scopeId, name, and value")
@@ -173,6 +173,6 @@ public class CreateRequestOperationValidatorTest {
     request.setVariableValue("val");
 
     // when - then
-    assertDoesNotThrow(() -> underTest.validate(request, "123"));
+    assertThatCode(() -> underTest.validate(request, "123")).doesNotThrowAnyException();
   }
 }
