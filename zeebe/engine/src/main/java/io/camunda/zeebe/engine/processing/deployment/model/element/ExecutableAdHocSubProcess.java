@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -16,6 +18,7 @@ import java.util.Map;
 public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
     implements ExecutableJobWorkerElement {
 
+  private final String innerInstanceId;
   private Expression activeElementsCollection;
   private Expression completionCondition;
   private boolean cancelRemainingInstances;
@@ -26,6 +29,7 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
 
   public ExecutableAdHocSubProcess(final String id) {
     super(id);
+    innerInstanceId = id + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
   }
 
   public Expression getActiveElementsCollection() {
@@ -34,6 +38,10 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
 
   public void setActiveElementsCollection(final Expression activeElementsCollection) {
     this.activeElementsCollection = activeElementsCollection;
+  }
+
+  public String getInnerInstanceId() {
+    return innerInstanceId;
   }
 
   public Expression getCompletionCondition() {

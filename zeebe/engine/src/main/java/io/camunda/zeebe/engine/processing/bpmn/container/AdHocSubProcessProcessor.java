@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.container;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
@@ -39,6 +40,7 @@ public class AdHocSubProcessProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final ExpressionProcessor expressionProcessor;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
 
   public AdHocSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -51,6 +53,7 @@ public class AdHocSubProcessProcessor
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
     this.stateTransitionBehavior = stateTransitionBehavior;
+    adHocSubProcessBehavior = bpmnBehaviors.adHocSubProcessBehavior();
   }
 
   @Override
@@ -212,7 +215,7 @@ public class AdHocSubProcessProcessor
         .map(element.getAdHocActivitiesById()::get)
         .forEach(
             elementToActivate ->
-                stateTransitionBehavior.activateChildInstance(context, elementToActivate));
+                adHocSubProcessBehavior.activateElement(context, element, elementToActivate));
   }
 
   @Override

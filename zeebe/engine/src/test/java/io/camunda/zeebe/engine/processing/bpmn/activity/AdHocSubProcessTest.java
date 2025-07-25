@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -46,6 +47,8 @@ public final class AdHocSubProcessTest {
 
   private static final String PROCESS_ID = "process";
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
+  private static final String AHSP_INNER_INSTANCE_ELEMENT_ID =
+      "ad-hoc" + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -140,7 +143,11 @@ public final class AdHocSubProcessTest {
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("C", ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
@@ -156,9 +163,26 @@ public final class AdHocSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withFlowScopeKey(adHocSubProcessActivated.getKey())
                 .limit(2))
+        .describedAs("Has activated two inner instances")
         .hasSize(2)
         .extracting(r -> r.getValue().getElementId())
-        .contains("A", "C");
+        .containsOnly(AHSP_INNER_INSTANCE_ELEMENT_ID);
+
+    final var innerInstanceKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AHSP_INNER_INSTANCE_ELEMENT_ID)
+            .limit(2)
+            .map(Record::getKey)
+            .toList();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .filter(record -> innerInstanceKeys.contains(record.getValue().getFlowScopeKey())))
+        .extracting(r -> r.getValue().getElementId())
+        .containsOnly("A", "C");
   }
 
   @Test
@@ -254,6 +278,8 @@ public final class AdHocSubProcessTest {
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
@@ -292,6 +318,8 @@ public final class AdHocSubProcessTest {
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
@@ -336,11 +364,13 @@ public final class AdHocSubProcessTest {
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED))
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
         .describedAs(
             "Expect service task not to be terminated because completion condition does not apply")
         .doesNotContain(
-            tuple("ServiceTask", ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     // complete service task + update condition variable
@@ -401,7 +431,9 @@ public final class AdHocSubProcessTest {
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED))
+            tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
         .describedAs("Expect ad-hoc sub-process to not complete when condition does not apply")
         .doesNotContain(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
@@ -443,11 +475,17 @@ public final class AdHocSubProcessTest {
         .describedAs("Expect ad-hoc sub-process to complete and to terminate service task")
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple("ServiceTask", ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
@@ -495,13 +533,17 @@ public final class AdHocSubProcessTest {
         .describedAs("Expect service task be activated and ad-hoc sub-process to not complete")
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED))
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
         .describedAs(
             "Expect service task not to be terminated because cancelRemainingInstances is false")
         .doesNotContain(
             tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     // complete service task
@@ -516,6 +558,7 @@ public final class AdHocSubProcessTest {
             "Expect ad-hoc sub-process to complete after service task is completed and condition applies")
         .containsSubsequence(
             tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
@@ -571,7 +614,11 @@ public final class AdHocSubProcessTest {
         .containsSequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT));
   }
 
@@ -659,7 +706,11 @@ public final class AdHocSubProcessTest {
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT));
 
     final Record<VariableRecordValue> variableCreated =
@@ -703,6 +754,9 @@ public final class AdHocSubProcessTest {
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
             tuple(BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(
                 BpmnElementType.AD_HOC_SUB_PROCESS,
@@ -804,8 +858,14 @@ public final class AdHocSubProcessTest {
         .containsSubsequence(
             tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE,
+                ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE,
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
@@ -854,10 +914,10 @@ public final class AdHocSubProcessTest {
             tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
-    final List<Long> adHocSubProcessKeys =
+    final List<Long> adHocSubProcessInnerInstanceKeys =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
             .limit(3)
             .map(Record::getKey)
             .toList();
@@ -873,9 +933,9 @@ public final class AdHocSubProcessTest {
             ProcessInstanceRecordValue::getElementId, ProcessInstanceRecordValue::getFlowScopeKey)
         .hasSize(3)
         .containsExactly(
-            tuple("A", adHocSubProcessKeys.get(0)),
-            tuple("B", adHocSubProcessKeys.get(1)),
-            tuple("C", adHocSubProcessKeys.get(2)));
+            tuple("A", adHocSubProcessInnerInstanceKeys.get(0)),
+            tuple("B", adHocSubProcessInnerInstanceKeys.get(1)),
+            tuple("C", adHocSubProcessInnerInstanceKeys.get(2)));
   }
 
   @Test
