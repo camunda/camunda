@@ -262,7 +262,6 @@ public class KeycloakIdentityMigrationIT {
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(
                     PermissionType.READ_PROCESS_DEFINITION,
-                    PermissionType.DELETE_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE,
                     PermissionType.READ_PROCESS_INSTANCE)),
             tuple(
@@ -281,7 +280,6 @@ public class KeycloakIdentityMigrationIT {
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(
                     PermissionType.CREATE_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE,
                     PermissionType.UPDATE_USER_TASK)),
             tuple(
@@ -394,8 +392,7 @@ public class KeycloakIdentityMigrationIT {
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(
                     PermissionType.READ_PROCESS_DEFINITION,
-                    PermissionType.READ_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE)),
+                    PermissionType.READ_PROCESS_INSTANCE)),
             tuple(
                 "groupb",
                 OwnerType.GROUP,

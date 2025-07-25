@@ -97,14 +97,13 @@ public class MigrationUtil {
       result.add(PermissionType.READ_PROCESS_DEFINITION);
       result.add(PermissionType.READ_PROCESS_INSTANCE);
     }
-    if (permissions.contains("UPDATE_PROCESS_INSTANCE")) {
+    if (permissions.contains("UPDATE_PROCESS_INSTANCE")
+        || permissions.contains("DELETE")
+        || permissions.contains("DELETE_PROCESS_INSTANCE")) {
       result.add(PermissionType.UPDATE_PROCESS_INSTANCE);
     }
     if (permissions.contains("START_PROCESS_INSTANCE")) {
       result.add(PermissionType.CREATE_PROCESS_INSTANCE);
-    }
-    if (permissions.contains("DELETE") || permissions.contains("DELETE_PROCESS_INSTANCE")) {
-      result.add(PermissionType.DELETE_PROCESS_INSTANCE);
     }
     return result;
   }
