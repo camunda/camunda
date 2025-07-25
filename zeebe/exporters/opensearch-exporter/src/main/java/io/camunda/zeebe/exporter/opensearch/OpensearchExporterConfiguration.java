@@ -106,7 +106,7 @@ public class OpensearchExporterConfiguration {
       case MESSAGE_CORRELATION -> index.messageCorrelation;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION -> index.adHocSubProcessActivityActivation;
       case ASYNC_REQUEST -> index.asyncRequest;
-      case RUNTIME_INSTRUCTION_INTERRUPTION -> index.runtimeInstructionInterruption;
+      case RUNTIME_INSTRUCTION -> index.runtimeInstruction;
       default -> false;
     };
   }
@@ -202,7 +202,7 @@ public class OpensearchExporterConfiguration {
 
     public boolean authorization = true;
 
-    public boolean runtimeInstructionInterruption = true;
+    public boolean runtimeInstruction = true;
 
     public boolean batchOperationCreation = false;
     public boolean batchOperationChunk = false;

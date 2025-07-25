@@ -74,7 +74,8 @@ public interface Intent {
           BatchOperationExecutionIntent.class,
           AdHocSubProcessActivityActivationIntent.class,
           AsyncRequestIntent.class,
-          UsageMetricIntent.class);
+          UsageMetricIntent.class,
+          RuntimeInstructionIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -196,8 +197,8 @@ public interface Intent {
         return AsyncRequestIntent.from(intent);
       case USAGE_METRIC:
         return UsageMetricIntent.from(intent);
-      case RUNTIME_INSTRUCTION_INTERRUPTION:
-        return ProcessInstanceIntent.from(intent);
+      case RUNTIME_INSTRUCTION:
+        return RuntimeInstructionIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

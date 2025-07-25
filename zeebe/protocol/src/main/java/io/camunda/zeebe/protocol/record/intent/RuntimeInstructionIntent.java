@@ -13,16 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.protocol.record.value;
+package io.camunda.zeebe.protocol.record.intent;
 
-import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValue;
-import org.immutables.value.Value;
+public enum RuntimeInstructionIntent implements Intent {
+  INTERRUPTED(0);
 
-@Value.Immutable
-@ImmutableProtocol(builder = ImmutableRuntimeInstructionInterruptionRecordValue.Builder.class)
-public interface RuntimeInstructionInterruptionRecordValue
-    extends RecordValue, ProcessInstanceRelated, TenantOwned {
+  private final short value;
 
-  String getElementId();
+  RuntimeInstructionIntent(final int value) {
+    this.value = (short) value;
+  }
+
+  @Override
+  public short value() {
+    return value;
+  }
+
+  @Override
+  public boolean isEvent() {
+    return true;
+  }
+
+  public static Intent from(final short value) {
+    switch (value) {
+      case 0:
+        return INTERRUPTED;
+      default:
+        return Intent.UNKNOWN;
+    }
+  }
 }

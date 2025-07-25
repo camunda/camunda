@@ -11,39 +11,32 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionInterruptionRecordValue;
 import org.agrona.DirectBuffer;
 
-public class RuntimeInstructionInterruptionRecord extends UnifiedRecordValue
+public class RuntimeInstructionRecord extends UnifiedRecordValue
     implements RuntimeInstructionInterruptionRecordValue {
 
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue INTERRUPTING_ELEMENT_ID_KEY =
-      new StringValue("interruptingElementId");
-
   private final LongProperty processInstanceKeyProperty =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1);
-  private final StringProperty tenantIdProperty = new StringProperty(TENANT_ID_KEY, "");
-  private final StringProperty interruptingElementIdProperty =
-      new StringProperty(INTERRUPTING_ELEMENT_ID_KEY, "");
+      new LongProperty("processInstanceKey", -1);
+  private final StringProperty tenantIdProperty = new StringProperty("tenantId", "");
+  private final StringProperty elementIdProperty = new StringProperty("elementId", "");
 
-  public RuntimeInstructionInterruptionRecord() {
+  public RuntimeInstructionRecord() {
     super(3);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(tenantIdProperty)
-        .declareProperty(interruptingElementIdProperty);
+        .declareProperty(elementIdProperty);
   }
 
   @Override
-  public String getInterruptingElementId() {
-    return bufferAsString(interruptingElementIdProperty.getValue());
+  public String getElementId() {
+    return bufferAsString(elementIdProperty.getValue());
   }
 
-  public void setInterruptingElementId(final String interruptingElementId) {
-    interruptingElementIdProperty.setValue(interruptingElementId);
+  public void setElementId(final String interruptingElementId) {
+    elementIdProperty.setValue(interruptingElementId);
   }
 
   @Override
@@ -64,7 +57,7 @@ public class RuntimeInstructionInterruptionRecord extends UnifiedRecordValue
     tenantIdProperty.setValue(tenantId);
   }
 
-  public DirectBuffer getInterruptingElementIdBuffer() {
-    return interruptingElementIdProperty.getValue();
+  public DirectBuffer getElementIdBuffer() {
+    return elementIdProperty.getValue();
   }
 }

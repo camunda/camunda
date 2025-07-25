@@ -347,8 +347,8 @@ public class OpensearchExporter implements Exporter {
       if (index.asyncRequest) {
         createValueIndexTemplate(ValueType.ASYNC_REQUEST, version);
       }
-      if (index.runtimeInstructionInterruption) {
-        createValueIndexTemplate(ValueType.RUNTIME_INSTRUCTION_INTERRUPTION, version);
+      if (index.runtimeInstruction) {
+        createValueIndexTemplate(ValueType.RUNTIME_INSTRUCTION, version);
       }
     }
 

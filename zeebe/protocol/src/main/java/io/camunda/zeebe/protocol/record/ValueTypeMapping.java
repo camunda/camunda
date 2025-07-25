@@ -309,7 +309,7 @@ public final class ValueTypeMapping {
         ValueType.USAGE_METRIC,
         new Mapping<>(UsageMetricRecordValue.class, UsageMetricIntent.class));
     mapping.put(
-        ValueType.RUNTIME_INSTRUCTION_INTERRUPTION,
+        ValueType.RUNTIME_INSTRUCTION,
         new Mapping<>(
             RuntimeInstructionInterruptionRecordValue.class, ProcessInstanceIntent.class));
     return mapping;

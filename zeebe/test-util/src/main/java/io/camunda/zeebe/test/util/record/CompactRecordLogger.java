@@ -101,7 +101,7 @@ public class CompactRecordLogger {
           entry("PROCESS_INSTANCE_CREATION", "CREA"),
           entry("PROCESS_INSTANCE_MODIFICATION", "MOD"),
           entry("PROCESS_INSTANCE", "PI"),
-          entry("RUNTIME_INSTRUCTION_INTERRUPTION", "RI_INT"),
+          entry("RUNTIME_INSTRUCTION", "RI"),
           entry("PROCESS", "PROC"),
           entry("AD_HOC_SUB_PROC_ACTIVITY_ACTIVATION", "AH_ACT"),
           entry("TIMER", "TIME"),
@@ -124,8 +124,7 @@ public class CompactRecordLogger {
           entry("ROLE", "RL"),
           entry("GROUP", "GR"),
           entry("MAPPING", "MAP"),
-          entry("ASYNC_REQUEST", "ASYNC"),
-          entry("INTERRUPTED_BY_RUNTIME_INSTRUCTION", "INTERRUPTED"));
+          entry("ASYNC_REQUEST", "ASYNC"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -184,7 +183,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
     valueLoggers.put(ValueType.MAPPING_RULE, this::summarizeMappingRule);
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
-    valueLoggers.put(ValueType.RUNTIME_INSTRUCTION_INTERRUPTION, this::summarizeInterruption);
+    valueLoggers.put(ValueType.RUNTIME_INSTRUCTION, this::summarizeRuntimeInstruction);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1104,18 +1103,18 @@ public class CompactRecordLogger {
         .toString();
   }
 
-  private String summarizeInterruption(final Record<?> record) {
+  private String summarizeRuntimeInstruction(final Record<?> record) {
     final var value = (RuntimeInstructionInterruptionRecordValue) record.getValue();
 
     final var result = new StringBuilder();
-    if (value.getInterruptingElementId() != null) {
-      result.append("interrupted by \"").append(value.getInterruptingElementId()).append("\"");
-    }
 
-    if (value.getProcessInstanceKey() != -1) {
-      result.append(summarizeProcessInformation(null, value.getProcessInstanceKey()));
-    }
+    final var formattedInstanceKey =
+        value.getProcessInstanceKey() < 0 ? "?" : shortenKey(value.getProcessInstanceKey());
+    result.append(String.format("[%s]", formattedInstanceKey));
 
+    if (value.getElementId() != null) {
+      result.append(" interrupted by \"").append(value.getElementId()).append("\"");
+    }
     return result.toString();
   }
 
