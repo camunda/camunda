@@ -18,9 +18,9 @@ package io.camunda.zeebe.model.bpmn.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
-import static org.junit.Assert.fail;
 
 import java.util.Collection;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.type.ModelElementTypeImpl;
@@ -95,13 +95,13 @@ public abstract class AbstractModelElementInstanceTest {
     if (assumption.isAbstract) {
       try {
         modelInstance.newInstance(modelElementType);
-        fail("Element type " + modelElementType.getTypeName() + " is abstract.");
+        Assertions.fail("Element type " + modelElementType.getTypeName() + " is abstract.");
       } catch (final DOMException e) {
         // expected exception
       } catch (final ModelTypeException e) {
         // expected exception
       } catch (final Exception e) {
-        fail("Unexpected exception " + e.getMessage());
+        Assertions.fail("Unexpected exception " + e.getMessage());
       }
     } else {
       final ModelElementInstance modelElementInstance = modelInstance.newInstance(modelElementType);
@@ -115,8 +115,7 @@ public abstract class AbstractModelElementInstanceTest {
     if (childElementAssumptions == null) {
       assertThatType().hasNoChildElements();
     } else {
-      assertThat(modelElementType.getChildElementTypes().size())
-          .isEqualTo(childElementAssumptions.size());
+      assertThat(modelElementType.getChildElementTypes()).hasSameSizeAs(childElementAssumptions);
       for (final ChildElementAssumption assumption : childElementAssumptions) {
         assertThatType().hasChildElements(assumption.childElementType);
         if (assumption.namespaceUri != null) {

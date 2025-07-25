@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.util;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
@@ -140,11 +139,9 @@ class AdvancedSearchFilterUtilTest {
     filter.set$Eq(10);
 
     // when/then
-    final var ex =
-        assertThrowsExactly(
-            IllegalArgumentException.class,
-            () -> AdvancedSearchFilterUtil.mapToOperations(filter, Boolean.class));
-    assertThat(ex).hasMessage("Could not convert request value [10] to [java.lang.Boolean]");
+    assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Boolean.class))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Could not convert request value [10] to [java.lang.Boolean]");
   }
 
   @Test
@@ -154,10 +151,8 @@ class AdvancedSearchFilterUtilTest {
     filter.set$Eq("2023-11-11T10:10:10.1010+0100");
 
     // when/then
-    final var ex =
-        assertThrowsExactly(
-            IllegalArgumentException.class,
-            () -> AdvancedSearchFilterUtil.mapToOperations(filter, OffsetDateTime.class));
-    assertThat(ex).hasMessage("Failed to parse date-time: [2023-11-11T10:10:10.1010+0100]");
+    assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, OffsetDateTime.class))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Failed to parse date-time: [2023-11-11T10:10:10.1010+0100]");
   }
 }

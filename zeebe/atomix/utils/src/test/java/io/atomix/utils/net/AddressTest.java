@@ -16,7 +16,7 @@
  */
 package io.atomix.utils.net;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.InetAddress;
 import org.junit.Test;
@@ -26,27 +26,27 @@ public class AddressTest {
   @Test
   public void testIPv4Address() throws Exception {
     final Address address = Address.from("127.0.0.1:5000");
-    assertEquals("127.0.0.1", address.host());
-    assertEquals(5000, address.port());
-    assertEquals("localhost", address.tryResolveAddress().getHostName());
-    assertEquals("127.0.0.1:5000", address.toString());
+    assertThat(address.host()).isEqualTo("127.0.0.1");
+    assertThat(address.port()).isEqualTo(5000);
+    assertThat(address.tryResolveAddress().getHostName()).isEqualTo("localhost");
+    assertThat(address.toString()).isEqualTo("127.0.0.1:5000");
   }
 
   @Test
   public void testIPv6Address() throws Exception {
     final Address address = Address.from("[fe80:cd00:0000:0cde:1257:0000:211e:729c]:5000");
-    assertEquals("fe80:cd00:0000:0cde:1257:0000:211e:729c", address.host());
-    assertEquals(5000, address.port());
-    assertEquals("fe80:cd00:0:cde:1257:0:211e:729c", address.tryResolveAddress().getHostName());
-    assertEquals("[fe80:cd00:0000:0cde:1257:0000:211e:729c]:5000", address.toString());
+    assertThat(address.host()).isEqualTo("fe80:cd00:0000:0cde:1257:0000:211e:729c");
+    assertThat(address.port()).isEqualTo(5000);
+    assertThat(address.tryResolveAddress().getHostName())
+        .isEqualTo("fe80:cd00:0:cde:1257:0:211e:729c");
+    assertThat(address.toString()).isEqualTo("[fe80:cd00:0000:0cde:1257:0000:211e:729c]:5000");
   }
 
   @Test
   public void testResolveAddress() throws Exception {
     final Address address = Address.from("localhost", 5000);
-    assertEquals(
-        InetAddress.getLoopbackAddress().getHostAddress(),
-        address.tryResolveAddress().getHostAddress());
-    assertEquals(5000, address.port());
+    assertThat(address.tryResolveAddress().getHostAddress())
+        .isEqualTo(InetAddress.getLoopbackAddress().getHostAddress());
+    assertThat(address.port()).isEqualTo(5000);
   }
 }

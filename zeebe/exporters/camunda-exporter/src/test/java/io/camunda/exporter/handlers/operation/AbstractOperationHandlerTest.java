@@ -8,7 +8,6 @@
 package io.camunda.exporter.handlers.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -36,7 +35,7 @@ abstract class AbstractOperationHandlerTest<R extends RecordValue> {
 
   @Test
   void testGetHandledValueType() {
-    assertEquals(underTest.getHandledValueType(), valueType);
+    assertThat(valueType).isEqualTo(underTest.getHandledValueType());
   }
 
   @Test

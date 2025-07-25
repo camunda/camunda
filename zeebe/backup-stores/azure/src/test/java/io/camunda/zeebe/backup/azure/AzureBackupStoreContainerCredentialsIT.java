@@ -8,8 +8,7 @@
 package io.camunda.zeebe.backup.azure;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
@@ -51,9 +50,8 @@ public class AzureBackupStoreContainerCredentialsIT {
 
     // then we should fail to create the store since the container does not
     // exist yet.
-    assertThrowsExactly(
-        AzureBackupStoreException.ContainerDoesNotExist.class,
-        () -> new AzureBackupStore(azureBackupConfig));
+    assertThatCode(() -> new AzureBackupStore(azureBackupConfig))
+        .isInstanceOf(AzureBackupStoreException.ContainerDoesNotExist.class);
 
     // when we create the container
     new BlobServiceClientBuilder()
@@ -63,7 +61,7 @@ public class AzureBackupStoreContainerCredentialsIT {
         .create();
 
     // then we can create the store without any exceptions
-    assertDoesNotThrow(() -> new AzureBackupStore(azureBackupConfig));
+    assertThatCode(() -> new AzureBackupStore(azureBackupConfig)).doesNotThrowAnyException();
   }
 
   // The test for the user delegation token is not present due to the fact that the azurite

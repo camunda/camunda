@@ -9,8 +9,6 @@ package io.camunda.zeebe.it.management;
 
 import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -96,7 +94,7 @@ final class ExportingEndpointIT {
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
     // then
-    assertEquals(recordsAfterPause, recordsBeforePause);
+    assertThat(recordsBeforePause).isEqualTo(recordsAfterPause);
     Awaitility.await().untilAsserted(this::allPartitionsPausedExporting);
   }
 
@@ -174,7 +172,7 @@ final class ExportingEndpointIT {
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
     // then
-    assertEquals(recordsAfterRestart, recordsBeforePause);
+    assertThat(recordsBeforePause).isEqualTo(recordsAfterRestart);
     Awaitility.await().untilAsserted(this::allPartitionsPausedExporting);
   }
 
@@ -301,12 +299,13 @@ final class ExportingEndpointIT {
 
     assertThat(recordsAfterSoftPause).isGreaterThan(recordsBeforePause);
     // at least one partition should have a higher exported position
-    assertTrue(
-        exportedPositionPerPartition.entrySet().stream()
-            .anyMatch(
-                exportedPosition ->
-                    secondExportedPositionPerPartition.get(exportedPosition.getKey())
-                        > exportedPosition.getValue()));
+    assertThat(
+            exportedPositionPerPartition.entrySet().stream()
+                .anyMatch(
+                    exportedPosition ->
+                        secondExportedPositionPerPartition.get(exportedPosition.getKey())
+                            > exportedPosition.getValue()))
+        .isTrue();
   }
 
   @Test

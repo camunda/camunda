@@ -21,7 +21,6 @@ import static io.atomix.cluster.protocol.GroupMembershipEvent.Type.MEMBER_REMOVE
 import static io.atomix.cluster.protocol.GroupMembershipEvent.Type.METADATA_CHANGED;
 import static io.atomix.cluster.protocol.GroupMembershipEvent.Type.REACHABILITY_CHANGED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Maps;
@@ -408,7 +407,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
 
   private void checkMembers(final Member member, final Member... members) {
     final SwimMembershipProtocol protocol = protocols.get(member.id());
-    assertEquals(Sets.newHashSet(members), protocol.getMembers());
+    assertThat(protocol.getMembers()).isEqualTo(Sets.newHashSet(members));
   }
 
   private void awaitMembers(final Member member, final Member... members) {

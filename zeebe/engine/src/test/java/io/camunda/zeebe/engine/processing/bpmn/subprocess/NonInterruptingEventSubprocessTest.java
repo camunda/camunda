@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.subprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -200,7 +201,7 @@ public class NonInterruptingEventSubprocessTest {
   @Test
   public void shouldTriggerEventSubprocessTwice() {
     // Only run test if test-case is cyclic
-    org.junit.Assume.assumeTrue(cyclic);
+    assumeThat(cyclic).isTrue();
 
     // given
     final BpmnModelInstance model = eventSubprocModel(builder);
@@ -253,7 +254,7 @@ public class NonInterruptingEventSubprocessTest {
   @Test
   public void shouldTriggerEventSubprocessTwiceWithOwnLocalScopeVariable() {
     // Only run test if test-case is cyclic
-    org.junit.Assume.assumeTrue(cyclic);
+    assumeThat(cyclic).isTrue();
 
     // given
     final BpmnModelInstance model = eventSubprocModelWithLocalScopeVariable(builder);

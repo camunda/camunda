@@ -16,8 +16,7 @@
  */
 package io.atomix.cluster.messaging.impl;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -56,7 +55,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -409,7 +407,7 @@ final class NettyMessagingServiceTest {
             .sendAndReceive(
                 netty2.address(), subject, "hello world".getBytes(), Duration.ofSeconds(1))
             .join();
-        Assertions.fail();
+        fail("");
       } catch (final CompletionException e) {
         assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
       }
@@ -435,7 +433,7 @@ final class NettyMessagingServiceTest {
               latch.await();
             } catch (final InterruptedException e1) {
               Thread.currentThread().interrupt();
-              Assertions.fail("InterruptedException");
+              fail("InterruptedException");
             }
             return "hello there".getBytes();
           };

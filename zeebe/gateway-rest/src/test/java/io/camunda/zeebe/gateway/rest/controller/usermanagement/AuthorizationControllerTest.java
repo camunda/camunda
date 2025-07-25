@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -107,12 +107,13 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
     verify(authorizationServices, times(1)).createAuthorization(captor.capture());
     final var capturedRequest = captor.getValue();
-    assertEquals(ownerId, capturedRequest.ownerId());
-    assertEquals(authorizationRecord.getOwnerType(), capturedRequest.ownerType());
-    assertEquals(resourceId, capturedRequest.resourceId());
-    assertEquals(authorizationRecord.getResourceType(), capturedRequest.resourceType());
-    assertEquals(1, capturedRequest.permissionTypes().size());
-    assertEquals(authorizationRecord.getPermissionTypes(), capturedRequest.permissionTypes());
+    assertThat(capturedRequest.ownerId()).isEqualTo(ownerId);
+    assertThat(capturedRequest.ownerType()).isEqualTo(authorizationRecord.getOwnerType());
+    assertThat(capturedRequest.resourceId()).isEqualTo(resourceId);
+    assertThat(capturedRequest.resourceType()).isEqualTo(authorizationRecord.getResourceType());
+    assertThat(capturedRequest.permissionTypes().size()).isEqualTo(1);
+    assertThat(capturedRequest.permissionTypes())
+        .isEqualTo(authorizationRecord.getPermissionTypes());
   }
 
   @ParameterizedTest
@@ -202,13 +203,14 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var captor = ArgumentCaptor.forClass(UpdateAuthorizationRequest.class);
     verify(authorizationServices, times(1)).updateAuthorization(captor.capture());
     final var capturedRequest = captor.getValue();
-    assertEquals(authorizationKey, capturedRequest.authorizationKey());
-    assertEquals(ownerId, capturedRequest.ownerId());
-    assertEquals(authorizationRecord.getOwnerType(), capturedRequest.ownerType());
-    assertEquals(resourceId, capturedRequest.resourceId());
-    assertEquals(authorizationRecord.getResourceType(), capturedRequest.resourceType());
-    assertEquals(1, capturedRequest.permissionTypes().size());
-    assertEquals(authorizationRecord.getPermissionTypes(), capturedRequest.permissionTypes());
+    assertThat(capturedRequest.authorizationKey()).isEqualTo(authorizationKey);
+    assertThat(capturedRequest.ownerId()).isEqualTo(ownerId);
+    assertThat(capturedRequest.ownerType()).isEqualTo(authorizationRecord.getOwnerType());
+    assertThat(capturedRequest.resourceId()).isEqualTo(resourceId);
+    assertThat(capturedRequest.resourceType()).isEqualTo(authorizationRecord.getResourceType());
+    assertThat(capturedRequest.permissionTypes().size()).isEqualTo(1);
+    assertThat(capturedRequest.permissionTypes())
+        .isEqualTo(authorizationRecord.getPermissionTypes());
   }
 
   @ParameterizedTest

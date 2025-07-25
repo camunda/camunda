@@ -15,7 +15,7 @@
  */
 package io.atomix.utils.serializer;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
@@ -36,7 +36,7 @@ public class NamespaceTest {
     final Object got = ns.deserialize(ser);
 
     // then
-    assertEquals(want, got);
+    assertThat(got).isEqualTo(want);
   }
 
   @Test
@@ -52,8 +52,8 @@ public class NamespaceTest {
     final Integer gotInteger = ns.deserialize(ns.serialize(expectedInteger));
 
     // then
-    assertEquals(expectedLong, gotLong);
-    assertEquals(expectedInteger, gotInteger);
+    assertThat(gotLong).isEqualTo(expectedLong);
+    assertThat(gotInteger).isEqualTo(expectedInteger);
   }
 
   private static final class NumberSerializer extends Serializer<Number> {

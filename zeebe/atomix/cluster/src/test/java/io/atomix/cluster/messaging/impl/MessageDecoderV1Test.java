@@ -16,7 +16,7 @@
  */
 package io.atomix.cluster.messaging.impl;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -29,22 +29,22 @@ public class MessageDecoderV1Test {
   public void testDecodeCompactInt() throws Exception {
     ByteBuf buffer = Unpooled.buffer(5);
     MessageEncoderV1.writeInt(buffer, 10);
-    assertEquals(10, MessageDecoderV1.readInt(buffer));
+    assertThat(MessageDecoderV1.readInt(buffer)).isEqualTo(10);
 
     buffer = Unpooled.buffer(2);
     MessageEncoderV1.writeInt(buffer, 10);
-    assertEquals(10, MessageDecoderV1.readInt(buffer));
+    assertThat(MessageDecoderV1.readInt(buffer)).isEqualTo(10);
   }
 
   @Test
   public void testDecodeCompactLong() throws Exception {
     ByteBuf buffer = Unpooled.buffer(9);
     MessageEncoderV1.writeLong(buffer, 10);
-    assertEquals(10, MessageDecoderV1.readLong(buffer));
+    assertThat(MessageDecoderV1.readLong(buffer)).isEqualTo(10);
 
     buffer = Unpooled.buffer(2);
     MessageEncoderV1.writeLong(buffer, 10);
-    assertEquals(10, MessageDecoderV1.readLong(buffer));
+    assertThat(MessageDecoderV1.readLong(buffer)).isEqualTo(10);
   }
 
   @Test
@@ -52,7 +52,7 @@ public class MessageDecoderV1Test {
     final String payload = "huuhaa";
     ByteBuf byteBuf = Unpooled.wrappedBuffer(payload.getBytes(StandardCharsets.UTF_8));
     try {
-      assertEquals(payload, MessageDecoderV1.readString(byteBuf, payload.length()));
+      assertThat(MessageDecoderV1.readString(byteBuf, payload.length())).isEqualTo(payload);
     } finally {
       byteBuf.release();
     }
@@ -62,7 +62,7 @@ public class MessageDecoderV1Test {
       byteBuf.writeInt(1);
       byteBuf.writeBytes(bytes);
       byteBuf.readInt();
-      assertEquals(payload, MessageDecoderV1.readString(byteBuf, payload.length()));
+      assertThat(MessageDecoderV1.readString(byteBuf, payload.length())).isEqualTo(payload);
     } finally {
       byteBuf.release();
     }
@@ -75,7 +75,7 @@ public class MessageDecoderV1Test {
         Unpooled.directBuffer(payload.length())
             .writeBytes(payload.getBytes(StandardCharsets.UTF_8));
     try {
-      assertEquals(payload, MessageDecoderV1.readString(byteBuf, payload.length()));
+      assertThat(MessageDecoderV1.readString(byteBuf, payload.length())).isEqualTo(payload);
     } finally {
       byteBuf.release();
     }

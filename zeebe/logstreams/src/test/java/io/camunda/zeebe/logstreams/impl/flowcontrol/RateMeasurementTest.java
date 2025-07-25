@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,7 +25,7 @@ class RateMeasurementTest {
     final double rate = rateMeasurement.rate();
 
     // then
-    assertEquals(0, rate);
+    assertThat(rate).isEqualTo(0);
   }
 
   @Test
@@ -42,7 +42,7 @@ class RateMeasurementTest {
     rateMeasurement.observe(12345);
 
     // then
-    assertEquals(12345 / observationWindow.toSeconds(), rateMeasurement.rate());
+    assertThat(rateMeasurement.rate()).isEqualTo(12345 / observationWindow.toSeconds());
   }
 
   @Test
@@ -60,6 +60,6 @@ class RateMeasurementTest {
     }
 
     // then
-    assertEquals(10, rateMeasurement.rate());
+    assertThat(rateMeasurement.rate()).isEqualTo(10);
   }
 }

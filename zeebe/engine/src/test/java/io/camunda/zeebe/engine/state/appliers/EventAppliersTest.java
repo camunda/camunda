@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.util.Arrays;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -111,7 +110,7 @@ public class EventAppliersTest {
     final var actualVersion = eventAppliers.getLatestVersion(intent);
 
     // then
-    Assertions.assertEquals(expectedVersion, actualVersion);
+    assertThat(actualVersion).isEqualTo(expectedVersion);
   }
 
   @Test
@@ -128,7 +127,7 @@ public class EventAppliersTest {
     final var actualVersion = eventAppliers.getLatestVersion(intent);
 
     // then
-    Assertions.assertEquals(expectedVersion, actualVersion);
+    assertThat(actualVersion).isEqualTo(expectedVersion);
   }
 
   @Test
@@ -140,7 +139,7 @@ public class EventAppliersTest {
     final var actualVersion = eventAppliers.getLatestVersion(Intent.UNKNOWN);
 
     // then
-    Assertions.assertEquals(expectedVersion, actualVersion);
+    assertThat(actualVersion).isEqualTo(expectedVersion);
   }
 
   @Test
@@ -156,7 +155,7 @@ public class EventAppliersTest {
     final var actualVersion = eventAppliers.getLatestVersion(intent);
 
     // then
-    Assertions.assertEquals(expectedVersion, actualVersion);
+    assertThat(actualVersion).isEqualTo(expectedVersion);
   }
 
   @Test

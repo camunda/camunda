@@ -69,7 +69,7 @@ public class DataObjectsTest {
     final DataInputAssociation dataInputAssociation =
         scriptTask.getDataInputAssociations().iterator().next();
     final Collection<ItemAwareElement> sources = dataInputAssociation.getSources();
-    assertThat(sources.size()).isEqualTo(1);
+    assertThat(sources).hasSize(1);
     assertThat(sources.iterator().next()).isEqualTo(dataObjectReference);
   }
 

@@ -15,8 +15,6 @@
  */
 package io.atomix.raft;
 
-import static org.junit.Assert.fail;
-
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ScheduledFutureImpl;
@@ -24,6 +22,7 @@ import io.atomix.utils.concurrent.ThreadContext;
 import java.time.Duration;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.Assertions;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,7 +118,7 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
         command.run();
       } catch (final Exception e) {
         LOGGER.error("Uncaught exception", e);
-        fail("Uncaught exception" + e);
+        Assertions.fail("Uncaught exception" + e);
       }
     }
   }

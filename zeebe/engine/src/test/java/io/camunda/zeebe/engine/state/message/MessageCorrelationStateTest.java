@@ -8,12 +8,12 @@
 package io.camunda.zeebe.engine.state.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,10 +55,10 @@ public class MessageCorrelationStateTest {
 
     // when - then
     final var exception =
-        Assertions.assertThrows(
-            ZeebeDbInconsistentException.class,
-            () -> state.putMessageCorrelation(messageKey, requestId, requestStreamId),
-            "Expected to insert new element, but element with key '1' already exists");
+        assertThatExceptionOfType(ZeebeDbInconsistentException.class)
+            .as("Expected to insert new element, but element with key '1' already exists")
+            .isThrownBy(() -> state.putMessageCorrelation(messageKey, requestId, requestStreamId))
+            .actual();
     assertThat(exception)
         .hasMessage("Key DbLong{1} in ColumnFamily MESSAGE_CORRELATION already exists");
   }
@@ -102,10 +102,10 @@ public class MessageCorrelationStateTest {
   void shouldNotRemoveNonExistingMessageCorrelation() {
     // when - then
     final var exception =
-        Assertions.assertThrows(
-            ZeebeDbInconsistentException.class,
-            () -> state.removeMessageCorrelation(1),
-            "Expected to delete existing element, but no element with key '1' found");
+        assertThatExceptionOfType(ZeebeDbInconsistentException.class)
+            .as("Expected to delete existing element, but no element with key '1' found")
+            .isThrownBy(() -> state.removeMessageCorrelation(1))
+            .actual();
     assertThat(exception)
         .hasMessage("Key DbLong{1} in ColumnFamily MESSAGE_CORRELATION does not exist");
   }

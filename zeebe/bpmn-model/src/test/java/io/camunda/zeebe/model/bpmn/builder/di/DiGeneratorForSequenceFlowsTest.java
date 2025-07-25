@@ -19,8 +19,7 @@ import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.END_EVENT_ID;
 import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.SEQUENCE_FLOW_ID;
 import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.START_EVENT_ID;
 import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.USER_TASK_ID;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -56,7 +55,7 @@ public class DiGeneratorForSequenceFlowsTest {
             .done();
 
     final Collection<BpmnEdge> allEdges = instance.getModelElementsByType(BpmnEdge.class);
-    assertEquals(1, allEdges.size());
+    assertThat(allEdges).hasSize(1);
 
     assertBpmnEdgeExists(SEQUENCE_FLOW_ID);
   }
@@ -79,7 +78,7 @@ public class DiGeneratorForSequenceFlowsTest {
             .done();
 
     final Collection<BpmnEdge> allEdges = instance.getModelElementsByType(BpmnEdge.class);
-    assertEquals(3, allEdges.size());
+    assertThat(allEdges).hasSize(3);
 
     assertBpmnEdgeExists("s1");
     assertBpmnEdgeExists("s2");
@@ -106,7 +105,7 @@ public class DiGeneratorForSequenceFlowsTest {
             .done();
 
     final Collection<BpmnEdge> allEdges = instance.getModelElementsByType(BpmnEdge.class);
-    assertEquals(4, allEdges.size());
+    assertThat(allEdges).hasSize(4);
 
     assertBpmnEdgeExists("s1");
     assertBpmnEdgeExists("s2");
@@ -134,7 +133,7 @@ public class DiGeneratorForSequenceFlowsTest {
             .done();
 
     final Collection<BpmnEdge> allEdges = instance.getModelElementsByType(BpmnEdge.class);
-    assertEquals(4, allEdges.size());
+    assertThat(allEdges).hasSize(4);
 
     assertBpmnEdgeExists("s1");
     assertBpmnEdgeExists("s2");
@@ -162,7 +161,7 @@ public class DiGeneratorForSequenceFlowsTest {
             .done();
 
     final Collection<BpmnEdge> allEdges = instance.getModelElementsByType(BpmnEdge.class);
-    assertEquals(4, allEdges.size());
+    assertThat(allEdges).hasSize(4);
 
     assertBpmnEdgeExists("s1");
     assertBpmnEdgeExists("s2");
@@ -185,6 +184,6 @@ public class DiGeneratorForSequenceFlowsTest {
 
   protected void assertBpmnEdgeExists(final String id) {
     final BpmnEdge edge = findBpmnEdge(id);
-    assertNotNull(edge);
+    assertThat(edge).isNotNull();
   }
 }

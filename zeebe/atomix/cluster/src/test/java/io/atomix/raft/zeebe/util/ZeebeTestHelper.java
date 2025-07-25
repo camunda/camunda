@@ -15,7 +15,7 @@
  */
 package io.atomix.raft.zeebe.util;
 
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
@@ -115,7 +115,7 @@ public class ZeebeTestHelper {
       result = predicate.getAsBoolean();
     }
 
-    assertTrue(result);
+    assertThat(result).isTrue();
   }
 
   public void awaitContains(

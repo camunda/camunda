@@ -8,9 +8,7 @@
 package io.camunda.zeebe.exporter.opensearch.aws;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -79,7 +77,7 @@ class AwsRequestSigningApacheInterceptorTest {
     assertAwsHeaders(request);
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     request.getEntity().writeTo(outputStream);
-    assertEquals(content, outputStream.toString());
+    assertThat(outputStream.toString()).isEqualTo(content);
   }
 
   @Test
@@ -98,7 +96,7 @@ class AwsRequestSigningApacheInterceptorTest {
     assertThat(request.getRequestLine().getMethod()).isEqualTo("POST");
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     request.getEntity().writeTo(outputStream);
-    assertEquals(content, outputStream.toString());
+    assertThat(outputStream.toString()).isEqualTo(content);
     assertAwsHeaders(request);
   }
 
@@ -113,13 +111,14 @@ class AwsRequestSigningApacheInterceptorTest {
     context.setTargetHost(HttpHost.create("localhost"));
     interceptor.process(request, context);
 
-    assertTrue(request.getEntity().isRepeatable());
+    assertThat(request.getEntity().isRepeatable()).isTrue();
   }
 
   @Test
   void shouldThrowBadRequest() {
     final HttpRequest badRequest = new BasicHttpRequest("GET", "?#!@*%");
-    assertThrows(IOException.class, () -> interceptor.process(badRequest, new BasicHttpContext()));
+    assertThatExceptionOfType(IOException.class)
+        .isThrownBy(() -> interceptor.process(badRequest, new BasicHttpContext()));
   }
 
   private static void assertAwsHeaders(final HttpEntityEnclosingRequest request) {

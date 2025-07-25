@@ -20,9 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.Maps;
@@ -73,6 +70,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
@@ -342,7 +340,7 @@ public class RaftTest extends ConcurrentTestCase {
 
     // then
     final double missedHeartBeats = roleMetrics.getHeartbeatMissCount();
-    assertThat(0.0, is(missedHeartBeats - startMissedHeartBeats));
+    assertThat(missedHeartBeats - startMissedHeartBeats).isZero();
   }
 
   @Test
@@ -604,7 +602,7 @@ public class RaftTest extends ConcurrentTestCase {
 
     @Override
     public void onWriteError(final Throwable error) {
-      fail("Unexpected write error: " + error.getMessage());
+      Assertions.fail("Unexpected write error: " + error.getMessage());
     }
 
     @Override
@@ -614,7 +612,7 @@ public class RaftTest extends ConcurrentTestCase {
 
     @Override
     public void onCommitError(final long index, final Throwable error) {
-      fail("Unexpected write error: " + error.getMessage());
+      Assertions.fail("Unexpected write error: " + error.getMessage());
     }
 
     public long awaitCommit() throws Exception {

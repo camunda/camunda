@@ -16,7 +16,7 @@
  */
 package io.atomix.utils;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.utils.misc.TimestampPrinter;
 import org.junit.Ignore;
@@ -28,6 +28,6 @@ public class TimestampPrinterTest {
   @Ignore // Timestamp is environment specific
   public void testTimestampPrinter() throws Exception {
     final TimestampPrinter printer = TimestampPrinter.of(1);
-    assertEquals("1969-12-31 04:00:00,001", printer.toString());
+    assertThat(printer.toString()).isEqualTo("1969-12-31 04:00:00,001");
   }
 }
