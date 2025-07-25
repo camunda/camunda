@@ -18,13 +18,6 @@ package io.camunda.client.api.response;
 public interface CreateUserResponse {
 
   /**
-   * Returns the key of the created user.
-   *
-   * @return the key of the created user.
-   */
-  long getUserKey();
-
-  /**
    * Returns the username of the created user.
    *
    * @return the username of the created user.

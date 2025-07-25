@@ -15,33 +15,20 @@
  */
 package io.camunda.client.impl.response;
 
-import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.CreateUserResponse;
 import io.camunda.client.protocol.rest.UserCreateResult;
 
 public class CreateUserResponseImpl implements CreateUserResponse {
 
-  private final JsonMapper jsonMapper;
-  private long userKey;
   private String username;
   private String name;
   private String email;
 
-  public CreateUserResponseImpl(final JsonMapper jsonMapper) {
-    this.jsonMapper = jsonMapper;
-  }
-
   public CreateUserResponseImpl setResponse(final UserCreateResult response) {
-    userKey = Long.parseLong(response.getUserKey());
     username = response.getUsername();
     name = response.getName();
     email = response.getEmail();
     return this;
-  }
-
-  @Override
-  public long getUserKey() {
-    return userKey;
   }
 
   @Override
