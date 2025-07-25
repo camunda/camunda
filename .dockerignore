@@ -6,7 +6,6 @@
 target/
 .DS_Store
 .vscode/
-.git/
 
 # Dockerignore files are not recursive :( - https://github.com/moby/moby/issues/20944
 operate/client/build

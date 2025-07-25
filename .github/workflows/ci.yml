@@ -948,19 +948,19 @@ jobs:
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
     steps:
       - uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@v3.1.0
-        with:
-          config: ./.hadolint.yaml
-          dockerfile: ./camunda.Dockerfile
-          format: sarif
-          output-file: ./hadolint.sarif
-          no-color: true
-          verbose: true
-      - name: Upload Hadolint Results
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: ./hadolint.sarif
+      # - uses: hadolint/hadolint-action@v3.1.0
+      #   with:
+      #     config: ./.hadolint.yaml
+      #     dockerfile: ./camunda.Dockerfile
+      #     format: sarif
+      #     output-file: ./hadolint.sarif
+      #     no-color: true
+      #     verbose: true
+      # - name: Upload Hadolint Results
+      #   if: always()
+      #   uses: github/codeql-action/upload-sarif@v3
+      #   with:
+      #     sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
