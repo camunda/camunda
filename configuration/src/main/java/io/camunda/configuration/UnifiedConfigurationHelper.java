@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("unifiedConfigurationHelper")
 public class UnifiedConfigurationHelper {
 
   private static final Map<String, Set<String>> LEGACY_PROPERTIES =

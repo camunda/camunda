@@ -24,14 +24,12 @@ import java.time.Duration;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.filter.CompositeFilter;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(BrokerBasedProperties.class)
 @Profile(value = {"broker", "restore"})
 public class BrokerBasedConfiguration {
 
