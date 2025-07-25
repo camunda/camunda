@@ -21,8 +21,11 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import java.util.NoSuchElementException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class SegmentedJournalReader implements JournalReader {
+  private static final Logger LOG = LoggerFactory.getLogger(SegmentedJournalReader.class);
 
   private final SegmentedJournal journal;
   private Segment currentSegment;
@@ -175,7 +178,7 @@ class SegmentedJournalReader implements JournalReader {
 
     if (index < currentReader.getNextIndex()) {
       rewind(index);
-    } else if (index > currentReader.getNextIndex()) {
+    } else if (index > currentReader.getNextIndex() || !currentReader.hasNext()) {
       forward(index);
     } else {
       currentReader.seek(index);
@@ -223,19 +226,29 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   private boolean unsafeHasNext() {
-    if (!currentReader.hasNext()) {
-      if (!currentSegment.isOpen()) {
-        // When the segment has been deleted concurrently, we do not want to allow the readers to
-        // read further until the reader is reset.
+    if (!currentSegment.isOpen()) {
+      // When the segment has been deleted concurrently, we do not want to allow the readers to
+      // read further until the reader is reset.
+      return false;
+    }
+    final long nextIndex = getNextIndex();
+
+    while (!currentReader.hasNext() || currentReader.getNextIndex() != nextIndex) {
+      // the current reader is exhausted, or we are not at the expected index. The latter condition
+      // only occurs when we already switched to another segment that doesn't contain the expected
+      // next index.
+      final Segment nextSegment = journal.getNextSegment(currentSegment.index());
+      LOG.trace("Segment {} exhausted, switching to next segment: {}", currentSegment, nextSegment);
+      if (nextSegment == null) {
+        // We ran out of segments, so we can't continue reading.
         return false;
       }
-
-      final Segment nextSegment = journal.getNextSegment(currentSegment.index());
-      if (nextSegment != null && nextSegment.index() == getNextIndex()) {
-        replaceCurrentSegment(nextSegment);
-        return currentReader.hasNext();
+      replaceCurrentSegment(nextSegment);
+      if (currentReader.getNextIndex() != nextIndex) {
+        // The new segment had an overlap with the previous segment, seek for the index where we
+        // need to continue reading from.
+        currentReader.seek(nextIndex);
       }
-      return false;
     }
     return true;
   }

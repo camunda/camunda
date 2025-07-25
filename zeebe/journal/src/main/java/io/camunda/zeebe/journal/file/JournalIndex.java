@@ -66,6 +66,14 @@ interface JournalIndex {
   void deleteAfter(long indexExclusive);
 
   /**
+   * Delete a range of entries from the index, inclusive of the given indices.
+   *
+   * @param fromIndexInclusive the start index of the range to delete, inclusive
+   * @param toIndexInclusive the end index of the range to delete, inclusive
+   */
+  void deleteInRange(long fromIndexInclusive, long toIndexInclusive);
+
+  /**
    * Compacts the index until the next stored index (exclusively), which means everything lower then
    * the stored index will be removed.
    *

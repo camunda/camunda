@@ -279,18 +279,23 @@ final class SegmentsManager implements AutoCloseable {
   void open() {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
-    loadSegments()
-        .forEach(
-            segment -> {
-              final Segment replacedSegment = segments.put(segment.descriptor().index(), segment);
-              if (replacedSegment != null) {
-                // The previous segment can be safely deleted to free resources.
-                replacedSegment.close();
-                replacedSegment.delete();
-              } else {
-                journalMetrics.incSegmentCount();
-              }
-            });
+    Segment previousSegment = null;
+    for (final Segment segment : loadSegments()) {
+      if (previousSegment != null && previousSegment.lastIndex() >= segment.index()) {
+        // Segments are overlapping, remove the journal index entries in the segment's index range.
+        // This is to avoid having an index lookup point to a position in the previous segment.
+        journalIndex.deleteInRange(segment.index(), segment.lastIndex() - 1);
+      }
+      previousSegment = segment;
+      final Segment replacedSegment = segments.put(segment.descriptor().index(), segment);
+      if (replacedSegment != null) {
+        // The previous segment can be safely deleted to free resources.
+        replacedSegment.close();
+        replacedSegment.delete();
+      } else {
+        journalMetrics.incSegmentCount();
+      }
+    }
 
     // If a segment doesn't already exist, create an initial segment starting at index 1.
     if (!segments.isEmpty()) {

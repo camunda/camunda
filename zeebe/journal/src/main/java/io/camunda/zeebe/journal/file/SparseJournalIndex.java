@@ -84,6 +84,21 @@ final class SparseJournalIndex implements JournalIndex {
   }
 
   @Override
+  public void deleteInRange(final long fromIndexInclusive, final long toIndexInclusive) {
+    indexToPosition.subMap(fromIndexInclusive, true, toIndexInclusive, true).clear();
+    final var indexToAsqnSubMap =
+        indexToAsqn.subMap(fromIndexInclusive, true, toIndexInclusive, true);
+    asqnToIndex
+        .subMap(
+            indexToAsqnSubMap.firstEntry().getValue(),
+            true,
+            indexToAsqnSubMap.lastEntry().getValue(),
+            true)
+        .clear();
+    indexToAsqnSubMap.clear();
+  }
+
+  @Override
   public void deleteUntil(final long index) {
     indexToPosition.headMap(index, false).clear();
 
