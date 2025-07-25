@@ -72,11 +72,9 @@ public class DefaultCamundaAuthenticationConverter
 
     if (authenticationContext.username() != null) {
       final var authenticatedUsername = authenticationContext.username();
-      claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
       authenticationBuilder.user(authenticatedUsername);
     } else {
       final var authenticatedClientId = authenticationContext.clientId();
-      claims.put(Authorization.AUTHORIZED_CLIENT_ID, authenticatedClientId);
       authenticationBuilder.clientId(authenticatedClientId);
     }
 
