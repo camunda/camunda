@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { isOIDC } from "src/configuration";
 import { SearchResponse } from "src/utility/api";
-import { useApiCall, usePaginatedApiCall } from "src/utility/api/hooks";
+import { useApiCall, usePaginatedApiCall } from "src/utility/api";
 import { MemberUser } from "src/utility/api/membership";
 import { ApiDefinition } from "src/utility/api/request";
 import { searchUser, User } from "src/utility/api/users";

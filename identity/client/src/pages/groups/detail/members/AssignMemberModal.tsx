@@ -10,7 +10,7 @@ import { FC, useEffect, useState } from "react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import { assignGroupMember } from "src/utility/api/membership";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api/hooks";
+import { useApiCall } from "src/utility/api";
 import { User } from "src/utility/api/users";
 import FormModal from "src/components/modal/FormModal";
 import { Group } from "src/utility/api/groups";

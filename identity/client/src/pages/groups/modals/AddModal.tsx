@@ -9,7 +9,7 @@
 import { FC, useState } from "react";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api/hooks";
+import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
 import { createGroup } from "src/utility/api/groups";
 import { isValidGroupId } from "./isValidGroupId";

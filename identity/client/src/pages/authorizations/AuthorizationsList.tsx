@@ -16,7 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "./modals/AddModal";
 import DeleteModal from "./modals/DeleteModal";
-import { usePaginatedApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api";
 
 type AuthorizationListProps = {
   tab: ResourceType;

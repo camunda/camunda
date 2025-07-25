@@ -9,7 +9,7 @@
 import { FC, useState } from "react";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api/hooks";
+import { useApiCall } from "src/utility/api";
 import { useNotifications } from "src/components/notifications";
 import { Group, updateGroup } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";

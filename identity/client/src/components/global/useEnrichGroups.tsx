@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { isCamundaGroupsEnabled } from "src/configuration";
 import { SearchResponse } from "src/utility/api";
-import { useApiCall, usePaginatedApiCall } from "src/utility/api/hooks";
+import { useApiCall, usePaginatedApiCall } from "src/utility/api";
 import { MemberGroup } from "src/utility/api/groups";
 import { ApiDefinition } from "src/utility/api/request";
 import { searchGroups, Group } from "src/utility/api/groups";

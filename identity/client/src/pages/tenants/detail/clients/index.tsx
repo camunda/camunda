@@ -10,7 +10,7 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api";
 import { getClientsByTenantId, Tenant } from "src/utility/api/tenants";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";

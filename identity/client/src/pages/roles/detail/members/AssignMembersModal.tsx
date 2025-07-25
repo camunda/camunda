@@ -11,7 +11,7 @@ import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import { assignRoleMember } from "src/utility/api/membership";
 import useTranslate from "src/utility/localization";
-import { useApi, useApiCall } from "src/utility/api/hooks";
+import { useApi, useApiCall } from "src/utility/api";
 import { searchUser, User } from "src/utility/api/users";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
