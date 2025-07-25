@@ -10,8 +10,8 @@ package io.camunda.webapps.backup.repository.opensearch;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.REPOSITORY_MISSING_EXCEPTION_TYPE;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -277,7 +277,9 @@ class OpensearchBackupRepositoryTest {
                     .build()));
 
     final var exception =
-        assertThrows(BackupException.class, () -> repository.validateRepositoryExists("repo"));
+        assertThatExceptionOfType(BackupException.class)
+            .isThrownBy(() -> repository.validateRepositoryExists("repo"))
+            .actual();
     assertThat(exception.getMessage()).isEqualTo("No repository with name [repo] could be found.");
   }
 
@@ -303,9 +305,9 @@ class OpensearchBackupRepositoryTest {
                                             .uuid("test"))))));
 
     final var exception =
-        assertThrows(
-            InvalidRequestException.class,
-            () -> repository.validateNoDuplicateBackupId("repo", 42L));
+        assertThatExceptionOfType(InvalidRequestException.class)
+            .isThrownBy(() -> repository.validateNoDuplicateBackupId("repo", 42L))
+            .actual();
     assertThat(exception.getMessage())
         .isEqualTo("A backup with ID [42] already exists. Found snapshots: [test]");
   }
