@@ -207,6 +207,8 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
               final var timer = getArchiverDeleteQueryTimer();
               startTimer.stop(timer);
               final var result = handleResponse(response, e, sourceIndexName, "delete");
+              result.ifLeft(
+                  throwable -> trackMetricForDeleteFailures(processInstanceKeys, throwable));
               result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
             });
     return deleteFuture.thenApply(ok -> null);
@@ -382,11 +384,25 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   private void trackMetricForReindexFailures(
       final List<Object> processInstanceKeys, final Throwable e) {
     LOGGER.error(
-        "Failed reindex while trying to reindex the following process instance keys [{}]",
+        "Failed while trying to reindex documents during the archival process for the following process instance keys [{}]",
         processInstanceKeys);
 
     metrics.recordCounts(
         Metrics.COUNTER_NAME_REINDEX_FAILURES,
+        1,
+        "exception",
+        e.getCause().getClass().getSimpleName());
+  }
+
+  private void trackMetricForDeleteFailures(
+      final List<Object> processInstanceKeys, final Throwable e) {
+
+    LOGGER.error(
+        "Failed while trying to delete documents during the archival process for the following process instance keys [{}]",
+        processInstanceKeys);
+
+    metrics.recordCounts(
+        Metrics.COUNTER_NAME_DELETE_FAILURES,
         1,
         "exception",
         e.getCause().getClass().getSimpleName());
