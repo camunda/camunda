@@ -13,8 +13,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
@@ -108,19 +107,19 @@ public class ConsoleClientIT {
   @Test
   void testFetchMembers() {
     final ConsoleClient.Members members = consoleClient.fetchMembers();
-    assertNotNull(members);
-    assertEquals(1, members.members().size());
-    assertEquals("John Doe", members.members().getFirst().name());
-    assertEquals("user123", members.members().getFirst().userId());
-    assertEquals("user@example.com", members.members().getFirst().email());
-    assertEquals(2, members.members().getFirst().roles().size());
-    assertEquals(Role.ADMIN, members.members().getFirst().roles().get(0));
-    assertEquals(Role.DEVELOPER, members.members().getFirst().roles().get(1));
-    assertEquals(1, members.clients().size());
-    assertEquals("console-client", members.clients().getFirst().name());
-    assertEquals("client123", members.clients().getFirst().clientId());
-    assertEquals(2, members.clients().getFirst().permissions().size());
-    assertEquals(Permission.OPERATE, members.clients().getFirst().permissions().get(0));
-    assertEquals(Permission.ZEEBE, members.clients().getFirst().permissions().get(1));
+    assertThat(members).isNotNull();
+    assertThat(members.members().size()).isEqualTo(1);
+    assertThat(members.members().getFirst().name()).isEqualTo("John Doe");
+    assertThat(members.members().getFirst().userId()).isEqualTo("user123");
+    assertThat(members.members().getFirst().email()).isEqualTo("user@example.com");
+    assertThat(members.members().getFirst().roles().size()).isEqualTo(2);
+    assertThat(members.members().getFirst().roles().get(0)).isEqualTo(Role.ADMIN);
+    assertThat(members.members().getFirst().roles().get(1)).isEqualTo(Role.DEVELOPER);
+    assertThat(members.clients().size()).isEqualTo(1);
+    assertThat(members.clients().getFirst().name()).isEqualTo("console-client");
+    assertThat(members.clients().getFirst().clientId()).isEqualTo("client123");
+    assertThat(members.clients().getFirst().permissions().size()).isEqualTo(2);
+    assertThat(members.clients().getFirst().permissions().get(0)).isEqualTo(Permission.OPERATE);
+    assertThat(members.clients().getFirst().permissions().get(1)).isEqualTo(Permission.ZEEBE);
   }
 }

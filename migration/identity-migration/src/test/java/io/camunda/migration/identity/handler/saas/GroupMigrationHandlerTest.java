@@ -8,7 +8,7 @@
 package io.camunda.migration.identity.handler.saas;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
@@ -70,7 +70,7 @@ public class GroupMigrationHandlerTest {
     when(consoleClient.fetchMembers()).thenReturn(new Members(List.of(), List.of()));
 
     // when
-    assertThrows(NotImplementedException.class, migrationHandler::migrate);
+    assertThatExceptionOfType(NotImplementedException.class).isThrownBy(migrationHandler::migrate);
 
     // then
     verify(managementIdentityClient).fetchGroups(anyInt());
