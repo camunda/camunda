@@ -248,7 +248,8 @@ jobs:
     name: "[UT] General Unit Tests"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      pull-requests: write
     runs-on: gcp-perf-core-16-default
     steps:
       - uses: actions/checkout@v4
@@ -457,7 +458,8 @@ jobs:
     needs: [ detect-changes ]
     name: "[IT] Elasticsearch"
     timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      pull-requests: write
     runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
@@ -549,7 +551,8 @@ jobs:
     needs: [ detect-changes ]
     name: "[IT] OpenSearch"
     timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      pull-requests: write
     runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
@@ -648,7 +651,8 @@ jobs:
     needs: [ detect-changes ]
     name: "[IT] RDBMS - H2"
     timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      pull-requests: write
     runs-on: gcp-perf-core-8-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
@@ -715,7 +719,8 @@ jobs:
     name: "[IT] RDBMS"
     timeout-minutes: 7
     runs-on: gcp-perf-core-8-default
-    permissions: { }  # no GITHUB_TOKEN is needed
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
@@ -771,7 +776,8 @@ jobs:
     name: "[IT] ${{ matrix.name }} ${{ matrix.suite }}"
     needs: [ detect-changes ]
     timeout-minutes: 25
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      pull-requests: write
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -937,6 +943,7 @@ jobs:
     timeout-minutes: 20
     permissions:
       security-events: write
+      pull-requests: write
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
       registry:
