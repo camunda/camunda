@@ -67,6 +67,7 @@ public class ProcessInstanceQueryControllerIT {
   @Before
   public void setupMockMvc() {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+    when(permissionsService.hasPermissionForProcess(any(), any())).thenReturn(true);
   }
 
   @Test

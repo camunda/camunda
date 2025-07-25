@@ -15,9 +15,13 @@ import io.camunda.operate.webapp.api.v1.entities.Error;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.security.auth.Authorization;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -41,6 +45,8 @@ public class DecisionInstanceController extends ErrorController {
   public static final String URI = "/v1/decision-instances";
   public static final String BY_ID = "/{id}";
   public static final String SEARCH = "/search";
+
+  @Autowired private PermissionsService permissionsService;
 
   @Autowired private DecisionInstanceDao decisionInstanceDao;
 
@@ -78,6 +84,7 @@ public class DecisionInstanceController extends ErrorController {
   public DecisionInstance byId(
       @Parameter(description = "Id of decision instance", required = true) @PathVariable
           final String id) {
+    checkIdentityReadPermission();
     return decisionInstanceDao.byId(id);
   }
 
@@ -161,7 +168,15 @@ public class DecisionInstanceController extends ErrorController {
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public Results<DecisionInstance> search(
       @RequestBody(required = false) Query<DecisionInstance> query) {
+    checkIdentityReadPermission();
     query = (query == null) ? new Query<>() : query;
     return decisionInstanceDao.search(query);
+  }
+
+  private void checkIdentityReadPermission() {
+    if (!permissionsService.hasPermissionForDecision(
+        Authorization.WILDCARD, PermissionType.READ_DECISION_INSTANCE)) {
+      throw new ForbiddenException("No read permission for decision instances");
+    }
   }
 }
