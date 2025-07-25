@@ -55,6 +55,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          declare -A lookup
+          lookup["Core Features"]="@core-features-medic"
+          lookup["Data Layer"]="@data-layer-medic"
+          lookup["Identity"]="@identity-medic"
+
           # shellcheck disable=SC2016
           NUMBER_OF_ALL_JOBS=$(bq query --format=json --use_legacy_sql=false --quiet=true 'SELECT COUNT(*) as number_of_all_jobs FROM `ci-30-162810.prod_ci_analytics.build_status_v2` WHERE TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY), INTERVAL 1 DAY)<=report_time AND report_time<=TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY) AND ci_url="https://github.com/camunda/camunda"' | jq -r '.[0].number_of_all_jobs')
           # shellcheck disable=SC2016
@@ -74,6 +79,7 @@ jobs:
               FULLY_QUALIFIED_TEST_CLASS_NAME=$(echo "$top_flakytest" | jq -r '.test_class_name')
               TEST_CLASS_NAME="${FULLY_QUALIFIED_TEST_CLASS_NAME##*.}"
               TEST_NAME=$(echo "$top_flakytest" | jq -r '.test_name')
+              TEST_OWNER=$(echo "$top_flakytest" | jq -r '.user_decription')
               SUFFIX=""
 
               # Try to find GH issues about related flaky tests:
@@ -88,6 +94,12 @@ jobs:
               fi
 
               printf "• %sx \`%s.%s\`%s\n\n" "$NUMBER_OF_FLAKES" "$TEST_CLASS_NAME" "$TEST_NAME" "$SUFFIX"
+              # only print if the owner is a team name
+              if [ ${#TEST_OWNER} -lt 20 ]; then
+                if [[ -n "${lookup[$TEST_OWNER]}" ]]; then
+                  printf "\t• ${lookup[$TEST_OWNER]}\n"
+                fi
+              fi
 
             done
             echo ""
@@ -100,6 +112,19 @@ jobs:
         shell: bash
         run: |
           echo '${{ steps.message.outputs.MESSAGE }}'
+
+      - name: Send report to slack channel
+        if: false
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ steps.secrets.outputs.SLACK_API_KEY }}
+          # "C04FM0DRJT0" is the ID of the #optimize-status channel
+          payload: |
+            {
+              "channel": "C089RLDSCEB",
+              "text": "${{ steps.message.outputs.MESSAGE }}"
+            }
 
       - name: Send notification
         if: github.event_name != 'pull_request'
