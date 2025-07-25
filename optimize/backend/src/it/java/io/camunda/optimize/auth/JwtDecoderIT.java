@@ -31,6 +31,9 @@ import io.camunda.optimize.rest.security.AbstractSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.ccsm.CCSMSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.cloud.CCSaaSSecurityConfigurerAdapter;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -215,11 +218,15 @@ public class JwtDecoderIT extends AbstractCCSMIT {
 
   public static JWTClaimsSet getDefaultClaimsSet() {
     // prepare default JWT claims set
+    final Map<String, Object> org = new HashMap<>();
+    org.put("id", "org1");
+    org.put("roles", List.of("admin"));
     return new JWTClaimsSet.Builder()
         .subject("alice")
         .audience("optimize")
         .issuer("http://localhost")
         .claim("https://camunda.com/clusterId", "456")
+        .claim("https://camunda.com/orgs", List.of(org))
         .expirationTime(new Date(new Date().getTime() + 60 * 1000))
         .build();
   }
