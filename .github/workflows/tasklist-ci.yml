@@ -3,7 +3,7 @@
 # type: CI
 # owner: @camunda/core-features
 ---
-name: Tasklist CI
+name: "[Legacy] Tasklist CI"
 on:
   workflow_dispatch:
   push:
@@ -34,6 +34,7 @@ jobs:
       - name: Detect changes
         uses: ./.github/actions/paths-filter
         id: filter
+
   run-build:
     name: run-build
     needs: [detect-changes]
@@ -43,7 +44,8 @@ jobs:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
     if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
 
-  run-tests:
+  # Does not meet run time requirements for Unified CI
+  run-integration-tests:
     name: run-tests
     needs: [detect-changes]
     uses: ./.github/workflows/tasklist-ci-test-reusable.yml

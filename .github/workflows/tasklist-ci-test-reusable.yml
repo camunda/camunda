@@ -44,9 +44,10 @@ env:
 
 jobs:
   integration-tests:
-    name: Test
+    name: Integration Tests
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 40
+    permissions: { }
     strategy:
       fail-fast: false
       matrix:
