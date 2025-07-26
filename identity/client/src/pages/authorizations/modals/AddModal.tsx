@@ -10,7 +10,7 @@ import { FC, useState } from "react";
 import { Dropdown, CheckboxGroup, Checkbox } from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
-import { isOIDC } from "src/configuration";
+import { isOIDC, isTenantsApiEnabled } from "src/configuration";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import {
   Authorization,
@@ -86,14 +86,18 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   const [ownerType, setOwnerType] = useState<OwnerType>(OwnerType.USER);
   const [ownerId, setOwnerId] = useState("");
   const [resourceId, setResourceId] = useState("");
-  const [resourceType, setResourceType] =
-    useState<ResourceType>(defaultResourceType);
   const [permissionTypes, setPermissionTypes] = useState<
     Authorization["permissionTypes"]
   >([]);
 
   const ownerTypeItems = Object.values(OwnerType);
-  const resourceTypeItems = Object.values(ResourceType);
+  const allResourceTypes = Object.values(ResourceType);
+  const resourceTypeItems = isTenantsApiEnabled
+    ? allResourceTypes
+    : allResourceTypes.filter((type) => type !== ResourceType.TENANT);
+
+  const [resourceType, setResourceType] =
+    useState<ResourceType>(defaultResourceType);
 
   const handleChangeCheckbox = (checked: boolean, id: PermissionTypes) => {
     if (checked) {

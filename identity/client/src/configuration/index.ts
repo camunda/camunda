@@ -19,6 +19,7 @@ export const isCamundaGroupsEnabled = getEnvBoolean(
   "CAMUNDA_GROUPS_ENABLED",
   true,
 );
+export const isTenantsApiEnabled = getEnvBoolean("TENANTS_API_ENABLED", false);
 
 export const docsUrl = "https://docs.camunda.io";
 
