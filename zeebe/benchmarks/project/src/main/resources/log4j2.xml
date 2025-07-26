@@ -6,6 +6,7 @@
     </Console>
   </Appenders>
   <Loggers>
+    <Logger name="io.camunda.client.job.worker" level="${env:LOG_LEVEL_WORKER:-debug}"/>
     <Root level="${env:LOG_LEVEL:-info}">
       <AppenderRef ref="Console"/>
     </Root>
