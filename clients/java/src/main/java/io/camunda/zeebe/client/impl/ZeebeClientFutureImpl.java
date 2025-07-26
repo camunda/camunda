@@ -101,8 +101,7 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
 
   @Override
   public void onCompleted() {
-    // if the stream completes, we won't receive a response or error anymore, thus cancelling
-    cancel(true);
+    // noop
   }
 
   @Override
