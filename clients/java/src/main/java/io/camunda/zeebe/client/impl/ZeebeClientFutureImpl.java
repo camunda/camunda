@@ -66,9 +66,10 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
   public boolean cancel(final boolean mayInterruptIfRunning, final Throwable cause) {
     if (mayInterruptIfRunning && clientCall != null) {
       clientCall.cancel("Client call explicitly cancelled by user", cause);
+      return true;
+    } else {
+      return super.cancel(mayInterruptIfRunning);
     }
-
-    return super.cancel(mayInterruptIfRunning);
   }
 
   @Override
@@ -100,7 +101,8 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
 
   @Override
   public void onCompleted() {
-    // do nothing as we don't support streaming
+    // if the stream completes, we won't receive a response or error anymore, thus cancelling
+    cancel(true);
   }
 
   @Override
