@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
@@ -172,6 +173,17 @@ public final class ClusterConfigurationManagementRequestSender {
         ClusterConfigurationRequestTopics.DISABLE_EXPORTER.topic(),
         exporterDisableRequest,
         serializer::encodeExporterDisableRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      deleteExporter(final ExporterDeleteRequest exporterDeleteRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.DELETE_EXPORTER.topic(),
+        exporterDeleteRequest,
+        serializer::encodeExporterDeleteRequest,
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);

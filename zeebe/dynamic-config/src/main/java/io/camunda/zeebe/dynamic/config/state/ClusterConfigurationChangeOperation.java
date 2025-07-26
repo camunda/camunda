@@ -147,6 +147,16 @@ public sealed interface ClusterConfigurationChangeOperation {
         implements PartitionChangeOperation {}
 
     /**
+     * Operation to delete an exporter on a partition in the given member.
+     *
+     * @param memberId the member id of the member that will apply this operation
+     * @param partitionId id of the partition which delete the exporter
+     * @param exporterId id of the exporter to delete
+     */
+    record PartitionDeleteExporterOperation(MemberId memberId, int partitionId, String exporterId)
+        implements PartitionChangeOperation {}
+
+    /**
      * Operation to enable an exporter on a partition in the given member.
      *
      * @param memberId the member id of the member that will apply this operation
