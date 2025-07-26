@@ -54,6 +54,12 @@ public final class BusinessRuleTaskProcessor
   }
 
   @Override
+  public void finalizeTermination(
+      final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.executeRuntimeInstructions(element, context);
+  }
+
+  @Override
   protected boolean isJobBehavior(
       final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
     if (element.getDecisionId() != null) {
@@ -102,9 +108,9 @@ public final class BusinessRuleTaskProcessor
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
               stateTransitionBehavior
-                  .suspendProcessInstanceIfNeeded(element, completed)
-                  .ifLeft(
-                      notSuspended ->
+                  .executeRuntimeInstructions(element, completed)
+                  .ifRight(
+                      notInterrupted ->
                           stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
@@ -140,11 +146,5 @@ public final class BusinessRuleTaskProcessor
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
     return TransitionOutcome.CONTINUE;
-  }
-
-  @Override
-  public void finalizeTermination(
-      final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 }

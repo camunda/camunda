@@ -76,9 +76,9 @@ public final class EventBasedGatewayProcessor
         .thenDo(
             completed ->
                 stateTransitionBehavior
-                    .suspendProcessInstanceIfNeeded(element, completed)
-                    .ifLeft(
-                        notSuspended ->
+                    .executeRuntimeInstructions(element, completed)
+                    .ifRight(
+                        notInterrupted ->
                             eventSubscriptionBehavior.activateTriggeredEvent(
                                 context.getElementInstanceKey(),
                                 completed.getFlowScopeKey(),
@@ -106,6 +106,6 @@ public final class EventBasedGatewayProcessor
   @Override
   public void finalizeTermination(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
+    stateTransitionBehavior.executeRuntimeInstructions(element, context);
   }
 }

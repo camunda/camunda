@@ -39,6 +39,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue FETCH_VARIABLES_KEY = new StringValue("fetchVariables");
   private static final StringValue START_INSTRUCTIONS_KEY = new StringValue("startInstructions");
+  private static final StringValue RUNTIME_INSTRUCTIONS_KEY =
+      new StringValue("runtimeInstructions");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -57,7 +59,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final ArrayProperty<ProcessInstanceCreationRuntimeInstruction>
       runtimeInstructionsProperty =
           new ArrayProperty<>(
-              "runtimeInstructions", ProcessInstanceCreationRuntimeInstruction::new);
+              RUNTIME_INSTRUCTIONS_KEY, ProcessInstanceCreationRuntimeInstruction::new);
 
   public ProcessInstanceCreationRecord() {
     super(9);
@@ -113,7 +115,6 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return runtimeInstructionsProperty.stream()
         .map(
             element -> {
-              final RuntimeInstructionType elementType = element.getInstructionType();
               final ProcessInstanceCreationRuntimeInstruction elementCopy =
                   ProcessInstanceCreationRuntimeInstruction.createInstruction();
               elementCopy.copy(element);

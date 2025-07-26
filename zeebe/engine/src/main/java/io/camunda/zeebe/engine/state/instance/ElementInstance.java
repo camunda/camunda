@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -76,7 +75,6 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       new IntegerProperty(EXECUTION_LISTENER_INDEX, 0);
   private final ObjectProperty<TaskListenerIndicesRecord> taskListenerIndicesRecordProp =
       new ObjectProperty<>(TASK_LISTENER_INDICES_RECORD, new TaskListenerIndicesRecord());
-  private final BooleanProperty isSuspendedProp = new BooleanProperty("isSuspended", false);
   private final IntegerProperty processDepth = new IntegerProperty(PROCESS_DEPTH, 1);
 
   /**
@@ -110,8 +108,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(userTaskKeyProp)
         .declareProperty(executionListenerIndexProp)
         .declareProperty(taskListenerIndicesRecordProp)
-        .declareProperty(processDepth)
-        .declareProperty(isSuspendedProp);
+        .declareProperty(processDepth);
   }
 
   public ElementInstance(
@@ -351,13 +348,5 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void setProcessDepth(final int depth) {
     processDepth.setValue(depth);
-  }
-
-  public boolean isSuspended() {
-    return isSuspendedProp.getValue();
-  }
-
-  public void suspend() {
-    isSuspendedProp.setValue(true);
   }
 }

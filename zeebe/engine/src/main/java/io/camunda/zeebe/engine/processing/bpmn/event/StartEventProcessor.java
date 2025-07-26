@@ -77,9 +77,9 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
         .thenDo(
             completed ->
                 stateTransitionBehavior
-                    .suspendProcessInstanceIfNeeded(element, completed)
-                    .ifLeft(
-                        notSuspended ->
+                    .executeRuntimeInstructions(element, completed)
+                    .ifRight(
+                        notInterrupted ->
                             stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed)));
   }
 
@@ -102,7 +102,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   @Override
   public void finalizeTermination(
       final ExecutableStartEvent element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
+    stateTransitionBehavior.executeRuntimeInstructions(element, context);
   }
 
   private BpmnElementContextImpl buildContextForFlowScopeInstance(

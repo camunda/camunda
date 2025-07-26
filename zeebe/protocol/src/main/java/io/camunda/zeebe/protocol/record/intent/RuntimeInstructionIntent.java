@@ -13,11 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.zeebe.protocol.record.intent;
 
-public enum ElementInstanceState {
-  ACTIVE,
-  COMPLETED,
-  TERMINATED,
-  UNKNOWN_ENUM_VALUE;
+public enum RuntimeInstructionIntent implements Intent {
+  INTERRUPTED(0);
+
+  private final short value;
+
+  RuntimeInstructionIntent(final int value) {
+    this.value = (short) value;
+  }
+
+  @Override
+  public short value() {
+    return value;
+  }
+
+  @Override
+  public boolean isEvent() {
+    return true;
+  }
+
+  public static Intent from(final short value) {
+    switch (value) {
+      case 0:
+        return INTERRUPTED;
+      default:
+        return Intent.UNKNOWN;
+    }
+  }
 }

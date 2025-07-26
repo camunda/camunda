@@ -327,6 +327,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
+  public void addRuntimeInstructions(
+      final long processInstanceKey,
+      final List<ProcessInstanceCreationRuntimeInstructionValue> instructions) {
+
+    runtimeInstructions.setRuntimeInstructions(instructions);
+    elementInstanceKey.wrapLong(processInstanceKey);
+    runtimeInstructionsByProcessInstanceKey.insert(elementInstanceKey, runtimeInstructions);
+  }
+
+  @Override
   public ElementInstance getInstance(final long key) {
     elementInstanceKey.wrapLong(key);
     return elementInstanceColumnFamily.get(elementInstanceKey, ElementInstance::new);
@@ -489,29 +499,17 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public boolean shouldSuspendElementInstance(
+  public List<RuntimeInstructionValue> getRuntimeInstructionsForElementId(
       final long processInstanceKey, final String elementId) {
 
     elementInstanceKey.wrapLong(processInstanceKey);
     final var instructions = runtimeInstructionsByProcessInstanceKey.get(elementInstanceKey);
     if (instructions == null) {
-      return false;
-    }
-    if (instructions.isEmpty()) {
-      return false;
+      return List.of();
     }
     return instructions.getRuntimeInstructions().stream()
-        .anyMatch(instruction -> instruction.getAfterElementId().equals(elementId));
-  }
-
-  @Override
-  public void addRuntimeInstructions(
-      final long processInstanceKey,
-      final List<ProcessInstanceCreationRuntimeInstructionValue> instructions) {
-
-    runtimeInstructions.setRuntimeInstructions(instructions);
-    elementInstanceKey.wrapLong(processInstanceKey);
-    runtimeInstructionsByProcessInstanceKey.insert(elementInstanceKey, runtimeInstructions);
+        .filter(instruction -> instruction.getAfterElementId().equals(elementId))
+        .toList();
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {

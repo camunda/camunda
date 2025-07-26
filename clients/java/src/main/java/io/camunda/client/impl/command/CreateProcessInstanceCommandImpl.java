@@ -32,14 +32,14 @@ import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.client.protocol.rest.ProcessInstanceCreationSuspendInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendProcessInstanceInstruction;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TerminateProcessInstanceInstruction;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -135,13 +135,13 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
-  public CreateProcessInstanceCommandStep3 suspendAfterElement(final String elementId) {
+  public CreateProcessInstanceCommandStep3 terminateAfterElement(final String elementId) {
     grpcRequestObjectBuilder.addRuntimeInstructions(
         GatewayOuterClass.ProcessInstanceCreationRuntimeInstruction.newBuilder()
-            .setSuspend(
-                SuspendProcessInstanceInstruction.newBuilder().setAfterElementId(elementId)));
+            .setTerminate(
+                TerminateProcessInstanceInstruction.newBuilder().setAfterElementId(elementId)));
     httpRequestObject.addRuntimeInstructionsItem(
-        new ProcessInstanceCreationSuspendInstruction().afterElementId(elementId));
+        new ProcessInstanceCreationTerminateInstruction().afterElementId(elementId));
     return this;
   }
 

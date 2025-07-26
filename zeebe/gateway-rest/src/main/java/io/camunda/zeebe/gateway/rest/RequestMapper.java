@@ -90,7 +90,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationSuspendInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
@@ -122,13 +122,13 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
@@ -713,9 +713,9 @@ public class RequestMapper {
                     .map(
                         instruction -> {
                           final var instructionCasted =
-                              (ProcessInstanceCreationSuspendInstruction) instruction;
+                              (ProcessInstanceCreationTerminateInstruction) instruction;
                           return new ProcessInstanceCreationRuntimeInstruction()
-                              .setType(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE)
+                              .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
                               .setAfterElementId(instructionCasted.getAfterElementId());
                         })
                     .toList(),

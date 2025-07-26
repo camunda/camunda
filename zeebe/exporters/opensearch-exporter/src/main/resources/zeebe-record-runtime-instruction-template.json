@@ -1,0 +1,38 @@
+{
+  "index_patterns": [
+    "zeebe-record_runtime-instruction_*"
+  ],
+  "composed_of": [
+    "zeebe-record"
+  ],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record-runtime-instruction": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "processInstanceKey": {
+              "type": "long"
+            },
+            "tenantId": {
+              "type": "keyword"
+            },
+            "elementId": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}
