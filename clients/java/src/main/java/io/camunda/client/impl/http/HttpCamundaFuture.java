@@ -48,7 +48,7 @@ public class HttpCamundaFuture<RespT> extends CompletableFuture<RespT>
   }
 
   @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
+  public boolean cancel(final boolean mayInterruptIfRunning, final Throwable cause) {
     if (transportFuture != null) {
       transportFuture.cancel(mayInterruptIfRunning);
     }

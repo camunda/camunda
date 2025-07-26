@@ -28,6 +28,7 @@ import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -46,7 +47,7 @@ final class JobStreamerImpl implements JobStreamer {
   private final Duration timeout;
   private final List<String> fetchVariables;
   private final List<String> tenantIds;
-  private final Duration requestTimeout;
+  private final Duration streamTimeout;
   private final BackoffSupplier backoffSupplier;
   private final ScheduledExecutorService executor;
   private final Lock streamLock;
@@ -63,6 +64,9 @@ final class JobStreamerImpl implements JobStreamer {
   @GuardedBy("streamLock")
   private long retryDelay;
 
+  @GuardedBy("streamLock")
+  private ScheduledFuture<?> scheduledRecreationTriggerTask;
+
   public JobStreamerImpl(
       final JobClient jobClient,
       final String jobType,
@@ -70,7 +74,7 @@ final class JobStreamerImpl implements JobStreamer {
       final Duration timeout,
       final List<String> fetchVariables,
       final List<String> tenantIds,
-      final Duration requestTimeout,
+      final Duration streamTimeout,
       final BackoffSupplier backoffSupplier,
       final ScheduledExecutorService executor) {
     this.jobClient = jobClient;
@@ -79,7 +83,7 @@ final class JobStreamerImpl implements JobStreamer {
     this.timeout = timeout;
     this.fetchVariables = fetchVariables;
     this.tenantIds = tenantIds;
-    this.requestTimeout = requestTimeout;
+    this.streamTimeout = streamTimeout;
     this.backoffSupplier = backoffSupplier;
     this.executor = executor;
 
@@ -165,16 +169,20 @@ final class JobStreamerImpl implements JobStreamer {
       command = command.fetchVariables(fetchVariables);
     }
 
-    return command.requestTimeout(requestTimeout);
+    return command;
   }
 
   @GuardedBy("streamLock")
   private void lockedClose() {
-    LOGGER.debug("Closing job stream for type '{}' and worker '{}", jobType, workerName);
+    LOGGER.debug("Closing job stream for type '{}' and worker '{}'", jobType, workerName);
     isClosed = true;
+    if (scheduledRecreationTriggerTask != null) {
+      scheduledRecreationTriggerTask.cancel(true);
+    }
     if (streamControl != null) {
       streamControl.cancel(true);
     }
+    LOGGER.debug("Closed job stream for type '{}' and worker '{}'", jobType, workerName);
   }
 
   @GuardedBy("streamLock")
@@ -188,6 +196,53 @@ final class JobStreamerImpl implements JobStreamer {
     control.whenCompleteAsync((ignored, error) -> handleStreamComplete(error), executor);
     streamControl = control;
     LOGGER.debug("Opened job stream of type '{}' for worker '{}'", jobType, workerName);
+
+    if (streamTimeout != null) {
+      LOGGER.debug(
+          "Scheduling recreation of the job stream of type '{}' for worker '{}' after '{}s'",
+          jobType,
+          workerName,
+          streamTimeout.getSeconds());
+      if (scheduledRecreationTriggerTask != null && !scheduledRecreationTriggerTask.isDone()) {
+        scheduledRecreationTriggerTask.cancel(true);
+      }
+      scheduledRecreationTriggerTask =
+          executor.schedule(
+              () -> triggerRecreation(streamControl),
+              streamTimeout.toMillis(),
+              TimeUnit.MILLISECONDS);
+    }
+  }
+
+  private void triggerRecreation(final ZeebeFuture<StreamJobsResponse> streamControl) {
+    try {
+      streamLock.lockInterruptibly();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return;
+    }
+
+    try {
+      if (!isClosed) {
+        if (this.streamControl == streamControl) {
+          LOGGER.debug(
+              "Job streaming timeout reached for type '{}' and worker '{}'. Closing existing stream.",
+              jobType,
+              workerName);
+          // cancellation will trigger lockedHandleStreamComplete, which will reopen the stream
+          this.streamControl.cancel(
+              true, Status.CANCELLED.withCause(new StreamingTimeoutException()).asException());
+          this.streamControl = null;
+        } else if (!streamControl.isDone()) {
+          LOGGER.error(
+              "Job stream for type '{}' and worker '{}' is a different instance than for which the streaming timeout hit",
+              jobType,
+              workerName);
+        }
+      }
+    } finally {
+      streamLock.unlock();
+    }
   }
 
   @GuardedBy("streamLock")
@@ -198,6 +253,19 @@ final class JobStreamerImpl implements JobStreamer {
     }
 
     if (error != null) {
+      if (error instanceof StatusRuntimeException) {
+        final StatusRuntimeException statusError = ((StatusRuntimeException) error);
+        if (statusError.getStatus().getCode() == Status.CANCELLED.getCode()
+            && statusError.getCause() != null
+            && statusError.getCause().getCause() instanceof StreamingTimeoutException) {
+          LOGGER.debug(
+              "Recreating job stream for type '{}' and worker '{}' after timeout",
+              jobType,
+              workerName);
+          lockedOpen();
+          return;
+        }
+      }
       logStreamError(error);
       retryDelay = backoffSupplier.supplyRetryDelay(retryDelay);
       LOGGER
@@ -223,4 +291,6 @@ final class JobStreamerImpl implements JobStreamer {
 
     LOGGER.warn(errorMsg, jobType, workerName, error);
   }
+
+  private static final class StreamingTimeoutException extends RuntimeException {}
 }
