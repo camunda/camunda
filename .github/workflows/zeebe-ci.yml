@@ -31,7 +31,7 @@ env:
 
 jobs:
   smoke-tests:
-    name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
+    name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }} / Core Features"
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runner }}
@@ -112,7 +112,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   property-tests:
-    name: Property Tests
+    name: "[Property] Tests / Core Features"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -164,7 +164,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   performance-tests:
-    name: Performance Tests
+    name: "[Performance] Tests / Core Features"
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -230,7 +230,7 @@ jobs:
 
   strace-tests:
     # Zeebe tests requiring strace
-    name: Strace Tests
+    name: "[UT] Strace Tests / Core Features"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -286,7 +286,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   docker-checks:
-    name: Docker checks
+    name: "[Build] Docker Build Checks / Core Features"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
