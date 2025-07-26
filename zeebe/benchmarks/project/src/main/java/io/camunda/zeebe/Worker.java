@@ -66,6 +66,7 @@ public class Worker extends App {
             .jobType(jobType)
             .handler(handleJob(client, variables, completionDelay, requestFutures))
             .streamEnabled(isStreamEnabled)
+            .streamTimeout(Duration.ofMinutes(5))
             .metrics(metrics)
             .open();
 
