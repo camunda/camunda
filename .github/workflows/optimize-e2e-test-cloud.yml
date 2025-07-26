@@ -2,7 +2,7 @@
 # test location: /optimize/client/e2e/cloud-tests
 # type: CI
 # owner: @camunda/core-features
-name: Optimize E2E Cloud
+name: "[Legacy] Optimize E2E Cloud"
 
 on:
   pull_request:
