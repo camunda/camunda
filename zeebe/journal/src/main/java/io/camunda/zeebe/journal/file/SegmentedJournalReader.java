@@ -215,14 +215,17 @@ class SegmentedJournalReader implements JournalReader {
   /** Fast forwards the journal to the given index. */
   private void forward(final long index) {
     // skip to the correct segment if there is one
+    boolean indexIntermediateEntries = true;
     if (!currentSegment.equals(journal.getLastSegment())) {
       final Segment segment = journal.getSegment(index);
       if (segment != null && !segment.equals(currentSegment)) {
+        // we want to identity overlapping entries to not index them
+        indexIntermediateEntries = index >= segment.index() && index < currentSegment.lastIndex();
         replaceCurrentSegment(segment);
       }
     }
 
-    currentReader.seek(index);
+    currentReader.seek(index, indexIntermediateEntries);
   }
 
   private boolean unsafeHasNext() {
@@ -246,8 +249,8 @@ class SegmentedJournalReader implements JournalReader {
       replaceCurrentSegment(nextSegment);
       if (currentReader.getNextIndex() != nextIndex) {
         // The new segment had an overlap with the previous segment, seek for the index where we
-        // need to continue reading from.
-        currentReader.seek(nextIndex);
+        // need to continue reading from, skipping indexing of overlapping entries
+        currentReader.seek(nextIndex, false);
       }
     }
     return true;

@@ -76,6 +76,10 @@ final class SegmentReader implements Iterator<JournalRecord> {
   }
 
   void seek(final long index) {
+    seek(index, true);
+  }
+
+  void seek(final long index, final boolean shouldIndexIntermediateEntries) {
     checkSegmentOpen();
     final long firstIndex = segment.index();
     final long lastIndex = segment.lastIndex();
@@ -90,7 +94,7 @@ final class SegmentReader implements Iterator<JournalRecord> {
 
     // If the returned index is far away from the seekIndex, it is likely that this segment was not
     // indexed before. So we try to index them during the seek.
-    final boolean shouldIndex = !this.index.hasIndexed(index);
+    final boolean shouldIndex = !this.index.hasIndexed(index) && shouldIndexIntermediateEntries;
 
     while (getNextIndex() < index && hasNext()) {
       final var nextPosition = buffer.position();

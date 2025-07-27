@@ -306,6 +306,54 @@ class SegmentedJournalReaderTest {
     }
   }
 
+  @Test
+  void shouldNotIndexOverlappingEntriesWhenSeekingForward() throws IOException {
+    // clean up default test datadir
+    FileUtil.deleteFolder(directory.resolve("data"));
+    Files.createDirectory(directory.resolve("data"));
+    // given an overlapping journal with multiple segments
+    var journalFactory = new TestJournalFactory(200);
+    journal = JournalTestHelper.openJournal(journalFactory, directory);
+    JournalTestHelper.appendJournalEntries(journal, IntStream.rangeClosed(1, 200).toArray());
+    journal.getLastSegment().updateDescriptor();
+    journal.close();
+
+    journalFactory = new TestJournalFactory(200);
+    final var secondaryJournal =
+        JournalTestHelper.openJournal(journalFactory, directory.resolve("secondary"));
+    secondaryJournal.reset(50);
+    JournalTestHelper.appendJournalEntries(
+        secondaryJournal, IntStream.rangeClosed(50, 249).toArray());
+    secondaryJournal.close();
+
+    journalFactory = new TestJournalFactory(200);
+    final var thirdJournal =
+        JournalTestHelper.openJournal(journalFactory, directory.resolve("third"));
+    thirdJournal.reset(230);
+    JournalTestHelper.appendJournalEntries(thirdJournal, IntStream.rangeClosed(230, 300).toArray());
+    thirdJournal.close();
+
+    JournalTestHelper.mergeJournals(
+        directory, directory.resolve("secondary"), directory.resolve("third"));
+
+    // when opening the journal
+    journalFactory = new TestJournalFactory(200);
+    journal = JournalTestHelper.openJournal(journalFactory, directory);
+    reader = journal.openReader();
+
+    // and seeking past an overlapping position
+    reader.seek(220);
+    assertThat(reader.hasNext()).isTrue();
+    reader.seek(300);
+    assertThat(reader.hasNext()).isTrue();
+
+    // then the overlapping entries are not indexed in the journal
+    IntStream.rangeClosed(50, 200)
+        .forEach(i -> assertThat(journal.getJournalIndex().hasIndexed(i)).isFalse());
+    IntStream.rangeClosed(230, 249)
+        .forEach(i -> assertThat(journal.getJournalIndex().hasIndexed(i)).isFalse());
+  }
+
   private int getSerializedSize(final DirectBuffer data) {
     final var record = new RecordData(Long.MAX_VALUE, Long.MAX_VALUE, data);
     final var serializer = new SBESerializer();
