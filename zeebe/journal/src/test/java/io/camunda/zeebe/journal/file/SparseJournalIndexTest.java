@@ -22,7 +22,6 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.util.TestJournalRecord;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /** Sparse journal index test. */
@@ -283,26 +282,26 @@ class SparseJournalIndexTest {
         .forEach(
             i -> {
               final var info = index.lookup(i);
-              Assertions.assertNotNull(info);
-              assertEquals(2, info.index());
-              assertEquals(4, info.position());
-              assertEquals(2, index.lookupAsqn(4));
+              assertThat(info).isNotNull();
+              assertThat(info.index()).isEqualTo(2);
+              assertThat(info.position()).isEqualTo(4);
+              assertThat(index.lookupAsqn(i)).isEqualTo(2);
             });
 
     IntStream.rangeClosed(1, 2)
         .forEach(
             i -> {
-              assertEquals(i, index.lookup(i).index());
-              assertEquals(i * 2, index.lookup(i).position());
-              assertEquals(i, index.lookupAsqn(i));
+              assertThat(index.lookup(i).index()).isEqualTo(i);
+              assertThat(index.lookup(i).position()).isEqualTo(i * 2);
+              assertThat(index.lookupAsqn(i)).isEqualTo(i);
             });
 
     IntStream.rangeClosed(8, 10)
         .forEach(
             i -> {
-              assertEquals(i, index.lookup(i).index());
-              assertEquals(i * 2, index.lookup(i).position());
-              assertEquals(i, index.lookupAsqn(i));
+              assertThat(index.lookup(i).index()).isEqualTo(i);
+              assertThat(index.lookup(i).position()).isEqualTo(i * 2);
+              assertThat(index.lookupAsqn(i)).isEqualTo(i);
             });
   }
 }
