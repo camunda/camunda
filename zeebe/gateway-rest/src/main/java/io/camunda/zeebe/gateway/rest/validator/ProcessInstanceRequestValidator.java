@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateOperationReference;
 
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
@@ -47,6 +48,8 @@ public class ProcessInstanceRequestValidator {
                 ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
                     List.of("processDefinitionId", "processDefinitionKey")));
           }
+          // Validate processDefinitionKey format if provided
+          validateKeyFormat(request.getProcessDefinitionKey(), "processDefinitionKey", violations);
           validateOperationReference(request.getOperationReference(), violations);
         });
   }
@@ -67,6 +70,10 @@ public class ProcessInstanceRequestValidator {
         violations -> {
           if (request.getTargetProcessDefinitionKey() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetProcessDefinitionKey"));
+          } else {
+            // Validate targetProcessDefinitionKey format
+            validateKeyFormat(
+                request.getTargetProcessDefinitionKey(), "targetProcessDefinitionKey", violations);
           }
           if (request.getMappingInstructions() == null
               || request.getMappingInstructions().isEmpty()) {
@@ -83,6 +90,10 @@ public class ProcessInstanceRequestValidator {
         violations -> {
           if (request.getTargetProcessDefinitionKey() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetProcessDefinitionKey"));
+          } else {
+            // Validate targetProcessDefinitionKey format
+            validateKeyFormat(
+                request.getTargetProcessDefinitionKey(), "targetProcessDefinitionKey", violations);
           }
           if (request.getMappingInstructions() == null
               || request.getMappingInstructions().isEmpty()) {
@@ -153,6 +164,13 @@ public class ProcessInstanceRequestValidator {
         (instruction) -> instruction.getElementInstanceKey() != null,
         violations,
         ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
+    // Also validate the format of elementInstanceKey values
+    instructions.stream()
+        .filter(instruction -> instruction.getElementInstanceKey() != null)
+        .forEach(
+            instruction ->
+                validateKeyFormat(
+                    instruction.getElementInstanceKey(), "elementInstanceKey", violations));
   }
 
   private static void validateMoveBatchInstructions(
