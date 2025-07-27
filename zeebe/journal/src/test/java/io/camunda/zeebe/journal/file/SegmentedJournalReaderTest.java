@@ -22,10 +22,14 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
+import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.IntStream;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -180,11 +184,9 @@ class SegmentedJournalReaderTest {
         JournalTestHelper.openJournal(journalFactory, directory.resolve("secondary"));
 
     JournalTestHelper.appendJournalEntries(journal, 1, 2, 3);
-    journal.getLastSegment().updateDescriptor();
 
     secondaryJournal.reset(3);
     JournalTestHelper.appendJournalEntries(secondaryJournal, 3, 4, 5);
-    secondaryJournal.getLastSegment().updateDescriptor();
     journal.close();
     secondaryJournal.close();
 
@@ -223,7 +225,6 @@ class SegmentedJournalReaderTest {
         JournalTestHelper.openJournal(journalFactory, directory.resolve("secondary"));
     secondaryJournal.reset(2);
     JournalTestHelper.appendJournalEntries(secondaryJournal, 2, 3, 4);
-    secondaryJournal.getLastSegment().updateDescriptor();
     secondaryJournal.close();
 
     journalFactory = new TestJournalFactory(5);
@@ -231,7 +232,6 @@ class SegmentedJournalReaderTest {
         JournalTestHelper.openJournal(journalFactory, directory.resolve("third"));
     thirdJournal.reset(3);
     JournalTestHelper.appendJournalEntries(thirdJournal, 3, 4, 5, 6, 7);
-    thirdJournal.getLastSegment().updateDescriptor();
     thirdJournal.close();
 
     JournalTestHelper.mergeJournals(
@@ -271,7 +271,6 @@ class SegmentedJournalReaderTest {
         JournalTestHelper.openJournal(journalFactory, directory.resolve("secondary"));
     secondaryJournal.reset(2);
     JournalTestHelper.appendJournalEntries(secondaryJournal, 2, 3, 4);
-    secondaryJournal.getLastSegment().updateDescriptor();
     secondaryJournal.close();
 
     journalFactory = new TestJournalFactory(5);
@@ -279,7 +278,6 @@ class SegmentedJournalReaderTest {
         JournalTestHelper.openJournal(journalFactory, directory.resolve("third"));
     thirdJournal.reset(3);
     JournalTestHelper.appendJournalEntries(thirdJournal, 3, 4, 5, 6, 7);
-    thirdJournal.getLastSegment().updateDescriptor();
     thirdJournal.close();
 
     JournalTestHelper.mergeJournals(
