@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - 28529-test
+  pull_request: {}
+  merge_group: {}
+  workflow_dispatch: {}
+
+jobs:
+  create-dry-run-branch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Essential for branch creation
+    steps:
+      - name: Create dryrun branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euox pipefail
+
+          SOURCE_BRANCH="28529-test"
+          DRYRUN_BRANCH="dryrun/${SOURCE_BRANCH}"
+
+          echo "Fetching SHA for branch: ${SOURCE_BRANCH}"
+
+          SHA=$(gh api "repos/${{ github.repository }}/git/ref/heads/${SOURCE_BRANCH}" \
+            --jq '.object.sha')
+
+          echo "Source Branch SHA: ${SHA}"
+
+          if [[ -z "${SHA}" ]]; then
+            echo "Error: Failed to retrieve SHA for branch '${SOURCE_BRANCH}'."
+            exit 1
+          fi
+
+          echo "Attempting to create branch '${DRYRUN_BRANCH}' from SHA '${SHA}'"
+
+          # Check if new branch already exists
+          BRANCH_EXISTS=$(gh api \
+            "repos/${{ github.repository }}/git/matching-refs/heads/${DRYRUN_BRANCH}" \
+            --jq '.[].ref')
+
+          if [[ "${BRANCH_EXISTS}" == "refs/heads/${DRYRUN_BRANCH}" ]]; then
+            echo "Branch '${DRYRUN_BRANCH}' already exists. Deleting it."
+
+            gh api -X DELETE "repos/camunda/camunda/git/refs/heads/${DRYRUN_BRANCH}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            --silent # Suppress output
+          fi
+
+          # Create dryrun branch
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            "repos/${{ github.repository }}/git/refs" \
+            -f ref="refs/heads/${DRYRUN_BRANCH}" \
+            -f sha="${SHA}"
+
+          echo "Branch '${DRYRUN_BRANCH}' created successfully."
+
+  run-release:
+    name: "Test camunda-platform-release.yml"
+    needs: [create-dry-run-branch]
+    uses: ./.github/workflows/camunda-platform-release.yml
+    secrets: inherit
+    with:
+      releaseBranch: "dryrun/28529-test"
+      releaseVersion: "8.3.20-alpha-rc999.1"
+      nextDevelopmentVersion: "8.3.20-alpha-rc999.2"
+      isLatest: true
+      dryRun: true
+
+  dry-run-cleanup:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [run-release]
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write # Needed to delete branch
+    steps:
+      - name: Delete branch
+        run: |
+          DRYRUN_BRANCH="dryrun/28529-test"
+
+          gh api -X DELETE "repos/camunda/camunda/git/refs/heads/${DRYRUN_BRANCH}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            --silent # Suppress output
+
+          echo "Branch '${DRYRUN_BRANCH}' deletion command sent."

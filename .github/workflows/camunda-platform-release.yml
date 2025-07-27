@@ -28,6 +28,10 @@ on:
         description: 'Whether to perform a dry release where no changes or artifacts are pushed, defaults to true.'
         type: boolean
         default: true
+      dryRunCleanup:
+        description: 'Whether to automatically remove all the artefacts produced in the dryRun mode upon workflow completion. Relevant only when dryRun=true, defaults to true.'
+        type: boolean
+        default: true
   workflow_dispatch:
     inputs:
       releaseBranch:
@@ -49,7 +53,11 @@ on:
         required: false
         default: false
       dryRun:
-        description: 'Whether to perform a dry release where no changes or artifacts are pushed, defaults to true.'
+        description: 'Perform a dry release where only removable artefacts are produced, defaults to true.'
+        type: boolean
+        default: true
+      dryRunCleanup:
+        description: 'Whether to automatically remove all the artefacts produced in the dryRun mode upon workflow completion. Relevant only when dryRun=true, defaults to true.'
         type: boolean
         default: true
 
@@ -60,6 +68,7 @@ defaults:
 env:
   RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
+  RELEASE_TAG: ${{ inputs.dryRun && format('dryrun-{0}', inputs.releaseVersion) || inputs.releaseVersion }}
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
 jobs:
   release:
@@ -160,665 +169,665 @@ jobs:
           #   This is the reason why we have to set it at least as empty string.
           ./mvnw release:prepare -B \
             -Dresume=false \
-            -Dtag="${RELEASE_VERSION}" \
+            -Dtag="${RELEASE_TAG}" \
             -DreleaseVersion="${RELEASE_VERSION}" \
             -DdevelopmentVersion="${DEVELOPMENT_VERSION}" \
-            -DpushChanges="${PUSH_CHANGES}" \
-            -DremoteTagging="${PUSH_CHANGES}" \
+            -DpushChanges="true" \
+            -DremoteTagging="true" \
             -DcompletionGoals="spotless:apply" \
             -P-autoFormat \
             -DpreparationGoals="" \
             -P\!include-optimize \
             -Darguments='-P!include-optimize'
-
-      - name: Maven Perform Release
-        id: maven-perform-release
-        env:
-          SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
-        run: |
-          # Perform a maven release
-          # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
-          # https://maven.apache.org/maven-release/maven-release-plugin/usage/perform-release.html
-
-          # -DskipQaBuild=true -P-autoFormat
-          #   In order to disable QA/IT and the auto formatting during the release.
-          #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
-
-          # shellcheck disable=SC2016
-          ./mvnw release:perform -B \
-            -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
-            -DlocalCheckout="${{ inputs.dryRun }}" \
-            -DskipQaBuild=true \
-            -P-autoFormat \
-            -P\!include-optimize \
-            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
-
-          # switch to the directory to which maven checks out the release tag
-          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
-          pushd target/checkout
-          TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
-          export TAG_REVISION
-          echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
-          popd
-      - name: Collect Release artifacts
-        id: release-artifacts
-        run: |
-          ARTIFACT_DIR=$(mktemp -d)
-          cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".tar.gz "${ARTIFACT_DIR}/"
-          cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
-          echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
-      - name: Upload Release Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-          path: ${{ steps.release-artifacts.outputs.dir }}
-          retention-days: 5
-      - name: Update Compat Version
-        run: |
-          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Skipping updating the compat version as ${RELEASE_VERSION} is not a stable version"
-            exit 0
-          fi
-
-          ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}" -P\!include-optimize
-          FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout -P\!include-optimize)
-          rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
-          git commit -am "build(project): update java compat versions"
-      - name: Delete version-specific allowed API breaking changes
-        run: |
-          IFS=$'\n' readarray -t files <<< "$(find . -name 'ignored-changes.json')"
-          for file in "${files[@]}"; do
-            if [ '${{ inputs.dryRun }}' = 'false' ]; then
-              echo "[DRY RUN] rm -f ${file}"
-            else
-              rm -f "${file}"
-            fi
-          done
-      - name: Push Changes to Release branch
-        if: ${{ inputs.dryRun == false }}
-        run: git push origin "${RELEASE_BRANCH}"
-      - name: Cleanup Maven Central GPG Key
-        # make sure we always remove the imported signing key to avoid it leaking on runners
-        if: always()
-        run: rm -rf "$HOME/.gnupg"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  github:
-    needs: release
-    name: Github Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-          fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
-      - name: Install Zeebe changelog tool
-        run: |
-          gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz'
-          tar -xzvf zeebe-changelog_*
-          chmod +x zcl
-      - name: Identify previous release version
-        id: prev_version
-        uses: camunda/infra-global-github-actions/previous-version@main
-        with:
-          version: "${{ inputs.releaseVersion }}"
-          verbose: 'false'
-      - name: Generate Changelog
-        id: gen-changelog
-        run: |
-          # We set some bash properties to better fail/debug this script
-          #
-          # * https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html
-          # * https://explainshell.com/explain?cmd=set+-euox+pipefail
-          #
-          set -euox pipefail
-
-          # Default changelog value
-          changelog="Release ${{ inputs.releaseVersion }}"
-
-          # Add the release labels to the release's issues, specifying the previous and current release in place of ZCL_FROM_REV and ZCL_TARGET_REV, respectively.
-          #
-          # ZCL_TARGET_REV should be replaced with the tag name for the version you are releasing, and
-          # ZCL_FROM_REV should be replaced as the tag name for the previous version, based on the release type
-          ZCL_FROM_REV="${{ steps.prev_version.outputs.previous_version }}"
-          ZCL_TARGET_REV="${{ inputs.releaseVersion }}"
-
-          # The following command will add labels to the issues on GitHub.
-          # You can verify this step by looking at closed issues. They should now be tagged with the release.
-          ./zcl add-labels \
-          --token=${{ secrets.GITHUB_TOKEN }} \
-          --from="$ZCL_FROM_REV" \
-          --target="$ZCL_TARGET_REV" \
-          --label="version:$ZCL_TARGET_REV" \
-          --org camunda --repo camunda
-
-          # The following command will print the markdown code to sysout - we are storing this into our variable "changelog"
-          changelog=$(./zcl generate \
-          --token=${{ secrets.GITHUB_TOKEN }} \
-          --label="version:$ZCL_TARGET_REV" \
-          --org camunda --repo camunda)
-
-          # With multiline strings the output needs to be set differently.
-          #
-          # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
-          #
-          {
-            echo 'CHANGELOG<<EOF'
-            echo "$changelog"
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
-
-          # To show the changelog also as step summary
-          echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-          path: release-artifacts
-      - name: Create Artifact Checksums
-        id: checksum
-        working-directory: ./release-artifacts
-        run: |
-          for filename in *; do
-            checksumFile="${filename}.sha1sum"
-            sha1sum "${filename}" > "${checksumFile}"
-            sha1sumResult=$?
-            if [ ! -f "${checksumFile}" ]; then
-              echo "Failed to created checksum of ${filename} at ${checksumFile}; [sha1sum] exited with result ${sha1sumResult}. Check the logs for errors."
-              exit 1
-            fi
-          done
-      - name: Determine if Pre-Release
-        id: pre-release
-        run: |
-          shopt -s nocasematch # set matching to case insensitive
-          PRE_RELEASE=false
-          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT).*$ ]]; then
-            PRE_RELEASE=true
-          fi
-          shopt -u nocasematch # reset it
-          echo "result=${PRE_RELEASE}" >> "$GITHUB_OUTPUT"
-      - name: Create Github release
-        uses: ncipollo/release-action@v1
-        if: ${{ inputs.dryRun == false }}
-        with:
-          name: ${{ inputs.releaseVersion }}
-          artifacts: "release-artifacts/*"
-          artifactErrorsFailBuild: true
-          draft: false
-          makeLatest: ${{ inputs.isLatest }}
-          body: ${{ steps.gen-changelog.outputs.changelog }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: ${{ steps.pre-release.outputs.result }}
-          tag: ${{ inputs.releaseVersion }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  zeebe-docker:
-    needs: release
-    name: Zeebe docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      PLATFORMS: "linux/amd64,linux/arm64"
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
-      DOCKER_IMAGE: camunda/zeebe
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Zeebe Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-zeebe-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-      - name: Verify Zeebe Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-zeebe-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-      - name: Sync Docker Image to DockerHub
-        id: push-docker
-        if: ${{ inputs.dryRun == false }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
-            ${{ steps.build-zeebe-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  operate-docker:
-    needs: release
-    name: Operate Docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      PLATFORMS: "linux/amd64,linux/arm64"
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
-      DOCKER_IMAGE: camunda/operate
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Operate Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-operate-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: operate.Dockerfile
-      - name: Verify Operate Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-operate-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: operate.Dockerfile
-          goldenfile: operate-docker-labels.golden.json
-      - name: Sync Operate Docker Image to DockerHub
-        id: push-docker
-        if: ${{ inputs.dryRun == false }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
-            ${{ steps.build-operate-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  tasklist-docker:
-    needs: release
-    name: Tasklist Docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      PLATFORMS: "linux/amd64,linux/arm64"
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/tasklist
-      DOCKER_IMAGE: camunda/tasklist
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Tasklist Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-tasklist-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: tasklist.Dockerfile
-      - name: Verify Tasklist Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-tasklist-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: tasklist.Dockerfile
-          goldenfile: tasklist-docker-labels.golden.json
-      - name: Sync Tasklist Docker Image to DockerHub
-        id: push-docker
-        if: ${{ inputs.dryRun == false }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
-            ${{ steps.build-tasklist-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  camunda-docker:
-    needs: release
-    name: Camunda Docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      PLATFORMS: "linux/amd64,linux/arm64"
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
-      DOCKER_IMAGE: camunda/camunda
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Camunda Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-camunda-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: camunda.Dockerfile
-      - name: Verify Camunda Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-camunda-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: camunda.Dockerfile
-          goldenfile: camunda-docker-labels.golden.json
-      - name: Sync Camunda Docker Image to DockerHub
-        id: push-docker
-        if: ${{ inputs.dryRun == false }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
-            ${{ steps.build-camunda-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  snyk:
-    name: Snyk Monitor
-    needs: [ zeebe-docker, release ]
-    # skip if the version contains a dash as a quick test for -alpha, -rc, -SNAPSHOT, etc.
-    if: ${{ !contains(inputs.releaseVersion, '-') }}
-    concurrency:
-      group: release-snyk-${{ inputs.releaseVersion }}
-      cancel-in-progress: false
-    uses: ./.github/workflows/zeebe-snyk.yml
-    with:
-      # Can't reference env.RELEASE_BRANCH directly due to https://github.com/actions/runner/issues/2372
-      ref: ${{ needs.release.outputs.releaseBranch }}
-      version: ${{ inputs.releaseVersion }}
-      useMinorVersion: true
-      # test instead of monitor during dry-runs
-      monitor: ${{ !inputs.dryRun }}
-      # the docker image will not be pushed during a dry-run, so we need to build it locally
-      build: ${{ inputs.dryRun }}
-      dockerImage: ${{ inputs.dryRun && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
-    secrets: inherit
-
-  notify-on-success:
-    name: Send Slack notification on success
-    runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
-    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
-    # else => send slack notification as an actual release succeeded
-    if: ${{ always() && (
-      needs.release.result == 'success' &&
-      needs.github.result == 'success' &&
-      needs.zeebe-docker.result == 'success' &&
-      needs.operate-docker.result == 'success' &&
-      needs.tasklist-docker.result == 'success' &&
-      needs.camunda-docker.result == 'success' &&
-      needs.snyk.result == 'success'
-      ) && inputs.dryRun == false }}
-    timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    steps:
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
-
-      - name: Send success Slack notification
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
-        with:
-          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":success: *Release job for ${{ inputs.releaseVersion }}* succeeded! (excluding Maven Central publishing - this is done separately)\n"
-                  }
-                }
-              ]
-            }
-
-  notify-if-failed:
-    name: Send Slack notification on failure
-    runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
-    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
-    # else => send slack notification as an actual release failed
-    if: ${{ always() && (
-        needs.release.result == 'failure' ||
-        needs.github.result == 'failure' ||
-        needs.zeebe-docker.result == 'failure' ||
-        needs.operate-docker.result == 'failure' ||
-        needs.tasklist-docker.result == 'failure' ||
-        needs.camunda-docker.result == 'failure' ||
-        needs.snyk.result == 'failure'
-        ) && inputs.dryRun == false }}
-    timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    steps:
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
-
-      - name: Send failure Slack notification
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
-        with:
-          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: *Release job for ${{ inputs.releaseVersion }}* **failed!**\n"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run>."
-                  }
-                }
-              ]
-            }
+#
+#      - name: Maven Perform Release
+#        id: maven-perform-release
+#        env:
+#          SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
+#        run: |
+#          # Perform a maven release
+#          # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
+#          # https://maven.apache.org/maven-release/maven-release-plugin/usage/perform-release.html
+#
+#          # -DskipQaBuild=true -P-autoFormat
+#          #   In order to disable QA/IT and the auto formatting during the release.
+#          #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
+#
+#          # shellcheck disable=SC2016
+#          ./mvnw release:perform -B \
+#            -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
+#            -DlocalCheckout="${{ inputs.dryRun }}" \
+#            -DskipQaBuild=true \
+#            -P-autoFormat \
+#            -P\!include-optimize \
+#            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+#
+#          # switch to the directory to which maven checks out the release tag
+#          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
+#          pushd target/checkout
+#          TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
+#          export TAG_REVISION
+#          echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
+#          popd
+#      - name: Collect Release artifacts
+#        id: release-artifacts
+#        run: |
+#          ARTIFACT_DIR=$(mktemp -d)
+#          cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".tar.gz "${ARTIFACT_DIR}/"
+#          cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
+#          echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
+#      - name: Upload Release Artifacts
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: release-artifacts-${{ inputs.releaseVersion }}
+#          path: ${{ steps.release-artifacts.outputs.dir }}
+#          retention-days: 5
+#      - name: Update Compat Version
+#        run: |
+#          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+#            echo "Skipping updating the compat version as ${RELEASE_VERSION} is not a stable version"
+#            exit 0
+#          fi
+#
+#          ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}" -P\!include-optimize
+#          FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout -P\!include-optimize)
+#          rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
+#          git commit -am "build(project): update java compat versions"
+#      - name: Delete version-specific allowed API breaking changes
+#        run: |
+#          IFS=$'\n' readarray -t files <<< "$(find . -name 'ignored-changes.json')"
+#          for file in "${files[@]}"; do
+#            if [ '${{ inputs.dryRun }}' = 'false' ]; then
+#              echo "[DRY RUN] rm -f ${file}"
+#            else
+#              rm -f "${file}"
+#            fi
+#          done
+#      - name: Push Changes to Release branch
+#        if: ${{ inputs.dryRun == false }}
+#        run: git push origin "${RELEASE_BRANCH}"
+#      - name: Cleanup Maven Central GPG Key
+#        # make sure we always remove the imported signing key to avoid it leaking on runners
+#        if: always()
+#        run: rm -rf "$HOME/.gnupg"
+#      - name: Observe build status
+#        if: always()
+#        continue-on-error: true
+#        uses: ./.github/actions/observe-build-status
+#        with:
+#          build_status: ${{ job.status }}
+#          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+#          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+#
+#  github:
+#    needs: release
+#    name: Github Release
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 10
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          ref: ${{ env.RELEASE_BRANCH }}
+#          fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
+#      - name: Install Zeebe changelog tool
+#        run: |
+#          gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz'
+#          tar -xzvf zeebe-changelog_*
+#          chmod +x zcl
+#      - name: Identify previous release version
+#        id: prev_version
+#        uses: camunda/infra-global-github-actions/previous-version@main
+#        with:
+#          version: "${{ inputs.releaseVersion }}"
+#          verbose: 'false'
+#      - name: Generate Changelog
+#        id: gen-changelog
+#        run: |
+#          # We set some bash properties to better fail/debug this script
+#          #
+#          # * https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html
+#          # * https://explainshell.com/explain?cmd=set+-euox+pipefail
+#          #
+#          set -euox pipefail
+#
+#          # Default changelog value
+#          changelog="Release ${{ inputs.releaseVersion }}"
+#
+#          # Add the release labels to the release's issues, specifying the previous and current release in place of ZCL_FROM_REV and ZCL_TARGET_REV, respectively.
+#          #
+#          # ZCL_TARGET_REV should be replaced with the tag name for the version you are releasing, and
+#          # ZCL_FROM_REV should be replaced as the tag name for the previous version, based on the release type
+#          ZCL_FROM_REV="${{ steps.prev_version.outputs.previous_version }}"
+#          ZCL_TARGET_REV="${{ inputs.releaseVersion }}"
+#
+#          # The following command will add labels to the issues on GitHub.
+#          # You can verify this step by looking at closed issues. They should now be tagged with the release.
+#          ./zcl add-labels \
+#          --token=${{ secrets.GITHUB_TOKEN }} \
+#          --from="$ZCL_FROM_REV" \
+#          --target="$ZCL_TARGET_REV" \
+#          --label="version:$ZCL_TARGET_REV" \
+#          --org camunda --repo camunda
+#
+#          # The following command will print the markdown code to sysout - we are storing this into our variable "changelog"
+#          changelog=$(./zcl generate \
+#          --token=${{ secrets.GITHUB_TOKEN }} \
+#          --label="version:$ZCL_TARGET_REV" \
+#          --org camunda --repo camunda)
+#
+#          # With multiline strings the output needs to be set differently.
+#          #
+#          # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
+#          #
+#          {
+#            echo 'CHANGELOG<<EOF'
+#            echo "$changelog"
+#            echo 'EOF'
+#          } >> "$GITHUB_OUTPUT"
+#
+#          # To show the changelog also as step summary
+#          echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
+#      - name: Download Release Artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: release-artifacts-${{ inputs.releaseVersion }}
+#          path: release-artifacts
+#      - name: Create Artifact Checksums
+#        id: checksum
+#        working-directory: ./release-artifacts
+#        run: |
+#          for filename in *; do
+#            checksumFile="${filename}.sha1sum"
+#            sha1sum "${filename}" > "${checksumFile}"
+#            sha1sumResult=$?
+#            if [ ! -f "${checksumFile}" ]; then
+#              echo "Failed to created checksum of ${filename} at ${checksumFile}; [sha1sum] exited with result ${sha1sumResult}. Check the logs for errors."
+#              exit 1
+#            fi
+#          done
+#      - name: Determine if Pre-Release
+#        id: pre-release
+#        run: |
+#          shopt -s nocasematch # set matching to case insensitive
+#          PRE_RELEASE=false
+#          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT).*$ ]]; then
+#            PRE_RELEASE=true
+#          fi
+#          shopt -u nocasematch # reset it
+#          echo "result=${PRE_RELEASE}" >> "$GITHUB_OUTPUT"
+#      - name: Create Github release
+#        uses: ncipollo/release-action@v1
+#        if: ${{ inputs.dryRun == false }}
+#        with:
+#          name: ${{ inputs.releaseVersion }}
+#          artifacts: "release-artifacts/*"
+#          artifactErrorsFailBuild: true
+#          draft: false
+#          makeLatest: ${{ inputs.isLatest }}
+#          body: ${{ steps.gen-changelog.outputs.changelog }}
+#          token: ${{ secrets.GITHUB_TOKEN }}
+#          prerelease: ${{ steps.pre-release.outputs.result }}
+#          tag: ${{ inputs.releaseVersion }}
+#      - name: Observe build status
+#        if: always()
+#        continue-on-error: true
+#        uses: ./.github/actions/observe-build-status
+#        with:
+#          build_status: ${{ job.status }}
+#          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+#          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+#
+#  zeebe-docker:
+#    needs: release
+#    name: Zeebe docker Image Release
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 15
+#    services:
+#      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+#      # registry. As we want to verify the images first before pushing them to dockerhub though,
+#      # a local registry is used and if verification passes images are pushed to the remote registry.
+#      registry:
+#        image: registry:3
+#        ports:
+#          - 5000:5000
+#    env:
+#      PLATFORMS: "linux/amd64,linux/arm64"
+#      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
+#      DOCKER_IMAGE: camunda/zeebe
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          ref: ${{ env.RELEASE_BRANCH }}
+#      - name: Import Secrets
+#        id: secrets
+#        uses: hashicorp/vault-action@v3.4.0
+#        with:
+#          url: ${{ secrets.VAULT_ADDR }}
+#          method: approle
+#          roleId: ${{ secrets.VAULT_ROLE_ID }}
+#          secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secrets: |
+#            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+#            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
+#      - name: Login to DockerHub
+#        uses: docker/login-action@v3
+#        with:
+#          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+#          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+#      - name: Download Release Artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: release-artifacts-${{ inputs.releaseVersion }}
+#      - name: Build Zeebe Docker Image
+#        uses: ./.github/actions/build-platform-docker
+#        id: build-zeebe-docker
+#        with:
+#          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+#          version: ${{ inputs.releaseVersion }}
+#          revision: ${{ needs.release.outputs.releaseTagRevision }}
+#          # pushes to local registry for verification prior pushing to remote
+#          push: true
+#          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+#          platforms: ${{ env.PLATFORMS }}
+#      - name: Verify Zeebe Docker image
+#        uses: ./.github/actions/verify-platform-docker
+#        with:
+#          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+#          date: ${{ steps.build-zeebe-docker.outputs.date }}
+#          revision: ${{ needs.release.outputs.releaseTagRevision }}
+#          version: ${{ inputs.releaseVersion }}
+#          platforms: ${{ env.PLATFORMS }}
+#      - name: Sync Docker Image to DockerHub
+#        id: push-docker
+#        if: ${{ inputs.dryRun == false }}
+#        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+#        run: |
+#          docker buildx imagetools create \
+#            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+#            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+#            ${{ steps.build-zeebe-docker.outputs.image }}
+#      - name: Observe build status
+#        if: always()
+#        continue-on-error: true
+#        uses: ./.github/actions/observe-build-status
+#        with:
+#          build_status: ${{ job.status }}
+#          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+#          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+#
+#  operate-docker:
+#    needs: release
+#    name: Operate Docker Image Release
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 15
+#    services:
+#      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+#      # registry. As we want to verify the images first before pushing them to dockerhub though,
+#      # a local registry is used and if verification passes images are pushed to the remote registry.
+#      registry:
+#        image: registry:3
+#        ports:
+#          - 5000:5000
+#    env:
+#      PLATFORMS: "linux/amd64,linux/arm64"
+#      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
+#      DOCKER_IMAGE: camunda/operate
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          ref: ${{ env.RELEASE_BRANCH }}
+#      - name: Import Secrets
+#        id: secrets
+#        uses: hashicorp/vault-action@v3.4.0
+#        with:
+#          url: ${{ secrets.VAULT_ADDR }}
+#          method: approle
+#          roleId: ${{ secrets.VAULT_ROLE_ID }}
+#          secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secrets: |
+#            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
+#            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
+#      - name: Login to DockerHub
+#        uses: docker/login-action@v3
+#        with:
+#          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+#          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+#      - name: Download Release Artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: release-artifacts-${{ inputs.releaseVersion }}
+#      - name: Build Operate Docker Image
+#        uses: ./.github/actions/build-platform-docker
+#        id: build-operate-docker
+#        with:
+#          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+#          version: ${{ inputs.releaseVersion }}
+#          revision: ${{ needs.release.outputs.releaseTagRevision }}
+#          # pushes to local registry for verification prior pushing to remote
+#          push: true
+#          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+#          platforms: ${{ env.PLATFORMS }}
+#          dockerfile: operate.Dockerfile
+#      - name: Verify Operate Docker image
+#        uses: ./.github/actions/verify-platform-docker
+#        with:
+#          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+#          date: ${{ steps.build-operate-docker.outputs.date }}
+#          revision: ${{ needs.release.outputs.releaseTagRevision }}
+#          version: ${{ inputs.releaseVersion }}
+#          platforms: ${{ env.PLATFORMS }}
+#          dockerfile: operate.Dockerfile
+#          goldenfile: operate-docker-labels.golden.json
+#      - name: Sync Operate Docker Image to DockerHub
+#        id: push-docker
+#        if: ${{ inputs.dryRun == false }}
+#        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+#        run: |
+#          docker buildx imagetools create \
+#            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+#            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+#            ${{ steps.build-operate-docker.outputs.image }}
+#      - name: Observe build status
+#        if: always()
+#        continue-on-error: true
+#        uses: ./.github/actions/observe-build-status
+#        with:
+#          build_status: ${{ job.status }}
+#          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+#          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+#
+#  tasklist-docker:
+#    needs: release
+#    name: Tasklist Docker Image Release
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 15
+#    services:
+#      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+#      # registry. As we want to verify the images first before pushing them to dockerhub though,
+#      # a local registry is used and if verification passes images are pushed to the remote registry.
+#      registry:
+#        image: registry:3
+#        ports:
+#          - 5000:5000
+#    env:
+#      PLATFORMS: "linux/amd64,linux/arm64"
+#      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/tasklist
+#      DOCKER_IMAGE: camunda/tasklist
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          ref: ${{ env.RELEASE_BRANCH }}
+#      - name: Import Secrets
+#        id: secrets
+#        uses: hashicorp/vault-action@v3.4.0
+#        with:
+#          url: ${{ secrets.VAULT_ADDR }}
+#          method: approle
+#          roleId: ${{ secrets.VAULT_ROLE_ID }}
+#          secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secrets: |
+#            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
+#            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
+#      - name: Login to DockerHub
+#        uses: docker/login-action@v3
+#        with:
+#          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+#          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+#      - name: Download Release Artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: release-artifacts-${{ inputs.releaseVersion }}
+#      - name: Build Tasklist Docker Image
+#        uses: ./.github/actions/build-platform-docker
+#        id: build-tasklist-docker
+#        with:
+#          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+#          version: ${{ inputs.releaseVersion }}
+#          revision: ${{ needs.release.outputs.releaseTagRevision }}
+#          # pushes to local registry for verification prior pushing to remote
+#          push: true
+#          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+#          platforms: ${{ env.PLATFORMS }}
+#          dockerfile: tasklist.Dockerfile
+#      - name: Verify Tasklist Docker image
+#        uses: ./.github/actions/verify-platform-docker
+#        with:
+#          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+#          date: ${{ steps.build-tasklist-docker.outputs.date }}
+#          revision: ${{ needs.release.outputs.releaseTagRevision }}
+#          version: ${{ inputs.releaseVersion }}
+#          platforms: ${{ env.PLATFORMS }}
+#          dockerfile: tasklist.Dockerfile
+#          goldenfile: tasklist-docker-labels.golden.json
+#      - name: Sync Tasklist Docker Image to DockerHub
+#        id: push-docker
+#        if: ${{ inputs.dryRun == false }}
+#        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+#        run: |
+#          docker buildx imagetools create \
+#            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+#            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+#            ${{ steps.build-tasklist-docker.outputs.image }}
+#      - name: Observe build status
+#        if: always()
+#        continue-on-error: true
+#        uses: ./.github/actions/observe-build-status
+#        with:
+#          build_status: ${{ job.status }}
+#          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+#          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+#
+#  camunda-docker:
+#    needs: release
+#    name: Camunda Docker Image Release
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 15
+#    services:
+#      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+#      # registry. As we want to verify the images first before pushing them to dockerhub though,
+#      # a local registry is used and if verification passes images are pushed to the remote registry.
+#      registry:
+#        image: registry:3
+#        ports:
+#          - 5000:5000
+#    env:
+#      PLATFORMS: "linux/amd64,linux/arm64"
+#      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
+#      DOCKER_IMAGE: camunda/camunda
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          ref: ${{ env.RELEASE_BRANCH }}
+#      - name: Import Secrets
+#        id: secrets
+#        uses: hashicorp/vault-action@v3.4.0
+#        with:
+#          url: ${{ secrets.VAULT_ADDR }}
+#          method: approle
+#          roleId: ${{ secrets.VAULT_ROLE_ID }}
+#          secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secrets: |
+#            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
+#            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
+#      - name: Login to DockerHub
+#        uses: docker/login-action@v3
+#        with:
+#          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+#          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+#      - name: Download Release Artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: release-artifacts-${{ inputs.releaseVersion }}
+#      - name: Build Camunda Docker Image
+#        uses: ./.github/actions/build-platform-docker
+#        id: build-camunda-docker
+#        with:
+#          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+#          version: ${{ inputs.releaseVersion }}
+#          revision: ${{ needs.release.outputs.releaseTagRevision }}
+#          # pushes to local registry for verification prior pushing to remote
+#          push: true
+#          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+#          platforms: ${{ env.PLATFORMS }}
+#          dockerfile: camunda.Dockerfile
+#      - name: Verify Camunda Docker image
+#        uses: ./.github/actions/verify-platform-docker
+#        with:
+#          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+#          date: ${{ steps.build-camunda-docker.outputs.date }}
+#          revision: ${{ needs.release.outputs.releaseTagRevision }}
+#          version: ${{ inputs.releaseVersion }}
+#          platforms: ${{ env.PLATFORMS }}
+#          dockerfile: camunda.Dockerfile
+#          goldenfile: camunda-docker-labels.golden.json
+#      - name: Sync Camunda Docker Image to DockerHub
+#        id: push-docker
+#        if: ${{ inputs.dryRun == false }}
+#        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+#        run: |
+#          docker buildx imagetools create \
+#            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+#            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+#            ${{ steps.build-camunda-docker.outputs.image }}
+#      - name: Observe build status
+#        if: always()
+#        continue-on-error: true
+#        uses: ./.github/actions/observe-build-status
+#        with:
+#          build_status: ${{ job.status }}
+#          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+#          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+#
+#  snyk:
+#    name: Snyk Monitor
+#    needs: [ zeebe-docker, release ]
+#    # skip if the version contains a dash as a quick test for -alpha, -rc, -SNAPSHOT, etc.
+#    if: ${{ !contains(inputs.releaseVersion, '-') }}
+#    concurrency:
+#      group: release-snyk-${{ inputs.releaseVersion }}
+#      cancel-in-progress: false
+#    uses: ./.github/workflows/zeebe-snyk.yml
+#    with:
+#      # Can't reference env.RELEASE_BRANCH directly due to https://github.com/actions/runner/issues/2372
+#      ref: ${{ needs.release.outputs.releaseBranch }}
+#      version: ${{ inputs.releaseVersion }}
+#      useMinorVersion: true
+#      # test instead of monitor during dry-runs
+#      monitor: ${{ !inputs.dryRun }}
+#      # the docker image will not be pushed during a dry-run, so we need to build it locally
+#      build: ${{ inputs.dryRun }}
+#      dockerImage: ${{ inputs.dryRun && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
+#    secrets: inherit
+#
+#  notify-on-success:
+#    name: Send Slack notification on success
+#    runs-on: ubuntu-latest
+#    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
+#    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
+#    # else => send slack notification as an actual release succeeded
+#    if: ${{ always() && (
+#      needs.release.result == 'success' &&
+#      needs.github.result == 'success' &&
+#      needs.zeebe-docker.result == 'success' &&
+#      needs.operate-docker.result == 'success' &&
+#      needs.tasklist-docker.result == 'success' &&
+#      needs.camunda-docker.result == 'success' &&
+#      needs.snyk.result == 'success'
+#      ) && inputs.dryRun == false }}
+#    timeout-minutes: 5
+#    permissions: {}  # GITHUB_TOKEN unused in this job
+#    steps:
+#      - name: Import Secrets
+#        id: secrets
+#        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+#        with:
+#          url: ${{ secrets.VAULT_ADDR }}
+#          method: approle
+#          roleId: ${{ secrets.VAULT_ROLE_ID }}
+#          secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          exportEnv: false # we rely on step outputs, no need for environment variables
+#          secrets: |
+#            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+#
+#      - name: Send success Slack notification
+#        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+#        with:
+#          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+#          webhook-type: incoming-webhook
+#          # For posting a rich message using Block Kit
+#          payload: |
+#            {
+#              "blocks": [
+#                {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": ":success: *Release job for ${{ inputs.releaseVersion }}* succeeded! (excluding Maven Central publishing - this is done separately)\n"
+#                  }
+#                }
+#              ]
+#            }
+#
+#  notify-if-failed:
+#    name: Send Slack notification on failure
+#    runs-on: ubuntu-latest
+#    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
+#    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
+#    # else => send slack notification as an actual release failed
+#    if: ${{ always() && (
+#        needs.release.result == 'failure' ||
+#        needs.github.result == 'failure' ||
+#        needs.zeebe-docker.result == 'failure' ||
+#        needs.operate-docker.result == 'failure' ||
+#        needs.tasklist-docker.result == 'failure' ||
+#        needs.camunda-docker.result == 'failure' ||
+#        needs.snyk.result == 'failure'
+#        ) && inputs.dryRun == false }}
+#    timeout-minutes: 5
+#    permissions: {}  # GITHUB_TOKEN unused in this job
+#    steps:
+#      - name: Import Secrets
+#        id: secrets
+#        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+#        with:
+#          url: ${{ secrets.VAULT_ADDR }}
+#          method: approle
+#          roleId: ${{ secrets.VAULT_ROLE_ID }}
+#          secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          exportEnv: false # we rely on step outputs, no need for environment variables
+#          secrets: |
+#            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+#
+#      - name: Send failure Slack notification
+#        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+#        with:
+#          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+#          webhook-type: incoming-webhook
+#          # For posting a rich message using Block Kit
+#          payload: |
+#            {
+#              "blocks": [
+#                {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": ":alarm: *Release job for ${{ inputs.releaseVersion }}* **failed!**\n"
+#                  }
+#                },
+#                {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": "Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run>."
+#                  }
+#                }
+#              ]
+#            }
 
 
