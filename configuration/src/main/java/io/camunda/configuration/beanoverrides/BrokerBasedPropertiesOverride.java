@@ -51,6 +51,13 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromCluster(final BrokerBasedProperties override) {
+    final var cluster = unifiedConfiguration.getCamunda().getCluster();
+
+    override.getCluster().setNodeId(cluster.getNodeId());
+    override.getCluster().setPartitionsCount(cluster.getPartitionCount());
+    override.getCluster().setReplicationFactor(cluster.getReplicationFactor());
+    override.getCluster().setClusterSize(cluster.getSize());
+
     populateFromClusterMetadata(override);
     // Rest of camunda.cluster.* sections
   }
