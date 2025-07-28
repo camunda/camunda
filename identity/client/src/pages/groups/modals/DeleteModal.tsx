@@ -12,7 +12,7 @@ import {
   UseEntityModalProps,
 } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api/hooks";
+import { useApiCall } from "src/utility/api";
 import { useNotifications } from "src/components/notifications";
 import { deleteGroup, Group } from "src/utility/api/groups";
 

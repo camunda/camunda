@@ -27,12 +27,10 @@ type GroupsProps = {
 const Groups: FC<GroupsProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
 
-  const { groups, loading, success, reload } = useEnrichedGroups(
-    getGroupsByTenantId,
-    {
+  const { groups, loading, success, reload, paginationProps } =
+    useEnrichedGroups(getGroupsByTenantId, {
       tenantId,
-    },
-  );
+    });
 
   const isGroupsEmpty = !groups || groups.length === 0;
   const [assignGroups, assignGroupsModal] = useEntityModal(
@@ -82,21 +80,21 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
   type GroupsListHeaders = {
     header: string;
     key: GroupKeys;
+    isSortable?: boolean;
   }[];
 
   const groupsListHeaders: GroupsListHeaders = isCamundaGroupsEnabled
     ? [
-        { header: t("groupId"), key: "groupId" },
+        { header: t("groupId"), key: "groupId", isSortable: true },
         { header: t("groupName"), key: "name" },
       ]
-    : [{ header: t("groupId"), key: "groupId" }];
+    : [{ header: t("groupId"), key: "groupId", isSortable: true }];
 
   return (
     <>
       <EntityList
         data={groups}
         headers={groupsListHeaders}
-        sortProperty="groupId"
         loading={loading}
         addEntityLabel={t("assignGroup")}
         onAddEntity={openAssignModal}
@@ -109,6 +107,7 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
             onClick: unassignGroup,
           },
         ]}
+        {...paginationProps}
       />
       {assignGroupsModal}
       {unassignGroupModal}

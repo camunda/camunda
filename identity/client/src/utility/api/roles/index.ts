@@ -16,6 +16,7 @@ import {
 import { SearchResponse } from "src/utility/api";
 import { Group } from "src/utility/api/groups";
 import { MappingRule } from "src/utility/api/mapping-rules";
+import { PageSearchParams } from "../hooks/usePagination";
 
 export const ROLES_ENDPOINT = "/roles";
 
@@ -25,8 +26,10 @@ export type Role = {
   description: string;
 };
 
-export const searchRoles: ApiDefinition<SearchResponse<Role>> = () =>
-  apiPost(`${ROLES_ENDPOINT}/search`);
+export const searchRoles: ApiDefinition<
+  SearchResponse<Role>,
+  PageSearchParams | undefined
+> = (params) => apiPost(`${ROLES_ENDPOINT}/search`, params);
 
 type GetRoleParams = {
   roleId: string;
@@ -54,7 +57,10 @@ export type GetRoleMappingRulesParams = {
 export const getMappingRulesByRoleId: ApiDefinition<
   SearchResponse<MappingRule>,
   GetRoleMappingRulesParams
-> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/search`);
+> = (params) => {
+  const { roleId, ...body } = params;
+  return apiPost(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/search`, body);
+};
 
 type AssignRoleMappingParams = GetRoleMappingRulesParams & {
   mappingRuleId: string;
@@ -82,7 +88,8 @@ type GetRoleGroupsParams = {
 export const getGroupsByRoleId: ApiDefinition<
   SearchResponse<Group>,
   GetRoleGroupsParams
-> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/groups/search`);
+> = ({ roleId, ...body }) =>
+  apiPost(`${ROLES_ENDPOINT}/${roleId}/groups/search`, body);
 
 type AssignRoleGroupParams = GetRoleGroupsParams & Pick<Group, "groupId">;
 export const assignRoleGroup: ApiDefinition<
@@ -112,7 +119,10 @@ export type Client = {
 export const getClientsByRoleId: ApiDefinition<
   SearchResponse<Client>,
   GetRoleClientsParams
-> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/clients/search`);
+> = (args) => {
+  const { roleId, ...body } = args;
+  return apiPost(`${ROLES_ENDPOINT}/${roleId}/clients/search`, body);
+};
 
 type AssignRoleClientParams = GetRoleClientsParams & Client;
 export const assignRoleClient: ApiDefinition<

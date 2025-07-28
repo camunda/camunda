@@ -11,7 +11,7 @@ import { useNavigate, useParams } from "react-router";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
 import { spacing01, spacing03 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { useApi } from "src/utility/api";
 import NotFound from "src/pages/not-found";
 import { Breadcrumbs, StackPage } from "src/components/layout/Page";
 import PageHeadline from "src/components/layout/PageHeadline";

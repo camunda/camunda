@@ -6,8 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import { PageResult } from "./hooks/usePagination";
+
 export * from "./hooks";
 
 export type SearchResponse<R> = {
   items: R[];
+  page?: PageResult;
 };
+
+export type {
+  PageSearchParams,
+  PageResult,
+  SortConfig,
+} from "./hooks/usePagination";
