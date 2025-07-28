@@ -17,4 +17,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class Camunda {
 
   public static final String PREFIX = "camunda";
+
+  private Cluster cluster = new Cluster();
+
+  public Cluster getCluster() {
+    return cluster;
+  }
+
+  public void setCluster(final Cluster cluster) {
+    this.cluster = cluster;
+  }
 }

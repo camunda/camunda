@@ -9,23 +9,31 @@ package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
+import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import org.springframework.beans.BeanUtils;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
+@EnableConfigurationProperties(LegacyBrokerBasedProperties.class)
 @Profile(value = {"broker", "restore"})
+@DependsOn("unifiedConfigurationHelper")
 public class BrokerBasedPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
-  private final BrokerBasedProperties legacyBrokerBasedProperties;
+  private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
 
   public BrokerBasedPropertiesOverride(
-      UnifiedConfiguration unifiedConfiguration, BrokerBasedProperties properties) {
+      final UnifiedConfiguration unifiedConfiguration,
+      final LegacyBrokerBasedProperties properties) {
     this.unifiedConfiguration = unifiedConfiguration;
-    this.legacyBrokerBasedProperties = properties;
+    legacyBrokerBasedProperties = properties;
   }
 
   @Bean
@@ -34,9 +42,26 @@ public class BrokerBasedPropertiesOverride {
     final BrokerBasedProperties override = new BrokerBasedProperties();
     BeanUtils.copyProperties(legacyBrokerBasedProperties, override);
 
-    // TODO: Populate the bean using unifiedConfiguration
-    //  override.setSampleField(unifiedConfiguration.getSampleField());
+    // from camunda.cluster.* sections
+    populateFromCluster(override);
+    // TODO: Populate the bean from rest of camunda.* sections
+    // populateFromData(override);
 
     return override;
+  }
+
+  private void populateFromCluster(final BrokerBasedProperties override) {
+    populateFromClusterMetadata(override);
+    // Rest of camunda.cluster.* sections
+  }
+
+  private void populateFromClusterMetadata(final BrokerBasedProperties override) {
+    final var metadata = unifiedConfiguration.getCamunda().getCluster().getMetadata();
+    final var syncDelay = metadata.getSyncDelay();
+    final var syncTimeout = metadata.getSyncRequestTimeout();
+    final var gossipFanout = metadata.getGossipFanout();
+    final var configManagerGossipConfig =
+        new ClusterConfigurationGossiperConfig(syncDelay, syncTimeout, gossipFanout);
+    override.getCluster().setConfigManager(new ConfigManagerCfg(configManagerGossipConfig));
   }
 }

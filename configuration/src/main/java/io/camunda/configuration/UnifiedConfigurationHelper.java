@@ -11,14 +11,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
+import org.springframework.boot.convert.DurationStyle;
 import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
 
-@ComponentScan("io.camunda.configuration")
+@Component("unifiedConfigurationHelper")
 public class UnifiedConfigurationHelper {
 
   private static final Map<String, Set<String>> LEGACY_PROPERTIES =
@@ -31,23 +31,23 @@ public class UnifiedConfigurationHelper {
               "camunda.tasklist.elasticsearch.url",
               "camunda.tasklist.zeebeElasticsearch.url"),
           "camunda.data.secondary-storage.type",
-          Set.of("camunda.database.type"));
+          Set.of("camunda.database.type"),
+          "camunda.cluster.metadata.sync-delay",
+          Set.of("zeebe.broker.cluster.configManager.gossip.syncDelay"),
+          "camunda.cluster.metadata.sync-request-timeout",
+          Set.of("zeebe.broker.cluster.configManager.gossip.syncRequestTimeout"),
+          "camunda.cluster.metadata.gossip-fanout",
+          Set.of("zeebe.broker.cluster.configManager.gossip.gossipFanout"));
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
 
   private static Environment environment;
   private static Map<String, Set<String>> legacyPropertiesDict = LEGACY_PROPERTIES;
 
-  public UnifiedConfigurationHelper(@Autowired Environment environment) {
+  public UnifiedConfigurationHelper(@Autowired final Environment environment) {
     // We need to pin the environment object statically so that it can be used to perform the
     // fallback mechanism.
     UnifiedConfigurationHelper.environment = environment;
-  }
-
-  public enum BackwardsCompatibilityMode {
-    NOT_SUPPORTED,
-    SUPPORTED_ONLY_IF_VALUES_MATCH,
-    SUPPORTED
   }
 
   public static <T> T validateLegacyConfiguration(
@@ -64,9 +64,8 @@ public class UnifiedConfigurationHelper {
     final Set<String> legacyProperties = legacyPropertiesDict.get(newProperty);
 
     return switch (backwardsCompatibilityMode) {
-      case NOT_SUPPORTED -> {
-        yield backwardsCompatibilityNotSupported(legacyProperties, newProperty, newValue);
-      }
+      case NOT_SUPPORTED ->
+          backwardsCompatibilityNotSupported(legacyProperties, newProperty, newValue);
       case SUPPORTED_ONLY_IF_VALUES_MATCH -> {
         final T legacyValue = getLegacyValue(legacyProperties, expectedType);
         yield backwardsCompatibilitySupportedOnlyIfValuesMatch(
@@ -93,7 +92,7 @@ public class UnifiedConfigurationHelper {
       throw new UnifiedConfigurationException(
           String.format(
               "Ambiguous legacy configuration. Legacy properties: %s; Legacy values: %s",
-              String.join(", ", legacyProperties), legacyValues.toString()));
+              String.join(", ", legacyProperties), legacyValues));
     }
 
     return legacyValues.iterator().next();
@@ -113,7 +112,7 @@ public class UnifiedConfigurationHelper {
       // Legacy config: not present
       // We can return the newValue or default value
       return newValue;
-    } else if (legacyPresent && !newPresent) {
+    } else if (!newPresent) {
       // Legacy config: present
       // New config...: not present
       // The legacy configuration is no longer allowed -> error
@@ -137,14 +136,13 @@ public class UnifiedConfigurationHelper {
       final String newProperty,
       final T newValue) {
     final boolean legacyPresent = legacyConfigPresent(legacyProperties);
-    final boolean newPresent = newConfigPresent(newProperty);
 
     final String warningMessage =
         String.format(
             "The following legacy properties are no longer supported and should be removed in favor of '%s': %s",
             newProperty, String.join(", ", legacyProperties));
 
-    if ((!legacyPresent && !newPresent) || (!legacyPresent && newPresent)) {
+    if (!legacyPresent) {
       // Legacy config: not present
       // New config...: not present
       // or
@@ -187,12 +185,12 @@ public class UnifiedConfigurationHelper {
             "The following legacy configuration properties should be removed in favor of '%s': %s",
             newProperty, String.join(", ", legacyProperties));
 
-    if ((!legacyPresent && !newPresent) || (!legacyPresent && newPresent)) {
+    if (!legacyPresent) {
       // Legacy config: not present
       // New config...: not present
       // We can retrun the new default value
       return newValue;
-    } else if (legacyPresent && !newPresent) {
+    } else if (!newPresent) {
       // Legacy config: present
       // New config...: not present
       // We can return the legacy value
@@ -207,7 +205,7 @@ public class UnifiedConfigurationHelper {
     }
   }
 
-  private static boolean legacyConfigPresent(Set<String> legacyProperties) {
+  private static boolean legacyConfigPresent(final Set<String> legacyProperties) {
     for (final String legacyProperty : legacyProperties) {
       if (environment.containsProperty(legacyProperty)) {
         return true;
@@ -217,7 +215,7 @@ public class UnifiedConfigurationHelper {
     return false;
   }
 
-  private static boolean newConfigPresent(String newProperty) {
+  private static boolean newConfigPresent(final String newProperty) {
     return environment.containsProperty(newProperty);
   }
 
@@ -231,19 +229,25 @@ public class UnifiedConfigurationHelper {
       case "String" -> (T) strValue;
       case "Integer" -> (T) Integer.valueOf(strValue);
       case "Boolean" -> (T) Boolean.valueOf(strValue);
-      case "Duration" -> (T) Duration.parse(strValue);
+      case "Duration" -> (T) DurationStyle.detectAndParse(strValue);
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }
-
-  /* Setters used by tests to inject the mock objects */
 
   public static void setCustomLegacyProperties(
       final Map<String, Set<String>> legacyPropertiesDict) {
     UnifiedConfigurationHelper.legacyPropertiesDict = legacyPropertiesDict;
   }
 
+  /* Setters used by tests to inject the mock objects */
+
   public static void setCustomEnvironment(final Environment environment) {
     UnifiedConfigurationHelper.environment = environment;
+  }
+
+  public enum BackwardsCompatibilityMode {
+    NOT_SUPPORTED,
+    SUPPORTED_ONLY_IF_VALUES_MATCH,
+    SUPPORTED
   }
 }
