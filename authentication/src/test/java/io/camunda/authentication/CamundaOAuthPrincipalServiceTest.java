@@ -23,7 +23,6 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -58,7 +57,6 @@ public class CamundaOAuthPrincipalServiceTest {
     @Mock private TenantServices tenantServices;
     @Mock private RoleServices roleServices;
     @Mock private GroupServices groupServices;
-    @Mock private AuthorizationServices authorizationServices;
     @Mock private SecurityConfiguration securityConfiguration;
     @Mock private AuthenticationConfiguration authenticationConfiguration;
     @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
@@ -79,8 +77,6 @@ public class CamundaOAuthPrincipalServiceTest {
           .thenReturn(roleServices);
       when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(groupServices);
-      when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(authorizationServices);
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalServiceImpl(
@@ -88,7 +84,6 @@ public class CamundaOAuthPrincipalServiceTest {
               tenantServices,
               roleServices,
               groupServices,
-              authorizationServices,
               securityConfiguration);
     }
 
@@ -150,7 +145,6 @@ public class CamundaOAuthPrincipalServiceTest {
     @Mock private TenantServices tenantServices;
     @Mock private RoleServices roleServices;
     @Mock private GroupServices groupServices;
-    @Mock private AuthorizationServices authorizationServices;
     @Mock private SecurityConfiguration securityConfiguration;
     @Mock private AuthenticationConfiguration authenticationConfiguration;
     @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
@@ -171,17 +165,10 @@ public class CamundaOAuthPrincipalServiceTest {
           .thenReturn(roleServices);
       when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(groupServices);
-      when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(authorizationServices);
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalServiceImpl(
-              mappingServices,
-              tenantServices,
-              roleServices,
-              groupServices,
-              authorizationServices,
-              securityConfiguration);
+              mappingServices, tenantServices, roleServices, groupServices, securityConfiguration);
     }
 
     @Test
@@ -265,18 +252,6 @@ public class CamundaOAuthPrincipalServiceTest {
                   Set.of("roleR1", "roleGroup"))))
           .thenReturn(List.of(tenantT1, groupTenant));
 
-      when(authorizationServices.getAuthorizedApplications(
-              Map.of(
-                  EntityType.MAPPING_RULE,
-                  Set.of("test-id", "test-id-2"),
-                  EntityType.GROUP,
-                  Set.of("group-g1"),
-                  EntityType.USER,
-                  Set.of("foo@camunda.test"),
-                  EntityType.ROLE,
-                  Set.of("roleR1", "roleGroup"))))
-          .thenReturn(List.of("*"));
-
       // when
       final OAuthContext oAuthContext = camundaOAuthPrincipalService.loadOAuthContext(claims);
 
@@ -289,7 +264,6 @@ public class CamundaOAuthPrincipalServiceTest {
       assertThat(authenticationContext.groups()).containsExactly("group-g1");
       assertThat(authenticationContext.tenants())
           .containsAll(List.of(TenantDTO.fromEntity(tenantT1), TenantDTO.fromEntity(groupTenant)));
-      assertThat(authenticationContext.authorizedApplications()).containsAll(Set.of("*"));
     }
 
     @Test
@@ -338,18 +312,6 @@ public class CamundaOAuthPrincipalServiceTest {
                   Set.of("roleR1"))))
           .thenReturn(List.of(tenantEntity1, tenantEntity2));
 
-      when(authorizationServices.getAuthorizedApplications(
-              Map.of(
-                  EntityType.MAPPING_RULE,
-                  Set.of("map-1", "map-2"),
-                  EntityType.GROUP,
-                  Set.of("group-g1"),
-                  EntityType.USER,
-                  Set.of("scooby-doo"),
-                  EntityType.ROLE,
-                  Set.of("roleR1"))))
-          .thenReturn(List.of("app-1", "app-2"));
-
       // when
       final OAuthContext oAuthContext = camundaOAuthPrincipalService.loadOAuthContext(claims);
 
@@ -364,8 +326,6 @@ public class CamundaOAuthPrincipalServiceTest {
       assertThat(authenticationContext.tenants())
           .containsExactlyInAnyOrder(
               TenantDTO.fromEntity(tenantEntity1), TenantDTO.fromEntity(tenantEntity2));
-      assertThat(authenticationContext.authorizedApplications())
-          .containsExactlyInAnyOrder("app-1", "app-2");
     }
   }
 
@@ -376,7 +336,6 @@ public class CamundaOAuthPrincipalServiceTest {
     @Mock private TenantServices tenantServices;
     @Mock private RoleServices roleServices;
     @Mock private GroupServices groupServices;
-    @Mock private AuthorizationServices authorizationServices;
     @Mock private SecurityConfiguration securityConfiguration;
     @Mock private AuthenticationConfiguration authenticationConfiguration;
     @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
@@ -398,17 +357,10 @@ public class CamundaOAuthPrincipalServiceTest {
           .thenReturn(roleServices);
       when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(groupServices);
-      when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(authorizationServices);
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalServiceImpl(
-              mappingServices,
-              tenantServices,
-              roleServices,
-              groupServices,
-              authorizationServices,
-              securityConfiguration);
+              mappingServices, tenantServices, roleServices, groupServices, securityConfiguration);
     }
 
     @Test
@@ -444,12 +396,7 @@ public class CamundaOAuthPrincipalServiceTest {
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalServiceImpl(
-              mappingServices,
-              tenantServices,
-              roleServices,
-              groupServices,
-              authorizationServices,
-              securityConfiguration);
+              mappingServices, tenantServices, roleServices, groupServices, securityConfiguration);
       final Map<String, Object> claims =
           Map.of("groups", Map.of("name", GROUP1_NAME, "id", "idp-g1-id"), "sub", "user1");
       // when

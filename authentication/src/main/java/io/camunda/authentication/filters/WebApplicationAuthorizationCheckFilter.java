@@ -7,8 +7,11 @@
  */
 package io.camunda.authentication.filters;
 
-import io.camunda.authentication.entity.CamundaPrincipal;
+import static io.camunda.service.authorization.Authorizations.APPLICATION_ACCESS_AUTHORIZATION;
+
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.reader.ResourceAccessProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,7 +20,6 @@ import java.io.IOException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.UrlPathHelper;
@@ -28,12 +30,19 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
       LoggerFactory.getLogger(WebApplicationAuthorizationCheckFilter.class);
   private static final List<String> WEB_APPLICATIONS = List.of("identity", "operate", "tasklist");
   private static final List<String> STATIC_RESOURCES =
-      List.of(".css", ".js", ".jpg", ".png", "woff2", ".ico", ".svg");
+      List.of(".css", ".js", ".js.map", ".jpg", ".png", "woff2", ".ico", ".svg");
   final UrlPathHelper urlPathHelper = new UrlPathHelper();
   private final SecurityConfiguration securityConfig;
+  private final CamundaAuthenticationProvider authenticationProvider;
+  private final ResourceAccessProvider resourceAccessProvider;
 
-  public WebApplicationAuthorizationCheckFilter(final SecurityConfiguration securityConfig) {
+  public WebApplicationAuthorizationCheckFilter(
+      final SecurityConfiguration securityConfig,
+      final CamundaAuthenticationProvider authenticationProvider,
+      final ResourceAccessProvider resourceAccessProvider) {
     this.securityConfig = securityConfig;
+    this.authenticationProvider = authenticationProvider;
+    this.resourceAccessProvider = resourceAccessProvider;
   }
 
   @Override
@@ -54,7 +63,7 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
 
   private boolean isAllowed(final HttpServletRequest request) {
 
-    if (!securityConfig.getAuthorizations().isEnabled()) {
+    if (!securityConfig.getAuthorizations().isEnabled() || !isAuthenticated()) {
       return true;
     }
 
@@ -71,10 +80,15 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
       return true;
     }
 
-    final CamundaPrincipal principal = findCurrentCamundaPrincipal();
-    return principal == null
-        || principal.getAuthenticationContext().authorizedApplications().contains(application)
-        || principal.getAuthenticationContext().authorizedApplications().contains("*");
+    return hasAccessToApplication(application);
+  }
+
+  private boolean hasAccessToApplication(final String application) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return resourceAccessProvider
+        .hasResourceAccessByResourceId(
+            authentication, APPLICATION_ACCESS_AUTHORIZATION, application)
+        .allowed();
   }
 
   private boolean isStaticResource(final HttpServletRequest request) {
@@ -88,13 +102,8 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
     return WEB_APPLICATIONS.stream().filter(applicationPath::equals).findFirst().orElse(null);
   }
 
-  private CamundaPrincipal findCurrentCamundaPrincipal() {
-    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth != null
-        && auth.isAuthenticated()
-        && auth.getPrincipal() instanceof final CamundaPrincipal principal) {
-      return principal;
-    }
-    return null;
+  private boolean isAuthenticated() {
+    final var auth = SecurityContextHolder.getContext().getAuthentication();
+    return auth != null && auth.isAuthenticated();
   }
 }

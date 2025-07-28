@@ -17,10 +17,8 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,20 +26,14 @@ public class AuthorizationServiceTest {
 
   private AuthorizationServices services;
   private AuthorizationSearchClient client;
-  private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   public void before() {
-    securityConfiguration = new SecurityConfiguration();
     client = mock(AuthorizationSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new AuthorizationServices(
-            mock(BrokerClient.class),
-            mock(SecurityContextProvider.class),
-            client,
-            null,
-            securityConfiguration);
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test
@@ -58,54 +50,6 @@ public class AuthorizationServiceTest {
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
-  }
-
-  @Test
-  public void noApplicationAuthorizationWhenAuthorizationsEnabled() {
-    // given
-    securityConfiguration.getAuthorizations().setEnabled(true);
-
-    // when
-    final var authorizedApplications = services.getAuthorizedApplications(Map.of());
-
-    // then
-    assertThat(authorizedApplications).isEmpty();
-  }
-
-  @Test
-  public void wildcardApplicationAuthorizationWhenAuthorizationsDisabled() {
-    // given
-    securityConfiguration.getAuthorizations().setEnabled(false);
-
-    // when
-    final var authorizedApplications = services.getAuthorizedApplications(Map.of());
-
-    // then
-    assertThat(authorizedApplications).containsExactly("*");
-  }
-
-  @Test
-  public void noAuthorizedApplicationsWhenOwnerIdsIsEmpty() {
-    // given
-    securityConfiguration.getAuthorizations().setEnabled(true);
-
-    // when
-    final var authorizedApplications = services.getAuthorizedApplications(Map.of());
-
-    // then
-    assertThat(authorizedApplications).isEmpty();
-  }
-
-  @Test
-  public void noAuthorizedApplicationsWhenOwnerIdsIsNull() {
-    // given
-    securityConfiguration.getAuthorizations().setEnabled(true);
-
-    // when
-    final var authorizedApplications = services.getAuthorizedApplications(null);
-
-    // then
-    assertThat(authorizedApplications).isEmpty();
   }
 
   @Test

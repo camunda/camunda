@@ -37,7 +37,7 @@ public class OidcCamundaUserServiceTest {
 
   @BeforeEach
   public void setUp() throws Exception {
-    oidcCamundaUserService = new OidcCamundaUserService();
+    oidcCamundaUserService = new OidcCamundaUserService(null, null);
   }
 
   @Test

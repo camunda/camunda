@@ -13,16 +13,13 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -31,19 +28,16 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 public class CamundaUserDetailsService implements UserDetailsService {
 
   private final UserServices userServices;
-  private final AuthorizationServices authorizationServices;
   private final RoleServices roleServices;
   private final TenantServices tenantServices;
   private final GroupServices groupServices;
 
   public CamundaUserDetailsService(
       final UserServices userServices,
-      final AuthorizationServices authorizationServices,
       final RoleServices roleServices,
       final TenantServices tenantServices,
       final GroupServices groupServices) {
     this.userServices = userServices;
-    this.authorizationServices = authorizationServices;
     this.roleServices = roleServices;
     this.tenantServices = tenantServices;
     this.groupServices = groupServices;
@@ -82,12 +76,6 @@ public class CamundaUserDetailsService implements UserDetailsService {
             .map(RoleEntity::roleId)
             .collect(Collectors.toSet());
 
-    final var authorizedApplications =
-        authorizationServices
-            .withAuthentication(CamundaAuthentication.anonymous())
-            .getAuthorizedApplications(
-                Map.of(EntityType.USER, Set.of(storedUser.username()), EntityType.ROLE, roles));
-
     final var tenants =
         tenantServices
             .withAuthentication(CamundaAuthentication.anonymous())
@@ -102,7 +90,6 @@ public class CamundaUserDetailsService implements UserDetailsService {
         .withUsername(storedUser.username())
         .withPassword(storedUser.password())
         .withEmail(storedUser.email())
-        .withAuthorizedApplications(authorizedApplications)
         .withRoles(roles.stream().toList())
         .withTenants(tenants)
         .withGroups(groups.stream().toList())

@@ -7,6 +7,9 @@
  */
 package io.camunda.service.authorization;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.APPLICATION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.ACCESS;
+
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
@@ -28,6 +31,9 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.security.auth.Authorization;
 
 public abstract class Authorizations {
+
+  public static final Authorization<Object> APPLICATION_ACCESS_AUTHORIZATION =
+      Authorization.of(a -> a.resourceType(APPLICATION).permissionType(ACCESS));
 
   public static final Authorization<AuthorizationEntity> AUTHORIZATION_READ_AUTHORIZATION =
       Authorization.of(a -> a.authorization().read());
