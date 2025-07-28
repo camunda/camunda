@@ -22,6 +22,8 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.TaskListenerBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners;
+import java.util.EnumSet;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -82,5 +84,27 @@ public class ZeebeTaskListenersValidationTest {
 
     // when/then
     ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void shouldRejectDeploymentOfProcessWithTaskListenerOnUserTaskWithJobWorkerImplementation() {
+    EnumSet.allOf(ZeebeTaskListenerEventType.class)
+        .forEach(
+            eventType -> {
+              final BpmnModelInstance process =
+                  Bpmn.createExecutableProcess("process")
+                      .startEvent()
+                      .userTask(
+                          "task",
+                          ut -> ut.zeebeTaskListener(l -> l.eventType(eventType).type("listener")))
+                      .endEvent()
+                      .done();
+
+              ProcessValidationUtil.assertThatProcessHasViolations(
+                  process,
+                  expect(
+                      ZeebeTaskListeners.class,
+                      "Task listeners are only allowed on Camunda user tasks."));
+            });
   }
 }
