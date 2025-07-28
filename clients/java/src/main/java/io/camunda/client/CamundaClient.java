@@ -2225,7 +2225,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newCreateAuthorizationCommand(tenantKey)
+   *   .newCreateAuthorizationCommand()
    *   .ownerId(ownerId)
    *   .ownerType(ownerType)
    *   .resourceId(resourceId)
