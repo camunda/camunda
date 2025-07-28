@@ -373,7 +373,6 @@ public class TenantControllerTest {
       final var tenantId = "tenant-id";
       final var tenantName = "My tenant";
       final var tenantDescription = "My tenant description";
-      final var tenantKey = 100L;
       final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
       when(tenantServices.updateTenant(
               new TenantDTO(null, tenantId, tenantName, tenantDescription)))
@@ -381,10 +380,7 @@ public class TenantControllerTest {
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
-                          TenantIntent.UPDATE,
-                          tenantKey,
-                          RejectionType.NOT_FOUND,
-                          "Tenant not found"))));
+                          TenantIntent.UPDATE, -1L, RejectionType.NOT_FOUND, "Tenant not found"))));
 
       // when / then
       webClient
