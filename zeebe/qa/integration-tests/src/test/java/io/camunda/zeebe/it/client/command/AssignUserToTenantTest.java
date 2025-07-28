@@ -41,13 +41,7 @@ class AssignUserToTenantTest {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
 
     // Create Tenant
-    client
-        .newCreateTenantCommand()
-        .tenantId(TENANT_ID)
-        .name("Tenant Name")
-        .send()
-        .join()
-        .getTenantKey();
+    client.newCreateTenantCommand().tenantId(TENANT_ID).name("Tenant Name").send().join();
 
     // Create User
     client

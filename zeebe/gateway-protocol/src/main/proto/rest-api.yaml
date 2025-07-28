@@ -5412,9 +5412,6 @@ components:
     TenantCreateResult:
       type: object
       properties:
-        tenantKey:
-          description: The unique system-generated internal tenant ID.
-          type: string
         tenantId:
           type: string
           description: The unique external tenant ID

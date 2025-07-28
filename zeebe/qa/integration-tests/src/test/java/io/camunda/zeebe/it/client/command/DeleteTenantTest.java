@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.it.client.command;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
@@ -31,19 +30,11 @@ class DeleteTenantTest {
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
-  private long tenantKey;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    tenantKey =
-        client
-            .newCreateTenantCommand()
-            .tenantId(TENANT_ID)
-            .name("Tenant Name")
-            .send()
-            .join()
-            .getTenantKey();
+    client.newCreateTenantCommand().tenantId(TENANT_ID).name("Tenant Name").send().join();
   }
 
   @Test
@@ -52,8 +43,7 @@ class DeleteTenantTest {
     client.newDeleteTenantCommand(TENANT_ID).send().join();
 
     // then
-    ZeebeAssertHelper.assertTenantDeleted(
-        "tenantId", tenant -> assertThat(tenant.getTenantKey()).isEqualTo(tenantKey));
+    ZeebeAssertHelper.assertTenantDeleted("tenantId");
   }
 
   @Test

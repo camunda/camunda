@@ -517,8 +517,7 @@ public final class ZeebeAssertHelper {
     consumer.accept(tenantRecordValue);
   }
 
-  public static void assertTenantDeleted(
-      final String tenantId, final Consumer<TenantRecordValue> consumer) {
+  public static void assertTenantDeleted(final String tenantId) {
     final TenantRecordValue tenantRecordValue =
         RecordingExporter.tenantRecords()
             .withIntent(TenantIntent.DELETED)
@@ -527,7 +526,6 @@ public final class ZeebeAssertHelper {
             .getValue();
 
     assertThat(tenantRecordValue).isNotNull();
-    consumer.accept(tenantRecordValue);
   }
 
   public static void assertEntityAssignedToTenant(

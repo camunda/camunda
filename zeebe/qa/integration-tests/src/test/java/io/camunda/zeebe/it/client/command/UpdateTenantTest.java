@@ -37,13 +37,7 @@ class UpdateTenantTest {
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    client
-        .newCreateTenantCommand()
-        .tenantId(TENANT_ID)
-        .name("Initial Tenant Name")
-        .send()
-        .join()
-        .getTenantKey();
+    client.newCreateTenantCommand().tenantId(TENANT_ID).name("Initial Tenant Name").send().join();
   }
 
   @Test
