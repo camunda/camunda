@@ -48,7 +48,7 @@ const NEW_APPLICATION_AUTHORIZATION = {
 };
 
 test.describe.serial("authorizations CRUD", () => {
-  test.skip("create user authorization", async ({
+  test("create user authorization", async ({
     page,
     usersPage,
     rolesPage,
@@ -94,7 +94,7 @@ test.describe.serial("authorizations CRUD", () => {
     await expect(page).toHaveURL(relativizePath(Paths.forbidden()));
   });
 
-  test.skip("create application authorization", async ({
+  test("create application authorization", async ({
     usersPage,
     authorizationsPage,
     header,
@@ -111,7 +111,7 @@ test.describe.serial("authorizations CRUD", () => {
     ).toBeVisible();
   });
 
-  test.skip("delete an authorization", async ({
+  test("delete an authorization", async ({
     page,
     header,
     loginPage,
