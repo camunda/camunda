@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.entity;
 import static io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState.ACTIVE;
 import static io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState.COMPLETED;
 import static io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState.TERMINATED;
+import static io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType.AD_HOC_SUB_PROCESS;
 import static io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType.BOUNDARY_EVENT;
 import static io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType.BUSINESS_RULE_TASK;
 import static io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType.CALL_ACTIVITY;
@@ -76,6 +77,7 @@ public class FlowNodeInstanceEntityTransformer
       case PROCESS -> PROCESS;
       case SUB_PROCESS -> SUB_PROCESS;
       case EVENT_SUB_PROCESS -> EVENT_SUB_PROCESS;
+      case AD_HOC_SUB_PROCESS -> AD_HOC_SUB_PROCESS;
       case START_EVENT -> START_EVENT;
       case INTERMEDIATE_CATCH_EVENT -> INTERMEDIATE_CATCH_EVENT;
       case INTERMEDIATE_THROW_EVENT -> INTERMEDIATE_THROW_EVENT;

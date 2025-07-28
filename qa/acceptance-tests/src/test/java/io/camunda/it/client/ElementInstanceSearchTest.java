@@ -33,6 +33,8 @@ import java.util.random.RandomGenerator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 @MultiDbTest
 public class ElementInstanceSearchTest {
@@ -55,7 +57,8 @@ public class ElementInstanceSearchTest {
             "incident_process_v2.bpmn",
             "manual_process.bpmn",
             "parent_process_v1.bpmn",
-            "child_process_v1.bpmn");
+            "child_process_v1.bpmn",
+            "ad_hoc_sub_process.bpmn");
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
@@ -77,9 +80,10 @@ public class ElementInstanceSearchTest {
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "incident_process_v2"));
     PROCESS_INSTANCES.add(processInstanceWithIncident);
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "parent_process_v1"));
+    PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "ad_hoc_sub_process"));
 
-    waitForProcessInstancesToStart(camundaClient, 8);
-    waitForElementInstances(camundaClient, 24);
+    waitForProcessInstancesToStart(camundaClient, 9);
+    waitForElementInstances(camundaClient, 26);
     waitUntilElementInstanceHasIncidents(camundaClient, 2);
     waitUntilProcessInstanceHasIncidents(camundaClient, 2);
     // store element instances for querying
@@ -203,7 +207,7 @@ public class ElementInstanceSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(22);
+    assertThat(resultAfter.items().size()).isEqualTo(24);
     final var keyAfter = resultAfter.items().getFirst().getElementInstanceKey();
     // apply searchBefore
     final var resultBefore =
@@ -289,17 +293,39 @@ public class ElementInstanceSearchTest {
     assertSorted(resultAsc, resultDesc, ElementInstance::getProcessInstanceKey);
   }
 
-  @Test
-  void shouldGetElementInstanceByKey() {
+  @ParameterizedTest
+  @CsvSource(
+      value = {
+        "service_tasks_v2,startEvent",
+        "service_tasks_v2,exclusiveGateway",
+        "service_tasks_v2,taskC",
+        "parent_process_v1,call_activity",
+        "incident_process_v1,taskAIncident",
+        "manual_process,taskM",
+        "ad_hoc_sub_process,adHocSubProcess"
+      })
+  void shouldGetElementInstanceByKey(final String processDefinitionId, final String elementId) {
     // given
+    final var elementInstance =
+        allElementInstances.stream()
+            .filter(
+                e ->
+                    e.getProcessDefinitionId().equals(processDefinitionId)
+                        && e.getElementId().equals(elementId))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Test element %s/%s was not found"
+                            .formatted(processDefinitionId, elementId)));
+
     final var elementInstanceKey = elementInstance.getElementInstanceKey();
 
     // when
     final var result = camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join();
 
     // then
-    assertThat(result).isNotNull();
-    assertThat(result).isEqualTo(elementInstance);
+    assertThat(result).isNotNull().isEqualTo(elementInstance);
   }
 
   @Test
@@ -492,7 +518,7 @@ public class ElementInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(19);
+    assertThat(result.items().size()).isEqualTo(20);
     assertThat(result.items().getFirst().getState()).isEqualTo(state);
   }
 
@@ -577,7 +603,7 @@ public class ElementInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.page().totalItems()).isEqualTo(24);
+    assertThat(result.page().totalItems()).isEqualTo(26);
     assertThat(result.items()).allMatch(f -> f.getTenantId().equals(tenantId));
   }
 
@@ -595,7 +621,7 @@ public class ElementInstanceSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(22);
+    assertThat(resultAfter.items().size()).isEqualTo(24);
     final var keyAfter = resultAfter.items().getFirst().getElementInstanceKey();
     // apply searchBefore
     final var resultBefore =
