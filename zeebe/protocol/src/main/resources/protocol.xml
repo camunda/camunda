@@ -59,12 +59,12 @@
       <validValue name="USER">41</validValue>
       <validValue name="CLOCK">42</validValue>
       <validValue name="AUTHORIZATION">43</validValue>
-      <validValue name="ROLE">44</validValue>
+      <validValue name="RESOURCE">44</validValue>
       <validValue name="TENANT">45</validValue>
       <validValue name="GROUP">46</validValue>
       <validValue name="MAPPING_RULE">47</validValue>
       <validValue name="IDENTITY_SETUP">48</validValue>
-      <validValue name="RESOURCE">49</validValue>
+      <validValue name="ROLE">49</validValue>
       <validValue name="BATCH_OPERATION_CREATION">50</validValue>
       <validValue name="BATCH_OPERATION_EXECUTION">51</validValue>
       <validValue name="BATCH_OPERATION_CHUNK">52</validValue>
