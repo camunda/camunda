@@ -7,6 +7,8 @@
  */
 package io.camunda.operate.modules;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.modules.ModulesTestApplication;
 import org.junit.runner.RunWith;
@@ -17,7 +19,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {ModulesTestApplication.class},
+    classes = {
+      ModulesTestApplication.class,
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class,
+    },
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",

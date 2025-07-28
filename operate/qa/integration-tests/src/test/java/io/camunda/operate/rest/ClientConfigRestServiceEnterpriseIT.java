@@ -13,13 +13,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
-import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.ClientConfig;
 import io.camunda.operate.webapp.rest.ClientConfigRestService;
@@ -37,8 +39,10 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
-      TestOperatePropertiesOverride.class,
-      CamundaSecurityProperties.class
+      OperatePropertiesOverride.class,
+      CamundaSecurityProperties.class,
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class
     },
     properties = {
       OperateProperties.PREFIX + ".enterprise=true",

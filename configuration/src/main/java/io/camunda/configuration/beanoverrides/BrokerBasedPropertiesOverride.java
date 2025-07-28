@@ -11,6 +11,7 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -44,6 +45,11 @@ public class BrokerBasedPropertiesOverride {
 
     // from camunda.cluster.* sections
     populateFromCluster(override);
+
+    // from camunda.system.* sections in relation
+    // with zeebe.broker.*
+    populateFromSystem(override);
+
     // TODO: Populate the bean from rest of camunda.* sections
     // populateFromData(override);
 
@@ -70,5 +76,18 @@ public class BrokerBasedPropertiesOverride {
     final var configManagerGossipConfig =
         new ClusterConfigurationGossiperConfig(syncDelay, syncTimeout, gossipFanout);
     override.getCluster().setConfigManager(new ConfigManagerCfg(configManagerGossipConfig));
+  }
+
+  private void populateFromSystem(final BrokerBasedProperties override) {
+    final var system = unifiedConfiguration.getCamunda().getSystem();
+
+    final var threadsCfg = new ThreadsCfg();
+    threadsCfg.setCpuThreadCount(system.getCpuThreadCount());
+    threadsCfg.setIoThreadCount(system.getIoThreadCount());
+    override.setThreads(threadsCfg);
+
+    final var enableVersionCheck =
+        unifiedConfiguration.getCamunda().getSystem().getUpgrade().getEnableVersionCheck();
+    override.getExperimental().setVersionCheckRestrictionEnabled(enableVersionCheck);
   }
 }

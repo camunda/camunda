@@ -9,6 +9,8 @@ package io.camunda.operate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.qa.util.TestSchemaManager;
 import io.camunda.operate.util.TestApplication;
@@ -28,7 +30,11 @@ class ProbesTestIT {
   @Nested
   @ExtendWith(SpringExtension.class)
   @SpringBootTest(
-      classes = TestApplication.class,
+      classes = {
+        TestApplication.class,
+        UnifiedConfigurationHelper.class,
+        UnifiedConfiguration.class
+      },
       webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
   class SchemaExistsIT {
     @Autowired private IndicesCheck indicesCheck;
@@ -56,7 +62,11 @@ class ProbesTestIT {
   @Nested
   @ExtendWith(SpringExtension.class)
   @SpringBootTest(
-      classes = TestApplication.class,
+      classes = {
+        TestApplication.class,
+        UnifiedConfigurationHelper.class,
+        UnifiedConfiguration.class
+      },
       webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
   class SchemaNotExistsIT {
     @Autowired private IndicesCheck indicesCheck;
