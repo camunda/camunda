@@ -24,6 +24,7 @@ import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
@@ -458,6 +459,21 @@ public final class TestHelper {
               final var result =
                   camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
               assertThat(result.getState()).isEqualTo(ProcessInstanceState.TERMINATED);
+            });
+  }
+
+  public static void waitForProcessInstance(
+      final CamundaClient client,
+      final Consumer<ProcessInstanceFilter> filter,
+      final Consumer<List<ProcessInstance>> asserter) {
+    await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client.newProcessInstanceSearchRequest().filter(filter).send().join().items();
+              asserter.accept(result);
             });
   }
 
