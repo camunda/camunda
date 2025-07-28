@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
@@ -27,15 +26,17 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.function.Function;
 
@@ -47,6 +48,7 @@ public final class BpmnStateTransitionBehavior {
 
   private final ProcessInstanceRecord childInstanceRecord = new ProcessInstanceRecord();
   private final ProcessInstanceRecord followUpInstanceRecord = new ProcessInstanceRecord();
+  private final RuntimeInstructionRecord runtimeInstructionRecord = new RuntimeInstructionRecord();
 
   private final KeyGenerator keyGenerator;
   private final BpmnStateBehavior stateBehavior;
@@ -74,7 +76,7 @@ public final class BpmnStateTransitionBehavior {
       final Writers writers) {
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
-    this.jobBehavior = bpmnJobBehavior;
+    jobBehavior = bpmnJobBehavior;
     this.userTaskBehavior = userTaskBehavior;
     this.metrics = metrics;
     this.processorLookUp = processorLookUp;
@@ -169,35 +171,6 @@ public final class BpmnStateTransitionBehavior {
     }
 
     return transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
-  }
-
-  public void transitionToSuspended(final BpmnElementContext context) {
-    resetTreePathProperties(context);
-
-    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
-
-    stateWriter.appendFollowUpEvent(
-        context.getProcessInstanceKey(),
-        ProcessInstanceIntent.ELEMENT_SUSPENDED,
-        processInstance.getValue());
-
-    final var dequeue = new ArrayDeque<BpmnElementContext>();
-    final var processInstanceContext = new BpmnElementContextImpl();
-    processInstanceContext.init(
-        processInstance.getKey(), processInstance.getValue(), processInstance.getState());
-    dequeue.add(processInstanceContext);
-
-    // recurse through the process instance tree without causing stack overflow
-    while (!dequeue.isEmpty()) {
-      final var elementInstanceContext = dequeue.pop();
-      jobBehavior.cancelJob(elementInstanceContext);
-      eventSubscriptionBehavior.unsubscribeFromEvents(elementInstanceContext);
-      incidentBehavior.resolveIncidents(elementInstanceContext);
-      userTaskBehavior.cancelUserTask(elementInstanceContext);
-
-      final var children = stateBehavior.getChildInstanceContexts(elementInstanceContext);
-      dequeue.addAll(children);
-    }
   }
 
   /**
@@ -484,29 +457,64 @@ public final class BpmnStateTransitionBehavior {
   }
 
   /**
-   * Suspends the process instance if the condition for suspension is met.
+   * Executes runtime instructions for the given flow node element if there are any. This method may
+   * cause the process instance to be interrupted, depending on the runtime instructions present.
    *
    * @param element the flow node element that is being processed
    * @param context the context of the process instance
-   * @return an Either with the context (left) if the process instance is not suspended by this
-   *     call, or Void (right) if it is. If already suspended, returns the context (left) to allow
-   *     the processors to finish terminating elements.
+   * @return an Either with:
+   *     <ul>
+   *       <li><b>Right:</b> the context if the process instance is not interrupted (e.g. there are
+   *           no runtime instructions to execute), or
+   *       <li><b>Left:</b> a {@link ProcessInstanceInterrupted} singleton marker if the process
+   *           instance is interrupted. In this case, the caller should not append any further
+   *           commands/events.
+   *     </ul>
    */
   public <T extends ExecutableFlowNode>
-      Either<BpmnElementContext, Void> suspendProcessInstanceIfNeeded(
-          final T element, BpmnElementContext context) {
+      Either<ProcessInstanceInterrupted, BpmnElementContext> executeRuntimeInstructions(
+          final T element, final BpmnElementContext context) {
 
-    if (!stateBehavior.shouldSuspendProcessInstance(
-        context.getProcessInstanceKey(), BufferUtil.bufferAsString(element.getId()))) {
-      return Either.left(context);
+    final var runtimeInstructions =
+        stateBehavior.getRuntimeInstructionsForElementId(
+            context.getProcessInstanceKey(), BufferUtil.bufferAsString(element.getId()));
+
+    if (runtimeInstructions.isEmpty()) {
+      return Either.right(context);
     }
+
+    // We only have one runtime instruction type for now (termination), so we can directly execute
+    // its logic (interrupt process instance and request termination).
+    // Due to this, we also assume that only one non-duplicate instruction can be present for each
+    // element, and always take the first one.
+    // In the future, we might have branches for different instruction types
+
+    final var runtimeInstruction = runtimeInstructions.getFirst();
+    if (runtimeInstruction.getType() != RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE) {
+      // other runtime instruction types are not supported yet
+      return Either.right(context);
+    }
+
     final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
-    if (processInstance.isSuspended()) {
-      // if the process instance is already suspended, we don't need to suspend it again
-      return Either.left(context);
+    if (processInstance.isTerminating()) {
+      // if the process instance is already terminating, we don't need to interrupt and terminate it
+      // again, the instruction has already been processed.
+      return Either.right(context);
     }
-    transitionToSuspended(context);
-    return Either.right(null);
+
+    runtimeInstructionRecord.reset();
+    runtimeInstructionRecord.setProcessInstanceKey(context.getProcessInstanceKey());
+    runtimeInstructionRecord.setTenantId(context.getTenantId());
+    runtimeInstructionRecord.setElementId(runtimeInstruction.getAfterElementId());
+
+    stateWriter.appendFollowUpEvent(
+        processInstance.getKey(), RuntimeInstructionIntent.INTERRUPTED, runtimeInstructionRecord);
+    commandWriter.appendFollowUpCommand(
+        processInstance.getKey(),
+        ProcessInstanceIntent.TERMINATE_ELEMENT,
+        processInstance.getValue());
+
+    return Either.left(ProcessInstanceInterrupted.INSTANCE);
   }
 
   public Either<Failure, ?> beforeExecutionPathCompleted(
@@ -669,6 +677,17 @@ public final class BpmnStateTransitionBehavior {
             child ->
                 terminateElement(context.copy(child.getKey(), child.getValue(), child.getState())),
             () -> containerProcessor.onChildTerminated(element, context, null));
+  }
+
+  /** A singleton marker class to indicate that the process instance has been interrupted. */
+  public static final class ProcessInstanceInterrupted {
+    /**
+     * A singleton instance of {@link ProcessInstanceInterrupted} to be used as a marker. It can be
+     * returned as a result of a method call to indicate that process instance is interrupted.
+     */
+    private static final ProcessInstanceInterrupted INSTANCE = new ProcessInstanceInterrupted();
+
+    private ProcessInstanceInterrupted() {}
   }
 
   private static final class ChildTerminationStackOverflowException extends RuntimeException {

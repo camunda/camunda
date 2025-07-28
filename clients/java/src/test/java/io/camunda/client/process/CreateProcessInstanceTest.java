@@ -319,7 +319,7 @@ public final class CreateProcessInstanceTest extends ClientTest {
     client
         .newCreateInstanceCommand()
         .processDefinitionKey(123)
-        .suspendAfterElement("elementId_A")
+        .terminateAfterElement("elementId_A")
         .send()
         .join();
 
@@ -329,7 +329,7 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .hasSize(1)
         .allSatisfy(
             instruction ->
-                assertThat(instruction.getSuspend())
+                assertThat(instruction.getTerminate())
                     .satisfies(
                         suspend ->
                             assertThat(suspend.getAfterElementId()).isEqualTo("elementId_A")));
@@ -341,8 +341,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
     client
         .newCreateInstanceCommand()
         .processDefinitionKey(123)
-        .suspendAfterElement("elementId_A")
-        .suspendAfterElement("elementId_B")
+        .terminateAfterElement("elementId_A")
+        .terminateAfterElement("elementId_B")
         .send()
         .join();
 
@@ -352,7 +352,7 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .hasSize(2)
         .allSatisfy(
             instruction ->
-                assertThat(instruction.getSuspend())
+                assertThat(instruction.getTerminate())
                     .satisfies(
                         suspend ->
                             assertThat(suspend.getAfterElementId())

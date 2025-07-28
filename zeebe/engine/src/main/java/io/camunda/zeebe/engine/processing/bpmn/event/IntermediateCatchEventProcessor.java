@@ -76,9 +76,9 @@ public class IntermediateCatchEventProcessor
         .thenDo(
             completed ->
                 stateTransitionBehavior
-                    .suspendProcessInstanceIfNeeded(element, completed)
-                    .ifLeft(
-                        notSuspended ->
+                    .executeRuntimeInstructions(element, completed)
+                    .ifRight(
+                        notInterrupted ->
                             stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed)));
   }
 
@@ -101,7 +101,7 @@ public class IntermediateCatchEventProcessor
   @Override
   public void finalizeTermination(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
+    stateTransitionBehavior.executeRuntimeInstructions(element, context);
   }
 
   private IntermediateCatchEventBehavior eventBehaviorOf(

@@ -6544,14 +6544,12 @@ components:
         - ACTIVE
         - COMPLETED
         - TERMINATED
-        - SUSPENDED
     ElementInstanceStateEnum:
       description: Element states
       enum:
         - ACTIVE
         - COMPLETED
         - TERMINATED
-        - SUSPENDED
     ProcessInstanceCallHierarchyEntry:
       type: object
       required:
@@ -10211,24 +10209,9 @@ components:
     RuntimeInstructionType:
       type: string
       description: |
-        The type of the runtime instruction. For now, only SUSPEND_PROCESS_INSTANCE is supported.
-
-        Caution: process instance suspension is an alpha feature and may be subject to change
-        in future releases.
-
-        Note the following limitations of suspended process instances:
-          - Suspended process instances currently cannot be resumed. The only possible state
-            transition is to cancel the suspended instance.
-          - Suspending a process instance currently means that all jobs, user tasks, incidents, and
-            event subscriptions are removed from the runtime state. This means that process instances
-            suspended with the current implementation may not be fully recoverable in the future,
-            when the resume functionality is implemented.
-          - Suspended process instances currently cannot be modified or migrated.
-
-        It is therefore not recommended to use process instance suspension outside of testing or
-        debugging context.
+        The type of the runtime instruction. For now, only TERMINATE_PROCESS_INSTANCE is supported.
       enum:
-        - SUSPEND_PROCESS_INSTANCE
+        - TERMINATE_PROCESS_INSTANCE
     ProcessInstanceCreationRuntimeInstruction:
       type: object
       required:
@@ -10239,10 +10222,10 @@ components:
       discriminator:
         propertyName: type
         mapping:
-          SUSPEND_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationSuspendInstruction"
+          TERMINATE_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
       description: |
         Base type for all runtime instructions.
-    ProcessInstanceCreationSuspendInstruction:
+    ProcessInstanceCreationTerminateInstruction:
       allOf:
         - $ref: "#/components/schemas/ProcessInstanceCreationRuntimeInstruction"
         - type: object
@@ -10251,10 +10234,10 @@ components:
           properties:
             afterElementId:
               description: |
-                The ID of the element that, once completed, will cause the process to move into suspended state.
+                The ID of the element that, once completed or terminated, will cause the process to be terminated.
               type: string
           description: |
-            Suspends the process instance after a specific BPMN element is completed.
+            Terminates the process instance after a specific BPMN element is completed or terminated.
     CreateProcessInstanceResult:
       type: object
       properties:

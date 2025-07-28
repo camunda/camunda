@@ -12,9 +12,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -76,10 +76,10 @@ public class BrokerCreateProcessInstanceRequest
         .map(
             instruction ->
                 switch (instruction.getInstructionCase()) {
-                  case SUSPEND ->
+                  case TERMINATE ->
                       new ProcessInstanceCreationRuntimeInstruction()
-                          .setType(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE)
-                          .setAfterElementId(instruction.getSuspend().getAfterElementId());
+                          .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+                          .setAfterElementId(instruction.getTerminate().getAfterElementId());
                   case INSTRUCTION_NOT_SET ->
                       throw new IllegalArgumentException(
                           "Unsupported runtime instruction type: "

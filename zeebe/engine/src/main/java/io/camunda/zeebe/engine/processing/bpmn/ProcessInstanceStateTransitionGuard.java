@@ -60,7 +60,7 @@ public final class ProcessInstanceStateTransitionGuard {
     return switch (context.getIntent()) {
       case ACTIVATE_ELEMENT ->
           hasActiveFlowScopeInstance(context)
-              .flatMap(ok -> processInstanceNotSuspended(context, element))
+              .flatMap(ok -> hasActiveProcessInstance(context))
               .flatMap(ok -> canActivateParallelGateway(context, element))
               .flatMap(ok -> canActivateInclusiveGateway(context, element));
       case COMPLETE_ELEMENT ->
@@ -70,8 +70,8 @@ public final class ProcessInstanceStateTransitionGuard {
                   context,
                   ProcessInstanceIntent.ELEMENT_ACTIVATED,
                   ProcessInstanceIntent.ELEMENT_COMPLETING)
-              .flatMap(ok -> hasActiveFlowScopeInstance(context))
-              .flatMap(ok -> processInstanceNotSuspended(context, element));
+              .flatMap(ok -> hasActiveProcessInstance(context))
+              .flatMap(ok -> hasActiveFlowScopeInstance(context));
       case TERMINATE_ELEMENT ->
           hasElementInstanceWithState(
               context,
@@ -209,21 +209,22 @@ public final class ProcessInstanceStateTransitionGuard {
     }
   }
 
-  private Either<String, Object> processInstanceNotSuspended(
-      final BpmnElementContext context, final ExecutableFlowElement element) {
-    if (context.getBpmnElementType() == BpmnElementType.PROCESS
-        && context.getIntent() == ProcessInstanceIntent.ACTIVATE_ELEMENT) {
-      // when activating a process instance, it cannot yet be suspended
+  private Either<String, ?> hasActiveProcessInstance(final BpmnElementContext context) {
+    if (context.getBpmnElementType() == BpmnElementType.PROCESS) {
       return Either.right(null);
     }
     final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
     if (processInstance == null) {
-      return Either.left("Process instance '" + context.getProcessInstanceKey() + "' not found");
+      return Either.right(null);
     }
-    if (processInstance.isSuspended()) {
-      return Either.left("Process instance '" + context.getProcessInstanceKey() + "' is suspended");
+    if (processInstance.isInterruptedByRuntimeInstruction()) {
+      return Either.left(
+          String.format(
+              "Expected process instance to be active but was interrupted by an event with id '%s'.",
+              BufferUtil.bufferAsString(processInstance.getInterruptingElementId())));
+    } else {
+      return Either.right(context);
     }
-    return Either.right(processInstance);
   }
 
   private Either<String, ?> canActivateParallelGateway(

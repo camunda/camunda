@@ -37,6 +37,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       new StringValue("multiInstanceLoopCounter");
   private static final StringValue INTERRUPTING_ELEMENT_ID =
       new StringValue("interruptingElementId");
+  private static final StringValue INTERRUPTED_BY_RUNTIME_INSTRUCTION =
+      new StringValue("interruptedByRuntimeInstruction");
   private static final StringValue CALLED_CHILD_INSTANCE_KEY =
       new StringValue("calledChildInstanceKey");
   private static final StringValue ELEMENT_RECORD = new StringValue("elementRecord");
@@ -63,6 +65,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       new IntegerProperty(MULTI_INSTANCE_LOOP_COUNTER, 0);
   private final StringProperty interruptingEventKeyProp =
       new StringProperty(INTERRUPTING_ELEMENT_ID, "");
+  private final BooleanProperty interruptedByRuntimeInstructionProp =
+      new BooleanProperty(INTERRUPTED_BY_RUNTIME_INSTRUCTION, false);
   private final LongProperty calledChildInstanceKeyProp =
       new LongProperty(CALLED_CHILD_INSTANCE_KEY, -1L);
   private final ObjectProperty<IndexedRecord> recordProp =
@@ -76,7 +80,6 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       new IntegerProperty(EXECUTION_LISTENER_INDEX, 0);
   private final ObjectProperty<TaskListenerIndicesRecord> taskListenerIndicesRecordProp =
       new ObjectProperty<>(TASK_LISTENER_INDICES_RECORD, new TaskListenerIndicesRecord());
-  private final BooleanProperty isSuspendedProp = new BooleanProperty("isSuspended", false);
   private final IntegerProperty processDepth = new IntegerProperty(PROCESS_DEPTH, 1);
 
   /**
@@ -111,7 +114,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(executionListenerIndexProp)
         .declareProperty(taskListenerIndicesRecordProp)
         .declareProperty(processDepth)
-        .declareProperty(isSuspendedProp);
+        .declareProperty(interruptedByRuntimeInstructionProp);
   }
 
   public ElementInstance(
@@ -244,6 +247,14 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     interruptingEventKeyProp.setValue(elementId);
   }
 
+  public boolean isInterruptedByRuntimeInstruction() {
+    return interruptedByRuntimeInstructionProp.getValue();
+  }
+
+  public void setInterruptedByRuntimeInstruction() {
+    interruptedByRuntimeInstructionProp.setValue(true);
+  }
+
   public boolean isInterrupted() {
     return getInterruptingElementId().capacity() > 0;
   }
@@ -351,13 +362,5 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void setProcessDepth(final int depth) {
     processDepth.setValue(depth);
-  }
-
-  public boolean isSuspended() {
-    return isSuspendedProp.getValue();
-  }
-
-  public void suspend() {
-    isSuspendedProp.setValue(true);
   }
 }

@@ -9,24 +9,37 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public final class SuspendProcessInstanceRuntimeInstruction extends UnpackedObject
-    implements DbValue {
+public final class RuntimeInstructionValue extends UnpackedObject implements DbValue {
 
   private final StringProperty afterElementIdProp = new StringProperty("afterElementId", "");
+  private final EnumProperty<RuntimeInstructionType> typeProp =
+      new EnumProperty<>(
+          "type", RuntimeInstructionType.class, RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
 
-  public SuspendProcessInstanceRuntimeInstruction() {
-    super(1);
+  public RuntimeInstructionValue() {
+    super(2);
     declareProperty(afterElementIdProp);
+    declareProperty(typeProp);
+  }
+
+  public String getAfterElementId() {
+    return BufferUtil.bufferAsString(afterElementIdProp.getValue());
   }
 
   public void setAfterElementId(final String afterElementId) {
     afterElementIdProp.setValue(afterElementId);
   }
 
-  public String getAfterElementId() {
-    return BufferUtil.bufferAsString(afterElementIdProp.getValue());
+  public RuntimeInstructionType getType() {
+    return typeProp.getValue();
+  }
+
+  public void setType(final RuntimeInstructionType type) {
+    typeProp.setValue(type);
   }
 }

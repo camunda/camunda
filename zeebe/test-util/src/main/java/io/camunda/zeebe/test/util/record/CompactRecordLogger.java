@@ -54,6 +54,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -102,6 +103,7 @@ public class CompactRecordLogger {
           entry("PROCESS_INSTANCE_CREATION", "CREA"),
           entry("PROCESS_INSTANCE_MODIFICATION", "MOD"),
           entry("PROCESS_INSTANCE", "PI"),
+          entry("RUNTIME_INSTRUCTION", "RI"),
           entry("PROCESS", "PROC"),
           entry("TIMER", "TIME"),
           entry("MESSAGE", "MSG"),
@@ -184,6 +186,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MAPPING_RULE, this::summarizeMappingRule);
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
     valueLoggers.put(ValueType.MULTI_INSTANCE, this::summarizeMultiInstance);
+    valueLoggers.put(ValueType.RUNTIME_INSTRUCTION, this::summarizeRuntimeInstruction);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1109,6 +1112,21 @@ public class CompactRecordLogger {
         .append("inputCollection: ")
         .append(value.getInputCollection())
         .toString();
+  }
+
+  private String summarizeRuntimeInstruction(final Record<?> record) {
+    final var value = (RuntimeInstructionRecordValue) record.getValue();
+
+    final var result = new StringBuilder();
+
+    final var formattedInstanceKey =
+        value.getProcessInstanceKey() < 0 ? "?" : shortenKey(value.getProcessInstanceKey());
+    result.append(String.format("[%s]", formattedInstanceKey));
+
+    if (value.getElementId() != null) {
+      result.append(" interrupted by \"").append(value.getElementId()).append("\"");
+    }
+    return result.toString();
   }
 
   private String formatPinnedTime(final long time) {

@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 @JsonIgnoreProperties({
   /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
@@ -37,36 +40,37 @@ public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
    *
    * @return the type as an enum
    */
-  public RuntimeInstructionType getInstructionType() {
+  @Override
+  public RuntimeInstructionType getType() {
     return typeProp.getValue();
   }
 
-  public String getAfterElementId() {
-    return BufferUtil.bufferAsString(afterElementIdProp.getValue());
-  }
-
-  @Override
-  public String getType() {
-    final RuntimeInstructionType type = typeProp.getValue();
-    return type != null ? type.name() : null;
-  }
-
-  public ProcessInstanceCreationRuntimeInstruction setType(RuntimeInstructionType type) {
+  public ProcessInstanceCreationRuntimeInstruction setType(final RuntimeInstructionType type) {
     typeProp.setValue(type);
     return this;
   }
 
-  public ProcessInstanceCreationRuntimeInstruction setAfterElementId(String afterElementId) {
+  @Override
+  public String getAfterElementId() {
+    return BufferUtil.bufferAsString(afterElementIdProp.getValue());
+  }
+
+  public ProcessInstanceCreationRuntimeInstruction setAfterElementId(final String afterElementId) {
     afterElementIdProp.setValue(afterElementId);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getAfterElementIdBuffer() {
+    return afterElementIdProp.getValue();
   }
 
   public static ProcessInstanceCreationRuntimeInstruction createInstruction() {
     return new ProcessInstanceCreationRuntimeInstruction();
   }
 
-  public void copy(ProcessInstanceCreationRuntimeInstruction instruction) {
-    setType(instruction.getInstructionType());
+  public void copy(final ProcessInstanceCreationRuntimeInstructionValue instruction) {
+    setType(instruction.getType());
     setAfterElementId(instruction.getAfterElementId());
   }
 }

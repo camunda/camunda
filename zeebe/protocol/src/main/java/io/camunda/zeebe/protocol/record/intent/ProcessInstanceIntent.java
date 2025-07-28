@@ -29,8 +29,7 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
   ELEMENT_COMPLETED((short) 5),
   ELEMENT_TERMINATING((short) 6),
   ELEMENT_TERMINATED((short) 7),
-  ELEMENT_SUSPENDED((short) 15),
-  SEQUENCE_FLOW_DELETED((short) 16),
+  SEQUENCE_FLOW_DELETED((short) 15),
 
   ACTIVATE_ELEMENT((short) 8),
   COMPLETE_ELEMENT((short) 9),
@@ -119,8 +118,6 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       case 14:
         return CONTINUE_TERMINATING_ELEMENT;
       case 15:
-        return ELEMENT_SUSPENDED;
-      case 16:
         return SEQUENCE_FLOW_DELETED;
       default:
         return Intent.UNKNOWN;
@@ -144,7 +141,6 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       case ELEMENT_TERMINATED:
       case ELEMENT_MIGRATED:
       case ANCESTOR_MIGRATED:
-      case ELEMENT_SUSPENDED:
       case SEQUENCE_FLOW_DELETED:
         return true;
       default:

@@ -347,7 +347,6 @@ public final class ProcessInstanceModificationModifyProcessor
         .flatMap(valid -> validateVariableScopeExists(process, activateInstructions))
         .flatMap(valid -> validateVariableScopeIsFlowScope(process, activateInstructions))
         .flatMap(valid -> validateAncestorKeys(process, value))
-        .flatMap(valid -> validateProcessInstanceNotSuspended(process, processInstance))
         .map(valid -> VALID);
   }
 
@@ -673,18 +672,6 @@ public final class ProcessInstanceModificationModifyProcessor
     }
 
     return false;
-  }
-
-  private Either<Rejection, ?> validateProcessInstanceNotSuspended(
-      final DeployedProcess process, final ElementInstance processInstance) {
-
-    if (processInstance.isSuspended()) {
-      final var reason =
-          ERROR_MESSAGE_PROCESS_INSTANCE_SUSPENDED.formatted(
-              BufferUtil.bufferAsString(process.getBpmnProcessId()));
-      return Either.left(new Rejection(RejectionType.INVALID_STATE, reason));
-    }
-    return VALID;
   }
 
   public void executeVariableInstruction(

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.RuntimeInstructionValue;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -122,14 +123,15 @@ public interface ElementInstanceState {
   boolean hasActiveProcessInstances(long processDefinitionKey, final List<Long> bannedInstances);
 
   /**
-   * Verifies if the process instance needs to be suspended after the element with the given ID
-   * completes or terminates, based on the runtime instructions of the process instance.
+   * Verifies if the process instance has a runtime instruction to be terminated after the element
+   * with the given ID has completed or terminated.
    *
    * @param processInstanceKey the key of the process instance
    * @param elementId the ID of the element that has completed or terminated
-   * @return a boolean indicating whether the process instance should be suspended
+   * @return a list of runtime instructions for the given element ID, potentially empty
    */
-  boolean shouldSuspendElementInstance(long processInstanceKey, String elementId);
+  List<RuntimeInstructionValue> getRuntimeInstructionsForElementId(
+      long processInstanceKey, String elementId);
 
   @FunctionalInterface
   interface TakenSequenceFlowVisitor {
