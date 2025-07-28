@@ -1059,8 +1059,8 @@ jobs:
     secrets: inherit
     permissions: { }
     with:
-      runFeTests: ${{ needs.detect-changes.outputs.tasklist-frontend-changes }}
-      runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes }}
+      runFeTests: ${{ needs.detect-changes.outputs.tasklist-frontend-changes  == 'true' }}
+      runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
