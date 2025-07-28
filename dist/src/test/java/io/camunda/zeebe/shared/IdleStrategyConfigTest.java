@@ -10,7 +10,7 @@ package io.camunda.zeebe.shared;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration;
-import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategyProperties;
+import io.camunda.configuration.beans.IdleStrategyBasedProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ final class IdleStrategyConfigTest {
   void shouldConfigureIdleStrategy() {
     // given
     final var props =
-        new IdleStrategyProperties(50L, 62L, Duration.ofNanos(100), Duration.ofNanos(500));
+        new IdleStrategyBasedProperties(50L, 62L, Duration.ofNanos(100), Duration.ofNanos(500));
     final var config = new ActorIdleStrategyConfiguration(props);
 
     // when
@@ -37,7 +37,7 @@ final class IdleStrategyConfigTest {
   @Test
   void shouldUseSchedulerDefaults() {
     // given
-    final var props = new IdleStrategyProperties(null, null, null, null);
+    final var props = new IdleStrategyBasedProperties(null, null, null, null);
     final var config = new ActorIdleStrategyConfiguration(props);
 
     // when
@@ -56,7 +56,7 @@ final class IdleStrategyConfigTest {
   @Test
   void shouldAcceptPartialConfig() {
     // given
-    final var props = new IdleStrategyProperties(null, 62L, Duration.ofNanos(100), null);
+    final var props = new IdleStrategyBasedProperties(null, 62L, Duration.ofNanos(100), null);
     final var config = new ActorIdleStrategyConfiguration(props);
 
     // when
