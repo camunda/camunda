@@ -105,6 +105,12 @@ const TaskDetails: React.FC = observer(() => {
         ),
         isDismissable: true,
       });
+      if (parsedError?.response?.statusText.toLowerCase().includes('timeout')) {
+        navigate({
+          pathname: pages.initial,
+          search: location.search,
+        });
+      }
       return;
     }
 

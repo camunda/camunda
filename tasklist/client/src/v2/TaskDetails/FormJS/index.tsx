@@ -21,7 +21,8 @@ import {
   TaskDetailsContainer,
   TaskDetailsRow,
 } from 'common/tasks/details/TaskDetailsLayout';
-import {useMemo, useRef, useState} from 'react';
+import {TaskStateLoadingText} from 'common/tasks/details/TaskStateLoadingText';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {match, Pattern} from 'ts-pattern';
 import {useSelectedVariables} from 'v2/api/useSelectedVariables.query';
@@ -88,8 +89,13 @@ const FormJS: React.FC<Props> = ({
     (state === 'UPDATING' && assignee === null) ||
     (state === 'CANCELING' && assignee === null);
 
-  const {removeFormReference} = useRemoveFormReference(task);
+  useEffect(() => {
+    if (state === 'COMPLETING') {
+      setSubmissionState('active');
+    }
+  }, [state]);
 
+  const {removeFormReference} = useRemoveFormReference(task);
   return (
     <ScrollableContent data-testid="embedded-form" tabIndex={-1}>
       <TaskDetailsContainer>
@@ -171,11 +177,18 @@ const FormJS: React.FC<Props> = ({
                 setSubmissionState('inactive');
               }}
               onError={() => {
-                setSubmissionState('inactive');
+                if (state === 'COMPLETING') {
+                  setSubmissionState('active');
+                } else {
+                  setSubmissionState('inactive');
+                }
               }}
-              isHidden={state === 'COMPLETED'}
+              isHidden={['COMPLETED', 'CANCELING', 'UPDATING'].includes(state)}
               isDisabled={!canCompleteTask}
             />
+            {['UPDATING', 'CANCELING'].includes(state) && (
+              <TaskStateLoadingText taskState={state} />
+            )}
           </DetailsFooter>
         )}
       </TaskDetailsContainer>
