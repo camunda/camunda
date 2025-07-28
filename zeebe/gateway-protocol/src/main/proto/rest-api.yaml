@@ -7699,9 +7699,6 @@ components:
         apiUser:
           description: Flag for understanding if the user is an API user.
           type: boolean
-        userKey:
-          description: The system generated key of the user.
-          type: string
     UserResult:
       type: "object"
       properties:
