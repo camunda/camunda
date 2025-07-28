@@ -25253,6 +25253,7 @@
         },
         "definition": "label_values(atomix_role{cluster=~\"$cluster\"}, namespace)",
         "includeAll": true,
+        "multi": true,
         "name": "namespace",
         "options": [],
         "query": {
@@ -25348,6 +25349,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "zeebe-dashboard",
-  "version": 38,
+  "version": 43,
   "weekStart": ""
 }
