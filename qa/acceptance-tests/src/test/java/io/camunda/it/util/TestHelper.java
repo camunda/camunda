@@ -391,9 +391,8 @@ public final class TestHelper {
                 assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
               } catch (final ProblemException e) {
                 if (e.code() == 404) {
-                  // If the batch operation is not found, it means it has been completed or failed.
-                  // We can ignore this exception and let the test fail later when checking the
-                  // status.
+                  // In the case where it could not be found in the db, we can ignore it.
+                  // When we start this await, it will always not be there.
                   return;
                 }
 
