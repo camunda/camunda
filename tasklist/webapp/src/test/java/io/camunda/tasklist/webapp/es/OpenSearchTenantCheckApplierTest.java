@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.reader.TenantAccess;
 import io.camunda.tasklist.webapp.es.tenant.OpenSearchTenantCheckApplier;
 import io.camunda.tasklist.webapp.tenant.TenantService;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,13 +40,11 @@ public class OpenSearchTenantCheckApplierTest {
         .index("test")
         .query(q -> q.term(term -> term.value(FieldValue.of("value")).field("field")));
 
-    final TenantService.AuthenticatedTenants authenticatedTenants = mock();
+    final var tenantAccess = mock(TenantAccess.class);
     final List<String> authorizedTenant = List.of("TenantA", "TenantB");
-    when(authenticatedTenants.getTenantIds()).thenReturn(authorizedTenant);
-
-    when(authenticatedTenants.getTenantAccessType())
-        .thenReturn(TenantService.TenantAccessType.TENANT_ACCESS_ASSIGNED);
-    when(tenantService.getAuthenticatedTenants()).thenReturn(authenticatedTenants);
+    when(tenantAccess.allowed()).thenReturn(true);
+    when(tenantAccess.tenantIds()).thenReturn(authorizedTenant);
+    when(tenantService.getAuthenticatedTenants()).thenReturn(tenantAccess);
 
     // when
     instance.apply(searchRequest);
@@ -71,14 +69,11 @@ public class OpenSearchTenantCheckApplierTest {
         .index("test")
         .query(q -> q.term(term -> term.value(FieldValue.of("value")).field("field")));
 
-    final TenantService.AuthenticatedTenants authenticatedTenants = mock();
+    final var tenantAccess = mock(TenantAccess.class);
     final List<String> tenantsProvidedByUser = List.of("UnknownTenant");
     final List<String> authorizedTenant = List.of("TenantA", "TenantB");
-    when(authenticatedTenants.getTenantIds()).thenReturn(authorizedTenant);
-
-    when(authenticatedTenants.getTenantAccessType())
-        .thenReturn(TenantService.TenantAccessType.TENANT_ACCESS_ASSIGNED);
-    when(tenantService.getAuthenticatedTenants()).thenReturn(authenticatedTenants);
+    when(tenantAccess.tenantIds()).thenReturn(authorizedTenant);
+    when(tenantService.getAuthenticatedTenants()).thenReturn(tenantAccess);
 
     // when
     instance.apply(searchRequest, tenantsProvidedByUser);
@@ -101,14 +96,12 @@ public class OpenSearchTenantCheckApplierTest {
         .index("test")
         .query(q -> q.term(term -> term.value(FieldValue.of("value")).field("field")));
 
-    final TenantService.AuthenticatedTenants authenticatedTenants = mock();
+    final var tenantAccess = mock(TenantAccess.class);
     final List<String> tenantsProvidedByUser = List.of("TenantA", "TenantC");
     final List<String> authorizedTenant = List.of("TenantA", "TenantB");
-    when(authenticatedTenants.getTenantIds()).thenReturn(authorizedTenant);
-
-    when(authenticatedTenants.getTenantAccessType())
-        .thenReturn(TenantService.TenantAccessType.TENANT_ACCESS_ASSIGNED);
-    when(tenantService.getAuthenticatedTenants()).thenReturn(authenticatedTenants);
+    when(tenantAccess.allowed()).thenReturn(true);
+    when(tenantAccess.tenantIds()).thenReturn(authorizedTenant);
+    when(tenantService.getAuthenticatedTenants()).thenReturn(tenantAccess);
 
     // when
     instance.apply(searchRequest, tenantsProvidedByUser);
@@ -133,11 +126,9 @@ public class OpenSearchTenantCheckApplierTest {
         .index("test")
         .query(q -> q.term(term -> term.value(FieldValue.of("1")).field("test")));
 
-    final TenantService.AuthenticatedTenants authenticatedTenants = mock();
-    when(authenticatedTenants.getTenantIds()).thenReturn(Collections.emptyList());
-    when(authenticatedTenants.getTenantAccessType())
-        .thenReturn(TenantService.TenantAccessType.TENANT_ACCESS_ALL);
-    when(tenantService.getAuthenticatedTenants()).thenReturn(authenticatedTenants);
+    final var tenantAccess = mock(TenantAccess.class);
+    when(tenantAccess.wildcard()).thenReturn(true);
+    when(tenantService.getAuthenticatedTenants()).thenReturn(tenantAccess);
 
     // when
     instance.apply(searchRequest);
@@ -157,12 +148,9 @@ public class OpenSearchTenantCheckApplierTest {
         .index("test")
         .query(q -> q.term(term -> term.value(FieldValue.of("value")).field("field")));
 
-    final TenantService.AuthenticatedTenants authenticatedTenants = mock();
-    when(authenticatedTenants.getTenantIds()).thenReturn(Collections.emptyList());
-
-    when(authenticatedTenants.getTenantAccessType())
-        .thenReturn(TenantService.TenantAccessType.TENANT_ACCESS_NONE);
-    when(tenantService.getAuthenticatedTenants()).thenReturn(authenticatedTenants);
+    final var tenantAccess = mock(TenantAccess.class);
+    when(tenantAccess.denied()).thenReturn(true);
+    when(tenantService.getAuthenticatedTenants()).thenReturn(tenantAccess);
 
     // when
     instance.apply(searchRequest);

@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.es.tenant;
 
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 
+import io.camunda.security.reader.TenantAccess;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.tenant.TenantCheckApplier;
@@ -16,6 +17,8 @@ import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.webapp.tenant.TenantService;
 import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
@@ -34,63 +37,57 @@ public class OpenSearchTenantCheckApplier implements TenantCheckApplier<SearchRe
 
   @Override
   public void apply(final SearchRequest.Builder searchRequest) {
-    final var tenants = tenantService.getAuthenticatedTenants();
-    final var tenantCheckQueryType = tenants.getTenantAccessType();
-    final var searchByTenantIds = tenants.getTenantIds();
-
-    applyTenantCheckOnQuery(searchRequest, tenantCheckQueryType, searchByTenantIds);
+    final var tenantAccess = tenantService.getAuthenticatedTenants();
+    applyTenantCheckOnQuery(searchRequest, tenantAccess, tenantAccess.tenantIds());
   }
 
   @Override
   public void apply(final SearchRequest.Builder searchRequest, final Collection<String> tenantIds) {
-    final var tenants = tenantService.getAuthenticatedTenants();
-    final var tenantCheckQueryType = tenants.getTenantAccessType();
-    final var authorizedTenantIds = Set.copyOf(tenants.getTenantIds());
+    final var tenantAccess = tenantService.getAuthenticatedTenants();
+    final var authorizedTenantIds =
+        Optional.ofNullable(tenantAccess.tenantIds()).map(Set::copyOf).orElseGet(HashSet::new);
     final var searchByTenantIds =
         tenantIds.stream().filter(authorizedTenantIds::contains).collect(Collectors.toSet());
 
-    applyTenantCheckOnQuery(searchRequest, tenantCheckQueryType, searchByTenantIds);
+    applyTenantCheckOnQuery(searchRequest, tenantAccess, searchByTenantIds);
   }
 
   private void applyTenantCheckOnQuery(
       final SearchRequest.Builder searchRequest,
-      final TenantService.TenantAccessType tenantCheckQueryType,
+      final TenantAccess tenantAccess,
       final Collection<String> searchByTenantIds) {
     final var actualQuery = getQueryFromSearchRequestBuilder(searchRequest);
 
-    switch (tenantCheckQueryType) {
-      case TENANT_ACCESS_ASSIGNED -> {
-        final Query finalQuery;
-        if (CollectionUtils.isEmpty(searchByTenantIds)) {
-          // no data must be returned
-          finalQuery = OpenSearchUtil.createMatchNoneQuery();
-        } else {
-          final var tenantTermsQuery =
-              new Query.Builder()
-                  .terms(
-                      terms ->
-                          terms
-                              .field(TENANT_ID)
-                              .terms(
-                                  values ->
-                                      values.value(
-                                          searchByTenantIds.stream()
-                                              .map(FieldValue::of)
-                                              .collect(Collectors.toList()))));
-          finalQuery = OpenSearchUtil.joinWithAnd(tenantTermsQuery.build(), actualQuery);
-        }
-        searchRequest.query(finalQuery);
-      }
-      case TENANT_ACCESS_NONE -> // no data must be returned
-          searchRequest.query(OpenSearchUtil.createMatchNoneQuery());
-      case TENANT_ACCESS_ALL -> // return without changing anything in the query
-          searchRequest.query(actualQuery);
-      default -> {
-        final var message =
-            String.format("Unexpected tenant check query type %s", tenantCheckQueryType);
-        throw new TasklistRuntimeException(message);
-      }
+    if (tenantAccess.wildcard()) {
+      searchRequest.query(actualQuery);
+
+    } else if (tenantAccess.denied() || CollectionUtils.isEmpty(searchByTenantIds)) {
+      searchRequest.query(OpenSearchUtil.createMatchNoneQuery());
+
+    } else if (tenantAccess.allowed()) {
+      final var tenantTermsQuery = getTenantTermsQuery(searchByTenantIds);
+      final var finalQuery = OpenSearchUtil.joinWithAnd(tenantTermsQuery, actualQuery);
+      searchRequest.query(finalQuery);
+
+    } else {
+      final var message = String.format("Unexpected tenant access type %s", tenantAccess);
+      throw new TasklistRuntimeException(message);
     }
+  }
+
+  private Query getTenantTermsQuery(final Collection<String> searchByTenantIds) {
+    return new Query.Builder()
+        .terms(
+            terms ->
+                terms
+                    .field(TENANT_ID)
+                    .terms(
+                        values ->
+                            values.value(
+                                searchByTenantIds.stream()
+                                    .map(FieldValue::of)
+                                    .collect(Collectors.toList()))))
+        .build();
   }
 
   private Query getQueryFromSearchRequestBuilder(final SearchRequest.Builder searchRequest) {
