@@ -25,7 +25,6 @@ import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessInstanceReader;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
-import io.camunda.optimize.service.db.writer.variable.VariableUpdateInstanceWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
@@ -66,7 +65,6 @@ public class OptimizeProcessCleanupServiceTest {
   @Mock private ProcessInstanceReader processInstanceReader;
   @Mock private ProcessInstanceWriter processInstanceWriter;
   @Mock private ProcessVariableUpdateWriter processVariableUpdateWriter;
-  @Mock private VariableUpdateInstanceWriter variableUpdateInstanceWriter;
   private ConfigurationService configurationService;
 
   @BeforeEach
@@ -303,10 +301,6 @@ public class OptimizeProcessCleanupServiceTest {
         .deleteByIds(any(), eq(FIRST_PAGE.getEntities()));
     verify(processInstanceWriter, times(expectedProcessDefinitionKeys.size()))
         .deleteByIds(any(), eq(SECOND_PAGE.getEntities()));
-    verify(variableUpdateInstanceWriter, times(expectedProcessDefinitionKeys.size()))
-        .deleteByProcessInstanceIds(eq(FIRST_PAGE.getEntities()));
-    verify(variableUpdateInstanceWriter, times(expectedProcessDefinitionKeys.size()))
-        .deleteByProcessInstanceIds(eq(SECOND_PAGE.getEntities()));
   }
 
   private void assertInstancesWereRetrievedByKeyAndExpectedTtl(
@@ -395,7 +389,6 @@ public class OptimizeProcessCleanupServiceTest {
         processDefinitionReader,
         processInstanceReader,
         processInstanceWriter,
-        processVariableUpdateWriter,
-        variableUpdateInstanceWriter);
+        processVariableUpdateWriter);
   }
 }
