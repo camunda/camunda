@@ -245,7 +245,7 @@ jobs:
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-unit-tests
   general-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "[UT] General Unit Tests"
+    name: "General / [UT] Run Unit Tests"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -292,7 +292,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[UT] General Unit Tests"
+          name: "General / [UT]"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -328,7 +328,7 @@ jobs:
 
   zeebe-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "[UT] Zeebe - ${{matrix.component}} - ${{matrix.suiteName}}"
+    name: "Zeebe / [UT] ${{matrix.component}} / ${{matrix.suiteName}}"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -728,7 +728,7 @@ jobs:
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "[IT] ${{ matrix.name }} ${{ matrix.suite }}"
+    name: "${{ matrix.module }} / [IT] ${{ matrix.name }} / ${{ matrix.owner }}"
     needs: [ detect-changes ]
     timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -745,7 +745,8 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            suite: ""
+            owner: "QA"
+            module: "QA"
           - group: modules
             name: "Zeebe Module"
             maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
@@ -754,7 +755,8 @@ jobs:
             runs-on: gcp-perf-core-16-longrunning
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            suite: "Core Features"
+            owner: "Core Features"
+            module: "Zeebe"
           - group: schema-manager
             name: "Schema Manager"
             maven-modules: "schema-manager"
@@ -763,7 +765,8 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/camunda
             docker-file: camunda.Dockerfile
-            suite: "Data Layer"
+            owner: "Data Layer"
+            module: "Schema Manager"
           - group: qa-integration
             name: "Zeebe QA"
             maven-modules: "zeebe/qa/integration-tests"
@@ -772,7 +775,8 @@ jobs:
             runs-on: gcp-perf-core-16-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            suite: ""
+            owner: "Core Features"
+            module: "Zeebe"
           - group: qa-migration-integration
             name: "Migration QA"
             maven-modules: "migration/process-migration"
@@ -781,7 +785,8 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            suite: "Data Layer"
+            owner: "Data Layer"
+            module: "Migration"
           - group: qa-update
             name: "Zeebe QA - Update"
             maven-modules: "zeebe/qa/update-tests"
@@ -790,7 +795,8 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            suite: ""
+            owner: "Core Features"
+            module: "Zeebe"
           - group: qa-camunda-process-test
             name: "Camunda Process"
             maven-modules: "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example"
@@ -799,7 +805,8 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/camunda
             docker-file: camunda.Dockerfile
-            suite: ""
+            owner: "Core Features"
+            module: "Testing"
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
@@ -1055,6 +1062,7 @@ jobs:
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
+    name: "Zeebe"
     needs: [ detect-changes ]
     uses: ./.github/workflows/zeebe-ci.yml
     secrets: inherit
