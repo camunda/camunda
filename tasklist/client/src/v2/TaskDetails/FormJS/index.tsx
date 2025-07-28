@@ -28,7 +28,6 @@ import {useSelectedVariables} from 'v2/api/useSelectedVariables.query';
 import {useRemoveFormReference} from 'v2/api/useTask.query';
 import {useUserTaskForm} from 'v2/api/useUserTaskForm.query';
 import {tryParseJSON} from 'v2/features/tasks/details/tryParseJSON';
-import {TaskStateLoadingText} from 'common/tasks/details/TaskStateLoadingText';
 
 type Props = {
   task: UserTask;
@@ -49,9 +48,10 @@ const FormJS: React.FC<Props> = ({
 }) => {
   const {t} = useTranslation();
   const formManagerRef = useRef<FormManager | null>(null);
-  const [submissionState, setSubmissionState] =
-    useState<NonNullable<InlineLoadingProps['status']>>('inactive');
   const {userTaskKey, state, assignee} = task;
+  const [submissionState, setSubmissionState] = useState<
+    NonNullable<InlineLoadingProps['status']>
+  >(() => (state === 'COMPLETING' ? 'active' : 'inactive'));
   const {data, isLoading} = useUserTaskForm(
     {userTaskKey},
     {
@@ -173,10 +173,9 @@ const FormJS: React.FC<Props> = ({
               onError={() => {
                 setSubmissionState('inactive');
               }}
-              isHidden={['COMPLETING', 'COMPLETED'].includes(state)}
+              isHidden={state === 'COMPLETED'}
               isDisabled={!canCompleteTask}
             />
-            <TaskStateLoadingText taskState={state} />
           </DetailsFooter>
         )}
       </TaskDetailsContainer>
