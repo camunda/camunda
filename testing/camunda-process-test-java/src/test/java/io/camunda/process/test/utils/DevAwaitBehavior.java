@@ -28,7 +28,7 @@ import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
 import org.junit.function.ThrowingRunnable;
 
-public class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
+public final class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
 
   private final boolean expectFailure;
 
