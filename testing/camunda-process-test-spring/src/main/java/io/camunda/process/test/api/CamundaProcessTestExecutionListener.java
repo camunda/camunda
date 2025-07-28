@@ -108,7 +108,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
 
     camundaProcessTestContext =
-        new CamundaProcessTestContextImpl(runtime, createdClients::add, camundaManagementClient);
+        new CamundaProcessTestContextImpl(
+            runtime,
+            createdClients::add,
+            camundaManagementClient,
+            CamundaAssert.getAwaitBehavior());
   }
 
   @Override

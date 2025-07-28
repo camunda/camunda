@@ -16,29 +16,30 @@
 package io.camunda.process.test.impl.assertions;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
-import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.assertj.core.api.AbstractAssert;
-import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
 
 public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSelector>
     implements UserTaskAssert {
 
   private final CamundaDataSource dataSource;
+  private final CamundaAssertAwaitBehavior awaitBehavior;
 
-  public UserTaskAssertj(final CamundaDataSource dataSource, final UserTaskSelector selector) {
+  public UserTaskAssertj(
+      final CamundaDataSource dataSource,
+      final CamundaAssertAwaitBehavior awaitBehavior,
+      final UserTaskSelector selector) {
     super(selector, UserTaskAssert.class);
     this.dataSource = dataSource;
+    this.awaitBehavior = awaitBehavior;
   }
 
   @Override
@@ -227,32 +228,16 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
   }
 
   private void awaitUserTask(final Consumer<UserTask> assertion) {
-    // If await() times out, the exception doesn't contain the assertion error. Use a reference to
-    // store the error's failure message.
-    final AtomicReference<String> failureMessage = new AtomicReference<>("?");
+    awaitBehavior.untilAsserted(
+        () -> dataSource.findUserTasks(actual::applyFilter),
+        userTasks -> {
+          final Optional<UserTask> userTask = userTasks.stream().filter(actual::test).findFirst();
 
-    try {
-      Awaitility.await()
-          .ignoreException(ClientException.class)
-          .untilAsserted(
-              () -> dataSource.findUserTasks(actual::applyFilter),
-              userTasks -> {
-                final Optional<UserTask> userTask =
-                    userTasks.stream().filter(actual::test).findFirst();
+          assertThat(userTask)
+              .withFailMessage("No user task [%s] found", actual.describe())
+              .isPresent();
 
-                try {
-                  assertThat(userTask)
-                      .withFailMessage("No user task [%s] found", actual.describe())
-                      .isPresent();
-
-                  assertion.accept(userTask.get());
-                } catch (final AssertionError e) {
-                  failureMessage.set(e.getMessage());
-                  throw e;
-                }
-              });
-    } catch (final ConditionTimeoutException ignore) {
-      fail(failureMessage.get());
-    }
+          assertion.accept(userTask.get());
+        });
   }
 }

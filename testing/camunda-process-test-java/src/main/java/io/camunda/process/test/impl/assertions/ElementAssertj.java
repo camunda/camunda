@@ -18,30 +18,32 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AbstractAssert;
-import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
 
 public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
   private final CamundaDataSource dataSource;
+  private final CamundaAssertAwaitBehavior awaitBehavior;
 
-  protected ElementAssertj(final CamundaDataSource dataSource, final String failureMessagePrefix) {
+  protected ElementAssertj(
+      final CamundaDataSource dataSource,
+      final CamundaAssertAwaitBehavior awaitBehavior,
+      final String failureMessagePrefix) {
     super(failureMessagePrefix, ElementAssertj.class);
     this.dataSource = dataSource;
+    this.awaitBehavior = awaitBehavior;
   }
 
   public void hasActiveElements(
@@ -279,26 +281,8 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
   private void awaitElementInstanceAssertion(
       final Consumer<ElementInstanceFilter> filter,
       final Consumer<List<ElementInstance>> assertion) {
-    // If await() times out, the exception doesn't contain the assertion error. Use a reference to
-    // store the error's failure message.
-    final AtomicReference<String> failureMessage = new AtomicReference<>("?");
-    try {
-      Awaitility.await()
-          .ignoreException(ClientException.class)
-          .untilAsserted(
-              () -> dataSource.findElementInstances(filter),
-              elementInstances -> {
-                try {
-                  assertion.accept(elementInstances);
-                } catch (final AssertionError e) {
-                  failureMessage.set(e.getMessage());
-                  throw e;
-                }
-              });
 
-    } catch (final ConditionTimeoutException ignore) {
-      fail(failureMessage.get());
-    }
+    awaitBehavior.untilAsserted(() -> dataSource.findElementInstances(filter), assertion);
   }
 
   private static List<ElementInstance> getInstancesInState(
