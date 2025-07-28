@@ -44,6 +44,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubs
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
+import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -136,6 +137,7 @@ public final class TypedEventRegistry {
         ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
         BatchOperationPartitionLifecycleRecord.class);
     registry.put(ValueType.ASYNC_REQUEST, AsyncRequestRecord.class);
+    registry.put(ValueType.MULTI_INSTANCE, MultiInstanceRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 
