@@ -79,12 +79,14 @@ public class GroupsByRoleSearchRequestImpl
 
   @Override
   public GroupsByRoleSearchRequest filter(final RoleGroupFilter value) {
-    return this;
+    // this command does not support filtering
+    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override
   public GroupsByRoleSearchRequest filter(final Consumer<RoleGroupFilter> fn) {
-    return this;
+    // this command does not support filtering
+    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override
