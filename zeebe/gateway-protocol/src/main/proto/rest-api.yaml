@@ -6984,6 +6984,7 @@ components:
             - JOB_NO_RETRIES
             - EXECUTION_LISTENER_NO_RETRIES
             - TASK_LISTENER_NO_RETRIES
+            - AD_HOC_SUB_PROCESS_NO_RETRIES
             - CONDITION_ERROR
             - EXTRACT_VALUE_ERROR
             - CALLED_ELEMENT_ERROR
@@ -7225,6 +7226,7 @@ components:
             - JOB_NO_RETRIES
             - EXECUTION_LISTENER_NO_RETRIES
             - TASK_LISTENER_NO_RETRIES
+            - AD_HOC_SUB_PROCESS_NO_RETRIES
             - CONDITION_ERROR
             - EXTRACT_VALUE_ERROR
             - CALLED_ELEMENT_ERROR
