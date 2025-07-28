@@ -52,6 +52,18 @@ export const createEditedGroup = (customId?: string) => {
   };
 };
 
+// Create unique tenant group data with optional custom ID
+export const createUniqueTenant = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    tenantId: `tenant${id}`,
+    name: `Test Tenant ${id}`,
+    description: `Test tenant description ${id}`,
+  };
+};
+
+// Generic function to create specific test data with shared ID
+
 export const createUserAuthorization = (authRole: {name: string}) => ({
   ownerType: 'Role',
   ownerId: authRole.name,
@@ -76,6 +88,7 @@ export const createTestData = (options: {
   applicationAuth?: boolean;
   group?: boolean;
   editedGroup?: boolean;
+  tenant?: boolean;
 }) => {
   const {
     user = false,
@@ -84,6 +97,7 @@ export const createTestData = (options: {
     applicationAuth = false,
     group = false,
     editedGroup = false,
+    tenant = false,
   } = options;
   const sharedId = generateUniqueId();
 
@@ -94,6 +108,7 @@ export const createTestData = (options: {
     applicationAuth?: ReturnType<typeof createApplicationAuthorization>;
     group?: ReturnType<typeof createUniqueGroup>;
     editedGroup?: ReturnType<typeof createEditedGroup>;
+    tenant?: ReturnType<typeof createUniqueTenant>;
     id: string;
   } = {id: sharedId};
 
@@ -111,6 +126,10 @@ export const createTestData = (options: {
 
   if (editedGroup) {
     result.editedGroup = createEditedGroup(sharedId);
+  }
+
+  if (tenant) {
+    result.tenant = createUniqueTenant(sharedId);
   }
 
   // Create authorizations only if authRole is also created
