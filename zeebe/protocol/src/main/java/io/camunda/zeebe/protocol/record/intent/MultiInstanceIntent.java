@@ -43,6 +43,6 @@ public enum MultiInstanceIntent implements ProcessInstanceRelatedIntent {
 
   @Override
   public boolean isEvent() {
-    return this == INPUT_COLLECTION_EVALUATED;
+    return true;
   }
 }
