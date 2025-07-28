@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
@@ -2298,26 +2298,26 @@ final class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      ////////////////////////// AdHocSubProcessActivityActivationRecord //////////////////////////
+      ////////////////////////// AdHocSubProcessInstructionRecord //////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "AdHocSubProcessActivityActivationRecord",
+        "AdHocSubProcessInstructionRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
-              final var adHocSubProcessActivityActivationRecord =
-                  new AdHocSubProcessActivityActivationRecord()
+              final var adHocSubProcessInstructionRecord =
+                  new AdHocSubProcessInstructionRecord()
                       .setAdHocSubProcessInstanceKey("1234")
                       .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-              adHocSubProcessActivityActivationRecord.elements().add().setElementId("123");
+              adHocSubProcessInstructionRecord.activateElements().add().setElementId("123");
 
-              return adHocSubProcessActivityActivationRecord;
+              return adHocSubProcessInstructionRecord;
             },
         """
         {
           "adHocSubProcessInstanceKey": "1234",
           "tenantId": "<default>",
-          "elements": [
+          "activateElements": [
             {
               "elementId": "123"
             }
@@ -2327,16 +2327,16 @@ final class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      /////////////////////// Empty AdHocSubProcessActivityActivationRecord ///////////////////////
+      /////////////////////// Empty AdHocSubProcessInstructionRecord ///////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "Empty AdHocSubProcessActivityActivationRecord",
-        (Supplier<UnifiedRecordValue>) AdHocSubProcessActivityActivationRecord::new,
+        "Empty AdHocSubProcessInstructionRecord",
+        (Supplier<UnifiedRecordValue>) AdHocSubProcessInstructionRecord::new,
         """
         {
           "adHocSubProcessInstanceKey": "",
           "tenantId": "<default>",
-          "elements": []
+          "activateElements": []
         }
         """
       },

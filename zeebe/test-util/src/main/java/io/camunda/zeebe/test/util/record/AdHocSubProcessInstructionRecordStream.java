@@ -9,32 +9,31 @@ package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import java.util.stream.Stream;
 
-public class AdHocSubProcessActivityActivationRecordStream
+public class AdHocSubProcessInstructionRecordStream
     extends ExporterRecordStream<
-        AdHocSubProcessActivityActivationRecordValue,
-        AdHocSubProcessActivityActivationRecordStream> {
+        AdHocSubProcessInstructionRecordValue, AdHocSubProcessInstructionRecordStream> {
 
-  public AdHocSubProcessActivityActivationRecordStream(
-      final Stream<Record<AdHocSubProcessActivityActivationRecordValue>> wrappedStream) {
+  public AdHocSubProcessInstructionRecordStream(
+      final Stream<Record<AdHocSubProcessInstructionRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected AdHocSubProcessActivityActivationRecordStream supply(
-      final Stream<Record<AdHocSubProcessActivityActivationRecordValue>> wrappedStream) {
-    return new AdHocSubProcessActivityActivationRecordStream(wrappedStream);
+  protected AdHocSubProcessInstructionRecordStream supply(
+      final Stream<Record<AdHocSubProcessInstructionRecordValue>> wrappedStream) {
+    return new AdHocSubProcessInstructionRecordStream(wrappedStream);
   }
 
-  public AdHocSubProcessActivityActivationRecordStream withAdHocSubProcessInstanceKey(
+  public AdHocSubProcessInstructionRecordStream withAdHocSubProcessInstanceKey(
       final String adHocSubProcessInstanceKey) {
     return valueFilter(
         record -> record.getAdHocSubProcessInstanceKey().equals(adHocSubProcessInstanceKey));
   }
 
-  public AdHocSubProcessActivityActivationRecordStream limitToAdHocSubProcessInstanceCompleted() {
+  public AdHocSubProcessInstructionRecordStream limitToAdHocSubProcessInstanceCompleted() {
     return limit(
         r ->
             r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED

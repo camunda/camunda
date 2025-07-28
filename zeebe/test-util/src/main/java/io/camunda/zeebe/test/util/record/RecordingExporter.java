@@ -49,7 +49,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
@@ -462,12 +462,10 @@ public final class RecordingExporter implements Exporter {
     return resourceDeletionRecords().withIntent(intent);
   }
 
-  public static AdHocSubProcessActivityActivationRecordStream
-      adHocSubProcessActivityActivationRecords() {
-    return new AdHocSubProcessActivityActivationRecordStream(
+  public static AdHocSubProcessInstructionRecordStream adHocSubProcessInstructionRecords() {
+    return new AdHocSubProcessInstructionRecordStream(
         records(
-            ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
-            AdHocSubProcessActivityActivationRecordValue.class));
+            ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, AdHocSubProcessInstructionRecordValue.class));
   }
 
   public static FormRecordStream formRecords() {

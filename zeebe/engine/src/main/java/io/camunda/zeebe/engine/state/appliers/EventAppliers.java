@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionSt
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
+import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -584,7 +584,7 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerAdHocSubProcessActivityActivationAppliers() {
-    register(AdHocSubProcessActivityActivationIntent.ACTIVATED, NOOP_EVENT_APPLIER);
+    register(AdHocSubProcessInstructionIntent.ACTIVATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerClockAppliers(final MutableProcessingState state) {

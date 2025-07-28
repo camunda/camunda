@@ -72,7 +72,7 @@ public interface Intent {
           BatchOperationIntent.class,
           BatchOperationChunkIntent.class,
           BatchOperationExecutionIntent.class,
-          AdHocSubProcessActivityActivationIntent.class,
+          AdHocSubProcessInstructionIntent.class,
           AsyncRequestIntent.class,
           UsageMetricIntent.class,
           MultiInstanceIntent.class);
@@ -151,8 +151,8 @@ public interface Intent {
         return CommandDistributionIntent.from(intent);
       case PROCESS_INSTANCE_BATCH:
         return ProcessInstanceBatchIntent.from(intent);
-      case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION:
-        return AdHocSubProcessActivityActivationIntent.from(intent);
+      case AD_HOC_SUB_PROCESS_INSTRUCTION:
+        return AdHocSubProcessInstructionIntent.from(intent);
       case FORM:
         return FormIntent.from(intent);
       case RESOURCE:
@@ -250,8 +250,8 @@ public interface Intent {
         return DeploymentDistributionIntent.valueOf(intent);
       case PROCESS_EVENT:
         return ProcessEventIntent.valueOf(intent);
-      case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION:
-        return AdHocSubProcessActivityActivationIntent.valueOf(intent);
+      case AD_HOC_SUB_PROCESS_INSTRUCTION:
+        return AdHocSubProcessInstructionIntent.valueOf(intent);
       case DECISION:
         return DecisionIntent.valueOf(intent);
       case DECISION_REQUIREMENTS:

@@ -8,21 +8,19 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
+import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import org.agrona.DirectBuffer;
 
 public class BrokerActivateAdHocSubProcessActivityRequest
-    extends BrokerExecuteCommand<AdHocSubProcessActivityActivationRecord> {
+    extends BrokerExecuteCommand<AdHocSubProcessInstructionRecord> {
 
-  private final AdHocSubProcessActivityActivationRecord requestDto =
-      new AdHocSubProcessActivityActivationRecord();
+  private final AdHocSubProcessInstructionRecord requestDto =
+      new AdHocSubProcessInstructionRecord();
 
   public BrokerActivateAdHocSubProcessActivityRequest() {
-    super(
-        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
-        AdHocSubProcessActivityActivationIntent.ACTIVATE);
+    super(ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, AdHocSubProcessInstructionIntent.ACTIVATE);
   }
 
   public BrokerActivateAdHocSubProcessActivityRequest setAdHocSubProcessInstanceKey(
@@ -32,19 +30,18 @@ public class BrokerActivateAdHocSubProcessActivityRequest
   }
 
   public BrokerActivateAdHocSubProcessActivityRequest addElement(final String elementId) {
-    requestDto.elements().add().setElementId(elementId);
+    requestDto.activateElements().add().setElementId(elementId);
     return this;
   }
 
   @Override
-  public AdHocSubProcessActivityActivationRecord getRequestWriter() {
+  public AdHocSubProcessInstructionRecord getRequestWriter() {
     return requestDto;
   }
 
   @Override
-  protected AdHocSubProcessActivityActivationRecord toResponseDto(final DirectBuffer buffer) {
-    final AdHocSubProcessActivityActivationRecord responseDto =
-        new AdHocSubProcessActivityActivationRecord();
+  protected AdHocSubProcessInstructionRecord toResponseDto(final DirectBuffer buffer) {
+    final AdHocSubProcessInstructionRecord responseDto = new AdHocSubProcessInstructionRecord();
     responseDto.wrap(buffer);
     return responseDto;
   }

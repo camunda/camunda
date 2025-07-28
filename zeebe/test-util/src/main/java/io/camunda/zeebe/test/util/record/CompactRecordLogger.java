@@ -24,7 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -98,11 +98,11 @@ public class CompactRecordLogger {
           entry("COMPLETION_DENIED", "COMP_DENIED"),
           entry("UPDATE_DENIED", "UPDT_DENIED"),
           entry("SEQUENCE_FLOW_TAKEN", "SQ_FLW_TKN"),
+          entry("AD_HOC_SUB_PROCESS_INSTRUCTION", "AHSP_INST"),
           entry("PROCESS_INSTANCE_CREATION", "CREA"),
           entry("PROCESS_INSTANCE_MODIFICATION", "MOD"),
           entry("PROCESS_INSTANCE", "PI"),
           entry("PROCESS", "PROC"),
-          entry("AD_HOC_SUB_PROC_ACTIVITY_ACTIVATION", "AH_ACT"),
           entry("TIMER", "TIME"),
           entry("MESSAGE", "MSG"),
           entry("SUBSCRIPTION", "SUB"),
@@ -164,8 +164,7 @@ public class CompactRecordLogger {
     valueLoggers.put(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
     valueLoggers.put(
-        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
-        this::summarizeAdHocSubProcessActivityActivation);
+        ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, this::summarizeAdHocSubProcessInstruction);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
     valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
     valueLoggers.put(ValueType.ERROR, this::summarizeError);
@@ -779,12 +778,12 @@ public class CompactRecordLogger {
     return result.toString();
   }
 
-  private String summarizeAdHocSubProcessActivityActivation(final Record<?> record) {
-    final var value = (AdHocSubProcessActivityActivationRecordValue) record.getValue();
+  private String summarizeAdHocSubProcessInstruction(final Record<?> record) {
+    final var value = (AdHocSubProcessInstructionRecordValue) record.getValue();
 
     final var builder = new StringBuilder();
     builder
-        .append(String.format("ACTIVATE elements %s", value.getElements()))
+        .append(String.format("ACTIVATE elements %s", value.getActivateElements()))
         .append(
             String.format(
                 " in ad-hoc sub-process [%s]",

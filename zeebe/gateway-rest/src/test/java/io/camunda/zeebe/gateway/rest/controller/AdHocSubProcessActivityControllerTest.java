@@ -21,7 +21,7 @@ import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,8 +61,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
     void shouldActivateActivities() {
       when(adHocSubProcessActivityServices.activateActivities(
               any(AdHocSubProcessActivateActivitiesRequest.class)))
-          .thenReturn(
-              CompletableFuture.completedFuture(new AdHocSubProcessActivityActivationRecord()));
+          .thenReturn(CompletableFuture.completedFuture(new AdHocSubProcessInstructionRecord()));
 
       webClient
           .post()

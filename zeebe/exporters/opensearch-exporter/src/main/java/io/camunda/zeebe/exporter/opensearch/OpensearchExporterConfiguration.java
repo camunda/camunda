@@ -104,7 +104,7 @@ public class OpensearchExporterConfiguration {
       case USER_TASK -> index.userTask;
       case COMPENSATION_SUBSCRIPTION -> index.compensationSubscription;
       case MESSAGE_CORRELATION -> index.messageCorrelation;
-      case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION -> index.adHocSubProcessActivityActivation;
+      case AD_HOC_SUB_PROCESS_INSTRUCTION -> index.adHocSubProcessInstruction;
       case ASYNC_REQUEST -> index.asyncRequest;
       default -> false;
     };
@@ -181,7 +181,7 @@ public class OpensearchExporterConfiguration {
     public boolean processMessageSubscription = true;
     public boolean variable = true;
     public boolean variableDocument = true;
-    public boolean adHocSubProcessActivityActivation = true;
+    public boolean adHocSubProcessInstruction = true;
 
     public boolean checkpoint = false;
     public boolean timer = true;
@@ -301,8 +301,8 @@ public class OpensearchExporterConfiguration {
           + signalSubscription
           + ", resourceDeletion="
           + resourceDeletion
-          + ", adHocSubProcessActivityActivation="
-          + adHocSubProcessActivityActivation
+          + ", adHocSubProcessInstruction="
+          + adHocSubProcessInstruction
           + ", recordDistribution="
           + commandDistribution
           + ", form="
