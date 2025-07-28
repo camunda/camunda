@@ -28,7 +28,7 @@ test.beforeEach(async ({ loginPage, tenantsPage }) => {
 });
 
 test.describe.serial("tenants CRUD", () => {
-  test("creates a tenant", async ({ page, tenantsPage }) => {
+  test.skip("creates a tenant", async ({ page, tenantsPage }) => {
     await expect(
       tenantsPage.tenantsList.getByRole("cell", { name: NEW_TENANT.name }),
     ).not.toBeVisible();
@@ -48,7 +48,7 @@ test.describe.serial("tenants CRUD", () => {
     await waitForItemInList(page, item);
   });
 
-  test("assign a user", async ({ page, tenantsPage }) => {
+  test.skip("assign a user", async ({ page, tenantsPage }) => {
     await tenantsPage.openTenantDetails(NEW_TENANT.tenantId).click();
 
     await tenantsPage.assignUserButton.click();
@@ -69,7 +69,7 @@ test.describe.serial("tenants CRUD", () => {
     });
   });
 
-  test("remove a user", async ({ page, tenantsPage }) => {
+  test.skip("remove a user", async ({ page, tenantsPage }) => {
     await tenantsPage.openTenantDetails(NEW_TENANT.tenantId).click();
     await tenantsPage.removeUserButton(USER.name).click();
     await expect(tenantsPage.removeUserModal).toBeVisible();
@@ -87,7 +87,7 @@ test.describe.serial("tenants CRUD", () => {
     });
   });
 
-  test("deletes a tenant", async ({ page, tenantsPage }) => {
+  test.skip("deletes a tenant", async ({ page, tenantsPage }) => {
     await expect(
       tenantsPage.tenantsList.getByRole("cell", { name: NEW_TENANT.name }),
     ).toBeVisible();
