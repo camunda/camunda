@@ -50,28 +50,6 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
-  public void setIndexLifeCycle(final String destinationIndexName) {
-    try {
-      if (tasklistProperties.getArchiver().isIlmEnabled()) {
-        esClient
-            .indices()
-            .putSettings(
-                new UpdateSettingsRequest(destinationIndexName)
-                    .settings(
-                        Settings.builder()
-                            .put(INDEX_LIFECYCLE_NAME, TASKLIST_DELETE_ARCHIVED_INDICES)
-                            .build()),
-                RequestOptions.DEFAULT);
-      }
-    } catch (Exception e) {
-      LOGGER.warn(
-          "Could not set ILM policy {} for index {}: {}",
-          TASKLIST_DELETE_ARCHIVED_INDICES,
-          destinationIndexName,
-          e.getMessage());
-    }
-  }
-
   public CompletableFuture<Long> deleteDocuments(
       final String sourceIndexName,
       final String idFieldName,
@@ -88,6 +66,11 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
             (response, e) -> {
               final var timer = getArchiverDeleteQueryTimer();
               startTimer.stop(timer);
+
+              if (e != null) {
+                trackMetricForDeleteFailures(processInstanceKeys, e);
+              }
+
               final var result = handleResponse(response, e, sourceIndexName, "delete");
               result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
             });
@@ -114,11 +97,37 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
               final var reindexTimer = getArchiverReindexQueryTimer();
               startTimer.stop(reindexTimer);
 
+              if (e != null) {
+                trackMetricForReindexFailures(processInstanceKeys, e);
+              }
+
               final var result = handleResponse(response, e, sourceIndexName, "reindex");
               result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
             });
 
     return reindexFuture;
+  }
+
+  public void setIndexLifeCycle(final String destinationIndexName) {
+    try {
+      if (tasklistProperties.getArchiver().isIlmEnabled()) {
+        esClient
+            .indices()
+            .putSettings(
+                new UpdateSettingsRequest(destinationIndexName)
+                    .settings(
+                        Settings.builder()
+                            .put(INDEX_LIFECYCLE_NAME, TASKLIST_DELETE_ARCHIVED_INDICES)
+                            .build()),
+                RequestOptions.DEFAULT);
+      }
+    } catch (Exception e) {
+      LOGGER.warn(
+          "Could not set ILM policy {} for index {}: {}",
+          TASKLIST_DELETE_ARCHIVED_INDICES,
+          destinationIndexName,
+          e.getMessage());
+    }
   }
 
   private CompletableFuture<BulkByScrollResponse> sendReindexRequest(
@@ -141,7 +150,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
     return ElasticsearchUtil.deleteByQueryAsync(deleteRequest, archiverExecutor, esClient);
   }
 
-  private <T extends AbstractBulkByScrollRequest<T>> T applyDefaultSettings(T request) {
+  private <T extends AbstractBulkByScrollRequest<T>> T applyDefaultSettings(final T request) {
     return request
         .setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
         .setAbortOnVersionConflict(false)
@@ -181,6 +190,32 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
 
   private Timer getArchiverReindexQueryTimer() {
     return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY);
+  }
+
+  private void trackMetricForReindexFailures(
+      final List<String> processInstanceKeys, final Throwable e) {
+    LOGGER.error(
+        "Failed reindex while trying to reindex the following process instance keys [{}]",
+        processInstanceKeys);
+
+    metrics.recordCounts(
+        Metrics.COUNTER_NAME_REINDEX_FAILURES,
+        1,
+        "exception",
+        e.getCause().getClass().getSimpleName());
+  }
+
+  private void trackMetricForDeleteFailures(
+      final List<String> processInstanceKeys, final Throwable e) {
+    LOGGER.error(
+        "Failed deletion while trying to archive the following process instance keys [{}]",
+        processInstanceKeys);
+
+    metrics.recordCounts(
+        Metrics.COUNTER_NAME_DELETE_FAILURES,
+        1,
+        "exception",
+        e.getCause().getClass().getSimpleName());
   }
 
   private Timer getArchiverDeleteQueryTimer() {
