@@ -27,6 +27,7 @@ import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
@@ -116,6 +117,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailWithStringSelector() {
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -158,6 +160,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailWithByIdSelector() {
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -193,6 +196,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailWithByNameSelector() {
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -272,6 +276,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsNotFound() {
       // given
       final ElementInstance elementInstanceA = newActiveElementInstance("A");
@@ -294,6 +299,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsNotActive() {
       // given
       final ElementInstance elementInstanceA = newActiveElementInstance("A");
@@ -317,6 +323,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailWithSameElementId() {
       // given
       final ElementInstance elementInstanceA = newActiveElementInstance("A");
@@ -338,6 +345,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
@@ -408,6 +416,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsNotFound() {
       // given
       final ElementInstance elementInstanceA = newCompletedElementInstance("A");
@@ -432,6 +441,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsNotCompleted() {
       // given
       final ElementInstance elementInstanceA = newCompletedElementInstance("A");
@@ -453,6 +463,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailWithSameElementId() {
       // given
       final ElementInstance elementInstanceA = newCompletedElementInstance("A");
@@ -474,6 +485,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
@@ -544,6 +556,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsNotFound() {
       // given
       final ElementInstance elementInstanceA = newTerminatedElementInstance("A");
@@ -568,6 +581,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsNotTerminated() {
       // given
       final ElementInstance elementInstanceA = newCompletedElementInstance("A");
@@ -589,6 +603,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailWithSameElementId() {
       // given
       final ElementInstance elementInstanceA = newCompletedElementInstance("A");
@@ -610,6 +625,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
@@ -660,6 +676,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNumberIsGreater() {
       // given
       final ElementInstance elementInstance1 = newActiveElementInstance("A");
@@ -682,6 +699,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNumberIsLess() {
       // given
       final ElementInstance elementInstanceA = newActiveElementInstance("A");
@@ -703,6 +721,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNotActive() {
       // given
       final ElementInstance elementInstanceA1 = newCompletedElementInstance("A");
@@ -725,6 +744,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNotCreated() {
       // given
       when(camundaDataSource.findElementInstances(any())).thenReturn(Collections.emptyList());
@@ -759,6 +779,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfExpectedZero() {
       // given
       when(camundaDataSource.findElementInstances(any()))
@@ -777,6 +798,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNumberIsNegative() {
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -845,6 +867,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNumberIsGreater() {
       // given
       final ElementInstance elementInstance1 = newCompletedElementInstance("A");
@@ -867,6 +890,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNumberIsLess() {
       // given
       final ElementInstance elementInstanceA = newCompletedElementInstance("A");
@@ -888,6 +912,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNotCompleted() {
       // given
       final ElementInstance elementInstanceA1 = newTerminatedElementInstance("A");
@@ -910,6 +935,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNotCreated() {
       // given
       when(camundaDataSource.findElementInstances(any())).thenReturn(Collections.emptyList());
@@ -944,6 +970,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfExpectedZero() {
       // given
       when(camundaDataSource.findElementInstances(any()))
@@ -962,6 +989,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNumberIsNegative() {
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -1030,6 +1058,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNumberIsGreater() {
       // given
       final ElementInstance elementInstance1 = newTerminatedElementInstance("A");
@@ -1052,6 +1081,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNumberIsLess() {
       // given
       final ElementInstance elementInstanceA = newTerminatedElementInstance("A");
@@ -1073,6 +1103,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNotTerminated() {
       // given
       final ElementInstance elementInstanceA1 = newCompletedElementInstance("A");
@@ -1095,6 +1126,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNotCreated() {
       // given
       when(camundaDataSource.findElementInstances(any())).thenReturn(Collections.emptyList());
@@ -1129,6 +1161,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfExpectedZero() {
       // given
       when(camundaDataSource.findElementInstances(any()))
@@ -1147,6 +1180,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNumberIsNegative() {
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -1195,6 +1229,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsAreActive() {
       // given
       final ElementInstance elementInstanceA = newActiveElementInstance("A");
@@ -1219,6 +1254,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsAreCompleted() {
       // given
       final ElementInstance elementInstanceA = newCompletedElementInstance("A");
@@ -1243,6 +1279,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsAreTerminated() {
       // given
       final ElementInstance elementInstanceA = newTerminatedElementInstance("A");
@@ -1267,6 +1304,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
@@ -1318,6 +1356,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsAreActive() {
       // given
       when(camundaDataSource.findElementInstances(any()))
@@ -1338,6 +1377,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
@@ -1433,6 +1473,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfOneElementIsNotCompleted() {
       // given
       when(camundaDataSource.findElementInstances(any()))
@@ -1458,6 +1499,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsAreCompletedInADifferentOrder() {
       // given
       when(camundaDataSource.findElementInstances(any()))
@@ -1562,6 +1604,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsAreNotActive() {
       // given
       when(camundaDataSource.findElementInstances(any()))
@@ -1588,6 +1631,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfOtherElementsAreActive() {
       // given
       when(camundaDataSource.findElementInstances(any()))
@@ -1611,6 +1655,7 @@ public class ElementAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfElementsAreNotActiveAndOtherElementsAreActive() {
       // given
       when(camundaDataSource.findElementInstances(any()))

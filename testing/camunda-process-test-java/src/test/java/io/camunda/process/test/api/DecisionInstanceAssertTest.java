@@ -31,6 +31,7 @@ import io.camunda.client.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.client.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import java.util.Arrays;
 import java.util.Collections;
@@ -186,6 +187,7 @@ public class DecisionInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void evaluationFailure() {
       // when
       mockDecisionInstanceSearch(decisionInstance(d -> d.state(DecisionInstanceStateEnum.FAILED)));
@@ -230,6 +232,7 @@ public class DecisionInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void assertionFailureWithStringMatch() {
       // when
       mockDecisionInstanceSearch(decisionInstanceWithAnswers(STRING_RESULT));
@@ -249,6 +252,7 @@ public class DecisionInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void assertionFailureWithMapMatch() {
       // when
       mockDecisionInstanceSearch(decisionInstanceWithAnswers(MAP_RESULT));
@@ -268,6 +272,7 @@ public class DecisionInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void assertionFailureWithListMatch() {
       // when
       mockDecisionInstanceSearch(decisionInstanceWithAnswers(LIST_RESULT));
@@ -321,6 +326,7 @@ public class DecisionInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasNotMatched() {
       // when
       mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", singleRule()));
@@ -357,6 +363,7 @@ public class DecisionInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasMatched() {
       // when
       mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", singleRule()));
@@ -369,6 +376,7 @@ public class DecisionInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasMatchedPartial() {
       // when
       mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", multiRule()));
