@@ -47,7 +47,7 @@ export enum OwnerType {
   "USER" = "USER",
   "ROLE" = "ROLE",
   "GROUP" = "GROUP",
-  "MAPPING" = "MAPPING",
+  "MAPPING_RULE" = "MAPPING_RULE",
   "CLIENT" = "CLIENT",
 }
 

@@ -69,7 +69,7 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
           type="text"
         />
       );
-    case OwnerType.MAPPING:
+    case OwnerType.MAPPING_RULE:
       return (
         <OwnerSelection
           id="mappingRuleSelection"

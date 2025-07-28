@@ -147,7 +147,7 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           items={ownerTypeItems.filter((ownerType) => {
             const excludedType = isOIDC
               ? []
-              : [OwnerType.MAPPING, OwnerType.CLIENT];
+              : [OwnerType.MAPPING_RULE, OwnerType.CLIENT];
 
             return !excludedType.includes(ownerType);
           })}
