@@ -16,9 +16,8 @@ import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class PersistedInputCollection extends UnpackedObject implements DbValue {
-  private static final StringValue INPUT_COLLECTION = new StringValue("inputCollection");
   private final ArrayProperty<StringValue> inputCollectionProperty =
-      new ArrayProperty<>(INPUT_COLLECTION, StringValue::new);
+      new ArrayProperty<>("inputCollection", StringValue::new);
 
   public PersistedInputCollection() {
     super(0);
