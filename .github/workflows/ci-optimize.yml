@@ -9,11 +9,11 @@ on:
   workflow_dispatch:
     inputs:
       runFeTests:
-        description: "Set to true to run front end tests for Optimize"
+        description: "Set to true if Optimize front-end code was changed"
         type: boolean
         required: true
       runBeTests:
-        description: "Set to true to run back end tests for Optimize"
+        description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
   workflow_call:
