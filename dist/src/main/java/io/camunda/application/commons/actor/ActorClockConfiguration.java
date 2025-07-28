@@ -7,29 +7,28 @@
  */
 package io.camunda.application.commons.actor;
 
-import io.camunda.application.commons.actor.ActorClockConfiguration.ActorClockControlled;
+import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride;
+import io.camunda.configuration.beans.ActorClockControlledProperties;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.shared.management.ActorClockService;
 import io.camunda.zeebe.shared.management.ControlledActorClockService;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @SuppressWarnings("unused")
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(ActorClockControlled.class)
+@Import({ActorClockControlledPropertiesOverride.class})
 public final class ActorClockConfiguration {
 
   private final Optional<ActorClock> clock;
   private final ActorClockService service;
 
   @Autowired
-  public ActorClockConfiguration(final ActorClockControlled controlledProperty) {
+  public ActorClockConfiguration(final ActorClockControlledProperties controlledProperty) {
     this(controlledProperty.controlled());
   }
 
@@ -53,7 +52,4 @@ public final class ActorClockConfiguration {
   public ActorClockService getClockService() {
     return service;
   }
-
-  @ConfigurationProperties(prefix = "zeebe.clock")
-  public record ActorClockControlled(@DefaultValue("false") boolean controlled) {}
 }

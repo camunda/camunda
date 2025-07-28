@@ -11,6 +11,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OpensearchConnector;
@@ -18,7 +19,6 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
-import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.util.TestPlugin;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.util.FileUtil;
@@ -48,7 +48,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
-      TestOperatePropertiesOverride.class
+      OperatePropertiesOverride.class
     },
     properties = OperateProperties.PREFIX + ".database=opensearch")
 public class OpensearchConnectorIT extends OperateAbstractIT {

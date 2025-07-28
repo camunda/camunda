@@ -14,6 +14,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
@@ -40,7 +42,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest(
-    classes = {TestApplication.class},
+    classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",

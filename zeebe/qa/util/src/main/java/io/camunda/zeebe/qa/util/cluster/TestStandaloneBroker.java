@@ -15,6 +15,8 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
@@ -50,7 +52,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneBroker() {
-    super(BrokerModuleConfiguration.class, CommonsModuleConfiguration.class);
+    super(
+        BrokerModuleConfiguration.class,
+        CommonsModuleConfiguration.class,
+        UnifiedConfigurationHelper.class,
+        UnifiedConfiguration.class);
 
     config = new BrokerBasedProperties();
 
