@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -36,7 +37,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class SchemaManagerIT {
   @Container
   private static final OpensearchContainer<?> CONTAINER =
-      TestSupport.createDefaultContainer().withEnv("action.destructive_requires_name", "false");
+      TestSearchContainers.createDefaultOpensearchContainer()
+          .withEnv("action.destructive_requires_name", "false");
 
   private static final OpensearchExporterConfiguration CONFIG =
       new OpensearchExporterConfiguration();
