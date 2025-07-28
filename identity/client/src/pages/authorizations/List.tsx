@@ -23,15 +23,20 @@ import {
   TabsTitle,
 } from "./components";
 import AuthorizationList from "./AuthorizationsList";
+import { isTenantsApiEnabled } from "src/configuration";
 
 const List: FC = () => {
   const { t } = useTranslate("authorizations");
-  const [activeTab, setActiveTab] = useState<string>(ResourceType.APPLICATION);
+
+  const allResourceTypes = Object.values(ResourceType);
+  const authorizationTabs = isTenantsApiEnabled
+    ? allResourceTypes
+    : allResourceTypes.filter((type) => type !== ResourceType.TENANT);
+
+  const [activeTab, setActiveTab] = useState<string>(authorizationTabs[0]);
   const { data, loading, reload, success } = useApi(searchAuthorization, {
     filter: { resourceType: activeTab },
   });
-
-  const authorizationTabs = Object.values(ResourceType);
 
   return (
     <Page>
