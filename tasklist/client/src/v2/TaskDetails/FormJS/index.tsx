@@ -173,7 +173,7 @@ const FormJS: React.FC<Props> = ({
               onError={() => {
                 setSubmissionState('inactive');
               }}
-              isHidden={state === 'COMPLETED'}
+              isHidden={['COMPLETING', 'COMPLETED'].includes(state)}
               isDisabled={!canCompleteTask}
             />
             <TaskStateLoadingText taskState={state} />
