@@ -21,6 +21,8 @@ public class CaffeineCacheStatsCounter implements StatsCounter {
   private final Timer loadSuccessDuration;
   private final Timer loadFailureDuration;
   private final Counter evictionCount;
+  private final Counter hitCount;
+  private final Counter missCount;
   private final String cacheName;
   private final String namespace;
   private final MeterRegistry meterRegistry;
@@ -31,10 +33,17 @@ public class CaffeineCacheStatsCounter implements StatsCounter {
     this.namespace = namespace;
     this.meterRegistry = meterRegistry;
 
-    Counter.builder(meterName("result"))
-        .description("Number of cache access results by type")
-        .tag(TAG_TYPE, "")
-        .register(meterRegistry);
+    hitCount =
+        Counter.builder(meterName("result"))
+            .description("Number of cache hits")
+            .tag(TAG_TYPE, CacheResult.HIT.name())
+            .register(meterRegistry);
+
+    missCount =
+        Counter.builder(meterName("result"))
+            .description("Number of cache misses")
+            .tag(TAG_TYPE, CacheResult.MISS.name())
+            .register(meterRegistry);
 
     evictionCount =
         Counter.builder(meterName("evictions"))
@@ -57,12 +66,12 @@ public class CaffeineCacheStatsCounter implements StatsCounter {
 
   @Override
   public void recordHits(final int count) {
-    meterRegistry.counter(meterName("result"), TAG_TYPE, CacheResult.HIT.name()).increment(count);
+    hitCount.increment(count);
   }
 
   @Override
   public void recordMisses(final int count) {
-    meterRegistry.counter(meterName("result"), TAG_TYPE, CacheResult.MISS.name()).increment(count);
+    missCount.increment(count);
   }
 
   @Override
