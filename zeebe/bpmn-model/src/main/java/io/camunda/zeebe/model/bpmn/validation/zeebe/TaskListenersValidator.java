@@ -55,9 +55,9 @@ public class TaskListenersValidator implements ModelElementValidator<ZeebeTaskLi
             .getParentElement()
             .getParentElement()
             .getChildElementsByType(ExtensionElements.class);
-    for (final ExtensionElements extentionElement : extentionElements) {
-      for (final ModelElementInstance extentionElementElement : extentionElement.getElements()) {
-        if (extentionElementElement instanceof ZeebeUserTask) {
+    for (final ExtensionElements extensionElements : extentionElements) {
+      for (final ModelElementInstance extensionElementElement : extensionElements.getElements()) {
+        if (extensionElementElement instanceof ZeebeUserTask) {
           // This is a Zeebe UserTask, i.e. a Camunda user task
           return true;
         }
