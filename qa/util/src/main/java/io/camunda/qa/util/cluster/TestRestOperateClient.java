@@ -309,7 +309,6 @@ public class TestRestOperateClient implements AutoCloseable {
     final CreateBatchOperationRequestDto createBatchOperation =
         new CreateBatchOperationRequestDto();
 
-    //    createBatchOperation.setName("migration");
     createBatchOperation.setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE);
     createBatchOperation.setQuery(createBasicListQueryDto());
 
@@ -334,7 +333,7 @@ public class TestRestOperateClient implements AutoCloseable {
       final CreateBatchOperationRequestDto createBatchOperationRequestDto) {
     final HttpRequest request;
     try {
-      final String jsonBody = new ObjectMapper().writeValueAsString(createBatchOperationRequestDto);
+      final String jsonBody = OBJECT_MAPPER.writeValueAsString(createBatchOperationRequestDto);
       request =
           createBuilder(batchOperationEndpoint)
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))

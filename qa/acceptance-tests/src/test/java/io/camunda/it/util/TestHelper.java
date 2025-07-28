@@ -13,6 +13,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -380,14 +381,24 @@ public final class TestHelper {
       final CamundaClient camundaClient, final String batchOperationKey, final int expectedItems) {
     Awaitility.await("should start batch operation with correct total count")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               // and
-              final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
-              assertThat(batch).isNotNull();
-              assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
+              try {
+                final var batch =
+                    camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                assertThat(batch).isNotNull();
+                assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
+              } catch (final ProblemException e) {
+                if (e.code() == 404) {
+                  // If the batch operation is not found, it means it has been completed or failed.
+                  // We can ignore this exception and let the test fail later when checking the
+                  // status.
+                  return;
+                }
+
+                throw e;
+              }
             });
   }
 
