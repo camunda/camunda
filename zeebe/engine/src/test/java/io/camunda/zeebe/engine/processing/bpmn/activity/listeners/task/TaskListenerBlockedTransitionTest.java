@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -958,5 +959,66 @@ public class TaskListenerBlockedTransitionTest {
             tuple(ValueType.JOB, JobIntent.COMPLETED),
             tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
             tuple(ValueType.USER_TASK, terminalActionIntent));
+  }
+
+  @Test
+  public void shouldRejectThrowingErrorOnCreatingTaskListenerJob() {
+    verifyThrowingErrorOnTaskListenerJobIsRejected(
+        ZeebeTaskListenerEventType.creating, ignored -> {});
+  }
+
+  @Test
+  public void shouldRejectThrowingErrorOnAssigningTaskListenerJob() {
+    verifyThrowingErrorOnTaskListenerJobIsRejected(
+        ZeebeTaskListenerEventType.assigning,
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("bilbo").assign());
+  }
+
+  @Test
+  public void shouldRejectThrowingErrorOnUpdatingTaskListenerJob() {
+    verifyThrowingErrorOnTaskListenerJobIsRejected(
+        ZeebeTaskListenerEventType.updating, pik -> ENGINE.userTask().ofInstance(pik).update());
+  }
+
+  @Test
+  public void shouldRejectThrowingErrorOnCompletingTaskListenerJob() {
+    verifyThrowingErrorOnTaskListenerJobIsRejected(
+        ZeebeTaskListenerEventType.completing, pik -> ENGINE.userTask().ofInstance(pik).complete());
+  }
+
+  @Test
+  public void shouldRejectThrowingErrorOnCancelingTaskListenerJob() {
+    verifyThrowingErrorOnTaskListenerJobIsRejected(
+        ZeebeTaskListenerEventType.canceling,
+        pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel());
+  }
+
+  private void verifyThrowingErrorOnTaskListenerJobIsRejected(
+      final ZeebeTaskListenerEventType eventType, final Consumer<Long> transitionTrigger) {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(eventType, listenerType));
+
+    // trigger the user task transition
+    transitionTrigger.accept(processInstanceKey);
+
+    // when
+    final var rejection =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType(listenerType)
+            .expectRejection()
+            .throwError();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+            Cannot throw BPMN error from TASK_LISTENER job with key '%d', \
+            type '%s' and processInstanceKey '%d'"""
+                .formatted(rejection.getKey(), listenerType, processInstanceKey));
   }
 }

@@ -116,10 +116,14 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final JobRecord job) {
     final long jobKey = command.getKey();
 
-    // Check if the job is of kind EXECUTION_LISTENER. Execution Listener jobs should not throw
-    // BPMN errors because the element is not in an ACTIVATED state.
     final var jobKind = job.getJobKind();
-    if (jobKind == JobKind.EXECUTION_LISTENER) {
+    if (jobKind != JobKind.BPMN_ELEMENT) {
+      /*
+       Throwing bpmn error is only supported for BPMN element jobs:
+       - Execution Listener jobs should not throw BPMN errors because the element is not in an
+         ACTIVATED state.
+       - Task Listener jobs simply don't support throwing BPMN errors yet.
+      */
       final long processInstanceKey = job.getProcessInstanceKey();
       commandControl.reject(
           RejectionType.INVALID_STATE,
