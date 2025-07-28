@@ -1511,7 +1511,6 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case KEY -> builder.tenantKey();
         case NAME -> builder.name();
         case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
