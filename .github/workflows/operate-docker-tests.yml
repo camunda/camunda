@@ -38,6 +38,7 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
+  # does not meet the 10 minute runtime as required by the unified CI
   integration-tests:
     name: Docker container tests
     runs-on: gcp-core-4-default
@@ -83,11 +84,11 @@ jobs:
         with:
           githubServer: false
           servers: |
-           [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
-              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
-            }]
+            [{
+               "id": "camunda-nexus",
+               "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+               "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
         run: ./mvnw clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true

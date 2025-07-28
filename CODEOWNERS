@@ -58,10 +58,9 @@
 /.github/workflows/operate-ci-core-features.yml           @camunda/core-features
 /.github/workflows/operate-ci-fe.yml                      @camunda/core-features
 /.github/workflows/operate-ci-test-reusable.yml           @camunda/core-features
-/.github/workflows/operate-docker-tests.yml               @camunda/core-features
 /.github/workflows/operate-e2e-tests.yml                  @camunda/core-features
-/.github/workflows/operate-frontend.yml                   @camunda/core-features
 /.github/workflows/operate-playwright.yml                 @camunda/core-features
+/.github/workflows/ci-operate.yml                         @camunda/core-features
 /.github/workflows/operate-run-tests.yml                  @camunda/core-features
 /.github/workflows/ci-tasklist.yml                        @camunda/core-features
 /.github/workflows/tasklist-ci-fe-reusable.yml            @camunda/core-features
@@ -82,6 +81,7 @@
 /.github/workflows/operate-test-backup-restore.yml                @camunda/data-layer
 /.github/workflows/operate-test-importer.yml                      @camunda/data-layer
 /.github/workflows/operate-run-tests.yml                          @camunda/data-layer
+/.github/workflows/ci-operate.yml
 /.github/workflows/tasklist-backup-restore-tests-reusable.yml     @camunda/data-layer
 
 # Unit Test Suites
