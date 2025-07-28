@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
 
 export class IdentityTenantsPage {
@@ -16,18 +16,18 @@ export class IdentityTenantsPage {
   readonly deleteTenantButton: (rowName?: string) => Locator;
   readonly createTenantModal: Locator;
   readonly closeCreateTenantModal: Locator;
-  readonly createTenantIdField: Locator;
-  readonly createTenantNameField: Locator;
-  readonly createTenantDescField: Locator;
+  readonly tenantFieldId: Locator;
+  readonly tenantNameField: Locator;
+  readonly tenantDescriptionField: Locator;
   readonly createTenantModalCancelButton: Locator;
-  readonly createTenantModalCreateButton: Locator;
+  readonly createTenantModalButton: Locator;
   readonly deleteTenantModal: Locator;
   readonly closeDeleteTenantModal: Locator;
   readonly deleteTenantModalCancelButton: Locator;
   readonly deleteTenantModalDeleteButton: Locator;
   readonly assignUserButton: Locator;
   readonly assignUserModal: Locator;
-  readonly assignUserNameField: Locator;
+  readonly assignUserSearchbox: Locator;
   readonly assignUserNameOption: (name: string) => Locator;
   readonly confirmAssignmentButton: Locator;
   readonly openTenantDetails: (rowName: string) => Locator;
@@ -35,6 +35,9 @@ export class IdentityTenantsPage {
   readonly removeUserModal: Locator;
   readonly confirmRemoveUserButton: Locator;
   readonly usersEmptyState: Locator;
+  readonly userRow: (userName: string) => Locator;
+  readonly tenantCell: (tenantName: string) => Locator;
+  readonly tenantRow: (tenantName: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -52,23 +55,22 @@ export class IdentityTenantsPage {
     this.closeCreateTenantModal = this.createTenantModal.getByRole('button', {
       name: 'Close',
     });
-    this.createTenantIdField = this.createTenantModal.getByRole('textbox', {
+    this.tenantFieldId = this.createTenantModal.getByRole('textbox', {
       name: 'Tenant ID',
     });
-    this.createTenantNameField = this.createTenantModal.getByRole('textbox', {
+    this.tenantNameField = this.createTenantModal.getByRole('textbox', {
       name: 'Tenant name',
     });
-    this.createTenantDescField = this.createTenantModal.getByRole('textbox', {
+    this.tenantDescriptionField = this.createTenantModal.getByRole('textbox', {
       name: 'Description',
     });
     this.createTenantModalCancelButton = this.createTenantModal.getByRole(
       'button',
       {name: 'Cancel'},
     );
-    this.createTenantModalCreateButton = this.createTenantModal.getByRole(
-      'button',
-      {name: 'Create tenant'},
-    );
+    this.createTenantModalButton = this.createTenantModal.getByRole('button', {
+      name: 'Create tenant',
+    });
 
     this.deleteTenantModal = page.getByRole('dialog', {
       name: 'Delete tenant',
@@ -93,7 +95,7 @@ export class IdentityTenantsPage {
     this.assignUserModal = page.getByRole('dialog', {
       name: 'assign user',
     });
-    this.assignUserNameField = this.assignUserModal.getByRole('searchbox', {
+    this.assignUserSearchbox = this.assignUserModal.getByRole('searchbox', {
       name: 'Search by full name',
     });
     this.assignUserNameOption = (name) =>
@@ -106,6 +108,12 @@ export class IdentityTenantsPage {
     this.usersEmptyState = page.getByText('Assign users to this Tenant');
     this.removeUserButton = (rowName) =>
       page.getByRole('row', {name: rowName}).getByLabel('Remove');
+    this.userRow = (userName) =>
+      this.tenantsList.getByRole('row', {name: userName});
+    this.tenantCell = (tenantName) =>
+      this.tenantsList.getByRole('cell', {name: tenantName});
+    this.tenantRow = (tenantName) =>
+      this.tenantsList.getByRole('row', {name: tenantName});
 
     this.removeUserModal = page.getByRole('dialog', {
       name: 'Remove user',
@@ -117,5 +125,58 @@ export class IdentityTenantsPage {
 
   async navigateToTenants() {
     await this.page.goto(relativizePath(Paths.tenants()));
+  }
+
+  async fillTenantId(tenantId: string) {
+    await this.tenantFieldId.fill(tenantId);
+  }
+
+  async fillTenantName(name: string) {
+    await this.tenantNameField.fill(name);
+  }
+
+  async fillTenantDescription(description: string) {
+    await this.tenantDescriptionField.fill(description);
+  }
+
+  async fillAssignUserName(userName: string) {
+    await this.assignUserSearchbox.fill(userName);
+  }
+
+  async assignUserToTenant(user: {id: string; name: string}) {
+    await this.assignUserButton.click();
+    await expect(this.assignUserModal).toBeVisible();
+    await this.fillAssignUserName(user.name);
+    await this.assignUserNameOption(user.id).click();
+    await this.confirmAssignmentButton.click();
+    await expect(this.assignUserModal).toBeHidden();
+  }
+
+  async removeUserFromTenant(userName: string) {
+    await this.removeUserButton(userName).click();
+    await expect(this.removeUserModal).toBeVisible();
+    await this.confirmRemoveUserButton.click();
+    await expect(this.removeUserModal).toBeHidden();
+  }
+
+  async deleteTenant(tenantName: string) {
+    await this.deleteTenantButton(tenantName).click();
+    await expect(this.deleteTenantModal).toBeVisible();
+    await this.deleteTenantModalDeleteButton.click();
+    await expect(this.deleteTenantModal).toBeHidden();
+  }
+
+  async createTenant(tenant: {
+    tenantId: string;
+    name: string;
+    description: string;
+  }) {
+    await this.createTenantButton.click();
+    await expect(this.createTenantModal).toBeVisible();
+    await this.fillTenantId(tenant.tenantId);
+    await this.fillTenantName(tenant.name);
+    await this.fillTenantDescription(tenant.description);
+    await this.createTenantModalButton.click();
+    await expect(this.createTenantModal).toBeHidden();
   }
 }
