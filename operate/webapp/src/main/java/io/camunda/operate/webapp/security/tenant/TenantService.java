@@ -9,93 +9,49 @@ package io.camunda.operate.webapp.security.tenant;
 
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 
-import io.camunda.authentication.entity.CamundaPrincipal;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.service.TenantServices.TenantDTO;
-import java.util.ArrayList;
+import io.camunda.security.reader.TenantAccess;
+import io.camunda.security.reader.TenantAccessProvider;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 
 @Component
 public class TenantService {
 
-  @Autowired private SecurityConfiguration securityConfiguration;
+  private final CamundaAuthenticationProvider authenticationProvider;
+  private final TenantAccessProvider tenantAccessProvider;
+  private final SecurityConfiguration securityConfiguration;
 
-  public List<String> tenantIds() {
-    final List<String> authenticatedTenantIds = new ArrayList<>();
-    final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
-    if (requestAuthentication.getPrincipal()
-        instanceof final CamundaPrincipal authenticatedPrincipal) {
-
-      authenticatedTenantIds.addAll(
-          authenticatedPrincipal.getAuthenticationContext().tenants().stream()
-              .map(TenantDTO::tenantId)
-              .toList());
-    }
-    return authenticatedTenantIds;
+  public TenantService(
+      final CamundaAuthenticationProvider authenticationProvider,
+      final TenantAccessProvider tenantAccessProvider,
+      final SecurityConfiguration securityConfiguration) {
+    this.authenticationProvider = authenticationProvider;
+    this.tenantAccessProvider = tenantAccessProvider;
+    this.securityConfiguration = securityConfiguration;
   }
 
-  public AuthenticatedTenants getAuthenticatedTenants() {
-    if (RequestContextHolder.getRequestAttributes() == null) {
-      // if the query comes from the source without request context, return all tenants
-      return AuthenticatedTenants.allTenants();
+  public TenantAccess getAuthenticatedTenants() {
+    if (hasNoneRequestContext()) {
+      return TenantAccess.wildcard(null);
     }
 
     if (!isMultiTenancyEnabled()) {
       // the user/app has access to only <default> tenant
-      return AuthenticatedTenants.assignedTenants(List.of(DEFAULT_TENANT_ID));
+      return TenantAccess.allowed(List.of(DEFAULT_TENANT_ID));
     }
 
-    final var tenants = tenantIds();
-
-    if (tenants != null && !tenants.isEmpty()) {
-      return AuthenticatedTenants.assignedTenants(tenants);
-    } else {
-      return AuthenticatedTenants.noTenantsAssigned();
-    }
+    final var currentAuthentication = authenticationProvider.getCamundaAuthentication();
+    return tenantAccessProvider.resolveTenantAccess(currentAuthentication);
   }
 
   private boolean isMultiTenancyEnabled() {
     return securityConfiguration.getMultiTenancy().isChecksEnabled();
   }
 
-  public static final class AuthenticatedTenants {
-
-    private final TenantAccessType tenantAccessType;
-    private final List<String> ids;
-
-    private AuthenticatedTenants(final TenantAccessType tenantAccessType, final List<String> ids) {
-      this.tenantAccessType = tenantAccessType;
-      this.ids = ids;
-    }
-
-    public static AuthenticatedTenants allTenants() {
-      return new AuthenticatedTenants(TenantAccessType.TENANT_ACCESS_ALL, null);
-    }
-
-    public static AuthenticatedTenants noTenantsAssigned() {
-      return new AuthenticatedTenants(TenantAccessType.TENANT_ACCESS_NONE, null);
-    }
-
-    public static AuthenticatedTenants assignedTenants(final List<String> tenants) {
-      return new AuthenticatedTenants(TenantAccessType.TENANT_ACCESS_ASSIGNED, tenants);
-    }
-
-    public TenantAccessType getTenantAccessType() {
-      return tenantAccessType;
-    }
-
-    public List<String> getTenantIds() {
-      return ids;
-    }
-  }
-
-  public enum TenantAccessType {
-    TENANT_ACCESS_ALL,
-    TENANT_ACCESS_ASSIGNED,
-    TENANT_ACCESS_NONE
+  private boolean hasNoneRequestContext() {
+    return RequestContextHolder.getRequestAttributes() == null;
   }
 }

@@ -29,6 +29,7 @@ import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.reader.TenantAccess;
 import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
 import java.util.Collections;
 import org.junit.jupiter.api.AfterAll;
@@ -101,9 +102,7 @@ public class OperateZeebeSearchAbstractIT {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyMap()));
-    doReturn(TenantService.AuthenticatedTenants.allTenants())
-        .when(tenantService)
-        .getAuthenticatedTenants();
+    doReturn(TenantAccess.wildcard(null)).when(tenantService).getAuthenticatedTenants();
 
     // Start zeebe and elasticsearch/opensearch
     zeebeContainerManager.startContainer();
@@ -151,9 +150,7 @@ public class OperateZeebeSearchAbstractIT {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyMap()));
-    doReturn(TenantService.AuthenticatedTenants.allTenants())
-        .when(tenantService)
-        .getAuthenticatedTenants();
+    doReturn(TenantAccess.wildcard(null)).when(tenantService).getAuthenticatedTenants();
 
     final var camundaClient = zeebeContainerManager.getClient();
     operateServicesAdapter =
