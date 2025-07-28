@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvid
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
@@ -118,7 +119,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       executing.set(true);
       batchOperationState
           .getNextPendingBatchOperation()
-          .ifPresent(bo -> executeBatchOperation(bo, taskResultBuilder));
+          .ifPresent(bo -> initializeBatchOperation(bo, taskResultBuilder));
       return taskResultBuilder.build();
     } finally {
       executing.set(false);
@@ -126,7 +127,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     }
   }
 
-  private void executeBatchOperation(
+  private void initializeBatchOperation(
       final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
     if (batchOperation.isSuspended()) {
       LOG.trace("Batch operation {} is suspended.", batchOperation.getKey());
@@ -138,16 +139,13 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
 
-    String lastSearchResultCursor = batchOperation.getInitializationSearchCursor();
-    int keysAdded = 0;
-    ItemPage page = null;
-    if (lastSearchResultCursor != null && lastSearchResultCursor.isEmpty()) {
-      // If the cursor is empty, we need to initialize it with the first page
-      lastSearchResultCursor = null;
-    }
-    while (page == null || !page.isLastPage()) {
+    // use overall state variable for all parameters that are used in the loop
+    final InitLoopState loopState = new InitLoopState(batchOperation);
+    while (loopState.hasNextPage()) {
       try {
-        page = itemProvider.fetchItemPage(lastSearchResultCursor, queryPageSize);
+        loopState.page =
+            itemProvider.fetchItemPage(
+                loopState.lastSearchResultCursor, loopState.searchResultPageSize);
       } catch (final Exception e) {
         LOG.error(
             "Failed to query keys for batch operation with key {}. It will be removed from queue",
@@ -159,44 +157,71 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       }
 
       // Then try to append the items to the batch operation
-      final boolean appendedChunks = appendChunks(batchOperation, taskResultBuilder, page.items());
-      if (!appendedChunks) {
-        if (lastSearchResultCursor == null) {
-          // If we failed to append even the first chunk, we need to fail the batch operation
-          // directly. Otherwise, we would be stuck in an infinite loop
-          LOG.error(
-              "Failed to query keys for batch operation with key {}. It will be removed from queue",
-              batchOperation.getKey());
-          appendQueryFailedCommand(
-              taskResultBuilder,
-              batchOperation,
-              String.format(ERROR_MSG_FAILED_FIRST_CHUNK_APPEND, page.items().size()));
-          return;
-        } else {
-          // The RecordBatch is full, so we need another init run to continue
-          appendInitializeCommand(
-              taskResultBuilder, batchOperation.getKey(), lastSearchResultCursor);
-          break;
-        }
-      } else {
-        lastSearchResultCursor = page.endCursor();
-        keysAdded += page.items().size();
-        if (page.isLastPage()) {
+      final boolean appendedChunks =
+          appendChunks(batchOperation, taskResultBuilder, loopState.page.items());
+      if (appendedChunks) {
+        // everything went normally, so we can continue with the next page in the next loop
+
+        loopState.chunksAppendedThisRun = true;
+        loopState.lastSearchResultCursor = loopState.page.endCursor();
+        loopState.keysAdded += loopState.page.items().size();
+        if (loopState.page.isLastPage()) {
           // If we have reached the last page, we can finalize the initialization and start the BO
           // we always append the EXECUTE command at the end, even if no items were found, so we can
           // leave the completion logic in that processor.
-          appendExecution(batchOperation.getKey(), taskResultBuilder);
-          metrics.recordItemsPerPartition(
-              batchOperation.getNumTotalItems() + keysAdded,
-              batchOperation.getBatchOperationType());
+          startExecutionPhase(taskResultBuilder, loopState);
+
+          // this is the end of the initialization run, so we can break out of the loop
+          return;
         }
+      } else {
+        handleFailedChunkAppend(taskResultBuilder, loopState);
+        return;
       }
     }
+  }
 
-    metrics.startStartExecuteLatencyMeasure(
-        batchOperation.getKey(), batchOperation.getBatchOperationType());
-    metrics.startTotalExecutionLatencyMeasure(
-        batchOperation.getKey(), batchOperation.getBatchOperationType());
+  private void startExecutionPhase(
+      final TaskResultBuilder resultBuilder, final InitLoopState state) {
+    if (appendExecution(state.batchOperation.getKey(), resultBuilder)) {
+      // start some metrics for the execution phase
+      metrics.recordItemsPerPartition(
+          state.batchOperation.getNumTotalItems() + state.keysAdded,
+          state.batchOperation.getBatchOperationType());
+      metrics.startStartExecuteLatencyMeasure(
+          state.batchOperation.getKey(), state.batchOperation.getBatchOperationType());
+      metrics.startTotalExecutionLatencyMeasure(
+          state.batchOperation.getKey(), state.batchOperation.getBatchOperationType());
+    } else {
+      // It seems we were unable to append the execution command to the result builder,
+      // so we need to add another init loop to retry. The lastSearchResultCursor now points to the
+      // end of the result, so the next run will fetch an empty page and then adds the EXECUTE
+      // command.
+      continueInitialization(resultBuilder, state);
+    }
+  }
+
+  private void handleFailedChunkAppend(
+      final TaskResultBuilder taskResultBuilder, final InitLoopState state) {
+    if (!state.chunksAppendedThisRun) {
+      // the first chunk of this init-run could not be appended. We try to reduce the page size
+      // and retry again. If the pageSize can be halved, we will fail this partition.
+      if (state.searchResultPageSize > 1) {
+        state.searchResultPageSize = state.searchResultPageSize / 2;
+        continueInitialization(taskResultBuilder, state);
+      } else {
+        // If we failed to append the first chunk even when the pageSize is 1,
+        // we need to fail the batch operation. Otherwise, we would be stuck in an infinite loop
+        appendQueryFailedCommand(
+            taskResultBuilder,
+            state.batchOperation,
+            String.format(ERROR_MSG_FAILED_FIRST_CHUNK_APPEND, state.page.items().size()));
+      }
+      return;
+    } else {
+      // The RecordBatch is full, so we need another init run to continue
+      continueInitialization(taskResultBuilder, state);
+    }
   }
 
   /**
@@ -270,21 +295,23 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
-  private void appendInitializeCommand(
-      final TaskResultBuilder taskResultBuilder,
-      final long batchOperationKey,
-      final String cursor) {
+  private void continueInitialization(
+      final TaskResultBuilder taskResultBuilder, final InitLoopState state) {
     final var command =
         new BatchOperationInitializationRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setSearchResultCursor(cursor);
-    LOG.trace("Appending batch operation {} initializing command", batchOperationKey);
+            .setBatchOperationKey(state.batchOperation.getKey())
+            .setSearchResultCursor( // no null values allowed in the protocol
+                state.lastSearchResultCursor == null
+                    ? StringValue.EMPTY_STRING
+                    : state.lastSearchResultCursor)
+            .setSearchQueryPageSize(state.searchResultPageSize);
+    LOG.trace("Appending batch operation {} initializing command", state.batchOperation.getKey());
 
     taskResultBuilder.appendCommandRecord(
-        batchOperationKey,
+        state.batchOperation.getKey(),
         BatchOperationIntent.CONTINUE_INITIALIZATION,
         command,
-        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
+        FollowUpCommandMetadata.of(b -> b.batchOperationReference(state.batchOperation.getKey())));
   }
 
   private void appendQueryFailedCommand(
@@ -309,16 +336,48 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
-  private void appendExecution(
+  private boolean appendExecution(
       final Long batchOperationKey, final TaskResultBuilder taskResultBuilder) {
     final var command = new BatchOperationExecutionRecord();
     command.setBatchOperationKey(batchOperationKey);
 
     LOG.trace("Appending batch operation execution {}", batchOperationKey);
-    taskResultBuilder.appendCommandRecord(
+    return taskResultBuilder.appendCommandRecord(
         batchOperationKey,
         BatchOperationExecutionIntent.EXECUTE,
         command,
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
+  }
+
+  /**
+   * This is a mutable state class that is used to track the state of the initialization loop. Using
+   * this state class avoids the need to pass around multiple parameters.
+   */
+  private class InitLoopState {
+    public PersistedBatchOperation batchOperation;
+    public String lastSearchResultCursor;
+    public int searchResultPageSize;
+    public ItemPage page;
+    public int keysAdded;
+    public boolean chunksAppendedThisRun = false;
+
+    public InitLoopState(final PersistedBatchOperation batchOperation) {
+      this.batchOperation = batchOperation;
+      lastSearchResultCursor = batchOperation.getInitializationSearchCursor();
+      searchResultPageSize = batchOperation.getInitializationSearchQueryPageSize(queryPageSize);
+      page = null;
+      keysAdded = 0;
+      chunksAppendedThisRun = false;
+
+      // StringValue cannot be null, so we need to check for empty string and interpret it as NULL
+      if (lastSearchResultCursor != null && lastSearchResultCursor.isEmpty()) {
+        // If the cursor is empty, we need to initialize it with the first page
+        lastSearchResultCursor = null;
+      }
+    }
+
+    public boolean hasNextPage() {
+      return page == null || !page.isLastPage();
+    }
   }
 }

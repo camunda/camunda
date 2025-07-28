@@ -288,6 +288,14 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     return this;
   }
 
+  public int getInitializationSearchQueryPageSize(final int defaultValue) {
+    if (initializationSearchQueryPageSizeProp.getValue() == -1) {
+      return defaultValue;
+    }
+
+    return initializationSearchQueryPageSizeProp.getValue();
+  }
+
   public <T> T getEntityFilter(final Class<T> clazz) {
     return MsgPackConverter.convertToObject(entityFilterProp.getValue(), clazz);
   }

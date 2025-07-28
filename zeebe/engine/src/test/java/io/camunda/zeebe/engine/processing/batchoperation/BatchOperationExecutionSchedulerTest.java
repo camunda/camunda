@@ -90,6 +90,9 @@ public class BatchOperationExecutionSchedulerTest {
     lenient()
         .when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
         .thenReturn(filter);
+    lenient()
+        .when(batchOperation.getInitializationSearchQueryPageSize(anyInt()))
+        .thenReturn(QUERY_PAGE_SIZE);
     when(batchOperationState.getNextPendingBatchOperation())
         .thenReturn(Optional.of(batchOperation));
     lenient().when(batchOperationState.exists(anyLong())).thenReturn(true);
@@ -102,6 +105,9 @@ public class BatchOperationExecutionSchedulerTest {
     lenient().when(itemProviderFactory.fromBatchOperation(any())).thenReturn(itemProvider);
 
     lenient().when(taskResultBuilder.canAppendRecords(any(), any())).thenReturn(true);
+    lenient()
+        .when(taskResultBuilder.appendCommandRecord(anyLong(), any(), any(), any()))
+        .thenReturn(true);
 
     scheduler =
         new BatchOperationExecutionScheduler(
@@ -137,12 +143,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verify(taskResultBuilder)
-        .appendCommandRecord(
-            anyLong(),
-            eq(BatchOperationIntent.START),
-            any(BatchOperationCreationRecord.class),
-            any());
+    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -151,12 +152,7 @@ public class BatchOperationExecutionSchedulerTest {
             any());
 
     // and should NOT append an execute command
-    verify(taskResultBuilder, times(0))
-        .appendCommandRecord(
-            anyLong(),
-            eq(BatchOperationExecutionIntent.EXECUTE),
-            any(UnifiedRecordValue.class),
-            any());
+    verifyNoExecuteCommandAppended();
 
     // and should contain an errors
     final var error = lifecycleRecordArgumentCaptor.getValue().getError();
@@ -167,7 +163,7 @@ public class BatchOperationExecutionSchedulerTest {
   }
 
   @Test
-  public void shouldAppendFailedEventWhenFirstAppendFails() {
+  public void shouldReducePageSizeEventWhenFirstAppendFails() {
     // given
     when(itemProvider.fetchItemPage(any(), anyInt())).thenReturn(createItemPage(1L, 2L, 3L));
     when(taskResultBuilder.canAppendRecords(any(), any())).thenReturn(false);
@@ -177,12 +173,37 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
+    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
-            eq(BatchOperationIntent.START),
-            any(BatchOperationCreationRecord.class),
+            eq(BatchOperationIntent.CONTINUE_INITIALIZATION),
+            initializeRecordArgumentCaptor.capture(),
             any());
+
+    // and should NOT append an execute command
+    verifyNoExecuteCommandAppended();
+
+    // and should contain an errors
+    final var value = initializeRecordArgumentCaptor.getValue();
+    assertThat(value).isNotNull();
+    assertThat(value.getSearchResultCursor()).isEqualTo("");
+    assertThat(value.getSearchQueryPageSize()).isEqualTo(5);
+  }
+
+  @Test
+  public void shouldFailWhenPageSizeCannotBeReduced() {
+    // given
+    when(itemProvider.fetchItemPage(any(), anyInt())).thenReturn(createItemPage(1L, 2L, 3L));
+    when(taskResultBuilder.canAppendRecords(any(), any())).thenReturn(false);
+    when(batchOperation.getInitializationSearchQueryPageSize(anyInt())).thenReturn(1);
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    verify(batchOperationState).getNextPendingBatchOperation();
+    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -191,24 +212,17 @@ public class BatchOperationExecutionSchedulerTest {
             any());
 
     // and should NOT append an execute command
-    verify(taskResultBuilder, times(0))
-        .appendCommandRecord(
-            anyLong(),
-            eq(BatchOperationExecutionIntent.EXECUTE),
-            any(UnifiedRecordValue.class),
-            any());
+    verifyNoExecuteCommandAppended();
 
     // and should contain an errors
     final var error = lifecycleRecordArgumentCaptor.getValue().getError();
     assertThat(error).isNotNull();
-    assertThat(error.getPartitionId()).isEqualTo(PARTITION_ID);
-    assertThat(error.getType()).isEqualTo(BatchOperationErrorType.QUERY_FAILED);
     assertThat(error.getMessage())
-        .contains("Unable to append first chunk of batch operation items. Number of items: 3");
+        .startsWith("Unable to append first chunk of batch operation items");
   }
 
   @Test
-  public void shouldAppendInitializeCommandForBigBatchOperations() {
+  public void shouldContinueInitializationForBigBatchOperations() {
     // given
     when(itemProvider.fetchItemPage(any(), anyInt()))
         .thenReturn(createItemPage(new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "0", false))
@@ -226,17 +240,38 @@ public class BatchOperationExecutionSchedulerTest {
             any());
 
     // and should NOT append an execute command
-    verify(taskResultBuilder, times(0))
-        .appendCommandRecord(
-            anyLong(),
-            eq(BatchOperationExecutionIntent.EXECUTE),
-            any(UnifiedRecordValue.class),
-            any());
+    verifyNoExecuteCommandAppended();
 
     // and should contain an errors
     final var recordValue = initializeRecordArgumentCaptor.getValue();
     assertThat(recordValue).isNotNull();
     assertThat(recordValue.getSearchResultCursor()).isEqualTo("0");
+  }
+
+  @Test
+  public void shouldContinueInitializationWhenExecuteFailed() {
+    // given
+    when(itemProvider.fetchItemPage(any(), anyInt()))
+        .thenReturn(createItemPage(new long[] {1, 2, 3}, "3", true));
+    when(taskResultBuilder.appendCommandRecord(
+            anyLong(), eq(BatchOperationExecutionIntent.EXECUTE), any(), any()))
+        .thenReturn(false);
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.CONTINUE_INITIALIZATION),
+            initializeRecordArgumentCaptor.capture(),
+            any());
+
+    // and should contain an errors
+    final var recordValue = initializeRecordArgumentCaptor.getValue();
+    assertThat(recordValue).isNotNull();
+    assertThat(recordValue.getSearchResultCursor()).isEqualTo("3");
   }
 
   @Test
@@ -249,12 +284,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verify(taskResultBuilder)
-        .appendCommandRecord(
-            anyLong(),
-            eq(BatchOperationIntent.START),
-            any(BatchOperationCreationRecord.class),
-            any());
+    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
@@ -279,12 +309,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verify(taskResultBuilder)
-        .appendCommandRecord(
-            anyLong(),
-            eq(BatchOperationIntent.START),
-            any(BatchOperationCreationRecord.class),
-            any());
+    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
@@ -310,12 +335,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verify(taskResultBuilder)
-        .appendCommandRecord(
-            anyLong(),
-            eq(BatchOperationIntent.START),
-            any(BatchOperationCreationRecord.class),
-            any());
+    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
@@ -334,12 +354,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verify(taskResultBuilder)
-        .appendCommandRecord(
-            anyLong(),
-            eq(BatchOperationIntent.START),
-            any(BatchOperationCreationRecord.class),
-            any());
+    verifyStartedCommandAppended();
     verify(taskResultBuilder, times(2))
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
@@ -388,7 +403,7 @@ public class BatchOperationExecutionSchedulerTest {
   }
 
   private ItemPage createItemPage(final long... itemKeys) {
-    return createItemPage(itemKeys, "0", true);
+    return createItemPage(itemKeys, Long.toString(itemKeys[itemKeys.length - 1]), true);
   }
 
   private ItemPage createItemPage(
@@ -421,5 +436,23 @@ public class BatchOperationExecutionSchedulerTest {
         .skip(offset)
         .limit(limit)
         .collect(Collectors.toSet());
+  }
+
+  private void verifyStartedCommandAppended() {
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.START),
+            any(BatchOperationCreationRecord.class),
+            any());
+  }
+
+  private void verifyNoExecuteCommandAppended() {
+    verify(taskResultBuilder, times(0))
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationExecutionIntent.EXECUTE),
+            any(UnifiedRecordValue.class),
+            any());
   }
 }
