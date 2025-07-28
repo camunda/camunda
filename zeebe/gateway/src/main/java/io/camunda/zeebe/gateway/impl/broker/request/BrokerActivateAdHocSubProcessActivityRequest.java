@@ -34,6 +34,18 @@ public class BrokerActivateAdHocSubProcessActivityRequest
     return this;
   }
 
+  public BrokerActivateAdHocSubProcessActivityRequest addElement(
+      final String elementId, final DirectBuffer variables) {
+    requestDto.activateElements().add().setElementId(elementId).setVariables(variables);
+    return this;
+  }
+
+  public BrokerActivateAdHocSubProcessActivityRequest cancelRemainingInstances(
+      final boolean cancelRemainingInstances) {
+    requestDto.cancelRemainingInstances(cancelRemainingInstances);
+    return this;
+  }
+
   @Override
   public AdHocSubProcessInstructionRecord getRequestWriter() {
     return requestDto;
