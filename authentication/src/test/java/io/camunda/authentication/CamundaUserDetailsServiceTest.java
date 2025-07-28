@@ -111,7 +111,8 @@ public class CamundaUserDetailsServiceTest {
     assertThat(user.getAuthenticationContext().username()).isEqualTo(TEST_USER_ID);
     assertThat(user.getAuthenticationContext().authorizedApplications())
         .containsExactlyInAnyOrder("operate", "identity");
-    assertThat(user.getAuthenticationContext().roles()).isEqualTo(List.of(adminRole, groupRole));
+    assertThat(user.getAuthenticationContext().roles())
+        .isEqualTo(List.of(adminRole.roleId(), groupRole.roleId()));
     assertThat(user.getAuthenticationContext().groups()).isEqualTo(List.of(adminGroup.groupId()));
     assertThat(user.getAuthenticationContext().tenants())
         .isEqualTo(List.of(TenantDTO.fromEntity(adminTenant), TenantDTO.fromEntity(groupTenant)));

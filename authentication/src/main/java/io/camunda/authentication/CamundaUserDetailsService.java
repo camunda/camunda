@@ -77,23 +77,21 @@ public class CamundaUserDetailsService implements UserDetailsService {
     final var roles =
         roleServices
             .withAuthentication(CamundaAuthentication.anonymous())
-            .getRolesByUserAndGroups(username, groups);
-    final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
+            .getRolesByUserAndGroups(username, groups)
+            .stream()
+            .map(RoleEntity::roleId)
+            .collect(Collectors.toSet());
 
     final var authorizedApplications =
         authorizationServices
             .withAuthentication(CamundaAuthentication.anonymous())
             .getAuthorizedApplications(
-                Map.of(
-                    EntityType.USER,
-                    Set.of(storedUser.username()),
-                    EntityType.ROLE,
-                    roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet())));
+                Map.of(EntityType.USER, Set.of(storedUser.username()), EntityType.ROLE, roles));
 
     final var tenants =
         tenantServices
             .withAuthentication(CamundaAuthentication.anonymous())
-            .getTenantsByUserAndGroupsAndRoles(username, groups, roleIds)
+            .getTenantsByUserAndGroupsAndRoles(username, groups, roles)
             .stream()
             .map(TenantDTO::fromEntity)
             .toList();
@@ -105,7 +103,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
         .withPassword(storedUser.password())
         .withEmail(storedUser.email())
         .withAuthorizedApplications(authorizedApplications)
-        .withRoles(roles)
+        .withRoles(roles.stream().toList())
         .withTenants(tenants)
         .withGroups(groups.stream().toList())
         .withCanLogout(true)

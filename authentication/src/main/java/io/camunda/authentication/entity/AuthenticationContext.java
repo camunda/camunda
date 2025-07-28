@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.entity;
 
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -16,7 +15,7 @@ import java.util.List;
 public record AuthenticationContext(
     String username,
     String clientId,
-    List<RoleEntity> roles,
+    List<String> roles,
     List<String> authorizedApplications,
     List<TenantDTO> tenants,
     List<String> groups,
@@ -26,7 +25,7 @@ public record AuthenticationContext(
   public static final class AuthenticationContextBuilder {
     private String username;
     private String clientId;
-    private List<RoleEntity> roles = new ArrayList<>();
+    private List<String> roles = new ArrayList<>();
     private List<String> authorizedApplications = new ArrayList<>();
     private List<TenantDTO> tenants = new ArrayList<>();
     private List<String> groups = new ArrayList<>();
@@ -42,7 +41,7 @@ public record AuthenticationContext(
       return this;
     }
 
-    public AuthenticationContextBuilder withRoles(final List<RoleEntity> roles) {
+    public AuthenticationContextBuilder withRoles(final List<String> roles) {
       this.roles = roles;
       return this;
     }
