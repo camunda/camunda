@@ -122,8 +122,8 @@ const TaskDetailsHeader: React.FC<Props> = ({
               </span>
             ),
           )
-          .with({taskState: 'ASSIGNING'}, ({taskState}) => (
-            <TaskStateLoadingText taskState={taskState} />
+          .with({taskState: 'ASSIGNING'}, () => (
+            <span className={styles.assignButtonContainer}>{assignButton}</span>
           ))
           .exhaustive()}
       </div>
