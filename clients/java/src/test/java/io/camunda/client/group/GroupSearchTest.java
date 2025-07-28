@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.filter.ClientFilter;
+import io.camunda.client.api.search.filter.GroupUserFilter;
 import io.camunda.client.api.search.sort.ClientSort;
 import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.GroupUserSort;
@@ -30,15 +32,16 @@ import org.junit.jupiter.api.Test;
 
 public class GroupSearchTest extends ClientRestTest {
 
+  public static final String GROUP_ID = "groupId";
+
   @Test
   public void testGroupSearch() {
     // when
-    final String groupId = "groupId";
-    client.newGroupGetRequest(groupId).send().join();
+    client.newGroupGetRequest(GROUP_ID).send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/groups/" + groupId);
+    assertThat(request.getUrl()).isEqualTo("/v2/groups/" + GROUP_ID);
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 
@@ -79,9 +82,8 @@ public class GroupSearchTest extends ClientRestTest {
   @Test
   public void testUsersSearchByGroup() {
     // when
-    final String groupId = "groupId";
     client
-        .newUsersByGroupSearchRequest(groupId)
+        .newUsersByGroupSearchRequest(GROUP_ID)
         .sort(GroupUserSort::username)
         .page(fn -> fn.limit(5))
         .send()
@@ -94,11 +96,31 @@ public class GroupSearchTest extends ClientRestTest {
   }
 
   @Test
+  void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingUsersByGroup() {
+    assertThatThrownBy(
+            () -> client.newUsersByGroupSearchRequest(GROUP_ID).filter(fn -> {}).send().join())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("This command does not support filtering");
+  }
+
+  @Test
+  void shouldRaiseExceptionWhenFilteringIsPresentWhenSearchingUsersByGroup() {
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUsersByGroupSearchRequest(GROUP_ID)
+                    .filter(new GroupUserFilter() {})
+                    .send()
+                    .join())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("This command does not support filtering");
+  }
+
+  @Test
   public void testMappingsByGroupSearch() {
     // when
-    final String groupId = "groupId";
     client
-        .newMappingRulesByGroupSearchRequest(groupId)
+        .newMappingRulesByGroupSearchRequest(GROUP_ID)
         .filter(fn -> fn.mappingRuleId("mappingRuleId"))
         .sort(MappingRuleSort::name)
         .page(fn -> fn.limit(5))
@@ -114,9 +136,8 @@ public class GroupSearchTest extends ClientRestTest {
   @Test
   public void testRolesSearchByGroup() {
     // when
-    final String groupId = "groupId";
     client
-        .newRolesByGroupSearchRequest(groupId)
+        .newRolesByGroupSearchRequest(GROUP_ID)
         .filter(fn -> fn.name("roleName"))
         .sort(RoleSort::name)
         .page(fn -> fn.limit(5))
@@ -132,9 +153,8 @@ public class GroupSearchTest extends ClientRestTest {
   @Test
   public void testClientsSearchByGroup() {
     // when
-    final String groupId = "groupId";
     client
-        .newClientsByGroupSearchRequest(groupId)
+        .newClientsByGroupSearchRequest(GROUP_ID)
         .sort(ClientSort::clientId)
         .page(fn -> fn.limit(5))
         .send()
@@ -166,7 +186,7 @@ public class GroupSearchTest extends ClientRestTest {
   void shouldIncludeSortInClientsByGroupSearchRequestBody() {
     // when
     client
-        .newClientsByGroupSearchRequest("groupId")
+        .newClientsByGroupSearchRequest(GROUP_ID)
         .sort(s -> s.clientId().desc())
         .page(fn -> fn.limit(5))
         .send()
@@ -177,5 +197,26 @@ public class GroupSearchTest extends ClientRestTest {
     final String requestBody = lastRequest.getBodyAsString();
 
     assertThat(requestBody).contains("\"sort\":[{\"field\":\"clientId\",\"order\":\"DESC\"}]");
+  }
+
+  @Test
+  void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingClientsByGroup() {
+    assertThatThrownBy(
+            () -> client.newClientsByGroupSearchRequest(GROUP_ID).filter(fn -> {}).send().join())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("This command does not support filtering");
+  }
+
+  @Test
+  void shouldRaiseExceptionWhenFilteringIsPresentWhenSearchingClientsByGroup() {
+    assertThatThrownBy(
+            () ->
+                client
+                    .newClientsByGroupSearchRequest(GROUP_ID)
+                    .filter(new ClientFilter() {})
+                    .send()
+                    .join())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("This command does not support filtering");
   }
 }
