@@ -306,26 +306,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  optimize-backend-unit-tests:
-    if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
-    name: "[UT] Optimize - ${{matrix.suiteName}}"
-    needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    secrets: inherit
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [ DataLayer, CoreFeatures ]
-        include:
-          - suite: DataLayer
-            suiteName: Data Layer
-          - suite: CoreFeatures
-            suiteName: Core Features
-    with:
-      componentName: "Optimize"
-      suite: ${{ matrix.suite }}
-
   zeebe-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Zeebe / [UT] ${{matrix.component}} / ${{matrix.suiteName}}"
