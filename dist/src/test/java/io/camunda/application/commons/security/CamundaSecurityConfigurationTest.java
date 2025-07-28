@@ -9,29 +9,25 @@ package io.camunda.application.commons.security;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.MainSupport;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.boot.SpringApplication;
 
 public class CamundaSecurityConfigurationTest {
 
   @Test
   public void whenMultiTenancyEnabledAndApiUnprotectedThenFailsToStart() {
-    final var application =
-        MainSupport.createDefaultApplicationBuilder()
-            .sources(CommonsModuleConfiguration.class)
-            .build();
-
     final var mtProperty = "camunda.security.multiTenancy.checksEnabled";
     final var apiProperty = "camunda.security.authentication.unprotected-api";
-    application.setDefaultProperties(
-        Map.of(
-            mtProperty, true,
-            apiProperty, true));
+    System.setProperty(mtProperty, "true");
+    System.setProperty(apiProperty, "true");
 
-    assertThatThrownBy(application::run)
+    assertThatThrownBy(
+            () -> {
+              final SpringApplication app = new SpringApplication(CommonsModuleConfiguration.class);
+              app.run();
+            })
         .isInstanceOf(BeanCreationException.class)
         .cause()
         .isInstanceOf(IllegalStateException.class)
