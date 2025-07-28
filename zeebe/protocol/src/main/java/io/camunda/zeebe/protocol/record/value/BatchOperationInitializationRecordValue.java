@@ -35,4 +35,12 @@ public interface BatchOperationInitializationRecordValue
    * @return the search result cursor
    */
   String getSearchResultCursor();
+
+  /**
+   * The page size used for the search query that found items for the batch operation. When errors
+   * occur during initialization, this value is used to reduce the pageSize.
+   *
+   * @return the current page size of the search query
+   */
+  int getSearchQueryPageSize();
 }
