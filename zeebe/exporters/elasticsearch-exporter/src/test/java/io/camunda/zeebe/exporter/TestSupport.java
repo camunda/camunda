@@ -133,7 +133,8 @@ final class TestSupport {
             ValueType.NULL_VAL,
             ValueType.PROCESS_INSTANCE_RESULT,
             ValueType.CLOCK,
-            ValueType.RESOURCE);
+            ValueType.RESOURCE,
+            ValueType.MULTI_INSTANCE);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }

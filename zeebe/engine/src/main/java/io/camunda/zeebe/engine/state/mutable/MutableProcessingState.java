@@ -90,5 +90,8 @@ public interface MutableProcessingState extends ProcessingState {
   @Override
   MutableResourceState getResourceState();
 
+  @Override
+  MutableMultiInstanceState getMultiInstanceState();
+
   KeyGenerator getKeyGenerator();
 }
