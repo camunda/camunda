@@ -13,8 +13,6 @@ import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.T
 
 import io.camunda.exporter.handlers.UsageMetricHandler.UsageMetricsBatch;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
@@ -27,9 +25,8 @@ import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,13 +55,7 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
 
   @Override
   public List<String> generateIds(final Record<UsageMetricRecordValue> record) {
-    final long key = record.getKey();
-    final UsageMetricRecordValue value = record.getValue();
-
-    return Stream.concat(
-            value.getCounterValues().keySet().stream(), value.getSetValues().keySet().stream())
-        .map(tenantId -> ID_PATTERN.formatted(key, tenantId))
-        .toList();
+    return Collections.singletonList(String.valueOf(record.getKey()));
   }
 
   @Override
@@ -115,8 +106,8 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
 
   @Override
   public void flush(final UsageMetricsBatch batch, final BatchRequest batchRequest) {
-    batch.variables().forEach(v -> flushUsageMetricsBatch(v, batchRequest));
-    batch.tuVariables().forEach(v -> flushUsageMetricsTUBatch(v, batchRequest));
+    batch.variables().forEach(e -> batchRequest.add(indexName, e));
+    batch.tuVariables().forEach(e -> batchRequest.add(tuIndexName, e));
   }
 
   @Override
@@ -163,27 +154,6 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
         .setTenantId(tenantId)
         .setEventTime(timestamp)
         .setAssigneeHash(assigneeHash);
-  }
-
-  private void flushUsageMetricsBatch(
-      final UsageMetricsEntity entity, final BatchRequest batchRequest) {
-    final var updateFields = new HashMap<String, Object>();
-    updateFields.put(UsageMetricIndex.EVENT_VALUE, entity.getEventValue());
-    updateFields.put(UsageMetricIndex.EVENT_TYPE, entity.getEventType());
-    updateFields.put(UsageMetricIndex.EVENT_TIME, entity.getEventTime());
-    updateFields.put(UsageMetricIndex.PARTITION_ID, entity.getPartitionId());
-    updateFields.put(UsageMetricIndex.TENANT_ID, entity.getTenantId());
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
-  }
-
-  private void flushUsageMetricsTUBatch(
-      final UsageMetricsTUEntity entity, final BatchRequest batchRequest) {
-    final var updateFields = new HashMap<String, Object>();
-    updateFields.put(UsageMetricTUIndex.EVENT_TIME, entity.getEventTime());
-    updateFields.put(UsageMetricTUIndex.ASSIGNEE_HASH, entity.getAssigneeHash());
-    updateFields.put(UsageMetricTUIndex.PARTITION_ID, entity.getPartitionId());
-    updateFields.put(UsageMetricTUIndex.TENANT_ID, entity.getTenantId());
-    batchRequest.upsert(tuIndexName, entity.getId(), entity, updateFields);
   }
 
   public record UsageMetricsBatch(

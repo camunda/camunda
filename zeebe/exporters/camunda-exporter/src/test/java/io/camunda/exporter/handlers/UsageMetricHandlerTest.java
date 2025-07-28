@@ -8,8 +8,6 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -111,11 +109,7 @@ class UsageMetricHandlerTest {
     final var idList = underTest.generateIds(record);
 
     // then
-    assertThat(idList)
-        .containsExactlyInAnyOrder(
-            String.format(ID_PATTERN, EVENT_KEY, TENANT_1),
-            String.format(ID_PATTERN, EVENT_KEY, TENANT_2),
-            String.format(ID_PATTERN, EVENT_KEY, TENANT_3));
+    assertThat(idList).containsOnly(EVENT_KEY);
   }
 
   @Test
@@ -305,7 +299,7 @@ class UsageMetricHandlerTest {
   }
 
   @Test
-  void shouldUpsertEntityOnFlush() throws PersistenceException {
+  void shouldAddEntityOnFlush() throws PersistenceException {
     // given
     final var now = OffsetDateTime.now().toEpochSecond();
     final var usageMetricsBatch =
@@ -319,13 +313,10 @@ class UsageMetricHandlerTest {
     underTest.flush(usageMetricsBatch, mockRequest);
 
     // then
-    usageMetricsBatch
-        .variables()
-        .forEach(v -> verify(mockRequest).upsert(eq(indexName), eq(v.getId()), eq(v), anyMap()));
-
+    usageMetricsBatch.variables().forEach(entity -> verify(mockRequest).add(indexName, entity));
     usageMetricsBatch
         .tuVariables()
-        .forEach(v -> verify(mockRequest).upsert(eq(tuIndexName), eq(v.getId()), eq(v), anyMap()));
+        .forEach(tuEntity -> verify(mockRequest).add(tuIndexName, tuEntity));
     verifyNoMoreInteractions(mockRequest);
   }
 
