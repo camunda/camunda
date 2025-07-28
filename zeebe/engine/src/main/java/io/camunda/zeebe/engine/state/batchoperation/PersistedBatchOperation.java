@@ -107,6 +107,9 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   private final StringProperty initializationSearchCursorProp =
       new StringProperty("initializationSearchCursor", "");
 
+  private final IntegerProperty initializationSearchQueryPageSizeProp =
+      new IntegerProperty("initializationSearchQueryPageSize", -1);
+
   /**
    * The partition ids that are part of the batch operation. This is used to track which partitions
    * existed when the batch operation was created and on which partitions the batch operation runs.
@@ -125,7 +128,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new ArrayProperty<>("errors", BatchOperationError::new);
 
   public PersistedBatchOperation() {
-    super(15);
+    super(16);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
@@ -135,6 +138,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(chunkKeysProp)
         .declareProperty(initializedProp)
         .declareProperty(initializationSearchCursorProp)
+        .declareProperty(initializationSearchQueryPageSizeProp)
         .declareProperty(authenticationProp)
         .declareProperty(partitionsProp)
         .declareProperty(finishedPartitionsProp)
@@ -272,6 +276,15 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
 
   public PersistedBatchOperation setInitializationSearchCursor(final String cursor) {
     initializationSearchCursorProp.setValue(cursor);
+    return this;
+  }
+
+  public int getInitializationSearchQueryPageSize() {
+    return initializationSearchQueryPageSizeProp.getValue();
+  }
+
+  public PersistedBatchOperation setInitializationSearchQueryPageSize(final int pageSize) {
+    initializationSearchQueryPageSizeProp.setValue(pageSize);
     return this;
   }
 

@@ -25,6 +25,7 @@ public class BatchOperationInitializationContinuedApplier
   @Override
   public void applyState(
       final long batchOperationKey, final BatchOperationInitializationRecord value) {
-    batchOperationState.continueInitialization(batchOperationKey, value.getSearchResultCursor());
+    batchOperationState.continueInitialization(
+        batchOperationKey, value.getSearchResultCursor(), value.getSearchQueryPageSize());
   }
 }

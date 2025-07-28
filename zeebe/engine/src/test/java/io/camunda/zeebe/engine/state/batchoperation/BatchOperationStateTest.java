@@ -214,11 +214,12 @@ public class BatchOperationStateTest {
     state.start(1L);
 
     // when
-    state.continueInitialization(batchOperationKey, "123");
+    state.continueInitialization(batchOperationKey, "123", 100);
 
     // then
     assertThat(state.getNextPendingBatchOperation().get().getKey()).isEqualTo(batchOperationKey);
     assertThat(state.get(1).get().getInitializationSearchCursor()).isEqualTo("123");
+    assertThat(state.get(1).get().getInitializationSearchQueryPageSize()).isEqualTo(100);
   }
 
   @Test

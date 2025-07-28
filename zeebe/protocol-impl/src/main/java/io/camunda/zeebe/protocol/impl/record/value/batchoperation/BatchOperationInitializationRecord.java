@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -19,14 +20,19 @@ public final class BatchOperationInitializationRecord extends UnifiedRecordValue
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_SEARCH_RESULT_CURSOR_KEY = "searchResultCursor";
+  public static final String PROP_SEARCH_QUERY_PAGE_SIZE = "searchQueryPageSize";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
   private final StringProperty searchResultCursorProp =
       new StringProperty(PROP_SEARCH_RESULT_CURSOR_KEY);
+  private final IntegerProperty searchQueryPageSize =
+      new IntegerProperty(PROP_SEARCH_QUERY_PAGE_SIZE);
 
   public BatchOperationInitializationRecord() {
-    super(2);
-    declareProperty(batchOperationKeyProp).declareProperty(searchResultCursorProp);
+    super(3);
+    declareProperty(batchOperationKeyProp)
+        .declareProperty(searchResultCursorProp)
+        .declareProperty(searchQueryPageSize);
   }
 
   @Override
@@ -51,8 +57,20 @@ public final class BatchOperationInitializationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public int getSearchQueryPageSize() {
+    return searchQueryPageSize.getValue();
+  }
+
+  public BatchOperationInitializationRecord setSearchQueryPageSize(final int pageSize) {
+    searchQueryPageSize.reset();
+    searchQueryPageSize.setValue(pageSize);
+    return this;
+  }
+
   public void wrap(final BatchOperationInitializationRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
     setSearchResultCursor(record.getSearchResultCursor());
+    setSearchQueryPageSize(record.getSearchQueryPageSize());
   }
 }
