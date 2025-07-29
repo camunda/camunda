@@ -26,6 +26,11 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -127,7 +132,8 @@ public class CompactRecordLogger {
           entry("MAPPING", "MAP"),
           entry("ASYNC_REQUEST", "ASYNC"),
           entry("MULTI_INSTANCE", "MI"),
-          entry("INPUT_COLLECTION_EVALUATED", "IN_COL_EVAL"));
+          entry("INPUT_COLLECTION_EVALUATED", "IN_COL_EVAL"),
+          entry("BATCH_OPERATION", "BO"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -187,6 +193,14 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
     valueLoggers.put(ValueType.MULTI_INSTANCE, this::summarizeMultiInstance);
     valueLoggers.put(ValueType.RUNTIME_INSTRUCTION, this::summarizeRuntimeInstruction);
+    valueLoggers.put(ValueType.BATCH_OPERATION_CREATION, this::summarizeBatchOperationCreation);
+    valueLoggers.put(ValueType.BATCH_OPERATION_CHUNK, this::summarizeBatchOperationChunk);
+    valueLoggers.put(
+        ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, this::summarizeBatchOperationLifecycle);
+    valueLoggers.put(
+        ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
+        this::summarizeBatchOperationPartitionLifecycle);
+    valueLoggers.put(ValueType.BATCH_OPERATION_EXECUTION, this::summarizeBatchOperationExecution);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1127,6 +1141,59 @@ public class CompactRecordLogger {
       result.append(" interrupted by \"").append(value.getElementId()).append("\"");
     }
     return result.toString();
+  }
+
+  private String summarizeBatchOperationCreation(final Record<?> record) {
+    final var value = (BatchOperationCreationRecordValue) record.getValue();
+
+    final var sb = new StringBuilder().append("type=").append(value.getBatchOperationType());
+    if (value.getMigrationPlan() != null
+        && value.getMigrationPlan().getMappingInstructions() != null
+        && !value.getMigrationPlan().getMappingInstructions().isEmpty()) {
+      sb.append(", migrationPlan=").append(value.getMigrationPlan());
+    }
+    if (value.getModificationPlan() != null
+        && value.getModificationPlan().getMoveInstructions() != null
+        && !value.getModificationPlan().getMoveInstructions().isEmpty()) {
+      sb.append(", modificationPlan=").append(value.getModificationPlan());
+    }
+    return sb.toString();
+  }
+
+  private String summarizeBatchOperationChunk(final Record<?> record) {
+    final var value = (BatchOperationChunkRecordValue) record.getValue();
+
+    return new StringBuilder().append("numItems=").append(value.getItems().size()).toString();
+  }
+
+  private String summarizeBatchOperationExecution(final Record<?> record) {
+    final var value = (BatchOperationExecutionRecordValue) record.getValue();
+
+    final var sb = new StringBuilder();
+    if (value.getItemKeys() != null && !value.getItemKeys().isEmpty()) {
+      sb.append("items=").append(value.getItemKeys());
+    }
+    return sb.toString();
+  }
+
+  private String summarizeBatchOperationPartitionLifecycle(final Record<?> record) {
+    final var value = (BatchOperationPartitionLifecycleRecordValue) record.getValue();
+
+    return new StringBuilder()
+        .append("sourcePartition=")
+        .append(value.getSourcePartitionId())
+        .toString();
+  }
+
+  private String summarizeBatchOperationLifecycle(final Record<?> record) {
+    final var value = (BatchOperationLifecycleManagementRecordValue) record.getValue();
+
+    final var sb = new StringBuilder();
+    if (value.getErrors() != null && !value.getErrors().isEmpty()) {
+      sb.append("errors=").append(value.getErrors().size());
+    }
+
+    return sb.toString();
   }
 
   private String formatPinnedTime(final long time) {
