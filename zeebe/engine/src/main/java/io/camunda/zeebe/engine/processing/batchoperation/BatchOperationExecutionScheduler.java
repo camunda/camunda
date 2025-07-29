@@ -151,8 +151,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
             "Failed to query keys for batch operation with key {}. It will be removed from queue",
             batchOperation.getKey(),
             e);
-        appendQueryFailedCommand(
-            taskResultBuilder, batchOperation, ExceptionUtils.getStackTrace(e));
+        appendFailedCommand(
+            taskResultBuilder,
+            batchOperation,
+            ExceptionUtils.getStackTrace(e),
+            BatchOperationErrorType.QUERY_FAILED);
         return;
       }
 
@@ -212,10 +215,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       } else {
         // If we failed to append the first chunk even when the pageSize is 1,
         // we need to fail the batch operation. Otherwise, we would be stuck in an infinite loop
-        appendQueryFailedCommand(
+        appendFailedCommand(
             taskResultBuilder,
             state.batchOperation,
-            String.format(ERROR_MSG_FAILED_FIRST_CHUNK_APPEND, state.page.items().size()));
+            String.format(ERROR_MSG_FAILED_FIRST_CHUNK_APPEND, state.page.items().size()),
+            BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED);
       }
       return;
     } else {
@@ -314,16 +318,17 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(state.batchOperation.getKey())));
   }
 
-  private void appendQueryFailedCommand(
+  private void appendFailedCommand(
       final TaskResultBuilder taskResultBuilder,
       final PersistedBatchOperation batchOperation,
-      final String message) {
+      final String message,
+      final BatchOperationErrorType errorType) {
     final var batchOperationKey = batchOperation.getKey();
     final var command = new BatchOperationPartitionLifecycleRecord();
     command.setBatchOperationKey(batchOperationKey);
 
     final var error = new BatchOperationError();
-    error.setType(BatchOperationErrorType.QUERY_FAILED);
+    error.setType(errorType);
     error.setPartitionId(partitionId);
     error.setMessage(message);
     command.setError(error);

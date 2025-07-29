@@ -10759,6 +10759,7 @@ components:
           type: string
           enum:
             - QUERY_FAILED
+            - RESULT_BUFFER_SIZE_EXCEEDED
         message:
           description: The error message that occurred during the batch operation.
           type: string
