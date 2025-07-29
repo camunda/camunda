@@ -18,6 +18,27 @@ Accept: application/json
 %}
 
 ###
+# @name create-test-user-without-authorizations
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "password": "admin",
+  "username": "{{USERNAME_NO_AUTHORIZATIONS}}",
+  "name": "admin",
+  "email": "admin@test.com"
+}
+
+> {%
+  client.test("User creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+    client.global.set("USERNAME_NO_AUTHORIZATIONS", response.body.username);
+  });
+%}
+
+###
 # @name test-create-user-authorized
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
@@ -53,7 +74,7 @@ Accept: application/json
 
 > {%
   client.test("User update should be authorized", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 200, "Response status is not 200");
   });
 %}
 
@@ -287,23 +308,62 @@ Accept: application/json
 %}
 
 ###
-# @name create-test-user-without-authorizations
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+# @name create-process-instance
+
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
 {
-  "password": "admin",
-  "username": "{{USERNAME_NO_AUTHORIZATIONS}}",
-  "name": "admin",
-  "email": "admin@test.com"
+  "processDefinitionName": "TwoUserTasks",
+  "processDefinitionVersion": 1,
+  "startDate": "2025-07-28T13:18:05.666Z",
+  "state": "ACTIVE",
+  "hasIncident": false,
+  "tenantId": "<default>",
+  "processInstanceKey": "2251799813692075",
+  "processDefinitionKey": "2251799813685329"
 }
 
 > {%
-  client.test("User creation should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
-    client.global.set("USERNAME_NO_AUTHORIZATIONS", response.body.username);
+  client.test("Create process instance is successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Response should contain process key", function () {
+    client.assert(response.body.processDefinitionKey === "2251799813685329", "Process definition key was not returned");
+    client.global.set("PROCESS_INSTANCE_KEY", response.body.processInstanceKey);
+  });
+%}
+
+###
+# @name get-process-instance
+< {%
+  import {wait} from "js/wait"
+  wait(3)
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Process instance is successful returned", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  let expectedInstanceKey = client.global.get("PROCESS_INSTANCE_KEY");
+  client.test("Response should not be empty", function () {
+    client.assert(response.body.processInstanceKey === expectedInstanceKey, "Process instances wasn't returned");
   });
 %}
 
@@ -345,36 +405,66 @@ Accept: application/json
   });
 %}
 
-
 ###
-# @name create-authorization-for-apps-positive
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
-Authorization: Basic {{BASIC_AUTH_TOKEN}}
+# @name get-process-instance-no-tenant-assignment
+< {%
+  import {wait} from "js/wait"
+  wait(3)
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
 Content-Type: application/json
 Accept: application/json
 
-{
-  "permissionTypes": [
-    "ACCESS"
-  ],
-  "ownerType": "USER",
-  "ownerId": "{{USERNAME_NO_AUTHORIZATIONS}}",
-  "resourceType": "APPLICATION",
-  "resourceId": "*"
-}
-
 > {%
-  client.test("Authorization creation should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+  client.test("Get process instance is unsuccessful without tenant assignment", function () {
+    client.assert(response.status === 404, "Response status is not 404");
   });
 
   client.test("Response should be JSON", function () {
-    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+    client.assert(response.headers.valueOf("Content-Type").includes("application/problem+json"), "Response is not JSON");
   });
 
-  client.test("Authorization key should not be empty", function () {
-    client.assert(response.body.authorizationKey !== "", "Authorization key is empty");
-    client.global.set("AUTHORIZATION_KEY_APP", response.body.authorizationKey);
+  let expectedInstanceKey = client.global.get("PROCESS_INSTANCE_KEY");
+  client.test("Response should contain correct error message", function () {
+    client.assert(response.body.detail === `Process Instance with key '${expectedInstanceKey}' not found`, "Error message is incorrect");
+  });
+%}
+
+### Assign Unauthorized User to Tenant
+# @name assign-user-to-tenant
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{DEFAULT_TENANT_ID}}/users/{{USERNAME_NO_AUTHORIZATIONS}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("User assignment should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+###
+# @name get-process-instance-unauthorized
+< {%
+  import {wait} from "js/wait"
+  wait(4)
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Get process instance is unsuccessful without authorizations", function () {
+    client.assert(response.status === 403, "Response status is not 403");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/problem+json"), "Response is not JSON");
+  });
+
+  client.test("Response should contain correct error message", function () {
+    client.assert(response.body.detail === "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'", "Error message is incorrect");
   });
 %}
 
