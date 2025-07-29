@@ -72,9 +72,9 @@ public final class BatchOperationSetupProcessors {
                 routingInfo,
                 batchOperationMetrics))
         .onCommand(
-            ValueType.BATCH_OPERATION_CREATION,
+            ValueType.BATCH_OPERATION_INITIALIZATION,
             BatchOperationIntent.INITIALIZE,
-            new BatchOperationInitializeProcessor(writers, batchOperationMetrics))
+            new BatchOperationInitializeProcessor(writers))
         .onCommand(
             ValueType.BATCH_OPERATION_INITIALIZATION,
             BatchOperationIntent.CONTINUE_INITIALIZATION,

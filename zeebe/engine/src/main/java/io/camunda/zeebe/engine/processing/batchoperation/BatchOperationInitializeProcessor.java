@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
@@ -20,28 +19,23 @@ import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
 public final class BatchOperationInitializeProcessor
-    implements TypedRecordProcessor<BatchOperationCreationRecord> {
+    implements TypedRecordProcessor<BatchOperationInitializationRecord> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationInitializeProcessor.class);
 
   private final StateWriter stateWriter;
-  private final BatchOperationMetrics metrics;
 
-  public BatchOperationInitializeProcessor(
-      final Writers writers, final BatchOperationMetrics metrics) {
+  public BatchOperationInitializeProcessor(final Writers writers) {
     stateWriter = writers.state();
-    this.metrics = metrics;
   }
 
   @Override
-  public void processRecord(final TypedRecord<BatchOperationCreationRecord> command) {
+  public void processRecord(final TypedRecord<BatchOperationInitializationRecord> command) {
     final var recordValue = command.getValue();
     LOGGER.debug(
         "Marking batch operation {} as started", command.getValue().getBatchOperationKey());
 
     stateWriter.appendFollowUpEvent(command.getKey(), BatchOperationIntent.STARTED, recordValue);
-
-    metrics.recordStarted(recordValue.getBatchOperationType());
   }
 }
