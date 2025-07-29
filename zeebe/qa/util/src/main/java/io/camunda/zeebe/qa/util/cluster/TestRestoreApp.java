@@ -13,14 +13,16 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
+import java.util.Arrays;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Represents an instance of the {@link RestoreApp} Spring application. */
 public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> {
   private final BrokerBasedProperties config;
-  private Long backupId;
+  private long[] backupId;
 
   public TestRestoreApp() {
     this(new BrokerBasedProperties());
@@ -56,7 +58,12 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   @Override
   protected String[] commandLineArgs() {
-    return backupId == null ? super.commandLineArgs() : new String[] {"--backupId=" + backupId};
+    return backupId == null
+        ? super.commandLineArgs()
+        : new String[] {
+          "--backupId="
+              + Arrays.stream(backupId).mapToObj(Long::toString).collect(Collectors.joining(","))
+        };
   }
 
   @Override
@@ -69,7 +76,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
     return this;
   }
 
-  public TestRestoreApp withBackupId(final long backupId) {
+  public TestRestoreApp withBackupId(final long... backupId) {
     this.backupId = backupId;
     return this;
   }
