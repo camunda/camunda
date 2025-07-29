@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {screen, waitForElementToBeRemoved} from 'modules/testing-library';
+import {screen} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
@@ -28,6 +28,7 @@ import {
   singleInstanceMetadata,
   incidentsByProcessKeyMetadata,
   processDefinitionMetadata,
+  jobMetadata,
 } from 'modules/mocks/metadata';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
@@ -48,6 +49,9 @@ import {waitFor} from '@testing-library/react';
 import {mockSearchIncidents} from 'modules/mocks/api/v2/incidents/searchIncidents';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockFetchProcessDefinition} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinition';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -105,6 +109,16 @@ describe('MetadataPopover', () => {
       page: {totalItems: 1},
     });
 
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockSearchUserTasks().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -131,6 +145,13 @@ describe('MetadataPopover', () => {
       ],
     });
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
   });
 
   afterEach(() => {
@@ -262,6 +283,24 @@ describe('MetadataPopover', () => {
     });
     flowNodeMetaDataStore.setMetaData(calledInstanceMetadata);
 
+    mockSearchProcessInstances().withSuccess({
+      items: [
+        {
+          ...mockProcessInstance,
+          processInstanceKey: '229843728748927482',
+          processDefinitionName: 'Called Process',
+        },
+      ],
+      page: {totalItems: 1},
+    });
+
+    mockSearchJobs().withSuccess({
+      items: [jobMetadata],
+      page: {
+        totalItems: 1,
+      },
+    });
+
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
@@ -309,15 +348,19 @@ describe('MetadataPopover', () => {
     expect(
       screen.getByText(/"jobDeadline": "2018-12-12 00:00:00"/),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"jobKey": "2251799813939822"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"jobType": "io.camunda.zeebe:userTask"/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"jobRetries": 1/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobWorker": ""/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobCustomHeaders": {}/)).toBeInTheDocument();
     expect(screen.getByText(/"incidentErrorType": null/)).toBeInTheDocument();
     expect(
       screen.getByText(/"incidentErrorMessage": null/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/"jobId": null/)).toBeInTheDocument();
-    expect(screen.getByText(/"jobType": null/)).toBeInTheDocument();
-    expect(screen.getByText(/"jobRetries": null/)).toBeInTheDocument();
-    expect(screen.getByText(/"jobWorker": null/)).toBeInTheDocument();
-    expect(screen.getByText(/"jobCustomHeaders": null/)).toBeInTheDocument();
     expect(
       screen.getByText(/"calledProcessInstanceKey": "229843728748927482"/),
     ).toBeInTheDocument();
@@ -418,10 +461,6 @@ describe('MetadataPopover', () => {
         /To view details for any of these, select one Instance in the Instance History./,
       ),
     ).toBeInTheDocument();
-
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('incidents-loading'),
-    );
 
     expect(screen.getByText(/3 incidents occurred/)).toBeInTheDocument();
     expect(
@@ -552,8 +591,15 @@ describe('MetadataPopover', () => {
 
     renderPopover();
 
+    mockSearchJobs().withSuccess({
+      items: [jobMetadata],
+      page: {
+        totalItems: 1,
+      },
+    });
+
     expect(await screen.findByText(labels.retriesLeft)).toBeInTheDocument();
-    expect(screen.getByTestId('retries-left-count')).toHaveTextContent('2');
+    expect(screen.getByTestId('retries-left-count')).toHaveTextContent('1');
   });
 
   it('should fetch and display specific element instance when selected from history', async () => {

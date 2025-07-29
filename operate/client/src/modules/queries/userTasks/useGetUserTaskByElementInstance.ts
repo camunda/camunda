@@ -27,7 +27,7 @@ const useGetUserTaskByElementInstance = (
 
       const {response, error} = await searchUserTasks(payload);
       if (response !== null) {
-        return response.items?.[0];
+        return response.items?.[0] ?? null;
       }
 
       throw error;

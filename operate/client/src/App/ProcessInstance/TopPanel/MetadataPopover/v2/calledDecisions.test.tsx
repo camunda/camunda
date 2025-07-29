@@ -39,8 +39,13 @@ import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstan
 import {mockIncidents} from 'modules/mocks/incidents';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {incidentsStore} from 'modules/stores/incidents';
-import type {ElementInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
+
+import type {
+  ElementInstance,
+  ProcessInstance,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -57,6 +62,18 @@ const mockElementInstance: ElementInstance = {
   processDefinitionKey: '2',
   hasIncident: false,
   tenantId: '<default>',
+};
+
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: '229843728748927482',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'Called Process',
+  hasIncident: true,
 };
 
 vi.mock('date-fns', async () => {
@@ -136,6 +153,11 @@ describe('MetadataPopover', () => {
 
     mockSearchElementInstances().withSuccess({
       items: [mockCallActivityElementInstance],
+      page: {totalItems: 1},
+    });
+
+    mockSearchProcessInstances().withSuccess({
+      items: [mockProcessInstance],
       page: {totalItems: 1},
     });
 
