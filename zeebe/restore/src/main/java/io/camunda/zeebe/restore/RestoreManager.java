@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
@@ -63,6 +64,12 @@ public class RestoreManager {
   public void restore(
       final long backupId, final boolean validateConfig, final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
+    restore(new long[] {backupId}, validateConfig, ignoreFilesInTarget);
+  }
+
+  public void restore(
+      final long[] backupIds, final boolean validateConfig, final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
     if (!dataFolderIsEmpty(dataDirectory, ignoreFilesInTarget)) {
       LOG.error(
@@ -80,7 +87,7 @@ public class RestoreManager {
       for (final var partition : partitionsToRestore) {
         tasks.add(
             () -> {
-              restorePartition(partition, backupId, validateConfig);
+              restorePartition(partition, backupIds, validateConfig);
               return null;
             });
       }
@@ -125,8 +132,10 @@ public class RestoreManager {
   }
 
   private void restorePartition(
-      final InstrumentedRaftPartition partition, final long backupId, final boolean validateConfig)
-      throws IOException {
+      final InstrumentedRaftPartition partition,
+      final long[] backupIds,
+      final boolean validateConfig)
+      throws IOException, FlushException {
     final BackupValidator validator;
     final RaftPartition raftPartition = partition.partition();
 
@@ -146,12 +155,11 @@ public class RestoreManager {
             new ChecksumProviderRocksDBImpl(),
             partition.registry());
     try {
-      final var backup = restoreService.restore(backupId, validator);
+      restoreService.restore(backupIds, validator);
       LOG.info(
-          "Successfully restored partition {} from backup {}. Backup description: {}",
+          "Successfully restored partition {} from backups {}.",
           raftPartition.id().id(),
-          backupId,
-          backup);
+          backupIds);
     } finally {
       MicrometerUtil.close(registry);
     }

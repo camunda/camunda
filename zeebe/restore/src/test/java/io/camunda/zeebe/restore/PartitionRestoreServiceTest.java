@@ -19,6 +19,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.management.BackupService;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
@@ -130,7 +131,7 @@ class PartitionRestoreServiceTest {
   }
 
   @Test
-  void shouldRestoreToDataDirectory() throws IOException {
+  void shouldRestoreToDataDirectory() throws IOException, FlushException {
     // given
     // write something to the journal
     appendRecord(1, "data");
