@@ -9,6 +9,7 @@ package io.camunda.authentication.service;
 
 import io.camunda.search.util.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.security.auth.OidcGroupsLoader;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,14 +19,14 @@ import org.springframework.util.StringUtils;
 
 @Service
 @ConditionalOnSecondaryStorageDisabled
-public class NoDBMembershipService extends MembershipService {
+public class NoDBMembershipService implements MembershipService {
 
   private final OidcGroupsLoader oidcGroupsLoader;
   private final String groupsClaim;
 
-  public NoDBMembershipService(final OidcGroupsLoader oidcGroupsLoader) {
-    this.oidcGroupsLoader = oidcGroupsLoader;
-    groupsClaim = oidcGroupsLoader.getGroupsClaim();
+  public NoDBMembershipService(final SecurityConfiguration securityConfiguration) {
+    groupsClaim = securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
+    oidcGroupsLoader = new OidcGroupsLoader(groupsClaim);
   }
 
   @Override
@@ -36,10 +37,6 @@ public class NoDBMembershipService extends MembershipService {
     final Set<String> groups =
         groupsClaimPresent ? new HashSet<>(oidcGroupsLoader.load(claims)) : Collections.emptySet();
     return new MembershipResult(
-        groups,
-        Collections.emptyList(),
-        Collections.emptyList(),
-        Collections.emptySet(),
-        Collections.emptyList());
+        groups, Collections.emptySet(), Collections.emptyList(), Collections.emptySet());
   }
 }

@@ -13,15 +13,15 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.util.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
-import io.camunda.service.AuthorizationServices;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,10 +38,9 @@ import org.springframework.util.StringUtils;
 @Service
 @Primary
 @ConditionalOnSecondaryStorageEnabled
-public class DefaultMembershipService extends MembershipService {
+public class DefaultMembershipService implements MembershipService {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultMembershipService.class);
 
-  private final AuthorizationServices authorizationServices;
   private final MappingRuleServices mappingRuleServices;
   private final TenantServices tenantServices;
   private final RoleServices roleServices;
@@ -50,19 +49,17 @@ public class DefaultMembershipService extends MembershipService {
   private final String groupsClaim;
 
   public DefaultMembershipService(
-      final AuthorizationServices authorizationServices,
       final MappingRuleServices mappingRuleServices,
       final TenantServices tenantServices,
       final RoleServices roleServices,
       final GroupServices groupServices,
-      final OidcGroupsLoader oidcGroupsLoader) {
-    this.authorizationServices = authorizationServices;
+      final SecurityConfiguration securityConfiguration) {
     this.mappingRuleServices = mappingRuleServices;
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
     this.groupServices = groupServices;
-    this.oidcGroupsLoader = oidcGroupsLoader;
-    groupsClaim = oidcGroupsLoader.getGroupsClaim();
+    groupsClaim = securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
+    oidcGroupsLoader = new OidcGroupsLoader(groupsClaim);
   }
 
   @Override
@@ -110,10 +107,13 @@ public class DefaultMembershipService extends MembershipService {
     final var roles =
         roleServices
             .withAuthentication(CamundaAuthentication.anonymous())
-            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds);
-    final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
-    if (!roleIds.isEmpty()) {
-      ownerTypeToIds.put(EntityType.ROLE, roleIds);
+            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds)
+            .stream()
+            .map(RoleEntity::roleId)
+            .collect(Collectors.toSet());
+
+    if (!roles.isEmpty()) {
+      ownerTypeToIds.put(EntityType.ROLE, roles);
     }
 
     final var tenants =
@@ -121,14 +121,9 @@ public class DefaultMembershipService extends MembershipService {
             .withAuthentication(CamundaAuthentication.anonymous())
             .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds)
             .stream()
-            .map(TenantDTO::fromEntity)
+            .map(TenantEntity::tenantId)
             .toList();
 
-    final var authorizedApplications =
-        authorizationServices
-            .withAuthentication(CamundaAuthentication.anonymous())
-            .getAuthorizedApplications(ownerTypeToIds);
-
-    return new MembershipResult(groups, roles, tenants, mappingRuleIds, authorizedApplications);
+    return new MembershipResult(groups, roles, tenants, mappingRuleIds);
   }
 }
