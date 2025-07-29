@@ -211,6 +211,13 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
         "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
   }
 
+  /** Returns the broker's working directory if it is already set, or null otherwise. */
+  public final Path getWorkingDirectory() {
+    return Optional.ofNullable(bean(WorkingDirectory.class))
+        .map(WorkingDirectory::path)
+        .orElse(null);
+  }
+
   public final Optional<AuthenticationMethod> apiAuthenticationMethod() {
     if (property(AuthenticationProperties.API_UNPROTECTED, Boolean.class, true)) {
       return Optional.empty();
