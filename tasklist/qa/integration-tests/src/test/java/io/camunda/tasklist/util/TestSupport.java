@@ -157,7 +157,8 @@ public final class TestSupport {
             ValueType.GROUP,
             ValueType.MAPPING_RULE,
             ValueType.IDENTITY_SETUP,
-            ValueType.RESOURCE);
+            ValueType.RESOURCE,
+            ValueType.MULTI_INSTANCE);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }
