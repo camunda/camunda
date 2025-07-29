@@ -36,6 +36,7 @@ public final class BatchOperationInitializeProcessor
     LOGGER.debug(
         "Marking batch operation {} as started", command.getValue().getBatchOperationKey());
 
-    stateWriter.appendFollowUpEvent(command.getKey(), BatchOperationIntent.STARTED, recordValue);
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), BatchOperationIntent.INITIALIZATION_CONTINUED, recordValue);
   }
 }

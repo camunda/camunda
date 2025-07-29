@@ -147,7 +147,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     }
 
     // First fire a start event to indicate the beginning of the INIT phase
-    appendStartedCommand(taskResultBuilder, batchOperation);
+    appendInitializeCommand(taskResultBuilder, batchOperation);
 
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
 
@@ -295,11 +295,13 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         .setProcessInstanceKey(i.processInstanceKey());
   }
 
-  private void appendStartedCommand(
+  private void appendInitializeCommand(
       final TaskResultBuilder taskResultBuilder, final PersistedBatchOperation batchOperation) {
     final var batchOperationKey = batchOperation.getKey();
-    final var command = new BatchOperationInitializationRecord();
-    command.setBatchOperationKey(batchOperationKey);
+    final var command =
+        new BatchOperationInitializationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setSearchQueryPageSize(queryPageSize);
     LOG.trace("Appending batch operation {} started event", batchOperationKey);
     taskResultBuilder.appendCommandRecord(
         batchOperationKey,
