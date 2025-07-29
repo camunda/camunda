@@ -122,10 +122,10 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
       final var roleId = assignmentsForRole.getKey();
       for (final var assignmentsForEntityType : assignmentsForRole.getValue().entrySet()) {
         final var entityType =
-            switch (assignmentsForEntityType.getKey()) {
+            switch (assignmentsForEntityType.getKey().toLowerCase()) {
               case "users" -> EntityType.USER;
               case "clients" -> EntityType.CLIENT;
-              case "mappingRules" -> EntityType.MAPPING_RULE;
+              case "mappingrules" -> EntityType.MAPPING_RULE;
               case "groups" -> EntityType.GROUP;
               case "roles" -> EntityType.ROLE;
               default ->
