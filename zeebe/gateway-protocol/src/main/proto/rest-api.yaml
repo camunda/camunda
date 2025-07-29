@@ -6642,12 +6642,7 @@ components:
       nullable: true
       properties:
         operationReference:
-          description: |
-            A reference key chosen by the user that will be part of all records resulting from this operation.
-            Must be > 0 if provided.
-          type: integer
-          format: int64
-          minimum: 1
+          $ref: '#/components/schemas/OperationReference'
     ElementInstanceSearchQuerySortRequest:
       type: object
       properties:
@@ -8905,12 +8900,7 @@ components:
         changeset:
           $ref: "#/components/schemas/JobChangeset"
         operationReference:
-          description: |
-            A reference key chosen by the user that will be part of all records resulting from this operation.
-            Must be > 0 if provided.
-          type: integer
-          format: int64
-          minimum: 1
+          $ref: '#/components/schemas/OperationReference'
       required:
         - changeset
     JobChangeset:
@@ -9770,7 +9760,13 @@ components:
         - ASC
         - DESC
       default: ASC
-
+    OperationReference:
+      description: |
+        A reference key chosen by the user that will be part of all records resulting from this operation.
+        Must be > 0 if provided.
+      type: integer
+      format: int64
+      minimum: 1
     MessageCorrelationRequest:
       type: object
       properties:
@@ -10098,12 +10094,7 @@ components:
       type: object
       properties:
         operationReference:
-          description: |
-            A reference key chosen by the user that will be part of all records resulting from this operation.
-            Must be >0 if provided.
-          type: integer
-          format: int64
-          minimum: 1
+          $ref: '#/components/schemas/OperationReference'
 
     ProcessInstanceCreationInstruction:
       type: object
@@ -10130,12 +10121,7 @@ components:
           description: The tenant ID of the process definition.
           type: string
         operationReference:
-          description: |
-            A reference key chosen by the user that will be part of all records resulting from this operation.
-            Must be >0 if provided.
-          type: integer
-          format: int64
-          minimum: 1
+          $ref: '#/components/schemas/OperationReference'
         startInstructions:
           description: |
             List of start instructions. By default, the process instance will start at
@@ -10288,11 +10274,7 @@ components:
           items:
             $ref: "#/components/schemas/MigrateProcessInstanceMappingInstruction"
         operationReference:
-          description: |
-            A reference key chosen by the user that will be part of all records resulting from this operation. Must be > 0 if provided.
-          type: integer
-          format: int64
-          minimum: 1
+          $ref: '#/components/schemas/OperationReference'
         targetProcessDefinitionKey:
           description: The key of process definition to migrate the process instance to.
           type: string
@@ -10317,11 +10299,7 @@ components:
       type: object
       properties:
         operationReference:
-          description: |
-            A reference key chosen by the user that will be part of all records resulting from this operation. Must be > 0 if provided.
-          type: integer
-          format: int64
-          minimum: 1
+          $ref: '#/components/schemas/OperationReference'
         activateInstructions:
           description: Instructions describing which elements should be activated in which scopes and which variables should be created.
           type: array
@@ -10409,12 +10387,7 @@ components:
           type: boolean
           default: false
         operationReference:
-          description: >
-            A reference key chosen by the user that will be part of all records resulting from this operation.
-            Must be > 0 if provided.
-          type: integer
-          format: int64
-          minimum: 1
+          $ref: '#/components/schemas/OperationReference'
       required:
         - variables
 
@@ -10423,12 +10396,7 @@ components:
       nullable: true
       properties:
         operationReference:
-          description: |
-            A reference key chosen by the user that will be part of all records resulting from this operation.
-            Must be > 0 if provided.
-          type: integer
-          format: int64
-          minimum: 1
+          $ref: '#/components/schemas/OperationReference'
 
     SignalBroadcastRequest:
       type: object
