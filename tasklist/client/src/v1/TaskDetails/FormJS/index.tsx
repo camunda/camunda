@@ -28,7 +28,7 @@ import {CompleteTaskButton} from 'common/tasks/details/CompleteTaskButton';
 import {useTranslation} from 'react-i18next';
 import {extractVariablesFromFormSchema} from 'common/tasks/details/extractVariablesFromFormSchema';
 import {formatVariablesToFormData} from 'common/tasks/details/formatVariablesToFormData';
-import {TaskStateLoadingText} from 'common/tasks/details/TaskStateLoadingText';
+import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';
 
 type Props = {
   id: Form['id'];
@@ -181,7 +181,7 @@ const FormJS: React.FC<Props> = ({
               isDisabled={!canCompleteTask}
             />
             {['UPDATING', 'CANCELING'].includes(taskState) && (
-              <TaskStateLoadingText taskState={taskState} />
+              <ActiveTransitionLoadingText taskState={taskState} />
             )}
           </DetailsFooter>
         )}

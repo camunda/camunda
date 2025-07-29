@@ -14,7 +14,7 @@ import {AssigneeTag} from 'common/components/AssigneeTag';
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
 import styles from './styles.module.scss';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
-import {TaskStateLoadingText} from 'common/tasks/details/TaskStateLoadingText';
+import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';
 
 type Props = {
   taskName: string;
@@ -108,7 +108,9 @@ const TaskDetailsHeader: React.FC<Props> = ({
               taskState: Pattern.union('UPDATING', 'CANCELING'),
               assignee: null,
             },
-            ({taskState}) => <TaskStateLoadingText taskState={taskState} />,
+            ({taskState}) => (
+              <ActiveTransitionLoadingText taskState={taskState} />
+            ),
           )
           .with(
             {taskState: Pattern.union('UPDATING', 'CANCELING', 'COMPLETING')},
