@@ -23,6 +23,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
@@ -203,5 +204,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public TestStandaloneBroker withWorkingDirectory(final Path directory) {
     return withBean(
         "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
+  }
+
+  /** Returns the broker's working directory if it is already set, or null otherwise. */
+  public Path getWorkingDirectory() {
+    return Optional.ofNullable(bean(WorkingDirectory.class))
+        .map(WorkingDirectory::path)
+        .orElse(null);
   }
 }
