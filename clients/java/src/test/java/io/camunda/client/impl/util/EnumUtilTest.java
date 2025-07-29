@@ -17,6 +17,7 @@ package io.camunda.client.impl.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.search.enums.BatchOperationErrorType;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
@@ -29,6 +30,7 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.protocol.rest.BatchOperationError;
 import io.camunda.client.protocol.rest.BatchOperationItemResponse;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
 import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
@@ -488,6 +490,32 @@ public class EnumUtilTest {
       assertThat(value).isNotNull();
       if (protocolValue == BatchOperationTypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(BatchOperationType.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
+
+  @Test
+  public void shouldConvertBatchOperationErrorType() {
+
+    for (final BatchOperationErrorType value : BatchOperationErrorType.values()) {
+      final BatchOperationError.TypeEnum protocolValue =
+          EnumUtil.convert(value, BatchOperationError.TypeEnum.class);
+      assertThat(protocolValue).isNotNull();
+      if (value == BatchOperationErrorType.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue).isEqualTo(BatchOperationError.TypeEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final BatchOperationError.TypeEnum protocolValue : BatchOperationError.TypeEnum.values()) {
+      final BatchOperationErrorType value =
+          EnumUtil.convert(protocolValue, BatchOperationErrorType.class);
+      assertThat(value).isNotNull();
+      if (protocolValue == BatchOperationError.TypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(BatchOperationErrorType.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());
       }

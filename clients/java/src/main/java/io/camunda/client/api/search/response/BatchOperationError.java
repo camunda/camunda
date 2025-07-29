@@ -15,30 +15,13 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.api.search.enums.BatchOperationState;
-import io.camunda.client.api.search.enums.BatchOperationType;
-import java.util.List;
+import io.camunda.client.api.search.enums.BatchOperationErrorType;
 
-public interface BatchOperation {
+public interface BatchOperationError {
 
-  // To be backwards compatible with legacy batch operations from Operate, we need a String Key
-  // Operate BatchOperation Key is a UUID
-  // Engine BatchOperation Key is a Long
-  String getBatchOperationKey();
+  BatchOperationErrorType getType();
 
-  BatchOperationState getStatus();
+  String getMessage();
 
-  BatchOperationType getType();
-
-  String getStartDate();
-
-  String getEndDate();
-
-  Integer getOperationsTotalCount();
-
-  Integer getOperationsFailedCount();
-
-  Integer getOperationsCompletedCount();
-
-  List<BatchOperationError> getErrors();
+  int getPartitionId();
 }
