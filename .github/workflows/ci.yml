@@ -986,6 +986,124 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "General"
 
+  collect-flaky-tests:
+    name: Collect and update flaky tests comment
+    if: always() && github.event_name == 'pull_request'
+    needs:
+      - general-unit-tests
+      - zeebe-unit-tests
+      - elasticsearch-integration-tests
+      - opensearch-integration-tests
+      - rdbms-h2-integration-tests
+      - rdbms-integration-tests
+      - integration-tests
+      - docker-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Collect flaky test results
+        id: collect-results
+        run: |
+          # Initialize JSON array
+          flaky_data='[]'
+
+          # Helper function to add job data to JSON array
+          add_job_data() {
+            local job_name="$1"
+            local flaky_tests="$2"
+
+            if [[ -n "$flaky_tests" && "$flaky_tests" != "" ]]; then
+              # Escape quotes and newlines for JSON
+              escaped_flaky_tests=$(echo "$flaky_tests" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+
+              # Add to JSON array
+              flaky_data=$(echo "$flaky_data" | jq --arg job "$job_name" --arg tests "$escaped_flaky_tests" '. += [{"job": $job, "flaky_tests": $tests}]')
+            fi
+          }
+
+          # Collect from general-unit-tests
+          if [[ "${{ needs.general-unit-tests.result }}" != "skipped" ]]; then
+            flaky_tests='${{ needs.general-unit-tests.outputs.flakyTests || '' }}'
+            add_job_data "general-unit-tests" "$flaky_tests"
+          fi
+
+          # Collect from zeebe-unit-tests matrix jobs
+          # Matrix job outputs are available but we need to iterate through them
+          # Note: GitHub Actions doesn't provide a direct way to iterate matrix outputs
+          # We'll need to check each known matrix combination
+          declare -a zeebe_matrix_combinations=(
+            "General-CoreFeatures"
+            "Protocol-CoreFeatures"
+            "Gateway-CoreFeatures"
+            "Exporter-DataLayer"
+            "Backup-DistributedPlatform"
+            "Distributed-DistributedPlatform"
+          )
+
+          # For zeebe-unit-tests, we can only access the result, not individual matrix outputs
+          # This is a GitHub Actions limitation - matrix job outputs are not accessible
+          # We'll add a placeholder and note this needs to be handled differently
+          if [[ "${{ needs.zeebe-unit-tests.result }}" != "skipped" ]]; then
+            echo "# TODO: Matrix job outputs for zeebe-unit-tests cannot be accessed directly"
+            echo "# GitHub Actions doesn't expose individual matrix job outputs to dependent jobs"
+            echo "# This will need to be handled in a future step with a different approach"
+          fi
+
+          # Collect from elasticsearch-integration-tests
+          if [[ "${{ needs.elasticsearch-integration-tests.result }}" != "skipped" ]]; then
+            flaky_tests='${{ needs.elasticsearch-integration-tests.outputs.flakyTests || '' }}'
+            add_job_data "elasticsearch-integration-tests" "$flaky_tests"
+          fi
+
+          # Collect from opensearch-integration-tests
+          if [[ "${{ needs.opensearch-integration-tests.result }}" != "skipped" ]]; then
+            flaky_tests='${{ needs.opensearch-integration-tests.outputs.flakyTests || '' }}'
+            add_job_data "opensearch-integration-tests" "$flaky_tests"
+          fi
+
+          # Collect from rdbms-h2-integration-tests
+          if [[ "${{ needs.rdbms-h2-integration-tests.result }}" != "skipped" ]]; then
+            flaky_tests='${{ needs.rdbms-h2-integration-tests.outputs.flakyTests || '' }}'
+            add_job_data "rdbms-h2-integration-tests" "$flaky_tests"
+          fi
+
+          # Collect from rdbms-integration-tests
+          if [[ "${{ needs.rdbms-integration-tests.result }}" != "skipped" ]]; then
+            flaky_tests='${{ needs.rdbms-integration-tests.outputs.flakyTests || '' }}'
+            add_job_data "rdbms-integration-tests" "$flaky_tests"
+          fi
+
+          # Collect from integration-tests matrix jobs
+          # Same limitation as zeebe-unit-tests - matrix outputs not accessible
+          if [[ "${{ needs.integration-tests.result }}" != "skipped" ]]; then
+            echo "# TODO: Matrix job outputs for integration-tests cannot be accessed directly"
+            echo "# GitHub Actions doesn't expose individual matrix job outputs to dependent jobs"
+            echo "# This will need to be handled in a future step with a different approach"
+          fi
+
+          # Collect from docker-checks
+          if [[ "${{ needs.docker-checks.result }}" != "skipped" ]]; then
+            flaky_tests='${{ needs.docker-checks.outputs.flakyTests || '' }}'
+            add_job_data "docker-checks" "$flaky_tests"
+          fi
+
+          # Output the collected data
+          echo "flaky_tests_data=$flaky_data" >> "$GITHUB_OUTPUT"
+
+          # Log the collected data for debugging
+          echo "Collected flaky tests data:"
+          echo "$flaky_data" | jq '.'
+
+      - name: Update flaky tests comment
+        uses: ./.github/actions/update-flaky-tests-comment
+        with:
+          flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data }}'
+          pr-number: ${{ github.event.pull_request.number }}
+
   identity-frontend-tests:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
     needs: [ detect-changes ]
@@ -1025,7 +1143,6 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           user_description: "Identity"
-
 
   tasklist-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'

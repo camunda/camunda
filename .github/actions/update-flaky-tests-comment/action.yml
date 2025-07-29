@@ -1,0 +1,38 @@
+---
+name: Update Flaky Tests Comment
+
+description: Creates or updates a PR comment with flaky test summary across all test jobs
+
+inputs:
+  flaky-tests-data:
+    description: 'JSON array containing flaky test data from all jobs'
+    required: true
+  pr-number:
+    description: 'Pull request number for the comment'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Update Flaky Tests Comment
+      uses: actions/github-script@v7
+      with:
+        script: |
+          // Parse the flaky tests data
+          const flakyTestsData = JSON.parse('${{ inputs.flaky-tests-data }}');
+
+          console.log('Received flaky tests data:', JSON.stringify(flakyTestsData, null, 2));
+
+          // TODO: Implement the comment creation/update logic
+          // This is a placeholder for Step 1
+
+          // For now, just log that we received the data
+          if (flakyTestsData.length === 0) {
+            console.log('No flaky tests found in any job');
+          } else {
+            console.log(`Found flaky tests data from ${flakyTestsData.length} job(s)`);
+            flakyTestsData.forEach(jobData => {
+              console.log(`- Job: ${jobData.job}`);
+              console.log(`  Flaky tests: ${jobData.flaky_tests || 'none'}`);
+            });
+          }
