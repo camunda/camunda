@@ -292,7 +292,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "General / [UT]"
+          name: "General - [UT]"
       - name: Observe build status
         if: always()
         continue-on-error: true
