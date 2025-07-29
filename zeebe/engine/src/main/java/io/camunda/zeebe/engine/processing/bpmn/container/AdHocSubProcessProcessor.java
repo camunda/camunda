@@ -112,7 +112,8 @@ public class AdHocSubProcessProcessor
   public TransitionOutcome onTerminate(
       final ExecutableAdHocSubProcess element, final BpmnElementContext terminating) {
 
-    if (element.hasExecutionListeners()) {
+    if (element.hasExecutionListeners()
+        || element.getImplementationType() == ZeebeAdHocImplementationType.JOB_WORKER) {
       jobBehavior.cancelJob(terminating);
     }
     eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
