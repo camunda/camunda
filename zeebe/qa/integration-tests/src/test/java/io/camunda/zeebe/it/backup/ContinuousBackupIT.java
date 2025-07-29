@@ -8,9 +8,11 @@
 package io.camunda.zeebe.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import com.google.cloud.storage.BucketInfo;
+import io.camunda.client.CamundaClient;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
@@ -31,10 +33,12 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.util.unit.DataSize;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -107,21 +111,7 @@ final class ContinuousBackupIT {
   void canRestoreFromMultipleBackups() throws IOException {
     // given - three backups with some initial data
     try (final var client = broker.newClientBuilder().build()) {
-      final var process =
-          client
-              .newDeployResourceCommand()
-              .addProcessModel(
-                  Bpmn.createExecutableProcess("process")
-                      .startEvent()
-                      .serviceTask("task", t -> t.zeebeJobType("task"))
-                      .endEvent()
-                      .done(),
-                  "process.bpmn")
-              .send()
-              .join()
-              .getProcesses()
-              .getFirst()
-              .getProcessDefinitionKey();
+      final var process = deployTestProcess(client);
       client.newCreateInstanceCommand().processDefinitionKey(process).send().join();
       takeAndAwaitBackup(1L);
       client.newCreateInstanceCommand().processDefinitionKey(process).send().join();
@@ -140,7 +130,7 @@ final class ContinuousBackupIT {
         new TestRestoreApp()
             .withBrokerConfig(this::configureBroker)
             .withWorkingDirectory(dataDirectory)
-            .withBackupId(new long[] {1, 2, 3})
+            .withBackupId(1, 2, 3)
             .start();
     restore.close();
 
@@ -153,6 +143,72 @@ final class ContinuousBackupIT {
       for (final var job : jobs.getJobs()) {
         client.newCompleteCommand(job.getKey()).send().join();
       }
+    }
+  }
+
+  @Test
+  void restoreFailsOnGapsBetweenBackups() throws IOException {
+    // given - three backups spanning over multiple segments with snapshots in between
+    try (final var client = broker.newClientBuilder().build()) {
+      final var process = deployTestProcess(client);
+
+      createManyInstances(client, process);
+      takeAndAwaitBackup(1L);
+
+      partitionsActuator.takeSnapshot();
+      createManyInstances(client, process);
+      takeAndAwaitBackup(2L);
+
+      partitionsActuator.takeSnapshot();
+      createManyInstances(client, process);
+      takeAndAwaitBackup(3L);
+    }
+
+    // when/then - restoring from backup 1 and 3, but skipping backup 2
+    broker.stop();
+    final var dataDirectory = Path.of(broker.brokerConfig().getData().getDirectory()).getParent();
+    FileUtil.deleteFolder(dataDirectory);
+    FileUtil.ensureDirectoryExists(dataDirectory);
+    final var restore =
+        new TestRestoreApp()
+            .withBrokerConfig(this::configureBroker)
+            .withWorkingDirectory(dataDirectory)
+            .withBackupId(1, 3);
+
+    // then restore will fail
+    assertThatThrownBy(restore::start)
+        .rootCause()
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Cannot find a record at checkpoint position");
+
+    restore.close();
+  }
+
+  private static long deployTestProcess(final CamundaClient client) {
+    return client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .endEvent()
+                .done(),
+            "process.bpmn")
+        .send()
+        .join()
+        .getProcesses()
+        .getFirst()
+        .getProcessDefinitionKey();
+  }
+
+  private static void createManyInstances(final CamundaClient client, final long process) {
+    for (int i = 0; i < 100; i++) {
+      client
+          .newCreateInstanceCommand()
+          .processDefinitionKey(process)
+          .variables(Map.of("test", RandomStringUtils.insecure().nextAlphabetic(100_000)))
+          .send()
+          .join();
     }
   }
 
@@ -195,5 +251,7 @@ final class ContinuousBackupIT {
     gcsConfig.setHost(GCS.externalEndpoint());
     cfg.getData().getBackup().setGcs(gcsConfig);
     cfg.getData().getBackup().setStore(BackupStoreType.GCS);
+    cfg.getData().setLogSegmentSize(DataSize.ofMegabytes(1));
+    cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(500));
   }
 }
