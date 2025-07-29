@@ -324,7 +324,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
     taskResultBuilder.appendCommandRecord(
         state.batchOperation.getKey(),
-        BatchOperationIntent.CONTINUE_INITIALIZATION,
+        BatchOperationIntent.INITIALIZE,
         command,
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(state.batchOperation.getKey())));
   }
