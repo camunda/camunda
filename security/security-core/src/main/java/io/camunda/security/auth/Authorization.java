@@ -16,6 +16,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.M
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
@@ -156,6 +157,10 @@ public record Authorization<T>(
 
     public Builder<T> batchOperation() {
       return resourceType(BATCH);
+    }
+
+    public Builder<T> usageMetric() {
+      return resourceType(USAGE_METRIC);
     }
 
     public Builder<T> resourceId(final String resourceId) {
