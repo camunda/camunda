@@ -22,9 +22,9 @@ import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
+import org.assertj.core.api.SoftAssertionsProvider.ThrowingRunnable;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
-import org.junit.function.ThrowingRunnable;
 
 public class AwaitilityBehavior implements CamundaAssertAwaitBehavior {
 

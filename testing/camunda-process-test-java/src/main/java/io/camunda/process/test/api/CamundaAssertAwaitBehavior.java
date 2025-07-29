@@ -18,7 +18,7 @@ package io.camunda.process.test.api;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
-import org.junit.function.ThrowingRunnable;
+import org.assertj.core.api.SoftAssertionsProvider.ThrowingRunnable;
 
 /**
  * A behavior for waiting until a given assertion is satisfied.
