@@ -142,7 +142,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
+    verifyInitializeCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -172,11 +172,12 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
-    verify(taskResultBuilder)
+    // should be called twice, once for the initial command and once for the continued
+    // initialization
+    verify(taskResultBuilder, times(2))
         .appendCommandRecord(
             anyLong(),
-            eq(BatchOperationIntent.CONTINUE_INITIALIZATION),
+            eq(BatchOperationIntent.INITIALIZE),
             initializeRecordArgumentCaptor.capture(),
             any());
 
@@ -202,7 +203,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
+    verifyInitializeCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -231,10 +232,12 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(taskResultBuilder)
+    // should be called twice, once for the initial command and once for the continued
+    // initialization
+    verify(taskResultBuilder, times(2))
         .appendCommandRecord(
             anyLong(),
-            eq(BatchOperationIntent.CONTINUE_INITIALIZATION),
+            eq(BatchOperationIntent.INITIALIZE),
             initializeRecordArgumentCaptor.capture(),
             any());
 
@@ -257,7 +260,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
+    verifyInitializeCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
@@ -282,7 +285,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
+    verifyInitializeCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
@@ -308,7 +311,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
+    verifyInitializeCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
@@ -327,7 +330,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
+    verifyInitializeCommandAppended();
     verify(taskResultBuilder, times(2))
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
@@ -411,7 +414,7 @@ public class BatchOperationExecutionSchedulerTest {
         .collect(Collectors.toSet());
   }
 
-  private void verifyStartedCommandAppended() {
+  private void verifyInitializeCommandAppended() {
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
