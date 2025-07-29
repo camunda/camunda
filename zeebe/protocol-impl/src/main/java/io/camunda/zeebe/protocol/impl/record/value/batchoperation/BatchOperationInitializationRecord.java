@@ -24,7 +24,7 @@ public final class BatchOperationInitializationRecord extends UnifiedRecordValue
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
   private final StringProperty searchResultCursorProp =
-      new StringProperty(PROP_SEARCH_RESULT_CURSOR_KEY);
+      new StringProperty(PROP_SEARCH_RESULT_CURSOR_KEY, "");
   private final IntegerProperty searchQueryPageSize =
       new IntegerProperty(PROP_SEARCH_QUERY_PAGE_SIZE);
 
