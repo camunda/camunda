@@ -25,7 +25,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteReq
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -102,37 +101,6 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
         BrokerTenantEntityRequest.createRemoveRequest()
             .setTenantId(request.tenantId())
             .setEntity(request.entityType(), request.entityId()));
-  }
-
-  public List<TenantEntity> getTenantsByMemberIds(
-      final Set<String> memberIds, final EntityType memberType) {
-    return search(
-            TenantQuery.of(
-                q -> q.filter(b -> b.memberIds(memberIds).childMemberType(memberType)).unlimited()))
-        .items();
-  }
-
-  public List<TenantEntity> getTenantsByUserAndGroupsAndRoles(
-      final String username, final Set<String> groupIds, final Set<String> roleIds) {
-    final var tenants = new ArrayList<>(getTenantsByMemberIds(Set.of(username), EntityType.USER));
-    final var groupTenants = getTenantsByMemberIds(groupIds, EntityType.GROUP);
-    final var roleTenants = getTenantsByMemberIds(roleIds, EntityType.ROLE);
-
-    tenants.addAll(groupTenants);
-    tenants.addAll(roleTenants);
-    return tenants.stream().distinct().toList();
-  }
-
-  public List<TenantEntity> getTenantsByMappingRulesAndGroupsAndRoles(
-      final Set<String> mappingRules, final Set<String> groupIds, final Set<String> roleIds) {
-    final var tenants =
-        new ArrayList<>(getTenantsByMemberIds(mappingRules, EntityType.MAPPING_RULE));
-    final var groupTenants = getTenantsByMemberIds(groupIds, EntityType.GROUP);
-    final var roleTenants = getTenantsByMemberIds(roleIds, EntityType.ROLE);
-
-    tenants.addAll(groupTenants);
-    tenants.addAll(roleTenants);
-    return tenants.stream().distinct().toList();
   }
 
   public List<TenantEntity> getTenantsByMemberTypeAndMemberIds(
