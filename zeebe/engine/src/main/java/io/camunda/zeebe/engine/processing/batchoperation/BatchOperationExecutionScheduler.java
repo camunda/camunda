@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
@@ -299,9 +298,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private void appendStartedCommand(
       final TaskResultBuilder taskResultBuilder, final PersistedBatchOperation batchOperation) {
     final var batchOperationKey = batchOperation.getKey();
-    final var command = new BatchOperationCreationRecord();
+    final var command = new BatchOperationInitializationRecord();
     command.setBatchOperationKey(batchOperationKey);
-    command.setBatchOperationType(batchOperation.getBatchOperationType());
     LOG.trace("Appending batch operation {} started event", batchOperationKey);
     taskResultBuilder.appendCommandRecord(
         batchOperationKey,

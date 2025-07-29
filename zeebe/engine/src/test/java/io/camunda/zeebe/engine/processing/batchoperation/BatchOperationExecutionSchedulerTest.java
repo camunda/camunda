@@ -25,7 +25,6 @@ import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -417,7 +416,7 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(),
             eq(BatchOperationIntent.INITIALIZE),
-            any(BatchOperationCreationRecord.class),
+            any(BatchOperationInitializationRecord.class),
             any());
   }
 
