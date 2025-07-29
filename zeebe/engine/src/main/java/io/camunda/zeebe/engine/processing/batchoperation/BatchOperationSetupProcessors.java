@@ -73,8 +73,8 @@ public final class BatchOperationSetupProcessors {
                 batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_CREATION,
-            BatchOperationIntent.START,
-            new BatchOperationStartProcessor(writers, batchOperationMetrics))
+            BatchOperationIntent.INITIALIZE,
+            new BatchOperationInitializeProcessor(writers, batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_INITIALIZATION,
             BatchOperationIntent.CONTINUE_INITIALIZATION,
