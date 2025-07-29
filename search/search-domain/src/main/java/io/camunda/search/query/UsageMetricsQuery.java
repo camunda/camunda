@@ -7,46 +7,32 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.aggregation.UsageMetricsAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.UsageMetricsFilter;
-import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.sort.SortOptionBuilders;
-import io.camunda.search.sort.UsageMetricsSort;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record UsageMetricsQuery(
-    UsageMetricsFilter filter, UsageMetricsSort sort, SearchQueryPage page)
-    implements TypedSearchQuery<UsageMetricsFilter, UsageMetricsSort> {
+public record UsageMetricsQuery(UsageMetricsFilter filter)
+    implements TypedSearchAggregationQuery<UsageMetricsFilter, UsageMetricsAggregation> {
 
   public static UsageMetricsQuery of(final Function<Builder, ObjectBuilder<UsageMetricsQuery>> fn) {
     return fn.apply(new Builder()).build();
   }
 
-  public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
-      implements TypedSearchQueryBuilder<
-          UsageMetricsQuery, Builder, UsageMetricsFilter, UsageMetricsSort> {
+  @Override
+  public UsageMetricsAggregation aggregation() {
+    return new UsageMetricsAggregation(filter);
+  }
+
+  public static final class Builder implements ObjectBuilder<UsageMetricsQuery> {
     private static final UsageMetricsFilter EMPTY_FILTER = FilterBuilders.usageMetrics().build();
-    private static final UsageMetricsSort EMPTY_SORT = SortOptionBuilders.usageMetrics().build();
 
     private UsageMetricsFilter filter;
-    private UsageMetricsSort sort;
 
-    @Override
-    protected Builder self() {
-      return this;
-    }
-
-    @Override
     public Builder filter(final UsageMetricsFilter value) {
       filter = value;
-      return this;
-    }
-
-    @Override
-    public Builder sort(final UsageMetricsSort value) {
-      sort = value;
       return this;
     }
 
@@ -55,16 +41,10 @@ public record UsageMetricsQuery(
       return filter(FilterBuilders.usageMetrics(fn));
     }
 
-    public Builder sort(
-        final Function<UsageMetricsSort.Builder, ObjectBuilder<UsageMetricsSort>> fn) {
-      return sort(SortOptionBuilders.usageMetrics(fn));
-    }
-
     @Override
     public UsageMetricsQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
-      sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      return new UsageMetricsQuery(filter, sort, page());
+      return new UsageMetricsQuery(filter);
     }
   }
 }

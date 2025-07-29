@@ -35,7 +35,6 @@ import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
-import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -347,25 +346,6 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public UsageMetricStatisticsEntity usageMetricStatistics(final UsageMetricsQuery query) {
     return doReadWithResourceAccessController(
         access -> readers.usageMetricsReader().usageMetricStatistics(query, access));
-  }
-
-  /*
-   * The distinct count is implemented here by using Java Stream API until aggregations are in place.
-   */
-  private Long distinctCountUsageMetricsFor(final String event, final UsageMetricsQuery query) {
-    final var finalQuery =
-        UsageMetricsQuery.of(
-            b ->
-                b.filter(
-                        f ->
-                            f.startTime(query.filter().startTime())
-                                .endTime(query.filter().endTime())
-                                .events(event))
-                    .unlimited());
-    return doSearchWithReader(readers.usageMetricsReader(), finalQuery).items().stream()
-        .map(UsageMetricsEntity::value)
-        .distinct()
-        .count();
   }
 
   @Override
