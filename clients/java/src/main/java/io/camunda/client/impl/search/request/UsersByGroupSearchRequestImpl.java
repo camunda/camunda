@@ -80,13 +80,13 @@ public class UsersByGroupSearchRequestImpl
   @Override
   public UsersByGroupSearchRequest filter(final GroupUserFilter value) {
     // This command doesn't support filtering
-    return this;
+    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override
   public UsersByGroupSearchRequest filter(final Consumer<GroupUserFilter> fn) {
     // This command doesn't support filtering
-    return this;
+    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override

@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.filter.RoleUserFilter;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
@@ -60,5 +61,26 @@ public class UsersByRoleSearchRequestTest extends ClientRestTest {
     assertThatThrownBy(() -> client.newUsersByRoleSearchRequest(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingUsersByRole() {
+    assertThatThrownBy(
+            () -> client.newUsersByRoleSearchRequest(ROLE_ID).filter(fn -> {}).send().join())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("This command does not support filtering");
+  }
+
+  @Test
+  void shouldRaiseExceptionWhenFilteringIsPresentWhenSearchingUsersByRole() {
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUsersByRoleSearchRequest(ROLE_ID)
+                    .filter(new RoleUserFilter() {})
+                    .send()
+                    .join())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("This command does not support filtering");
   }
 }

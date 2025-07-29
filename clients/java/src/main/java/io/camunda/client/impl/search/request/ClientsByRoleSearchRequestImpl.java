@@ -80,13 +80,13 @@ public class ClientsByRoleSearchRequestImpl
   @Override
   public ClientsByRoleSearchRequest filter(final ClientFilter value) {
     // This command doesn't support filtering
-    return this;
+    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override
   public ClientsByRoleSearchRequest filter(final Consumer<ClientFilter> fn) {
     // This command doesn't support filtering
-    return this;
+    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override
