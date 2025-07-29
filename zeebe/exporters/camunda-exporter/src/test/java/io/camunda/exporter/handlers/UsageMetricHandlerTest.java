@@ -203,7 +203,7 @@ class UsageMetricHandlerTest {
     assertThat(variables).extracting(UsageMetricsEntity::getPartitionId).containsOnly(PARTITION_ID);
     assertThat(variables)
         .extracting(UsageMetricsEntity::getEventValue)
-        .containsExactlyInAnyOrder(1L, 1L, 2L);
+        .containsExactlyInAnyOrder(1L, 1L, null);
 
     assertThat(tuVariables)
         .extracting(UsageMetricsTUEntity::getId)
@@ -268,7 +268,7 @@ class UsageMetricHandlerTest {
     assertThat(variables).extracting(UsageMetricsEntity::getPartitionId).containsOnly(PARTITION_ID);
     assertThat(variables)
         .extracting(UsageMetricsEntity::getEventValue)
-        .containsExactlyInAnyOrder(11L, 22L, 2L);
+        .containsExactlyInAnyOrder(11L, 22L, null);
 
     assertThat(tuVariables)
         .extracting(UsageMetricsTUEntity::getId)

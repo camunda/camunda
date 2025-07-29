@@ -95,7 +95,7 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
             (tenantId, set) -> {
               collection.add(
                   createUsageMetricEntity(
-                      recordKey, partitionId, timestamp, tenantId, eventType, set.size()));
+                      recordKey, partitionId, timestamp, tenantId, eventType, null));
               set.forEach(
                   setValue ->
                       tuCollection.add(
@@ -130,7 +130,7 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
       final OffsetDateTime timestamp,
       final String tenantId,
       final UsageMetricsEventType eventType,
-      final long eventValue) {
+      final Long eventValue) {
 
     return new UsageMetricsEntity()
         .setId(String.format(ID_PATTERN, recordKey, tenantId))
