@@ -17,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 class SaasTokenControllerTest {
   private static final String BASE_PATH = "/v2/authentication/me";
@@ -67,7 +68,7 @@ class SaasTokenControllerTest {
           .expectStatus()
           .isOk()
           .expectBody()
-          .json("{b: 'blah'}");
+          .json("{b: 'blah'}", JsonCompareMode.STRICT);
     }
 
     @Test
