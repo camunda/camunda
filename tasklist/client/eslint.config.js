@@ -133,6 +133,7 @@ export default [
     rules: {
       ...testingLibraryPlugin.configs.react.rules,
       'testing-library/no-debugging-utils': 'error',
+      'testing-library/no-node-access': 'off',
     },
   },
 
