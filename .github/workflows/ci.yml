@@ -1041,7 +1041,7 @@ jobs:
       runBeTests: ${{ needs.detect-changes.outputs.operate-backend-changes == 'true'}}
 
   optimize-ci:
-    if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' }}
+    if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' }}
     name: "Optimize"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-optimize.yml
@@ -1049,7 +1049,7 @@ jobs:
     permissions: { }
     with:
       runFeTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' }}
-      runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' }}
+      runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
