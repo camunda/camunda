@@ -10,12 +10,11 @@ package io.camunda.it.nodb;
 import static io.camunda.search.util.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
 import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.authentication.CamundaOAuthPrincipalServiceImpl;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.service.NoDBMembershipService;
-import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -53,15 +52,16 @@ public class NoSecondaryStorageAuthenticationIT {
     context.register(TestBasicAuthConfiguration.class);
 
     // then - should fail fast with clear error message
-    final var exception = assertThrows(BeanCreationException.class, context::refresh);
-    assertThat(exception.getCause()).isInstanceOf(BeanInstantiationException.class);
-    final var rootCause = (BeanInstantiationException) exception.getCause();
-    assertThat(rootCause.getMessage())
-        .contains("Basic Authentication is not supported")
-        .contains("secondary storage is disabled")
-        .contains(PROPERTY_CAMUNDA_DATABASE_TYPE + "=" + CAMUNDA_DATABASE_TYPE_NONE)
-        .contains("enable secondary storage")
-        .contains("disable authentication");
+    assertThatThrownBy(context::refresh)
+        .isInstanceOf(BeanCreationException.class)
+        .hasCauseInstanceOf(BeanInstantiationException.class)
+        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .rootCause()
+        .hasMessageContaining("Basic Authentication is not supported")
+        .hasMessageContaining("secondary storage is disabled")
+        .hasMessageContaining(PROPERTY_CAMUNDA_DATABASE_TYPE + "=" + CAMUNDA_DATABASE_TYPE_NONE)
+        .hasMessageContaining("enable secondary storage")
+        .hasMessageContaining("disable authentication");
   }
 
   @Test
@@ -93,8 +93,7 @@ public class NoSecondaryStorageAuthenticationIT {
     // No secondary storage access, so these should be empty
     assertThat(oauthContext.authenticationContext().roles()).isEmpty();
     assertThat(oauthContext.authenticationContext().tenants()).isEmpty();
-    assertThat(oauthContext.authenticationContext().authorizedApplications()).isEmpty();
-    assertThat(oauthContext.mappingIds()).isEmpty();
+    assertThat(oauthContext.mappingRuleIds()).isEmpty();
 
     context.close();
   }
@@ -133,8 +132,9 @@ public class NoSecondaryStorageAuthenticationIT {
     }
 
     @Bean
-    public NoDBMembershipService noDBMembershipService() {
-      return new NoDBMembershipService(new OidcGroupsLoader("groups"));
+    public NoDBMembershipService noDBMembershipService(
+        final SecurityConfiguration securityConfiguration) {
+      return new NoDBMembershipService(securityConfiguration);
     }
 
     @Bean

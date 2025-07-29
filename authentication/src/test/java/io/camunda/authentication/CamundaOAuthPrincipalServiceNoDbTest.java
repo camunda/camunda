@@ -8,12 +8,11 @@
 package io.camunda.authentication;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.authentication.service.NoDBMembershipService;
-import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -40,7 +39,7 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
     authConfig.setOidc(oidcConfig);
     securityConfiguration.setAuthentication(authConfig);
 
-    membershipService = new NoDBMembershipService(new OidcGroupsLoader("groups"));
+    membershipService = new NoDBMembershipService(securityConfiguration);
     camundaOAuthPrincipalService =
         new CamundaOAuthPrincipalServiceImpl(securityConfiguration, membershipService);
   }
@@ -60,8 +59,7 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
     assertThat(result.authenticationContext().groups()).isEmpty();
     assertThat(result.authenticationContext().roles()).isEmpty();
     assertThat(result.authenticationContext().tenants()).isEmpty();
-    assertThat(result.authenticationContext().authorizedApplications()).isEmpty();
-    assertThat(result.mappingIds()).isEmpty();
+    assertThat(result.mappingRuleIds()).isEmpty();
   }
 
   @Test
@@ -79,8 +77,7 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
     assertThat(result.authenticationContext().groups()).isEmpty();
     assertThat(result.authenticationContext().roles()).isEmpty();
     assertThat(result.authenticationContext().tenants()).isEmpty();
-    assertThat(result.authenticationContext().authorizedApplications()).isEmpty();
-    assertThat(result.mappingIds()).isEmpty();
+    assertThat(result.mappingRuleIds()).isEmpty();
   }
 
   @Test
@@ -101,8 +98,7 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
     // In no-db mode, no secondary storage access, so these should be empty
     assertThat(result.authenticationContext().roles()).isEmpty();
     assertThat(result.authenticationContext().tenants()).isEmpty();
-    assertThat(result.authenticationContext().authorizedApplications()).isEmpty();
-    assertThat(result.mappingIds()).isEmpty();
+    assertThat(result.mappingRuleIds()).isEmpty();
   }
 
   @Test
@@ -127,14 +123,10 @@ public class CamundaOAuthPrincipalServiceNoDbTest {
     final Map<String, Object> claims = Map.of("some_other_claim", "value");
 
     // when & then
-    final OAuth2AuthenticationException exception =
-        assertThrows(
-            OAuth2AuthenticationException.class,
-            () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
-
-    assertThat(exception.getError().getErrorCode()).isEqualTo("invalid_client");
-    assertThat(exception.getMessage()).contains("Neither username claim");
-    assertThat(exception.getMessage()).contains("nor clientId claim");
+    assertThatThrownBy(() -> camundaOAuthPrincipalService.loadOAuthContext(claims))
+        .isInstanceOf(OAuth2AuthenticationException.class)
+        .hasMessageContaining("Neither username claim")
+        .hasMessageContaining("nor clientId claim");
   }
 
   @Test
