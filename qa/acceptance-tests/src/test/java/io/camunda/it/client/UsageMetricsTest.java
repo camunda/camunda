@@ -130,7 +130,7 @@ public class UsageMetricsTest {
         adminClient.newUsageMetricsRequest(now.minusDays(1), now.plusDays(1)).send().join();
 
     // then
-    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(2, 3, 0, 2, null));
+    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(2, 3, 0, 2, Map.of()));
   }
 
   @Test
