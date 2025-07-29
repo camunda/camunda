@@ -54,6 +54,7 @@
       <validValue name="USER_TASK">37</validValue>
       <validValue name="PROCESS_INSTANCE_MIGRATION">38</validValue>
       <validValue name="COMPENSATION_SUBSCRIPTION">39</validValue>
+      <validValue name="MULTI_INSTANCE">58</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="CHECKPOINT">254</validValue>

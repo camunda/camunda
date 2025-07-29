@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -27,6 +28,7 @@ final class ProcessInstanceElementCompletedApplier
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
   private final ProcessState processState;
+  private final MutableMultiInstanceState multiInstanceState;
   private final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier;
 
   public ProcessInstanceElementCompletedApplier(
@@ -34,11 +36,13 @@ final class ProcessInstanceElementCompletedApplier
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final MutableVariableState variableState,
       final ProcessState processState,
+      final MutableMultiInstanceState multiInstanceState,
       final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier) {
     this.elementInstanceState = elementInstanceState;
     this.eventScopeInstanceState = eventScopeInstanceState;
     this.variableState = variableState;
     this.processState = processState;
+    this.multiInstanceState = multiInstanceState;
     this.bufferedStartMessageEventStateApplier = bufferedStartMessageEventStateApplier;
   }
 
@@ -52,6 +56,10 @@ final class ProcessInstanceElementCompletedApplier
     }
 
     bufferedStartMessageEventStateApplier.removeMessageLock(value);
+
+    if (value.getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+      multiInstanceState.deleteInputCollection(key);
+    }
 
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
