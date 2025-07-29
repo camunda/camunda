@@ -51,6 +51,22 @@ const DropdownSearch = <Item,>({
   const [search, setSearch] = useState("");
   const [selectedResult, setSelectedResult] = useState<number>(-1);
 
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+  const [hasFocus, setHasFocus] = useState(false);
+
+  const handleWrapperFocus = () => setHasFocus(true);
+  const handleWrapperBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (
+      wrapperRef.current &&
+      e.relatedTarget &&
+      wrapperRef.current.contains(e.relatedTarget as Node)
+    ) {
+      // Focus is still within the wrapper
+      return;
+    }
+    setHasFocus(false);
+  };
+
   const handleChange = (e: { target: HTMLInputElement; type: "change" }) => {
     const { value } = e.target;
     setSearch(value);
@@ -100,43 +116,50 @@ const DropdownSearch = <Item,>({
   }, [items.length]);
 
   return (
-    <ListBox disabled={false} type="inline" isOpen>
-      <Search
-        labelText={placeholder}
-        placeholder={placeholder}
-        onChange={handleChange}
-        onClear={handleClear}
-        value={search}
-        autoFocus={autoFocus}
-        onKeyDown={handleKeyDown}
-      />
-      {search && (
-        <ListStyleWrapper>
-          <ListBox.Menu id="list-box">
-            {items.map((item, index) => {
-              const title = itemTitle(item);
+    <div
+      ref={wrapperRef}
+      tabIndex={-1}
+      onFocus={handleWrapperFocus}
+      onBlur={handleWrapperBlur}
+    >
+      <ListBox disabled={false} type="inline" isOpen>
+        <Search
+          labelText={placeholder}
+          placeholder={placeholder}
+          onChange={handleChange}
+          onClear={handleClear}
+          value={search}
+          autoFocus={autoFocus}
+          onKeyDown={handleKeyDown}
+        />
+        {hasFocus && (
+          <ListStyleWrapper>
+            <ListBox.Menu id="list-box">
+              {items.map((item, index) => {
+                const title = itemTitle(item);
 
-              return (
-                <MenuItemWrapper
-                  key={title}
-                  $isSelected={index === selectedResult}
-                >
-                  <ListBox.MenuItem
-                    title={title}
-                    onClick={() => handleSelect(item)}
+                return (
+                  <MenuItemWrapper
+                    key={title}
+                    $isSelected={index === selectedResult}
                   >
-                    {title}
-                    {itemSubTitle && (
-                      <SecondaryText>{itemSubTitle(item)}</SecondaryText>
-                    )}
-                  </ListBox.MenuItem>
-                </MenuItemWrapper>
-              );
-            })}
-          </ListBox.Menu>
-        </ListStyleWrapper>
-      )}
-    </ListBox>
+                    <ListBox.MenuItem
+                      title={title}
+                      onClick={() => handleSelect(item)}
+                    >
+                      {title}
+                      {itemSubTitle && (
+                        <SecondaryText>{itemSubTitle(item)}</SecondaryText>
+                      )}
+                    </ListBox.MenuItem>
+                  </MenuItemWrapper>
+                );
+              })}
+            </ListBox.Menu>
+          </ListStyleWrapper>
+        )}
+      </ListBox>
+    </div>
   );
 };
 
