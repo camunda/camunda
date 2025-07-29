@@ -137,7 +137,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
   }
 
   private List<SearchQuery> getTenantQuery(final List<Operation<String>> tenant) {
-   return stringOperations(TENANT_ID, tenant);
+    return stringOperations(TENANT_ID, tenant);
   }
 
   private SearchQuery getBpmnProcessIdQuery(final List<String> bpmnProcessId) {
