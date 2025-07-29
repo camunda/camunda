@@ -257,7 +257,6 @@ class ProcessStoreElasticSearchTest {
     final CamundaUser camundaUser = mock(CamundaUser.class);
     final AuthenticationContext authenticationContext = mock(AuthenticationContext.class);
     when(auth.getPrincipal()).thenReturn(camundaUser);
-    when(camundaUser.getUserKey()).thenReturn(123L);
     when(camundaUser.getAuthenticationContext()).thenReturn(authenticationContext);
     when(authenticationContext.roles()).thenReturn(List.of());
 

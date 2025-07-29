@@ -44,8 +44,12 @@ public class WebSessionMapperTest {
             CamundaUserBuilder.aCamundaUser()
                 .withUsername("test")
                 .withPassword("admin")
+<<<<<<< HEAD
                 .withUserKey(1L)
                 .withRoles(List.of("testRole"))
+=======
+                .withRoles(List.of(new RoleEntity(1L, "testRole", "testRole", "description")))
+>>>>>>> a87007db2b0 (fix: removing `userKey` from tests)
                 .build(),
             null);
     securityContext.setAuthentication(authenticationToken);
@@ -136,8 +140,12 @@ public class WebSessionMapperTest {
             CamundaUserBuilder.aCamundaUser()
                 .withUsername("test")
                 .withPassword("admin")
+<<<<<<< HEAD
                 .withUserKey(1L)
                 .withRoles(List.of("testRole"))
+=======
+                .withRoles(List.of(new RoleEntity(1L, "testRole", "testRole", "description")))
+>>>>>>> a87007db2b0 (fix: removing `userKey` from tests)
                 .build(),
             null);
     securityContext.setAuthentication(authenticationToken);

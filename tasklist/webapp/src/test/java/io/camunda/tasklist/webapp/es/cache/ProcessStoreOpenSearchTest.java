@@ -263,7 +263,6 @@ class ProcessStoreOpenSearchTest {
     final org.springframework.security.core.Authentication auth = mock(Authentication.class);
     final CamundaUser camundaUser = mock(CamundaUser.class);
     when(auth.getPrincipal()).thenReturn(camundaUser);
-    when(camundaUser.getUserKey()).thenReturn(123L);
 
     // Mock SecurityContextHolder
     final SecurityContext securityContext = mock(SecurityContext.class);
