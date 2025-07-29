@@ -1,1 +1,25 @@
-{}
+{
+  "cookies": [
+    {
+      "name": "camunda-session",
+      "value": "E6460CA4AB66AA3B1AF33B0DB43E4609",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "X-CSRF-TOKEN",
+      "value": "a76bbda0-3856-4640-9919-7a0c5b008e03",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}
