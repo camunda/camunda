@@ -379,6 +379,17 @@ public class AdHocSubProcessProcessor
         final ExecutableAdHocSubProcess adHocSubProcess,
         final BpmnElementContext adHocSubProcessContext,
         final BpmnElementContext childContext,
-        final Boolean satisfiesCompletionCondition) {}
+        final Boolean satisfiesCompletionCondition) {
+      // There should only be 1 active Job for the ad-hoc sub-process. We should cancel any active
+      // job before creating the new one.
+      jobBehavior.cancelJob(adHocSubProcessContext);
+
+      jobBehavior
+          .evaluateJobExpressions(adHocSubProcess.getJobWorkerProperties(), adHocSubProcessContext)
+          .thenDo(
+              jobProperties ->
+                  jobBehavior.createNewAdHocSubProcessJob(
+                      adHocSubProcessContext, adHocSubProcess, jobProperties));
+    }
   }
 }
