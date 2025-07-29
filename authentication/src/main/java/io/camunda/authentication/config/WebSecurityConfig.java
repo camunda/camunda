@@ -24,11 +24,13 @@ import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
+import io.camunda.authentication.converter.UsernamePasswordAuthenticationTokenConverter;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
@@ -389,15 +391,20 @@ public class WebSecurityConfig {
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   public static class BasicConfiguration {
+
+    @Bean
+    public CamundaAuthenticationConverter<Authentication> usernamePasswordAuthenticationConverter(
+        final RoleServices roleServices,
+        final GroupServices groupServices,
+        final TenantServices tenantServices) {
+      return new UsernamePasswordAuthenticationTokenConverter(
+          roleServices, groupServices, tenantServices);
+    }
+
     @Bean
     @ConditionalOnMissingBean(UserDetailsService.class)
-    public CamundaUserDetailsService camundaUserDetailsService(
-        final UserServices userServices,
-        final RoleServices roleServices,
-        final TenantServices tenantServices,
-        final GroupServices groupServices) {
-      return new CamundaUserDetailsService(
-          userServices, roleServices, tenantServices, groupServices);
+    public CamundaUserDetailsService camundaUserDetailsService(final UserServices userServices) {
+      return new CamundaUserDetailsService(userServices);
     }
 
     @Bean

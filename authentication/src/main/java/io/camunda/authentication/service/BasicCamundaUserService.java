@@ -10,20 +10,20 @@ package io.camunda.authentication.service;
 import static io.camunda.service.authorization.Authorizations.APPLICATION_ACCESS_AUTHORIZATION;
 
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
-import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.TenantServices;
+import io.camunda.service.UserServices;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -33,43 +33,26 @@ public class BasicCamundaUserService implements CamundaUserService {
 
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ResourceAccessProvider resourceAccessProvider;
+  private final UserServices userServices;
   private final TenantServices tenantServices;
 
   public BasicCamundaUserService(
       final CamundaAuthenticationProvider authenticationProvider,
       final ResourceAccessProvider resourceAccessProvider,
+      final UserServices userServices,
       final TenantServices tenantServices) {
     this.authenticationProvider = authenticationProvider;
     this.resourceAccessProvider = resourceAccessProvider;
+    this.userServices = userServices;
     this.tenantServices = tenantServices;
-  }
-
-  private Optional<CamundaUser> getCurrentCamundaUser() {
-    return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
-        .map(Authentication::getPrincipal)
-        .map(principal -> principal instanceof final CamundaUser user ? user : null);
   }
 
   @Override
   public CamundaUserDTO getCurrentUser() {
-    final var authorizedApplications = getAuthorizedApplications();
-    return getCurrentCamundaUser()
-        .map(
-            user -> {
-              final var auth = user.getAuthenticationContext();
-              final var tenants = getTenantsForUser(user);
-              return new CamundaUserDTO(
-                  user.getDisplayName(),
-                  auth.username(),
-                  user.getEmail(),
-                  authorizedApplications,
-                  tenants,
-                  auth.groups(),
-                  auth.roles(),
-                  user.getSalesPlanType(),
-                  user.getC8Links(),
-                  user.canLogout());
-            })
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return Optional.ofNullable(authentication)
+        .filter(a -> !a.isAnonymous())
+        .map(this::getCurrentUser)
         .orElse(null);
   }
 
@@ -78,8 +61,32 @@ public class BasicCamundaUserService implements CamundaUserService {
     return null;
   }
 
-  protected List<String> getAuthorizedApplications() {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+  protected CamundaUserDTO getCurrentUser(final CamundaAuthentication authentication) {
+    final var user = getUser(authentication);
+    final var username = authentication.authenticatedUsername();
+    final var groups = authentication.authenticatedGroupIds();
+    final var roles = authentication.authenticatedRoleIds();
+    final var tenants = getTenantsForCamundaAuthentication(authentication);
+    final var authorizedApplications = getAuthorizedApplications(authentication);
+    return new CamundaUserDTO(
+        user.name(),
+        username,
+        user.email(),
+        authorizedApplications,
+        tenants,
+        groups,
+        roles,
+        null,
+        Map.of(),
+        true);
+  }
+
+  protected UserEntity getUser(final CamundaAuthentication authentication) {
+    final var username = authentication.authenticatedUsername();
+    return userServices.withAuthentication(CamundaAuthentication.anonymous()).getUser(username);
+  }
+
+  protected List<String> getAuthorizedApplications(final CamundaAuthentication authentication) {
     final var applicationAccess =
         resourceAccessProvider.resolveResourceAccess(
             authentication, APPLICATION_ACCESS_AUTHORIZATION);
@@ -88,9 +95,9 @@ public class BasicCamundaUserService implements CamundaUserService {
         : List.of();
   }
 
-  private List<TenantEntity> getTenantsForUser(final CamundaUser camundaUser) {
-    final var tenants = camundaUser.getAuthenticationContext().tenants();
-    return Optional.ofNullable(tenants)
+  private List<TenantEntity> getTenantsForCamundaAuthentication(
+      final CamundaAuthentication authentication) {
+    return Optional.ofNullable(authentication.authenticatedTenantIds())
         .filter(t -> !t.isEmpty())
         .map(this::getTenants)
         .orElseGet(List::of);

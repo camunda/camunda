@@ -5,20 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication;
+package io.camunda.authentication.converter;
 
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import io.camunda.authentication.CamundaJwtAuthenticationToken;
 import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
 import io.camunda.authentication.entity.CamundaJwtUser;
 import io.camunda.authentication.entity.CamundaOidcUser;
-import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
-import io.camunda.zeebe.auth.Authorization;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -46,8 +45,9 @@ public class DefaultCamundaAuthenticationConverterTest {
   @Test
   void shouldSupportCamundaPrincipal() {
     // given
-    final var username = "username";
-    final var authentication = getUsernamePasswordAuthenticationInContext(username);
+    final String usernameClaim = "sub";
+    final String usernameValue = "test-user";
+    final var authentication = getOidcAuthenticationInContext(usernameClaim, usernameValue, "aud1");
 
     // when
     final var supports = authenticationConverter.supports(authentication);
@@ -67,22 +67,6 @@ public class DefaultCamundaAuthenticationConverterTest {
 
     // then
     assertThat(supports).isFalse();
-  }
-
-  @Test
-  void authenticationContainsUsername() {
-    // given
-    final var username = "username";
-    final var authentication = getUsernamePasswordAuthenticationInContext(username);
-
-    // when
-    final var camundaAuthentication = authenticationConverter.convert(authentication);
-
-    // then
-    assertThat(camundaAuthentication).isNotNull();
-    assertThat(camundaAuthentication.authenticatedUsername()).isEqualTo(username);
-    assertThat(camundaAuthentication.claims().get(Authorization.AUTHORIZED_USERNAME))
-        .isEqualTo(username);
   }
 
   @Test
@@ -259,11 +243,5 @@ public class DefaultCamundaAuthenticationConverterTest {
             new AuthenticationContextBuilder().withUsername(usernameValue).build()),
         List.of(),
         "oidc");
-  }
-
-  private Authentication getUsernamePasswordAuthenticationInContext(final String username) {
-    return new UsernamePasswordAuthenticationToken(
-        CamundaUserBuilder.aCamundaUser().withUsername(username).withPassword("admin").build(),
-        null);
   }
 }

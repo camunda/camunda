@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication;
+package io.camunda.authentication.converter;
 
 import io.camunda.authentication.exception.CamundaAuthenticationException;
 import io.camunda.security.auth.CamundaAuthentication;

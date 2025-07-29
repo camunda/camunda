@@ -26,7 +26,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleDeleteRequest
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -79,21 +78,6 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
     return members.total() > 0;
   }
 
-  public List<RoleEntity> getRolesByMemberIds(
-      final Set<String> memberIds, final EntityType entityType) {
-    return search(
-            RoleQuery.of(
-                q -> q.filter(f -> f.memberIds(memberIds).childMemberType(entityType)).unlimited()))
-        .items();
-  }
-
-  public List<RoleEntity> getRolesByMemberId(final String memberId, final EntityType entityType) {
-    return search(
-            RoleQuery.of(
-                q -> q.filter(f -> f.memberId(memberId).childMemberType(entityType)).unlimited()))
-        .items();
-  }
-
   public List<RoleEntity> getRolesByMemberTypeAndMemberIds(
       final Map<EntityType, Set<String>> memberTypesToMemberIds) {
     return search(
@@ -103,15 +87,6 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
                         .filter(roleFilter -> roleFilter.memberIdsByType(memberTypesToMemberIds))
                         .unlimited()))
         .items();
-  }
-
-  public List<RoleEntity> getRolesByUserAndGroups(
-      final String username, final Set<String> groupIds) {
-    final var roles = new ArrayList<>(getRolesByMemberId(username, EntityType.USER));
-    final var groupRoles = getRolesByMemberIds(groupIds, EntityType.GROUP);
-
-    roles.addAll(groupRoles);
-    return roles.stream().distinct().toList();
   }
 
   @Override

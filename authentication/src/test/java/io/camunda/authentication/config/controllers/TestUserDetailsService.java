@@ -7,8 +7,7 @@
  */
 package io.camunda.authentication.config.controllers;
 
-import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aCamundaUser;
-
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,11 +23,6 @@ public class TestUserDetailsService implements UserDetailsService {
           "This service only manages the demo user; "
               + "make this more flexible if you need it for your tests");
     }
-
-    return aCamundaUser()
-        .withName(DEMO_USERNAME)
-        .withUsername(username)
-        .withPassword(DEMO_USERNAME)
-        .build();
+    return User.withUsername(username).password(DEMO_USERNAME).build();
   }
 }
