@@ -48,7 +48,7 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
   }
 
   @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
+  public boolean cancel(final boolean mayInterruptIfRunning, final Throwable cause) {
     if (transportFuture != null) {
       transportFuture.cancel(mayInterruptIfRunning);
     }
