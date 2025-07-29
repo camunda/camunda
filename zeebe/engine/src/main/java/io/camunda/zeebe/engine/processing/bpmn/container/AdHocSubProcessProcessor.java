@@ -22,11 +22,14 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AdHocSubProcessProcessor
@@ -41,6 +44,13 @@ public class AdHocSubProcessProcessor
   private final ExpressionProcessor expressionProcessor;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
+
+  private final EnumMap<ZeebeAdHocImplementationType, AdHocSubProcessBehavior>
+      adHocSubProcessBehaviors =
+          new EnumMap<>(
+              Map.ofEntries(
+                  Map.entry(ZeebeAdHocImplementationType.BPMN, new BpmnBehavior()),
+                  Map.entry(ZeebeAdHocImplementationType.JOB_WORKER, new JobWorkerBehavior())));
 
   public AdHocSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -290,5 +300,70 @@ public class AdHocSubProcessProcessor
       // all remaining child instances were terminated.
       stateTransitionBehavior.completeElement(adHocSubProcessContext);
     }
+  }
+
+  private interface AdHocSubProcessBehavior {
+
+    Either<Failure, ?> onActivation(
+        final ExecutableAdHocSubProcess element, final BpmnElementContext context);
+
+    Either<Failure, ?> beforeExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext);
+
+    void afterExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext,
+        final Boolean satisfiesCompletionCondition);
+  }
+
+  private final class BpmnBehavior implements AdHocSubProcessBehavior {
+
+    @Override
+    public Either<Failure, ?> onActivation(
+        final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+      return null;
+    }
+
+    @Override
+    public Either<Failure, ?> beforeExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext) {
+      return null;
+    }
+
+    @Override
+    public void afterExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext,
+        final Boolean satisfiesCompletionCondition) {}
+  }
+
+  private final class JobWorkerBehavior implements AdHocSubProcessBehavior {
+
+    @Override
+    public Either<Failure, ?> onActivation(
+        final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+      return null;
+    }
+
+    @Override
+    public Either<Failure, ?> beforeExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext) {
+      return null;
+    }
+
+    @Override
+    public void afterExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext,
+        final Boolean satisfiesCompletionCondition) {}
   }
 }
