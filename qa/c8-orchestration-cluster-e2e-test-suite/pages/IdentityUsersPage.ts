@@ -98,10 +98,8 @@ export class IdentityUsersPage {
         exact: true,
       },
     );
-
     this.editUserModal = page.getByRole('dialog', {
       name: 'Edit user',
-      exact: true,
     });
     this.closeEditUserModal = this.editUserModal.getByRole('button', {
       name: 'Close',
@@ -184,6 +182,18 @@ export class IdentityUsersPage {
     await waitForItemInList(this.page, item, {
       emptyStateLocator: this.emptyState,
     });
+  }
+
+  async editUser(
+    currentUser: {email: string},
+    updatedUser: {name: string; email: string},
+  ) {
+    await this.editUserButton(currentUser.email).click();
+    await expect(this.editUserModal).toBeVisible();
+    await this.editNameField.fill(updatedUser.name);
+    await this.editEmailField.fill(updatedUser.email);
+    await this.editUserModalUpdateButton.click();
+    await expect(this.editUserModal).toBeHidden();
   }
 
   async deleteUser(user: {username: string; email: string}) {
