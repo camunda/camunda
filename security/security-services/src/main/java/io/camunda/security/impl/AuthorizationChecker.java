@@ -22,7 +22,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -47,24 +50,27 @@ public class AuthorizationChecker {
    * @return a list of authorized resource ids for the user or group in the SecurityContext
    */
   public List<String> retrieveAuthorizedResourceIds(final SecurityContext securityContext) {
-    final var ownerIds = collectOwnerTypeToOwnerIds(securityContext.authentication());
+    final var authentication = securityContext.authentication();
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
-    final var authorizationEntities =
-        authorizationReader.search(
-            AuthorizationQuery.of(
-                q ->
-                    q.filter(
-                            f ->
-                                f.ownerTypeToOwnerIds(ownerIds)
-                                    .resourceType(resourceType.name())
-                                    .permissionTypes(permissionType))
-                        .unlimited()),
-            ResourceAccessChecks.disabled());
-    return authorizationEntities.items().stream()
-        .filter(e -> e.permissionTypes().contains(permissionType))
-        .map(AuthorizationEntity::resourceId)
-        .toList();
+    return getOrElseDefaultResult(
+        authentication,
+        (ownerIds) -> {
+          final var query =
+              AuthorizationQuery.of(
+                  q ->
+                      q.filter(
+                              f ->
+                                  f.ownerTypeToOwnerIds(ownerIds)
+                                      .resourceType(resourceType.name())
+                                      .permissionTypes(permissionType))
+                          .unlimited());
+          return authorizationReader.search(query, ResourceAccessChecks.disabled()).items().stream()
+              .filter(e -> e.permissionTypes().contains(permissionType))
+              .map(AuthorizationEntity::resourceId)
+              .toList();
+        },
+        List::of);
   }
 
   /**
@@ -77,23 +83,25 @@ public class AuthorizationChecker {
    * @return true if the resource id is authorized, false otherwise
    */
   public boolean isAuthorized(final String resourceId, final SecurityContext securityContext) {
-    final var ownerIds = collectOwnerTypeToOwnerIds(securityContext.authentication());
+    final var authentication = securityContext.authentication();
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
-    return authorizationReader
-            .search(
-                AuthorizationQuery.of(
-                    q ->
-                        q.filter(
-                                f ->
-                                    f.ownerTypeToOwnerIds(ownerIds)
-                                        .resourceType(resourceType.name())
-                                        .permissionTypes(permissionType)
-                                        .resourceIds(List.of(WILDCARD, resourceId)))
-                            .page(p -> p.size(1))),
-                ResourceAccessChecks.disabled())
-            .total()
-        > 0;
+    return getOrElseDefaultResult(
+        authentication,
+        (ownerIds) -> {
+          final var query =
+              AuthorizationQuery.of(
+                  q ->
+                      q.filter(
+                              f ->
+                                  f.ownerTypeToOwnerIds(ownerIds)
+                                      .resourceType(resourceType.name())
+                                      .permissionTypes(permissionType)
+                                      .resourceIds(List.of(WILDCARD, resourceId)))
+                          .page(p -> p.size(1)));
+          return authorizationReader.search(query, ResourceAccessChecks.disabled()).total() > 0;
+        },
+        () -> false);
   }
 
   /**
@@ -109,22 +117,23 @@ public class AuthorizationChecker {
       final String resourceId,
       final AuthorizationResourceType resourceType,
       final CamundaAuthentication authentication) {
-    final var ownerIds = collectOwnerTypeToOwnerIds(authentication);
-    final var authorizationEntities =
-        authorizationReader
-            .search(
-                AuthorizationQuery.of(
-                    q ->
-                        q.filter(
-                                f ->
-                                    f.ownerTypeToOwnerIds(ownerIds)
-                                        .resourceType(resourceType.name())
-                                        .resourceIds(List.of(WILDCARD, resourceId)))
-                            .unlimited()),
-                ResourceAccessChecks.disabled())
-            .items();
-
-    return collectPermissionTypes(authorizationEntities);
+    return getOrElseDefaultResult(
+        authentication,
+        (ownerIds) -> {
+          final var query =
+              AuthorizationQuery.of(
+                  q ->
+                      q.filter(
+                              f ->
+                                  f.ownerTypeToOwnerIds(ownerIds)
+                                      .resourceType(resourceType.name())
+                                      .resourceIds(List.of(WILDCARD, resourceId)))
+                          .unlimited());
+          final var authorizationEntities =
+              authorizationReader.search(query, ResourceAccessChecks.disabled()).items();
+          return collectPermissionTypes(authorizationEntities);
+        },
+        Set::of);
   }
 
   private Set<PermissionType> collectPermissionTypes(
@@ -132,6 +141,17 @@ public class AuthorizationChecker {
     return authorizationEntities.stream()
         .flatMap(a -> a.permissionTypes().stream())
         .collect(Collectors.toSet());
+  }
+
+  private <T> T getOrElseDefaultResult(
+      final CamundaAuthentication authentication,
+      final Function<Map<EntityType, Set<String>>, T> resultSupplier,
+      final Supplier<T> defaultResultSupplier) {
+    final var ownerTypeToOwnerIds = collectOwnerTypeToOwnerIds(authentication);
+    return Optional.of(ownerTypeToOwnerIds)
+        .filter(m -> !m.isEmpty())
+        .map(resultSupplier)
+        .orElseGet(defaultResultSupplier);
   }
 
   private Map<EntityType, Set<String>> collectOwnerTypeToOwnerIds(

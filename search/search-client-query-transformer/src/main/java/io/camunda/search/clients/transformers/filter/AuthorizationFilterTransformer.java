@@ -33,12 +33,9 @@ public final class AuthorizationFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
-    if (filter.ownerTypeToOwnerIds() != null && !filter.ownerTypeToOwnerIds().isEmpty()) {
-      return buildOwnerTypeToOwnerIdsQuery(filter);
-    }
-
     return and(
         buildCoreFilters(filter),
+        filter.ownerTypeToOwnerIds() != null ? buildOwnerTypeToOwnerIdsQuery(filter) : null,
         stringTerms(OWNER_ID, filter.ownerIds()),
         filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()));
   }
@@ -54,7 +51,6 @@ public final class AuthorizationFilterTransformer
             .map(
                 entry ->
                     and(
-                        buildCoreFilters(filter),
                         term(OWNER_TYPE, entry.getKey().name()),
                         stringTerms(OWNER_ID, entry.getValue())))
             .toList());
