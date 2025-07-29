@@ -18,10 +18,12 @@ package io.camunda.client.impl.search.response;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperation;
+import io.camunda.client.api.search.response.BatchOperationError;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class BatchOperationImpl implements BatchOperation {
 
@@ -34,6 +36,7 @@ public class BatchOperationImpl implements BatchOperation {
   private final Integer operationsFailedCount;
   private final Integer operationsCompletedCount;
   private final List<Long> keys = new ArrayList<>();
+  private final List<BatchOperationError> errors = new ArrayList<>();
 
   public BatchOperationImpl(final BatchOperationCreatedResult item) {
     batchOperationKey = item.getBatchOperationKey();
@@ -61,6 +64,11 @@ public class BatchOperationImpl implements BatchOperation {
     operationsTotalCount = item.getOperationsTotalCount();
     operationsFailedCount = item.getOperationsFailedCount();
     operationsCompletedCount = item.getOperationsCompletedCount();
+
+    if (item.getErrors() != null && !item.getErrors().isEmpty()) {
+      errors.addAll(
+          item.getErrors().stream().map(BatchOperationErrorImpl::new).collect(Collectors.toList()));
+    }
   }
 
   @Override
@@ -101,5 +109,10 @@ public class BatchOperationImpl implements BatchOperation {
   @Override
   public Integer getOperationsCompletedCount() {
     return operationsCompletedCount;
+  }
+
+  @Override
+  public List<BatchOperationError> getErrors() {
+    return new ArrayList<>(errors);
   }
 }
