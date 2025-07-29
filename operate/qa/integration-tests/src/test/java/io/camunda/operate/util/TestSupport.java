@@ -71,6 +71,7 @@ public final class TestSupport {
       case AD_HOC_SUB_PROCESS_INSTRUCTION -> config.adHocSubProcessInstruction = value;
       case ASYNC_REQUEST -> config.asyncRequest = value;
       case USAGE_METRIC -> config.usageMetrics = value;
+      case RUNTIME_INSTRUCTION -> config.runtimeInstruction = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -125,6 +126,7 @@ public final class TestSupport {
       case AD_HOC_SUB_PROCESS_INSTRUCTION -> config.adHocSubProcessInstruction = value;
       case ASYNC_REQUEST -> config.asyncRequest = value;
       case USAGE_METRIC -> config.usageMetrics = value;
+      case RUNTIME_INSTRUCTION -> config.runtimeInstruction = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
