@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
 import java.util.Optional;
@@ -96,7 +97,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
         .getPermissionTypes()
         .forEach(
             permissionType -> {
-              permissions.addResourceIdentifier(permissionType, authorization.getResourceId());
+              permissions.addAuthorizationScope(permissionType, authorization.getResourceId());
             });
     permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, permissions);
 
@@ -156,7 +157,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   }
 
   @Override
-  public Set<String> getResourceIdentifiers(
+  public Set<AuthorizationScope> getResourceIdentifiers(
       final AuthorizationOwnerType ownerType,
       final String ownerId,
       final AuthorizationResourceType resourceType,
@@ -194,7 +195,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
     this.resourceType.wrapString(resourceType.name());
 
     final var permissions = permissionsColumnFamily.get(ownerTypeOwnerIdAndResourceType);
-    permissions.removeResourceIdentifiers(permissionType, resourceIds);
+    permissions.removeAuthorizationScopes(permissionType, resourceIds);
 
     if (permissions.isEmpty()) {
       permissionsColumnFamily.deleteExisting(ownerTypeOwnerIdAndResourceType);
