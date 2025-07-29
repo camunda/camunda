@@ -18,13 +18,18 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.testcontainers.GcsContainer;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -98,11 +103,62 @@ final class ContinuousBackupIT {
         .untilAsserted(() -> assertThat(getSnapshotIndex()).isGreaterThan(0));
   }
 
+  @Test
+  void canRestoreFromMultipleBackups() throws IOException {
+    // given - three backups with some initial data
+    try (final var client = broker.newClientBuilder().build()) {
+      final var process =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(
+                  Bpmn.createExecutableProcess("process")
+                      .startEvent()
+                      .serviceTask("task", t -> t.zeebeJobType("task"))
+                      .endEvent()
+                      .done(),
+                  "process.bpmn")
+              .send()
+              .join()
+              .getProcesses()
+              .getFirst()
+              .getProcessDefinitionKey();
+      client.newCreateInstanceCommand().processDefinitionKey(process).send().join();
+      takeAndAwaitBackup(1L);
+      client.newCreateInstanceCommand().processDefinitionKey(process).send().join();
+      takeAndAwaitBackup(2L);
+      client.newCreateInstanceCommand().processDefinitionKey(process).send().join();
+      takeAndAwaitBackup(3L);
+      client.newCreateInstanceCommand().processDefinitionKey(process).send().join();
+    }
+
+    // when - restoring from all three backups
+    broker.stop();
+    final var dataDirectory = Path.of(broker.brokerConfig().getData().getDirectory()).getParent();
+    FileUtil.deleteFolder(dataDirectory);
+    FileUtil.ensureDirectoryExists(dataDirectory);
+    final var restore =
+        new TestRestoreApp()
+            .withBrokerConfig(this::configureBroker)
+            .withWorkingDirectory(dataDirectory)
+            .withBackupId(new long[] {1, 2, 3})
+            .start();
+    restore.close();
+
+    // then - result has the expected data: the first three process instances but not the fourth
+    broker.start();
+    try (final var client = broker.newClientBuilder().build()) {
+      final var jobs =
+          client.newActivateJobsCommand().jobType("task").maxJobsToActivate(3).send().join();
+      assertThat(jobs.getJobs()).hasSize(3);
+      for (final var job : jobs.getJobs()) {
+        client.newCompleteCommand(job.getKey()).send().join();
+      }
+    }
+  }
 
   void takeAndAwaitBackup(final long backupId) {
     backupActuator.take(backupId);
-
-    await("backup is completed")
+    await("snapshot is completed")
         .ignoreExceptions()
         .untilAsserted(
             () ->
