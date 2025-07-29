@@ -84,6 +84,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -2855,6 +2856,7 @@ final class JsonSerializableToJsonTest {
                     .setAuthorizationKey(1L)
                     .setOwnerId("ownerId")
                     .setOwnerType(AuthorizationOwnerType.USER)
+                    .setResourceMatcher(AuthorizationResourceMatcher.ID)
                     .setResourceId("resourceId")
                     .setResourceType(AuthorizationResourceType.RESOURCE)
                     .setPermissionTypes(Set.of(PermissionType.CREATE)),
@@ -2863,6 +2865,7 @@ final class JsonSerializableToJsonTest {
           "authorizationKey": 1,
           "ownerId": "ownerId",
           "ownerType": "USER",
+          "resourceMatcher": "ID",
           "resourceId": "resourceId",
           "resourceType": "RESOURCE",
           "permissionTypes": [
@@ -2882,6 +2885,7 @@ final class JsonSerializableToJsonTest {
           "authorizationKey": -1,
           "ownerId": "",
           "ownerType": "UNSPECIFIED",
+          "resourceMatcher": "UNSPECIFIED",
           "resourceId": "",
           "resourceType": "UNSPECIFIED",
           "permissionTypes": []
@@ -3194,6 +3198,7 @@ final class JsonSerializableToJsonTest {
                             .setOwnerId("id2")
                             .setOwnerType(AuthorizationOwnerType.MAPPING_RULE)
                             .setResourceType(AuthorizationResourceType.RESOURCE)
+                            .setResourceMatcher(AuthorizationResourceMatcher.ID)
                             .setResourceId("resource-id")
                             .setPermissionTypes(Set.of(PermissionType.CREATE))),
         """
@@ -3273,6 +3278,7 @@ final class JsonSerializableToJsonTest {
             "authorizationKey": -1,
             "ownerId": "id2",
             "ownerType": "MAPPING_RULE",
+            "resourceMatcher": "ID",
             "resourceId": "resource-id",
             "resourceType": "RESOURCE",
             "permissionTypes": ["CREATE"]

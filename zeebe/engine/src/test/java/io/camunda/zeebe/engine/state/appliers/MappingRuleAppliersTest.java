@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -180,6 +181,7 @@ public class MappingRuleAppliersTest {
         5L,
         new AuthorizationRecord()
             .setPermissionTypes(Set.of(PermissionType.READ))
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId("process")
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .setOwnerType(AuthorizationOwnerType.MAPPING_RULE)

@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -91,6 +92,7 @@ public class RoleAppliersTest {
         1L,
         new AuthorizationRecord()
             .setAuthorizationKey(1L)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId("role1")
             .setResourceType(AuthorizationResourceType.ROLE)
             .setPermissionTypes(Set.of(PermissionType.DELETE))
@@ -100,6 +102,7 @@ public class RoleAppliersTest {
         2L,
         new AuthorizationRecord()
             .setAuthorizationKey(2L)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId("role2")
             .setResourceType(AuthorizationResourceType.ROLE)
             .setPermissionTypes(Set.of(PermissionType.DELETE))

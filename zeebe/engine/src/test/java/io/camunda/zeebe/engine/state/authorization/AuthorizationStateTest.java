@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.authorization;
 
+import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
@@ -14,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
@@ -60,6 +62,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
             .setPermissionTypes(permissions);
@@ -74,6 +77,7 @@ public class AuthorizationStateTest {
     assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
     assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
+    assertThat(authorization.getResourceMatcher()).isEqualTo(AuthorizationResourceMatcher.ID);
     assertThat(authorization.getResourceId()).isEqualTo(resourceId);
     assertThat(authorization.getResourceType()).isEqualTo(resourceType);
     assertThat(authorization.getPermissionTypes()).containsExactlyInAnyOrderElementsOf(permissions);
@@ -100,6 +104,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
             .setPermissionTypes(permissions);
@@ -112,6 +117,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId("anotherResourceId")
             .setResourceType(resourceType)
             .setPermissionTypes(Set.of(PermissionType.READ, PermissionType.ACCESS));
@@ -124,6 +130,7 @@ public class AuthorizationStateTest {
     assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
     assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
+    assertThat(authorization.getResourceMatcher()).isEqualTo(AuthorizationResourceMatcher.ID);
     assertThat(authorization.getResourceId()).isEqualTo("anotherResourceId");
     assertThat(authorization.getResourceType()).isEqualTo(resourceType);
     assertThat(authorization.getPermissionTypes())
@@ -154,6 +161,77 @@ public class AuthorizationStateTest {
   }
 
   @Test
+  void shouldUpdateAuthorizationChangingResourceMatcherAndId() {
+    // given
+    final var authorizationKey = 1L;
+    final String ownerId = "ownerId";
+    final AuthorizationOwnerType ownerType = AuthorizationOwnerType.USER;
+    final AuthorizationResourceMatcher resourceMatcher = AuthorizationResourceMatcher.ID;
+    final String resourceId = "resourceId";
+    final AuthorizationResourceType resourceType = AuthorizationResourceType.RESOURCE;
+    final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceMatcher(resourceMatcher)
+            .setResourceId(resourceId)
+            .setResourceType(resourceType)
+            .setPermissionTypes(permissions);
+
+    authorizationState.create(authorizationKey, authorizationRecord);
+
+    // when
+    final var updatedAuthorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ANY)
+            .setResourceId("*")
+            .setResourceType(resourceType)
+            .setPermissionTypes(Set.of(PermissionType.READ, PermissionType.ACCESS));
+    authorizationState.update(authorizationKey, updatedAuthorizationRecord);
+
+    // then
+    final var persistedAuthorization = authorizationState.get(authorizationKey);
+    assertThat(persistedAuthorization).isPresent();
+    final var authorization = persistedAuthorization.get();
+    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
+    assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
+    assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
+    assertThat(authorization.getResourceMatcher()).isEqualTo(AuthorizationResourceMatcher.ANY);
+    assertThat(authorization.getResourceId()).isEqualTo("*");
+    assertThat(authorization.getResourceType()).isEqualTo(resourceType);
+    assertThat(authorization.getPermissionTypes())
+        .containsExactlyInAnyOrderElementsOf(Set.of(PermissionType.READ, PermissionType.ACCESS));
+
+    final var resourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.READ);
+    assertThat(resourceIdentifiers).containsExactly("*");
+
+    final var anotherResourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.ACCESS);
+    assertThat(anotherResourceIdentifiers).containsExactly("*");
+
+    final var anotherResourceIdentifiers2 =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.CREATE);
+    assertThat(anotherResourceIdentifiers2).isEmpty();
+
+    final var anotherResourceIdentifiers3 =
+        authorizationState.getResourceIdentifiers(
+            ownerType, ownerId, resourceType, PermissionType.DELETE);
+    assertThat(anotherResourceIdentifiers3).isEmpty();
+
+    final var keys = authorizationState.getAuthorizationKeysForOwner(ownerType, ownerId);
+    assertThat(keys).containsExactly(authorizationKey);
+  }
+
+  @Test
   void shouldUpdateAuthorizationChangingOwnerIdAndResourceId() {
     // given
     final var authorizationKey = 1L;
@@ -167,6 +245,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
             .setPermissionTypes(permissions);
@@ -179,6 +258,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId("anotherOwnerId")
             .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId("anotherResourceId")
             .setResourceType(resourceType)
             .setPermissionTypes(permissions);
@@ -236,6 +316,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
             .setPermissionTypes(permissions);
@@ -248,6 +329,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .setPermissionTypes(permissions);
@@ -309,6 +391,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
             .setPermissionTypes(permissions);
@@ -320,6 +403,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(2L)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId("resourceId2")
             .setResourceType(resourceType)
             .setPermissionTypes(permissions);
@@ -332,6 +416,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .setPermissionTypes(Set.of(PermissionType.READ_PROCESS_DEFINITION));
@@ -386,6 +471,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
             .setPermissionTypes(permissions);
@@ -426,6 +512,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey1)
             .setOwnerId(ownerId1)
             .setOwnerType(ownerType1)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId1)
             .setResourceType(resourceType1)
             .setPermissionTypes(permissions1);
@@ -441,6 +528,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey2)
             .setOwnerId(ownerId2)
             .setOwnerType(ownerType2)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId2)
             .setResourceType(resourceType2)
             .setPermissionTypes(permissions2);

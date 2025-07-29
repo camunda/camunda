@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -304,6 +305,7 @@ abstract class AbstractBatchOperationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.BATCH)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
         .withResourceId("*")
         .create(DEFAULT_USER.getUsername());
   }
@@ -317,6 +319,7 @@ abstract class AbstractBatchOperationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
         .withResourceId("*")
         .create(DEFAULT_USER.getUsername());
   }

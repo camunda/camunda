@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -73,6 +74,7 @@ public class AnonymousAuthorizationTest {
         .newAuthorization()
         .withPermissions(PermissionType.CREATE)
         .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
         .withResourceId("*")
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)

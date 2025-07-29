@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -97,6 +98,7 @@ public class AuthorizationCreatedUpdatedHandlerTest {
             .withAuthorizationKey(456L)
             .withOwnerId("foo")
             .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
             .withResourceId("*")
             .withPermissionTypes(List.of(PermissionType.CREATE, PermissionType.DELETE))
             .build();
@@ -115,6 +117,7 @@ public class AuthorizationCreatedUpdatedHandlerTest {
             .setAuthorizationKey(789L)
             .setOwnerId("bar")
             .setOwnerType(AuthorizationOwnerType.GROUP.name())
+            .setResourceMatcher(AuthorizationResourceMatcher.ID.value())
             .setResourceId("resourceId")
             .setPermissionTypes(Set.of(PermissionType.UPDATE));
     underTest.updateEntity(authorizationRecord, authorizationEntity);
@@ -125,6 +128,8 @@ public class AuthorizationCreatedUpdatedHandlerTest {
     assertThat(authorizationEntity.getOwnerId()).isEqualTo(authorizationRecordValue.getOwnerId());
     assertThat(authorizationEntity.getOwnerType())
         .isEqualTo(authorizationRecordValue.getOwnerType().name());
+    assertThat(authorizationEntity.getResourceMatcher())
+        .isEqualTo(authorizationRecordValue.getResourceMatcher().value());
     assertThat(authorizationEntity.getResourceId())
         .isEqualTo(authorizationRecordValue.getResourceId());
     assertThat(authorizationEntity.getPermissionTypes())

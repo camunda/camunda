@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -70,6 +71,7 @@ public class CreateInitialAdminUserAuthorizationTest {
         .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.AUTHORIZATION)
         .withPermissions(PermissionType.CREATE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
         .withResourceId("*")
         .create(DEFAULT_USER.getUsername());
     engine
@@ -79,6 +81,7 @@ public class CreateInitialAdminUserAuthorizationTest {
         .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.USER)
         .withPermissions(PermissionType.CREATE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
         .withResourceId("*")
         .create(DEFAULT_USER.getUsername());
     engine
@@ -88,6 +91,7 @@ public class CreateInitialAdminUserAuthorizationTest {
         .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.ROLE)
         .withPermissions(PermissionType.UPDATE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
         .withResourceId("*")
         .create(DEFAULT_USER.getUsername());
     engine
@@ -201,6 +205,7 @@ public class CreateInitialAdminUserAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
         .withResourceId("*")
         .create(DEFAULT_USER.getUsername());
   }

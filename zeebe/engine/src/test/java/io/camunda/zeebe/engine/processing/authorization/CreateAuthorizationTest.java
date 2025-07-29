@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -37,6 +38,7 @@ public class CreateAuthorizationTest {
             .newAuthorization()
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
             .withResourceId("resourceId")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
@@ -67,6 +69,7 @@ public class CreateAuthorizationTest {
         .newAuthorization()
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
         .withResourceId("resourceId")
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermissions(PermissionType.CREATE)
@@ -77,6 +80,7 @@ public class CreateAuthorizationTest {
         .newAuthorization()
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
         .withResourceId("anotherResourceId")
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermissions(PermissionType.CREATE)
@@ -89,6 +93,7 @@ public class CreateAuthorizationTest {
             .newAuthorization()
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
             .withResourceId("resourceId")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
@@ -116,6 +121,7 @@ public class CreateAuthorizationTest {
             .newAuthorization()
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
             .withResourceId("resourceId")
             .withResourceType(resourceType)
             .withPermissions(
@@ -146,6 +152,7 @@ public class CreateAuthorizationTest {
             .newAuthorization()
             .withOwnerId(nonexistentMappingId)
             .withOwnerType(AuthorizationOwnerType.MAPPING_RULE)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
             .withResourceId("resourceId")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)

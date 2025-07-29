@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
@@ -391,13 +392,13 @@ final class AuthorizationCheckBehaviorTest {
     final var firstResourceId = UUID.randomUUID().toString();
     final var secondResourceId = UUID.randomUUID().toString();
     addPermission(
-        String.valueOf(firstMapping.getMappingRuleId()),
+        firstMapping.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
         firstResourceId);
     addPermission(
-        String.valueOf(secondMapping.getMappingRuleId()),
+        secondMapping.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
@@ -841,11 +842,16 @@ final class AuthorizationCheckBehaviorTest {
       final String... resourceIds) {
     for (final String resourceId : resourceIds) {
       final var authorizationKey = random.nextLong();
+      final var resourceMatcher =
+          "*".equals(resourceId)
+              ? AuthorizationResourceMatcher.ANY
+              : AuthorizationResourceMatcher.ID;
       final var authorization =
           new AuthorizationRecord()
               .setAuthorizationKey(authorizationKey)
               .setOwnerId(ownerId)
               .setOwnerType(ownerType)
+              .setResourceMatcher(resourceMatcher)
               .setResourceId(resourceId)
               .setResourceType(resourceType)
               .setPermissionTypes(Set.of(permissionType));

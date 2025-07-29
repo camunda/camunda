@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
@@ -267,11 +268,16 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
       final String... resourceIds) {
     for (final String resourceId : resourceIds) {
       final var authorizationKey = random.nextLong();
+      final var resourceMatcher =
+          "*".equals(resourceId)
+              ? AuthorizationResourceMatcher.ANY
+              : AuthorizationResourceMatcher.ID;
       final var authorization =
           new AuthorizationRecord()
               .setAuthorizationKey(authorizationKey)
               .setOwnerId(ownerId)
               .setOwnerType(ownerType)
+              .setResourceMatcher(resourceMatcher)
               .setResourceId(resourceId)
               .setResourceType(resourceType)
               .setPermissionTypes(Set.of(permissionType));
