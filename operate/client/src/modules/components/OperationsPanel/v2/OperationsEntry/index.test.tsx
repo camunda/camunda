@@ -38,18 +38,18 @@ function createWrapper() {
 }
 
 const FinishingOperationsEntry: React.FC = () => {
-  const [finishedCount, setFinishedCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
 
   useLayoutEffect(() => {
-    setFinishedCount(5);
+    setCompletedCount(5);
   }, []);
 
   return (
     <OperationsEntry
       operation={{
-        ...OPERATIONS.EDIT,
+        ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
         operationsTotalCount: 5,
-        operationsFinishedCount: finishedCount,
+        operationsCompletedCount: completedCount,
       }}
     />
   );
@@ -59,9 +59,15 @@ const OPERATIONS_TIMESTAMP = '2023-11-22 08:03:29';
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
-    render(<OperationsEntry {...mockProps} operation={OPERATIONS.RETRY} />, {
-      wrapper: createWrapper(),
-    });
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={OPERATIONS.RESOLVE_INCIDENT}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(
@@ -72,9 +78,15 @@ describe('OperationsEntry', () => {
   });
 
   it('should render cancel operation', () => {
-    render(<OperationsEntry {...mockProps} operation={OPERATIONS.CANCEL} />, {
-      wrapper: createWrapper(),
-    });
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={OPERATIONS.CANCEL_PROCESS_INSTANCE}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
@@ -85,44 +97,16 @@ describe('OperationsEntry', () => {
     expect(screen.getByTestId('operation-cancel-icon')).toBeInTheDocument();
   });
 
-  it('should render edit operation', () => {
-    render(<OperationsEntry {...mockProps} operation={OPERATIONS.EDIT} />, {
-      wrapper: createWrapper(),
-    });
-
-    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
-    expect(
-      screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Edit')).toBeInTheDocument();
-    expect(screen.getByTestId('operation-edit-icon')).toBeInTheDocument();
-  });
-
-  it('should render delete operation', () => {
+  it('should render modify operation', () => {
     render(
       <OperationsEntry
         {...mockProps}
-        operation={OPERATIONS.DELETE_PROCESS_INSTANCE}
+        operation={OPERATIONS.MODIFY_PROCESS_INSTANCE}
       />,
       {
         wrapper: createWrapper(),
       },
     );
-
-    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
-    expect(
-      screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Delete')).toBeInTheDocument();
-    expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
-  });
-
-  it('should render modify operation', () => {
-    render(<OperationsEntry {...mockProps} operation={OPERATIONS.MODIFY} />, {
-      wrapper: createWrapper(),
-    });
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
@@ -134,9 +118,15 @@ describe('OperationsEntry', () => {
   });
 
   it('should render migrate operation', () => {
-    render(<OperationsEntry {...mockProps} operation={OPERATIONS.MIGRATE} />, {
-      wrapper: createWrapper(),
-    });
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={OPERATIONS.MIGRATE_PROCESS_INSTANCE}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
@@ -147,139 +137,25 @@ describe('OperationsEntry', () => {
     expect(screen.getByTestId('operation-migrate-icon')).toBeInTheDocument();
   });
 
-  it('should render batch move modification operation', () => {
-    render(<OperationsEntry {...mockProps} operation={OPERATIONS.MOVE} />, {
-      wrapper: createWrapper(),
-    });
-
-    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
-    expect(
-      screen.getByText('8ba1a9a7-8537-4af3-97dc-f7249743b20b'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Batch Modification')).toBeInTheDocument();
-    expect(screen.getByTestId('operation-move-icon')).toBeInTheDocument();
-  });
-
-  it('should render delete process definition operation', () => {
-    render(
-      <OperationsEntry
-        {...mockProps}
-        operation={OPERATIONS.DELETE_PROCESS_DEFINITION}
-      />,
-      {
-        wrapper: createWrapper(),
-      },
-    );
-
-    const {name, id} = OPERATIONS.DELETE_PROCESS_DEFINITION;
-
-    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
-    expect(screen.getByText(id)).toBeInTheDocument();
-    expect(screen.getByText(`Delete ${name}`)).toBeInTheDocument();
-    expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
-  });
-
-  it('should render delete decision definition operation', () => {
-    render(
-      <OperationsEntry
-        {...mockProps}
-        operation={OPERATIONS.DELETE_DECISION_DEFINITION}
-      />,
-      {
-        wrapper: createWrapper(),
-      },
-    );
-
-    const {name, id} = OPERATIONS.DELETE_DECISION_DEFINITION;
-
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    expect(screen.queryByText(OPERATIONS_TIMESTAMP)).not.toBeInTheDocument();
-    expect(screen.getByText(id)).toBeInTheDocument();
-    expect(screen.getByText(`Delete ${name}`)).toBeInTheDocument();
-    expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
-  });
-
-  //This test is duplicated by the new component OperationsEntryStatus and should be removed after BE issue #6294 gets resolved
-  it('should not render instances count for delete operation', () => {
-    render(
-      <OperationsEntry
-        {...mockProps}
-        operation={{
-          ...OPERATIONS.DELETE_PROCESS_INSTANCE,
-          instancesCount: 3,
-        }}
-      />,
-      {wrapper: createWrapper()},
-    );
-
-    expect(screen.queryByText('3 Instances')).not.toBeInTheDocument();
-  });
-
   it('should render id link for non-delete instance operations', () => {
     render(
       <OperationsEntry
         {...mockProps}
         operation={{
-          ...OPERATIONS.EDIT,
-          instancesCount: 6,
-          failedOperationsCount: 3,
-          completedOperationsCount: 3,
+          ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+          operationsTotalCount: 6,
+          operationsFailedCount: 3,
+          operationsCompletedCount: 3,
         }}
       />,
       {wrapper: createWrapper()},
     );
 
     expect(
-      screen.getByRole('link', {name: OPERATIONS.EDIT.id}),
-    ).toBeInTheDocument();
-  });
-
-  it('should not render id link for successful delete instance operations', () => {
-    render(
-      <OperationsEntry
-        {...mockProps}
-        operation={{
-          ...OPERATIONS.DELETE_PROCESS_INSTANCE,
-          instancesCount: 1,
-          failedOperationsCount: 0,
-          completedOperationsCount: 1,
-        }}
-      />,
-      {wrapper: createWrapper()},
-    );
-
-    expect(
-      screen.getByText(OPERATIONS.DELETE_PROCESS_INSTANCE.id),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('link', {name: OPERATIONS.DELETE_PROCESS_INSTANCE.id}),
-    ).not.toBeInTheDocument();
-  });
-
-  it('should not render id link when all instances are successful for delete process definition', () => {
-    render(
-      <OperationsEntry
-        {...mockProps}
-        operation={{
-          ...OPERATIONS.DELETE_PROCESS_DEFINITION,
-          instancesCount: 5,
-          failedOperationsCount: 0,
-          completedOperationsCount: 5,
-        }}
-      />,
-      {wrapper: createWrapper()},
-    );
-
-    expect(
-      screen.getByText(OPERATIONS.DELETE_PROCESS_DEFINITION.id),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('link', {
-        name: OPERATIONS.DELETE_PROCESS_DEFINITION.id,
+      screen.getByRole('link', {
+        name: OPERATIONS.CANCEL_PROCESS_INSTANCE.batchOperationKey,
       }),
-    ).not.toBeInTheDocument();
+    ).toBeInTheDocument();
   });
 
   it('should filter by Operation and expand Filters Panel', async () => {
@@ -289,8 +165,8 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         {...mockProps}
         operation={{
-          ...OPERATIONS.EDIT,
-          instancesCount: 1,
+          ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+          operationsTotalCount: 1,
         }}
       />,
       {wrapper: createWrapper()},
@@ -298,9 +174,11 @@ describe('OperationsEntry', () => {
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
-    await user.click(screen.getByText(OPERATIONS.EDIT.id));
+    await user.click(
+      screen.getByText(OPERATIONS.CANCEL_PROCESS_INSTANCE.batchOperationKey),
+    );
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052$/,
+      /^\?active=true&incidents=true&completed=true&canceled=true&operationId=393ad666-d7f0-45c9-a679-ffa0ef82f88a$/,
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -313,8 +191,8 @@ describe('OperationsEntry', () => {
         <OperationsEntry
           {...mockProps}
           operation={{
-            ...OPERATIONS.EDIT,
-            instancesCount: 1,
+            ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+            operationsTotalCount: 1,
           }}
         />
         <Filters />
@@ -324,22 +202,28 @@ describe('OperationsEntry', () => {
 
     expect(screen.queryByLabelText(/^operation id$/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByText(OPERATIONS.EDIT.id));
+    await user.click(
+      screen.getByText(OPERATIONS.CANCEL_PROCESS_INSTANCE.batchOperationKey),
+    );
 
     expect(await screen.findByLabelText(/^operation id$/i)).toBeInTheDocument();
 
-    await user.click(screen.getByText(OPERATIONS.EDIT.id));
+    await user.click(
+      screen.getByText(OPERATIONS.CANCEL_PROCESS_INSTANCE.batchOperationKey),
+    );
     expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
   });
 
   it('should fake the first 10% progress', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
     render(
       <OperationsEntry
         operation={{
-          ...OPERATIONS.EDIT,
-          endDate: null,
+          ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+          endDate: undefined,
           operationsTotalCount: 10,
-          operationsFinishedCount: 0,
+          operationsCompletedCount: 0,
+          operationsFailedCount: 0,
         }}
       />,
       {wrapper: createWrapper()},
@@ -350,12 +234,15 @@ describe('OperationsEntry', () => {
       '0',
     );
 
+    vi.runOnlyPendingTimersAsync();
     await waitFor(() =>
       expect(screen.getByRole('progressbar')).toHaveAttribute(
         'aria-valuenow',
         '10',
       ),
     );
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render 50% progress and fake progress', async () => {
@@ -363,21 +250,25 @@ describe('OperationsEntry', () => {
     render(
       <OperationsEntry
         operation={{
-          ...OPERATIONS.EDIT,
-          endDate: null,
+          ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+          endDate: undefined,
           operationsTotalCount: 10,
-          operationsFinishedCount: 5,
+          operationsCompletedCount: 5,
+          operationsFailedCount: 0,
         }}
       />,
       {wrapper: createWrapper()},
     );
 
+    vi.runOnlyPendingTimersAsync();
     await waitFor(() =>
       expect(screen.getByRole('progressbar')).toHaveAttribute(
         'aria-valuenow',
         '50',
       ),
     );
+
+    vi.runOnlyPendingTimersAsync();
     await waitFor(() =>
       expect(screen.getByRole('progressbar')).toHaveAttribute(
         'aria-valuenow',
@@ -398,7 +289,10 @@ describe('OperationsEntry', () => {
         '100',
       ),
     );
+
     expect(screen.queryByText(OPERATIONS_TIMESTAMP)).not.toBeInTheDocument();
+
+    vi.runOnlyPendingTimersAsync();
     await waitForElementToBeRemoved(screen.queryByRole('progressbar'));
     expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
     vi.clearAllTimers();
