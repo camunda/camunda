@@ -21,11 +21,13 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+@Disabled("https://github.com/camunda/ad-hoc-sub-process-phase-3/issues/26")
 public class ZeebeImportAdHocSubProcessIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private TaskStore taskStore;
