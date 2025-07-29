@@ -356,7 +356,14 @@ public class AdHocSubProcessProcessor
     @Override
     public Either<Failure, ?> finalizeActivation(
         final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
-      return null;
+      return jobBehavior
+          .evaluateJobExpressions(element.getJobWorkerProperties(), context)
+          .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
+          .thenDo(
+              jobProperties -> {
+                jobBehavior.createNewAdHocSubProcessJob(context, element, jobProperties);
+                stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+              });
     }
 
     @Override
