@@ -59,7 +59,7 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
         startProcessInstance(
             migrator.getCamundaClient(),
             PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
-    final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
+    final var taskKey = waitFor88CreatedTaskToBeImportedReturningId(migrator, piKey);
 
     final var res =
         migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
@@ -75,7 +75,7 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
         startProcessInstance(
             migrator.getCamundaClient(),
             PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
-    final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
+    final var taskKey = waitFor88CreatedTaskToBeImportedReturningId(migrator, piKey);
 
     migrator.getCamundaClient().newUserTaskUnassignCommand(taskKey).send().join();
 
@@ -100,8 +100,8 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
     final var piKey =
         startProcessInstance(
             migrator.getCamundaClient(),
-            PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
-    final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
+            PROCESS_DEFINITION_KEYS.get(TaskImplementation.JOB_WORKER));
+    final var taskKey = waitFor88CreatedTaskToBeImportedReturningId(migrator, piKey);
 
     final var res =
         migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
