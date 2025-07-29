@@ -59,7 +59,7 @@ public class CompleteUserTaskMigrationIT extends UserTaskMigrationHelper {
         startProcessInstance(
             migrator.getCamundaClient(),
             PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
-    final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
+    final var taskKey = waitFor88CreatedTaskToBeImportedReturningId(migrator, piKey);
 
     final var res =
         migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
@@ -75,7 +75,7 @@ public class CompleteUserTaskMigrationIT extends UserTaskMigrationHelper {
         startProcessInstance(
             migrator.getCamundaClient(),
             PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
-    final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
+    final var taskKey = waitFor88CreatedTaskToBeImportedReturningId(migrator, piKey);
 
     migrator.getCamundaClient().newUserTaskCompleteCommand(taskKey).send().join();
 
@@ -101,7 +101,7 @@ public class CompleteUserTaskMigrationIT extends UserTaskMigrationHelper {
         startProcessInstance(
             migrator.getCamundaClient(),
             PROCESS_DEFINITION_KEYS.get(TaskImplementation.JOB_WORKER));
-    final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
+    final var taskKey = waitFor88CreatedTaskToBeImportedReturningId(migrator, piKey);
 
     final var res =
         migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
