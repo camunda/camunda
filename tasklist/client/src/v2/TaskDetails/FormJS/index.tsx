@@ -21,7 +21,7 @@ import {
   TaskDetailsContainer,
   TaskDetailsRow,
 } from 'common/tasks/details/TaskDetailsLayout';
-import {TaskStateLoadingText} from 'common/tasks/details/TaskStateLoadingText';
+import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {match, Pattern} from 'ts-pattern';
@@ -187,7 +187,7 @@ const FormJS: React.FC<Props> = ({
               isDisabled={!canCompleteTask}
             />
             {['UPDATING', 'CANCELING'].includes(state) && (
-              <TaskStateLoadingText taskState={state} />
+              <ActiveTransitionLoadingText taskState={state} />
             )}
           </DetailsFooter>
         )}
