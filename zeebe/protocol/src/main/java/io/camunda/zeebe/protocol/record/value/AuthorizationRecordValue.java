@@ -30,6 +30,8 @@ public interface AuthorizationRecordValue extends RecordValue {
 
   AuthorizationOwnerType getOwnerType();
 
+  AuthorizationResourceMatcher getResourceMatcher();
+
   String getResourceId();
 
   AuthorizationResourceType getResourceType();
