@@ -196,6 +196,24 @@ public class DecisionInstanceIT {
   }
 
   @TestTemplate
+  public void shouldSaveAndFindDecisionInstanceWithLargeFailureMessage(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionInstanceDbReader decisionInstanceReader =
+        rdbmsService.getDecisionInstanceReader();
+
+    final var original =
+        DecisionInstanceFixtures.createRandomized(
+            b -> b.evaluationFailureMessage("x".repeat(9000)));
+    createAndSaveDecisionInstance(rdbmsWriter, original);
+    final var actual = decisionInstanceReader.findOne(original.decisionInstanceId()).orElseThrow();
+
+    assertThat(actual).isNotNull();
+    assertThat(actual.evaluationFailureMessage().length()).isEqualTo(4000);
+  }
+
+  @TestTemplate
   public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);

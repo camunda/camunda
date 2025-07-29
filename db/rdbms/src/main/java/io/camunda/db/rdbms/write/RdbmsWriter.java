@@ -98,7 +98,9 @@ public class RdbmsWriter {
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
     authorizationWriter = new AuthorizationWriter(executionQueue);
     decisionDefinitionWriter = new DecisionDefinitionWriter(executionQueue);
-    decisionInstanceWriter = new DecisionInstanceWriter(decisionInstanceMapper, executionQueue);
+    decisionInstanceWriter =
+        new DecisionInstanceWriter(
+            decisionInstanceMapper, executionQueue, vendorDatabaseProperties);
     decisionRequirementsWriter = new DecisionRequirementsWriter(executionQueue);
     flowNodeInstanceWriter = new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper);
     groupWriter = new GroupWriter(executionQueue);

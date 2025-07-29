@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.db.rdbms.write.domain.JobDbModel.Builder;
 import java.time.OffsetDateTime;
@@ -57,5 +58,24 @@ class JobDbModelTest {
 
     assertThat(truncatedMessage.errorMessage().length()).isEqualTo(2);
     assertThat(truncatedMessage.errorMessage()).isEqualTo("ää");
+  }
+
+  @Test
+  void shouldNotFailOnTruncateErrorMessageIfNoMessageIsSet() {
+    final var jobDbModel =
+        new Builder()
+            .jobKey(1L)
+            .processInstanceKey(2L)
+            .processDefinitionKey(3L)
+            .elementInstanceKey(4L)
+            .elementId("elementId")
+            .type("type")
+            .retries(1)
+            .worker("worker")
+            .deadline(OffsetDateTime.now())
+            .tenantId("tenantId")
+            .build();
+
+    assertThatCode(() -> jobDbModel.truncateErrorMessage(10, 5)).doesNotThrowAnyException();
   }
 }

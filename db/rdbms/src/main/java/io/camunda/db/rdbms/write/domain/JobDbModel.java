@@ -108,6 +108,10 @@ public class JobDbModel implements Copyable<JobDbModel> {
   }
 
   public JobDbModel truncateErrorMessage(final int sizeLimit, final Integer byteLimit) {
+    if (errorMessage == null) {
+      return this;
+    }
+
     final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, byteLimit);
 
     if (truncatedValue.length() < errorMessage.length()) {
