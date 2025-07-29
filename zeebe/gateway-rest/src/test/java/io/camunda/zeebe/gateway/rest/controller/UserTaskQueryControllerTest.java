@@ -848,6 +848,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "assignee",
         ops -> new UserTaskFilter.Builder().assigneeOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "tenantId",
+        ops -> new UserTaskFilter.Builder().tenantIdOperations(ops).build());
 
     return streamBuilder.build();
   }

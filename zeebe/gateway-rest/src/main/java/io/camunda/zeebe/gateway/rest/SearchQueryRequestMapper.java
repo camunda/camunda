@@ -1209,7 +1209,9 @@ public final class SearchQueryRequestMapper {
       Optional.ofNullable(filter.getProcessInstanceKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::processInstanceKeys);
-      Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+      Optional.ofNullable(filter.getTenantId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::tenantIdOperations);
       Optional.ofNullable(filter.getElementInstanceKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::elementInstanceKeys);
