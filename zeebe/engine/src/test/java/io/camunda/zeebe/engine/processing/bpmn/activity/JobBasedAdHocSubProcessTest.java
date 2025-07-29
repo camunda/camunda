@@ -135,4 +135,41 @@ public class JobBasedAdHocSubProcessTest {
         .hasBpmnProcessId(adHocSubProcess.getValue().getBpmnProcessId())
         .hasProcessDefinitionVersion(adHocSubProcess.getValue().getVersion());
   }
+
+  @Test
+  public void shouldCancelJobOnTermination() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A1");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    final var adHocSubProcess =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .withElementId(AHSP_ELEMENT_ID)
+            .getFirst();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(AHSP_ELEMENT_ID)
+                .getFirst()
+                .getValue())
+        .hasType(JOB_TYPE)
+        .hasRetries(3)
+        .hasElementInstanceKey(adHocSubProcess.getKey())
+        .hasElementId(adHocSubProcess.getValue().getElementId())
+        .hasProcessDefinitionKey(adHocSubProcess.getValue().getProcessDefinitionKey())
+        .hasBpmnProcessId(adHocSubProcess.getValue().getBpmnProcessId())
+        .hasProcessDefinitionVersion(adHocSubProcess.getValue().getVersion());
+  }
 }
