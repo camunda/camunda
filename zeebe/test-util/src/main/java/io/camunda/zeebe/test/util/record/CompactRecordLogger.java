@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementR
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -60,6 +62,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
@@ -67,6 +70,8 @@ import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -75,6 +80,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMet
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -141,7 +147,8 @@ public class CompactRecordLogger {
           entry("BATCH_OPERATION", "BO"),
           entry("AUTHORIZATION", "AUTH"),
           entry("ASYNC_REQUEST", "ASYNC"),
-          entry("COMPENSATION_SUB", "COMP_SUB"));
+          entry("COMPENSATION_SUB", "COMP_SUB"),
+          entry("USAGE_METRICS", "USG_MTRCS"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -219,6 +226,7 @@ public class CompactRecordLogger {
         ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
         this::summarizeBatchOperationPartitionLifecycle);
     valueLoggers.put(ValueType.BATCH_OPERATION_EXECUTION, this::summarizeBatchOperationExecution);
+    valueLoggers.put(ValueType.USAGE_METRIC, this::summarizeUsageMetrics);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1144,6 +1152,37 @@ public class CompactRecordLogger {
     return builder.toString();
   }
 
+  private String summarizeUser(final Record<?> record) {
+    final var value = (UserRecordValue) record.getValue();
+
+    final StringBuilder builder = new StringBuilder();
+    if (record.getKey() != value.getUserKey()) {
+      builder.append(shortenKey(value.getUserKey())).append(" ");
+    }
+
+    builder
+        .append("u=")
+        .append(formatId(value.getUsername()))
+        .append(" @=")
+        .append(value.getEmail())
+        .append(" n=")
+        .append(value.getName());
+
+    return builder.toString();
+  }
+
+  private String summarizeAuthorization(final Record<?> record) {
+    final var value = (AuthorizationRecordValue) record.getValue();
+
+    return "%s %s can %s %s %s"
+        .formatted(
+            value.getOwnerType(),
+            formatId(value.getOwnerId()),
+            value.getPermissionTypes(),
+            value.getResourceType(),
+            formatId(value.getResourceId()));
+  }
+
   private String summarizeAsyncRequest(final Record<?> record) {
     final var value = (AsyncRequestRecordValue) record.getValue();
 
@@ -1156,6 +1195,33 @@ public class CompactRecordLogger {
         .append(shortenKey(value.getScopeKey()))
         .append("]")
         .toString();
+  }
+
+  private String summarizeResource(final Record<?> record) {
+    final var value = (Resource) record.getValue();
+    final var result = new StringBuilder();
+
+    result
+        .append(value.getResourceName())
+        .append(" -> ")
+        .append(formatId(value.getResourceId()))
+        .append(" v")
+        .append(value.getVersion());
+
+    if (StringUtils.isNotEmpty(value.getVersionTag())) {
+      result.append("(tag-").append(value.getVersionTag()).append(")");
+    }
+
+    if (value.isDuplicate()) {
+      result.append(" (dup)");
+    }
+
+    return result.append(formatTenant(value)).toString();
+  }
+
+  private String summarizeResourceDeletion(final Record<?> record) {
+    final var value = (ResourceDeletionRecordValue) record.getValue();
+    return "res:%s%s".formatted(shortenKey(value.getResourceKey()), formatTenant(value));
   }
 
   private String summarizeMultiInstance(final Record<?> record) {
@@ -1178,6 +1244,24 @@ public class CompactRecordLogger {
     if (value.getElementId() != null) {
       result.append(" interrupted by \"").append(value.getElementId()).append("\"");
     }
+    return result.toString();
+  }
+
+  protected String summarizeUsageMetrics(final Record<?> record) {
+    final var result = new StringBuilder();
+    final var value = (UsageMetricRecordValue) record.getValue();
+    result
+        .append(value.getEventType())
+        .append(":")
+        .append(value.getIntervalType())
+        .append(" ")
+        .append(formatTime("start", value.getStartTime()))
+        .append(" ")
+        .append(formatTime("end", value.getEndTime()))
+        .append(" ")
+        .append(formatTime("reset", value.getResetTime()))
+        .append(formatVariables(value));
+
     return result.toString();
   }
 
@@ -1288,6 +1372,11 @@ public class CompactRecordLogger {
   private String formatPinnedTime(final long time) {
     final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
     return "%s (timestamp: %d)".formatted(shortenDateTime(dateTime), time);
+  }
+
+  private String formatTime(final String name, final long time) {
+    final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
+    return "%s[%s]".formatted(name, shortenDateTime(dateTime));
   }
 
   private String formatTenant(final TenantOwned value) {
