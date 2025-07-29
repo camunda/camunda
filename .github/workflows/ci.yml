@@ -587,7 +587,6 @@ jobs:
       # -D test.integration.camunda.database.type=os
       #
       - name: Run integration test with externalized OS
-        timeout-minutes: 10
         run: >
           ./mvnw -B -T 1 --no-snapshot-updates
           -D forkCount=4
