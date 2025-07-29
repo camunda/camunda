@@ -58,7 +58,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     queries.addAll(getAssigneesQuery(filter.assigneeOperations()));
     queries.addAll(getPrioritiesQuery(filter.priorityOperations()));
     queries.addAll(getStatesQuery(filter.stateOperations()));
-    ofNullable(getTenantQuery(filter.tenantIds())).ifPresent(queries::add);
+    queries.addAll(getTenantQuery(filter.tenantIdOperations()));
     ofNullable(getElementInstanceKeyQuery(filter.elementInstanceKeys())).ifPresent(queries::add);
     queries.addAll(getCreationTimeQuery(filter.creationDateOperations()));
     queries.addAll(getCompletionTimeQuery(filter.completionDateOperations()));
@@ -136,8 +136,8 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return stringOperations(STATE, states);
   }
 
-  private SearchQuery getTenantQuery(final List<String> tenant) {
-    return stringTerms(TENANT_ID, tenant);
+  private List<SearchQuery> getTenantQuery(final List<Operation<String>> tenant) {
+   return stringOperations(TENANT_ID, tenant);
   }
 
   private SearchQuery getBpmnProcessIdQuery(final List<String> bpmnProcessId) {
