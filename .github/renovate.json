@@ -5,7 +5,7 @@
     "config:recommended"
   ],
   "commitMessagePrefix": "deps:",
-  "baseBranches": [
+  "baseBranchPatterns": [
     "/^stable\\/8\\.([5-9]|[1-9][0-9])/",
     "stable/operate-8.5",
     "main"
