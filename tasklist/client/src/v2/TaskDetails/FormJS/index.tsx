@@ -22,7 +22,7 @@ import {
   TaskDetailsRow,
 } from 'common/tasks/details/TaskDetailsLayout';
 import {TaskStateLoadingText} from 'common/tasks/details/TaskStateLoadingText';
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {match, Pattern} from 'ts-pattern';
 import {useSelectedVariables} from 'v2/api/useSelectedVariables.query';
@@ -88,12 +88,6 @@ const FormJS: React.FC<Props> = ({
     state === 'ASSIGNING' ||
     (state === 'UPDATING' && assignee === null) ||
     (state === 'CANCELING' && assignee === null);
-
-  useEffect(() => {
-    if (state === 'COMPLETING') {
-      setSubmissionState('active');
-    }
-  }, [state]);
 
   const {removeFormReference} = useRemoveFormReference(task);
   return (
