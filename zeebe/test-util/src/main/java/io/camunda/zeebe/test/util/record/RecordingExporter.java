@@ -55,6 +55,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
@@ -596,6 +597,18 @@ public final class RecordingExporter implements Exporter {
   public static BatchOperationExecutionRecordStream batchOperationExecutionRecords(
       final BatchOperationIntent intent) {
     return batchOperationExecutionRecords().withIntent(intent);
+  }
+
+  public static BatchOperationInitializationRecordStream batchOperationInitializationRecords() {
+    return new BatchOperationInitializationRecordStream(
+        records(
+            ValueType.BATCH_OPERATION_INITIALIZATION,
+            BatchOperationInitializationRecordValue.class));
+  }
+
+  public static BatchOperationInitializationRecordStream batchOperationInitializationRecords(
+      final BatchOperationIntent intent) {
+    return batchOperationInitializationRecords().withIntent(intent);
   }
 
   public static BatchOperationLifecycleRecordStream batchOperationLifecycleRecords() {
