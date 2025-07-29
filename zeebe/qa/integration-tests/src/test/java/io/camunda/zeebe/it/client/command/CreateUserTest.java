@@ -49,7 +49,6 @@ class CreateUserTest {
             .join();
 
     // then
-    assertThat(response.getUserKey()).isGreaterThan(0);
     ZeebeAssertHelper.assertUserCreated(
         "username",
         (user) -> {

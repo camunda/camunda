@@ -22,11 +22,6 @@ public class BrokerUserDeleteRequest extends BrokerExecuteCommand<UserRecord> {
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerUserDeleteRequest setUserKey(final long userKey) {
-    requestDto.setUserKey(userKey);
-    return this;
-  }
-
   public BrokerUserDeleteRequest setUsername(final String username) {
     requestDto.setUsername(username);
     return this;

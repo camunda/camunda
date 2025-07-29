@@ -16,12 +16,6 @@
 package io.camunda.client.api.response;
 
 public interface CreateTenantResponse {
-  /**
-   * Returns the key of the created tenant.
-   *
-   * @return the key of the created tenant.
-   */
-  long getTenantKey();
 
   /** Returns the id of the created tenant. */
   String getTenantId();

@@ -17,16 +17,6 @@ package io.camunda.client.api.response;
 
 public interface UpdateTenantResponse {
   /**
-   * Returns the unique key of the updated tenant.
-   *
-   * <p>The tenant key is a system-generated identifier that is unique across all tenants. It is
-   * primarily used internally by the system for efficient indexing and processing.
-   *
-   * @return the system-generated tenant key.
-   */
-  long getTenantKey();
-
-  /**
    * Returns the unique identifier (ID) of the updated tenant.
    *
    * <p>The tenant ID is a user-defined identifier for the tenant. It is specified when the tenant

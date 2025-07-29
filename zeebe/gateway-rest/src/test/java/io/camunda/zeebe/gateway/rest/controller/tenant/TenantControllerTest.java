@@ -85,7 +85,6 @@ public class TenantControllerTest {
           .thenReturn(
               CompletableFuture.completedFuture(
                   new TenantRecord()
-                      .setTenantKey(100L)
                       .setName(tenantName)
                       .setDescription(tenantDescription)
                       .setTenantId(id)));
@@ -116,13 +115,11 @@ public class TenantControllerTest {
       final var tenantName = "Test Tenant";
       final var tenantId = "tenantId";
       final var tenantDescription = "Test description";
-      final var tenantKey = 100L;
       when(tenantServices.createTenant(
               new TenantDTO(null, tenantId, tenantName, tenantDescription)))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new TenantRecord()
-                      .setTenantKey(tenantKey)
                       .setName(tenantName)
                       .setDescription(tenantDescription)
                       .setTenantId(tenantId)));
@@ -145,13 +142,12 @@ public class TenantControllerTest {
           .json(
               """
             {
-              "tenantKey": "%d",
               "tenantId": "%s",
               "name": "%s",
               "description": "%s"
             }
             """
-                  .formatted(tenantKey, tenantId, tenantName, tenantDescription),
+                  .formatted(tenantId, tenantName, tenantDescription),
               JsonCompareMode.STRICT);
 
       // then
@@ -266,7 +262,6 @@ public class TenantControllerTest {
     @Test
     void updateTenantShouldReturnUpdatedResponse() {
       // given
-      final var tenantKey = 100L;
       final var tenantName = "Updated Tenant Name";
       final var tenantId = "tenant-test-id";
       final var tenantDescription = "Updated description";
@@ -277,7 +272,6 @@ public class TenantControllerTest {
                   new TenantRecord()
                       .setName(tenantName)
                       .setDescription(tenantDescription)
-                      .setTenantKey(tenantKey)
                       .setTenantId(tenantId)));
 
       // when
@@ -294,13 +288,12 @@ public class TenantControllerTest {
           .json(
               """
             {
-              "tenantKey": "%d",
               "tenantId": "%s",
               "name": "%s",
               "description": "%s"
             }
             """
-                  .formatted(tenantKey, tenantId, tenantName, tenantDescription),
+                  .formatted(tenantId, tenantName, tenantDescription),
               JsonCompareMode.STRICT);
 
       // then
@@ -380,7 +373,6 @@ public class TenantControllerTest {
       final var tenantId = "tenant-id";
       final var tenantName = "My tenant";
       final var tenantDescription = "My tenant description";
-      final var tenantKey = 100L;
       final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
       when(tenantServices.updateTenant(
               new TenantDTO(null, tenantId, tenantName, tenantDescription)))
@@ -388,10 +380,7 @@ public class TenantControllerTest {
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
-                          TenantIntent.UPDATE,
-                          tenantKey,
-                          RejectionType.NOT_FOUND,
-                          "Tenant not found"))));
+                          TenantIntent.UPDATE, -1L, RejectionType.NOT_FOUND, "Tenant not found"))));
 
       // when / then
       webClient

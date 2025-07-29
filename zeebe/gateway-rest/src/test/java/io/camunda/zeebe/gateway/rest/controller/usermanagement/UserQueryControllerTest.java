@@ -46,8 +46,7 @@ public class UserQueryControllerTest extends RestControllerTest {
       """
           {
               "items": [
-                 { "userKey": "1",
-                   "username": "username1",
+                 { "username": "username1",
                    "name": "name1",
                    "email": "email1"
                  }
@@ -102,8 +101,7 @@ public class UserQueryControllerTest extends RestControllerTest {
             {
               "username": "username",
               "name": "User Name",
-              "email": "email@email.com",
-              "userKey": "100"
+              "email": "email@email.com"
             }""",
             JsonCompareMode.STRICT);
 

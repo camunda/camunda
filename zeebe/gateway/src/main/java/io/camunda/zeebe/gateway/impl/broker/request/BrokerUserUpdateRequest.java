@@ -22,11 +22,6 @@ public class BrokerUserUpdateRequest extends BrokerExecuteCommand<UserRecord> {
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerUserUpdateRequest setUserKey(final long userKey) {
-    requestDto.setUserKey(userKey);
-    return this;
-  }
-
   public BrokerUserUpdateRequest setUsername(final String username) {
     requestDto.setUsername(username);
     return this;

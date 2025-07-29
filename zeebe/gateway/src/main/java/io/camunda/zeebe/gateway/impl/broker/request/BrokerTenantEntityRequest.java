@@ -29,11 +29,6 @@ public final class BrokerTenantEntityRequest extends BrokerExecuteCommand<Tenant
     return new BrokerTenantEntityRequest(TenantIntent.REMOVE_ENTITY);
   }
 
-  public BrokerTenantEntityRequest setTenantKey(final long tenantKey) {
-    tenantDto.setTenantKey(tenantKey);
-    return this;
-  }
-
   public BrokerTenantEntityRequest setTenantId(final String tenantId) {
     tenantDto.setTenantId(tenantId);
     return this;

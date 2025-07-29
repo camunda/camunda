@@ -48,11 +48,11 @@ class CreateTenantTest {
             .join();
 
     // then
-    assertThat(response.getTenantKey()).isGreaterThan(0);
     ZeebeAssertHelper.assertTenantCreated(
         "tenantId",
         (tenant) -> {
           assertThat(tenant.getName()).isEqualTo("Tenant Name");
+          assertThat(tenant.getTenantId()).isEqualTo("tenantId");
           assertThat(tenant.getDescription()).isEqualTo("Tenant Description");
         });
   }
@@ -64,11 +64,11 @@ class CreateTenantTest {
         client.newCreateTenantCommand().tenantId("tenantId").name("Tenant Name").send().join();
 
     // then
-    assertThat(response.getTenantKey()).isGreaterThan(0);
     ZeebeAssertHelper.assertTenantCreated(
         "tenantId",
         (tenant) -> {
           assertThat(tenant.getName()).isEqualTo("Tenant Name");
+          assertThat(tenant.getTenantId()).isEqualTo("tenantId");
           assertThat(tenant.getDescription()).isEmpty();
         });
   }

@@ -5412,9 +5412,6 @@ components:
     TenantCreateResult:
       type: object
       properties:
-        tenantKey:
-          description: The unique system-generated internal tenant ID.
-          type: string
         tenantId:
           type: string
           description: The unique external tenant ID
@@ -5450,9 +5447,6 @@ components:
         description:
           type: string
           description: The description of the tenant.
-        tenantKey:
-          type: string
-          description: The unique system-generated internal tenant ID.
 
     TenantResult:
       description: Tenant search response item.
@@ -5467,9 +5461,6 @@ components:
         description:
           type: string
           description: The tenant description.
-        tenantKey:
-          type: string
-          description: The unique system-generated internal tenant ID.
     TenantSearchQuerySortRequest:
       type: object
       properties:
@@ -7549,9 +7540,6 @@ components:
         email:
           description: The email of the user.
           type: "string"
-        userKey:
-          description: The key of the created user
-          type: "string"
     UserUpdateResult:
       type: object
       properties:
@@ -7710,9 +7698,6 @@ components:
         apiUser:
           description: Flag for understanding if the user is an API user.
           type: boolean
-        userKey:
-          description: The system generated key of the user.
-          type: string
     UserResult:
       type: "object"
       properties:
@@ -7724,9 +7709,6 @@ components:
           type: "string"
         email:
           description: The email of the user.
-          type: "string"
-        userKey:
-          description: The key of the user.
           type: "string"
     UserSearchResult:
       type: object
