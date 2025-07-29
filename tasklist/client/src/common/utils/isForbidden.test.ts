@@ -19,31 +19,32 @@ describe('isForbidden', () => {
     tenants: [],
     groups: [],
     canLogout: true,
-    authorizedComponents: [],
+    authorizedApplications: [],
     apiUser: false,
     userKey: 2251799813685250,
+    email: 'test@camunda.com',
   };
 
-  it('should return true when authorizedComponents does not contain "tasklist" or "*"', () => {
+  it('should return true when authorizedApplications does not contain "tasklist" or "*"', () => {
     const user: CurrentUser = {
       ...baseUser,
-      authorizedComponents: ['operate'],
+      authorizedApplications: ['operate'],
     };
     expect(isForbidden(user)).toBe(true);
   });
 
-  it('should return false when authorizedComponents contains "tasklist"', () => {
+  it('should return false when authorizedApplications contains "tasklist"', () => {
     const user: CurrentUser = {
       ...baseUser,
-      authorizedComponents: ['operate', 'tasklist'],
+      authorizedApplications: ['operate', 'tasklist'],
     };
     expect(isForbidden(user)).toBe(false);
   });
 
-  it('should return false when authorizedComponents contains "*"', () => {
+  it('should return false when authorizedApplications contains "*"', () => {
     const user: CurrentUser = {
       ...baseUser,
-      authorizedComponents: ['*'],
+      authorizedApplications: ['*'],
     };
     expect(isForbidden(user)).toBe(false);
   });

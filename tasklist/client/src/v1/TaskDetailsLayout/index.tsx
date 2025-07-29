@@ -125,6 +125,7 @@ const TaskDetailsLayout: React.FC = () => {
           assignButton={
             <AssignButton
               id={task.id}
+              taskState={task.taskState}
               assignee={task.assignee}
               onAssignmentError={onAssignmentError}
             />
