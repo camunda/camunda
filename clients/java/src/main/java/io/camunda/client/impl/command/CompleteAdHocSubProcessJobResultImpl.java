@@ -18,7 +18,7 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1.CompleteAdHocSubProcessResultStep2;
-import io.camunda.client.protocol.rest.JobResult.TypeEnum;
+import io.camunda.client.api.command.enums.JobResultType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,8 +40,8 @@ public class CompleteAdHocSubProcessJobResultImpl
   }
 
   @Override
-  public TypeEnum getType() {
-    return TypeEnum.AD_HOC_SUB_PROCESS;
+  public JobResultType getType() {
+    return JobResultType.AD_HOC_SUB_PROCESS;
   }
 
   @Override

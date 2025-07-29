@@ -13,18 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.command;
+package io.camunda.client.api.command.enums;
 
-import io.camunda.client.api.command.enums.JobResultType;
-
-public interface CompleteJobResult {
-
-  /**
-   * Get the type of the job result. Depending on the type, different fields will be set on the
-   * request. These fields are used to perform follow-up actions on the job upon completion. Eg:
-   * changing the assignee of a user task, or activating certain elements of an ad-hoc sub process.
-   *
-   * @return the type of the job result
-   */
-  JobResultType getType();
+public enum JobResultType {
+  USER_TASK,
+  AD_HOC_SUB_PROCESS
 }

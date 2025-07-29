@@ -17,7 +17,7 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.client.api.command.JobResultCorrections;
-import io.camunda.client.protocol.rest.JobResult.TypeEnum;
+import io.camunda.client.api.command.enums.JobResultType;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
@@ -115,7 +115,7 @@ public class CompleteUserTaskJobResultImpl implements CompleteUserTaskJobResultS
   }
 
   @Override
-  public TypeEnum getType() {
-    return TypeEnum.USER_TASK;
+  public JobResultType getType() {
+    return JobResultType.USER_TASK;
   }
 }
