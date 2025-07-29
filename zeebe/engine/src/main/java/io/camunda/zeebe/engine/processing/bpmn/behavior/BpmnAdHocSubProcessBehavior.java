@@ -41,7 +41,7 @@ public final class BpmnAdHocSubProcessBehavior {
       final ExecutableAdHocSubProcess adHocSubProcess,
       final ExecutableFlowNode elementToActivate) {
     final var innerInstanceKey = createInnerInstance(adHocSubProcessContext, adHocSubProcess);
-    activateElement(adHocSubProcessContext, adHocSubProcess, elementToActivate, innerInstanceKey);
+    activateElement(adHocSubProcessContext, elementToActivate, innerInstanceKey);
   }
 
   private long createInnerInstance(
@@ -74,7 +74,6 @@ public final class BpmnAdHocSubProcessBehavior {
 
   private void activateElement(
       final BpmnElementContext adHocSubProcessContext,
-      final ExecutableAdHocSubProcess adHocSubProcess,
       final ExecutableFlowNode elementToActivate,
       final long innerInstanceKey) {
     final var innerElementRecord = new ProcessInstanceRecord();
