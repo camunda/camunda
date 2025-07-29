@@ -1,0 +1,134 @@
+# Unified CI for Optimize. Runs backend unit tests, front end unit tests, dockerfile linting (hadolint)
+# test location: /optimize, /optimize/client, optimize.Dockerfile
+# called by: ci.yml
+# type: CI
+# owner: @camunda/core-features
+name: Optimize CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      runFeTests:
+        description: "Set to true if Optimize front-end code was changed"
+        type: boolean
+        required: true
+      runBeTests:
+        description: "Set to true if Optimize back-end code was changed"
+        type: boolean
+        required: true
+  workflow_call:
+    inputs:
+      runFeTests:
+        description: "Set to true if Optimize front-end code was changed"
+        type: boolean
+        required: true
+      runBeTests:
+        description: "Set to true if Optimize back-end code was changed"
+        type: boolean
+        required: true
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  # run every time this workflow is called
+  optimize-backend-unit-tests:
+    name: "[UT] Back End / ${{matrix.suiteName}}"
+    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ DataLayer, CoreFeatures ]
+        include:
+          - suite: DataLayer
+            suiteName: Data Layer
+          - suite: CoreFeatures
+            suiteName: Core Features
+    with:
+      componentName: "Optimize"
+      suite: ${{ matrix.suite }}
+
+  optimize-frontend-unit-tests:
+    name: "[UT] Front End / Core Features"
+    if: inputs.runFeTests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: optimize/client
+    env:
+      LIMITS_CPU: 4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: optimize/client
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Unit tests
+        run: yarn test:ci
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: optimize-unit-tests-frontend-junit
+          path: |
+            **/jest-test-results.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  hadolint:
+    if: inputs.runBeTests
+    name: "[Linting] Dockerfile / Core Features"
+    runs-on: ubuntu-latest
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          [
+            "optimize.Dockerfile",
+          ]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          ignore: DL3018,DL3008
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
