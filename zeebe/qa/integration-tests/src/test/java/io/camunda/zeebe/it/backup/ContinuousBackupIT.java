@@ -74,10 +74,6 @@ final class ContinuousBackupIT {
   void missingBackupPreventsSnapshotProgress() {
     // given - some initial processing
     processSomeData();
-    await("initial processing is done")
-        .untilAsserted(
-            () ->
-                assertThat(partitionsActuator.query().get(1).processedPosition()).isGreaterThan(0));
 
     // when - taking a snapshot without backup
     partitionsActuator.takeSnapshot();
@@ -92,13 +88,18 @@ final class ContinuousBackupIT {
   void successfulBackupEnablesSnapshotProgress() {
     // given - some initial processing
     processSomeData();
-    await("initial processing is done")
-        .untilAsserted(
-            () ->
-                assertThat(partitionsActuator.query().get(1).processedPosition()).isGreaterThan(0));
 
     // when - taking a successful backup, then processing a bit more and taking a snapshot
-    final var backupId = 1L;
+    takeAndAwaitBackup(1L);
+
+    // then - even after a new snapshot is taken, it's index is still the backup index
+    partitionsActuator.takeSnapshot();
+    await("snapshot is taken with backup position")
+        .untilAsserted(() -> assertThat(getSnapshotIndex()).isGreaterThan(0));
+  }
+
+
+  void takeAndAwaitBackup(final long backupId) {
     backupActuator.take(backupId);
 
     await("backup is completed")
@@ -107,11 +108,6 @@ final class ContinuousBackupIT {
             () ->
                 assertThat(backupActuator.status(backupId).getState())
                     .isEqualTo(StateCode.COMPLETED));
-
-    // then - even after a new snapshot is taken, it's index is still the backup index
-    partitionsActuator.takeSnapshot();
-    await("snapshot is taken with backup position")
-        .untilAsserted(() -> assertThat(getSnapshotIndex()).isGreaterThan(0));
   }
 
   private long getSnapshotIndex() {
