@@ -13,148 +13,65 @@ describe('OperationsEntryStatus', () => {
   it('should render instance status count when there is one instance with success status', () => {
     render(
       <OperationsEntryStatus
-        isTypeDeleteProcessOrDecision={false}
-        label={'Edit'}
-        failedOperationsCount={0}
-        completedOperationsCount={1}
+        batchOperationType="CANCEL_PROCESS_INSTANCE"
+        operationsFailedCount={0}
+        operationsCompletedCount={1}
       />,
     );
 
-    expect(screen.getByText('1 success')).toBeInTheDocument();
-    expect(screen.queryByText(/\d+\s(fail)/)).not.toBeInTheDocument();
+    expect(screen.getByText('1 instance succeeded')).toBeInTheDocument();
+    expect(screen.queryByText(/\d+\s(failed)/)).not.toBeInTheDocument();
   });
 
   it('should render instance status count when there is one instance with fail status', () => {
     render(
       <OperationsEntryStatus
-        isTypeDeleteProcessOrDecision={false}
-        label={'Edit'}
-        failedOperationsCount={1}
-        completedOperationsCount={0}
+        batchOperationType="CANCEL_PROCESS_INSTANCE"
+        operationsFailedCount={1}
+        operationsCompletedCount={0}
       />,
     );
 
-    expect(screen.getByText('1 fail')).toBeInTheDocument();
-    expect(screen.queryByText(/\d+\s(success)/)).not.toBeInTheDocument();
+    expect(screen.getByText('1 instance failed')).toBeInTheDocument();
+    expect(screen.queryByText(/\d+\s(succeeded)/)).not.toBeInTheDocument();
   });
 
   it('should render only success instance status count when all operations have been successful', () => {
     render(
       <OperationsEntryStatus
-        isTypeDeleteProcessOrDecision={false}
-        label={'Edit'}
-        failedOperationsCount={0}
-        completedOperationsCount={3}
+        batchOperationType="CANCEL_PROCESS_INSTANCE"
+        operationsFailedCount={0}
+        operationsCompletedCount={3}
       />,
     );
 
-    expect(screen.getByText('3 success')).toBeInTheDocument();
-    expect(screen.queryByText(/\d+\s(fail)/)).not.toBeInTheDocument();
+    expect(screen.getByText('3 instances succeeded')).toBeInTheDocument();
+    expect(screen.queryByText(/\d+\s(failed)/)).not.toBeInTheDocument();
   });
 
   it('should render only failed instance status count when all operations have failed', () => {
     render(
       <OperationsEntryStatus
-        isTypeDeleteProcessOrDecision={false}
-        label={'Edit'}
-        failedOperationsCount={3}
-        completedOperationsCount={0}
+        batchOperationType="CANCEL_PROCESS_INSTANCE"
+        operationsFailedCount={3}
+        operationsCompletedCount={0}
       />,
     );
 
-    expect(screen.getByText('3 fail')).toBeInTheDocument();
-    expect(screen.queryByText(/\d+\s(success)/)).not.toBeInTheDocument();
+    expect(screen.getByText('3 instances failed')).toBeInTheDocument();
+    expect(screen.queryByText(/\d+\s(succeeded)/)).not.toBeInTheDocument();
   });
 
   it('should render success and fail instance status count when there is a mix of failed and successful operations', () => {
     render(
       <OperationsEntryStatus
-        isTypeDeleteProcessOrDecision={false}
-        label={'Edit'}
-        failedOperationsCount={3}
-        completedOperationsCount={3}
+        batchOperationType="CANCEL_PROCESS_INSTANCE"
+        operationsFailedCount={2}
+        operationsCompletedCount={4}
       />,
     );
 
-    expect(screen.getByText('3 success')).toBeInTheDocument();
-    expect(screen.getByText('3 fail')).toBeInTheDocument();
-  });
-
-  it('should render delete process or decision definition instance status count when all operations have been successful', () => {
-    render(
-      <OperationsEntryStatus
-        isTypeDeleteProcessOrDecision={true}
-        label={'Delete'}
-        failedOperationsCount={0}
-        completedOperationsCount={3}
-      />,
-    );
-
-    expect(screen.getByText('3 instances deleted')).toBeInTheDocument();
-    expect(screen.queryByText(/\d+\s(fail)/)).not.toBeInTheDocument();
-  });
-
-  it('should render delete process or decision definition instance status count when all operations have failed', () => {
-    render(
-      <OperationsEntryStatus
-        isTypeDeleteProcessOrDecision={true}
-        label={'Delete'}
-        failedOperationsCount={3}
-        completedOperationsCount={0}
-      />,
-    );
-
-    expect(screen.getByText('3 fail')).toBeInTheDocument();
-    expect(
-      screen.queryByText(/\d+\s(instance(s)? deleted)/),
-    ).not.toBeInTheDocument();
-  });
-
-  it('should render delete process or decision definition instance status count when there is a mix of failed and successful operations', () => {
-    render(
-      <OperationsEntryStatus
-        isTypeDeleteProcessOrDecision={true}
-        label={'Delete'}
-        failedOperationsCount={3}
-        completedOperationsCount={3}
-      />,
-    );
-
-    expect(screen.getByText('3 instances deleted')).toBeInTheDocument();
-    expect(screen.getByText('3 fail')).toBeInTheDocument();
-  });
-
-  it('should not render instances status count for delete instance operation success', () => {
-    render(
-      <OperationsEntryStatus
-        isTypeDeleteProcessOrDecision={false}
-        label={'Delete'}
-        failedOperationsCount={0}
-        completedOperationsCount={1}
-      />,
-    );
-
-    expect(
-      screen.queryByText(/\d+\s(instance(s)? deleted)/),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText(/\d+\s(fail)/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/\d+\s(success)/)).not.toBeInTheDocument();
-  });
-
-  it('should render instances status count for delete instance operation fail', () => {
-    render(
-      <OperationsEntryStatus
-        isTypeDeleteProcessOrDecision={false}
-        label={'Delete'}
-        failedOperationsCount={1}
-        completedOperationsCount={0}
-      />,
-    );
-
-    expect(screen.getByText('1 fail')).toBeInTheDocument();
-    expect(
-      screen.queryByText(/\d+\s(instance(s)? deleted)/),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText(/\d+\s(success)/)).not.toBeInTheDocument();
+    expect(screen.getByText('4 instances succeeded')).toBeInTheDocument();
+    expect(screen.getByText('2 failed')).toBeInTheDocument();
   });
 });
