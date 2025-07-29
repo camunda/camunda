@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Search } from "@carbon/react";
 import ListBox from "@carbon/react/lib/components/ListBox";
 import useDebounce from "react-debounced";
 import { SecondaryText } from "src/components/form/Text";
 import styled from "styled-components";
+import Fuse from "fuse.js";
 
 type DropdownSearchProps<Item> = {
   items: Item[];
@@ -21,6 +22,11 @@ type DropdownSearchProps<Item> = {
   onChange?: (search: string) => unknown;
   onSelect: (item: Item) => unknown;
   autoFocus?: boolean;
+};
+
+type ItemWithTitleAndSubTitle<Item> = Item & {
+  title: string;
+  subTitle?: string;
 };
 
 const ListStyleWrapper = styled.div`
@@ -41,7 +47,7 @@ const MenuItemWrapper = styled.div<{ $isSelected: boolean }>`
 const DropdownSearch = <Item,>({
   placeholder,
   onChange = () => null,
-  items,
+  items: rawItems,
   itemTitle,
   itemSubTitle,
   onSelect,
@@ -50,6 +56,34 @@ const DropdownSearch = <Item,>({
   const debounce = useDebounce();
   const [search, setSearch] = useState("");
   const [selectedResult, setSelectedResult] = useState<number>(-1);
+  const [filteredItems, setFilteredItems] = useState<
+    ItemWithTitleAndSubTitle<Item>[]
+  >([]);
+
+  const items = useMemo(() => {
+    return rawItems.map((item) => ({
+      ...item,
+      title: itemTitle(item),
+      subTitle: itemSubTitle ? itemSubTitle(item) : undefined,
+    }));
+  }, [rawItems, itemTitle, itemSubTitle]);
+
+  const fuse = useMemo(
+    () =>
+      new Fuse(items, {
+        keys: ["title", "subTitle"],
+        threshold: 0.3,
+      }),
+    [items],
+  );
+
+  useEffect(() => {
+    if (search) {
+      setFilteredItems(fuse.search(search).map((result) => result.item));
+    } else {
+      setFilteredItems(items);
+    }
+  }, [search, items, fuse]);
 
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const [hasFocus, setHasFocus] = useState(false);
@@ -88,7 +122,10 @@ const DropdownSearch = <Item,>({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (event.key === "ArrowDown" && selectedResult < items.length - 1) {
+    if (
+      event.key === "ArrowDown" &&
+      selectedResult < filteredItems.length - 1
+    ) {
       event.preventDefault();
       event.stopPropagation();
       setSelectedResult(selectedResult + 1);
@@ -103,17 +140,17 @@ const DropdownSearch = <Item,>({
     if (
       event.key === "Enter" &&
       selectedResult >= 0 &&
-      selectedResult < items.length
+      selectedResult < filteredItems.length
     ) {
       event.preventDefault();
       event.stopPropagation();
-      handleSelect(items[selectedResult]);
+      handleSelect(filteredItems[selectedResult]);
     }
   };
 
   useEffect(() => {
-    if (items.length > 0) setSelectedResult(0);
-  }, [items.length]);
+    if (filteredItems.length > 0) setSelectedResult(0);
+  }, [filteredItems.length]);
 
   return (
     <div
@@ -135,8 +172,8 @@ const DropdownSearch = <Item,>({
         {hasFocus && (
           <ListStyleWrapper>
             <ListBox.Menu id="list-box">
-              {items.map((item, index) => {
-                const title = itemTitle(item);
+              {filteredItems.map((item, index) => {
+                const { title, subTitle } = item;
 
                 return (
                   <MenuItemWrapper
@@ -148,9 +185,7 @@ const DropdownSearch = <Item,>({
                       onClick={() => handleSelect(item)}
                     >
                       {title}
-                      {itemSubTitle && (
-                        <SecondaryText>{itemSubTitle(item)}</SecondaryText>
-                      )}
+                      {subTitle && <SecondaryText>{subTitle}</SecondaryText>}
                     </ListBox.MenuItem>
                   </MenuItemWrapper>
                 );
