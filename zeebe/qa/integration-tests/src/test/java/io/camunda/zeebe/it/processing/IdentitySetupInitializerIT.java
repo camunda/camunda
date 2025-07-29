@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.client.CamundaClient;
+import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
 import io.camunda.zeebe.protocol.Protocol;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.test.util.Strings;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.AutoClose;
@@ -155,6 +158,61 @@ final class IdentitySetupInitializerIT {
         .hasName(user2.getName())
         .hasEmail(user2.getEmail());
     assertThat(passwordEncoder.matches(user2.getPassword(), secondUser.getPassword())).isTrue();
+  }
+
+  @Test
+  void shouldInitializeWithMappingRulesAndRoleMemberships() {
+    // given a broker with authorization enabled
+    final var mappingRules1 =
+        new ConfiguredMappingRule(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString());
+    final var mappingRules2 =
+        new ConfiguredMappingRule(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString());
+    createBroker(
+        true,
+        1,
+        cfg -> {
+          cfg.getInitialization().setMappingRules(List.of(mappingRules1, mappingRules2));
+          cfg.getInitialization()
+              .getDefaultRoles()
+              .put(
+                  "admin",
+                  Map.of(
+                      "mappingRules",
+                      List.of(mappingRules1.getMappingRuleId()),
+                      "mappingrules",
+                      List.of(mappingRules2.getMappingRuleId())));
+        });
+
+    // then identity should be initialized
+    final var record =
+        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZE)
+            .getFirst()
+            .getValue();
+
+    final var firstMappingRule = record.getMappingRules().getFirst();
+    Assertions.assertThat(firstMappingRule)
+        .isNotNull()
+        .hasMappingRuleId(mappingRules1.getMappingRuleId())
+        .hasClaimName(mappingRules1.getClaimName())
+        .hasClaimValue(mappingRules1.getClaimValue());
+
+    final var secondMappingRule = record.getMappingRules().get(1);
+    Assertions.assertThat(secondMappingRule)
+        .isNotNull()
+        .hasMappingRuleId(mappingRules2.getMappingRuleId())
+        .hasClaimName(mappingRules2.getClaimName())
+        .hasClaimValue(mappingRules2.getClaimValue());
+
+    final var members = record.getRoleMembers().stream().map(RoleRecordValue::getEntityId).toList();
+    assertThat(members)
+        .containsExactlyInAnyOrder(
+            mappingRules1.getMappingRuleId(), mappingRules2.getMappingRuleId());
   }
 
   private void createBroker(
