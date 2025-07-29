@@ -8,6 +8,8 @@
 package io.camunda.zeebe.feel.impl;
 
 import static io.camunda.zeebe.feel.impl.Loggers.LOGGER;
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import org.agrona.DirectBuffer;
@@ -95,8 +97,10 @@ public class FeelToMessagePackTransformer {
       case final ValTime time -> writeStringValue(time.value().format());
       case final ValLocalTime time -> writeStringValue(time.value().toString());
       case final ValDate date -> writeStringValue(date.value().toString());
-      case final ValDateTime dateTime -> writeStringValue(dateTime.value().toString());
-      case final ValLocalDateTime dateTime -> writeStringValue(dateTime.value().toString());
+      case final ValDateTime dateTime ->
+          writeStringValue(ISO_ZONED_DATE_TIME.format(dateTime.value()));
+      case final ValLocalDateTime dateTime ->
+          writeStringValue(ISO_LOCAL_DATE_TIME.format(dateTime.value()));
       case final ValDayTimeDuration duration -> writeStringValue(duration.toString());
       case final ValYearMonthDuration duration -> writeStringValue(duration.toString());
       default -> {
