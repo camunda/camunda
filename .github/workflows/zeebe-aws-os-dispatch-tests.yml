@@ -11,9 +11,8 @@ on:
         description: Version of AWS OS
         type: choice
         options:
-          - "2.9"
-          - "2.11"
           - "2.17"
+          - "2.19"
   schedule:
     - cron: "0 23 * * Sat"
 
@@ -31,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os_version: ${{ fromJSON(format('[{0}]', inputs.os_version || '"2.9", "2.11", "2.17"')) }}
+        os_version: ${{ fromJSON(format('[{0}]', inputs.os_version || '"2.17", "2.19"')) }}
         group:
         - os-exporter
         - search-client-os
@@ -73,9 +72,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_9_URL;
-            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_11_URL;
             secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_17_URL;
+            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_19_URL;
       - name: Set temp GH envs
         id: temp-vars
         run: |
@@ -87,18 +85,14 @@ jobs:
             echo "AWS_STS_REGIONAL_ENDPOINTS=$AWS_STS_REGIONAL_ENDPOINTS"
           } >> "$GITHUB_ENV"
 
-          if [[ "${{ matrix.os_version }}" = "2.9" ]]
-          then
-            echo "Using OS 2.9"
-            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_9_URL }};
-          elif [[ "${{ matrix.os_version }}" = "2.11" ]]
-          then
-            echo "Using OS 2.11"
-            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_11_URL }};
-          elif [[ "${{ matrix.os_version }}" = "2.17" ]]
+          if [[ "${{ matrix.os_version }}" = "2.17" ]]
           then
             echo "Using OS 2.17"
             OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_17_URL }};
+          elif [[ "${{ matrix.os_version }}" = "2.19" ]]
+          then
+            echo "Using OS 2.19"
+            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_19_URL }};
           else
             echo "Incorrect on usupported version of OpenSearch"
             exit 1
