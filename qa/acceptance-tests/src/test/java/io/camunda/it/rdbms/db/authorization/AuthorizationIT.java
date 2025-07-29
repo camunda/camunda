@@ -72,7 +72,7 @@ public class AuthorizationIT {
                     .ownerId(authorization.ownerId())
                     .ownerType(authorization.ownerType())
                     .resourceType(authorization.resourceType())
-                    .resourceMatcher(AuthorizationResourceMatcher.ID.value())
+                    .resourceMatcher(authorization.resourceMatcher())
                     .resourceId("bar")
                     .permissionTypes(authorization.permissionTypes()));
     rdbmsWriter.getAuthorizationWriter().updateAuthorization(authorizationUpdate);
