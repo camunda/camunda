@@ -17,6 +17,7 @@ runs:
     - name: Update Flaky Tests Comment
       uses: actions/github-script@v7
       with:
+        github-token: ${{ github.token }}
         script: |
           // Parse the flaky tests data
           const flakyTestsData = JSON.parse(`${{ inputs.flaky-tests-data }}`);
@@ -34,7 +35,10 @@ runs:
 
           console.log('Processed flaky tests data:', JSON.stringify(processedData, null, 2));
 
-          // TODO: Step 3 - Generate comment content and create/update PR comment
+          // Step 3.1: Generate comment content and create/update PR comment
+          const { main } = require('./.github/actions/update-flaky-tests-comment/src/comment-generator');
+          console.log('🚀 Starting flaky test comment generation...');
+          await main(context, github, processedData, ${{ inputs.pr-number }});
 
           // Helper function to process flaky tests data
           function processFlakyTestsData(rawData) {
@@ -157,8 +161,8 @@ runs:
             } else {
               // New test, create entry
               packageFlakys.set(testKey, {
-                Class: className,
-                Method: methodName,
+                className: className,
+                methodName: methodName,
                 jobs: [jobName],
                 occurrences: 1
               });
