@@ -1,5 +1,5 @@
-### Create Group Unauthorized
-# @name create-group-unauthorized
+### Create Group Unauthenticated
+# @name create-group-unauthenticated
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups
 Content-Type: application/json
 Accept: application/json
@@ -70,6 +70,44 @@ Accept: application/json
   client.test("Group retrieval should be successful", function () {
     client.assert(response.status === 200, "Response status is not 200");
     client.assert(response.body.groupId === expectedGroupId, "GroupId was not found.");
+  });
+%}
+
+###
+# @name create-test-user-without-authorizations
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "password": "admin",
+  "username": "{{USERNAME_NO_AUTHORIZATIONS}}",
+  "name": "admin",
+  "email": "admin@test.com"
+}
+
+> {%
+  client.test("User creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+    client.global.set("USERNAME_NO_AUTHORIZATIONS", response.body.username);
+  });
+%}
+
+### Get Group Unauthorized
+# @name get-group-unauthorized
+< {%
+  import {wait} from "js/wait";
+  wait(4);
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Accept: application/json
+
+> {%
+  client.test("Group retrieval should be unsuccessful", function () {
+    client.assert(response.status === 403, "Response status is not 403");
+    client.assert(response.body.detail === "Unauthorized to perform operation 'READ' on resource 'GROUP'", "Error message is incorrect.");
   });
 %}
 

@@ -150,7 +150,7 @@ jobs:
           export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo && \
           export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com && \
           export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo && \
-          export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth && \
+          export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth,dev-data && \
           ./bin/camunda &
           sleep 60
 
@@ -171,7 +171,7 @@ jobs:
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false && \
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
           export CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=${{ inputs.multi-tenancy }} && \
-          export SPRING_PROFILES_ACTIVE=identity,broker,consolidated-auth && \
+          export SPRING_PROFILES_ACTIVE=identity,broker,consolidated-auth,dev-data && \
           ./bin/camunda &
           sleep 60
 

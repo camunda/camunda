@@ -53,7 +53,7 @@ Accept: application/json
 
 > {%
   client.test("User update should be authorized", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 200, "Response status is not 200");
   });
 %}
 
@@ -308,6 +308,66 @@ Accept: application/json
 %}
 
 ###
+# @name create-process-instance
+
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionName": "TwoUserTasks",
+  "processDefinitionVersion": 1,
+  "startDate": "2025-07-28T13:18:05.666Z",
+  "state": "ACTIVE",
+  "hasIncident": false,
+  "tenantId": "<default>",
+  "processInstanceKey": "2251799813692075",
+  "processDefinitionKey": "2251799813685329"
+}
+
+> {%
+  client.test("Create process instance is successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Response should contain process key", function () {
+    client.assert(response.body.processDefinitionKey === "2251799813685329", "Process definition key was not returned");
+    client.global.set("PROCESS_INSTANCE_KEY", response.body.processInstanceKey);
+  });
+%}
+
+###
+# @name get-process-instance
+< {%
+  import {wait} from "js/wait"
+  wait(3)
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Process instance is successful returned", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  let expectedInstanceKey = client.global.get("PROCESS_INSTANCE_KEY");
+  client.test("Response should not be empty", function () {
+    client.assert(response.body.processInstanceKey === expectedInstanceKey, "Process instances wasn't returned");
+  });
+%}
+
+###
 # @name process-instance-search-unauthorized
 < {%
   import {wait} from "js/wait"
@@ -345,6 +405,30 @@ Accept: application/json
   });
 %}
 
+###
+# @name get-process-instance-unauthorized
+< {%
+  import {wait} from "js/wait"
+  wait(3)
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Get process instance is unsuccessful without authorizations", function () {
+    client.assert(response.status === 403, "Response status is not 403");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/problem+json"), "Response is not JSON");
+  });
+
+  client.test("Response should contain correct error message", function () {
+    client.assert(response.body.detail === "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'", "Error message is incorrect");
+  });
+%}
 
 ###
 # @name create-authorization-for-apps-positive
