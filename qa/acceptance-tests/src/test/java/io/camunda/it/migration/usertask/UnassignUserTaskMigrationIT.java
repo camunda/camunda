@@ -100,7 +100,7 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
     final var piKey =
         startProcessInstance(
             migrator.getCamundaClient(),
-            PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
+            PROCESS_DEFINITION_KEYS.get(TaskImplementation.JOB_WORKER));
     final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
     final var res =
