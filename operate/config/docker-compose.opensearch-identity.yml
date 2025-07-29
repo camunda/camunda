@@ -111,7 +111,7 @@ services:
       start_period: 30s
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.7.8
+    image: camunda/zeebe:8.7.9
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
