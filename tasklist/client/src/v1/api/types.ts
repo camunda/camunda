@@ -24,7 +24,15 @@ type TruncatedVariable = {
 
 type Variable = FullVariable | TruncatedVariable;
 
-type TaskState = 'CREATED' | 'COMPLETED' | 'CANCELED';
+type TaskState =
+  | 'CREATED'
+  | 'COMPLETED'
+  | 'CANCELED'
+  | 'FAILED'
+  | 'ASSIGNING'
+  | 'UPDATING'
+  | 'COMPLETING'
+  | 'CANCELING';
 
 type Task = {
   id: string;

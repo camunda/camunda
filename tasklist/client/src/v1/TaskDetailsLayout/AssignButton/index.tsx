@@ -39,18 +39,36 @@ type AssignmentStatus =
 type Props = {
   id: string;
   assignee: string | null;
+  taskState:
+    | 'CREATED'
+    | 'COMPLETED'
+    | 'CANCELED'
+    | 'FAILED'
+    | 'ASSIGNING'
+    | 'UPDATING'
+    | 'COMPLETING'
+    | 'CANCELING';
   onAssignmentError: () => void;
 };
 
-const AssignButton: React.FC<Props> = ({id, assignee, onAssignmentError}) => {
+const AssignButton: React.FC<Props> = ({
+  id,
+  assignee,
+  taskState,
+  onAssignmentError,
+}) => {
   const isAssigned = assignee !== null;
-  const [assignmentStatus, setAssignmentStatus] =
-    useState<AssignmentStatus>('off');
+  const [assignmentStatus, setAssignmentStatus] = useState<AssignmentStatus>(
+    () => (taskState === 'ASSIGNING' ? 'assigning' : 'off'),
+  );
+
   const {t} = useTranslation();
   const {mutateAsync: assignTask, isPending: assignIsPending} = useAssignTask();
   const {mutateAsync: unassignTask, isPending: unassignIsPending} =
     useUnassignTask();
-  const isLoading = (assignIsPending || unassignIsPending) ?? false;
+  const isLoading =
+    (assignIsPending || unassignIsPending || taskState === 'ASSIGNING') ??
+    false;
 
   const handleAssignmentClick = async () => {
     try {
@@ -182,7 +200,10 @@ const AssignButton: React.FC<Props> = ({id, assignee, onAssignmentError}) => {
     if (isLoading || assignmentStatus !== 'off') {
       const ACTIVE_STATES: AssignmentStatus[] = ['assigning', 'unassigning'];
 
-      return ACTIVE_STATES.includes(assignmentStatus) ? 'active' : 'finished';
+      return ACTIVE_STATES.includes(assignmentStatus) ||
+        taskState === 'ASSIGNING'
+        ? 'active'
+        : 'finished';
     }
 
     return 'inactive';

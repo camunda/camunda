@@ -21,7 +21,8 @@ import {
   TaskDetailsContainer,
   TaskDetailsRow,
 } from 'common/tasks/details/TaskDetailsLayout';
-import {useMemo, useRef, useState} from 'react';
+import {TaskStateLoadingText} from 'common/tasks/details/TaskStateLoadingText';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {match, Pattern} from 'ts-pattern';
 import {useSelectedVariables} from 'v2/api/useSelectedVariables.query';
@@ -48,9 +49,10 @@ const FormJS: React.FC<Props> = ({
 }) => {
   const {t} = useTranslation();
   const formManagerRef = useRef<FormManager | null>(null);
-  const [submissionState, setSubmissionState] =
-    useState<NonNullable<InlineLoadingProps['status']>>('inactive');
   const {userTaskKey, state, assignee} = task;
+  const [submissionState, setSubmissionState] = useState<
+    NonNullable<InlineLoadingProps['status']>
+  >(() => (state === 'COMPLETING' ? 'active' : 'inactive'));
   const {data, isLoading} = useUserTaskForm(
     {userTaskKey},
     {
@@ -75,12 +77,25 @@ const FormJS: React.FC<Props> = ({
     () => formatVariablesToFormData(variablesData ?? []),
     [variablesData],
   );
+
   const hasFetchedVariables =
     extractedVariables.length === 0 || status === 'success';
+
   const canCompleteTask =
     user.userId === assignee && state === 'CREATED' && hasFetchedVariables;
-  const {removeFormReference} = useRemoveFormReference(task);
 
+  const shouldHideBottomPanel =
+    state === 'ASSIGNING' ||
+    (state === 'UPDATING' && assignee === null) ||
+    (state === 'CANCELING' && assignee === null);
+
+  useEffect(() => {
+    if (state === 'COMPLETING') {
+      setSubmissionState('active');
+    }
+  }, [state]);
+
+  const {removeFormReference} = useRemoveFormReference(task);
   return (
     <ScrollableContent data-testid="embedded-form" tabIndex={-1}>
       <TaskDetailsContainer>
@@ -149,24 +164,33 @@ const FormJS: React.FC<Props> = ({
             )
             .otherwise(() => null)}
         </Layer>
-        <DetailsFooter>
-          <CompleteTaskButton
-            submissionState={submissionState}
-            onClick={() => {
-              setSubmissionState('active');
-              formManagerRef.current?.submit();
-            }}
-            onSuccess={() => {
-              onSubmitSuccess();
-              setSubmissionState('inactive');
-            }}
-            onError={() => {
-              setSubmissionState('inactive');
-            }}
-            isHidden={state === 'COMPLETED'}
-            isDisabled={!canCompleteTask}
-          />
-        </DetailsFooter>
+        {!shouldHideBottomPanel && (
+          <DetailsFooter>
+            <CompleteTaskButton
+              submissionState={submissionState}
+              onClick={() => {
+                setSubmissionState('active');
+                formManagerRef.current?.submit();
+              }}
+              onSuccess={() => {
+                onSubmitSuccess();
+                setSubmissionState('inactive');
+              }}
+              onError={() => {
+                if (state === 'COMPLETING') {
+                  setSubmissionState('active');
+                } else {
+                  setSubmissionState('inactive');
+                }
+              }}
+              isHidden={['COMPLETED', 'CANCELING', 'UPDATING'].includes(state)}
+              isDisabled={!canCompleteTask}
+            />
+            {['UPDATING', 'CANCELING'].includes(state) && (
+              <TaskStateLoadingText taskState={state} />
+            )}
+          </DetailsFooter>
+        )}
       </TaskDetailsContainer>
     </ScrollableContent>
   );
