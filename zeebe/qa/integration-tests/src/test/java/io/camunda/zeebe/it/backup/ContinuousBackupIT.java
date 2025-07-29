@@ -214,7 +214,7 @@ final class ContinuousBackupIT {
 
   void takeAndAwaitBackup(final long backupId) {
     backupActuator.take(backupId);
-    await("snapshot is completed")
+    await("backup is completed")
         .ignoreExceptions()
         .untilAsserted(
             () ->
