@@ -8,12 +8,14 @@
 package io.camunda.zeebe.engine.processing.adhocsubprocess;
 
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -23,15 +25,12 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivateElementInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue.AdHocSubProcessActivateElementInstructionValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 
 public class AdHocSubProcessInstructionActivateProcessor
@@ -51,25 +50,23 @@ public class AdHocSubProcessInstructionActivateProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final TypedCommandWriter commandWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final AuthorizationCheckBehavior authCheckBehavior;
-  private final KeyGenerator keyGenerator;
+  private final BpmnAdHocSubProcessBehavior bpmnAdHocSubProcessBehavior;
 
   public AdHocSubProcessInstructionActivateProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final KeyGenerator keyGenerator) {
+      final BpmnBehaviors bpmnBehaviors) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    commandWriter = writers.command();
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
     this.authCheckBehavior = authCheckBehavior;
-    this.keyGenerator = keyGenerator;
+    bpmnAdHocSubProcessBehavior = bpmnBehaviors.adHocSubProcessBehavior();
   }
 
   @Override
@@ -141,10 +138,10 @@ public class AdHocSubProcessInstructionActivateProcessor
             .getProcess();
 
     final var adHocSubProcessElement =
-        adHocSubProcessDefinition.getElementById(
-            adHocSubProcessElementInstance.getValue().getElementId());
-    final var adHocActivitiesById =
-        ((ExecutableAdHocSubProcess) adHocSubProcessElement).getAdHocActivitiesById();
+        (ExecutableAdHocSubProcess)
+            adHocSubProcessDefinition.getElementById(
+                adHocSubProcessElementInstance.getValue().getElementId());
+    final var adHocActivitiesById = adHocSubProcessElement.getAdHocActivitiesById();
 
     // check that the given elements exist within the ad-hoc sub-process
     final var elementsNotInAdHocSubProcess =
@@ -164,23 +161,18 @@ public class AdHocSubProcessInstructionActivateProcessor
       return;
     }
 
+    final var bpmnElementContext = new BpmnElementContextImpl();
+    bpmnElementContext.init(
+        adHocSubProcessElementInstance.getKey(),
+        adHocSubProcessElementInstance.getValue(),
+        adHocSubProcessElementInstance.getState());
+
     // activate the elements
     for (final var elementValue : command.getValue().getActivateElements()) {
-      final var elementToActivate =
-          adHocSubProcessDefinition.getElementById(elementValue.getElementId());
-      final var elementProcessInstanceRecord = new ProcessInstanceRecord();
-      elementProcessInstanceRecord.wrap(adHocSubProcessElementInstance.getValue());
-      elementProcessInstanceRecord
-          .setFlowScopeKey(adHocSubProcessElementInstance.getKey())
-          .setElementId(elementToActivate.getId())
-          .setBpmnElementType(elementToActivate.getElementType())
-          .setBpmnEventType(elementToActivate.getEventType());
-
-      final long elementToActivateInstanceKey = keyGenerator.nextKey();
-      commandWriter.appendFollowUpCommand(
-          elementToActivateInstanceKey,
-          ProcessInstanceIntent.ACTIVATE_ELEMENT,
-          elementProcessInstanceRecord);
+      bpmnAdHocSubProcessBehavior.activateElement(
+          bpmnElementContext,
+          adHocSubProcessElement,
+          adHocSubProcessElement.getAdHocActivitiesById().get(elementValue.getElementId()));
     }
 
     stateWriter.appendFollowUpEvent(
