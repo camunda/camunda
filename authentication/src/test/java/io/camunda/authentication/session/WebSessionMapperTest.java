@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
 import io.camunda.search.entities.PersistentWebSessionEntity;
-import io.camunda.search.entities.RoleEntity;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
@@ -46,7 +45,7 @@ public class WebSessionMapperTest {
                 .withUsername("test")
                 .withPassword("admin")
                 .withUserKey(1L)
-                .withRoles(List.of(new RoleEntity(1L, "testRole", "testRole", "description")))
+                .withRoles(List.of("testRole"))
                 .build(),
             null);
     securityContext.setAuthentication(authenticationToken);
@@ -138,7 +137,7 @@ public class WebSessionMapperTest {
                 .withUsername("test")
                 .withPassword("admin")
                 .withUserKey(1L)
-                .withRoles(List.of(new RoleEntity(1L, "testRole", "testRole", "description")))
+                .withRoles(List.of("testRole"))
                 .build(),
             null);
     securityContext.setAuthentication(authenticationToken);

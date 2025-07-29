@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.OAuthContext;
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -63,7 +62,7 @@ public class CamundaOidcUserServiceTest {
             "group", "G1");
     when(jwtDecoder.decode(TOKEN_VALUE)).thenReturn(createJwt(TOKEN_VALUE, claims));
 
-    final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
+    final var roleR1 = "roleR1";
 
     when(camundaOAuthPrincipalService.loadOAuthContext(claims))
         .thenReturn(

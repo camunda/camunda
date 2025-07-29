@@ -11,7 +11,6 @@ import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
@@ -44,7 +43,7 @@ public class BasicCamundaUserService implements CamundaUserService {
                   auth.authorizedApplications(),
                   auth.tenants(),
                   auth.groups(),
-                  auth.roles().stream().map(RoleEntity::name).toList(),
+                  auth.roles(),
                   user.getSalesPlanType(),
                   user.getC8Links(),
                   user.canLogout());

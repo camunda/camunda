@@ -284,7 +284,8 @@ public class CamundaOAuthPrincipalServiceTest {
       assertThat(oAuthContext).isNotNull();
       assertThat(oAuthContext.mappingIds()).isEqualTo(Set.of("test-id", "test-id-2"));
       final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
-      assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1, groupRole));
+      assertThat(authenticationContext.roles())
+          .containsAll(Set.of(roleR1.roleId(), groupRole.roleId()));
       assertThat(authenticationContext.groups()).containsExactly("group-g1");
       assertThat(authenticationContext.tenants())
           .containsAll(List.of(TenantDTO.fromEntity(tenantT1), TenantDTO.fromEntity(groupTenant)));
@@ -358,7 +359,7 @@ public class CamundaOAuthPrincipalServiceTest {
 
       final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
       assertThat(authenticationContext.username()).isEqualTo("scooby-doo");
-      assertThat(authenticationContext.roles()).containsExactly(roleR1);
+      assertThat(authenticationContext.roles()).containsExactly(roleR1.roleId());
       assertThat(authenticationContext.groups()).containsExactly("group-g1");
       assertThat(authenticationContext.tenants())
           .containsExactlyInAnyOrder(

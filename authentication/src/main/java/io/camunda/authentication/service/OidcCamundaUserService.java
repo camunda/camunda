@@ -12,7 +12,6 @@ import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOAuthPrincipal;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.entity.ClusterMetadata.AppName;
 import jakarta.json.Json;
@@ -53,7 +52,7 @@ public class OidcCamundaUserService implements CamundaUserService {
                   auth.authorizedApplications(),
                   auth.tenants(),
                   auth.groups(),
-                  auth.roles().stream().map(RoleEntity::name).toList(),
+                  auth.roles(),
                   SALES_PLAN_TYPE,
                   C8_LINKS,
                   true);

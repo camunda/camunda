@@ -10,7 +10,6 @@ package io.camunda.authentication;
 import io.camunda.authentication.entity.CamundaOAuthPrincipal;
 import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.authentication.exception.CamundaAuthenticationException;
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthentication.Builder;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
@@ -58,8 +57,7 @@ public class DefaultCamundaAuthenticationConverter
     final var authenticationBuilder = new Builder();
     final var authenticationContext = camundaPrincipal.getAuthenticationContext();
 
-    authenticationBuilder.roleIds(
-        authenticationContext.roles().stream().map(RoleEntity::roleId).toList());
+    authenticationBuilder.roleIds(authenticationContext.roles());
 
     authenticationBuilder.tenants(
         authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());

@@ -8,7 +8,6 @@
 package io.camunda.authentication.entity;
 
 import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.entity.ClusterMetadata;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.util.Collections;
@@ -100,7 +99,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
     private String username;
     private String password;
     private String email;
-    private List<RoleEntity> roles = List.of();
+    private List<String> roles = List.of();
     private List<? extends GrantedAuthority> authorities = List.of();
     private List<String> authorizedApplications = List.of();
     private List<TenantDTO> tenants = List.of();
@@ -140,7 +139,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
       return this;
     }
 
-    public CamundaUserBuilder withRoles(final List<RoleEntity> roles) {
+    public CamundaUserBuilder withRoles(final List<String> roles) {
       this.roles = Objects.requireNonNullElse(roles, List.of());
       return this;
     }

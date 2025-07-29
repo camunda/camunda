@@ -137,10 +137,13 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
     final var roles =
         roleServices
             .withAuthentication(CamundaAuthentication.anonymous())
-            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds);
-    final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
-    if (!roleIds.isEmpty()) {
-      ownerTypeToIds.put(EntityType.ROLE, roleIds);
+            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds)
+            .stream()
+            .map(RoleEntity::roleId)
+            .collect(Collectors.toSet());
+
+    if (!roles.isEmpty()) {
+      ownerTypeToIds.put(EntityType.ROLE, roles);
     }
 
     final var tenants =
@@ -160,7 +163,7 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
         .withAuthorizedApplications(authorizedApplications)
         .withTenants(tenants)
         .withGroups(groups.stream().toList())
-        .withRoles(roles)
+        .withRoles(roles.stream().toList())
         .withGroupsClaimEnabled(groupsClaimPresent);
 
     return new OAuthContext(mappingRuleIds, authContextBuilder.build());
