@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.MultiInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -34,6 +35,7 @@ public final class BpmnStateBehavior {
   private final JobState jobState;
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
+  private final MultiInstanceState multiInstanceState;
 
   public BpmnStateBehavior(
       final ProcessingState processingState, final VariableBehavior variableBehavior) {
@@ -43,6 +45,7 @@ public final class BpmnStateBehavior {
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     jobState = processingState.getJobState();
+    multiInstanceState = processingState.getMultiInstanceState();
   }
 
   public ElementInstance getElementInstance(final BpmnElementContext context) {
@@ -282,5 +285,9 @@ public final class BpmnStateBehavior {
   public int getNumberOfTakenSequenceFlows(
       final long flowScopeKey, final DirectBuffer gatewayElementId) {
     return elementInstanceState.getNumberOfTakenSequenceFlows(flowScopeKey, gatewayElementId);
+  }
+
+  public Optional<List<DirectBuffer>> getInputCollection(final long multiInstanceKey) {
+    return multiInstanceState.getInputCollection(multiInstanceKey);
   }
 }

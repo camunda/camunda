@@ -51,7 +51,7 @@ jobs:
           - 9200:9200
           - 9300:9300
       zeebe:
-        image: camunda/zeebe:8.6.22
+        image: camunda/zeebe:8.6.23
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
           ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
@@ -68,7 +68,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b
+        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
