@@ -250,7 +250,7 @@ jobs:
           echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }} | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
       - name: Helm install
         run: >
-          helm upgrade --install ${{ inputs.name }} zeebe-benchmark/zeebe-benchmark --wait --timeout 20m0s
+          helm upgrade --install ${{ inputs.name }} zeebe-benchmark/zeebe-benchmark --wait --timeout 35m0s
           --namespace ${{ inputs.name }}
           --create-namespace
           --reuse-values
