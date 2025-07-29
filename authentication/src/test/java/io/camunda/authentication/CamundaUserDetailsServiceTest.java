@@ -22,7 +22,6 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Collections;
@@ -100,7 +99,7 @@ public class CamundaUserDetailsServiceTest {
         .isEqualTo(List.of(adminRole.roleId(), groupRole.roleId()));
     assertThat(user.getAuthenticationContext().groups()).isEqualTo(List.of(adminGroup.groupId()));
     assertThat(user.getAuthenticationContext().tenants())
-        .isEqualTo(List.of(TenantDTO.fromEntity(adminTenant), TenantDTO.fromEntity(groupTenant)));
+        .isEqualTo(List.of(adminTenant.tenantId(), groupTenant.tenantId()));
   }
 
   @Test

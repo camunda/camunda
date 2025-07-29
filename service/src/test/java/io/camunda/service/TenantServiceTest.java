@@ -21,8 +21,8 @@ import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
+import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -93,7 +93,7 @@ public class TenantServiceTest {
   public void shouldCreateTenant() {
     // given
     final var tenantDTO =
-        new TenantDTO(100L, "NewTenantName", "NewTenantId", "NewTenantDescription");
+        new TenantRequest(100L, "NewTenantName", "NewTenantId", "NewTenantDescription");
 
     // when
     services.createTenant(tenantDTO);
@@ -112,7 +112,7 @@ public class TenantServiceTest {
 
     // given
     final var tenantDTO =
-        new TenantDTO(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId", null);
+        new TenantRequest(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId", null);
 
     // when
     services.updateTenant(tenantDTO);
@@ -131,7 +131,7 @@ public class TenantServiceTest {
 
     // given
     final var tenantDTO =
-        new TenantDTO(
+        new TenantRequest(
             tenantEntity.key(), tenantEntity.tenantId(), "TenantName", "UpdatedTenantDescription");
 
     // when

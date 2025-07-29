@@ -20,8 +20,8 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
+import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -81,7 +81,7 @@ public class TenantControllerTest {
       // given
       final var tenantName = "Test Tenant";
       final var tenantDescription = "Test description";
-      when(tenantServices.createTenant(new TenantDTO(null, id, tenantName, tenantDescription)))
+      when(tenantServices.createTenant(new TenantRequest(null, id, tenantName, tenantDescription)))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new TenantRecord()
@@ -106,7 +106,7 @@ public class TenantControllerTest {
 
       // then
       verify(tenantServices, times(1))
-          .createTenant(new TenantDTO(null, id, tenantName, tenantDescription));
+          .createTenant(new TenantRequest(null, id, tenantName, tenantDescription));
     }
 
     @Test
@@ -116,7 +116,7 @@ public class TenantControllerTest {
       final var tenantId = "tenantId";
       final var tenantDescription = "Test description";
       when(tenantServices.createTenant(
-              new TenantDTO(null, tenantId, tenantName, tenantDescription)))
+              new TenantRequest(null, tenantId, tenantName, tenantDescription)))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new TenantRecord()
@@ -152,7 +152,7 @@ public class TenantControllerTest {
 
       // then
       verify(tenantServices, times(1))
-          .createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
+          .createTenant(new TenantRequest(null, tenantId, tenantName, tenantDescription));
     }
 
     @Test
@@ -266,7 +266,7 @@ public class TenantControllerTest {
       final var tenantId = "tenant-test-id";
       final var tenantDescription = "Updated description";
       when(tenantServices.updateTenant(
-              new TenantDTO(null, tenantId, tenantName, tenantDescription)))
+              new TenantRequest(null, tenantId, tenantName, tenantDescription)))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new TenantRecord()
@@ -298,7 +298,7 @@ public class TenantControllerTest {
 
       // then
       verify(tenantServices, times(1))
-          .updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
+          .updateTenant(new TenantRequest(null, tenantId, tenantName, tenantDescription));
     }
 
     @Test
@@ -375,7 +375,7 @@ public class TenantControllerTest {
       final var tenantDescription = "My tenant description";
       final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
       when(tenantServices.updateTenant(
-              new TenantDTO(null, tenantId, tenantName, tenantDescription)))
+              new TenantRequest(null, tenantId, tenantName, tenantDescription)))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -394,7 +394,7 @@ public class TenantControllerTest {
           .isNotFound();
 
       verify(tenantServices, times(1))
-          .updateTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
+          .updateTenant(new TenantRequest(null, tenantId, tenantName, tenantDescription));
     }
 
     @Test

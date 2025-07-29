@@ -21,8 +21,8 @@ import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TenantServices;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
+import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -80,7 +80,7 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
           if (!tenant.tenantId().equals(DEFAULT_TENANT_IDENTIFIER)) {
             tenantId = normalizeID(tenant.tenantId());
             try {
-              final var tenantDto = new TenantDTO(null, tenantId, tenant.name(), null);
+              final var tenantDto = new TenantRequest(null, tenantId, tenant.name(), null);
               retryOnBackpressure(
                   () -> tenantService.createTenant(tenantDto).join(),
                   "Failed to create tenant with ID: " + tenantId);

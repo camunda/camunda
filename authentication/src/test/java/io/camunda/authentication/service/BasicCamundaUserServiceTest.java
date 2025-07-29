@@ -11,14 +11,20 @@ import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aC
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.APPLICATION_ACCESS_AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.service.TenantServices;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -32,6 +38,7 @@ public class BasicCamundaUserServiceTest {
 
   @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private ResourceAccessProvider resourceAccessProvider;
+  @Mock private TenantServices tenantServices;
   private BasicCamundaUserService userService;
 
   @BeforeEach
@@ -51,7 +58,46 @@ public class BasicCamundaUserServiceTest {
     Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
     SecurityContextHolder.setContext(securityContext);
 
-    userService = new BasicCamundaUserService(authenticationProvider, resourceAccessProvider);
+    when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(tenantServices);
+
+    userService =
+        new BasicCamundaUserService(authenticationProvider, resourceAccessProvider, tenantServices);
+  }
+
+  @Test
+  void shouldIncludeTenants() {
+    // given
+    final var user =
+        aCamundaUser()
+            .withName("Foo Bar")
+            .withUsername("foo@bar.com")
+            .withPassword("foobar")
+            .withTenants(List.of("tenant1", "tenant2"))
+            .build();
+    final var authentication = Mockito.mock(Authentication.class);
+    when(authentication.getPrincipal()).thenReturn(user);
+    final var securityContext = Mockito.mock(SecurityContext.class);
+    Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
+    SecurityContextHolder.setContext(securityContext);
+
+    final var camundaAuthentication = mock(CamundaAuthentication.class);
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(camundaAuthentication);
+    when(resourceAccessProvider.resolveResourceAccess(
+            eq(camundaAuthentication), eq(APPLICATION_ACCESS_AUTHORIZATION)))
+        .thenReturn(ResourceAccess.allowed(APPLICATION_ACCESS_AUTHORIZATION));
+    when(tenantServices.search(any(TenantQuery.class)))
+        .thenReturn(
+            SearchQueryResult.of(
+                new TenantEntity(1L, "tenant1", "name", "desc"),
+                new TenantEntity(2L, "tenant2", "name", "desc")));
+
+    // when
+    final var currentUser = userService.getCurrentUser();
+
+    // then
+    assertThat(currentUser.tenants().stream().map(TenantEntity::tenantId).toList())
+        .containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test

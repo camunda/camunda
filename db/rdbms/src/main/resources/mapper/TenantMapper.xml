@@ -35,7 +35,10 @@
   <sql id="searchFilter">
     WHERE 1 = 1
     <if test="filter.key != null">AND TENANT_KEY = #{filter.key}</if>
-    <if test="filter.tenantId != null">AND TENANT_ID = #{filter.tenantId}</if>
+    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
     <if test="filter.name != null">AND NAME = #{filter.name}</if>
   </sql>
 

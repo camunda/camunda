@@ -13,7 +13,6 @@ import io.camunda.authentication.exception.CamundaAuthenticationException;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthentication.Builder;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.auth.Authorization;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,10 +57,7 @@ public class DefaultCamundaAuthenticationConverter
     final var authenticationContext = camundaPrincipal.getAuthenticationContext();
 
     authenticationBuilder.roleIds(authenticationContext.roles());
-
-    authenticationBuilder.tenants(
-        authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
-
+    authenticationBuilder.tenants(authenticationContext.tenants());
     authenticationBuilder.groupIds(authenticationContext.groups());
 
     if (authenticationContext.groupsClaimEnabled()) {

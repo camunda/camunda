@@ -19,8 +19,8 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
+import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
@@ -266,12 +266,13 @@ public class TenantController {
             tenantQuery -> searchClientsInTenant(tenantId, tenantQuery));
   }
 
-  private CompletableFuture<ResponseEntity<Object>> createTenant(final TenantDTO tenantDTO) {
+  private CompletableFuture<ResponseEntity<Object>> createTenant(
+      final TenantRequest tenantRequest) {
     return RequestMapper.executeServiceMethod(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createTenant(tenantDTO),
+                .createTenant(tenantRequest),
         ResponseMapper::toTenantCreateResponse);
   }
 
@@ -419,12 +420,13 @@ public class TenantController {
         .build();
   }
 
-  private CompletableFuture<ResponseEntity<Object>> updateTenant(final TenantDTO tenantDTO) {
+  private CompletableFuture<ResponseEntity<Object>> updateTenant(
+      final TenantRequest tenantRequest) {
     return RequestMapper.executeServiceMethod(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .updateTenant(tenantDTO),
+                .updateTenant(tenantRequest),
         ResponseMapper::toTenantUpdateResponse);
   }
 }
