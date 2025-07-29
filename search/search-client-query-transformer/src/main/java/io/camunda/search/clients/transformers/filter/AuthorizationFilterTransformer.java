@@ -20,6 +20,7 @@ import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RES
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_TYPE;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -49,10 +50,19 @@ public final class AuthorizationFilterTransformer
     return or(
         filter.ownerTypeToOwnerIds().entrySet().stream()
             .map(
-                entry ->
-                    and(
-                        term(OWNER_TYPE, entry.getKey().name()),
-                        stringTerms(OWNER_ID, entry.getValue())))
+                entry -> {
+                  final var key = entry.getKey();
+                  final var value = entry.getValue();
+
+                  if (value == null || value.isEmpty()) {
+                    final var message =
+                        "Cannot build owner type to owner ids query, because value for owner type '%s' is null or empty."
+                            .formatted(key.name());
+                    throw new CamundaSearchException(message);
+                  }
+
+                  return and(term(OWNER_TYPE, key.name()), stringTerms(OWNER_ID, value));
+                })
             .toList());
   }
 

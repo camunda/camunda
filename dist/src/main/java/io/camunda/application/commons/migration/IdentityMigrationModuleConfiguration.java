@@ -25,7 +25,6 @@ import io.camunda.search.clients.MappingRuleSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.clients.TenantSearchClient;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -71,14 +70,9 @@ public class IdentityMigrationModuleConfiguration {
   public AuthorizationServices authorizationServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final AuthorizationSearchClient authorizationSearchClient,
-      final SecurityConfiguration securityConfiguration) {
+      final AuthorizationSearchClient authorizationSearchClient) {
     return new AuthorizationServices(
-        brokerClient,
-        securityContextProvider,
-        authorizationSearchClient,
-        null,
-        securityConfiguration);
+        brokerClient, securityContextProvider, authorizationSearchClient, null);
   }
 
   @Bean

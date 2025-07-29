@@ -7,14 +7,19 @@
  */
 package io.camunda.authentication.service;
 
+import static io.camunda.service.authorization.Authorizations.APPLICATION_ACCESS_AUTHORIZATION;
+
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOAuthPrincipal;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.entity.ClusterMetadata.AppName;
+import io.camunda.security.reader.ResourceAccessProvider;
 import jakarta.json.Json;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
@@ -31,6 +36,16 @@ public class OidcCamundaUserService implements CamundaUserService {
   // TODO: This needs to be set for SaaS purposes
   private static final Map<AppName, String> C8_LINKS = Map.of();
 
+  private final CamundaAuthenticationProvider authenticationProvider;
+  private final ResourceAccessProvider resourceAccessProvider;
+
+  public OidcCamundaUserService(
+      final CamundaAuthenticationProvider authenticationProvider,
+      final ResourceAccessProvider resourceAccessProvider) {
+    this.authenticationProvider = authenticationProvider;
+    this.resourceAccessProvider = resourceAccessProvider;
+  }
+
   private Optional<CamundaOAuthPrincipal> getCamundaUser() {
     return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
         .map(Authentication::getPrincipal)
@@ -39,6 +54,7 @@ public class OidcCamundaUserService implements CamundaUserService {
 
   @Override
   public CamundaUserDTO getCurrentUser() {
+    final var authorizedApplications = getAuthorizedApplications();
     return getCamundaUser()
         .map(
             user -> {
@@ -49,7 +65,7 @@ public class OidcCamundaUserService implements CamundaUserService {
                   user.getDisplayName(),
                   auth.username(),
                   user.getEmail(),
-                  auth.authorizedApplications(),
+                  authorizedApplications,
                   auth.tenants(),
                   auth.groups(),
                   auth.roles(),
@@ -82,5 +98,15 @@ public class OidcCamundaUserService implements CamundaUserService {
             () ->
                 new UnsupportedOperationException(
                     "User is not authenticated or does not have a valid token"));
+  }
+
+  protected List<String> getAuthorizedApplications() {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var applicationAccess =
+        resourceAccessProvider.resolveResourceAccess(
+            authentication, APPLICATION_ACCESS_AUTHORIZATION);
+    return applicationAccess.allowed()
+        ? applicationAccess.authorization().resourceIds()
+        : List.of();
   }
 }

@@ -22,7 +22,6 @@ import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -52,7 +51,6 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
   private final TenantServices tenantServices;
   private final RoleServices roleServices;
   private final GroupServices groupServices;
-  private final AuthorizationServices authorizationServices;
   private final OidcPrincipalLoader oidcPrincipalLoader;
   private final OidcGroupsLoader oidcGroupsLoader;
   private final String usernameClaim;
@@ -64,13 +62,11 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
       final TenantServices tenantServices,
       final RoleServices roleServices,
       final GroupServices groupServices,
-      final AuthorizationServices authorizationServices,
       final SecurityConfiguration securityConfiguration) {
     this.mappingRuleServices = mappingRuleServices;
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
     this.groupServices = groupServices;
-    this.authorizationServices = authorizationServices;
     usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
     clientIdClaim = securityConfiguration.getAuthentication().getOidc().getClientIdClaim();
     groupsClaim = securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
@@ -154,13 +150,7 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
             .map(TenantDTO::fromEntity)
             .toList();
 
-    final var authorizedApplications =
-        authorizationServices
-            .withAuthentication(CamundaAuthentication.anonymous())
-            .getAuthorizedApplications(ownerTypeToIds);
-
     authContextBuilder
-        .withAuthorizedApplications(authorizedApplications)
         .withTenants(tenants)
         .withGroups(groups.stream().toList())
         .withRoles(roles.stream().toList())
