@@ -372,7 +372,7 @@ public class AdHocSubProcessProcessor
         final ExecutableAdHocSubProcess adHocSubProcess,
         final BpmnElementContext adHocSubProcessContext,
         final BpmnElementContext childContext) {
-      return null;
+      return SUCCESS;
     }
 
     @Override
