@@ -82,6 +82,26 @@ public record AuthorizationFilter(
       return this;
     }
 
+    private Map<EntityType, Set<String>> getValidOwnerTypeToOwnerIdsOrThrow() {
+      if (ownerTypeToOwnerIds == null || ownerTypeToOwnerIds.isEmpty()) {
+        return null;
+      }
+
+      final var ownerTypeWithoutOwnerIds =
+          ownerTypeToOwnerIds.entrySet().stream()
+              .filter(e -> e.getValue() == null || e.getValue().isEmpty())
+              .findFirst();
+
+      if (ownerTypeWithoutOwnerIds.isPresent()) {
+        final var message =
+            "Owner type to owner ids must not contain entries without a value: %s"
+                .formatted(ownerTypeWithoutOwnerIds.get());
+        throw new IllegalArgumentException(message);
+      }
+
+      return ownerTypeToOwnerIds;
+    }
+
     @Override
     public AuthorizationFilter build() {
       return new AuthorizationFilter(
@@ -91,7 +111,7 @@ public record AuthorizationFilter(
           resourceIds,
           resourceType,
           permissionTypes,
-          ownerTypeToOwnerIds);
+          getValidOwnerTypeToOwnerIdsOrThrow());
     }
   }
 }
