@@ -63,6 +63,7 @@ public class AuthorizationCreatedUpdatedHandler
         .setAuthorizationKey(value.getAuthorizationKey())
         .setOwnerId(value.getOwnerId())
         .setOwnerType(value.getOwnerType().name())
+        .setResourceMatcher(value.getResourceMatcher().value())
         .setResourceType(value.getResourceType().name())
         .setResourceId(value.getResourceId())
         .setPermissionTypes(new HashSet<>(value.getPermissionTypes()));
