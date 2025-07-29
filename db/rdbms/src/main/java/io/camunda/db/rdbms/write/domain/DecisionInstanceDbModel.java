@@ -7,12 +7,15 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public record DecisionInstanceDbModel(
     String decisionInstanceId,
@@ -39,9 +42,53 @@ public record DecisionInstanceDbModel(
     List<EvaluatedOutput> evaluatedOutputs,
     OffsetDateTime historyCleanupDate) {
 
+  public static final Logger LOG = LoggerFactory.getLogger(DecisionInstanceDbModel.class);
+
   public static DecisionInstanceDbModel of(
       final Function<Builder, ObjectBuilder<DecisionInstanceDbModel>> fn) {
     return fn.apply(new Builder()).build();
+  }
+
+  public DecisionInstanceDbModel truncateErrorMessage(
+      final int sizeLimit, final Integer byteLimit) {
+    if (evaluationFailureMessage == null) {
+      return this;
+    }
+
+    final var truncatedValue =
+        TruncateUtil.truncateValue(evaluationFailureMessage, sizeLimit, byteLimit);
+
+    if (truncatedValue.length() < evaluationFailureMessage.length()) {
+      LOG.warn(
+          "Truncated evaluation failure message for decision instance {}, original message was: {}",
+          decisionInstanceKey,
+          evaluationFailureMessage);
+    }
+
+    return new DecisionInstanceDbModel(
+        decisionInstanceId,
+        decisionInstanceKey,
+        state,
+        evaluationDate,
+        evaluationFailure,
+        truncatedValue,
+        result,
+        flowNodeInstanceKey,
+        flowNodeId,
+        processInstanceKey,
+        processDefinitionKey,
+        processDefinitionId,
+        decisionDefinitionKey,
+        decisionDefinitionId,
+        decisionRequirementsKey,
+        decisionRequirementsId,
+        rootDecisionDefinitionKey,
+        decisionType,
+        tenantId,
+        partitionId,
+        evaluatedInputs,
+        evaluatedOutputs,
+        historyCleanupDate);
   }
 
   public static final class Builder implements ObjectBuilder<DecisionInstanceDbModel> {
