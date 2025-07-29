@@ -40,10 +40,9 @@ public final class UsageMetricsServices
     validateStartAndEndTime(query);
     return SearchQueryResult.of(
         usageMetricsSearchClient
-            // TODO add proper authorization with https://github.com/camunda/camunda/issues/34708
             .withSecurityContext(
                 securityContextProvider.provideSecurityContext(
-                    authentication, Authorization.of(a -> a)))
+                    authentication, Authorization.of(a -> a.usageMetric().read())))
             .usageMetricStatistics(query));
   }
 

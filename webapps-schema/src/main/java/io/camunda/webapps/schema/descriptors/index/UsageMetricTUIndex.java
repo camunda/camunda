@@ -11,6 +11,7 @@ import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import java.util.Optional;
 
 public class UsageMetricTUIndex extends AbstractIndexDescriptor implements Prio5Backup {
   public static final String INDEX_NAME = "usage-metric-tu";
@@ -39,5 +40,10 @@ public class UsageMetricTUIndex extends AbstractIndexDescriptor implements Prio5
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 }
