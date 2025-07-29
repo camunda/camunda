@@ -30,7 +30,7 @@ public record UserTaskFilter(
     List<Long> processDefinitionKeys,
     List<Operation<String>> candidateUserOperations,
     List<Operation<String>> candidateGroupOperations,
-    List<String> tenantIds,
+    List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> processInstanceVariableFilter,
     List<VariableValueFilter> localVariableFilters,
     List<Long> elementInstanceKeys,
@@ -54,7 +54,7 @@ public record UserTaskFilter(
     private List<Long> processDefinitionKeys;
     private List<Operation<String>> candidateUserOperations;
     private List<Operation<String>> candidateGroupOperations;
-    private List<String> tenantIds;
+    private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> processInstanceVariableFilters;
     private List<VariableValueFilter> localVariableFilters;
     private List<Long> elementInstanceKeys;
@@ -197,12 +197,18 @@ public record UserTaskFilter(
       return candidateGroupOperations(collectValues(operation, operations));
     }
 
-    public Builder tenantIds(final String... values) {
-      return tenantIds(collectValuesAsList(values));
+    public Builder tenantIds(final String value, final String... values) {
+      return candidateGroupOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
-    public Builder tenantIds(final List<String> values) {
-      tenantIds = addValuesToList(tenantIds, values);
+    @SafeVarargs
+    public final Builder tenantIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return tenantIdOperations(collectValues(operation, operations));
+    }
+
+    public Builder tenantIdOperations(final List<Operation<String>> operations) {
+      tenantIdOperations = addValuesToList(candidateGroupOperations, operations);
       return this;
     }
 
@@ -288,7 +294,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUserOperations, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroupOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
+          Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceVariableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(localVariableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(elementInstanceKeys, Collections.emptyList()),

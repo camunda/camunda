@@ -193,10 +193,9 @@
         separator=", ">#{value}
       </foreach>
     </if>
-    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
-      AND ut.TENANT_ID IN
-      <foreach close=")" collection="filter.tenantIds" item="value" open="(" separator=", ">
-        #{value}
+    <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+      <foreach collection="filter.tenantIdOperations" item="operation">
+        AND ut.TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
 
