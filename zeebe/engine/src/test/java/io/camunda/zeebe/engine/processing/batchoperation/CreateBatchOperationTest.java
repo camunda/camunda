@@ -11,9 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.Lists;
+import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -21,13 +23,14 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.stream.LongStream;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
@@ -175,6 +178,54 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
   }
 
   @Test
+  public void shouldCreateAndInitLargeResolveIncidentBatchOperation() {
+    // given
+    final int numItems = 3000;
+    final var filterBuffer =
+        convertToBuffer(
+            new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
+
+    mockSearchClientWithMultiplePages(numItems);
+
+    // when
+    final long batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.RESOLVE_INCIDENT)
+            .withFilter(filterBuffer)
+            .create()
+            .getValue()
+            .getBatchOperationKey();
+
+    // then
+    assertThat(
+            RecordingExporter.batchOperationCreationRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .limit(record -> record.getIntent().equals(BatchOperationIntent.CREATED)))
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.CREATED);
+
+    // then
+    assertThat(
+            RecordingExporter.batchOperationInitializationRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents()
+                .limitByCount(
+                    record ->
+                        record.getIntent().equals(BatchOperationIntent.INITIALIZATION_CONTINUED),
+                    4)) // reduce to 5000, 2500, 1250 and then one more init-phase
+        .extracting(r -> r.getValue().getSearchQueryPageSize())
+        .containsSequence(5000, 2500, 1250, 1250);
+
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .limit(record -> record.getIntent().equals(BatchOperationExecutionIntent.EXECUTE)))
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationExecutionIntent.EXECUTE);
+  }
+
+  @Test
   public void shouldBeAuthorizedToCreateBatchOperationWithAdminPermission() {
     // given
     final var user = createUser();
@@ -263,39 +314,74 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
   }
 
   private void mockSearchClientWithMultiplePages(final int numItems) {
-    // crate pages of fake process instances
-    final var itemPages =
-        Lists.partition(
-            LongStream.range(0, numItems).boxed().map(this::fakeProcessInstanceEntity).toList(),
-            DEFAULT_QUERY_PAGE_SIZE);
+    final var items =
+        LongStream.rangeClosed(1, numItems).boxed().map(this::fakeProcessInstanceEntity).toList();
 
-    // now create a map of item pages with their respective after-cursors
-    final Map<String, SearchQueryResult<ProcessInstanceEntity>> itemPagesMap = new HashMap<>();
-    for (int i = 0; i < itemPages.size(); i++) {
-      final var result =
-          new SearchQueryResult.Builder<ProcessInstanceEntity>()
-              .items(itemPages.get(i))
-              .total(numItems)
-              .endCursor(String.valueOf(i))
-              .build();
-      itemPagesMap.put(String.valueOf(i), result);
-    }
     // append a last empty page to indicate the end of the results
     final var emptyResult =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(List.of())
             .total(numItems)
             .build();
-    itemPagesMap.put(String.valueOf(itemPages.size()), emptyResult);
 
     // mock the search client to return the pages based on the after-cursor
     when(searchClientsProxy.searchProcessInstances(any(ProcessInstanceQuery.class)))
         .then(
             invocation -> {
+              final var filter = invocation.getArgument(0, ProcessInstanceQuery.class);
               final var after =
-                  invocation.getArgument(0, ProcessInstanceQuery.class).page().after();
-              final var page = after == null ? "-1" : after;
-              return itemPagesMap.get(Integer.toString(Integer.parseInt(page) + 1));
+                  Integer.parseInt(Objects.requireNonNullElse(filter.page().after(), "0"));
+              final var itemsPerPage = filter.page().size();
+
+              if (after >= numItems) {
+                return emptyResult; // return empty result if after exceeds total items
+              }
+
+              final var pageItems =
+                  items.subList(after, Math.min(after + itemsPerPage, items.size()));
+
+              return new SearchQueryResult.Builder<ProcessInstanceEntity>()
+                  .items(pageItems)
+                  .total(numItems)
+                  .endCursor(Long.toString(pageItems.getLast().processInstanceKey()))
+                  .build();
+            });
+
+    // mock the search client to return the incidents based on the processInstanceKeys in the filter
+    when(searchClientsProxy.searchIncidents(any(IncidentQuery.class)))
+        .then(
+            invocation -> {
+              final var query = invocation.getArgument(0, IncidentQuery.class);
+
+              if (query.page().after() != null) {
+                // If after cursor is provided, return an empty result
+                return new SearchQueryResult.Builder<IncidentEntity>()
+                    .items(List.of())
+                    .total(0)
+                    .endCursor(null)
+                    .build();
+              }
+
+              final var processInstanceKeys =
+                  query.filter().processInstanceKeyOperations().stream()
+                      .map(Operation::values)
+                      .flatMap(List::stream)
+                      .toList();
+
+              final var incidentItems = new ArrayList<IncidentEntity>();
+              for (final var key : processInstanceKeys) {
+                // Create 20 incidents for each process instance key
+                for (int i = 0; i < 50; i++) {
+                  final long incidentKey = key * 100 + i;
+                  incidentItems.add(fakeIncidentEntity(incidentKey, key));
+                }
+              }
+
+              return new SearchQueryResult.Builder<IncidentEntity>()
+                  .items(incidentItems)
+                  .total(numItems)
+                  .endCursor(Long.toString(incidentItems.getLast().incidentKey()))
+                  .build();
             });
   }
 }

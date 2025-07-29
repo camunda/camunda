@@ -34,7 +34,9 @@ public final class BatchOperationContinueInitializationProcessor
   public void processRecord(final TypedRecord<BatchOperationInitializationRecord> command) {
     final var recordValue = command.getValue();
     LOGGER.debug(
-        "Marking batch operation {} as started", command.getValue().getBatchOperationKey());
+        "Marking batch operation {} as for continued initialization {}",
+        command.getValue().getBatchOperationKey(),
+        command.getValue());
 
     stateWriter.appendFollowUpEvent(
         command.getKey(), BatchOperationIntent.INITIALIZATION_CONTINUED, recordValue);
