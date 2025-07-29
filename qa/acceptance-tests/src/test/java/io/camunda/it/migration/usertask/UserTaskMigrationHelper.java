@@ -135,7 +135,7 @@ public abstract class UserTaskMigrationHelper {
     return userTaskKey.get();
   }
 
-  protected long waitFor88TaskToBeImportedReturningId(
+  protected long waitFor88CreatedTaskToBeImportedReturningId(
       final CamundaMigrator migrator, final long piKey) {
     final AtomicLong userTaskKey = new AtomicLong();
 
