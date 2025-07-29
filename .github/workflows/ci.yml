@@ -1019,7 +1019,7 @@ jobs:
 
 
   tasklist-ci:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     name: "Tasklist"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-tasklist.yml
@@ -1030,7 +1030,7 @@ jobs:
       runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
 
   operate-ci:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     name: "Operate"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-operate.yml
