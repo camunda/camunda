@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 public record CamundaUserDTO(
-    String userId,
-    Long userKey,
     String displayName,
     String username,
     String email,
