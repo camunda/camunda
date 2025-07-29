@@ -11,6 +11,7 @@ import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
@@ -21,6 +22,7 @@ public record AuthorizationFilter(
     Long authorizationKey,
     List<String> ownerIds,
     String ownerType,
+    Short resourceMatcher,
     List<String> resourceIds,
     String resourceType,
     List<PermissionType> permissionTypes,
@@ -31,6 +33,7 @@ public record AuthorizationFilter(
     private List<String> ownerIds;
     private String ownerType;
     private List<String> resourceIds;
+    private Short resourceMatcher;
     private String resourceType;
     private List<PermissionType> permissionTypes;
     private Map<EntityType, Set<String>> ownerTypeToOwnerIds;
@@ -51,6 +54,11 @@ public record AuthorizationFilter(
 
     public Builder ownerType(final String value) {
       ownerType = value;
+      return this;
+    }
+
+    public Builder resourceMatcher(final AuthorizationResourceMatcher value) {
+      resourceMatcher = value.value();
       return this;
     }
 
@@ -108,6 +116,7 @@ public record AuthorizationFilter(
           authorizationKey,
           ownerIds,
           ownerType,
+          resourceMatcher,
           resourceIds,
           resourceType,
           permissionTypes,

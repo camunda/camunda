@@ -29,6 +29,10 @@ public record SearchTermQuery(String field, TypedValue value, Boolean caseInsens
       return value(TypedValue.of(value));
     }
 
+    public Builder value(final short value) {
+      return value(TypedValue.of(value));
+    }
+
     public Builder value(final int value) {
       return value(TypedValue.of(value));
     }

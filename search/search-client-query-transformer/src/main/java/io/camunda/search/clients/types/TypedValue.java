@@ -38,6 +38,14 @@ public final record TypedValue(ValueType type, Object value) {
     return (double) value;
   }
 
+  public boolean isShort() {
+    return type == ValueType.SHORT;
+  }
+
+  public short shortValue() {
+    return (short) value;
+  }
+
   public boolean isInteger() {
     return type == ValueType.INTEGER;
   }
@@ -68,6 +76,10 @@ public final record TypedValue(ValueType type, Object value) {
 
   public String stringValue() {
     return (String) value;
+  }
+
+  public static TypedValue of(final short value) {
+    return new TypedValue(ValueType.SHORT, value);
   }
 
   public static TypedValue of(final int value) {
@@ -123,6 +135,7 @@ public final record TypedValue(ValueType type, Object value) {
 
   public enum ValueType {
     DOUBLE,
+    SHORT,
     INTEGER,
     LONG,
     BOOLEAN,

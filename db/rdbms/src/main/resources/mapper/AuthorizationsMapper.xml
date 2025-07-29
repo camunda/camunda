@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.AuthorizationDbQuery">
     SELECT COUNT(*) FROM (
-    SELECT DISTINCT AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_ID
+    SELECT DISTINCT AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_MATCHER,RESOURCE_ID
     FROM ${prefix}AUTHORIZATIONS a
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
     ) t
@@ -26,6 +26,7 @@
     t.OWNER_TYPE,
     t.RESOURCE_TYPE,
     a.PERMISSION_TYPE,
+    a.RESOURCE_MATCHER,
     a.RESOURCE_ID
     FROM (
     SELECT * FROM (
@@ -34,6 +35,7 @@
     OWNER_ID,
     OWNER_TYPE,
     RESOURCE_TYPE,
+    RESOURCE_MATCHER,
     RESOURCE_ID
     FROM ${prefix}AUTHORIZATIONS
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
@@ -54,6 +56,7 @@
     <if test="filter.authorizationKey != null">AND AUTHORIZATION_KEY = #{filter.authorizationKey}</if>
     <if test="filter.ownerType != null">AND OWNER_TYPE = #{filter.ownerType}</if>
     <if test="filter.resourceType != null">AND RESOURCE_TYPE = #{filter.resourceType}</if>
+    <if test="filter.resourceMatcher != null">AND RESOURCE_MATCHER = #{filter.resourceMatcher}</if>
     <if test="filter.permissionTypes != null and !filter.permissionTypes.isEmpty()">
         AND PERMISSION_TYPE IN
       <foreach collection="filter.permissionTypes" item="value" open="(" separator=", "
@@ -80,6 +83,7 @@
     <id column="OWNER_ID" property="ownerId"/>
     <id column="OWNER_TYPE" property="ownerType"/>
     <id column="RESOURCE_TYPE" property="resourceType"/>
+    <id column="RESOURCE_MATCHER" property="resourceMatcher" />
     <id column="RESOURCE_ID" property="resourceId" />
     <collection property="permissionTypes"
       ofType="io.camunda.zeebe.protocol.record.value.PermissionType"
@@ -89,10 +93,10 @@
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel">
-    INSERT INTO ${prefix}AUTHORIZATIONS (AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_ID, PERMISSION_TYPE)
+    INSERT INTO ${prefix}AUTHORIZATIONS (AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_MATCHER, RESOURCE_ID, PERMISSION_TYPE)
     VALUES
     <foreach collection="permissionTypes" item="permissionType" separator=",">
-      (#{authorizationKey}, #{ownerId}, #{ownerType}, #{resourceType}, #{resourceId}, #{permissionType})
+      (#{authorizationKey}, #{ownerId}, #{ownerType}, #{resourceType}, #{resourceMatcher}, #{resourceId}, #{permissionType})
     </foreach>
   </insert>
 

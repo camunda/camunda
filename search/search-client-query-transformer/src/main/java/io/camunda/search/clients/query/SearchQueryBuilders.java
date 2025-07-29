@@ -267,6 +267,10 @@ public final class SearchQueryBuilders {
     return fn.apply(term()).build();
   }
 
+  public static SearchQuery term(final String field, final Short value) {
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
+  }
+
   public static SearchQuery term(final String field, final Integer value) {
     return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
