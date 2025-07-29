@@ -198,7 +198,7 @@ public record UserTaskFilter(
     }
 
     public Builder tenantIds(final String value, final String... values) {
-      return candidateGroupOperations(FilterUtil.mapDefaultToOperation(value, values));
+      return tenantIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
@@ -208,7 +208,7 @@ public record UserTaskFilter(
     }
 
     public Builder tenantIdOperations(final List<Operation<String>> operations) {
-      tenantIdOperations = addValuesToList(candidateGroupOperations, operations);
+      tenantIdOperations = addValuesToList(tenantIdOperations, operations);
       return this;
     }
 
