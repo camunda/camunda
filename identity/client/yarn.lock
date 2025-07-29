@@ -3783,6 +3783,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"fuse.js@npm:7.1.0":
+  version: 7.1.0
+  resolution: "fuse.js@npm:7.1.0"
+  checksum: 10c0/c0d1b1d192a4bdf3eade897453ddd28aff96b70bf3e49161a45880f9845ebaee97265595db633776700a5bcf8942223c752754a848d70c508c3c9fd997faad1e
+  languageName: node
+  linkType: hard
+
 "gauge@npm:^3.0.0":
   version: 3.0.2
   resolution: "gauge@npm:3.0.2"
@@ -4041,6 +4048,7 @@ __metadata:
     eslint-plugin-react-hooks: "npm:5.2.0"
     eslint-plugin-react-refresh: "npm:0.4.19"
     event-source-polyfill: "npm:1.0.31"
+    fuse.js: "npm:7.1.0"
     i18next: "npm:25.3.0"
     license-checker: "npm:25.0.1"
     prettier: "npm:3.6.2"

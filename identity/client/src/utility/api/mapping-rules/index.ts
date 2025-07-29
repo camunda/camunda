@@ -23,9 +23,19 @@ export type MappingRule = {
   claimValue: string;
 };
 
-export const searchMappingRule: ApiDefinition<SearchResponse<MappingRule>> = (
-  params,
-) => apiPost(`${MAPPING_RULES_ENDPOINT}/search`, params);
+type MappingRuleSearchParams = {
+  filter?: {
+    name?: string;
+    claimName?: string;
+    claimValue?: string;
+    mappingRuleId?: string;
+  };
+};
+
+export const searchMappingRule: ApiDefinition<
+  SearchResponse<MappingRule>,
+  MappingRuleSearchParams | undefined
+> = (params) => apiPost(`${MAPPING_RULES_ENDPOINT}/search`, params);
 
 export const createMappingRule: ApiDefinition<undefined, MappingRule> = (
   mappingRule,
