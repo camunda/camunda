@@ -416,7 +416,7 @@ public class BatchOperationExecutionSchedulerTest {
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
-            eq(BatchOperationIntent.START),
+            eq(BatchOperationIntent.INITIALIZE),
             any(BatchOperationCreationRecord.class),
             any());
   }

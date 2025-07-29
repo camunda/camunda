@@ -305,7 +305,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     LOG.trace("Appending batch operation {} started event", batchOperationKey);
     taskResultBuilder.appendCommandRecord(
         batchOperationKey,
-        BatchOperationIntent.START,
+        BatchOperationIntent.INITIALIZE,
         command,
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }

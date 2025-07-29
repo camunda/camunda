@@ -19,15 +19,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
-public final class BatchOperationStartProcessor
+public final class BatchOperationInitializeProcessor
     implements TypedRecordProcessor<BatchOperationCreationRecord> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationStartProcessor.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationInitializeProcessor.class);
 
   private final StateWriter stateWriter;
   private final BatchOperationMetrics metrics;
 
-  public BatchOperationStartProcessor(final Writers writers, final BatchOperationMetrics metrics) {
+  public BatchOperationInitializeProcessor(
+      final Writers writers, final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
     this.metrics = metrics;
   }
