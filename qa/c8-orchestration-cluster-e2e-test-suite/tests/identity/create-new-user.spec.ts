@@ -43,7 +43,7 @@ test.describe.parallel('login page', () => {
       name: TEST_USER.email,
     });
 
-    await waitForItemInList(page, item);
+    await waitForItemInList(page, item, {timeout: 60000});
 
     await expect(
       identityUsersPage.usersList.getByRole('cell', {

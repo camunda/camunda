@@ -104,7 +104,7 @@ export default defineConfig({
     {
       name: 'identity-e2e',
       testMatch: ['tests/identity/*.spec.ts'],
-      use: devices['Desktop Edge'],
+      use: devices['Desktop Chrome'],
     },
   ],
   reporter:

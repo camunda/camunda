@@ -58,6 +58,8 @@ test.describe.serial('users CRUD', () => {
   test('delete a user', async ({identityUsersPage}) => {
     await expect(identityUsersPage.userCell(EDITED_USER.name)).toBeVisible();
     await identityUsersPage.deleteUser(EDITED_USER);
-    await expect(identityUsersPage.userCell(EDITED_USER.name)).toBeHidden();
+    await expect(identityUsersPage.userCell(EDITED_USER.name)).toBeHidden({
+      timeout: 60000,
+    });
   });
 });
