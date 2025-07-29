@@ -20,6 +20,16 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
+const mockBatchOperation = {
+  batchOperationKey: '1234',
+  batchOperationType: 'RESOLVE_INCIDENT',
+  startDate: '2020-02-06T14:37:29.699+0100',
+  operationsFailedCount: 0,
+  operationsTotalCount: 1,
+  operationsCompletedCount: 0,
+  state: 'ACTIVE',
+} as const;
+
 describe('Resolve Incident component', () => {
   it('should resolve incident on click', async () => {
     mockCreateIncidentResolutionBatchOperation().withSuccess({});
@@ -47,7 +57,7 @@ describe('Resolve Incident component', () => {
 
     // Expect button to be disabled when operation is pending
     mockQueryBatchOperations().withSuccess({
-      items: [{state: 'ACTIVE'}],
+      items: [mockBatchOperation],
       page: {totalItems: 1},
     });
     vi.runOnlyPendingTimersAsync();
@@ -59,7 +69,7 @@ describe('Resolve Incident component', () => {
 
     // Expect button to be enabled when operation was successful
     mockQueryBatchOperations().withSuccess({
-      items: [{state: 'COMPLETED'}],
+      items: [{...mockBatchOperation, state: 'COMPLETED'}],
       page: {totalItems: 1},
     });
     vi.runOnlyPendingTimersAsync();
