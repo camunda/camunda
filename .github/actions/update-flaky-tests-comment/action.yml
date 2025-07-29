@@ -72,7 +72,7 @@ runs:
             // Convert Map to the desired structure
             return {
               tests: Array.from(packageMap.entries()).map(([packageName, flakys]) => ({
-                package: packageName,
+                packageName: packageName,
                 flakys: Array.from(flakys.values())
               }))
             };
@@ -94,7 +94,7 @@ runs:
             if (!trimmedName.includes('.')) {
               console.log(`Malformed test name (no package): ${trimmedName}`);
               return {
-                package: 'unknown',
+                packageName: 'unknown',
                 className: '',
                 methodName: trimmedName
               };
@@ -108,7 +108,7 @@ runs:
               const [, packageName, className, methodName] = match;
               console.log(`Parsed: package="${packageName}", class="${className}", method="${methodName}"`);
               return {
-                package: packageName,
+                packageName: packageName,
                 className: className,
                 methodName: methodName
               };
@@ -122,7 +122,7 @@ runs:
 
               console.log(`Malformed test name, fallback parsing: package="${packageName}", method="${remainder}"`);
               return {
-                package: packageName,
+                packageName: packageName,
                 className: '',
                 methodName: remainder
               };
@@ -131,7 +131,7 @@ runs:
             // Ultimate fallback
             console.log(`Could not parse test name, using as method: ${trimmedName}`);
             return {
-              package: 'unknown',
+              packageName: 'unknown',
               className: '',
               methodName: trimmedName
             };
@@ -139,7 +139,7 @@ runs:
 
           // Helper function to add test to package map
           function addTestToPackageMap(packageMap, parsedTest, jobName) {
-            const { package: packageName, className, methodName } = parsedTest;
+            const { packageName, className, methodName } = parsedTest;
 
             // Initialize package entry if not exists
             if (!packageMap.has(packageName)) {
