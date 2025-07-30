@@ -133,6 +133,7 @@ public abstract class AdapterTest {
   @AfterEach
   public void cleanUp() throws IOException {
     properties.setBatchSize(5);
+    properties.setTimeout(Duration.ofMinutes(10));
     if (isElasticsearch) {
       esMigrator = new ProcessMigrator(properties, ES_CONFIGURATION, meterRegistry);
       esClient.deleteByQuery(

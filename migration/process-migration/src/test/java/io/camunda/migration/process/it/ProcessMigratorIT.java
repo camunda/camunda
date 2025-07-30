@@ -8,9 +8,11 @@
 package io.camunda.migration.process.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.api.MigrationTimeoutException;
 import io.camunda.migration.process.ProcessMigrator;
 import io.camunda.migration.process.TestData;
 import io.camunda.migration.process.adapter.Adapter;
@@ -422,5 +424,93 @@ public class ProcessMigratorIT extends AdapterTest {
     } else {
       OS_CONFIGURATION.setIndexPrefix(null);
     }
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldTimeoutMigration(final boolean isElasticsearch) throws IOException {
+    // given
+    this.isElasticsearch = isElasticsearch;
+    properties.setTimeout(Duration.ofSeconds(5));
+
+    final var migrator =
+        new ProcessMigrator(
+            properties, isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION, meterRegistry);
+    writeImportPositionToIndex(TestData.notCompletedImportPosition(1));
+
+    // when - then
+    final var maxTimeout =
+        properties.getTimeout().getSeconds()
+            + properties.getRetry().getMinRetryDelay().getSeconds()
+            + 1;
+    Awaitility.await()
+        .atLeast(properties.getTimeout().getSeconds() - 1, TimeUnit.SECONDS)
+        .atMost(maxTimeout, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThatExceptionOfType(MigrationException.class)
+                    .isThrownBy(migrator::call)
+                    .withCauseInstanceOf(MigrationTimeoutException.class)
+                    .withMessageContaining("Process Migration timed out"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldTimeoutAfterMigratingDataWithoutImportersCompleted(
+      final boolean isElasticsearch) throws IOException {
+    // given
+    this.isElasticsearch = isElasticsearch;
+    properties.setTimeout(Duration.ofSeconds(1));
+
+    final var migrator =
+        new ProcessMigrator(
+            properties, isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION, meterRegistry);
+    writeImportPositionToIndex(TestData.notCompletedImportPosition(1));
+
+    for (int i = 1; i < 10; i++) {
+      writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
+    }
+    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 9);
+
+    // when -  then
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThatExceptionOfType(MigrationException.class)
+                    .isThrownBy(migrator::call)
+                    .withCauseInstanceOf(MigrationTimeoutException.class)
+                    .withMessageContaining("Process Migration timed out"));
+    refreshIndices();
+
+    // and
+    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+
+    assertProcessorStepContentIsStored("9");
+    assertThat(records).hasSize(9);
+    assertThat(records.stream().noneMatch(r -> r.getIsPublic().equals(Boolean.FALSE))).isTrue();
+    assertThat(records.stream().noneMatch(r -> r.getFormId() == null)).isTrue();
+    assertThat(records.stream().allMatch(r -> r.getFormKey() == null)).isTrue();
+    assertThat(records.stream().noneMatch(ProcessEntity::getIsFormEmbedded)).isTrue();
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldNotTimeoutIfCountdownIsEngaged(final boolean isElasticsearch)
+      throws IOException {
+    // given
+    this.isElasticsearch = isElasticsearch;
+    properties.setImporterFinishedTimeout(Duration.ofSeconds(10));
+    properties.setTimeout(Duration.ofSeconds(1));
+
+    final var migrator =
+        new ProcessMigrator(
+            properties, isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION, meterRegistry);
+    writeImportPositionToIndex(TestData.completedImportPosition(1));
+
+    writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
+    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 1);
+
+    // when -  then
+    assertThatNoException().isThrownBy(migrator::call);
   }
 }

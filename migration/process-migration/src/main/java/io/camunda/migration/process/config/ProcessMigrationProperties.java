@@ -16,6 +16,7 @@ public class ProcessMigrationProperties {
 
   private int batchSize = 20;
   private Duration importerFinishedTimeout = Duration.ofMinutes(1);
+  private Duration timeout = Duration.ofHours(2);
   private ProcessMigrationRetryConfiguration retry = new ProcessMigrationRetryConfiguration();
 
   public int getBatchSize() {
@@ -40,6 +41,14 @@ public class ProcessMigrationProperties {
 
   public void setRetry(final ProcessMigrationRetryConfiguration retry) {
     this.retry = retry;
+  }
+
+  public Duration getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(final Duration timeout) {
+    this.timeout = timeout;
   }
 
   public static class ProcessMigrationRetryConfiguration extends RetryConfiguration {
