@@ -327,7 +327,6 @@ public class WebSecurityConfig {
   public CookieCsrfTokenRepository cookieCsrfTokenRepository() {
     final CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
     repository.setHeaderName(X_CSRF_TOKEN);
-    repository.setCookieCustomizer(cc -> cc.httpOnly(true).secure(true));
     repository.setCookieName(X_CSRF_TOKEN);
     return repository;
   }

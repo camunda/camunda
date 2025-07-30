@@ -14,6 +14,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.TestUserDetailsService;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
+import jakarta.servlet.http.Cookie;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
@@ -146,9 +147,38 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
     // then
     assertThat(testResult)
         .hasStatus(HttpStatus.NO_CONTENT)
-        .containsHeader("X-CSRF-TOKEN")
+        .containsHeader(EXPECTED_CSRF_HEADER_NAME)
         .cookies()
-        .containsCookie("X-CSRF-TOKEN");
+        .containsCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
+
+    final Cookie csrfCookie = testResult.getResponse().getCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
+
+    assertThat(csrfCookie.isHttpOnly()).isTrue();
+    assertThat(csrfCookie.getSecure()).isTrue();
+  }
+
+  @Test
+  public void shouldNotSetSecureFlagOnCsrfCookieWhenUsingHttp() {
+    // given
+    final String loginUrl = "http://localhost/login"; // note: http - not https
+
+    // when
+    final MvcTestResult testResult =
+        mockMvcTester
+            .post()
+            .uri(loginUrl)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .formField("username", TestUserDetailsService.DEMO_USERNAME)
+            .formField("password", TestUserDetailsService.DEMO_USERNAME)
+            .exchange();
+
+    // then
+    assertThat(testResult).cookies().containsCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
+
+    final Cookie csrfCookie = testResult.getResponse().getCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
+
+    assertThat(csrfCookie.isHttpOnly()).isTrue();
+    assertThat(csrfCookie.getSecure()).isFalse();
   }
 
   protected static HttpHeaders basicAuthDemo() {
