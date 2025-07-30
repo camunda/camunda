@@ -18,6 +18,7 @@ package io.camunda.client.api.search.enums;
 public enum BatchOperationItemState {
   ACTIVE,
   COMPLETED,
+  SKIPPED,
   FAILED,
   CANCELED,
   UNKNOWN_ENUM_VALUE;

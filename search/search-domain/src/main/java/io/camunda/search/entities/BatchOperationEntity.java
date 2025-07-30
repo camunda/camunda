@@ -72,6 +72,7 @@ public record BatchOperationEntity(
   public enum BatchOperationItemState {
     ACTIVE,
     COMPLETED,
+    SKIPPED,
     CANCELED,
     FAILED
   }

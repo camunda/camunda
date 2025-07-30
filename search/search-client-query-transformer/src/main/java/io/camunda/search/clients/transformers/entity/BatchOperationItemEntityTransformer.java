@@ -71,6 +71,7 @@ public class BatchOperationItemEntityTransformer
       case SCHEDULED, LOCKED, SENT -> BatchOperationItemState.ACTIVE;
       case COMPLETED -> BatchOperationItemState.COMPLETED;
       case FAILED -> BatchOperationItemState.FAILED;
+      case SKIPPED -> BatchOperationItemState.SKIPPED;
     };
   }
 }

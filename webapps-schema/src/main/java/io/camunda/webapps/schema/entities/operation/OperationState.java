@@ -12,5 +12,6 @@ public enum OperationState {
   LOCKED,
   SENT,
   FAILED,
-  COMPLETED
+  COMPLETED,
+  SKIPPED
 }
