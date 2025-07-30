@@ -20,6 +20,8 @@ on:
       - 'parent/*'
       - 'pom.xml'
       - 'webapps-common/**'
+      - 'zeebe/**'
+      - 'clients/**'
   pull_request:
     paths:
       - '.ci/**'
@@ -31,6 +33,8 @@ on:
       - 'operate.Dockerfile'
       - 'parent/*'
       - 'webapps-common/**'
+      - 'zeebe/**'
+      - 'clients/**'
 permissions:
   contents: read
 
