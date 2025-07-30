@@ -43,16 +43,16 @@ public final class JobRunnableFactoryImpl implements JobRunnableFactory {
   private void executeJob(final ActivatedJob job, final Runnable doneCallback) {
     try {
       handler.handle(jobClient, job);
-    } catch (final Exception e) {
+    } catch (final Throwable t) {
       LOG.warn(
           "Worker {} failed to handle job with key {} of type {}, sending fail command to broker",
           job.getWorker(),
           job.getKey(),
           job.getType(),
-          e);
+          t);
       final StringWriter stringWriter = new StringWriter();
       final PrintWriter printWriter = new PrintWriter(stringWriter);
-      e.printStackTrace(printWriter);
+      t.printStackTrace(printWriter);
       final String message = stringWriter.toString();
       jobClient
           .newFailCommand(job.getKey())
