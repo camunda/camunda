@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -361,8 +362,52 @@ final class ElasticsearchExporterIT {
       assertThat(document.index().contains(oldRecord.getBrokerVersion())).isTrue();
     }
 
+    @Test
+    void shouldSetIndexTemplatePriorityFromConfiguration() {
+      // given
+      final int priority = 100;
+      configureExporter(config -> config.index.setPriority(priority));
+      final var record = generateRecord(ValueType.JOB);
+
+      // when
+      export(record);
+
+      // then
+      final var template = testClient.getIndexTemplate(ValueType.JOB);
+      assertThat(template)
+          .as("should have created index template for value type %s", ValueType.JOB)
+          .isPresent()
+          .get()
+          .extracting(wrapper -> wrapper.template().priority())
+          .isEqualTo((long) priority);
+    }
+
+    @Test
+    void shouldSetIndexTemplateWithDefaultPriorityWhenNotSetInConfiguration() {
+      // given
+      configureExporter(config -> {});
+      final var record = generateRecord(ValueType.JOB);
+
+      // when
+      export(record);
+
+      // then
+      final var template = testClient.getIndexTemplate(ValueType.JOB);
+      assertThat(template)
+          .as("should have created index template for value type %s", ValueType.JOB)
+          .isPresent()
+          .get()
+          .extracting(wrapper -> wrapper.template().priority())
+          .isEqualTo(20L); // default priority is 20
+    }
+
     private void configureExporter(final boolean retentionEnabled) {
-      config.retention.setEnabled(retentionEnabled);
+      configureExporter(config -> config.retention.setEnabled(retentionEnabled));
+    }
+
+    private void configureExporter(
+        final Consumer<ElasticsearchExporterConfiguration> configurator) {
+      configurator.accept(config);
       exporter.configure(exporterTestContext);
     }
 

@@ -376,6 +376,15 @@ final class ElasticsearchExporterTest {
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
     }
+
+    @Test
+    void shouldForbidNegativePriority() {
+      // given
+      config.index.setPriority(-1);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
   }
 
   @Nested
