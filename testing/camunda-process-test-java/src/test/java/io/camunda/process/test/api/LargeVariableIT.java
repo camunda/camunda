@@ -55,7 +55,7 @@ public class LargeVariableIT {
             .send()
             .join();
 
-    CamundaAssert.assertThat(processInstance).isCompleted().hasVariables(variables);
+    CamundaAssert.assertThatProcessInstance(processInstance).isCompleted().hasVariables(variables);
   }
 
   private String createLargeString(final long sizeKb) {

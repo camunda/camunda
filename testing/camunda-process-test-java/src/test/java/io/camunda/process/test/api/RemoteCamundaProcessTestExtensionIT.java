@@ -79,7 +79,7 @@ public class RemoteCamundaProcessTestExtensionIT {
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // then
-    CamundaAssert.assertThat(processInstance)
+    CamundaAssert.assertThatProcessInstance(processInstance)
         .isCompleted()
         .hasCompletedElementsInOrder("start", "task", "end");
   }

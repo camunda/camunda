@@ -15,7 +15,7 @@
  */
 package io.camunda;
 
-import static io.camunda.process.test.api.CamundaAssert.assertThat;
+import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,7 +62,7 @@ public class ConnectorProcessTest {
             .join();
 
     // when
-    assertThat(processInstance).hasActiveElements(byName("Receive weather request"));
+    assertThatProcessInstance(processInstance).hasActiveElements(byName("Receive weather request"));
 
     final var inboundAddress =
         new URI(processTestContext.getConnectorsAddress() + "/inbound/" + CONNECTOR_ID);
@@ -91,7 +91,7 @@ public class ConnectorProcessTest {
             });
 
     // then
-    assertThat(processInstance)
+    assertThatProcessInstance(processInstance)
         .hasCompletedElements(byName("Receive weather request"), byName("Get weather info"))
         .hasVariableNames("temperature", "rain", "weather_code")
         .isCompleted();

@@ -15,10 +15,10 @@
  */
 package io.camunda;
 
-import static io.camunda.process.test.api.CamundaAssert.assertThat;
+import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
+import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byId;
 import static io.camunda.process.test.api.assertions.UserTaskSelectors.byElementId;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -108,13 +108,13 @@ public class InvoiceApprovalTest {
             .join();
 
     // assert the User Task and simulate a human decision
-    assertThat(processInstance).hasActiveElements("UserTask_ApproveInvoice");
-    assertThat(byElementId("UserTask_ApproveInvoice")).isCreated().hasAssignee("Zee");
+    assertThatProcessInstance(processInstance).hasActiveElements("UserTask_ApproveInvoice");
+    assertThatUserTask(byElementId("UserTask_ApproveInvoice")).isCreated().hasAssignee("Zee");
     processTestContext.completeUserTask(
         byElementId("UserTask_ApproveInvoice"), Map.of("approved", true));
 
     // This should make the process instance execute till the end
-    assertThat(processInstance)
+    assertThatProcessInstance(processInstance)
         .hasCompletedElementsInOrder(
             byId("StartEvent_InvoiceReceived"),
             byId("UserTask_ApproveInvoice"),
@@ -151,7 +151,7 @@ public class InvoiceApprovalTest {
             .join();
 
     // assert the User Task and simulate a human decision
-    assertThat(byElementId("UserTask_ApproveInvoice")).isCreated().hasAssignee("Zee");
+    assertThatUserTask(byElementId("UserTask_ApproveInvoice")).isCreated().hasAssignee("Zee");
     processTestContext.completeUserTask(
         byElementId("UserTask_ApproveInvoice"),
         Map.of( //
@@ -161,7 +161,7 @@ public class InvoiceApprovalTest {
             "it is a test case :-)"));
 
     // This should make the process instance execute till the end
-    assertThat(processInstance)
+    assertThatProcessInstance(processInstance)
         .hasCompletedElementsInOrder(
             byId("StartEvent_InvoiceReceived"),
             byId("UserTask_ApproveInvoice"),
@@ -190,11 +190,11 @@ public class InvoiceApprovalTest {
             .join();
 
     // assert the User Task and simulate the timeout
-    assertThat(processInstance).hasActiveElements("UserTask_ApproveInvoice");
+    assertThatProcessInstance(processInstance).hasActiveElements("UserTask_ApproveInvoice");
     processTestContext.increaseTime(Duration.ofDays(5));
 
     // This should make the process instance auto approve and run till the end
-    assertThat(processInstance)
+    assertThatProcessInstance(processInstance)
         .isCompleted()
         .hasCompletedElementsInOrder(
             byId("StartEvent_InvoiceReceived"),
@@ -224,13 +224,13 @@ public class InvoiceApprovalTest {
             .join();
 
     // approve the request
-    assertThat(byElementId("UserTask_ApproveInvoice")).isCreated();
+    assertThatUserTask(byElementId("UserTask_ApproveInvoice")).isCreated();
     processTestContext.completeUserTask(
         byElementId("UserTask_ApproveInvoice"), Map.of("approved", true));
 
     //  this should lead to the exception being thrown and the process to end up in the user task to
     // handle the problem
-    assertThat(byElementId("UserTask_ManuallyArchiveInvoice"))
+    assertThatUserTask(byElementId("UserTask_ManuallyArchiveInvoice"))
         .isCreated()
         .hasCandidateGroup(
             "archive-team"); // probably not worth to test as it limits flexibility in model changes
@@ -238,7 +238,7 @@ public class InvoiceApprovalTest {
 
     verify(archiveService).archiveInvoice(anyString(), any(JsonNode.class));
 
-    assertThat(processInstance)
+    assertThatProcessInstance(processInstance)
         .isCompleted()
         .hasCompletedElementsInOrder(
             byId("StartEvent_InvoiceReceived"),

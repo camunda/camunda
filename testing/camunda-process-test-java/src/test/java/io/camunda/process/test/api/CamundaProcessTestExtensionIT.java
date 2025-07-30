@@ -60,7 +60,7 @@ public class CamundaProcessTestExtensionIT {
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // then
-    CamundaAssert.assertThat(processInstance)
+    CamundaAssert.assertThatProcessInstance(processInstance)
         .isActive()
         .hasActiveElements(byName("task"))
         .hasVariable("status", "active");
@@ -93,7 +93,7 @@ public class CamundaProcessTestExtensionIT {
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // when
-    CamundaAssert.assertThat(processInstance).hasActiveElements(byName("A"));
+    CamundaAssert.assertThatProcessInstance(processInstance).hasActiveElements(byName("A"));
 
     final Instant timeBefore = processTestContext.getCurrentTime();
 
@@ -102,7 +102,7 @@ public class CamundaProcessTestExtensionIT {
     final Instant timeAfter = processTestContext.getCurrentTime();
 
     // then
-    CamundaAssert.assertThat(processInstance)
+    CamundaAssert.assertThatProcessInstance(processInstance)
         .hasTerminatedElements(byName("A"))
         .hasActiveElements(byName("B"));
 
@@ -162,7 +162,9 @@ public class CamundaProcessTestExtensionIT {
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // then
-    CamundaAssert.assertThat(processInstance).isActive().hasActiveElements(byName("task"));
+    CamundaAssert.assertThatProcessInstance(processInstance)
+        .isActive()
+        .hasActiveElements(byName("task"));
 
     final List<UserTask> userTasks =
         client
@@ -189,6 +191,8 @@ public class CamundaProcessTestExtensionIT {
     client.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
 
     // then: verify that the user task and the process instance are completed
-    CamundaAssert.assertThat(processInstance).hasCompletedElements(byName("task")).isCompleted();
+    CamundaAssert.assertThatProcessInstance(processInstance)
+        .hasCompletedElements(byName("task"))
+        .isCompleted();
   }
 }

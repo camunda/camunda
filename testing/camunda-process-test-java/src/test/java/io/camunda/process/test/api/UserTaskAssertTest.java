@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.api;
 
-import static io.camunda.process.test.api.CamundaAssert.assertThat;
+import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -63,7 +63,7 @@ public class UserTaskAssertTest {
                         .priority(60))));
 
     // then
-    assertThat(UserTaskSelectors.byTaskName("a"))
+    assertThatUserTask(UserTaskSelectors.byTaskName("a"))
         .isCreated()
         .hasElementId("test_element")
         .hasPriority(60)
@@ -85,7 +85,7 @@ public class UserTaskAssertTest {
                           .state(UserTaskStateEnum.CREATED))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).isCreated();
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).isCreated();
     }
 
     @Test
@@ -101,7 +101,7 @@ public class UserTaskAssertTest {
                           .state(UserTaskStateEnum.COMPLETED))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).isCompleted();
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).isCompleted();
     }
 
     @Test
@@ -117,7 +117,7 @@ public class UserTaskAssertTest {
                           .state(UserTaskStateEnum.CANCELED))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).isCanceled();
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).isCanceled();
     }
 
     @Test
@@ -133,7 +133,7 @@ public class UserTaskAssertTest {
                           .state(UserTaskStateEnum.FAILED))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).isFailed();
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).isFailed();
     }
 
     @Test
@@ -154,7 +154,7 @@ public class UserTaskAssertTest {
                           .state(UserTaskStateEnum.CREATED))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("mult")).isCreated();
+      assertThatUserTask(UserTaskSelectors.byTaskName("mult")).isCreated();
     }
 
     @Test
@@ -174,7 +174,7 @@ public class UserTaskAssertTest {
           .thenReturn(Collections.singletonList(activeTask));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).isCreated();
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).isCreated();
     }
 
     @Test
@@ -183,7 +183,8 @@ public class UserTaskAssertTest {
       when(camundaDataSource.findUserTasks(any())).thenReturn(Collections.emptyList());
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byTaskName("a")).isCreated())
+      Assertions.assertThatThrownBy(
+              () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).isCreated())
           .hasMessage("No user task [a] found");
     }
 
@@ -202,7 +203,8 @@ public class UserTaskAssertTest {
           .thenReturn(Collections.singletonList(completedTask));
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byTaskName("a")).isCreated())
+      Assertions.assertThatThrownBy(
+              () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).isCreated())
           .hasMessage("Expected [a] to be created, but was completed");
     }
   }
@@ -225,7 +227,7 @@ public class UserTaskAssertTest {
                           .priority(PRIORITY))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY);
     }
 
     @Test
@@ -253,7 +255,7 @@ public class UserTaskAssertTest {
                           .priority(PRIORITY))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY);
     }
 
     @Test
@@ -272,7 +274,7 @@ public class UserTaskAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY))
+              () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY))
           .hasMessage("Expected [a] to have priority '60', but was '40'");
     }
   }
@@ -295,7 +297,7 @@ public class UserTaskAssertTest {
                           .elementId(ELEMENT_ID))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID);
     }
 
     @Test
@@ -323,7 +325,7 @@ public class UserTaskAssertTest {
                           .elementId(ELEMENT_ID))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID);
     }
 
     @Test
@@ -342,7 +344,7 @@ public class UserTaskAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID))
+              () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID))
           .hasMessage("Expected [a] to have element ID 'element_id', but was 'other_element_id'");
     }
   }
@@ -364,7 +366,7 @@ public class UserTaskAssertTest {
                           .name(NAME))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName(NAME)).hasName(NAME);
+      assertThatUserTask(UserTaskSelectors.byTaskName(NAME)).hasName(NAME);
     }
 
     @Test
@@ -391,7 +393,7 @@ public class UserTaskAssertTest {
                           .name(NAME))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName(NAME)).hasName(NAME);
+      assertThatUserTask(UserTaskSelectors.byTaskName(NAME)).hasName(NAME);
     }
 
     @Test
@@ -409,7 +411,7 @@ public class UserTaskAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byTaskName(NAME)).hasName("other_name"))
+              () -> assertThatUserTask(UserTaskSelectors.byTaskName(NAME)).hasName("other_name"))
           .hasMessage("Expected [name] to have name 'other_name', but was 'name'");
     }
   }
@@ -432,7 +434,7 @@ public class UserTaskAssertTest {
                           .assignee(ASSIGNEE))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE);
     }
 
     @Test
@@ -460,7 +462,7 @@ public class UserTaskAssertTest {
                           .assignee(ASSIGNEE))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE);
     }
 
     @Test
@@ -479,7 +481,7 @@ public class UserTaskAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE))
+              () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE))
           .hasMessage("Expected [a] to have assignee 'tester', but was 'other'");
     }
   }
@@ -502,7 +504,7 @@ public class UserTaskAssertTest {
                           .dueDate(DUE_DATE))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE);
     }
 
     @Test
@@ -530,7 +532,7 @@ public class UserTaskAssertTest {
                           .dueDate(DUE_DATE))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE);
     }
 
     @Test
@@ -549,7 +551,7 @@ public class UserTaskAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE))
+              () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE))
           .hasMessage(
               "Expected [a] to have due date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
@@ -573,7 +575,7 @@ public class UserTaskAssertTest {
                           .completionDate(COMPLETION_DATE))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasCompletionDate(COMPLETION_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCompletionDate(COMPLETION_DATE);
     }
 
     @Test
@@ -601,7 +603,7 @@ public class UserTaskAssertTest {
                           .completionDate(COMPLETION_DATE))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasCompletionDate(COMPLETION_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCompletionDate(COMPLETION_DATE);
     }
 
     @Test
@@ -621,7 +623,8 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  assertThat(UserTaskSelectors.byTaskName("a")).hasCompletionDate(COMPLETION_DATE))
+                  assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+                      .hasCompletionDate(COMPLETION_DATE))
           .hasMessage(
               "Expected [a] to have completion date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
@@ -645,7 +648,7 @@ public class UserTaskAssertTest {
                           .followUpDate(FOLLOW_UP_DATE))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasFollowUpDate(FOLLOW_UP_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasFollowUpDate(FOLLOW_UP_DATE);
     }
 
     @Test
@@ -673,7 +676,7 @@ public class UserTaskAssertTest {
                           .followUpDate(FOLLOW_UP_DATE))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasFollowUpDate(FOLLOW_UP_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasFollowUpDate(FOLLOW_UP_DATE);
     }
 
     @Test
@@ -692,7 +695,9 @@ public class UserTaskAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasFollowUpDate(FOLLOW_UP_DATE))
+              () ->
+                  assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+                      .hasFollowUpDate(FOLLOW_UP_DATE))
           .hasMessage(
               "Expected [a] to have follow-up date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
@@ -716,7 +721,7 @@ public class UserTaskAssertTest {
                           .creationDate(CREATION_DATE))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasCreationDate(CREATION_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCreationDate(CREATION_DATE);
     }
 
     @Test
@@ -744,7 +749,7 @@ public class UserTaskAssertTest {
                           .creationDate(CREATION_DATE))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasCreationDate(CREATION_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCreationDate(CREATION_DATE);
     }
 
     @Test
@@ -763,7 +768,9 @@ public class UserTaskAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasCreationDate(CREATION_DATE))
+              () ->
+                  assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+                      .hasCreationDate(CREATION_DATE))
           .hasMessage(
               "Expected [a] to have creation date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
@@ -788,7 +795,7 @@ public class UserTaskAssertTest {
                           .candidateGroups(candidateGroups))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroup(CANDIDATE_GROUP);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCandidateGroup(CANDIDATE_GROUP);
     }
 
     @Test
@@ -805,7 +812,7 @@ public class UserTaskAssertTest {
                           .candidateGroups(candidateGroups))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroups(candidateGroups);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCandidateGroups(candidateGroups);
     }
 
     @Test
@@ -823,7 +830,7 @@ public class UserTaskAssertTest {
                               Arrays.asList("hr", "engineering", "management", "legal")))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroups(candidateGroups);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCandidateGroups(candidateGroups);
     }
 
     @Test
@@ -851,7 +858,7 @@ public class UserTaskAssertTest {
                           .candidateGroups(candidateGroups))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroup(CANDIDATE_GROUP);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCandidateGroup(CANDIDATE_GROUP);
     }
 
     @Test
@@ -870,7 +877,7 @@ public class UserTaskAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroup("foo"))
+              () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCandidateGroup("foo"))
           .hasMessage(
               "Expected [a] to have candidate group 'foo', but was [engineering, management]");
     }
@@ -892,7 +899,8 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroups(candidateGroups))
+                  assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+                      .hasCandidateGroups(candidateGroups))
           .hasMessage(
               "Expected [a] to have candidate groups [engineering, management], but was [marketing]");
     }
