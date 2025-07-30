@@ -108,6 +108,8 @@ public class ProcessMigrator implements Migrator {
       if (countdownTask != null && !countdownTask.isDone()) {
         LOG.info("Process Migration has timed out but countdown is in progress");
         return true;
+      } else if (countdownTask != null && countdownTask.isDone()) {
+        return false;
       } else {
         throw new MigrationTimeoutException(
             "Process Migration timed out after " + properties.getTimeout());

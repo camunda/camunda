@@ -8,6 +8,7 @@
 package io.camunda.migration.process.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.migration.api.MigrationException;
@@ -490,5 +491,26 @@ public class ProcessMigratorIT extends AdapterTest {
     assertThat(records.stream().noneMatch(r -> r.getFormId() == null)).isTrue();
     assertThat(records.stream().allMatch(r -> r.getFormKey() == null)).isTrue();
     assertThat(records.stream().noneMatch(ProcessEntity::getIsFormEmbedded)).isTrue();
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldNotTimeoutIfCountdownIsEngaged(final boolean isElasticsearch)
+      throws IOException {
+    // given
+    this.isElasticsearch = isElasticsearch;
+    properties.setImporterFinishedTimeout(Duration.ofSeconds(10));
+    properties.setTimeout(Duration.ofSeconds(1));
+
+    final var migrator =
+        new ProcessMigrator(
+            properties, isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION, meterRegistry);
+    writeImportPositionToIndex(TestData.completedImportPosition(1));
+
+    writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
+    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 1);
+
+    // when -  then
+    assertThatNoException().isThrownBy(migrator::call);
   }
 }
