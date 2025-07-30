@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.migration;
 
+import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.api.MigrationTimeoutException;
 import io.camunda.migration.api.Migrator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -67,7 +69,7 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
         try {
           result.get();
         } catch (final ExecutionException e) {
-          migrationFailed = true;
+          migrationFailed = shouldFailMigration(e.getCause());
           LOG.error("Migrator failed", e.getCause());
           migrationsExceptions.addSuppressed(e.getCause());
         }
@@ -80,6 +82,13 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
       throw migrationsExceptions;
     }
     LOG.info("All migration tasks completed");
+  }
+
+  private boolean shouldFailMigration(final Throwable e) {
+    if (e instanceof final MigrationException migrationException) {
+      return !(migrationException.getCause() instanceof MigrationTimeoutException);
+    }
+    return true;
   }
 
   public static class ProcessMigrationFinishedEvent extends MigrationFinishedEvent {
