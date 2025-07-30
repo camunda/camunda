@@ -76,7 +76,9 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
     }
     for (final CreateAuthorizationRequest request : combinedPermissions) {
       try {
-        authorizationServices.createAuthorization(request).join();
+        retryOnBackpressure(
+            () -> authorizationServices.createAuthorization(request).join(),
+            "creating client permission for client ID: " + clientId);
         createdAuthorizations.incrementAndGet();
         logger.debug(
             "Migrated client permission with owner ID: {} and resource type: {}",

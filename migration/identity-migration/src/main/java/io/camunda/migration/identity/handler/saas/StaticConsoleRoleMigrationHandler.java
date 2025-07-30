@@ -61,7 +61,9 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
     ROLES.forEach(
         role -> {
           try {
-            roleServices.createRole(role).join();
+            retryOnBackpressure(
+                () -> roleServices.createRole(role).join(),
+                "migrating role with ID: " + role.roleId());
             createdRoleCount.incrementAndGet();
             logger.debug("Migrated role: {}", role);
           } catch (final Exception e) {
@@ -95,7 +97,13 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
                         totalRoleAssignmentAttempts.incrementAndGet();
 
                         try {
-                          roleServices.addMember(request).join();
+                          retryOnBackpressure(
+                              () -> roleServices.addMember(request).join(),
+                              "assigning role '"
+                                  + effectiveRole.getName()
+                                  + "' to user '"
+                                  + email
+                                  + "'");
                           assignedRoleCount.incrementAndGet();
                           logger.debug(
                               "Assigned role '{}' to user '{}'", effectiveRole.getName(), email);

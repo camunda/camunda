@@ -84,7 +84,9 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
                   convertResourceType(authorization.resourceType()),
                   convertPermissions(authorization.permissions(), authorization.resourceType()));
           try {
-            authorizationService.createAuthorization(request).join();
+            retryOnBackpressure(
+                () -> authorizationService.createAuthorization(request).join(),
+                "creating authorization for entity ID: " + authorization.entityId());
             createdAuthorizationsCount.incrementAndGet();
             logger.debug(
                 "Migrating authorization: {} to an Authorization with ownerId: {}",

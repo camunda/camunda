@@ -66,7 +66,9 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
               "Migrating Group: {} to a Group with the identifier: {}.", group, normalizedGroupId);
           try {
             final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
-            groupServices.createGroup(groupDTO).join();
+            retryOnBackpressure(
+                () -> groupServices.createGroup(groupDTO).join(),
+                "create group with ID: " + group.id());
             createdGroupCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
@@ -113,7 +115,9 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
                 userEmail,
                 targetGroupId);
             final var groupMember = new GroupMemberDTO(targetGroupId, userEmail, EntityType.USER);
-            groupServices.assignMember(groupMember).join();
+            retryOnBackpressure(
+                () -> groupServices.assignMember(groupMember).join(),
+                "assign user with ID: " + user.getId() + " to group with ID: " + targetGroupId);
             assignedUserCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {

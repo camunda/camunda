@@ -44,7 +44,12 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
     ROLE_PERMISSIONS.forEach(
         request -> {
           try {
-            authorizationServices.createAuthorization(request).join();
+            retryOnBackpressure(
+                () -> authorizationServices.createAuthorization(request).join(),
+                "migrating role permission with owner ID: "
+                    + request.ownerId()
+                    + " and resource type: "
+                    + request.resourceType());
             createdAuthorizations.incrementAndGet();
             logger.debug(
                 "Migrated role permission with owner ID: {} and resource type: {}",
