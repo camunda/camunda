@@ -20,7 +20,7 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOp
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -46,9 +46,9 @@ class BatchOperationStartedHandlerTest {
   @Test
   void shouldHandleStartedRecord() {
     // given
-    final Record<BatchOperationCreationRecordValue> record =
+    final Record<BatchOperationInitializationRecordValue> record =
         factory.generateRecordWithIntent(
-            ValueType.BATCH_OPERATION_CREATION, BatchOperationIntent.INITIALIZED);
+            ValueType.BATCH_OPERATION_INITIALIZATION, BatchOperationIntent.INITIALIZED);
 
     // when - then
     assertThat(underTest.handlesRecord(record)).isTrue();
@@ -57,9 +57,9 @@ class BatchOperationStartedHandlerTest {
   @Test
   void shouldGenerateIds() {
     // given
-    final Record<BatchOperationCreationRecordValue> record =
+    final Record<BatchOperationInitializationRecordValue> record =
         factory.generateRecordWithIntent(
-            ValueType.BATCH_OPERATION_CREATION, BatchOperationIntent.INITIALIZED);
+            ValueType.BATCH_OPERATION_INITIALIZATION, BatchOperationIntent.INITIALIZED);
 
     // when
     final var idList = underTest.generateIds(record);
@@ -81,10 +81,10 @@ class BatchOperationStartedHandlerTest {
   @Test
   void shouldUpdateEntityFromRecord() {
     // given
-    final var recordValue = factory.generateObject(BatchOperationCreationRecordValue.class);
-    final Record<BatchOperationCreationRecordValue> record =
+    final var recordValue = factory.generateObject(BatchOperationInitializationRecordValue.class);
+    final Record<BatchOperationInitializationRecordValue> record =
         factory.generateRecord(
-            ValueType.BATCH_OPERATION_CREATION,
+            ValueType.BATCH_OPERATION_INITIALIZATION,
             r -> r.withIntent(BatchOperationIntent.INITIALIZED).withValue(recordValue));
 
     final var entity = new BatchOperationEntity();
