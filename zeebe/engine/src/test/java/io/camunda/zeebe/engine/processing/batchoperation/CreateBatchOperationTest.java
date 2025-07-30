@@ -213,7 +213,7 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
                 .limitByCount(
                     record ->
                         record.getIntent().equals(BatchOperationIntent.INITIALIZATION_CONTINUED),
-                    4)) // reduce to 5000, 2500, 1250 and then one more init-phase
+                    5)) // reduce to 5000, 2500, 1250 and then one more init-phase
         .extracting(r -> r.getValue().getSearchQueryPageSize())
         .containsSequence(5000, 2500, 1250, 1250);
 

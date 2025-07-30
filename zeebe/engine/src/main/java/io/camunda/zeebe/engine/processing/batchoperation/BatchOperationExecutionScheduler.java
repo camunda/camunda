@@ -146,9 +146,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       return;
     }
 
-    // First fire a start event to indicate the beginning of the INIT phase
-    appendInitializeCommand(taskResultBuilder, batchOperation);
-
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
 
     // use overall state variable for all parameters that are used in the loop
@@ -184,6 +181,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
           // If we have reached the last page, we can finalize the initialization and start the BO
           // we always append the EXECUTE command at the end, even if no items were found, so we can
           // leave the completion logic in that processor.
+          finishInitialization(loopState.batchOperation, taskResultBuilder);
           startExecutionPhase(taskResultBuilder, loopState);
 
           // this is the end of the initialization run, so we can break out of the loop
@@ -208,6 +206,22 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         state.batchOperation.getKey(), state.batchOperation.getBatchOperationType());
     metrics.startTotalExecutionLatencyMeasure(
         state.batchOperation.getKey(), state.batchOperation.getBatchOperationType());
+  }
+
+  private boolean finishInitialization(
+      final PersistedBatchOperation batchOperation, final TaskResultBuilder resultBuilder) {
+    final long batchOperationKey = batchOperation.getKey();
+    final var command =
+        new BatchOperationInitializationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(batchOperation.getBatchOperationType());
+    LOG.trace("Appending batch operation {} initializing finished command", batchOperationKey);
+
+    return resultBuilder.appendCommandRecord(
+        batchOperationKey,
+        BatchOperationIntent.FINISH_INITIALIZATION,
+        command,
+        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
   private void handleFailedChunkAppend(
@@ -295,38 +309,25 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         .setProcessInstanceKey(i.processInstanceKey());
   }
 
-  private void appendInitializeCommand(
-      final TaskResultBuilder taskResultBuilder, final PersistedBatchOperation batchOperation) {
-    final var batchOperationKey = batchOperation.getKey();
-    final var command =
-        new BatchOperationInitializationRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setSearchQueryPageSize(queryPageSize);
-    LOG.trace("Appending batch operation {} started event", batchOperationKey);
-    taskResultBuilder.appendCommandRecord(
-        batchOperationKey,
-        BatchOperationIntent.INITIALIZE,
-        command,
-        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
-  }
-
   private void continueInitialization(
       final TaskResultBuilder taskResultBuilder, final InitLoopState state) {
+    final var batchOperation = state.batchOperation;
     final var command =
         new BatchOperationInitializationRecord()
-            .setBatchOperationKey(state.batchOperation.getKey())
+            .setBatchOperationKey(batchOperation.getKey())
+            .setBatchOperationType(batchOperation.getBatchOperationType())
             .setSearchResultCursor( // no null values allowed in the protocol
                 state.lastSearchResultCursor == null
                     ? StringValue.EMPTY_STRING
                     : state.lastSearchResultCursor)
             .setSearchQueryPageSize(state.searchResultPageSize);
-    LOG.trace("Appending batch operation {} initializing command", state.batchOperation.getKey());
+    LOG.trace("Appending batch operation {} initializing command", batchOperation.getKey());
 
     taskResultBuilder.appendCommandRecord(
-        state.batchOperation.getKey(),
+        batchOperation.getKey(),
         BatchOperationIntent.INITIALIZE,
         command,
-        FollowUpCommandMetadata.of(b -> b.batchOperationReference(state.batchOperation.getKey())));
+        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
   }
 
   private void appendFailedCommand(
