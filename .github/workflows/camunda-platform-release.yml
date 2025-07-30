@@ -186,6 +186,7 @@ jobs:
 
           # shellcheck disable=SC2016
           ./mvnw release:perform -B \
+            -DreleaseVersion="${RELEASE_VERSION}" \
             -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
             -DlocalCheckout="${{ inputs.dryRun }}" \
             -DskipQaBuild=true \
