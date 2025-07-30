@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 export function generateRandomStringAsync(length: number): Promise<string> {
   // Simulate an asynchronous operation (e.g., using setTimeout)
   return new Promise<string>((resolve) => {
