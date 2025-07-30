@@ -11,6 +11,8 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
+import {createTestData} from '../../utils/constants';
+import {sleep} from '../../utils/sleep';
 
 test.describe('Users Page Tests', () => {
   test.beforeEach(async ({loginPage, page}) => {
@@ -23,29 +25,33 @@ test.describe('Users Page Tests', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  const TEST_USER = {
-    username: 'yuliia',
-    password: 'yuliia',
-    email: 'yuliia@example.com',
-  };
-
   test('Admin user can delete user', async ({
     page,
     loginPage,
     identityUsersPage,
     identityHeader,
   }) => {
+    const testData = createTestData({user: true});
+    const testUser = testData.user!;
+    await identityUsersPage.createUser({
+      username: testUser.username,
+      password: testUser.password,
+      email: testUser.email!,
+      name: testUser.name,
+    });
+
     await expect(identityUsersPage.usersList).toBeVisible();
-    await expect(identityUsersPage.usersList).toContainText(TEST_USER.username);
-    await identityUsersPage.deleteUser(TEST_USER);
+    await expect(identityUsersPage.usersList).toContainText(testUser.username);
+    await identityUsersPage.deleteUser(testUser);
     await identityHeader.logout();
+    await sleep(2000);
     await expect(page).toHaveURL(
       `${relativizePath(Paths.login('identity'))}?next=/identity/`,
     );
 
     await test.step(`Deleted user cannot access Identity`, async () => {
       await navigateToApp(page, `identity`);
-      await loginPage.login(TEST_USER.username, TEST_USER.password);
+      await loginPage.login(testUser.username, testUser.password);
       await expect(page).toHaveURL(new RegExp(`identity`));
       await expect(loginPage.errorMessage).toContainText(
         /Username and [Pp]assword do(?: not|n't) match/,
@@ -54,7 +60,7 @@ test.describe('Users Page Tests', () => {
 
     await test.step(`Deleted user cannot access Tasklist`, async () => {
       await navigateToApp(page, `tasklist`);
-      await loginPage.login('yuliia', 'yuliia');
+      await loginPage.login(testUser.username, testUser.password);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
       await expect(loginPage.errorMessage).toContainText(
         /Username and [Pp]assword do(?: not|n't) match/,
@@ -63,7 +69,7 @@ test.describe('Users Page Tests', () => {
 
     await test.step(`Deleted user cannot access Operate`, async () => {
       await navigateToApp(page, `operate`);
-      await loginPage.login('yuliia', 'yuliia');
+      await loginPage.login(testUser.username, testUser.password);
       await expect(page).toHaveURL(new RegExp(`operate`));
       await expect(loginPage.errorMessage).toContainText(
         /Username and [Pp]assword do(?: not|n't) match/,

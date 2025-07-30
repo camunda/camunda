@@ -9,7 +9,7 @@
 import {expect} from '@playwright/test';
 import {test} from 'fixtures';
 import {createInstances, deploy} from 'utils/zeebeClient';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {completeTaskWithRetry, navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
@@ -74,10 +74,12 @@ test.describe('HTO User Flow Tests', () => {
 
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
-      await taskPanelPage.openTask('Job_Worker_Process');
-      await taskDetailsPage.clickAssignToMeButton();
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      await completeTaskWithRetry(
+        taskPanelPage,
+        taskDetailsPage,
+        'Job_Worker_Process',
+        'medium',
+      );
 
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');
@@ -225,35 +227,30 @@ test.describe('HTO User Flow Tests', () => {
       await expect(
         page.getByText('Zeebe_Priority_User_Task_Process').first(),
       ).toBeVisible({timeout: 60000});
-      await taskPanelPage.openTask('priorityTest4');
-      await taskDetailsPage.clickAssignToMeButton();
-      await expect(
-        taskDetailsPage.detailsPanel.getByText('critical'),
-      ).toBeVisible();
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
-      await taskPanelPage.openTask('priorityTest3');
-      await taskDetailsPage.clickAssignToMeButton();
-      await expect(
-        taskDetailsPage.detailsPanel.getByText('high'),
-      ).toBeVisible();
-      await taskDetailsPage.taskCompletedBanner.waitFor({state: 'hidden'});
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
-      await taskPanelPage.openTask('priorityTest2');
-      await taskDetailsPage.clickAssignToMeButton();
-      await expect(
-        taskDetailsPage.detailsPanel.getByText('medium'),
-      ).toBeVisible();
-      await taskDetailsPage.taskCompletedBanner.waitFor({state: 'hidden'});
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
-      await taskPanelPage.openTask('priorityTest1');
-      await taskDetailsPage.clickAssignToMeButton();
-      await expect(taskDetailsPage.detailsPanel.getByText('low')).toBeVisible();
-      await taskDetailsPage.taskCompletedBanner.waitFor({state: 'hidden'});
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      await completeTaskWithRetry(
+        taskPanelPage,
+        taskDetailsPage,
+        'priorityTest4',
+        'critical',
+      );
+      await completeTaskWithRetry(
+        taskPanelPage,
+        taskDetailsPage,
+        'priorityTest3',
+        'high',
+      );
+      await completeTaskWithRetry(
+        taskPanelPage,
+        taskDetailsPage,
+        'priorityTest2',
+        'medium',
+      );
+      await completeTaskWithRetry(
+        taskPanelPage,
+        taskDetailsPage,
+        'priorityTest1',
+        'low',
+      );
       await taskPanelPage.filterBy('Completed');
       await taskPanelPage.assertCompletedHeadingVisible();
       await taskPanelPage.openTask('priorityTest4');
@@ -295,11 +292,12 @@ test.describe('HTO User Flow Tests', () => {
 
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
-
-      await taskPanelPage.openTask('Zeebe_User_Task_Process');
-      await taskDetailsPage.clickAssignToMeButton();
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      await completeTaskWithRetry(
+        taskPanelPage,
+        taskDetailsPage,
+        'Zeebe_User_Task_Process',
+        'medium',
+      );
 
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');

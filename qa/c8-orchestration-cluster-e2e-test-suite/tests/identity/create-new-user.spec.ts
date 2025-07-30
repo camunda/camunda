@@ -11,7 +11,7 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
-import {LOGIN_CREDENTIALS} from 'utils/constants';
+import {createTestData, LOGIN_CREDENTIALS} from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
 
 test.describe.parallel('login page', () => {
@@ -29,39 +29,39 @@ test.describe.parallel('login page', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  const TEST_USER = {
-    username: 'Test',
-    name: 'Test User',
-    email: 'test@test.com',
-    password: 'test',
-  };
-
   test('Create new Test user', async ({page, identityUsersPage}) => {
-    await identityUsersPage.createUser(TEST_USER);
+    const testData = createTestData({user: true});
+    const testUser = testData.user!;
 
+    await identityUsersPage.createUser({
+      username: testUser.username,
+      password: testUser.password,
+      email: testUser.email!,
+      name: testUser.name,
+    });
     const item = identityUsersPage.usersList.getByRole('cell', {
-      name: TEST_USER.email,
+      name: testUser.email,
     });
 
     await waitForItemInList(page, item, {timeout: 60000});
 
     await expect(
       identityUsersPage.usersList.getByRole('cell', {
-        name: TEST_USER.username,
+        name: testUser.username,
         exact: true,
       }),
     ).toBeVisible();
 
     await expect(
       identityUsersPage.usersList.getByRole('cell', {
-        name: TEST_USER.name,
+        name: testUser.name,
         exact: true,
       }),
     ).toBeVisible();
 
     await expect(
       identityUsersPage.usersList.getByRole('cell', {
-        name: TEST_USER.email,
+        name: testUser.email,
         exact: true,
       }),
     ).toBeVisible();
