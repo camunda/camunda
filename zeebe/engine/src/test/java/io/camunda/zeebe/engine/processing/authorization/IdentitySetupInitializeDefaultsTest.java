@@ -291,4 +291,36 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasResourceType(AuthorizationResourceType.MESSAGE)
                     .hasOnlyPermissionTypes(PermissionType.CREATE));
   }
+
+  @Test
+  public void shouldCreateRpaRoleByDefault() {
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
+                .authorizationRecords()
+                .withOwnerId(DefaultRole.RPA.getId()))
+        .extracting(Record::getValue)
+        .describedAs("Expect all RPA role authorizations to be owned by the RPA role")
+        .allSatisfy(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasOwnerId(DefaultRole.RPA.getId())
+                    .hasOwnerType(AuthorizationOwnerType.ROLE))
+        .describedAs("Expect all RPA role authorizations to have the wildcard resource ID")
+        .allSatisfy(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceId(AuthorizationCheckBehavior.WILDCARD_PERMISSION))
+        .describedAs("Expect the RPA role authorizations to have specific resource permissions")
+        .satisfiesExactlyInAnyOrder(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.RESOURCE)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .hasOnlyPermissionTypes(PermissionType.UPDATE_PROCESS_INSTANCE));
+  }
 }
