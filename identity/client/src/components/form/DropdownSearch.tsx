@@ -14,13 +14,15 @@ import { SecondaryText } from "src/components/form/Text";
 import styled from "styled-components";
 import Fuse from "fuse.js";
 
-type DropdownSearchProps<Item> = {
+type DropdownSearchProps<Item extends Record<string, unknown>> = {
   items: Item[];
+  keyAttribute?: string;
   itemTitle: (item: Item) => string;
   itemSubTitle?: (item: Item) => string;
   placeholder: string;
-  onChange?: (search: string) => unknown;
+  onChange?: (search: string) => void;
   onSelect: (item: Item) => unknown;
+  filter?: (item: Item) => boolean;
   autoFocus?: boolean;
 };
 
@@ -44,13 +46,15 @@ const MenuItemWrapper = styled.div<{ $isSelected: boolean }>`
         : ""};
   }
 `;
-const DropdownSearch = <Item,>({
+const DropdownSearch = <Item extends Record<string, unknown>>({
   placeholder,
-  onChange = () => null,
+  onChange = () => {},
+  keyAttribute = "title",
   items: rawItems,
   itemTitle,
   itemSubTitle,
   onSelect,
+  filter = () => true,
   autoFocus = false,
 }: DropdownSearchProps<Item>) => {
   const debounce = useDebounce();
@@ -60,30 +64,41 @@ const DropdownSearch = <Item,>({
     ItemWithTitleAndSubTitle<Item>[]
   >([]);
 
-  const items = useMemo(() => {
-    return rawItems.map((item) => ({
-      ...item,
-      title: itemTitle(item),
-      subTitle: itemSubTitle ? itemSubTitle(item) : undefined,
-    }));
-  }, [rawItems, itemTitle, itemSubTitle]);
+  const [allItems, setAllItems] = useState<ItemWithTitleAndSubTitle<Item>[]>(
+    [],
+  );
+
+  useEffect(() => {
+    setAllItems((prevItems) => {
+      const allKeys = prevItems.map((item) => item[keyAttribute] as string);
+
+      const newItems = rawItems
+        .map((item) => ({
+          ...item,
+          title: itemTitle(item),
+          subTitle: itemSubTitle ? itemSubTitle(item) : undefined,
+        }))
+        .filter((item) => !allKeys.includes(item[keyAttribute] as string));
+      return [...prevItems, ...newItems];
+    });
+  }, [rawItems, itemTitle, itemSubTitle, keyAttribute]);
 
   const fuse = useMemo(
     () =>
-      new Fuse(items, {
+      new Fuse(allItems, {
         keys: ["title", "subTitle"],
         threshold: 0.3,
       }),
-    [items],
+    [allItems],
   );
 
   useEffect(() => {
     if (search) {
       setFilteredItems(fuse.search(search).map((result) => result.item));
     } else {
-      setFilteredItems(items);
+      setFilteredItems(allItems);
     }
-  }, [search, items, fuse]);
+  }, [search, allItems, fuse]);
 
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const [hasFocus, setHasFocus] = useState(false);
@@ -172,12 +187,12 @@ const DropdownSearch = <Item,>({
         {hasFocus && (
           <ListStyleWrapper>
             <ListBox.Menu id="list-box">
-              {filteredItems.map((item, index) => {
+              {filteredItems.filter(filter).map((item, index) => {
                 const { title, subTitle } = item;
 
                 return (
                   <MenuItemWrapper
-                    key={title}
+                    key={item[keyAttribute] as string}
                     $isSelected={index === selectedResult}
                   >
                     <ListBox.MenuItem
