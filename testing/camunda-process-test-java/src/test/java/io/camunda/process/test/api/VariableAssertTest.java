@@ -27,6 +27,7 @@ import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
+import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
@@ -176,6 +177,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfVariableNotExist() {
       // given
       final Variable variableA = newVariable("a", "1");
@@ -198,6 +200,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
@@ -287,6 +290,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfVariableNotExist() {
       // given
       final Variable variableA = newVariable("a", "1");
@@ -307,6 +311,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfVariableHasDifferentValue() {
       // given
       final Variable variableA = newVariable("a", "1");
@@ -328,6 +333,7 @@ public class VariableAssertTest {
 
     @ParameterizedTest
     @MethodSource("io.camunda.process.test.api.VariableAssertTest#variableValues")
+    @CamundaAssertExpectFailure
     void shouldFailWithMessage(final String variableValue) {
       // given
       final Variable variableA = newVariable("a", variableValue);
@@ -347,6 +353,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
@@ -453,6 +460,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfOneVariableNotExist() {
       // given
       final Variable variableA = newVariable("a", "1");
@@ -477,6 +485,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfVariableHasDifferentValue() {
       // given
       final Variable variableA = newVariable("a", "1");
@@ -503,6 +512,7 @@ public class VariableAssertTest {
 
     @ParameterizedTest
     @MethodSource("io.camunda.process.test.api.VariableAssertTest#variableValues")
+    @CamundaAssertExpectFailure
     void shouldFailWithMessage(final String variableValue) {
       // given
       final Variable variableA = newVariable("a", variableValue);
@@ -525,6 +535,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfProcessInstanceNotFound() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
@@ -693,6 +704,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldHaveSensibleErrorMessageWhenAssertionFails() {
       // given
       when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
@@ -729,6 +741,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldHaveSensibleErrorMessageWhenJsonMappingFails() {
       // given
       when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
@@ -750,6 +763,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldHaveSensibleErrorMessageWhenNoVariablesFound() {
       // given
       when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
@@ -769,6 +783,7 @@ public class VariableAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldConvertCheckedExceptions() {
       // given
       when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))

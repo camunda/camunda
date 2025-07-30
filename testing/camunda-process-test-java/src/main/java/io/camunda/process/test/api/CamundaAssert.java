@@ -31,9 +31,9 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.DecisionInstanceAssertj;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
 import io.camunda.process.test.impl.assertions.UserTaskAssertj;
+import io.camunda.process.test.impl.assertions.util.AwaitilityBehavior;
 import java.time.Duration;
 import java.util.function.Function;
-import org.awaitility.Awaitility;
 
 /**
  * The entry point for all assertions.
@@ -74,13 +74,18 @@ public class CamundaAssert {
   public static final Function<String, ElementSelector> DEFAULT_ELEMENT_SELECTOR =
       ElementSelectors::byId;
 
+  /** The default await behavior for the assertions. */
+  public static final CamundaAssertAwaitBehavior DEFAULT_AWAIT_BEHAVIOR = new AwaitilityBehavior();
+
   private static final ThreadLocal<CamundaDataSource> DATA_SOURCE = new ThreadLocal<>();
 
   private static Function<String, ElementSelector> elementSelector = DEFAULT_ELEMENT_SELECTOR;
 
+  private static CamundaAssertAwaitBehavior awaitBehavior = DEFAULT_AWAIT_BEHAVIOR;
+
   static {
-    Awaitility.setDefaultTimeout(DEFAULT_ASSERTION_TIMEOUT);
-    Awaitility.setDefaultPollInterval(DEFAULT_ASSERTION_INTERVAL);
+    setAssertionTimeout(DEFAULT_ASSERTION_TIMEOUT);
+    setAssertionInterval(DEFAULT_ASSERTION_INTERVAL);
   }
 
   // ======== Configuration options ========
@@ -92,7 +97,7 @@ public class CamundaAssert {
    * @see #DEFAULT_ASSERTION_TIMEOUT
    */
   public static void setAssertionTimeout(final Duration assertionTimeout) {
-    Awaitility.setDefaultTimeout(assertionTimeout);
+    awaitBehavior.setAssertionTimeout(assertionTimeout);
   }
 
   /**
@@ -102,7 +107,7 @@ public class CamundaAssert {
    * @see #DEFAULT_ASSERTION_INTERVAL
    */
   public static void setAssertionInterval(final Duration assertionInterval) {
-    Awaitility.setDefaultPollInterval(assertionInterval);
+    awaitBehavior.setAssertionInterval(assertionInterval);
   }
 
   /**
@@ -113,6 +118,20 @@ public class CamundaAssert {
    */
   public static void setElementSelector(final Function<String, ElementSelector> elementSelector) {
     CamundaAssert.elementSelector = elementSelector;
+  }
+
+  static CamundaAssertAwaitBehavior getAwaitBehavior() {
+    return awaitBehavior;
+  }
+
+  /**
+   * Configures the await behavior for the assertions.
+   *
+   * @param awaitBehavior the behavior to use for waiting
+   * @see #DEFAULT_AWAIT_BEHAVIOR
+   */
+  public static void setAwaitBehavior(final CamundaAssertAwaitBehavior awaitBehavior) {
+    CamundaAssert.awaitBehavior = awaitBehavior;
   }
 
   // ======== Assertions ========
@@ -205,7 +224,8 @@ public class CamundaAssert {
    */
   public static ProcessInstanceAssert assertThatProcessInstance(
       final ProcessInstanceSelector processInstanceSelector) {
-    return new ProcessInstanceAssertj(getDataSource(), processInstanceSelector, elementSelector);
+    return new ProcessInstanceAssertj(
+        getDataSource(), awaitBehavior, processInstanceSelector, elementSelector);
   }
 
   /**
@@ -222,7 +242,8 @@ public class CamundaAssert {
 
   private static ProcessInstanceAssertj createProcessInstanceAssertj(
       final long processInstanceKey) {
-    return new ProcessInstanceAssertj(getDataSource(), processInstanceKey, elementSelector);
+    return new ProcessInstanceAssertj(
+        getDataSource(), awaitBehavior, processInstanceKey, elementSelector);
   }
 
   /**
@@ -233,7 +254,7 @@ public class CamundaAssert {
    * @see io.camunda.process.test.api.assertions.UserTaskSelectors
    */
   public static UserTaskAssert assertThatUserTask(final UserTaskSelector userTaskSelector) {
-    return new UserTaskAssertj(getDataSource(), userTaskSelector);
+    return new UserTaskAssertj(getDataSource(), awaitBehavior, userTaskSelector);
   }
 
   /**
@@ -255,7 +276,7 @@ public class CamundaAssert {
    * @see io.camunda.process.test.api.assertions.DecisionSelectors
    */
   public static DecisionInstanceAssert assertThatDecision(final DecisionSelector decisionSelector) {
-    return new DecisionInstanceAssertj(getDataSource(), decisionSelector);
+    return new DecisionInstanceAssertj(getDataSource(), awaitBehavior, decisionSelector);
   }
 
   /**
@@ -277,7 +298,8 @@ public class CamundaAssert {
    */
   public static DecisionInstanceAssertj assertThatDecision(
       final EvaluateDecisionResponse response) {
-    return new DecisionInstanceAssertj(getDataSource(), DecisionSelectors.byResponse(response));
+    return new DecisionInstanceAssertj(
+        getDataSource(), awaitBehavior, DecisionSelectors.byResponse(response));
   }
 
   /**

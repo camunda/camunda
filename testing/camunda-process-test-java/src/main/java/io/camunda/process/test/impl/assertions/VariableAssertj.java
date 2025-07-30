@@ -19,30 +19,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
 import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper.JsonMappingException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.ThrowingConsumer;
-import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
-import org.awaitility.core.TerminalFailureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,10 +46,15 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   private static final Logger LOG = LoggerFactory.getLogger(VariableAssertj.class);
 
   private final CamundaDataSource dataSource;
+  private final CamundaAssertAwaitBehavior awaitBehavior;
 
-  public VariableAssertj(final CamundaDataSource dataSource, final String failureMessagePrefix) {
+  public VariableAssertj(
+      final CamundaDataSource dataSource,
+      final CamundaAssertAwaitBehavior awaitBehavior,
+      final String failureMessagePrefix) {
     super(failureMessagePrefix, VariableAssertj.class);
     this.dataSource = dataSource;
+    this.awaitBehavior = awaitBehavior;
   }
 
   public void hasLocalVariableNames(
@@ -80,36 +80,23 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   private void hasVariableNames(
       final Supplier<Map<String, String>> actualVariablesSupplier, final String... variableNames) {
 
-    final AtomicReference<Map<String, String>> reference =
-        new AtomicReference<>(Collections.emptyMap());
+    awaitBehavior.untilAsserted(
+        () -> {
+          final Map<String, String> variables = actualVariablesSupplier.get();
 
-    try {
-      Awaitility.await()
-          .untilAsserted(
-              () -> {
-                final Map<String, String> variables = actualVariablesSupplier.get();
-                reference.set(variables);
+          final List<String> missingVariableNames =
+              Arrays.stream(variableNames)
+                  .filter(variableName -> !variables.containsKey(variableName))
+                  .collect(Collectors.toList());
 
-                assertThat(variables).containsKeys(variableNames);
-              });
-
-    } catch (final ConditionTimeoutException | TerminalFailureException e) {
-
-      final Map<String, String> actualVariables = reference.get();
-
-      final List<String> missingVariableNames =
-          Arrays.stream(variableNames)
-              .filter(variableName -> !actualVariables.containsKey(variableName))
-              .collect(Collectors.toList());
-
-      final String failureMessage =
-          String.format(
-              "%s should have the variables %s but %s don't exist.",
-              actual,
-              AssertFormatUtil.formatNames(variableNames),
-              AssertFormatUtil.formatNames(missingVariableNames));
-      fail(failureMessage);
-    }
+          assertThat(missingVariableNames)
+              .withFailMessage(
+                  "%s should have the variables %s but %s don't exist.",
+                  actual,
+                  AssertFormatUtil.formatNames(variableNames),
+                  AssertFormatUtil.formatNames(missingVariableNames))
+              .isEmpty();
+        });
   }
 
   public void hasLocalVariable(
@@ -143,38 +130,23 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final Supplier<Map<String, String>> actualVariablesSupplier) {
     final JsonNode expectedValue = AssertionJsonMapper.toJson(variableValue);
 
-    final AtomicReference<Map<String, String>> reference =
-        new AtomicReference<>(Collections.emptyMap());
+    awaitBehavior.untilAsserted(
+        () -> {
+          final Map<String, String> variables = actualVariablesSupplier.get();
 
-    try {
-      Awaitility.await()
-          .untilAsserted(
-              () -> {
-                final Map<String, String> variables = actualVariablesSupplier.get();
-                reference.set(variables);
+          assertThat(variables)
+              .withFailMessage(
+                  "%s should have a variable '%s' with value '%s' but the variable doesn't exist.",
+                  actual, variableName, expectedValue)
+              .containsKey(variableName);
 
-                assertThat(variables).containsKey(variableName);
-
-                final JsonNode actualValue =
-                    AssertionJsonMapper.readJson(variables.get(variableName));
-                assertThat(actualValue).isEqualTo(expectedValue);
-              });
-
-    } catch (final ConditionTimeoutException | TerminalFailureException e) {
-
-      final Map<String, String> actualVariables = reference.get();
-
-      final String failureReason =
-          Optional.ofNullable(actualVariables.get(variableName))
-              .map(value -> String.format("was '%s'", value))
-              .orElse("the variable doesn't exist");
-
-      final String failureMessage =
-          String.format(
-              "%s should have a variable '%s' with value '%s' but %s.",
-              actual, variableName, expectedValue, failureReason);
-      fail(failureMessage);
-    }
+          final JsonNode actualValue = AssertionJsonMapper.readJson(variables.get(variableName));
+          assertThat(actualValue)
+              .withFailMessage(
+                  "%s should have a variable '%s' with value '%s' but was '%s'.",
+                  actual, variableName, expectedValue, actualValue)
+              .isEqualTo(expectedValue);
+        });
   }
 
   public <T> void hasLocalVariableSatisfies(
@@ -216,56 +188,35 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final ThrowingConsumer<T> requirement,
       final Supplier<Map<String, String>> actualVariablesSupplier) {
 
-    final AtomicReference<String> assertionError = new AtomicReference<>("");
-    final AtomicReference<Map<String, String>> reference =
-        new AtomicReference<>(Collections.emptyMap());
+    awaitBehavior.untilAsserted(
+        () -> {
+          final Map<String, String> variables = actualVariablesSupplier.get();
 
-    try {
-      Awaitility.await()
-          .untilAsserted(
-              () -> {
-                final Map<String, String> variables = actualVariablesSupplier.get();
-                reference.set(variables);
+          assertThat(variables)
+              .withFailMessage(
+                  "%s should have a variable '%s', but the variable doesn't exist.",
+                  actual, variableName)
+              .containsKey(variableName);
 
-                assertThat(variables).containsKey(variableName);
+          final String actualVariable = variables.get(variableName);
+          try {
+            final T actualValue = AssertionJsonMapper.readJson(actualVariable, variableValueType);
 
-                final T actualValue =
-                    AssertionJsonMapper.readJson(variables.get(variableName), variableValueType);
+            requirement.accept(actualValue);
+          } catch (final AssertionError e) {
+            fail(
+                "%s should have a variable '%s' but the following requirement was not satisfied: %s.",
+                actual, variableName, e.getMessage());
 
-                try {
-                  requirement.accept(actualValue);
-                } catch (final AssertionError e) {
-                  assertionError.set(e.getMessage());
-                  throw e;
-                }
-              });
-    } catch (final ConditionTimeoutException | TerminalFailureException e) {
+          } catch (final JsonMappingException e) {
+            final String failureMessage =
+                String.format(
+                    "%s should have a variable '%s' of type '%s', but was: '%s'",
+                    actual, variableName, variableValueType.getName(), actualVariable);
 
-      final Map<String, String> actualVariables = reference.get();
-
-      final String failureMessage =
-          Optional.ofNullable(actualVariables.get(variableName))
-              .map(value -> assertionError.get())
-              .map(
-                  error ->
-                      String.format(
-                          "%s should have a variable '%s' but the following requirement was not satisfied: %s.",
-                          actual, variableName, error))
-              .orElse(
-                  String.format(
-                      "%s should have a variable '%s', but the variable doesn't exist.",
-                      actual, variableName));
-
-      fail(failureMessage);
-    } catch (final JsonMappingException e) {
-      final String actualVariable = reference.get().get(variableName);
-      final String failureMessage =
-          String.format(
-              "%s should have a variable '%s' of type '%s', but was: '%s'",
-              actual, variableName, variableValueType.getName(), actualVariable);
-
-      fail(failureMessage);
-    }
+            fail(failureMessage);
+          }
+        });
   }
 
   public void hasLocalVariables(
@@ -301,50 +252,37 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
     final Set<String> expectedVariableNames = expectedVariables.keySet();
 
-    final AtomicReference<Map<String, JsonNode>> reference =
-        new AtomicReference<>(Collections.emptyMap());
+    awaitBehavior.untilAsserted(
+        () -> {
+          final Map<String, JsonNode> actualValues =
+              actualVariablesSupplier.get().entrySet().stream()
+                  .filter(entry -> expectedVariableNames.contains(entry.getKey()))
+                  .collect(
+                      Collectors.toMap(
+                          Entry::getKey, entry -> AssertionJsonMapper.readJson(entry.getValue())));
 
-    try {
-      Awaitility.await()
-          .untilAsserted(
-              () -> {
-                final Map<String, JsonNode> actualValues =
-                    actualVariablesSupplier.get().entrySet().stream()
-                        .filter(entry -> expectedVariableNames.contains(entry.getKey()))
-                        .collect(
-                            Collectors.toMap(
-                                Entry::getKey,
-                                entry -> AssertionJsonMapper.readJson(entry.getValue())));
-                reference.set(actualValues);
+          final List<String> missingVariables =
+              expectedVariableNames.stream()
+                  .filter(variableName -> !actualValues.containsKey(variableName))
+                  .collect(Collectors.toList());
 
-                assertThat(actualValues).containsAllEntriesOf(expectedValues);
-              });
+          assertThat(missingVariables)
+              .withFailMessage(
+                  "%s should have the variables %s but was %s. The variables %s don't exist.",
+                  actual,
+                  AssertionJsonMapper.toJson(expectedVariables),
+                  AssertionJsonMapper.toJson(actualValues),
+                  AssertFormatUtil.formatNames(missingVariables))
+              .isEmpty();
 
-    } catch (final ConditionTimeoutException | TerminalFailureException e) {
-
-      final Map<String, JsonNode> actualVariables = reference.get();
-
-      final List<String> missingVariables =
-          expectedVariableNames.stream()
-              .filter(variableName -> !actualVariables.containsKey(variableName))
-              .collect(Collectors.toList());
-
-      String formattedMissingVariables = "";
-      if (!missingVariables.isEmpty()) {
-        formattedMissingVariables =
-            String.format(
-                " The variables %s don't exist.", AssertFormatUtil.formatNames(missingVariables));
-      }
-
-      final String failureMessage =
-          String.format(
-              "%s should have the variables %s but was %s.%s",
-              actual,
-              AssertionJsonMapper.toJson(expectedVariables),
-              AssertionJsonMapper.toJson(actualVariables),
-              formattedMissingVariables);
-      fail(failureMessage);
-    }
+          assertThat(actualValues)
+              .withFailMessage(
+                  "%s should have the variables %s but was %s.",
+                  actual,
+                  AssertionJsonMapper.toJson(expectedVariables),
+                  AssertionJsonMapper.toJson(actualValues))
+              .containsAllEntriesOf(expectedValues);
+        });
   }
 
   private void withLocalVariableAssertion(
@@ -374,26 +312,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   private void awaitElementInstanceAssertion(
       final Consumer<ElementInstanceFilter> filter,
       final Consumer<List<ElementInstance>> assertion) {
-    // If await() times out, the exception doesn't contain the assertion error. Use a reference to
-    // store the error's failure message.
-    final AtomicReference<String> failureMessage = new AtomicReference<>("?");
-    try {
-      Awaitility.await()
-          .ignoreException(ClientException.class)
-          .untilAsserted(
-              () -> dataSource.findElementInstances(filter),
-              elementInstances -> {
-                try {
-                  assertion.accept(elementInstances);
-                } catch (final AssertionError e) {
-                  failureMessage.set(e.getMessage());
-                  throw e;
-                }
-              });
-
-    } catch (final ConditionTimeoutException ignore) {
-      fail(failureMessage.get());
-    }
+    awaitBehavior.untilAsserted(() -> dataSource.findElementInstances(filter), assertion);
   }
 
   private Map<String, String> getLocalProcessInstanceVariables(

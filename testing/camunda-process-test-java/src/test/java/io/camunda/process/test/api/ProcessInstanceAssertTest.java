@@ -16,7 +16,6 @@
 package io.camunda.process.test.api;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -29,6 +28,7 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
@@ -118,6 +118,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailWithProcessInstanceEvent() {
       // given
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(COMPLETED_PROCESS_INSTANCE_KEY);
@@ -148,6 +149,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailWithProcessInstanceResult() {
       // given
       when(processInstanceResult.getProcessInstanceKey())
@@ -178,6 +180,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailWithByKeySelector() {
       // when
       Assertions.assertThatThrownBy(
@@ -206,6 +209,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailWithByProcessIdSelector() {
       // when
       Assertions.assertThatThrownBy(
@@ -241,6 +245,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfCompleted() {
       // given
       when(camundaDataSource.findProcessInstances(any()))
@@ -260,6 +265,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfTerminated() {
       // given
       when(camundaDataSource.findProcessInstances(any()))
@@ -279,6 +285,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNotFound() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
@@ -314,6 +321,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfTerminated() {
       // given
       when(camundaDataSource.findProcessInstances(any()))
@@ -355,6 +363,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfActive() {
       // given
       when(camundaDataSource.findProcessInstances(any()))
@@ -372,10 +381,11 @@ public class ProcessInstanceAssertTest {
               "Process instance [key: %d] should be completed but was active.",
               PROCESS_INSTANCE_KEY);
 
-      verify(camundaDataSource, atLeast(2)).findProcessInstances(any());
+      verify(camundaDataSource).findProcessInstances(any());
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNotFound() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
@@ -412,6 +422,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfCompleted() {
       // given
       when(camundaDataSource.findProcessInstances(any()))
@@ -453,6 +464,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfActive() {
       // given
       when(camundaDataSource.findProcessInstances(any()))
@@ -470,10 +482,11 @@ public class ProcessInstanceAssertTest {
               "Process instance [key: %d] should be terminated but was active.",
               PROCESS_INSTANCE_KEY);
 
-      verify(camundaDataSource, atLeast(2)).findProcessInstances(any());
+      verify(camundaDataSource).findProcessInstances(any());
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNotFound() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
@@ -541,6 +554,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNotCreated() {
       // given
       when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
