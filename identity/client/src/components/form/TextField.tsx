@@ -37,7 +37,7 @@ type PasswordInputProps = {
 export type TextFieldProps = {
   label: string;
   value: string;
-  errors?: string[];
+  errors?: string[] | string;
   helperText?: string;
   placeholder?: string;
   cols?: number;
@@ -81,8 +81,9 @@ const TextField: FC<TextFieldProps> = ({
       onChange?.(e.currentTarget.value);
       validate?.(e.currentTarget.value);
     },
-    invalid: errors && errors.length > 0,
-    invalidText: errors?.map((e) => t(e)).join(" "),
+    invalid: typeof errors === "string" ? Boolean(errors) : errors?.length > 0,
+    invalidText:
+      typeof errors === "string" ? errors : errors?.map((e) => t(e)).join(" "),
     onBlur: (
       e: ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>,
     ) => {

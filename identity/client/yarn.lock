@@ -4047,6 +4047,7 @@ __metadata:
     react: "npm:18.3.1"
     react-debounced: "npm:1.1.2"
     react-dom: "npm:18.3.1"
+    react-hook-form: "npm:7.61.1"
     react-i18next: "npm:15.6.0"
     react-router: "npm:7.7.1"
     react-router-dom: "npm:7.7.1"
@@ -5539,6 +5540,15 @@ __metadata:
   version: 3.2.2
   resolution: "react-fast-compare@npm:3.2.2"
   checksum: 10c0/0bbd2f3eb41ab2ff7380daaa55105db698d965c396df73e6874831dbafec8c4b5b08ba36ff09df01526caa3c61595247e3269558c284e37646241cba2b90a367
+  languageName: node
+  linkType: hard
+
+"react-hook-form@npm:7.61.1":
+  version: 7.61.1
+  resolution: "react-hook-form@npm:7.61.1"
+  peerDependencies:
+    react: ^16.8.0 || ^17 || ^18 || ^19
+  checksum: 10c0/c241bca80f6d5f9f8b4f24b668670a3ee7249f9cf99537219c4ac1072431493d3768a910b6f2aaff20689a727d0e2797aeacb1ab9285b3e59309de3dd1bead41
   languageName: node
   linkType: hard
 
