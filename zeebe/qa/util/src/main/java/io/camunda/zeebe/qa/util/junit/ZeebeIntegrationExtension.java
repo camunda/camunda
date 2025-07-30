@@ -227,6 +227,9 @@ final class ZeebeIntegrationExtension
 
   private void setWorkingDirectory(
       final Path directory, final MemberId id, final TestStandaloneBroker broker) {
+    if (broker.getWorkingDirectory() != null) {
+      return;
+    }
     final Path workingDirectory = directory.resolve("broker-" + id.id());
     try {
       Files.createDirectory(workingDirectory);
