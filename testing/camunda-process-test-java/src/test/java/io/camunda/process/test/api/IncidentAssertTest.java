@@ -23,6 +23,7 @@ import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.IncidentBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
@@ -112,6 +113,7 @@ public class IncidentAssertTest {
 
     @ParameterizedTest(name = "{0}")
     @ArgumentsSource(ActiveIncidentsProvider.class)
+    @CamundaAssertExpectFailure
     void shouldFailIfActiveIncidentsFound(final String label, final Incident incident) {
       // given
       when(camundaDataSource.findIncidents(any())).thenReturn(Collections.singletonList(incident));
@@ -129,6 +131,7 @@ public class IncidentAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFormatMultipleActiveIncidents() {
       // given
       final List<Incident> incidents =
@@ -205,6 +208,7 @@ public class IncidentAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfOnlyResolvedIncidentsAreFound() {
       // given
       when(camundaDataSource.findIncidents(any()))
@@ -222,6 +226,7 @@ public class IncidentAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     void shouldFailIfNoIncidentsFound() {
       // given
       when(camundaDataSource.findIncidents(any())).thenReturn(Collections.emptyList());

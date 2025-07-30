@@ -19,7 +19,6 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
@@ -28,7 +27,6 @@ import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +39,6 @@ public class CamundaUserDetailsServiceTest {
   private static final String TEST_USER_ID = "username1";
 
   @Mock private UserServices userService;
-  @Mock private AuthorizationServices authorizationServices;
   @Mock private RoleServices roleServices;
   @Mock private TenantServices tenantServices;
   @Mock private GroupServices groupServices;
@@ -51,11 +48,8 @@ public class CamundaUserDetailsServiceTest {
   public void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
     userDetailsService =
-        new CamundaUserDetailsService(
-            userService, authorizationServices, roleServices, tenantServices, groupServices);
+        new CamundaUserDetailsService(userService, roleServices, tenantServices, groupServices);
     when(userService.withAuthentication(any(CamundaAuthentication.class))).thenReturn(userService);
-    when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(authorizationServices);
     when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(roleServices);
     when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
@@ -77,13 +71,6 @@ public class CamundaUserDetailsServiceTest {
                 null));
 
     final var roleId = "admin";
-    when(authorizationServices.getAuthorizedApplications(
-            Map.of(
-                EntityType.USER,
-                Set.of(TEST_USER_ID),
-                EntityType.ROLE,
-                Set.of(roleId, "roleGroup"))))
-        .thenReturn(List.of("operate", "identity"));
     final var adminGroup = new GroupEntity(1L, "admin", "Admin Group", "description");
     when(groupServices.getGroupsByMemberId(TEST_USER_ID, EntityType.USER))
         .thenReturn(List.of(adminGroup));
@@ -109,8 +96,6 @@ public class CamundaUserDetailsServiceTest {
     assertThat(user.getPassword()).isEqualTo("password1");
     assertThat(user.getEmail()).isEqualTo("email@tested");
     assertThat(user.getAuthenticationContext().username()).isEqualTo(TEST_USER_ID);
-    assertThat(user.getAuthenticationContext().authorizedApplications())
-        .containsExactlyInAnyOrder("operate", "identity");
     assertThat(user.getAuthenticationContext().roles())
         .isEqualTo(List.of(adminRole.roleId(), groupRole.roleId()));
     assertThat(user.getAuthenticationContext().groups()).isEqualTo(List.of(adminGroup.groupId()));

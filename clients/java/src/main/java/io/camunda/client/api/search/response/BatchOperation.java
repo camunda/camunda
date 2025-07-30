@@ -17,6 +17,7 @@ package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
+import java.util.List;
 
 public interface BatchOperation {
 
@@ -38,4 +39,6 @@ public interface BatchOperation {
   Integer getOperationsFailedCount();
 
   Integer getOperationsCompletedCount();
+
+  List<BatchOperationError> getErrors();
 }

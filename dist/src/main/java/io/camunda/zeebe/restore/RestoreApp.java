@@ -39,7 +39,7 @@ public class RestoreApp implements ApplicationRunner {
 
   @Value("${backupId}")
   // Parsed from commandline Eg:-`--backupId=100`
-  private long backupId;
+  private long[] backupId;
 
   private final RestoreConfiguration restoreConfiguration;
   private final MeterRegistry meterRegistry;

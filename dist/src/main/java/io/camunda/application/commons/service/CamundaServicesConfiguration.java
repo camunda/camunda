@@ -31,7 +31,6 @@ import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.clients.reader.AuthorizationReader;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AuthorizationServices;
@@ -259,14 +258,9 @@ public class CamundaServicesConfiguration {
   public AuthorizationServices authorizationServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final AuthorizationSearchClient authorizationSearchClient,
-      final SecurityConfiguration securityConfiguration) {
+      final AuthorizationSearchClient authorizationSearchClient) {
     return new AuthorizationServices(
-        brokerClient,
-        securityContextProvider,
-        authorizationSearchClient,
-        null,
-        securityConfiguration);
+        brokerClient, securityContextProvider, authorizationSearchClient, null);
   }
 
   @Bean

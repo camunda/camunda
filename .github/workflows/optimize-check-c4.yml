@@ -2,7 +2,7 @@
 # test location: /optimize/c4
 # type: CI
 # owner: @camunda/core-features
-name: Optimize Check if C4 builds
+name: "[Legacy] Optimize Check if C4 builds"
 on:
   push:
     branches:

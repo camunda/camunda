@@ -25,6 +25,7 @@ import io.camunda.client.protocol.rest.UserTaskResult;
 import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import java.util.Arrays;
 import java.util.Collections;
@@ -177,6 +178,7 @@ public class UserTaskAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void failsWithConciseErrorMessageWhenNoTaskFound() {
       when(camundaDataSource.findUserTasks(any())).thenReturn(Collections.emptyList());
 
@@ -186,6 +188,7 @@ public class UserTaskAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void failsWithConciseErrorMessageWhenTaskHasWrongState() {
       // when
       final UserTask completedTask =
@@ -254,6 +257,7 @@ public class UserTaskAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasPriorityFailureMessage() {
       // when
       when(camundaDataSource.findUserTasks(any()))
@@ -323,6 +327,7 @@ public class UserTaskAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasElementIdFailureMessage() {
       // when
       when(camundaDataSource.findUserTasks(any()))
@@ -390,6 +395,7 @@ public class UserTaskAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasNameFailureMessage() {
       // when
       when(camundaDataSource.findUserTasks(any()))
@@ -458,7 +464,8 @@ public class UserTaskAssertTest {
     }
 
     @Test
-    public void hasAssigneeFailureMesasge() {
+    @CamundaAssertExpectFailure
+    public void hasAssigneeFailureMessage() {
       // when
       when(camundaDataSource.findUserTasks(any()))
           .thenReturn(
@@ -527,6 +534,7 @@ public class UserTaskAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasDueDateFailureMessage() {
       // when
       when(camundaDataSource.findUserTasks(any()))
@@ -597,6 +605,7 @@ public class UserTaskAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasCompletionDateFailureMessage() {
       // when
       when(camundaDataSource.findUserTasks(any()))
@@ -668,6 +677,7 @@ public class UserTaskAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasFollowUpDateFailureMessage() {
       // when
       when(camundaDataSource.findUserTasks(any()))
@@ -738,6 +748,7 @@ public class UserTaskAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasCreationDateFailureMessage() {
       // when
       when(camundaDataSource.findUserTasks(any()))
@@ -844,6 +855,7 @@ public class UserTaskAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasCandidateGroupFailureMessage() {
       // when
       when(camundaDataSource.findUserTasks(any()))
@@ -864,6 +876,7 @@ public class UserTaskAssertTest {
     }
 
     @Test
+    @CamundaAssertExpectFailure
     public void hasCandidateGroupsFailureMessage() {
       // when
       when(camundaDataSource.findUserTasks(any()))

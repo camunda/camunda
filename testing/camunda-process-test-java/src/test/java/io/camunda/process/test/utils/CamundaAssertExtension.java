@@ -16,34 +16,43 @@
 package io.camunda.process.test.utils;
 
 import io.camunda.process.test.api.CamundaAssert;
-import java.time.Duration;
-import java.time.format.DateTimeParseException;
+import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.platform.commons.support.AnnotationSupport;
 
+/**
+ * A JUnit extension for assertion tests that replaces the {@link CamundaAssertAwaitBehavior}.
+ *
+ * <p>Annotate test methods that verify an assertion failure message with {@link
+ * CamundaAssertExpectFailure} to reduce the assertion timeout and speed up the test case.
+ */
 public class CamundaAssertExtension implements BeforeEachCallback, AfterEachCallback {
 
-  private static final String PROPERTY_KEY_ASSERTION_TIMEOUT = "cptAssertionTimeout";
+  public static void expectFailure() {
+    CamundaAssert.setAwaitBehavior(DevAwaitBehavior.expectFailure());
+  }
 
-  private static final Duration ASSERTION_TIMEOUT = Duration.ofSeconds(1);
-  private static final Duration ASSERTION_INTERVAL = Duration.ofMillis(10);
+  public static void expectSuccess() {
+    CamundaAssert.setAwaitBehavior(DevAwaitBehavior.expectSuccess());
+  }
 
   @Override
   public void beforeEach(final ExtensionContext context) {
-    final String assertionTimeout =
-        System.getProperty(PROPERTY_KEY_ASSERTION_TIMEOUT, ASSERTION_TIMEOUT.toString());
-    try {
-      CamundaAssert.setAssertionInterval(ASSERTION_INTERVAL);
-      CamundaAssert.setAssertionTimeout(Duration.parse(assertionTimeout));
-    } catch (final DateTimeParseException e) {
-      // ignore, fallback to defaults
+
+    final boolean expectFailure =
+        AnnotationSupport.isAnnotated(context.getElement(), CamundaAssertExpectFailure.class);
+
+    if (expectFailure) {
+      expectFailure();
+    } else {
+      expectSuccess();
     }
   }
 
   @Override
   public void afterEach(final ExtensionContext context) {
-    CamundaAssert.setAssertionInterval(CamundaAssert.DEFAULT_ASSERTION_INTERVAL);
-    CamundaAssert.setAssertionTimeout(CamundaAssert.DEFAULT_ASSERTION_TIMEOUT);
+    CamundaAssert.setAwaitBehavior(CamundaAssert.DEFAULT_AWAIT_BEHAVIOR);
   }
 }

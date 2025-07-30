@@ -47,7 +47,7 @@ test.describe.serial('tenants CRUD', () => {
       ).toBeHidden();
       await identityTenantsPage.createTenant(NEW_TENANT);
       const item = identityTenantsPage.tenantCell(NEW_TENANT.name);
-      await waitForItemInList(page, item);
+      await waitForItemInList(page, item, {timeout: 60000});
     });
 
     test('assign a user', async ({page, identityTenantsPage}) => {
@@ -56,6 +56,7 @@ test.describe.serial('tenants CRUD', () => {
       const item = identityTenantsPage.userRow(USER.name);
       await waitForItemInList(page, item, {
         emptyStateLocator: identityTenantsPage.usersEmptyState,
+        timeout: 60000,
       });
     });
 

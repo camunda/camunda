@@ -128,7 +128,7 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.20</version.jnr-posix>
-    <version.zpt>8.7.8</version.zpt>
+    <version.zpt>8.7.9</version.zpt>
     <version.feign>13.6</version.feign>
     <version.google-sdk>26.64.0</version.google-sdk>
     <version.azure-sdk>1.2.36</version.azure-sdk>
@@ -186,7 +186,7 @@
     <version.jwks-rsa>0.22.2</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.4</version.nimbus-jose-jwt>
-    <version.nimbus-sdk>11.26.1</version.nimbus-sdk>
+    <version.nimbus-sdk>11.27</version.nimbus-sdk>
     <version.keycloak>26.3.2</version.keycloak>
     <version.keycloak-client>26.0.6</version.keycloak-client>
     <version.jna>5.17.0</version.jna>

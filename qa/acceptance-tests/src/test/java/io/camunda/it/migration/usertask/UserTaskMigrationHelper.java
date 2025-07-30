@@ -22,6 +22,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import io.camunda.webapps.schema.entities.usertask.TaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import java.net.URI;
@@ -134,7 +135,7 @@ public abstract class UserTaskMigrationHelper {
     return userTaskKey.get();
   }
 
-  protected long waitFor88TaskToBeImportedReturningId(
+  protected long waitFor88CreatedTaskToBeImportedReturningId(
       final CamundaMigrator migrator, final long piKey) {
     final AtomicLong userTaskKey = new AtomicLong();
 
@@ -142,13 +143,14 @@ public abstract class UserTaskMigrationHelper {
         SearchQueryBuilders.and(
             SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, piKey),
             SearchQueryBuilders.term(
-                TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType()));
+                TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType()),
+            SearchQueryBuilders.term(TaskTemplate.STATE, TaskState.CREATED.name()));
     final var req =
         SearchQueryRequest.of(
             s ->
                 s.query(processInstanceQuery)
                     .index(migrator.indexFor(TaskTemplate.class).getAlias()));
-    Awaitility.await("Wait for tasks to be imported")
+    Awaitility.await("Wait for tasks with CREATED state to be imported")
         .ignoreExceptions()
         .pollInterval(Duration.ofSeconds(1))
         .atMost(Duration.ofSeconds(30))

@@ -71,7 +71,6 @@ public class CamundaOidcUserServiceTest {
                 new AuthenticationContext.AuthenticationContextBuilder()
                     .withUsername("test")
                     .withRoles(List.of(roleR1))
-                    .withAuthorizedApplications(List.of("*"))
                     .withGroups(List.of("G1"))
                     .withTenants(List.of(new TenantDTO(1L, "tenant-1", "Tenant One", "desc")))
                     .build()));
@@ -90,8 +89,6 @@ public class CamundaOidcUserServiceTest {
     assertThat(authenticationContext.tenants()).hasSize(1);
     assertThat(authenticationContext.tenants().get(0).tenantId()).isEqualTo("tenant-1");
     assertThat(authenticationContext.groups()).containsExactly("G1");
-
-    assertThat(authenticationContext.authorizedApplications()).containsAll(Set.of("*"));
   }
 
   @Test

@@ -13,10 +13,8 @@ import static io.camunda.service.authorization.Authorizations.AUTHORIZATION_READ
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -26,39 +24,28 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class AuthorizationServices
     extends SearchQueryService<AuthorizationServices, AuthorizationQuery, AuthorizationEntity> {
 
   private final AuthorizationSearchClient authorizationSearchClient;
-  private final SecurityConfiguration securityConfiguration;
 
   public AuthorizationServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuthorizationSearchClient authorizationSearchClient,
-      final CamundaAuthentication authentication,
-      final SecurityConfiguration securityConfiguration) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.authorizationSearchClient = authorizationSearchClient;
-    this.securityConfiguration = securityConfiguration;
   }
 
   @Override
   public AuthorizationServices withAuthentication(final CamundaAuthentication authentication) {
     return new AuthorizationServices(
-        brokerClient,
-        securityContextProvider,
-        authorizationSearchClient,
-        authentication,
-        securityConfiguration);
+        brokerClient, securityContextProvider, authorizationSearchClient, authentication);
   }
 
   @Override
@@ -70,35 +57,6 @@ public class AuthorizationServices
                     securityContextProvider.provideSecurityContext(
                         authentication, AUTHORIZATION_READ_AUTHORIZATION))
                 .searchAuthorizations(query));
-  }
-
-  public List<String> getAuthorizedApplications(
-      final Map<EntityType, Set<String>> ownerTypeToOwnerIds) {
-    if (!securityConfiguration.getAuthorizations().isEnabled()) {
-      // if authorizations are not enabled, we default to a wildcard authorization which is
-      // needed for frontend side checks
-      return List.of("*");
-    }
-
-    if (ownerTypeToOwnerIds == null || ownerTypeToOwnerIds.isEmpty()) {
-      // if no ownerIds are provided, we return an empty list to be defensive, we can't work out
-      // which applications the user has access to if we don't know the ownerIds
-      return List.of();
-    }
-
-    return search(
-            SearchQueryBuilders.authorizationSearchQuery(
-                fn ->
-                    fn.filter(
-                            f ->
-                                f.resourceType(AuthorizationResourceType.APPLICATION.name())
-                                    .permissionTypes(PermissionType.ACCESS)
-                                    .ownerTypeToOwnerIds(ownerTypeToOwnerIds))
-                        .page(p -> p.size(1))))
-        .items()
-        .stream()
-        .map(AuthorizationEntity::resourceId)
-        .collect(Collectors.toList());
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(

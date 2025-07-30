@@ -16,13 +16,12 @@
 package io.camunda.process.test.impl.extension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
@@ -40,16 +39,10 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import org.assertj.core.api.Assertions;
-import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
-import org.awaitility.core.TerminalFailureException;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -63,8 +56,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaProcessTestContextImpl.class);
 
-  private static final int TIMEOUT = 40;
-
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
   private final URI connectorsRestApiAddress;
@@ -72,16 +63,20 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final Consumer<AutoCloseable> clientCreationCallback;
   private final CamundaManagementClient camundaManagementClient;
 
+  private final CamundaAssertAwaitBehavior awaitBehavior;
+
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
       final Consumer<AutoCloseable> clientCreationCallback,
-      final CamundaManagementClient camundaManagementClient) {
+      final CamundaManagementClient camundaManagementClient,
+      final CamundaAssertAwaitBehavior awaitBehavior) {
     camundaClientBuilderFactory = camundaRuntime.getCamundaClientBuilderFactory();
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
     camundaGrpcApiAddress = camundaRuntime.getCamundaGrpcApiAddress();
     connectorsRestApiAddress = camundaRuntime.getConnectorsRestApiAddress();
     this.clientCreationCallback = clientCreationCallback;
     this.camundaManagementClient = camundaManagementClient;
+    this.awaitBehavior = awaitBehavior;
   }
 
   @Override
@@ -246,35 +241,27 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final CamundaClient client = createClient();
     final AtomicReference<Long> userTaskKey = new AtomicReference<>();
 
-    try {
-      Awaitility.await("until user task is active")
-          .ignoreExceptions()
-          .atMost(Duration.ofSeconds(2 * TIMEOUT))
-          .untilAsserted(
-              () -> {
-                final Future<SearchResponse<UserTask>> userTaskFuture =
-                    client.newUserTaskSearchRequest().send();
-                Assertions.assertThat(userTaskFuture)
-                    .succeedsWithin(Duration.ofSeconds(TIMEOUT))
-                    .extracting(SearchResponse::items)
-                    .satisfies(
-                        items -> {
-                          final List<UserTask> tasks =
-                              items.stream()
-                                  .filter(userTaskSelector::test)
-                                  .collect(Collectors.toList());
-                          Assertions.assertThat(tasks).isNotEmpty();
-                          userTaskKey.set(tasks.get(0).getUserTaskKey());
-                        });
-              });
-    } catch (final ConditionTimeoutException | TerminalFailureException e) {
-      final String failureMessage =
-          String.format(
-              "Expected to complete user task [%s] but no job is available.",
-              userTaskSelector.describe());
+    awaitBehavior.untilAsserted(
+        () -> {
+          final Optional<UserTask> userTask =
+              client
+                  .newUserTaskSearchRequest()
+                  .filter(userTaskSelector::applyFilter)
+                  .send()
+                  .join()
+                  .items()
+                  .stream()
+                  .filter(userTaskSelector::test)
+                  .findFirst();
 
-      fail(failureMessage);
-    }
+          userTask.map(UserTask::getUserTaskKey).ifPresent(userTaskKey::set);
+
+          assertThat(userTask)
+              .withFailMessage(
+                  "Expected to complete user task [%s] but no job is available.",
+                  userTaskSelector.describe())
+              .isPresent();
+        });
 
     LOGGER.debug(
         "Complete user task with variables {} [user-task-key: '{}']", variables, userTaskKey.get());
@@ -322,31 +309,27 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final CamundaClient client = createClient();
     final AtomicReference<ActivatedJob> activatedJob = new AtomicReference<>();
 
-    try {
-      Awaitility.await()
-          .atMost(Duration.ofSeconds(10))
-          .untilAsserted(
-              () -> {
-                final List<ActivatedJob> jobs =
-                    client
-                        .newActivateJobsCommand()
-                        .jobType(jobType)
-                        .maxJobsToActivate(1)
-                        .send()
-                        .join()
-                        .getJobs();
+    awaitBehavior.untilAsserted(
+        () -> {
+          final Optional<ActivatedJob> firstActivatedJob =
+              client
+                  .newActivateJobsCommand()
+                  .jobType(jobType)
+                  .maxJobsToActivate(1)
+                  .requestTimeout(Duration.ofSeconds(1)) // avoid long blocking call
+                  .send()
+                  .join()
+                  .getJobs()
+                  .stream()
+                  .findFirst();
 
-                assertThat(jobs).isNotEmpty();
+          firstActivatedJob.ifPresent(activatedJob::set);
 
-                activatedJob.set(jobs.get(0));
-              });
-    } catch (final ConditionTimeoutException | TerminalFailureException e) {
-      final String failureMessage =
-          String.format(
-              "Expected to complete a job with the type '%s' but no job is available.", jobType);
-
-      fail(failureMessage);
-    }
+          assertThat(firstActivatedJob)
+              .withFailMessage(
+                  "Expected to complete a job with the type '%s' but no job is available.", jobType)
+              .isPresent();
+        });
 
     return activatedJob.get();
   }

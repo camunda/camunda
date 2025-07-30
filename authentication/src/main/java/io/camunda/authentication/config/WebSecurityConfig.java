@@ -29,11 +29,12 @@ import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.service.AuthorizationServices;
+import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
@@ -393,12 +394,11 @@ public class WebSecurityConfig {
     @ConditionalOnMissingBean(UserDetailsService.class)
     public CamundaUserDetailsService camundaUserDetailsService(
         final UserServices userServices,
-        final AuthorizationServices authorizationServices,
         final RoleServices roleServices,
         final TenantServices tenantServices,
         final GroupServices groupServices) {
       return new CamundaUserDetailsService(
-          userServices, authorizationServices, roleServices, tenantServices, groupServices);
+          userServices, roleServices, tenantServices, groupServices);
     }
 
     @Bean
@@ -455,6 +455,8 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final SecurityConfiguration securityConfiguration,
+        final CamundaAuthenticationProvider authenticationProvider,
+        final ResourceAccessProvider resourceAccessProvider,
         final RoleServices roleServices,
         final CookieCsrfTokenRepository csrfTokenRepository)
         throws Exception {
@@ -498,7 +500,8 @@ public class WebSecurityConfig {
                           .authenticationEntryPoint(authFailureHandler)
                           .accessDeniedHandler(authFailureHandler))
               .addFilterAfter(
-                  new WebApplicationAuthorizationCheckFilter(securityConfiguration),
+                  new WebApplicationAuthorizationCheckFilter(
+                      securityConfiguration, authenticationProvider, resourceAccessProvider),
                   AuthorizationFilter.class)
               .addFilterBefore(
                   new AdminUserCheckFilter(securityConfiguration, roleServices),
@@ -640,6 +643,8 @@ public class WebSecurityConfig {
         final JwtDecoder jwtDecoder,
         final CamundaJwtAuthenticationConverter converter,
         final SecurityConfiguration securityConfiguration,
+        final CamundaAuthenticationProvider authenticationProvider,
+        final ResourceAccessProvider resourceAccessProvider,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager)
@@ -689,7 +694,8 @@ public class WebSecurityConfig {
                           .logoutSuccessHandler(new NoContentResponseHandler())
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
               .addFilterAfter(
-                  new WebApplicationAuthorizationCheckFilter(securityConfiguration),
+                  new WebApplicationAuthorizationCheckFilter(
+                      securityConfiguration, authenticationProvider, resourceAccessProvider),
                   AuthorizationFilter.class);
 
       applyOauth2RefreshTokenFilter(

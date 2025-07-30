@@ -96,7 +96,7 @@ zeebe:
           index:
             prefix:
             zeebeIndexPrefix: zeebe-record
-            numberOfShards: 3
+            numberOfShards: 1
             numberOfReplicas: 0
             variableSizeThreshold: 8191
 

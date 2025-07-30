@@ -16,7 +16,6 @@ public record AuthenticationContext(
     String username,
     String clientId,
     List<String> roles,
-    List<String> authorizedApplications,
     List<TenantDTO> tenants,
     List<String> groups,
     boolean groupsClaimEnabled)
@@ -26,7 +25,6 @@ public record AuthenticationContext(
     private String username;
     private String clientId;
     private List<String> roles = new ArrayList<>();
-    private List<String> authorizedApplications = new ArrayList<>();
     private List<TenantDTO> tenants = new ArrayList<>();
     private List<String> groups = new ArrayList<>();
     private boolean groupsClaimEnabled = false;
@@ -43,12 +41,6 @@ public record AuthenticationContext(
 
     public AuthenticationContextBuilder withRoles(final List<String> roles) {
       this.roles = roles;
-      return this;
-    }
-
-    public AuthenticationContextBuilder withAuthorizedApplications(
-        final List<String> authorizedApplications) {
-      this.authorizedApplications = authorizedApplications;
       return this;
     }
 
@@ -69,7 +61,7 @@ public record AuthenticationContext(
 
     public AuthenticationContext build() {
       return new AuthenticationContext(
-          username, clientId, roles, authorizedApplications, tenants, groups, groupsClaimEnabled);
+          username, clientId, roles, tenants, groups, groupsClaimEnabled);
     }
   }
 }

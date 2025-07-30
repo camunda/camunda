@@ -16,30 +16,29 @@
 package io.camunda.process.test.impl.assertions;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
-import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
+import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
 import io.camunda.process.test.api.assertions.DecisionSelector;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.assertj.core.api.AbstractAssert;
-import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
 
 public class DecisionInstanceAssertj
     extends AbstractAssert<DecisionInstanceAssertj, DecisionSelector>
     implements DecisionInstanceAssert {
 
   private final CamundaDataSource dataSource;
+  private final CamundaAssertAwaitBehavior awaitBehavior;
   private final DecisionMatchedRulesAssertj decisionMatchedRulesAssertj;
   private final DecisionOutputAssertj decisionOutputAssertj;
 
   public DecisionInstanceAssertj(
-      final CamundaDataSource dataSource, final DecisionSelector decisionSelector) {
+      final CamundaDataSource dataSource,
+      final CamundaAssertAwaitBehavior awaitBehavior,
+      final DecisionSelector decisionSelector) {
 
     super(decisionSelector, DecisionInstanceAssert.class);
 
@@ -47,8 +46,9 @@ public class DecisionInstanceAssertj
         String.format("Expected DecisionInstance [%s]", actual.describe());
 
     this.dataSource = dataSource;
-    this.decisionMatchedRulesAssertj = new DecisionMatchedRulesAssertj(failureMessagePrefix);
-    this.decisionOutputAssertj = new DecisionOutputAssertj(failureMessagePrefix);
+    this.awaitBehavior = awaitBehavior;
+    decisionMatchedRulesAssertj = new DecisionMatchedRulesAssertj(failureMessagePrefix);
+    decisionOutputAssertj = new DecisionOutputAssertj(failureMessagePrefix);
   }
 
   @Override
@@ -108,35 +108,22 @@ public class DecisionInstanceAssertj
   }
 
   private void awaitDecisionInstance(final Consumer<DecisionInstance> assertion) {
-    final AtomicReference<String> failureMessage = new AtomicReference<>("?");
+    awaitBehavior.untilAsserted(
+        () -> dataSource.findDecisionInstances(actual::applyFilter),
+        decisionInstances -> {
+          final Optional<DecisionInstance> discoveredDecisionInstance =
+              decisionInstances.stream().filter(actual::test).findFirst();
 
-    try {
-      Awaitility.await()
-          .ignoreException(ClientException.class)
-          .untilAsserted(
-              () -> dataSource.findDecisionInstances(actual::applyFilter),
-              decisionInstances -> {
-                final Optional<DecisionInstance> discoveredDecisionInstance =
-                    decisionInstances.stream().filter(actual::test).findFirst();
+          assertThat(discoveredDecisionInstance)
+              .withFailMessage("No DecisionInstance [%s] found.", actual.describe())
+              .isPresent();
+          // We need to use the getById endpoint because only that endpoint contains
+          // the matchedRules() and evaluatedInput data.
+          final DecisionInstance completeDecisionInstance =
+              dataSource.getDecisionInstance(
+                  discoveredDecisionInstance.get().getDecisionInstanceId());
 
-                try {
-                  assertThat(discoveredDecisionInstance)
-                      .withFailMessage("No DecisionInstance [%s] found.", actual.describe())
-                      .isPresent();
-                  // We need to use the getById endpoint because only that endpoint contains
-                  // the matchedRules() and evaluatedInput data.
-                  final DecisionInstance completeDecisionInstance =
-                      dataSource.getDecisionInstance(
-                          discoveredDecisionInstance.get().getDecisionInstanceId());
-
-                  assertion.accept(completeDecisionInstance);
-                } catch (final AssertionError e) {
-                  failureMessage.set(e.getMessage());
-                  throw e;
-                }
-              });
-    } catch (final ConditionTimeoutException ignore) {
-      fail(failureMessage.get());
-    }
+          assertion.accept(completeDecisionInstance);
+        });
   }
 }

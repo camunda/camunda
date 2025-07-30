@@ -41,10 +41,6 @@ class SegmentedJournalReader implements JournalReader {
     currentReader = currentSegment.createReader();
   }
 
-  long getNextIndex() {
-    return currentReader.getNextIndex();
-  }
-
   @Override
   public boolean hasNext() {
     final var stamp = journal.acquireReadlock();
@@ -160,6 +156,11 @@ class SegmentedJournalReader implements JournalReader {
         journal.releaseReadlock(stamp);
       }
     }
+  }
+
+  @Override
+  public long getNextIndex() {
+    return currentReader.getNextIndex();
   }
 
   @Override
