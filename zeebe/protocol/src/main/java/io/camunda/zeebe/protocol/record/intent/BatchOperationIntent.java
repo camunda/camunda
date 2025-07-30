@@ -34,7 +34,8 @@ public enum BatchOperationIntent implements Intent {
   PARTITION_COMPLETED((short) 15),
   FAIL_PARTITION((short) 16),
   PARTITION_FAILED((short) 17),
-  INITIALIZATION_CONTINUED((short) 18);
+  INITIALIZATION_CONTINUED((short) 18),
+  FINISH_INITIALIZATION((short) 19);
 
   private final short value;
 
@@ -86,6 +87,8 @@ public enum BatchOperationIntent implements Intent {
         return PARTITION_FAILED;
       case 18:
         return INITIALIZATION_CONTINUED;
+      case 19:
+        return FINISH_INITIALIZATION;
       default:
         return Intent.UNKNOWN;
     }

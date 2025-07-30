@@ -29,6 +29,8 @@ import org.immutables.value.Value;
 public interface BatchOperationInitializationRecordValue
     extends BatchOperationRelated, RecordValue {
 
+  BatchOperationType getBatchOperationType();
+
   /**
    * The last search result cursor that was used to find items for the batch operation.
    *

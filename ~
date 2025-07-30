@@ -1,0 +1,23 @@
+refactor: remove CONTINUE_INITIALIZATION command
+
+behaves exactly the same as `INITIALIZE`
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# interactive rebase in progress; onto f4f3a3c420d
+# Last commands done (8 commands done):
+#    pick 0847f387ae0 refactor: initialize processor should only continue initialization
+#    pick b8d35c6a192 refactor: remove CONTINUE_INITIALIZATION command
+# Next commands to do (4 remaining commands):
+#    pick 429f083f94b feat: mark the bo as STARTED if initialization is finished
+#    pick a0c7eaaadcd refactor: rename intents
+# You are currently rebasing branch 'md/35435-refactor-initialization-flow' on 'f4f3a3c420d'.
+#
+# Changes to be committed:
+#	deleted:    zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/batchoperation/BatchOperationContinueInitializationProcessor.java
+#	modified:   zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/batchoperation/BatchOperationExecutionScheduler.java
+#	modified:   zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/batchoperation/BatchOperationSetupProcessors.java
+#	modified:   zeebe/engine/src/test/java/io/camunda/zeebe/engine/processing/batchoperation/BatchOperationExecutionSchedulerTest.java
+#	modified:   zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/intent/BatchOperationIntent.java
+#
