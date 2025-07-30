@@ -40,7 +40,7 @@ public final class BatchOperationFinishInitializationProcessor
     LOGGER.debug(
         "Marking batch operation {} as initialized", command.getValue().getBatchOperationKey());
     stateWriter.appendFollowUpEvent(
-        command.getKey(), BatchOperationIntent.STARTED, initializationRecord);
+        command.getKey(), BatchOperationIntent.INITIALIZED, initializationRecord);
     metrics.recordStarted(initializationRecord.getBatchOperationType());
   }
 }

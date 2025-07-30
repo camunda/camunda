@@ -34,9 +34,9 @@ public final class BatchOperationInitializeProcessor
   public void processRecord(final TypedRecord<BatchOperationInitializationRecord> command) {
     final var recordValue = command.getValue();
     LOGGER.debug(
-        "Marking batch operation {} as started", command.getValue().getBatchOperationKey());
+        "Marking batch operation {} as initializing", command.getValue().getBatchOperationKey());
 
     stateWriter.appendFollowUpEvent(
-        command.getKey(), BatchOperationIntent.INITIALIZATION_CONTINUED, recordValue);
+        command.getKey(), BatchOperationIntent.INITIALIZING, recordValue);
   }
 }

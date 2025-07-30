@@ -48,7 +48,7 @@ class BatchOperationStartedHandlerTest {
     // given
     final Record<BatchOperationCreationRecordValue> record =
         factory.generateRecordWithIntent(
-            ValueType.BATCH_OPERATION_CREATION, BatchOperationIntent.STARTED);
+            ValueType.BATCH_OPERATION_CREATION, BatchOperationIntent.INITIALIZED);
 
     // when - then
     assertThat(underTest.handlesRecord(record)).isTrue();
@@ -59,7 +59,7 @@ class BatchOperationStartedHandlerTest {
     // given
     final Record<BatchOperationCreationRecordValue> record =
         factory.generateRecordWithIntent(
-            ValueType.BATCH_OPERATION_CREATION, BatchOperationIntent.STARTED);
+            ValueType.BATCH_OPERATION_CREATION, BatchOperationIntent.INITIALIZED);
 
     // when
     final var idList = underTest.generateIds(record);
@@ -85,7 +85,7 @@ class BatchOperationStartedHandlerTest {
     final Record<BatchOperationCreationRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_CREATION,
-            r -> r.withIntent(BatchOperationIntent.STARTED).withValue(recordValue));
+            r -> r.withIntent(BatchOperationIntent.INITIALIZED).withValue(recordValue));
 
     final var entity = new BatchOperationEntity();
 
