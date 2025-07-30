@@ -72,9 +72,7 @@ test.describe.serial('authorizations CRUD', () => {
       await identityHeader.logout();
 
       await loginPage.login(NEW_USER.username, NEW_USER.password);
-      await expect(page).toHaveURL(relativizePath(Paths.users()));
-      await expect(identityUsersPage.userCell('demo@example.com')).toBeHidden();
-      await expect(identityUsersPage.userCell(NEW_USER.email)).toBeVisible();
+      await expect(page).toHaveURL(relativizePath(Paths.forbidden('identity')));
     });
 
     await test.step(`Login as main user and create role and assign the new user to it`, async () => {
