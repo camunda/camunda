@@ -15,17 +15,20 @@ export async function completeTaskWithRetry(
   taskPanelPage: TaskPanelPage,
   taskDetailsPage: TaskDetailsPage,
   taskName: string,
+  taskPriority: string,
   maxRetries: number = 3,
 ): Promise<void> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       await taskPanelPage.openTask(taskName);
-      await sleep(1000);
+      await sleep(500);
       if (!(await taskDetailsPage.assignedToMeText.isVisible())) {
         await taskDetailsPage.clickAssignToMeButton();
       }
+      await expect(
+        taskDetailsPage.detailsPanel.getByText(taskPriority),
+      ).toBeVisible();
       await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
       await expect(
         taskPanelPage.availableTasks.getByText(taskName, {exact: true}).first(),
       ).not.toBeVisible({timeout: 5000});

@@ -59,7 +59,7 @@ test.describe('Users Page Tests', () => {
 
     await test.step(`Deleted user cannot access Tasklist`, async () => {
       await navigateToApp(page, `tasklist`);
-      await loginPage.login('yuliia', 'yuliia');
+      await loginPage.login(TEST_USER.username, TEST_USER.password);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
       await expect(loginPage.errorMessage).toContainText(
         /Username and [Pp]assword do(?: not|n't) match/,
@@ -68,7 +68,7 @@ test.describe('Users Page Tests', () => {
 
     await test.step(`Deleted user cannot access Operate`, async () => {
       await navigateToApp(page, `operate`);
-      await loginPage.login('yuliia', 'yuliia');
+      await loginPage.login(TEST_USER.username, TEST_USER.password);
       await expect(page).toHaveURL(new RegExp(`operate`));
       await expect(loginPage.errorMessage).toContainText(
         /Username and [Pp]assword do(?: not|n't) match/,
