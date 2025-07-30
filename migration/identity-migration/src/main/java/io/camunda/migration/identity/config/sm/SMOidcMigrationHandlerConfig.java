@@ -49,10 +49,7 @@ public class SMOidcMigrationHandlerConfig {
       final CamundaAuthentication camundaAuthentication,
       final IdentityMigrationProperties migrationProperties) {
     return new TenantMigrationHandler(
-        managementIdentityClient,
-        tenantService,
-        camundaAuthentication,
-        migrationProperties.getMode());
+        managementIdentityClient, tenantService, camundaAuthentication, migrationProperties);
   }
 
   @Bean
@@ -62,12 +59,14 @@ public class SMOidcMigrationHandlerConfig {
       final MappingRuleServices mappingRuleServices,
       final RoleServices roleServices,
       final TenantServices tenantServices,
-      final CamundaAuthentication camundaAuthentication) {
+      final CamundaAuthentication camundaAuthentication,
+      final IdentityMigrationProperties migrationProperties) {
     return new MappingRuleMigrationHandler(
         managementIdentityClient,
         mappingRuleServices,
         roleServices,
         tenantServices,
-        camundaAuthentication);
+        camundaAuthentication,
+        migrationProperties);
   }
 }

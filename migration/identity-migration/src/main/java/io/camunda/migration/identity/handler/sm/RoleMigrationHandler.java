@@ -41,6 +41,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
       final RoleServices roleServices,
       final AuthorizationServices authorizationServices,
       final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.roleServices = roleServices.withAuthentication(authentication);
     this.authorizationServices = authorizationServices.withAuthentication(authentication);
@@ -67,9 +68,10 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
           final var roleName = role.name();
           final var roleId = normalizeID(roleName);
           try {
-            roleServices
-                .createRole(new CreateRoleRequest(roleId, roleName, role.description()))
-                .join();
+            final var roleRequest = new CreateRoleRequest(roleId, roleName, role.description());
+            retryOnBackpressure(
+                () -> roleServices.createRole(roleRequest).join(),
+                "Failed to create role with ID " + roleId);
             createdRoleCount.incrementAndGet();
             logger.debug("Role '{}' with ID '{}' created successfully.", roleName, roleId);
           } catch (final Exception e) {
@@ -114,7 +116,13 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
 
     for (final var request : combinedPermissions) {
       try {
-        authorizationServices.createAuthorization(request).join();
+        retryOnBackpressure(
+            () -> authorizationServices.createAuthorization(request).join(),
+            "Failed to create authorization for role with ID '"
+                + roleId
+                + "' with permissions '"
+                + request.permissionTypes()
+                + "'");
         logger.debug(
             "Authorization created for role '{}' with permissions '{}'.",
             roleName,

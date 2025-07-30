@@ -17,6 +17,7 @@ import io.camunda.migration.identity.client.ConsoleClient;
 import io.camunda.migration.identity.client.ConsoleClient.Client;
 import io.camunda.migration.identity.client.ConsoleClient.Members;
 import io.camunda.migration.identity.client.ConsoleClient.Permission;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
@@ -38,7 +39,9 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
   public ClientMigrationHandler(
       final ConsoleClient consoleClient,
       final AuthorizationServices authorizationServices,
-      final CamundaAuthentication servicesAuthentication) {
+      final CamundaAuthentication servicesAuthentication,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.consoleClient = consoleClient;
     this.authorizationServices = authorizationServices.withAuthentication(servicesAuthentication);
   }
@@ -76,7 +79,9 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
     }
     for (final CreateAuthorizationRequest request : combinedPermissions) {
       try {
-        authorizationServices.createAuthorization(request).join();
+        retryOnBackpressure(
+            () -> authorizationServices.createAuthorization(request).join(),
+            "creating client permission for client ID: " + clientId);
         createdAuthorizations.incrementAndGet();
         logger.debug(
             "Migrated client permission with owner ID: {} and resource type: {}",

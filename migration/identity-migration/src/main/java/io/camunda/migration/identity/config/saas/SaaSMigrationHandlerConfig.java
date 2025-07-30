@@ -9,6 +9,7 @@ package io.camunda.migration.identity.config.saas;
 
 import io.camunda.migration.identity.client.ConsoleClient;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.handler.saas.AuthorizationMigrationHandler;
 import io.camunda.migration.identity.handler.saas.ClientMigrationHandler;
 import io.camunda.migration.identity.handler.saas.GroupMigrationHandler;
@@ -29,25 +30,34 @@ public class SaaSMigrationHandlerConfig {
       final CamundaAuthentication authentication,
       final ConsoleClient consoleClient,
       final ManagementIdentityClient managementIdentityClient,
-      final GroupServices groupServices) {
+      final GroupServices groupServices,
+      final IdentityMigrationProperties migrationProperties) {
     return new GroupMigrationHandler(
-        authentication, consoleClient, managementIdentityClient, groupServices);
+        authentication,
+        consoleClient,
+        managementIdentityClient,
+        groupServices,
+        migrationProperties);
   }
 
   @Bean
   public StaticConsoleRoleMigrationHandler roleMigrationHandler(
       final CamundaAuthentication authentication,
       final RoleServices roleServices,
-      final ConsoleClient consoleClient) {
-    return new StaticConsoleRoleMigrationHandler(roleServices, authentication, consoleClient);
+      final ConsoleClient consoleClient,
+      final IdentityMigrationProperties migrationProperties) {
+    return new StaticConsoleRoleMigrationHandler(
+        roleServices, authentication, consoleClient, migrationProperties);
   }
 
   @Bean
   public StaticConsoleRoleAuthorizationMigrationHandler
       staticConsoleRoleAuthorizationMigrationHandler(
           final AuthorizationServices authorizationService,
-          final CamundaAuthentication authentication) {
-    return new StaticConsoleRoleAuthorizationMigrationHandler(authorizationService, authentication);
+          final CamundaAuthentication authentication,
+          final IdentityMigrationProperties migrationProperties) {
+    return new StaticConsoleRoleAuthorizationMigrationHandler(
+        authorizationService, authentication, migrationProperties);
   }
 
   @Bean
@@ -55,16 +65,23 @@ public class SaaSMigrationHandlerConfig {
       final CamundaAuthentication authentication,
       final AuthorizationServices authorizationService,
       final ConsoleClient consoleClient,
-      final ManagementIdentityClient managementIdentityClient) {
+      final ManagementIdentityClient managementIdentityClient,
+      final IdentityMigrationProperties migrationProperties) {
     return new AuthorizationMigrationHandler(
-        authentication, authorizationService, consoleClient, managementIdentityClient);
+        authentication,
+        authorizationService,
+        consoleClient,
+        managementIdentityClient,
+        migrationProperties);
   }
 
   @Bean
   public ClientMigrationHandler clientMigrationHandler(
       final ConsoleClient consoleClient,
       final AuthorizationServices authorizationServices,
-      final CamundaAuthentication servicesAuthentication) {
-    return new ClientMigrationHandler(consoleClient, authorizationServices, servicesAuthentication);
+      final CamundaAuthentication servicesAuthentication,
+      final IdentityMigrationProperties migrationProperties) {
+    return new ClientMigrationHandler(
+        consoleClient, authorizationServices, servicesAuthentication, migrationProperties);
   }
 }

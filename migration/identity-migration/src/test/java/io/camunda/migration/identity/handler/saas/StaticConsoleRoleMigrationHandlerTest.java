@@ -18,14 +18,18 @@ import io.camunda.migration.identity.client.ConsoleClient;
 import io.camunda.migration.identity.client.ConsoleClient.Member;
 import io.camunda.migration.identity.client.ConsoleClient.Members;
 import io.camunda.migration.identity.client.ConsoleClient.Role;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -50,9 +54,11 @@ public class StaticConsoleRoleMigrationHandlerTest {
       @Mock(answer = Answers.RETURNS_SELF) final ConsoleClient consoleClient) {
     this.roleServices = roleServices;
     this.consoleClient = consoleClient;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new StaticConsoleRoleMigrationHandler(
-            roleServices, CamundaAuthentication.none(), consoleClient);
+            roleServices, CamundaAuthentication.none(), consoleClient, migrationProperties);
   }
 
   @Test
@@ -140,5 +146,66 @@ public class StaticConsoleRoleMigrationHandlerTest {
     assertThat(requests.get(2).roleId()).isEqualTo("admin");
     assertThat(requests.get(2).entityId()).isEqualTo("user4@email.com");
     assertThat(requests.get(2).entityType()).isEqualTo(EntityType.USER);
+  }
+
+  @Test
+  public void shouldRetryWithBackpressureOnRoleCreation() {
+    // given
+    when(roleServices.createRole(any(CreateRoleRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(new RoleRecord()));
+    final var members =
+        new ConsoleClient.Members(
+            List.of(
+                new Member("user1", List.of(Role.DEVELOPER), "user1@email.com", "User One"),
+                new Member(
+                    "user2", List.of(Role.OPERATIONS_ENGINEER), "user2@email.com", "User Two"),
+                new Member("user3", List.of(Role.IGNORED), "user3@email.com", "User Three"),
+                new Member("user4", List.of(Role.OWNER), "user4@email.com", "User Four")),
+            List.of());
+    when(consoleClient.fetchMembers()).thenReturn(members);
+    when(roleServices.addMember(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(roleServices, times(5)).createRole(any(CreateRoleRequest.class));
+    verify(roleServices, times(3)).addMember(any(RoleMemberRequest.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackpressureOnRoleMembershipAssignation() {
+    // given
+    when(roleServices.createRole(any(CreateRoleRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new RoleRecord()));
+    final var members =
+        new ConsoleClient.Members(
+            List.of(
+                new Member("user1", List.of(Role.DEVELOPER), "user1@email.com", "User One"),
+                new Member(
+                    "user2", List.of(Role.OPERATIONS_ENGINEER), "user2@email.com", "User Two"),
+                new Member("user3", List.of(Role.IGNORED), "user3@email.com", "User Three"),
+                new Member("user4", List.of(Role.OWNER), "user4@email.com", "User Four")),
+            List.of());
+    when(consoleClient.fetchMembers()).thenReturn(members);
+    when(roleServices.addMember(any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(roleServices, times(4)).createRole(any(CreateRoleRequest.class));
+    verify(roleServices, times(4)).addMember(any(RoleMemberRequest.class));
   }
 }

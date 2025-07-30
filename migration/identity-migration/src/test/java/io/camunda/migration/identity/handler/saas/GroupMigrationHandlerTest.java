@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -22,14 +23,18 @@ import io.camunda.migration.identity.client.ConsoleClient;
 import io.camunda.migration.identity.client.ConsoleClient.Member;
 import io.camunda.migration.identity.client.ConsoleClient.Members;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -59,9 +64,15 @@ public class GroupMigrationHandlerTest {
     this.consoleClient = consoleClient;
     this.managementIdentityClient = managementIdentityClient;
     this.groupService = groupService;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new GroupMigrationHandler(
-            CamundaAuthentication.none(), consoleClient, managementIdentityClient, groupService);
+            CamundaAuthentication.none(),
+            consoleClient,
+            managementIdentityClient,
+            groupService,
+            migrationProperties);
   }
 
   @Test
@@ -353,5 +364,60 @@ public class GroupMigrationHandlerTest {
     // then
     final var groupMember = ArgumentCaptor.forClass(GroupMemberDTO.class);
     verify(groupService, never()).assignMember(groupMember.capture());
+  }
+
+  @Test
+  void shouldRetryWithBackpressureOnGroupCreation() {
+    // given
+
+    when(groupService.createGroup(any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(groupService.assignMember(any(GroupMemberDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(new Group("id1", "t1"), new Group("id2", "t2")))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchGroupUsers(anyString()))
+        .thenReturn(List.of(new User("user1", "username", "name", "email@email.com")));
+    when(consoleClient.fetchMembers()).thenReturn(new Members(List.of(), List.of()));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(groupService, times(3)).createGroup(any(GroupDTO.class));
+    verify(groupService, times(2)).assignMember(any(GroupMemberDTO.class));
+  }
+
+  @Test
+  void shouldRetryWithBackpressureOnGroupMembershipAssignation() {
+    // given
+
+    when(groupService.createGroup(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(groupService.assignMember(any(GroupMemberDTO.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(new Group("id1", "t1"), new Group("id2", "t2")))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchGroupUsers(anyString()))
+        .thenReturn(List.of(new User("user1", "username", "name", "email@email.com")));
+    when(consoleClient.fetchMembers()).thenReturn(new Members(List.of(), List.of()));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(groupService, times(2)).createGroup(any(GroupDTO.class));
+    verify(groupService, times(3)).assignMember(any(GroupMemberDTO.class));
   }
 }

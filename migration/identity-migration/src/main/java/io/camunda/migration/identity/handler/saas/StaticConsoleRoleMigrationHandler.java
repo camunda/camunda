@@ -11,6 +11,7 @@ import static io.camunda.migration.identity.config.saas.StaticEntities.ROLES;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ConsoleClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.NoopDTO;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -31,7 +32,9 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
   public StaticConsoleRoleMigrationHandler(
       final RoleServices roleServices,
       final CamundaAuthentication servicesAuthentication,
-      final ConsoleClient consoleClient) {
+      final ConsoleClient consoleClient,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.roleServices = roleServices.withAuthentication(servicesAuthentication);
     this.consoleClient = consoleClient;
   }
@@ -61,7 +64,9 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
     ROLES.forEach(
         role -> {
           try {
-            roleServices.createRole(role).join();
+            retryOnBackpressure(
+                () -> roleServices.createRole(role).join(),
+                "migrating role with ID: " + role.roleId());
             createdRoleCount.incrementAndGet();
             logger.debug("Migrated role: {}", role);
           } catch (final Exception e) {
@@ -95,7 +100,13 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
                         totalRoleAssignmentAttempts.incrementAndGet();
 
                         try {
-                          roleServices.addMember(request).join();
+                          retryOnBackpressure(
+                              () -> roleServices.addMember(request).join(),
+                              "assigning role '"
+                                  + effectiveRole.getName()
+                                  + "' to user '"
+                                  + email
+                                  + "'");
                           assignedRoleCount.incrementAndGet();
                           logger.debug(
                               "Assigned role '{}' to user '{}'", effectiveRole.getName(), email);

@@ -15,6 +15,7 @@ import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_
 import io.camunda.migration.identity.client.ConsoleClient;
 import io.camunda.migration.identity.client.ConsoleClient.Member;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -43,7 +44,9 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
       final CamundaAuthentication authentication,
       final AuthorizationServices authorizationService,
       final ConsoleClient consoleClient,
-      final ManagementIdentityClient managementIdentityClient) {
+      final ManagementIdentityClient managementIdentityClient,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.consoleClient = consoleClient;
     this.managementIdentityClient = managementIdentityClient;
     this.authorizationService = authorizationService.withAuthentication(authentication);
@@ -84,7 +87,9 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
                   convertResourceType(authorization.resourceType()),
                   convertPermissions(authorization.permissions(), authorization.resourceType()));
           try {
-            authorizationService.createAuthorization(request).join();
+            retryOnBackpressure(
+                () -> authorizationService.createAuthorization(request).join(),
+                "creating authorization for entity ID: " + authorization.entityId());
             createdAuthorizationsCount.incrementAndGet();
             logger.debug(
                 "Migrating authorization: {} to an Authorization with ownerId: {}",

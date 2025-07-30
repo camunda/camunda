@@ -49,9 +49,14 @@ public class SMKeycloakMigrationHandlerConfig {
       final ManagementIdentityClient managementIdentityClient,
       final GroupServices groupServices,
       final AuthorizationServices authorizationServices,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final IdentityMigrationProperties migrationProperties) {
     return new GroupMigrationHandler(
-        managementIdentityClient, groupServices, authorizationServices, authentication);
+        managementIdentityClient,
+        groupServices,
+        authorizationServices,
+        authentication,
+        migrationProperties);
   }
 
   @Bean
@@ -59,8 +64,10 @@ public class SMKeycloakMigrationHandlerConfig {
   public UserRoleMigrationHandler userRoleMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
-      final RoleServices roleServices) {
-    return new UserRoleMigrationHandler(authentication, managementIdentityClient, roleServices);
+      final RoleServices roleServices,
+      final IdentityMigrationProperties migrationProperties) {
+    return new UserRoleMigrationHandler(
+        authentication, managementIdentityClient, roleServices, migrationProperties);
   }
 
   @Bean
@@ -79,9 +86,10 @@ public class SMKeycloakMigrationHandlerConfig {
   public AuthorizationMigrationHandler authorizationMigrationHandler(
       final CamundaAuthentication authentication,
       final AuthorizationServices authorizationService,
-      final ManagementIdentityClient managementIdentityClient) {
+      final ManagementIdentityClient managementIdentityClient,
+      final IdentityMigrationProperties migrationProperties) {
     return new AuthorizationMigrationHandler(
-        authentication, authorizationService, managementIdentityClient);
+        authentication, authorizationService, managementIdentityClient, migrationProperties);
   }
 
   @Bean
@@ -92,9 +100,6 @@ public class SMKeycloakMigrationHandlerConfig {
       final CamundaAuthentication camundaAuthentication,
       final IdentityMigrationProperties migrationProperties) {
     return new TenantMigrationHandler(
-        managementIdentityClient,
-        tenantService,
-        camundaAuthentication,
-        migrationProperties.getMode());
+        managementIdentityClient, tenantService, camundaAuthentication, migrationProperties);
   }
 }

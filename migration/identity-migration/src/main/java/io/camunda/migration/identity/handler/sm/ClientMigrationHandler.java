@@ -36,6 +36,7 @@ public class ClientMigrationHandler extends MigrationHandler<Client> {
       final ManagementIdentityClient managementIdentityClient,
       final AuthorizationServices authorizationService,
       final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.authorizationService = authorizationService.withAuthentication(authentication);
     this.migrationProperties = migrationProperties;
@@ -100,7 +101,13 @@ public class ClientMigrationHandler extends MigrationHandler<Client> {
 
               for (final var request : combinedPermissions) {
                 try {
-                  authorizationService.createAuthorization(request).join();
+                  retryOnBackpressure(
+                      () -> authorizationService.createAuthorization(request).join(),
+                      "Failed to create authorization for client '"
+                          + clientId
+                          + "' with permissions '"
+                          + request.permissionTypes()
+                          + "'");
                   logger.debug(
                       "Authorization created for client '{}' with permissions '{}'.",
                       clientId,

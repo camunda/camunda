@@ -12,6 +12,7 @@ import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.RoleServices;
@@ -31,7 +32,9 @@ public class UserRoleMigrationHandler extends MigrationHandler<User> {
   public UserRoleMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
-      final RoleServices roleServices) {
+      final RoleServices roleServices,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.roleServices = roleServices.withAuthentication(authentication);
   }
@@ -54,9 +57,10 @@ public class UserRoleMigrationHandler extends MigrationHandler<User> {
                 try {
                   final var roleId = normalizeID(role.name());
                   logger.debug("Assigning role '{}' to user '{}'", roleId, userId);
-                  roleServices
-                      .addMember(new RoleMemberRequest(roleId, userId, EntityType.USER))
-                      .join();
+                  final var roleMember = new RoleMemberRequest(roleId, userId, EntityType.USER);
+                  retryOnBackpressure(
+                      () -> roleServices.addMember(roleMember).join(),
+                      String.format("Failed to assign user '%s' to role '%s'", userId, roleId));
                   assignedUserCount.incrementAndGet();
                 } catch (final Exception e) {
                   if (!isConflictError(e)) {

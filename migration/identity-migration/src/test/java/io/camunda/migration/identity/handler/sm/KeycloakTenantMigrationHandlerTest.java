@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
 import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Group;
@@ -26,8 +27,11 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -53,9 +57,15 @@ public class KeycloakTenantMigrationHandlerTest {
       @Mock(answer = Answers.RETURNS_SELF) final TenantServices tenantServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.tenantServices = tenantServices;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setMode(Mode.KEYCLOAK);
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new TenantMigrationHandler(
-            managementIdentityClient, tenantServices, CamundaAuthentication.none(), Mode.KEYCLOAK);
+            managementIdentityClient,
+            tenantServices,
+            CamundaAuthentication.none(),
+            migrationProperties);
   }
 
   @Test
@@ -235,5 +245,109 @@ public class KeycloakTenantMigrationHandlerTest {
     // then
     verify(tenantServices, times(2)).createTenant(any(TenantDTO.class));
     verify(tenantServices, times(9)).addMember(any(TenantMemberRequest.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackoffOnTenantCreation() {
+    // given
+    when(managementIdentityClient.fetchTenants())
+        .thenReturn(
+            List.of(
+                new Tenant("tenant1", "Tenant 1"),
+                new Tenant("tenant2", "Tenant 2"),
+                new Tenant("<default>", "Default Tenant")));
+    when(tenantServices.createTenant(any(TenantDTO.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(tenantServices.addMember(any(TenantMemberRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(managementIdentityClient.fetchTenantUsers("tenant1"))
+        .thenReturn(
+            List.of(
+                new User("id", "username1", "name", "email"),
+                new User("id2", "username2", "name2", "email2")));
+    when(managementIdentityClient.fetchTenantUsers("tenant2"))
+        .thenReturn(
+            List.of(
+                new User("id3", "username3", "name3", "email3"),
+                new User("id4", "username4", "name4", "email4")));
+    when(managementIdentityClient.fetchTenantUsers("<default>"))
+        .thenReturn(List.of(new User("id4", "username4", "name4", "email4")));
+
+    when(managementIdentityClient.fetchTenantGroups("tenant1"))
+        .thenReturn(List.of(new Group("group1", "Group 1")));
+    when(managementIdentityClient.fetchTenantGroups("tenant2"))
+        .thenReturn(List.of(new Group("group2", "Group 2")));
+    when(managementIdentityClient.fetchTenantGroups("<default>"))
+        .thenReturn(List.of(new Group("group3", "Group 3")));
+    when(managementIdentityClient.fetchTenantClients("tenant1"))
+        .thenReturn(List.of(new Client("client1", "Client 1"), new Client("client2", "Client 2")));
+    when(managementIdentityClient.fetchTenantClients("tenant2"))
+        .thenReturn(List.of(new Client("client3", "Client 3")));
+    when(managementIdentityClient.fetchTenantClients("<default>"))
+        .thenReturn(List.of(new Client("client4", "Client 4")));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(tenantServices, times(3)).createTenant(any(TenantDTO.class));
+    verify(tenantServices, times(12)).addMember(any(TenantMemberRequest.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackoffOnTenantMemberAssignation() {
+    // given
+    when(managementIdentityClient.fetchTenants())
+        .thenReturn(
+            List.of(
+                new Tenant("tenant1", "Tenant 1"),
+                new Tenant("tenant2", "Tenant 2"),
+                new Tenant("<default>", "Default Tenant")));
+    when(tenantServices.createTenant(any(TenantDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(tenantServices.addMember(any(TenantMemberRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(managementIdentityClient.fetchTenantUsers("tenant1"))
+        .thenReturn(
+            List.of(
+                new User("id", "username1", "name", "email"),
+                new User("id2", "username2", "name2", "email2")));
+    when(managementIdentityClient.fetchTenantUsers("tenant2"))
+        .thenReturn(
+            List.of(
+                new User("id3", "username3", "name3", "email3"),
+                new User("id4", "username4", "name4", "email4")));
+    when(managementIdentityClient.fetchTenantUsers("<default>"))
+        .thenReturn(List.of(new User("id4", "username4", "name4", "email4")));
+
+    when(managementIdentityClient.fetchTenantGroups("tenant1"))
+        .thenReturn(List.of(new Group("group1", "Group 1")));
+    when(managementIdentityClient.fetchTenantGroups("tenant2"))
+        .thenReturn(List.of(new Group("group2", "Group 2")));
+    when(managementIdentityClient.fetchTenantGroups("<default>"))
+        .thenReturn(List.of(new Group("group3", "Group 3")));
+    when(managementIdentityClient.fetchTenantClients("tenant1"))
+        .thenReturn(List.of(new Client("client1", "Client 1"), new Client("client2", "Client 2")));
+    when(managementIdentityClient.fetchTenantClients("tenant2"))
+        .thenReturn(List.of(new Client("client3", "Client 3")));
+    when(managementIdentityClient.fetchTenantClients("<default>"))
+        .thenReturn(List.of(new Client("client4", "Client 4")));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(tenantServices, times(2)).createTenant(any(TenantDTO.class));
+    verify(tenantServices, times(13)).addMember(any(TenantMemberRequest.class));
   }
 }

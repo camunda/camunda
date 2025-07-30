@@ -13,6 +13,7 @@ import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
 import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Group;
@@ -47,10 +48,11 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
       final ManagementIdentityClient managementIdentityClient,
       final TenantServices tenantService,
       final CamundaAuthentication camundaAuthentication,
-      final Mode mode) {
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.tenantService = tenantService.withAuthentication(camundaAuthentication);
-    this.mode = mode;
+    mode = migrationProperties.getMode();
   }
 
   @Override
@@ -78,7 +80,10 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
           if (!tenant.tenantId().equals(DEFAULT_TENANT_IDENTIFIER)) {
             tenantId = normalizeID(tenant.tenantId());
             try {
-              tenantService.createTenant(new TenantDTO(null, tenantId, tenant.name(), null)).join();
+              final var tenantDto = new TenantDTO(null, tenantId, tenant.name(), null);
+              retryOnBackpressure(
+                  () -> tenantService.createTenant(tenantDto).join(),
+                  "Failed to create tenant with ID: " + tenantId);
               createdTenantCount.incrementAndGet();
               logger.debug(
                   "Tenant with ID '{}' and name '{}' created successfully.",
@@ -140,11 +145,11 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
     tenantUsers.forEach(
         user -> {
           try {
-            tenantService
-                .addMember(
-                    new TenantMemberRequest(
-                        normalizedTenantId, user.getUsername(), EntityType.USER))
-                .join();
+            final var tenantMember =
+                new TenantMemberRequest(normalizedTenantId, user.getUsername(), EntityType.USER);
+            retryOnBackpressure(
+                () -> tenantService.addMember(tenantMember).join(),
+                "Failed to assign user with ID: " + user.getUsername() + " to tenant: " + tenantId);
             assignedUserCount.incrementAndGet();
             logger.debug(
                 "User with username '{}' assigned to tenant '{}'.",
@@ -184,11 +189,11 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
         group -> {
           try {
             final var normalizedGroupId = normalizeGroupID(group);
-            tenantService
-                .addMember(
-                    new TenantMemberRequest(
-                        normalizedTenantId, normalizedGroupId, EntityType.GROUP))
-                .join();
+            final var tenantMember =
+                new TenantMemberRequest(normalizedTenantId, normalizedGroupId, EntityType.GROUP);
+            retryOnBackpressure(
+                () -> tenantService.addMember(tenantMember).join(),
+                "Failed to assign group with name: " + group.name() + " to tenant: " + tenantId);
             assignedGroupCount.incrementAndGet();
             logger.debug(
                 "Group with name '{}' assigned to tenant '{}'.",
@@ -225,11 +230,14 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
         client -> {
           final var normalizedClientId = normalizeID(client.clientId());
           try {
-            tenantService
-                .addMember(
-                    new TenantMemberRequest(
-                        normalizedTenantId, normalizedClientId, EntityType.CLIENT))
-                .join();
+            final var tenantMember =
+                new TenantMemberRequest(normalizedTenantId, normalizedClientId, EntityType.CLIENT);
+            retryOnBackpressure(
+                () -> tenantService.addMember(tenantMember).join(),
+                "Failed to assign client with ID: "
+                    + normalizedClientId
+                    + " to tenant: "
+                    + tenantId);
             assignedClientCount.incrementAndGet();
             logger.debug(
                 "Client with ID '{}' assigned to tenant '{}'.",

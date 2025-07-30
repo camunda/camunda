@@ -14,6 +14,7 @@ import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -41,7 +42,9 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
   public AuthorizationMigrationHandler(
       final CamundaAuthentication authentication,
       final AuthorizationServices authorizationService,
-      final ManagementIdentityClient managementIdentityClient) {
+      final ManagementIdentityClient managementIdentityClient,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.authorizationService = authorizationService.withAuthentication(authentication);
   }
@@ -72,7 +75,12 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
                           convertPermissions(
                               authorization.permissions(), authorization.resourceType()));
                   try {
-                    authorizationService.createAuthorization(request).join();
+                    retryOnBackpressure(
+                        () -> authorizationService.createAuthorization(request).join(),
+                        "Failed to create authorization for entity with ID: "
+                            + authorization.entityId()
+                            + " and owner with ID: "
+                            + user.getEmail());
                     createdAuthorizationsCount.incrementAndGet();
                     logger.debug(
                         "Migrated authorization: {} to an Authorization with ownerId: {}",

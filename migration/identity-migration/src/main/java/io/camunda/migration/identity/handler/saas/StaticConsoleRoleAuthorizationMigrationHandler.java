@@ -10,6 +10,7 @@ package io.camunda.migration.identity.handler.saas;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
 
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.NoopDTO;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -27,7 +28,9 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
 
   public StaticConsoleRoleAuthorizationMigrationHandler(
       final AuthorizationServices authorizationServices,
-      final CamundaAuthentication servicesAuthentication) {
+      final CamundaAuthentication servicesAuthentication,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.authorizationServices = authorizationServices.withAuthentication(servicesAuthentication);
   }
 
@@ -44,7 +47,12 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
     ROLE_PERMISSIONS.forEach(
         request -> {
           try {
-            authorizationServices.createAuthorization(request).join();
+            retryOnBackpressure(
+                () -> authorizationServices.createAuthorization(request).join(),
+                "migrating role permission with owner ID: "
+                    + request.ownerId()
+                    + " and resource type: "
+                    + request.resourceType());
             createdAuthorizations.incrementAndGet();
             logger.debug(
                 "Migrated role permission with owner ID: {} and resource type: {}",

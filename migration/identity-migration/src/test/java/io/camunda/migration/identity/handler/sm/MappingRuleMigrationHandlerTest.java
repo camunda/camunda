@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
@@ -26,8 +27,11 @@ import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -61,13 +65,16 @@ public class MappingRuleMigrationHandlerTest {
     this.mappingRuleServices = mappingRuleServices;
     this.roleServices = roleServices;
     this.tenantServices = tenantServices;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     mappingRuleMigrationHandler =
         new MappingRuleMigrationHandler(
             managementIdentityClient,
             mappingRuleServices,
             roleServices,
             tenantServices,
-            CamundaAuthentication.none());
+            CamundaAuthentication.none(),
+            migrationProperties);
   }
 
   @Test
@@ -180,5 +187,110 @@ public class MappingRuleMigrationHandlerTest {
     verify(mappingRuleServices, times(1)).createMappingRule(any(MappingRuleDTO.class));
     verify(roleServices, times(2)).addMember(any(RoleMemberRequest.class));
     verify(tenantServices, times(2)).addMember(any(TenantMemberRequest.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackpressureOnMappingCreation() {
+    // given
+    when(managementIdentityClient.fetchMappingRules())
+        .thenReturn(
+            List.of(
+                new MappingRule(
+                    "rule1",
+                    "claimName",
+                    "claimValue",
+                    Set.of(new Role("role1", "description1"), new Role("role2", "description2")),
+                    Set.of(
+                        new Tenant("tenant1", "tenantDescription1"),
+                        new Tenant("tenant2", "tenantDescription2")))));
+    when(mappingRuleServices.createMappingRule(any(MappingRuleDTO.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(roleServices.addMember(any(RoleMemberRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(tenantServices.addMember(any(TenantMemberRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    mappingRuleMigrationHandler.migrate();
+
+    // then
+    verify(mappingRuleServices, times(2)).createMappingRule(any(MappingRuleDTO.class));
+    verify(roleServices, times(2)).addMember(any(RoleMemberRequest.class));
+    verify(tenantServices, times(2)).addMember(any(TenantMemberRequest.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackpressureOnMappingRoleAssignation() {
+    // given
+    when(managementIdentityClient.fetchMappingRules())
+        .thenReturn(
+            List.of(
+                new MappingRule(
+                    "rule1",
+                    "claimName",
+                    "claimValue",
+                    Set.of(new Role("role1", "description1"), new Role("role2", "description2")),
+                    Set.of(
+                        new Tenant("tenant1", "tenantDescription1"),
+                        new Tenant("tenant2", "tenantDescription2")))));
+    when(mappingRuleServices.createMappingRule(any(MappingRuleDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(roleServices.addMember(any(RoleMemberRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(tenantServices.addMember(any(TenantMemberRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    mappingRuleMigrationHandler.migrate();
+
+    // then
+    verify(mappingRuleServices, times(1)).createMappingRule(any(MappingRuleDTO.class));
+    verify(roleServices, times(3)).addMember(any(RoleMemberRequest.class));
+    verify(tenantServices, times(2)).addMember(any(TenantMemberRequest.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackpressureOnMappingTenantAssignation() {
+    // given
+    when(managementIdentityClient.fetchMappingRules())
+        .thenReturn(
+            List.of(
+                new MappingRule(
+                    "rule1",
+                    "claimName",
+                    "claimValue",
+                    Set.of(new Role("role1", "description1"), new Role("role2", "description2")),
+                    Set.of(
+                        new Tenant("tenant1", "tenantDescription1"),
+                        new Tenant("tenant2", "tenantDescription2")))));
+    when(mappingRuleServices.createMappingRule(any(MappingRuleDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(roleServices.addMember(any(RoleMemberRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(tenantServices.addMember(any(TenantMemberRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    mappingRuleMigrationHandler.migrate();
+
+    // then
+    verify(mappingRuleServices, times(1)).createMappingRule(any(MappingRuleDTO.class));
+    verify(roleServices, times(2)).addMember(any(RoleMemberRequest.class));
+    verify(tenantServices, times(3)).addMember(any(TenantMemberRequest.class));
   }
 }

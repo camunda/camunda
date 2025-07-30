@@ -24,10 +24,13 @@ import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -65,6 +68,7 @@ public class OidcRoleMigrationHandlerTest {
     final var audience = identityMigrationProperties.getOidc().getAudience();
     audience.setIdentity("identity");
     audience.setZeebe("zeebe");
+    identityMigrationProperties.setBackpressureDelay(100);
     roleMigrationHandler =
         new RoleMigrationHandler(
             CamundaAuthentication.none(),
@@ -318,5 +322,69 @@ public class OidcRoleMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchPermissions(any());
     verify(authorizationServices, times(20)).createAuthorization(any());
+  }
+
+  @Test
+  public void shouldRetryWithBackpressureOnRoleCreation() {
+    // given
+    when(managementIdentityClient.fetchRoles())
+        .thenReturn(
+            List.of(
+                new Role("Role 1", "Description for Role 1"),
+                new Role("Role 2", "Description for Role 2")));
+    when(roleServices.createRole(any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(new RoleRecord()));
+
+    // when
+    roleMigrationHandler.migrate();
+
+    // then
+    verify(roleServices, Mockito.times(3)).createRole(any(CreateRoleRequest.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackpressureOnRoleAuthorizationCreation() {
+    // given
+    when(managementIdentityClient.fetchRoles())
+        .thenReturn(
+            List.of(
+                new Role("Role 1", "Description for Role 1"),
+                new Role("Role 2", "Description for Role 2")));
+    when(roleServices.createRole(any()))
+        .thenReturn(CompletableFuture.completedFuture(new RoleRecord()));
+
+    when(managementIdentityClient.fetchPermissions(any()))
+        .thenReturn(
+            List.of(
+                new Permission("read", "identity"),
+                new Permission("read:users", "identity"),
+                new Permission("write", "identity"),
+                new Permission("read:*", "operate-api"),
+                new Permission("write:*", "operate-api")))
+        .thenReturn(
+            List.of(
+                new Permission("read:*", "tasklist-api"),
+                new Permission("write:*", "tasklist-api"),
+                new Permission("write:*", "zeebe")));
+    when(authorizationServices.createAuthorization(any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+
+    // when
+    roleMigrationHandler.migrate();
+
+    // then
+    verify(roleServices, Mockito.times(2)).createRole(any(CreateRoleRequest.class));
+    verify(authorizationServices, Mockito.times(21))
+        .createAuthorization(any(CreateAuthorizationRequest.class));
   }
 }

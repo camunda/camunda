@@ -27,9 +27,12 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -57,12 +60,14 @@ public class ClientMigrationHandlerTest {
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.authorizationServices = authorizationServices;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new ClientMigrationHandler(
             CamundaAuthentication.none(),
             managementIdentityClient,
             authorizationServices,
-            new IdentityMigrationProperties());
+            migrationProperties);
   }
 
   @Test
@@ -276,6 +281,38 @@ public class ClientMigrationHandlerTest {
 
     //
     verify(authorizationServices, times(16))
+        .createAuthorization(any(CreateAuthorizationRequest.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackpressure() {
+    // given
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+    when(managementIdentityClient.fetchClients())
+        .thenReturn(
+            List.of(
+                new Client("client1", "ClientOne", CONFIDENTIAL),
+                new Client("client2", "ClientTwo", M2M)));
+    when(managementIdentityClient.fetchClientPermissions(anyString()))
+        .thenReturn(
+            List.of(
+                new Permission("write:*", "zeebe-api"), new Permission("write:*", "operate-api")))
+        .thenReturn(
+            List.of(
+                new Permission("read:*", "operate-api"),
+                new Permission("write:*", "tasklist-api")));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(authorizationServices, times(17))
         .createAuthorization(any(CreateAuthorizationRequest.class));
   }
 }

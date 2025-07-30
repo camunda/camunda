@@ -11,6 +11,7 @@ import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
@@ -46,7 +47,9 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
       final MappingRuleServices mappingRuleServices,
       final RoleServices roleServices,
       final TenantServices tenantServices,
-      final CamundaAuthentication camundaAuthentication) {
+      final CamundaAuthentication camundaAuthentication,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.mappingRuleServices = mappingRuleServices.withAuthentication(camundaAuthentication);
     this.roleServices = roleServices.withAuthentication(camundaAuthentication);
@@ -67,9 +70,12 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
         mapping -> {
           final var mappingId = normalizeID(mapping.name());
           try {
-            mappingRuleServices.createMappingRule(
+            final var mappingRule =
                 new MappingRuleDTO(
-                    mapping.claimName(), mapping.claimValue(), mapping.name(), mappingId));
+                    mapping.claimName(), mapping.claimValue(), mapping.name(), mappingId);
+            retryOnBackpressure(
+                () -> mappingRuleServices.createMappingRule(mappingRule).join(),
+                "Failed to create mapping rule with ID: " + mappingId);
             createdMappingCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
@@ -99,8 +105,11 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
         role -> {
           final var roleId = normalizeID(role.name());
           try {
-            roleServices.addMember(
-                new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING_RULE));
+            final var roleMember =
+                new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING_RULE);
+            retryOnBackpressure(
+                () -> roleServices.addMember(roleMember).join(),
+                "Failed to assign role with ID: " + roleId + " to mapping with ID: " + mappingId);
             assignedRoleCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
@@ -121,8 +130,14 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
         tenant -> {
           final var tenantId = normalizeID(tenant.tenantId());
           try {
-            tenantServices.addMember(
-                new TenantMemberRequest(tenantId, mappingId, EntityType.MAPPING_RULE));
+            final var tenantMember =
+                new TenantMemberRequest(tenantId, mappingId, EntityType.MAPPING_RULE);
+            retryOnBackpressure(
+                () -> tenantServices.addMember(tenantMember).join(),
+                "Failed to assign tenant with ID: "
+                    + tenantId
+                    + " to mapping with ID: "
+                    + mappingId);
             assignedTenantCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {

@@ -13,6 +13,7 @@ import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ConsoleClient;
 import io.camunda.migration.identity.client.ConsoleClient.Member;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -41,7 +42,9 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
       final CamundaAuthentication authentication,
       final ConsoleClient consoleClient,
       final ManagementIdentityClient managementIdentityClient,
-      final GroupServices groupServices) {
+      final GroupServices groupServices,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.consoleClient = consoleClient;
     this.managementIdentityClient = managementIdentityClient;
     this.groupServices = groupServices.withAuthentication(authentication);
@@ -66,7 +69,9 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
               "Migrating Group: {} to a Group with the identifier: {}.", group, normalizedGroupId);
           try {
             final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
-            groupServices.createGroup(groupDTO).join();
+            retryOnBackpressure(
+                () -> groupServices.createGroup(groupDTO).join(),
+                "create group with ID: " + group.id());
             createdGroupCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
@@ -113,7 +118,9 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
                 userEmail,
                 targetGroupId);
             final var groupMember = new GroupMemberDTO(targetGroupId, userEmail, EntityType.USER);
-            groupServices.assignMember(groupMember).join();
+            retryOnBackpressure(
+                () -> groupServices.assignMember(groupMember).join(),
+                "assign user with ID: " + user.getId() + " to group with ID: " + targetGroupId);
             assignedUserCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {

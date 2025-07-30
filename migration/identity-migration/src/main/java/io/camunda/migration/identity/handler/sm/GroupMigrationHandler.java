@@ -16,6 +16,7 @@ import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.handler.MigrationHandler;
@@ -51,7 +52,9 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
       final ManagementIdentityClient managementIdentityClient,
       final GroupServices groupServices,
       final AuthorizationServices authorizationServices,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.groupServices = groupServices.withAuthentication(authentication);
     this.authorizationServices = authorizationServices.withAuthentication(authentication);
@@ -73,7 +76,9 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
               "Migrating Group: {} to a Group with the identifier: {}.", group, normalizedGroupId);
           try {
             final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
-            groupServices.createGroup(groupDTO).join();
+            retryOnBackpressure(
+                () -> groupServices.createGroup(groupDTO).join(),
+                "Failed to create group with ID: " + group.id());
             createdGroupCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
@@ -113,7 +118,13 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
                 username,
                 targetGroupId);
             final var groupMember = new GroupMemberDTO(targetGroupId, username, EntityType.USER);
-            groupServices.assignMember(groupMember).join();
+            retryOnBackpressure(
+                () -> groupServices.assignMember(groupMember).join(),
+                "Failed to assign user with ID '"
+                    + user.getUsername()
+                    + "' to group with ID '"
+                    + targetGroupId
+                    + "'");
             assignedUserCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
@@ -142,7 +153,13 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
             logger.debug("Assigning Role: {} to Group: {}", normalizedRoleId, targetGroupId);
             final var groupMember =
                 new GroupMemberDTO(targetGroupId, normalizedRoleId, EntityType.ROLE);
-            groupServices.assignMember(groupMember).join();
+            retryOnBackpressure(
+                () -> groupServices.assignMember(groupMember).join(),
+                "Failed to assign role '"
+                    + normalizedRoleId
+                    + "' to group with ID '"
+                    + targetGroupId
+                    + "'");
             assignedRoleCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
@@ -183,7 +200,13 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
                   convertResourceType(authorization.resourceType()),
                   convertPermissions(authorization.permissions(), authorization.resourceType()));
           try {
-            authorizationServices.createAuthorization(request).join();
+            retryOnBackpressure(
+                () -> authorizationServices.createAuthorization(request).join(),
+                "Failed to create authorization for group '"
+                    + targetGroupId
+                    + "' with permissions '"
+                    + request.permissionTypes()
+                    + "'");
             logger.debug(
                 "Authorization created for group '{}' with permissions '{}'.",
                 targetGroupId,

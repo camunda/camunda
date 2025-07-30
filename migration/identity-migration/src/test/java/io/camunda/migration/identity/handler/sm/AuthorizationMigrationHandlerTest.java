@@ -16,14 +16,18 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -54,9 +58,14 @@ final class AuthorizationMigrationHandlerTest {
       @Mock final ManagementIdentityClient managementIdentityClient) {
     this.authorizationServices = authorizationServices;
     this.managementIdentityClient = managementIdentityClient;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new AuthorizationMigrationHandler(
-            CamundaAuthentication.none(), authorizationServices, managementIdentityClient);
+            CamundaAuthentication.none(),
+            authorizationServices,
+            managementIdentityClient,
+            migrationProperties);
   }
 
   @Test
@@ -219,6 +228,46 @@ final class AuthorizationMigrationHandlerTest {
 
     // then
     verify(authorizationServices, times(2))
+        .createAuthorization(any(CreateAuthorizationRequest.class));
+  }
+
+  @Test
+  public void shouldRetryOnBackpressure() {
+    // given
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+    final var users1 = List.of(new User("user1", "username1", "name1", "email1"));
+    when(managementIdentityClient.fetchUsers(any(Integer.class)))
+        .thenReturn(users1)
+        .thenReturn(List.of());
+
+    when(managementIdentityClient.fetchUserAuthorizations(anyString()))
+        .thenReturn(
+            List.of(
+                new Authorization(
+                    "email1",
+                    "USER",
+                    "process",
+                    "process-definition",
+                    Set.of("READ", "UPDATE_PROCESS_INSTANCE", "START_PROCESS_INSTANCE")),
+                new Authorization(
+                    "email1",
+                    "USER",
+                    "*",
+                    "decision-definition",
+                    Set.of("DELETE_PROCESS_INSTANCE", "READ", "DELETE"))))
+        .thenReturn(List.of());
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(authorizationServices, times(3))
         .createAuthorization(any(CreateAuthorizationRequest.class));
   }
 }
