@@ -11,9 +11,8 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
-import {LOGIN_CREDENTIALS} from 'utils/constants';
+import {createTestData, LOGIN_CREDENTIALS} from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
-import {generateRandomStringAsync} from '../../utils/randomString';
 
 test.describe.parallel('login page', () => {
   test.beforeEach(async ({page, loginPage}) => {
@@ -31,39 +30,38 @@ test.describe.parallel('login page', () => {
   });
 
   test('Create new Test user', async ({page, identityUsersPage}) => {
-    const randomString = await generateRandomStringAsync(3);
-    const TEST_USER = {
-      username: 'Test' + randomString,
-      name: 'Test User' + randomString,
-      email: `test${randomString}@test.com`,
-      password: `test${randomString}`,
-    };
+    const testData = createTestData({user: true});
+    const testUser = testData.user!;
 
-    await identityUsersPage.createUser(TEST_USER);
-
+    await identityUsersPage.createUser({
+      username: testUser.username,
+      password: testUser.password,
+      email: testUser.email!,
+      name: testUser.name,
+    });
     const item = identityUsersPage.usersList.getByRole('cell', {
-      name: TEST_USER.email,
+      name: testUser.email,
     });
 
     await waitForItemInList(page, item, {timeout: 60000});
 
     await expect(
       identityUsersPage.usersList.getByRole('cell', {
-        name: TEST_USER.username,
+        name: testUser.username,
         exact: true,
       }),
     ).toBeVisible();
 
     await expect(
       identityUsersPage.usersList.getByRole('cell', {
-        name: TEST_USER.name,
+        name: testUser.name,
         exact: true,
       }),
     ).toBeVisible();
 
     await expect(
       identityUsersPage.usersList.getByRole('cell', {
-        name: TEST_USER.email,
+        name: testUser.email,
         exact: true,
       }),
     ).toBeVisible();

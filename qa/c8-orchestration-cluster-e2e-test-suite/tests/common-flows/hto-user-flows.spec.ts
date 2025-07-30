@@ -9,10 +9,9 @@
 import {expect} from '@playwright/test';
 import {test} from 'fixtures';
 import {createInstances, deploy} from 'utils/zeebeClient';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {completeTaskWithRetry, navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {completeTaskWithRetry} from '../../utils/completeTaskWithRetry';
 
 test.beforeAll(async () => {
   await deploy([
