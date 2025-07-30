@@ -19,6 +19,7 @@ import static io.camunda.process.test.api.CamundaAssert.assertThatDecision;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Fail.fail;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.CamundaClient;
@@ -31,6 +32,7 @@ import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
+import io.camunda.process.test.impl.mock.JobWorkerMockImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
@@ -39,6 +41,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -179,6 +185,41 @@ public class CamundaProcessTestContextIT {
 
     assertThat(mockedJobWorker.getInvocations()).isEqualTo(1);
     assertThat(mockedJobWorker.getActivatedJobs().get(0).getType()).isEqualTo("test");
+  }
+
+  @Test
+  void shouldMockJobWorkerWithAssertionError() {
+    // Given
+    final LoggerContext loggerContext = LoggerContext.getContext(false);
+    final Logger logger = ((Logger) loggerContext.getLogger(JobWorkerMockImpl.class));
+    final ListAppender appender = new ListAppender("List");
+    appender.start();
+    ((Logger) loggerContext.getLogger(JobWorkerMockImpl.class)).addAppender(appender);
+    loggerContext.getConfiguration().addLoggerAppender(logger, appender);
+
+    processTestContext
+        .mockJobWorker("test")
+        .withHandler(
+            (jobClient, job) -> {
+              fail("AssertionError in MockJobWorker");
+
+              // Should never reach this code
+              jobClient.newCompleteCommand(job).send().join();
+            });
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
+
+    // When
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // Then the process instance should still be active since the jobWorker failed
+    assertThatProcessInstance(processInstanceEvent).isActive();
+    assertThat(appender.getEvents()).hasSize(1);
+
+    final LogEvent event = appender.getEvents().get(0);
+    assertThat(event.getMessage().getFormattedMessage())
+        .contains("JobWorkerMock has a failed assertion and will be terminated");
+    assertThat(event.getThrown()).isInstanceOf(AssertionError.class);
   }
 
   @Test
