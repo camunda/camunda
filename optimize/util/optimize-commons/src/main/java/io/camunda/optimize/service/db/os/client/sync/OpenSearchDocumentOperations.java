@@ -103,8 +103,9 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     if (!response.shards().failures().isEmpty()) {
       throw new OptimizeRuntimeException(
           format(
-              "Shards failed executing request (request=%s, failed shards=%s)",
-              request, response.shards().failures().stream().map(ShardFailure::shard).toList()));
+              "Shards failed executing request (indices=%s, failed shards=%s)",
+              request.index(),
+              response.shards().failures().stream().map(ShardFailure::shard).toList()));
     }
   }
 
