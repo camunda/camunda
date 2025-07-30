@@ -34,6 +34,7 @@ import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.ShardFailure;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -103,7 +104,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       throw new OptimizeRuntimeException(
           format(
               "Shards failed executing request (request=%s, failed shards=%s)",
-              request, response.shards().failures()));
+              request, response.shards().failures().stream().map(ShardFailure::shard).toList()));
     }
   }
 
