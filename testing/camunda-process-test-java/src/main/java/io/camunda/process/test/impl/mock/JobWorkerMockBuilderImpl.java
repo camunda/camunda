@@ -31,7 +31,7 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
   private final CamundaClient client;
 
   /**
-   * Constructs a `JobWorkerMock` instance.
+   * Constructs a `JobWorkerMockBuilder` instance.
    *
    * @param jobType the job type to mock, matching the `zeebeJobType` in the BPMN model.
    * @param client the Camunda client used to create the mock worker.
