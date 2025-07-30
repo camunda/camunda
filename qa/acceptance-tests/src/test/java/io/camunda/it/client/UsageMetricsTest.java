@@ -108,14 +108,20 @@ public class UsageMetricsTest {
         NOW.plusDays(1),
         res -> assertThat(res.getProcessInstances()).isEqualTo(2));
 
-    // Deploy a decision model for TENANT_A, evaluate it and wait for metrics to be exported
+    // Deploy a decision model for TENANT_A and evaluate it 2 times
     deployResource(adminClient, "decisions/decision_model.dmn", TENANT_A);
     evaluateDecision(adminClient, "decision_1", Map.of("age", 20, "income", 25000), TENANT_A);
     evaluateDecision(adminClient, "decision_1", Map.of("age", 40, "income", 3000), TENANT_A);
+
+    // Deploy another decision model for TENANT_B and evaluate it
+    deployResource(adminClient, "decisions/decision_model_1.dmn", TENANT_B);
+    evaluateDecision(adminClient, "test_qa", Map.of("input1", "B"), TENANT_B);
+
+    // Wait for eDI metrics to be exported
     waitForUsageMetrics(
         NOW.minusDays(1),
         NOW.plusDays(1),
-        res -> assertThat(res.getDecisionInstances()).isEqualTo(2));
+        res -> assertThat(res.getDecisionInstances()).isEqualTo(3));
   }
 
   @Test
@@ -128,7 +134,7 @@ public class UsageMetricsTest {
         camundaClient.newUsageMetricsRequest(now.minusDays(1), now.plusDays(1)).send().join();
 
     // then
-    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(2, 2, 0, 2, null));
+    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(2, 3, 0, 2, null));
   }
 
   @Test
@@ -149,14 +155,14 @@ public class UsageMetricsTest {
         .isEqualTo(
             new UsageMetricsStatisticsImpl(
                 2,
-                2,
+                3,
                 0,
                 2,
                 Map.of(
                     TENANT_A,
                     new UsageMetricsStatisticsItemImpl(1, 2, 0),
                     TENANT_B,
-                    new UsageMetricsStatisticsItemImpl(1, 0, 0))));
+                    new UsageMetricsStatisticsItemImpl(1, 1, 0))));
   }
 
   @Test
@@ -197,7 +203,7 @@ public class UsageMetricsTest {
     assertThat(actual)
         .isEqualTo(
             new UsageMetricsStatisticsImpl(
-                1, 0, 0, 1, Map.of(TENANT_B, new UsageMetricsStatisticsItemImpl(1, 0, 0))));
+                1, 1, 0, 1, Map.of(TENANT_B, new UsageMetricsStatisticsItemImpl(1, 1, 0))));
   }
 
   private static DeploymentEvent deployResource(
