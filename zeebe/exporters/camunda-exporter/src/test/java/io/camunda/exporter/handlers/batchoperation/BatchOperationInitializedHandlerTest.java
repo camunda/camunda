@@ -26,12 +26,12 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class BatchOperationStartedHandlerTest {
+class BatchOperationInitializedHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-" + OperationTemplate.INDEX_NAME;
-  private final BatchOperationStartedHandler underTest =
-      new BatchOperationStartedHandler(indexName);
+  private final BatchOperationInitializedHandler underTest =
+      new BatchOperationInitializedHandler(indexName);
 
   @Test
   void testGetHandledValueType() {

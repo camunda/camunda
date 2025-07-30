@@ -22,12 +22,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class BatchOperationStartedHandler
+public class BatchOperationInitializedHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationInitializationRecordValue> {
 
   private final String indexName;
 
-  public BatchOperationStartedHandler(final String indexName) {
+  public BatchOperationInitializedHandler(final String indexName) {
     this.indexName = indexName;
   }
 
