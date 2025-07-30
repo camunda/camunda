@@ -66,6 +66,7 @@ final class RoutingInfoInitializationMigrationTest {
     assertThat(updatedRoutingState.currentPartitions()).containsExactlyInAnyOrder(1, 2, 3);
     assertThat(updatedRoutingState.messageCorrelation())
         .isEqualTo(new MessageCorrelation.HashMod(3));
+    assertThat(updatedRoutingState.desiredPartitions()).containsExactlyInAnyOrder(1, 2, 3);
   }
 
   @Test

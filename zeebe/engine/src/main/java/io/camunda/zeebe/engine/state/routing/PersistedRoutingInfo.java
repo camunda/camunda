@@ -20,7 +20,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-final class PersistedRoutingInfo extends UnpackedObject implements DbValue {
+public final class PersistedRoutingInfo extends UnpackedObject implements DbValue {
   private final ArrayProperty<IntegerValue> partitions =
       new ArrayProperty<>("partitions", IntegerValue::new);
   private final EnumProperty<MessageCorrelationStrategy> messageCorrelationStrategy =
