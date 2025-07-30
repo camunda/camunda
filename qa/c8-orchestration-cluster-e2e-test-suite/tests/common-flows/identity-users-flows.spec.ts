@@ -11,14 +11,9 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
-<<<<<<< HEAD
-import {createTestData} from '../../utils/constants';
-import {sleep} from '../../utils/sleep';
-=======
 import {createTestData} from 'utils/constants';
->>>>>>> eac2f893042 (test: add Brand new user cannot access any OC cluster apps to the correct specs file)
 
-test.describe('Identity User Workflows', () => {
+test.describe('Identity User Flows', () => {
   test.beforeEach(async ({loginPage, page}) => {
     await navigateToApp(page, 'identity');
     await loginPage.login('demo', 'demo');
@@ -37,26 +32,17 @@ test.describe('Identity User Workflows', () => {
   }) => {
     const testData = createTestData({user: true});
     const testUser = testData.user!;
-<<<<<<< HEAD
-=======
-
->>>>>>> eac2f893042 (test: add Brand new user cannot access any OC cluster apps to the correct specs file)
     await identityUsersPage.createUser({
       username: testUser.username,
       password: testUser.password,
       email: testUser.email!,
-<<<<<<< HEAD
       name: testUser.name,
-=======
-      name: testUser.name ?? testUser.username,
->>>>>>> eac2f893042 (test: add Brand new user cannot access any OC cluster apps to the correct specs file)
     });
 
     await expect(identityUsersPage.usersList).toBeVisible();
     await expect(identityUsersPage.usersList).toContainText(testUser.username);
     await identityUsersPage.deleteUser(testUser);
     await identityHeader.logout();
-    await sleep(2000);
     await expect(page).toHaveURL(
       `${relativizePath(Paths.login('identity'))}?next=/identity/`,
     );
