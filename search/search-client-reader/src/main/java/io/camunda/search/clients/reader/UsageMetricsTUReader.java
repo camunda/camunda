@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.metrics;
+package io.camunda.search.clients.reader;
 
-public enum UsageMetricsEventType {
-  RPI,
-  EDI,
-  TU
-}
+import io.camunda.search.entities.UsageMetricsTUEntity;
+import io.camunda.search.query.UsageMetricsQuery;
+
+public interface UsageMetricsTUReader
+    extends SearchEntityReader<UsageMetricsTUEntity, UsageMetricsQuery> {}

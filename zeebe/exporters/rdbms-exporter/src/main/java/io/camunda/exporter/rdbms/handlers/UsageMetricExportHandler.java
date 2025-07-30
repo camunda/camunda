@@ -83,8 +83,7 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
         .forEach(
             (key, valSet) -> {
               usageMetricList.add(
-                  new UsageMetricDbModel(
-                      recordKey, startTime, key, eventType, valSet.size(), partitionId));
+                  new UsageMetricDbModel(recordKey, startTime, key, eventType, null, partitionId));
 
               valSet.forEach(
                   val ->

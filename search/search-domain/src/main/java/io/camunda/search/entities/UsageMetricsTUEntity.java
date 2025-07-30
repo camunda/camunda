@@ -5,10 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.metrics;
+package io.camunda.search.entities;
 
-public enum UsageMetricsEventType {
-  RPI,
-  EDI,
-  TU
-}
+import java.time.OffsetDateTime;
+
+public record UsageMetricsTUEntity(
+    String id, String tenantId, OffsetDateTime eventTime, long assigneeHash) {}

@@ -15,7 +15,7 @@ public record UsageMetricDbModel(
     OffsetDateTime eventTime,
     String tenantId,
     EventTypeDbModel eventType,
-    long value,
+    Long value,
     int partitionId) {
 
   public String getId() {
@@ -32,7 +32,7 @@ public record UsageMetricDbModel(
     private OffsetDateTime eventTime;
     private String tenantId;
     private EventTypeDbModel eventType;
-    private long value;
+    private Long value;
     private int partitionId;
 
     public Builder key(final long key) {
@@ -55,7 +55,7 @@ public record UsageMetricDbModel(
       return this;
     }
 
-    public Builder value(final long value) {
+    public Builder value(final Long value) {
       this.value = value;
       return this;
     }

@@ -58,6 +58,8 @@ import io.camunda.search.clients.reader.TenantMemberReader;
 import io.camunda.search.clients.reader.TenantReader;
 import io.camunda.search.clients.reader.UsageMetricsDocumentReader;
 import io.camunda.search.clients.reader.UsageMetricsReader;
+import io.camunda.search.clients.reader.UsageMetricsTUDocumentReader;
+import io.camunda.search.clients.reader.UsageMetricsTUReader;
 import io.camunda.search.clients.reader.UserDocumentReader;
 import io.camunda.search.clients.reader.UserReader;
 import io.camunda.search.clients.reader.UserTaskDocumentReader;
@@ -287,6 +289,12 @@ public class SearchClientReaderConfiguration {
   public UsageMetricsReader usageMetricsReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new UsageMetricsDocumentReader(executor, descriptors.get(MetricIndex.class));
+  }
+
+  @Bean
+  public UsageMetricsTUReader usageMetricsTUReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new UsageMetricsTUDocumentReader(executor, descriptors.get(MetricIndex.class));
   }
 
   @Bean
