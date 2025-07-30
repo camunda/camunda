@@ -20,6 +20,7 @@ on:
       - "zeebe/exporters/camunda-exporter/**"
       - "parent/*"
       - "pom.xml"
+      - "qa/c8-orchestration-cluster-e2e-test-suite/tests/identity/**"
   pull_request:
     paths:
       - ".ci/**"
@@ -31,6 +32,7 @@ on:
       - "zeebe/exporters/camunda-exporter/**"
       - "parent/*"
       - "pom.xml"
+      - "qa/c8-orchestration-cluster-e2e-test-suite/tests/identity/**"
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
@@ -77,6 +79,12 @@ jobs:
       - name: Install Playwright
         run: yarn exec playwright install --with-deps chromium
         working-directory: ./identity/client
+      - name: Install QA Test Suite Dependencies
+        run: npm install
+        working-directory: ./qa/c8-orchestration-cluster-e2e-test-suite
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+        working-directory: ./qa/c8-orchestration-cluster-e2e-test-suite
       - name: Build backend
         run: ./mvnw clean install -DskipTests=true -DskipChecks -Dskip.fe.build=true -T1C -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Identity
@@ -102,14 +110,27 @@ jobs:
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME: Demo
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL: demo@example.com
           CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_1_USERNAME: lisa
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_1_PASSWORD: lisa
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_1_NAME: lisa
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_1_EMAIL: lisa@example.com
+          CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_1: lisa
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_2_USERNAME: yuliia
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_2_PASSWORD: yuliia
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_2_NAME: Yuliia
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_2_EMAIL: yuliia@example.com
+          CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_2: yuliia
       - name: Run tests
-        working-directory: ./identity/client
-        run: yarn run test:e2e
+        env:
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_URL: http://localhost:8080
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        run: npm run test -- --project=identity-e2e
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Playwright report
-          path: identity/client/playwright-report/
+          name: C8 Orchestration Cluster E2E Test Result
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 30
       - name: Observe build status
         if: always()

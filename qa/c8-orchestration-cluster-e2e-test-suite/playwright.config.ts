@@ -101,6 +101,11 @@ export default defineConfig({
       testIgnore: 'task-panel.spec.ts',
       teardown: 'chromium-subset',
     },
+    {
+      name: 'identity-e2e',
+      testMatch: ['tests/identity/*.spec.ts'],
+      use: devices['Desktop Chrome'],
+    },
   ],
   reporter:
     process.env.INCLUDE_SLACK_REPORTER === 'true'
