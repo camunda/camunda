@@ -11,6 +11,7 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
+import {generateRandomStringAsync} from '../../utils/randomString';
 
 test.describe('Users Page Tests', () => {
   test.beforeEach(async ({loginPage, page}) => {
@@ -23,18 +24,22 @@ test.describe('Users Page Tests', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  const TEST_USER = {
-    username: 'yuliia',
-    password: 'yuliia',
-    email: 'yuliia@example.com',
-  };
-
   test('Admin user can delete user', async ({
     page,
     loginPage,
     identityUsersPage,
     identityHeader,
   }) => {
+    const randomString = await generateRandomStringAsync(3);
+
+    const TEST_USER = {
+      username: 'Test' + randomString,
+      name: 'Test User' + randomString,
+      email: `test${randomString}@test.com`,
+      password: `test${randomString}`,
+    };
+    await identityUsersPage.createUser(TEST_USER);
+
     await expect(identityUsersPage.usersList).toBeVisible();
     await expect(identityUsersPage.usersList).toContainText(TEST_USER.username);
     await identityUsersPage.deleteUser(TEST_USER);
@@ -54,7 +59,7 @@ test.describe('Users Page Tests', () => {
 
     await test.step(`Deleted user cannot access Tasklist`, async () => {
       await navigateToApp(page, `tasklist`);
-      await loginPage.login('yuliia', 'yuliia');
+      await loginPage.login(TEST_USER.username, TEST_USER.password);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
       await expect(loginPage.errorMessage).toContainText(
         /Username and [Pp]assword do(?: not|n't) match/,
@@ -63,7 +68,7 @@ test.describe('Users Page Tests', () => {
 
     await test.step(`Deleted user cannot access Operate`, async () => {
       await navigateToApp(page, `operate`);
-      await loginPage.login('yuliia', 'yuliia');
+      await loginPage.login(TEST_USER.username, TEST_USER.password);
       await expect(page).toHaveURL(new RegExp(`operate`));
       await expect(loginPage.errorMessage).toContainText(
         /Username and [Pp]assword do(?: not|n't) match/,

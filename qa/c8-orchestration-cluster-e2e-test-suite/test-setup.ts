@@ -38,21 +38,6 @@ export async function captureFailureVideo(page: Page, testInfo: TestInfo) {
   }
 }
 
-export function generateRandomStringAsync(length: number): Promise<string> {
-  // Simulate an asynchronous operation (e.g., using setTimeout)
-  return new Promise<string>((resolve) => {
-    setTimeout(() => {
-      const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      let result = '';
-      for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * alphabet.length);
-        result += alphabet.charAt(randomIndex);
-      }
-      resolve(result);
-    }, 100); // Simulate a delay of 100 milliseconds
-  });
-}
-
 export async function performBasicAuthPostRequest(
   requestUrl: string,
   username: string,
