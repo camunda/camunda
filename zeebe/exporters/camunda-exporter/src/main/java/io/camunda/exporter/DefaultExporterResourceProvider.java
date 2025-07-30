@@ -51,6 +51,7 @@ import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.RoleDeletedHandler;
 import io.camunda.exporter.handlers.RoleMemberAddedHandler;
 import io.camunda.exporter.handlers.RoleMemberRemovedHandler;
+import io.camunda.exporter.handlers.SequenceFlowDeletedHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
 import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
@@ -231,6 +232,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new IncidentHandler(
                 indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(), processCache),
             new SequenceFlowHandler(
+                indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
+            new SequenceFlowDeletedHandler(
                 indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
             new DecisionEvaluationHandler(
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),

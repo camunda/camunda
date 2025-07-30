@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
@@ -16,13 +17,13 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.List;
 
-public class SequenceFlowHandler
+public class SequenceFlowDeletedHandler
     implements ExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
 
   private static final String ID_PATTERN = "%s_%s";
   private final String indexName;
 
-  public SequenceFlowHandler(final String indexName) {
+  public SequenceFlowDeletedHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -38,7 +39,7 @@ public class SequenceFlowHandler
 
   @Override
   public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
-    return record.getIntent().equals(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
+    return record.getIntent().equals(ProcessInstanceIntent.SEQUENCE_FLOW_DELETED);
   }
 
   @Override
@@ -66,8 +67,9 @@ public class SequenceFlowHandler
   }
 
   @Override
-  public void flush(final SequenceFlowEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+  public void flush(final SequenceFlowEntity entity, final BatchRequest batchRequest)
+      throws PersistenceException {
+    batchRequest.delete(indexName, entity.getId());
   }
 
   @Override
