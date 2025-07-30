@@ -7,9 +7,6 @@
  */
 package io.camunda.exporter.rdbms;
 
-import static io.camunda.db.rdbms.write.RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
-import static io.camunda.db.rdbms.write.RdbmsWriterConfig.DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
-
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
@@ -52,8 +49,6 @@ import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
-import java.time.Duration;
-import java.util.Map;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
 public class RdbmsExporterWrapper implements Exporter {
@@ -62,13 +57,6 @@ public class RdbmsExporterWrapper implements Exporter {
   public static final long PROCESS_DEFINITION_PARTITION = 1L;
 
   public static final String NAMESPACE = "camunda.rdbms.exporter.cache";
-  private static final int DEFAULT_FLUSH_INTERVAL = 500;
-  private static final int DEFAULT_MAX_QUEUE_SIZE = 1000;
-  private static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
-  private static final long DEFAULT_MAX_CACHE_SIZE = 10_000;
-
-  private static final String CONFIG_CACHE_PROCESS = "processCache";
-  private static final String CONFIG_CACHE_BATCH_OPERATION = "batchOperationCache";
 
   private final RdbmsService rdbmsService;
 
@@ -83,38 +71,39 @@ public class RdbmsExporterWrapper implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    final var queueSize = readQueueSize(context);
+    final var config = context.getConfiguration().instantiate(ExporterConfiguration.class);
+    config.validate(); // throws exception if configuration is invalid
+
     final int partitionId = context.getPartitionId();
     final RdbmsWriter rdbmsWriter =
         rdbmsService.createWriter(
             new RdbmsWriterConfig.Builder()
                 .partitionId(partitionId)
-                .queueSize(queueSize)
-                .historyCleanupBatchSize(readCleanupBatchSize(context))
-                .defaultHistoryTTL(readHistoryTTL(context))
-                .minHistoryCleanupInterval(readMinHistoryCleanupInterval(context))
-                .maxHistoryCleanupInterval(readMaxHistoryCleanupInterval(context))
-                .batchOperationItemInsertBlockSize(readBatchOperationItemInsertBlockSize(context))
-                .exportBatchOperationItemsOnCreation(
-                    readExportBatchOperationItemsOnCreation(context))
+                .queueSize(config.getQueueSize())
+                .historyCleanupBatchSize(config.getHistoryCleanupBatchSize())
+                .defaultHistoryTTL(config.getDefaultHistoryTTL())
+                .minHistoryCleanupInterval(config.getMinHistoryCleanupInterval())
+                .maxHistoryCleanupInterval(config.getMaxHistoryCleanupInterval())
+                .batchOperationItemInsertBlockSize(config.getBatchOperationItemInsertBlockSize())
+                .exportBatchOperationItemsOnCreation(config.isExportBatchOperationItemsOnCreation())
                 .build());
 
     final var builder =
         new RdbmsExporter.Builder()
             .partitionId(partitionId)
-            .flushInterval(readFlushInterval(context))
-            .queueSize(queueSize)
+            .flushInterval(config.getFlushInterval())
+            .queueSize(config.getQueueSize())
             .rdbmsWriter(rdbmsWriter);
 
     processCache =
         new ExporterEntityCacheImpl<>(
-            readMaxCacheSize(context, CONFIG_CACHE_PROCESS),
+            config.getProcessCache().getMaxSize(),
             new RdbmsProcessCacheLoader(rdbmsService.getProcessDefinitionReader()),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", context.getMeterRegistry()));
 
     batchOperationCache =
         new ExporterEntityCacheImpl<>(
-            readMaxCacheSize(context, CONFIG_CACHE_BATCH_OPERATION),
+            config.getBatchOperationCache().getMaxSize(),
             new RdbmsBatchOperationCacheLoader(rdbmsService.getBatchOperationReader()),
             new CaffeineCacheStatsCounter(NAMESPACE, "batchOperation", context.getMeterRegistry()));
 
@@ -142,93 +131,6 @@ public class RdbmsExporterWrapper implements Exporter {
   @Override
   public void purge() throws Exception {
     exporter.purge();
-  }
-
-  private Duration readFlushInterval(final Context context) {
-    return readDuration(context, "flushInterval", Duration.ofMillis(DEFAULT_FLUSH_INTERVAL));
-  }
-
-  private Duration readHistoryTTL(final Context context) {
-    return readDuration(context, "defaultHistoryTTL", RdbmsWriterConfig.DEFAULT_HISTORY_TTL);
-  }
-
-  private Duration readMinHistoryCleanupInterval(final Context context) {
-    return readDuration(
-        context,
-        "minHistoryCleanupInterval",
-        RdbmsWriterConfig.DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL);
-  }
-
-  private Duration readMaxHistoryCleanupInterval(final Context context) {
-    return readDuration(
-        context,
-        "maxHistoryCleanupInterval",
-        RdbmsWriterConfig.DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL);
-  }
-
-  private int readQueueSize(final Context context) {
-    return readInt(context, "queueSize", DEFAULT_MAX_QUEUE_SIZE);
-  }
-
-  private int readCleanupBatchSize(final Context context) {
-    return readInt(context, "historyCleanupBatchSize", DEFAULT_CLEANUP_BATCH_SIZE);
-  }
-
-  private int readBatchOperationItemInsertBlockSize(final Context context) {
-    return readInt(
-        context,
-        "batchOperationItemInsertBlockSize",
-        DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE);
-  }
-
-  private boolean readExportBatchOperationItemsOnCreation(final Context context) {
-    return readBoolean(
-        context,
-        "exportBatchOperationItemsOnCreation",
-        DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION);
-  }
-
-  private Duration readDuration(
-      final Context context, final String property, final Duration defaultValue) {
-    final var arguments = context.getConfiguration().getArguments();
-    if (arguments != null && arguments.containsKey(property)) {
-      return Duration.parse((String) arguments.get(property));
-    } else {
-      return defaultValue;
-    }
-  }
-
-  private int readInt(final Context context, final String property, final int defaultValue) {
-    final var arguments = context.getConfiguration().getArguments();
-    if (arguments != null && arguments.containsKey(property)) {
-      return (Integer) arguments.get(property);
-    } else {
-      return defaultValue;
-    }
-  }
-
-  private boolean readBoolean(
-      final Context context, final String property, final boolean defaultValue) {
-    final var arguments = context.getConfiguration().getArguments();
-    if (arguments != null && arguments.containsKey(property)) {
-      return (Boolean) arguments.get(property);
-    } else {
-      return defaultValue;
-    }
-  }
-
-  private long readMaxCacheSize(final Context context, final String cacheConfigName) {
-    final var arguments = context.getConfiguration().getArguments();
-    if (arguments != null && arguments.containsKey(cacheConfigName)) {
-      final var processCacheObject = arguments.get(cacheConfigName);
-      if (processCacheObject instanceof final Map<?, ?> processCacheMap) {
-        final var maxCacheSize = processCacheMap.get("maxCacheSize");
-        if (maxCacheSize instanceof Number) {
-          return ((Number) maxCacheSize).longValue();
-        }
-      }
-    }
-    return DEFAULT_MAX_CACHE_SIZE;
   }
 
   private void createHandlers(

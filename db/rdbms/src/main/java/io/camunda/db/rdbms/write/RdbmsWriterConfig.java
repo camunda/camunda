@@ -28,7 +28,7 @@ public record RdbmsWriterConfig(
      */
     boolean exportBatchOperationItemsOnCreation) {
 
-  public static final int DEFAULT_QUEUE_SIZE = -1;
+  public static final int DEFAULT_QUEUE_SIZE = 1000;
   public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
   public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(1);
   public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);

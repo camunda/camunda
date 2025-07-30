@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.util.List;
@@ -26,6 +27,7 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
   // instantiated (the last declared one), using the last matching value.
   private static final ObjectMapper MAPPER =
       JsonMapper.builder()
+          .addModule(new JavaTimeModule())
           .addModule(
               new SimpleModule()
                   .addDeserializer(List.class, new ExporterConfigurationListDeserializer<>()))

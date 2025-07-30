@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
-public class RdbmsExporter {
+public final class RdbmsExporter {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsExporter.class);
 
