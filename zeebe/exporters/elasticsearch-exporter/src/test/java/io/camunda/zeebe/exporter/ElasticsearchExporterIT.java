@@ -366,7 +366,7 @@ final class ElasticsearchExporterIT {
     void shouldSetIndexTemplatePriorityFromConfiguration() {
       // given
       final int priority = 100;
-      configureExporter(config -> config.index.setPriority(priority));
+      configureExporter(config -> config.index.setTemplatePriority(priority));
       final var record = generateRecord(ValueType.JOB);
 
       // when

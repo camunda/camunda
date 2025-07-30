@@ -57,7 +57,7 @@ final class TemplateReader {
               aliases.clear();
               aliases.put(aliasName, Collections.emptyMap());
             })
-        .withPriority(Long.valueOf(config.index.getPriority()))
+        .withPriority(Long.valueOf(config.index.getTemplatePriority()))
         .build();
   }
 
