@@ -143,7 +143,7 @@ class ChannelPool {
     final var currentFuture = channelPool.get(messageType);
     // check if new channel is already replaced before removing it.
     if (finalFuture == currentFuture) {
-      channelPool.put(messageType, null);
+      channelPool.remove(messageType);
     }
   }
 
