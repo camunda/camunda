@@ -362,12 +362,12 @@ class Tracking {
   }
 
   identifyUser = (user: {
-    userId: string;
+    username: string;
     salesPlanType: string | null;
     roles: ReadonlyArray<string> | null;
   }) => {
-    this.#mixpanel?.identify(user.userId);
-    this.#appCues?.identify(user.userId, {
+    this.#mixpanel?.identify(user.username);
+    this.#appCues?.identify(user.username, {
       orgId: this.#baseProperties.organizationId,
       salesPlanType: user.salesPlanType ?? '',
       roles: user.roles?.join('|'),
