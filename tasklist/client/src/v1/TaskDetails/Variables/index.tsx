@@ -36,6 +36,7 @@ import type {FormValues} from 'common/tasks/variables-editor/types';
 import styles from 'common/tasks/variables-editor/styles.module.scss';
 import cn from 'classnames';
 import {completionErrorMap} from 'v1/api/useCompleteTask.mutation';
+import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';
 
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
@@ -82,14 +83,22 @@ const Variables: React.FC<Props> = ({
     },
   );
   const [editingVariable, setEditingVariable] = useState<string | undefined>();
-  const [submissionState, setSubmissionState] =
+  const [localSubmissionState, setLocalSubmissionState] =
     useState<NonNullable<InlineLoadingProps['status']>>('inactive');
+
+  const submissionState =
+    taskState === 'COMPLETING' ? 'active' : localSubmissionState;
   const canCompleteTask =
     user.userId === assignee && taskState === 'CREATED' && status === 'success';
   const hasEmptyNewVariable = (values: FormValues | undefined) =>
     values?.newVariables?.some((variable) => variable === undefined);
   const variables = data ?? [];
   const isJsonEditorModalOpen = editingVariable !== undefined;
+
+  const shouldHideBottomPanel =
+    taskState === 'ASSIGNING' ||
+    (taskState === 'UPDATING' && assignee === null) ||
+    (taskState === 'CANCELING' && assignee === null);
 
   if (isLoading) {
     return null;
@@ -111,7 +120,7 @@ const Variables: React.FC<Props> = ({
         const newVariables = get(values, 'newVariables') || [];
 
         try {
-          setSubmissionState('active');
+          setLocalSubmissionState('active');
           await onSubmit([
             ...existingVariables.map((variable) => ({
               ...variable,
@@ -120,7 +129,7 @@ const Variables: React.FC<Props> = ({
             ...newVariables,
           ]);
 
-          setSubmissionState('finished');
+          setLocalSubmissionState('finished');
         } catch (error) {
           if (
             error instanceof Error &&
@@ -130,7 +139,7 @@ const Variables: React.FC<Props> = ({
             return;
           }
           onSubmitFailure(error as Error);
-          setSubmissionState('error');
+          setLocalSubmissionState('error');
         }
       }}
       initialValues={variables.reduce(
@@ -246,36 +255,47 @@ const Variables: React.FC<Props> = ({
                   )
                   .otherwise(() => null)}
 
-                <div className={styles.footer}>
-                  {hasEmptyNewVariable(values) && (
-                    <IconButton
-                      className={styles.inlineIcon}
-                      label={t('variablesFillAllFieldsWarning')}
-                      align="top"
-                    >
-                      <Information size={20} />
-                    </IconButton>
-                  )}
+                {!shouldHideBottomPanel && (
+                  <div className={styles.footer}>
+                    {hasEmptyNewVariable(values) && (
+                      <IconButton
+                        className={styles.inlineIcon}
+                        label={t('variablesFillAllFieldsWarning')}
+                        align="top"
+                      >
+                        <Information size={20} />
+                      </IconButton>
+                    )}
 
-                  <CompleteTaskButton
-                    submissionState={submissionState}
-                    onSuccess={() => {
-                      setSubmissionState('inactive');
-                      onSubmitSuccess();
-                    }}
-                    onError={() => {
-                      setSubmissionState('inactive');
-                    }}
-                    isHidden={taskState === 'COMPLETED'}
-                    isDisabled={
-                      submitting ||
-                      hasValidationErrors ||
-                      validating ||
-                      hasEmptyNewVariable(values) ||
-                      !canCompleteTask
-                    }
-                  />
-                </div>
+                    <CompleteTaskButton
+                      submissionState={submissionState}
+                      onSuccess={() => {
+                        setLocalSubmissionState('inactive');
+                        onSubmitSuccess();
+                      }}
+                      onError={() => {
+                        if (taskState === 'COMPLETING') {
+                          setLocalSubmissionState('active');
+                        } else {
+                          setLocalSubmissionState('inactive');
+                        }
+                      }}
+                      isHidden={['COMPLETED', 'CANCELING', 'UPDATING'].includes(
+                        taskState,
+                      )}
+                      isDisabled={
+                        submitting ||
+                        hasValidationErrors ||
+                        validating ||
+                        hasEmptyNewVariable(values) ||
+                        !canCompleteTask
+                      }
+                    />
+                    {['UPDATING', 'CANCELING'].includes(taskState) && (
+                      <ActiveTransitionLoadingText taskState={taskState} />
+                    )}
+                  </div>
+                )}
               </TaskDetailsContainer>
 
               <Suspense>
