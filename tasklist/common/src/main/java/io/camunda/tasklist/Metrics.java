@@ -7,8 +7,10 @@
  */
 package io.camunda.tasklist;
 
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.util.function.ToDoubleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,9 @@ public class Metrics {
 
   public static final String COUNTER_NAME_REINDEX_FAILURES = "archival.reindex.failures";
   public static final String COUNTER_NAME_DELETE_FAILURES = "archival.delete.failures";
+
+  // Gauges:
+  public static final String GAUGE_IMPORT_QUEUE_SIZE = TASKLIST_NAMESPACE + "import.queue.size";
   // Tags
   // -----
   //  Keys:
@@ -82,6 +87,14 @@ public class Metrics {
 
   public Timer getTimer(final String name, final String... tags) {
     return registry.timer(name, tags);
+  }
+
+  public <T> void registerGauge(
+      final String name,
+      final T stateObject,
+      final ToDoubleFunction<T> valueFunction,
+      final String... tags) {
+    Gauge.builder(name, stateObject, valueFunction).tags(tags).register(registry);
   }
 
   public MeterRegistry getRegistry() {
