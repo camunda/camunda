@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsImpl;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsItemImpl;
@@ -106,6 +107,15 @@ public class UsageMetricsTest {
         NOW.minusDays(1),
         NOW.plusDays(1),
         res -> assertThat(res.getProcessInstances()).isEqualTo(2));
+
+    // Deploy a decision model for TENANT_A, evaluate it and wait for metrics to be exported
+    deployResource(adminClient, "decisions/decision_model.dmn", TENANT_A);
+    evaluateDecision(adminClient, "decision_1", Map.of("age", 20, "income", 25000), TENANT_A);
+    evaluateDecision(adminClient, "decision_1", Map.of("age", 40, "income", 3000), TENANT_A);
+    waitForUsageMetrics(
+        NOW.minusDays(1),
+        NOW.plusDays(1),
+        res -> assertThat(res.getDecisionInstances()).isEqualTo(2));
   }
 
   @Test
@@ -118,7 +128,7 @@ public class UsageMetricsTest {
         camundaClient.newUsageMetricsRequest(now.minusDays(1), now.plusDays(1)).send().join();
 
     // then
-    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(2, 0, 0, 2, null));
+    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(2, 2, 0, 2, null));
   }
 
   @Test
@@ -139,12 +149,12 @@ public class UsageMetricsTest {
         .isEqualTo(
             new UsageMetricsStatisticsImpl(
                 2,
-                0,
+                2,
                 0,
                 2,
                 Map.of(
                     TENANT_A,
-                    new UsageMetricsStatisticsItemImpl(1, 0, 0),
+                    new UsageMetricsStatisticsItemImpl(1, 2, 0),
                     TENANT_B,
                     new UsageMetricsStatisticsItemImpl(1, 0, 0))));
   }
@@ -196,6 +206,20 @@ public class UsageMetricsTest {
         .newDeployResourceCommand()
         .addResourceFromClasspath(resourceName)
         .tenantId(tenantId)
+        .send()
+        .join();
+  }
+
+  private static EvaluateDecisionResponse evaluateDecision(
+      final CamundaClient camundaClient,
+      final String decisionId,
+      final Map<String, Object> variables,
+      final String tenantId) {
+    return camundaClient
+        .newEvaluateDecisionCommand()
+        .decisionId(decisionId)
+        .tenantId(tenantId)
+        .variables(variables)
         .send()
         .join();
   }
