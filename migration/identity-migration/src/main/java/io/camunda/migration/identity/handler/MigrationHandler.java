@@ -10,6 +10,7 @@ package io.camunda.migration.identity.handler;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
@@ -75,9 +76,12 @@ public abstract class MigrationHandler<T> {
         if (!isBackpressureError(e)) {
           throw e;
         }
-        logger.warn("Backpressure during {}. Retrying in 5 seconds...", contextDescription);
+        logger.warn(
+            "Backpressure during {}. Retrying in {} seconds...",
+            contextDescription,
+            backpressureDelay);
         try {
-          Thread.sleep(backpressureDelay);
+          Thread.sleep(Duration.ofMillis(backpressureDelay));
         } catch (final InterruptedException ie) {
           Thread.currentThread().interrupt();
           throw new MigrationException("Retry interrupted during backpressure handling.", ie);
