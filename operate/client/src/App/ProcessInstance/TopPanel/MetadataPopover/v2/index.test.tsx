@@ -27,7 +27,6 @@ import {
   retriesLeftFlowNodeMetaData,
   singleInstanceMetadata,
   incidentsByProcessKeyMetadata,
-  processDefinitionMetadata,
   jobMetadata,
 } from 'modules/mocks/metadata';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
@@ -48,7 +47,6 @@ import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {waitFor} from '@testing-library/react';
 import {mockSearchIncidents} from 'modules/mocks/api/v2/incidents/searchIncidents';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
-import {mockFetchProcessDefinition} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinition';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
@@ -214,9 +212,6 @@ describe('MetadataPopover', () => {
     mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess(
       incidentsByProcessKeyMetadata,
     );
-    mockFetchProcessDefinition(
-      incidentsByProcessKeyMetadata.items[0].processDefinitionKey,
-    ).withSuccess(processDefinitionMetadata);
     flowNodeMetaDataStore.setMetaData(incidentFlowNodeMetaData);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -268,7 +263,7 @@ describe('MetadataPopover', () => {
     expect(screen.getByText(incident.errorType.name)).toBeInTheDocument();
     expect(
       screen.getByText(
-        `${processDefinitionMetadata.name} - ${incidentsByProcessKeyMetadata.items[0].processInstanceKey}`,
+        `${incident.rootCauseInstance.processDefinitionName} - ${incident.rootCauseInstance.instanceId}`,
       ),
     ).toBeInTheDocument();
   });

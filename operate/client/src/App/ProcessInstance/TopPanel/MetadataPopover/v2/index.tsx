@@ -25,7 +25,6 @@ import {Details} from './Details';
 import {createV2InstanceMetadata} from './types';
 import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
 import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
-import {useProcessDefinition} from 'modules/queries/processDefinitions/useProcessDefinition';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {resolveIncidentErrorType} from './Incident/resolveIncidentErrorType';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -153,17 +152,6 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       ? elementInstancesIncidentsSearchResult[0]
       : null;
 
-  const {data: processDefinition, isLoading: isFetchingProcessDefinition} =
-    useProcessDefinition(
-      elementInstancesIncidentsSearchResult &&
-        elementInstancesIncidentsSearchResult?.length > 0
-        ? elementInstancesIncidentsSearchResult[0]?.processDefinitionKey
-        : '',
-      {
-        enabled: elementInstancesIncidentsSearchResult?.length === 1,
-      },
-    );
-
   const {data: jobSearchResult, isLoading: isSearchingJob} = useJobs({
     payload: {
       filter: {
@@ -239,14 +227,13 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
             businessObject={businessObject}
           />
         )}
-        {isSearchingIncidents || isFetchingProcessDefinition ? (
+        {isSearchingIncidents ? (
           <Loading small withOverlay={false} data-testid="incidents-loading" />
         ) : singleIncident ? (
           <>
             <Divider />
             <Incident
               processInstanceId={processInstance?.processInstanceKey}
-              processDefinitionName={processDefinition?.name}
               incidentV2={singleIncident}
               incident={incident}
               onButtonClick={() => {

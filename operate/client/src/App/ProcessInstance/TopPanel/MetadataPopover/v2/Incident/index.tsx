@@ -19,7 +19,6 @@ type Props = {
   incidentV2: IncidentDto;
   incident: MetaDataDto['incident'];
   processInstanceId?: string;
-  processDefinitionName?: string;
   onButtonClick: () => void;
 };
 
@@ -27,15 +26,14 @@ const Incident: React.FC<Props> = ({
   incidentV2,
   incident,
   processInstanceId,
-  processDefinitionName,
   onButtonClick,
 }) => {
   if (incident === null) {
     return null;
   }
 
-  //TODO will be handled separately in #35528
-  const {rootCauseDecision} = incident;
+  //TODO will be handled separately in #35528 and #35529
+  const {rootCauseDecision, rootCauseInstance} = incident;
 
   const errorType = resolveIncidentErrorType(incidentV2.errorType);
 
@@ -63,23 +61,25 @@ const Incident: React.FC<Props> = ({
             </SummaryDataValue>
           </Stack>
         )}
-        {incidentV2 !== null && rootCauseDecision === null && (
-          <Stack gap={3} as="dl">
-            <SummaryDataKey>Root Cause Process Instance</SummaryDataKey>
-            <SummaryDataValue>
-              {incidentV2.processInstanceKey === processInstanceId ? (
-                'Current Instance'
-              ) : (
-                <Link
-                  to={Paths.processInstance(incidentV2.processInstanceKey)}
-                  title={`View root cause instance ${processDefinitionName} - ${incidentV2.processInstanceKey}`}
-                >
-                  {`${processDefinitionName} - ${incidentV2.processInstanceKey}`}
-                </Link>
-              )}
-            </SummaryDataValue>
-          </Stack>
-        )}
+        {incidentV2 !== null &&
+          rootCauseInstance !== null &&
+          rootCauseDecision === null && (
+            <Stack gap={3} as="dl">
+              <SummaryDataKey>Root Cause Process Instance</SummaryDataKey>
+              <SummaryDataValue>
+                {rootCauseInstance.instanceId === processInstanceId ? (
+                  'Current Instance'
+                ) : (
+                  <Link
+                    to={Paths.processInstance(rootCauseInstance.instanceId)}
+                    title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                  >
+                    {`${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                  </Link>
+                )}
+              </SummaryDataValue>
+            </Stack>
+          )}
         {rootCauseDecision !== null && (
           <Stack gap={3} as="dl">
             <SummaryDataKey>Root Cause Decision Instance</SummaryDataKey>
