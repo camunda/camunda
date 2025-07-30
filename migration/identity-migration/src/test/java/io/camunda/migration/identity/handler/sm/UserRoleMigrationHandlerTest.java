@@ -22,8 +22,11 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import java.util.List;
@@ -129,5 +132,39 @@ public class UserRoleMigrationHandlerTest {
 
     // then
     verify(roleServices, times(4)).addMember(any());
+  }
+
+  @Test
+  public void shouldRetryWithBackpressure() {
+    // given
+    when(managementIdentityClient.fetchUsers(any(Integer.class)))
+        .thenReturn(
+            List.of(
+                new User("user1", "username1", "name", "user1@email.com"),
+                new User("user2", "username2", "name", "user2@email.com")))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchUserRoles(any()))
+        .thenReturn(
+            List.of(
+                new Role("Role 1", "Description for Role 1"),
+                new Role(
+                    "Role@Name#With$Special%Chars", "Description for Role with special chars")))
+        .thenReturn(
+            List.of(
+                new Role("Role 2", "Description for Role 2"),
+                new Role("Role 3", "Description for Role 3")));
+    when(roleServices.addMember(any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    userRoleMigrationHandler.migrate();
+
+    // then
+    verify(roleServices, times(5)).addMember(any(RoleMemberRequest.class));
   }
 }

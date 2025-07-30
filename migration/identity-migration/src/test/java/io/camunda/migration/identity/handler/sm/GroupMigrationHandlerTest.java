@@ -27,9 +27,12 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -270,6 +273,150 @@ public class GroupMigrationHandlerTest {
     migrationHandler.migrate();
     // then
     verify(authorizationServices, times(1))
+        .createAuthorization(any(CreateAuthorizationRequest.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackpressureOnGroupCreation() {
+    // given
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(
+            List.of(
+                new Group("id1", "groupName"),
+                new Group("id2", "groupName"),
+                new Group("id3", "groupName")))
+        .thenReturn(List.of());
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(groupService, times(4)).createGroup(any(GroupDTO.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackpressureOnGroupUserAssignation() {
+    // given
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(
+            List.of(
+                new Group("id1", "groupName"),
+                new Group("id2", "groupName"),
+                new Group("id3", "groupName")))
+        .thenReturn(List.of());
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    when(managementIdentityClient.fetchGroupUsers(any()))
+        .thenReturn(List.of(new User("id", "username1", "name", "email")))
+        .thenReturn(List.of(new User("id", "username2", "name", "email")))
+        .thenReturn(List.of(new User("id", "username3", "name", "email")));
+    when(groupService.assignMember(any(GroupMemberDTO.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(groupService, times(3)).createGroup(any(GroupDTO.class));
+    verify(groupService, times(4)).assignMember(any(GroupMemberDTO.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackpressureOnGroupRoleAssignation() {
+    // given
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(
+            List.of(
+                new Group("id1", "groupName"),
+                new Group("id2", "groupName"),
+                new Group("id3", "groupName")))
+        .thenReturn(List.of());
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    when(managementIdentityClient.fetchGroupRoles(any()))
+        .thenReturn(List.of(new Role("RoleName1", "Role description")))
+        .thenReturn(List.of(new Role("RoleName2", "Role description")))
+        .thenReturn(List.of(new Role("RoleName3", "Role description")));
+    when(groupService.assignMember(any(GroupMemberDTO.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(groupService, times(3)).createGroup(any(GroupDTO.class));
+    verify(groupService, times(4)).assignMember(any(GroupMemberDTO.class));
+  }
+
+  @Test
+  public void shouldRetryWithBackpressureOnGroupAuthorizationCreation() {
+    // given
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(
+            List.of(
+                new Group("id1", "groupName"),
+                new Group("id2", "groupName"),
+                new Group("id3", "groupName")))
+        .thenReturn(List.of());
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    when(managementIdentityClient.fetchGroupAuthorizations(any()))
+        .thenReturn(List.of())
+        .thenReturn(List.of())
+        .thenReturn(
+            List.of(
+                new Authorization(
+                    "group3",
+                    "GROUP",
+                    "process",
+                    "process-definition",
+                    Set.of("READ", "UPDATE_PROCESS_INSTANCE", "START_PROCESS_INSTANCE")),
+                new Authorization(
+                    "group3",
+                    "GROUP",
+                    "*",
+                    "decision-definition",
+                    Set.of("DELETE_PROCESS_INSTANCE", "READ", "DELETE")),
+                new Authorization(
+                    "group3",
+                    "GROUP",
+                    "process",
+                    "not-valid",
+                    Set.of("UNKNOWN", "UPDATE_PROCESS_INSTANCE", "DELETE"))));
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(groupService, times(3)).createGroup(any(GroupDTO.class));
+    verify(authorizationServices, times(4))
         .createAuthorization(any(CreateAuthorizationRequest.class));
   }
 }
