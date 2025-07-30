@@ -268,7 +268,14 @@ final class SegmentsManager implements AutoCloseable {
     if (lastSegment != null) {
       currentSegment = lastSegment;
     } else {
-      currentSegment = createInitialSegment();
+      final SegmentDescriptor descriptor =
+          SegmentDescriptor.builder()
+              .withId(FIRST_SEGMENT_ID)
+              .withIndex(INITIAL_INDEX)
+              .withMaxSegmentSize(maxSegmentSize)
+              .build();
+
+      currentSegment = createSegment(descriptor, INITIAL_ASQN);
 
       segments.put(1L, currentSegment);
       journalMetrics.incSegmentCount();
@@ -279,24 +286,23 @@ final class SegmentsManager implements AutoCloseable {
   void open() {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
-    loadSegments()
-        .forEach(
-            segment -> {
-              final Segment replacedSegment = segments.put(segment.descriptor().index(), segment);
-              if (replacedSegment != null) {
-                // The previous segment can be safely deleted to free resources.
-                replacedSegment.close();
-                replacedSegment.delete();
-              } else {
-                journalMetrics.incSegmentCount();
-              }
-            });
+    for (final Segment segment : loadSegments()) {
+      segments.put(segment.descriptor().index(), segment);
+      journalMetrics.incSegmentCount();
+    }
 
     // If a segment doesn't already exist, create an initial segment starting at index 1.
     if (!segments.isEmpty()) {
       currentSegment = segments.lastEntry().getValue();
     } else {
-      currentSegment = createInitialSegment();
+      final SegmentDescriptor descriptor =
+          SegmentDescriptor.builder()
+              .withId(FIRST_SEGMENT_ID)
+              .withIndex(INITIAL_INDEX)
+              .withMaxSegmentSize(maxSegmentSize)
+              .build();
+
+      currentSegment = createSegment(descriptor, INITIAL_ASQN);
 
       segments.put(1L, currentSegment);
       journalMetrics.incSegmentCount();
@@ -318,17 +324,6 @@ final class SegmentsManager implements AutoCloseable {
             .withMaxSegmentSize(maxSegmentSize)
             .build();
     nextSegment = CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor));
-  }
-
-  private Segment createInitialSegment() {
-    final SegmentDescriptor descriptor =
-        SegmentDescriptor.builder()
-            .withId(FIRST_SEGMENT_ID)
-            .withIndex(INITIAL_INDEX)
-            .withMaxSegmentSize(maxSegmentSize)
-            .build();
-
-    return createSegment(descriptor, INITIAL_ASQN);
   }
 
   SortedMap<Long, Segment> getTailSegments(final long index) {
@@ -395,6 +390,7 @@ final class SegmentsManager implements AutoCloseable {
         if (handleSegmentCorruption(files, segments, i, lastFlushedIndex)) {
           return segments;
         }
+
         throw e;
       }
     }
@@ -403,7 +399,7 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   private void checkForIndexGaps(final Segment prevSegment, final Segment segment) {
-    if (prevSegment.lastIndex() < segment.index() - 1) {
+    if (prevSegment.lastIndex() != segment.index() - 1) {
       throw new CorruptedJournalException(
           String.format(
               "Log segment %s is not aligned with previous segment %s (last index: %d).",
@@ -423,7 +419,7 @@ final class SegmentsManager implements AutoCloseable {
       long lastSegmentIndex = 0;
 
       if (!segments.isEmpty()) {
-        final Segment previousSegment = segments.getLast();
+        final Segment previousSegment = segments.get(segments.size() - 1);
         lastSegmentIndex = previousSegment.lastIndex();
       }
 

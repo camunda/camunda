@@ -16,37 +16,27 @@ import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 class SegmentsManagerTest {
   private static final String JOURNAL_NAME = "journal";
-  private TestJournalFactory journalFactory;
+  private final TestJournalFactory journalFactory = new TestJournalFactory();
+
   private @TempDir Path directory;
   private SegmentsManager segments;
-  private final List<AutoCloseable> closeables = new ArrayList<>();
-
-  @BeforeEach
-  void beforeEach() {
-    journalFactory = new TestJournalFactory();
-  }
 
   @AfterEach
   void afterEach() {
     CloseHelper.quietClose(segments);
-    closeables.forEach(CloseHelper::quietClose);
   }
 
   @Test
@@ -303,169 +293,7 @@ class SegmentsManagerTest {
     }
   }
 
-  @Test
-  void shouldBuildJournalWithLargestSegment() throws IOException {
-    // given three journals, to simulate segments with different first and last index
-    final var journal = openJournal(directory, 3);
-    final var secondaryJournal = openJournal(directory.resolve("secondary"), 3);
-    final var thirdJournal = openJournal(directory.resolve("third"), 5);
-    closeables.addAll(List.of(journal, secondaryJournal, thirdJournal));
-
-    appendJournalEntries(journal, 1, 2);
-    journal.getLastSegment().updateDescriptor();
-
-    appendJournalEntries(secondaryJournal, 1, 2, 3);
-    secondaryJournal.getLastSegment().updateDescriptor();
-    secondaryJournal.close();
-
-    appendJournalEntries(thirdJournal, 1, 2, 3, 4, 5);
-    thirdJournal.getLastSegment().updateDescriptor();
-
-    // move the segment file from the second journal to the first one, replacing the suffix to point
-    // to a segment further in time
-    Files.move(
-        directory.resolve("secondary").resolve("data").resolve("journal-1.log"),
-        directory.resolve("data").resolve("journal-2.log"));
-
-    Files.move(
-        directory.resolve("third").resolve("data").resolve("journal-1.log"),
-        directory.resolve("data").resolve("journal-3.log"));
-
-    // when opening the journal
-    segments = journalFactory.segmentsManager(directory);
-    segments.open();
-
-    // then the segment with the greater lastIndex should be used
-    final var segment = segments.getCurrentSegment();
-    assertThat(segment.file().file().getName()).isEqualTo("journal-3.log");
-    assertThat(segment.lastAsqn()).isEqualTo(thirdJournal.getLastSegment().lastAsqn());
-    assertThat(segment.lastIndex()).isEqualTo(5);
-    assertThat(segments.getFirstSegment()).isEqualTo(segments.getLastSegment());
-    assertThat(directory.resolve("data").resolve("journal-1.log")).doesNotExist();
-    assertThat(directory.resolve("data").resolve("journal-2.log")).doesNotExist();
-  }
-
-  @Test
-  void shouldBuildJournalWithContinuousOverlaps() throws IOException {
-    // given three journals, to simulate segments with different first and last index
-    final var journal = openJournal(directory, 3);
-    final var secondaryJournal = openJournal(directory.resolve("secondary"), 2);
-    final var thirdJournal = openJournal(directory.resolve("third"), 2);
-    closeables.addAll(List.of(journal, secondaryJournal, thirdJournal));
-
-    appendJournalEntries(journal, 1, 2);
-    journal.getLastSegment().updateDescriptor();
-
-    secondaryJournal.reset(2);
-    appendJournalEntries(secondaryJournal, 2, 3);
-    secondaryJournal.getLastSegment().updateDescriptor();
-
-    thirdJournal.reset(3);
-    appendJournalEntries(thirdJournal, 3, 4);
-    thirdJournal.getLastSegment().updateDescriptor();
-
-    // move segment with id 2 from the second journal to the first one, replacing the suffix to
-    // point to a segment further in time
-    Files.move(
-        directory.resolve("secondary").resolve("data").resolve("journal-1.log"),
-        directory.resolve("data").resolve("journal-2.log"));
-
-    // move segment with id 3 from the third journal to the first one, replacing the suffix to point
-    // to a segment further in time
-    Files.move(
-        directory.resolve("third").resolve("data").resolve("journal-1.log"),
-        directory.resolve("data").resolve("journal-3.log"));
-
-    // when opening the journal
-    segments = journalFactory.segmentsManager(directory);
-    segments.open();
-
-    // then the segment with the greater lastIndex should be used
-    final var segment = segments.getCurrentSegment();
-    assertThat(segment.file().file().getName()).isEqualTo("journal-3.log");
-    assertThat(segment.lastIndex()).isEqualTo(4);
-
-    // First segment should be the one from the first journal
-    final var firstSegment = segments.getFirstSegment();
-    assertThat(firstSegment.lastIndex()).isEqualTo(journal.getFirstSegment().lastIndex());
-    assertThat(firstSegment.lastAsqn()).isEqualTo(journal.getFirstSegment().lastAsqn());
-    assertThat(firstSegment.file().name()).isEqualTo("journal-1.log");
-
-    // Second segment should be the one from the second journal
-    final var secondSegment = segments.getSegment(2);
-    assertThat(secondSegment.lastIndex()).isEqualTo(secondaryJournal.getFirstSegment().lastIndex());
-    assertThat(secondSegment.lastAsqn()).isEqualTo(secondaryJournal.getFirstSegment().lastAsqn());
-    assertThat(secondSegment.file().name()).isEqualTo("journal-2.log");
-
-    // Last segment should be the one from the third journal
-    final var lastSegment = segments.getLastSegment();
-    assertThat(lastSegment.lastIndex()).isEqualTo(thirdJournal.getFirstSegment().lastIndex());
-    assertThat(lastSegment.lastAsqn()).isEqualTo(thirdJournal.getFirstSegment().lastAsqn());
-    assertThat(lastSegment.file().name()).isEqualTo("journal-3.log");
-    assertThat(directory.resolve("data").resolve("journal-1.log")).exists();
-    assertThat(directory.resolve("data").resolve("journal-2.log")).exists();
-    assertThat(directory.resolve("data").resolve("journal-3.log")).exists();
-  }
-
-  @Test
-  void shouldBuildJournalWithPartialOverlap() throws IOException {
-    // given two journals, to simulate segments with different first and last index
-    final var journal = openJournal(directory, 5);
-    final var secondaryJournal = openJournal(directory.resolve("secondary"), 5);
-    closeables.addAll(List.of(journal, secondaryJournal));
-
-    appendJournalEntries(journal, 1, 2, 3, 4, 5);
-    journal.getLastSegment().updateDescriptor();
-
-    secondaryJournal.reset(3);
-    appendJournalEntries(secondaryJournal, 3, 4, 5, 6, 7);
-    secondaryJournal.getLastSegment().updateDescriptor();
-
-    // move segment with id 2 from the second journal to the first one, replacing the suffix to
-    // point to a segment further in time
-    Files.move(
-        directory.resolve("secondary").resolve("data").resolve("journal-1.log"),
-        directory.resolve("data").resolve("journal-2.log"));
-
-    // when opening the journal
-    segments = journalFactory.segmentsManager(directory);
-    segments.open();
-
-    // then the segment with the greater lastIndex should be used
-    final var segment = segments.getCurrentSegment();
-    assertThat(segment.file().file().getName()).isEqualTo("journal-2.log");
-    assertThat(segment.lastIndex()).isEqualTo(7);
-    assertThat(segment.lastAsqn()).isEqualTo(7);
-
-    // First segment should be the one from the first journal
-    final var firstSegment = segments.getFirstSegment();
-    assertThat(firstSegment).isNotNull();
-    assertThat(firstSegment.lastIndex()).isEqualTo(journal.getFirstSegment().lastIndex());
-    assertThat(firstSegment.lastAsqn()).isEqualTo(journal.getFirstSegment().lastAsqn());
-    assertThat(firstSegment.file().name()).isEqualTo("journal-1.log");
-
-    // Last segment should be the one from the third journal
-    final var lastSegment = segments.getLastSegment();
-    assertThat(lastSegment).isNotNull();
-    assertThat(lastSegment.lastIndex()).isEqualTo(secondaryJournal.getFirstSegment().lastIndex());
-    assertThat(lastSegment.lastAsqn()).isEqualTo(secondaryJournal.getFirstSegment().lastAsqn());
-    assertThat(lastSegment.file().name()).isEqualTo("journal-2.log");
-    assertThat(directory.resolve("data").resolve("journal-1.log")).exists();
-    assertThat(directory.resolve("data").resolve("journal-2.log")).exists();
-  }
-
-  private void appendJournalEntries(final SegmentedJournal journal, final int... asqns) {
-    Arrays.stream(asqns).forEach(asqn -> journal.append(asqn, journalFactory.entry()));
-  }
-
   private SegmentedJournal openJournal() {
     return journalFactory.journal(journalFactory.segmentsManager(directory));
-  }
-
-  private SegmentedJournal openJournal(final Path directory, final int entriesPerSegment) {
-    journalFactory = new TestJournalFactory(entriesPerSegment);
-    final var journal = journalFactory.journal(journalFactory.segmentsManager(directory));
-    closeables.add(journal);
-    return journal;
   }
 }
