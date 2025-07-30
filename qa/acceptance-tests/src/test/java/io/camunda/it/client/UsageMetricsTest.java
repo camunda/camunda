@@ -100,13 +100,9 @@ public class UsageMetricsTest {
     exportedTime = OffsetDateTime.now();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
-    // Create PI & wait for metrics to be exported
+    // Create PI for TENANT_B
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_B);
-    waitForUsageMetrics(
-        NOW.minusDays(1),
-        NOW.plusDays(1),
-        res -> assertThat(res.getProcessInstances()).isEqualTo(2));
 
     // Deploy a decision model for TENANT_A and evaluate it 2 times
     deployResource(adminClient, "decisions/decision_model.dmn", TENANT_A);
@@ -117,11 +113,14 @@ public class UsageMetricsTest {
     deployResource(adminClient, "decisions/decision_model_1.dmn", TENANT_B);
     evaluateDecision(adminClient, "test_qa", Map.of("input1", "B"), TENANT_B);
 
-    // Wait for eDI metrics to be exported
+    // Wait for rPI and eDI metrics to be exported
     waitForUsageMetrics(
         NOW.minusDays(1),
         NOW.plusDays(1),
-        res -> assertThat(res.getDecisionInstances()).isEqualTo(3));
+        res -> {
+          assertThat(res.getProcessInstances()).isEqualTo(2);
+          assertThat(res.getDecisionInstances()).isEqualTo(3);
+        });
   }
 
   @Test
