@@ -98,6 +98,7 @@ message TopologyChangeOperation {
     AwaitRedistributionCompletion awaitRedistributionCompletion = 14;
     AwaitRelocationCompletion awaitRelocationCompletion = 15;
     UpdateRoutingState updateRoutingState = 16;
+    PartitionDeleteExporterOperation partitionDeleteExporter = 17;
   }
 }
 
@@ -127,6 +128,11 @@ message PartitionForceReconfigureOperation {
 }
 
 message PartitionDisableExporterOperation {
+  int32 partitionId = 1;
+  string exporterId = 2;
+}
+
+message PartitionDeleteExporterOperation {
   int32 partitionId = 1;
   string exporterId = 2;
 }

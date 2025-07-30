@@ -74,6 +74,11 @@ message ExporterDisableRequest {
   bool dryRun = 2;
 }
 
+message ExporterDeleteRequest {
+  string exporterId = 1;
+  bool dryRun = 2;
+}
+
 message ExporterEnableRequest {
   string exporterId = 1;
   optional string initializeFrom = 2;

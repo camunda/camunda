@@ -490,6 +490,11 @@ public final class PartitionManagerImpl
   }
 
   @Override
+  public ActorFuture<Void> deleteExporter(final int partitionId, final String exporterId) {
+    throw new UnsupportedOperationException("deleteExporter not yet implemented");
+  }
+
+  @Override
   public ActorFuture<Void> enableExporter(
       final int partitionId,
       final String exporterId,
