@@ -20,11 +20,12 @@ public class BatchOperationUpdateRepositoryTest {
     // given
     final OperationsAggData data =
         new OperationsAggData(
-            "1", Map.of("SCHEDULED", 4L, "COMPLETED", 3L, "FAILED", 2L, "LOCKED", 1L));
+            "1",
+            Map.of("SCHEDULED", 3L, "COMPLETED", 3L, "SKIPPED", 1L, "FAILED", 2L, "LOCKED", 1L));
 
     // then
-    assertThat(data.getFinishedOperationsCount()).isEqualTo(5L);
-    assertThat(data.getCompletedOperationsCount()).isEqualTo(3L);
+    assertThat(data.getFinishedOperationsCount()).isEqualTo(6L);
+    assertThat(data.getCompletedOperationsCount()).isEqualTo(4L);
     assertThat(data.getFailedOperationsCount()).isEqualTo(2L);
     assertThat(data.getTotalOperationsCount()).isEqualTo(10L);
   }
