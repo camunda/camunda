@@ -44,6 +44,9 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 @ActiveProfiles("consolidated-auth")
 public class AbstractWebSecurityConfigTest {
 
+  protected static final String EXPECTED_CSRF_TOKEN_COOKIE_NAME = "X-CSRF-TOKEN";
+  protected static final String EXPECTED_CSRF_HEADER_NAME = "X-CSRF-TOKEN";
+
   /**
    * Wrapper around MockMvc that offers AssertJ-based assertions instead of Hamcrest matchers
    *
