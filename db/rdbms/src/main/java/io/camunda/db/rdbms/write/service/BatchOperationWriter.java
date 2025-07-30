@@ -100,7 +100,8 @@ public class BatchOperationWriter {
               item.batchOperationKey(),
               "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementFailedOperationsCount",
               item.batchOperationKey()));
-    } else if (item.state() == BatchOperationItemState.COMPLETED) {
+    } else if (item.state() == BatchOperationItemState.COMPLETED
+        || item.state() == BatchOperationItemState.SKIPPED) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.BATCH_OPERATION,

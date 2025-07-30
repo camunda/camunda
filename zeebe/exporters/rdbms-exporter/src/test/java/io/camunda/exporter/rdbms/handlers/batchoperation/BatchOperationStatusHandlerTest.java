@@ -178,6 +178,24 @@ class BatchOperationStatusHandlerTest {
     }
 
     @Test
+    void shouldUpdateEntityAsSkippedOnNotFound() {
+      final var record =
+          ImmutableRecord.<T>builder()
+              .from(createFailureRecord())
+              .withRejectionType(RejectionType.NOT_FOUND)
+              .build();
+
+      handler.export(record);
+
+      final var itemCaptor = ArgumentCaptor.forClass(BatchOperationItemDbModel.class);
+      verify(batchOperationWriter).updateItem(itemCaptor.capture());
+
+      assertThat(itemCaptor.getValue().state()).isEqualTo(BatchOperationItemState.SKIPPED);
+      assertThat(itemCaptor.getValue().processedDate()).isNotNull();
+      assertThat(itemCaptor.getValue().errorMessage()).isNull();
+    }
+
+    @Test
     abstract void shouldExtractCorrectItemKey();
 
     @Test
@@ -228,7 +246,7 @@ class BatchOperationStatusHandlerTest {
       return factory.generateRecord(
           ValueType.PROCESS_INSTANCE_MODIFICATION,
           b ->
-              b.withRejectionType(RejectionType.NOT_FOUND)
+              b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withIntent(ProcessInstanceModificationIntent.MODIFY)
                   .withBatchOperationReference(batchOperationKey));
     }
@@ -274,7 +292,7 @@ class BatchOperationStatusHandlerTest {
       return factory.generateRecord(
           ValueType.PROCESS_INSTANCE_MIGRATION,
           b ->
-              b.withRejectionType(RejectionType.NOT_FOUND)
+              b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withIntent(ProcessInstanceMigrationIntent.MIGRATE)
                   .withBatchOperationReference(batchOperationKey));
     }
@@ -343,7 +361,7 @@ class BatchOperationStatusHandlerTest {
       return factory.generateRecord(
           ValueType.PROCESS_INSTANCE_MIGRATION,
           b ->
-              b.withRejectionType(RejectionType.NOT_FOUND)
+              b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withValue(
                       ImmutableProcessInstanceRecordValue.builder()
                           .from(factory.generateObject(ProcessInstanceRecordValue.class))
@@ -392,7 +410,7 @@ class BatchOperationStatusHandlerTest {
       return factory.generateRecord(
           ValueType.INCIDENT,
           b ->
-              b.withRejectionType(RejectionType.NOT_FOUND)
+              b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withIntent(IncidentIntent.RESOLVE)
                   .withBatchOperationReference(batchOperationKey));
     }
