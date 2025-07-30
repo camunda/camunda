@@ -137,7 +137,7 @@ public class VariableAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasVariableNames("a", "b");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariableNames("a", "b");
     }
 
     @Test
@@ -153,7 +153,7 @@ public class VariableAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasVariableNames("a", "b");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariableNames("a", "b");
     }
 
     @Test
@@ -170,7 +170,7 @@ public class VariableAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasVariableNames("a", "b");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariableNames("a", "b");
 
       verify(camundaDataSource, times(2))
           .findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
@@ -192,7 +192,7 @@ public class VariableAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasVariableNames("a", "b", "c", "d"))
           .hasMessage(
               "Process instance [key: %d] should have the variables ['a', 'b', 'c', 'd'] but ['c', 'd'] don't exist.",
@@ -210,7 +210,9 @@ public class VariableAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariableNames("a"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariableNames("a"))
           .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
@@ -231,7 +233,7 @@ public class VariableAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", expectedValue);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariable("a", expectedValue);
     }
 
     @Test
@@ -248,7 +250,7 @@ public class VariableAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", 1);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariable("a", 1);
 
       verify(camundaDataSource, times(2))
           .findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
@@ -266,7 +268,7 @@ public class VariableAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", null);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariable("a", null);
     }
 
     @Test
@@ -283,7 +285,7 @@ public class VariableAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", 2);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariable("a", 2);
 
       verify(camundaDataSource, times(2))
           .findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
@@ -304,7 +306,8 @@ public class VariableAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariable("c", 3))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariable("c", 3))
           .hasMessage(
               "Process instance [key: %d] should have a variable 'c' with value '3' but the variable doesn't exist.",
               PROCESS_INSTANCE_KEY);
@@ -325,7 +328,8 @@ public class VariableAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", 2))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariable("a", 2))
           .hasMessage(
               "Process instance [key: %d] should have a variable 'a' with value '2' but was '1'.",
               PROCESS_INSTANCE_KEY);
@@ -346,7 +350,9 @@ public class VariableAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", -1))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariable("a", -1))
           .hasMessage(
               "Process instance [key: %d] should have a variable 'a' with value '-1' but was '%s'.",
               PROCESS_INSTANCE_KEY, variableValue, variableValue);
@@ -363,7 +369,9 @@ public class VariableAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", "1"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariable("a", "1"))
           .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
@@ -388,7 +396,7 @@ public class VariableAssertTest {
       final Map<String, Object> expectedVariables = new HashMap<>();
       expectedVariables.put("a", expectedValue);
       expectedVariables.put("b", 100);
-      CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
     }
 
     @Test
@@ -409,7 +417,7 @@ public class VariableAssertTest {
       expectedVariables.put("a", 1);
       expectedVariables.put("b", null);
       expectedVariables.put("c", null);
-      CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
     }
 
     @Test
@@ -429,7 +437,7 @@ public class VariableAssertTest {
       final Map<String, Object> expectedVariables = new HashMap<>();
       expectedVariables.put("a", 1);
       expectedVariables.put("b", 2);
-      CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
 
       verify(camundaDataSource, times(2))
           .findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
@@ -453,7 +461,7 @@ public class VariableAssertTest {
       final Map<String, Object> expectedVariables = new HashMap<>();
       expectedVariables.put("a", 2);
       expectedVariables.put("b", 2);
-      CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
 
       verify(camundaDataSource, times(2))
           .findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
@@ -478,7 +486,9 @@ public class VariableAssertTest {
       expectedVariables.put("c", 3);
 
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariables(expectedVariables))
           .hasMessage(
               "Process instance [key: %d] should have the variables {\"a\":1,\"c\":3} but was {\"a\":1}. The variables ['c'] don't exist.",
               PROCESS_INSTANCE_KEY);
@@ -504,7 +514,9 @@ public class VariableAssertTest {
       expectedVariables.put("b", 1);
 
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariables(expectedVariables))
           .hasMessage(
               "Process instance [key: %d] should have the variables {\"a\":1,\"b\":1} but was {\"a\":1,\"b\":2}.",
               PROCESS_INSTANCE_KEY);
@@ -528,7 +540,9 @@ public class VariableAssertTest {
       expectedVariables.put("a", -1);
 
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariables(expectedVariables))
           .hasMessage(
               "Process instance [key: %d] should have the variables {\"a\":-1} but was {\"a\":%s}.",
               PROCESS_INSTANCE_KEY, variableValue);
@@ -548,7 +562,9 @@ public class VariableAssertTest {
       expectedVariables.put("a", 1);
 
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariables(expectedVariables))
           .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
@@ -577,7 +593,7 @@ public class VariableAssertTest {
       // then
       final Map<String, Object> expectedVariables = new HashMap<>();
       expectedVariables.put("largeVar", "truncatedValue");
-      CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
     }
   }
 
@@ -615,7 +631,7 @@ public class VariableAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasVariableSatisfies(
               COMPLEX_VARIABLE_KEY,
               Map.class,
@@ -651,18 +667,18 @@ public class VariableAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasLocalVariableSatisfies(
               elementId, COMPLEX_VARIABLE_KEY, SimpleJsonObject.class, assertionRequirements);
 
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasLocalVariableSatisfies(
               ElementSelectors.byId(elementId),
               COMPLEX_VARIABLE_KEY,
               SimpleJsonObject.class,
               assertionRequirements);
 
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasLocalVariableSatisfies(
               ElementSelectors.byName(elementName),
               COMPLEX_VARIABLE_KEY,
@@ -678,7 +694,7 @@ public class VariableAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasVariableSatisfies(
               COMPLEX_VARIABLE_KEY, SimpleJsonObject.class, assertionRequirements);
     }
@@ -695,7 +711,7 @@ public class VariableAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasVariableSatisfies(
               "a", String.class, value -> Assertions.assertThat(value).isEqualTo("1"));
 
@@ -714,7 +730,7 @@ public class VariableAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasVariableSatisfies(
                           COMPLEX_VARIABLE_KEY,
                           SimpleJsonObject.class,
@@ -751,7 +767,7 @@ public class VariableAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasVariableSatisfies(
                           COMPLEX_VARIABLE_KEY,
                           List.class,
@@ -773,7 +789,7 @@ public class VariableAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasVariableSatisfies(
                           COMPLEX_VARIABLE_KEY,
                           SimpleJsonObject.class,
@@ -795,7 +811,7 @@ public class VariableAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasVariableSatisfies(
                           COMPLEX_VARIABLE_KEY,
                           SimpleJsonObject.class,

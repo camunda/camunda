@@ -42,7 +42,8 @@ public class CamundaAssertTest {
     CamundaAssert.reset();
 
     // when/then
-    assertThatThrownBy(() -> CamundaAssert.assertThat(processInstanceEvent).isActive())
+    assertThatThrownBy(
+            () -> CamundaAssert.assertThatProcessInstance(processInstanceEvent).isActive())
         .isInstanceOf(IllegalStateException.class)
         .hasMessage("No data source is set. Maybe you run outside of a testcase?");
   }
@@ -60,7 +61,7 @@ public class CamundaAssertTest {
 
     // when
     CamundaAssert.initialize(camundaDataSource);
-    CamundaAssert.assertThat(processInstanceEvent).isActive();
+    CamundaAssert.assertThatProcessInstance(processInstanceEvent).isActive();
 
     // then
     verify(camundaDataSource).findProcessInstances(any());

@@ -57,7 +57,7 @@ public class ZeebeClientBasedCamundaSpringProcessTestListenerIT {
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // then
-    CamundaAssert.assertThat(processInstance)
+    CamundaAssert.assertThatProcessInstance(processInstance)
         .isActive()
         .hasActiveElements(byName("task"))
         .hasVariable("status", "active");
@@ -90,7 +90,7 @@ public class ZeebeClientBasedCamundaSpringProcessTestListenerIT {
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // when
-    CamundaAssert.assertThat(processInstance).hasActiveElements(byName("A"));
+    CamundaAssert.assertThatProcessInstance(processInstance).hasActiveElements(byName("A"));
 
     final Instant timeBefore = processTestContext.getCurrentTime();
 
@@ -99,7 +99,7 @@ public class ZeebeClientBasedCamundaSpringProcessTestListenerIT {
     final Instant timeAfter = processTestContext.getCurrentTime();
 
     // then
-    CamundaAssert.assertThat(processInstance)
+    CamundaAssert.assertThatProcessInstance(processInstance)
         .hasTerminatedElements(byName("A"))
         .hasActiveElements(byName("B"));
 

@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.api;
 
-import static io.camunda.process.test.api.CamundaAssert.assertThat;
+import static io.camunda.process.test.api.CamundaAssert.assertThatDecision;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -183,7 +183,7 @@ public class DecisionInstanceAssertTest {
           decisionInstance(d -> d.state(DecisionInstanceStateEnum.EVALUATED)));
 
       // then
-      assertThat(DecisionSelectors.byName(NAME)).isEvaluated();
+      assertThatDecision(DecisionSelectors.byName(NAME)).isEvaluated();
     }
 
     @Test
@@ -193,7 +193,8 @@ public class DecisionInstanceAssertTest {
       mockDecisionInstanceSearch(decisionInstance(d -> d.state(DecisionInstanceStateEnum.FAILED)));
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(DecisionSelectors.byName(NAME)).isEvaluated())
+      Assertions.assertThatThrownBy(
+              () -> assertThatDecision(DecisionSelectors.byName(NAME)).isEvaluated())
           .hasMessage("Expected DecisionInstance [name] to have been evaluated, but was failed");
     }
   }
@@ -207,7 +208,7 @@ public class DecisionInstanceAssertTest {
       mockDecisionInstanceSearch(decisionInstanceWithAnswers(STRING_RESULT));
 
       // then
-      assertThat(DecisionSelectors.byName(NAME)).hasOutput("outputValue");
+      assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput("outputValue");
     }
 
     @Test
@@ -228,7 +229,7 @@ public class DecisionInstanceAssertTest {
           .thenReturn(correctInstance);
 
       // then
-      assertThat(DecisionSelectors.byName(NAME)).hasOutput("outputValue");
+      assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput("outputValue");
     }
 
     @Test
@@ -239,14 +240,14 @@ public class DecisionInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput("foo"))
+              () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
               "Expected DecisionInstance [name] to have output '\"foo\"', but was '\"outputValue\"'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput(expected))
+              () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
               "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '\"outputValue\"'");
     }
@@ -259,14 +260,14 @@ public class DecisionInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput("foo"))
+              () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
               "Expected DecisionInstance [name] to have output '\"foo\"', but was '{\"a\":\"b\",\"v\":2}'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput(expected))
+              () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
               "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '{\"a\":\"b\",\"v\":2}'");
     }
@@ -279,14 +280,14 @@ public class DecisionInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput("foo"))
+              () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
               "Expected DecisionInstance [name] to have output '\"foo\"', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput(expected))
+              () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
               "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
     }
@@ -300,7 +301,7 @@ public class DecisionInstanceAssertTest {
       mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", singleRule()));
 
       // then
-      assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(1);
+      assertThatDecision(DecisionSelectors.byName(NAME)).hasMatchedRules(1);
     }
 
     @Test
@@ -322,7 +323,7 @@ public class DecisionInstanceAssertTest {
           .thenReturn(correctInstance);
 
       // then
-      assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(1);
+      assertThatDecision(DecisionSelectors.byName(NAME)).hasMatchedRules(1);
     }
 
     @Test
@@ -333,7 +334,7 @@ public class DecisionInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(2))
+              () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasMatchedRules(2))
           .hasMessage(
               "Expected DecisionInstance [name] to have matched rules [2], but did not. Matches:\n"
                   + "\t- matched: []\n"
@@ -350,7 +351,7 @@ public class DecisionInstanceAssertTest {
       mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", singleRule()));
 
       // then
-      assertThat(DecisionSelectors.byName(NAME)).hasNotMatchedRules(2);
+      assertThatDecision(DecisionSelectors.byName(NAME)).hasNotMatchedRules(2);
     }
 
     @Test
@@ -359,7 +360,7 @@ public class DecisionInstanceAssertTest {
       mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", multiRule()));
 
       // then
-      assertThat(DecisionSelectors.byName(NAME)).hasNotMatchedRules(4, 5, 6);
+      assertThatDecision(DecisionSelectors.byName(NAME)).hasNotMatchedRules(4, 5, 6);
     }
 
     @Test
@@ -370,7 +371,7 @@ public class DecisionInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasNotMatchedRules(1))
+              () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasNotMatchedRules(1))
           .hasMessage(
               "Expected DecisionInstance [name] to not have matched rules [1], but matched [1]");
     }
@@ -383,7 +384,7 @@ public class DecisionInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasNotMatchedRules(4, 1, 5))
+              () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasNotMatchedRules(4, 1, 5))
           .hasMessage(
               "Expected DecisionInstance [name] to not have matched rules [4, 1, 5], but matched [1]");
     }

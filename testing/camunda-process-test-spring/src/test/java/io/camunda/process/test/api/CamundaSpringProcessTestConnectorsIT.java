@@ -68,7 +68,7 @@ public class CamundaSpringProcessTestConnectorsIT {
             .join();
 
     // then: outbound connector is invoked
-    CamundaAssert.assertThat(processInstance)
+    CamundaAssert.assertThatProcessInstance(processInstance)
         .isActive()
         .hasCompletedElements(byName("Get connectors readiness status"))
         .hasVariable("health", "UP");
@@ -94,7 +94,7 @@ public class CamundaSpringProcessTestConnectorsIT {
     }
 
     // then
-    CamundaAssert.assertThat(processInstance)
+    CamundaAssert.assertThatProcessInstance(processInstance)
         .isCompleted()
         .hasCompletedElements(byName("Wait for HTTP POST request"));
   }

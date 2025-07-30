@@ -107,7 +107,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElements("A");
 
       verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
 
@@ -124,7 +124,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "C", "D"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElements("A", "C", "D"))
           .hasMessage(
               "Process instance [key: %d] should have active elements ['A', 'C', 'D'] but the following elements were not active:\n"
                   + "\t- 'C': completed\n"
@@ -141,7 +143,8 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("element_A", "element_B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasActiveElements("element_A", "element_B");
     }
 
     @Test
@@ -150,7 +153,8 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements(ElementSelectors.byId("A"));
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasActiveElements(ElementSelectors.byId("A"));
 
       verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
 
@@ -168,7 +172,7 @@ public class ElementAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasActiveElements(
                           ElementSelectors.byId("A"),
                           ElementSelectors.byId("C"),
@@ -186,7 +190,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasActiveElements(ElementSelectors.byName("element_A"));
 
       verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
@@ -202,13 +206,13 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasActiveElements(
               ElementSelectors.byName("element_A"), ElementSelectors.byName("element_B"));
 
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasActiveElements(
                           ElementSelectors.byName("element_A"),
                           ElementSelectors.byName("element_C"),
@@ -237,7 +241,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElements("A", "B");
     }
 
     @Test
@@ -253,7 +257,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElements("A", "A");
     }
 
     @Test
@@ -270,7 +274,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElements("A", "B");
 
       verify(camundaDataSource, times(2)).findElementInstances(any());
     }
@@ -290,7 +294,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "C", "D"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElements("A", "C", "D"))
           .hasMessage(
               "Process instance [key: %d] should have active elements ['A', 'C', 'D'] but the following elements were not active:\n"
                   + "\t- 'C': not activated\n"
@@ -314,7 +320,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B", "C"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElements("A", "B", "C"))
           .hasMessage(
               "Process instance [key: %d] should have active elements ['A', 'B', 'C'] but the following elements were not active:\n"
                   + "\t- 'B': completed\n"
@@ -337,7 +345,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("B"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElements("B"))
           .hasMessage(
               "Process instance [key: %d] should have active elements ['B'] but the following elements were not active:\n"
                   + "\t- 'B': not activated",
@@ -355,7 +365,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElements("A"))
           .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
@@ -376,7 +388,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasCompletedElements("A", "B");
     }
 
     @Test
@@ -392,7 +404,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasCompletedElements("A", "A");
     }
 
     @Test
@@ -410,7 +422,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasCompletedElements("A", "B");
 
       verify(camundaDataSource, times(2)).findElementInstances(any());
     }
@@ -431,7 +443,7 @@ public class ElementAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasCompletedElements("A", "C", "D"))
           .hasMessage(
               "Process instance [key: %d] should have completed elements ['A', 'C', 'D'] but the following elements were not completed:\n"
@@ -455,7 +467,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasCompletedElements("A", "B"))
           .hasMessage(
               "Process instance [key: %d] should have completed elements ['A', 'B'] but the following elements were not completed:\n"
                   + "\t- 'B': terminated",
@@ -477,7 +491,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("B"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasCompletedElements("B"))
           .hasMessage(
               "Process instance [key: %d] should have completed elements ['B'] but the following elements were not completed:\n"
                   + "\t- 'B': not activated",
@@ -495,7 +511,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasCompletedElements("A"))
           .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
@@ -516,7 +534,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasTerminatedElements("A", "B");
     }
 
     @Test
@@ -532,7 +550,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasTerminatedElements("A", "A");
     }
 
     @Test
@@ -550,7 +568,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasTerminatedElements("A", "B");
 
       verify(camundaDataSource, times(2)).findElementInstances(any());
     }
@@ -571,7 +589,7 @@ public class ElementAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasTerminatedElements("A", "C", "D"))
           .hasMessage(
               "Process instance [key: %d] should have terminated elements ['A', 'C', 'D'] but the following elements were not terminated:\n"
@@ -595,7 +613,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasTerminatedElements("A", "B"))
           .hasMessage(
               "Process instance [key: %d] should have terminated elements ['A', 'B'] but the following elements were not terminated:\n"
                   + "\t- 'A': completed",
@@ -617,7 +637,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("B"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasTerminatedElements("B"))
           .hasMessage(
               "Process instance [key: %d] should have terminated elements ['B'] but the following elements were not terminated:\n"
                   + "\t- 'B': not activated",
@@ -635,7 +657,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasTerminatedElements("A"))
           .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
@@ -669,7 +693,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasActiveElement("A", 1)
           .hasActiveElement("B", 2)
           .hasActiveElement(ElementSelectors.byId("C"), 3);
@@ -690,7 +714,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 1))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElement("A", 1))
           .hasMessage(
               "Process instance [key: %d] should have active element 'A' 1 times but was 2. Element instances:\n"
                   + "\t- 'A': active\n"
@@ -713,7 +739,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 2))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElement("A", 2))
           .hasMessage(
               "Process instance [key: %d] should have active element 'A' 2 times but was 1. Element instances:\n"
                   + "\t- 'A': active",
@@ -735,7 +763,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 2))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElement("A", 2))
           .hasMessage(
               "Process instance [key: %d] should have active element 'A' 2 times but was 0. Element instances:\n"
                   + "\t- 'A': completed\n"
@@ -754,7 +784,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 2))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElement("A", 2))
           .hasMessage(
               "Process instance [key: %d] should have active element 'A' 2 times but was 0. Element instances:\n"
                   + "<None>",
@@ -772,7 +804,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasActiveElement("A", 0)
           .hasActiveElement("B", 0)
           .hasActiveElement("C", 0);
@@ -790,7 +822,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 0))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElement("A", 0))
           .hasMessage(
               "Process instance [key: %d] should have active element 'A' 0 times but was 1. Element instances:\n"
                   + "\t- 'A': active",
@@ -805,7 +839,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", -1))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElement("A", -1))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("The amount must be greater than or equal to zero.");
     }
@@ -825,7 +861,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 2);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElement("A", 2);
 
       verify(camundaDataSource, times(2)).findElementInstances(any());
     }
@@ -860,7 +896,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasCompletedElement("A", 1)
           .hasCompletedElement("B", 2)
           .hasCompletedElement(ElementSelectors.byId("C"), 3);
@@ -881,7 +917,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 1))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasCompletedElement("A", 1))
           .hasMessage(
               "Process instance [key: %d] should have completed element 'A' 1 times but was 2. Element instances:\n"
                   + "\t- 'A': completed\n"
@@ -904,7 +942,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 2))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasCompletedElement("A", 2))
           .hasMessage(
               "Process instance [key: %d] should have completed element 'A' 2 times but was 1. Element instances:\n"
                   + "\t- 'A': completed",
@@ -926,7 +966,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 2))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasCompletedElement("A", 2))
           .hasMessage(
               "Process instance [key: %d] should have completed element 'A' 2 times but was 0. Element instances:\n"
                   + "\t- 'A': terminated\n"
@@ -945,7 +987,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 2))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasCompletedElement("A", 2))
           .hasMessage(
               "Process instance [key: %d] should have completed element 'A' 2 times but was 0. Element instances:\n"
                   + "<None>",
@@ -963,7 +1007,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasCompletedElement("A", 0)
           .hasCompletedElement("B", 0)
           .hasCompletedElement("C", 0);
@@ -981,7 +1025,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 0))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasCompletedElement("A", 0))
           .hasMessage(
               "Process instance [key: %d] should have completed element 'A' 0 times but was 1. Element instances:\n"
                   + "\t- 'A': completed",
@@ -996,7 +1042,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", -1))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasCompletedElement("A", -1))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("The amount must be greater than or equal to zero.");
     }
@@ -1016,7 +1064,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 2);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasCompletedElement("A", 2);
 
       verify(camundaDataSource, times(2)).findElementInstances(any());
     }
@@ -1051,7 +1099,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasTerminatedElement("A", 1)
           .hasTerminatedElement("B", 2)
           .hasTerminatedElement(ElementSelectors.byId("C"), 3);
@@ -1072,7 +1120,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 1))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasTerminatedElement("A", 1))
           .hasMessage(
               "Process instance [key: %d] should have terminated element 'A' 1 times but was 2. Element instances:\n"
                   + "\t- 'A': terminated\n"
@@ -1095,7 +1145,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 2))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasTerminatedElement("A", 2))
           .hasMessage(
               "Process instance [key: %d] should have terminated element 'A' 2 times but was 1. Element instances:\n"
                   + "\t- 'A': terminated",
@@ -1117,7 +1169,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 2))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasTerminatedElement("A", 2))
           .hasMessage(
               "Process instance [key: %d] should have terminated element 'A' 2 times but was 0. Element instances:\n"
                   + "\t- 'A': completed\n"
@@ -1136,7 +1190,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 2))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasTerminatedElement("A", 2))
           .hasMessage(
               "Process instance [key: %d] should have terminated element 'A' 2 times but was 0. Element instances:\n"
                   + "<None>",
@@ -1154,7 +1210,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasTerminatedElement("A", 0)
           .hasTerminatedElement("B", 0)
           .hasTerminatedElement("C", 0);
@@ -1172,7 +1228,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 0))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasTerminatedElement("A", 0))
           .hasMessage(
               "Process instance [key: %d] should have terminated element 'A' 0 times but was 1. Element instances:\n"
                   + "\t- 'A': terminated",
@@ -1187,7 +1245,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", -1))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasTerminatedElement("A", -1))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("The amount must be greater than or equal to zero.");
     }
@@ -1207,7 +1267,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 2);
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasTerminatedElement("A", 2);
 
       verify(camundaDataSource, times(2)).findElementInstances(any());
     }
@@ -1225,7 +1285,8 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasNotActivatedElements("A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasNotActivatedElements("A", "B");
     }
 
     @Test
@@ -1244,7 +1305,7 @@ public class ElementAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasNotActivatedElements("A", "B", "C"))
           .hasMessage(
               "Process instance [key: %d] should have not activated elements ['A', 'B', 'C'] but the following elements were activated:\n"
@@ -1269,7 +1330,7 @@ public class ElementAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasNotActivatedElements("A", "B", "C"))
           .hasMessage(
               "Process instance [key: %d] should have not activated elements ['A', 'B', 'C'] but the following elements were activated:\n"
@@ -1294,7 +1355,7 @@ public class ElementAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasNotActivatedElements("A", "B", "C"))
           .hasMessage(
               "Process instance [key: %d] should have not activated elements ['A', 'B', 'C'] but the following elements were activated:\n"
@@ -1314,7 +1375,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasNotActivatedElements("A"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasNotActivatedElements("A"))
           .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
@@ -1331,7 +1394,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when
-      CamundaAssert.assertThat(processInstanceEvent).hasNoActiveElements("A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasNoActiveElements("A");
 
       // then
       verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
@@ -1352,7 +1415,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasNoActiveElements("A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasNoActiveElements("A", "B");
     }
 
     @Test
@@ -1368,7 +1431,8 @@ public class ElementAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent).hasNoActiveElements("A", "B", "C"))
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasNoActiveElements("A", "B", "C"))
           .hasMessage(
               "Process instance [key: %d] should have no active elements ['A', 'B', 'C'] but the following elements were active:\n"
                   + "\t- 'A': active\n"
@@ -1387,7 +1451,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasNoActiveElements("A"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasNoActiveElements("A"))
           .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
 
@@ -1402,7 +1468,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasNoActiveElements("A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasNoActiveElements("A");
 
       verify(camundaDataSource, times(2)).findElementInstances(any());
     }
@@ -1425,13 +1491,20 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "B", "C");
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "B");
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "C");
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("B", "C");
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A");
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("B");
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("C");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("A", "B", "C");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("A", "C");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("B", "C");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("C");
     }
 
     @Test
@@ -1448,9 +1521,12 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "A", "A");
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "A");
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("A", "A", "A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("A", "A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("A");
     }
 
     @Test
@@ -1468,8 +1544,10 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "B", "A");
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("B", "A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("A", "B", "A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("B", "A");
     }
 
     @Test
@@ -1489,7 +1567,7 @@ public class ElementAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasCompletedElementsInOrder("A", "B", "A"))
           .hasMessage(
               "Process instance [key: %d] should have completed elements ['A', 'B', 'A'] in order, but only the following elements were completed:\n"
@@ -1515,7 +1593,7 @@ public class ElementAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasCompletedElementsInOrder("B", "A", "A"))
           .hasMessage(
               "Process instance [key: %d] should have completed elements ['B', 'A', 'A'] in order, but only the following elements were completed:\n"
@@ -1544,7 +1622,8 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "B", "A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCompletedElementsInOrder("A", "B", "A");
       verify(camundaDataSource, times(2)).findElementInstances(any());
     }
   }
@@ -1562,7 +1641,8 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElementsExactly("A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasActiveElementsExactly("A", "B");
     }
 
     @Test
@@ -1579,7 +1659,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElementsExactly("A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElementsExactly("A");
     }
 
     @Test
@@ -1596,11 +1676,14 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElementsExactly("A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasActiveElementsExactly("A", "B");
 
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElementsExactly("A", "B", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasActiveElementsExactly("A", "B", "B");
 
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElementsExactly("A", "A", "B");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasActiveElementsExactly("A", "A", "B");
     }
 
     @Test
@@ -1620,7 +1703,7 @@ public class ElementAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent)
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .hasActiveElementsExactly("A", "B", "C", "D"))
           .hasMessage(
               "Process instance [key: %d] should have active elements ['A', 'B', 'C', 'D'] but the following elements were not active:\n"
@@ -1646,7 +1729,9 @@ public class ElementAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElementsExactly("A"))
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElementsExactly("A"))
           .hasMessage(
               "Process instance [key: %d] should have no active elements except ['A'] but the following elements were active:\n"
                   + "\t- 'B': active\n"
@@ -1671,7 +1756,8 @@ public class ElementAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  CamundaAssert.assertThat(processInstanceEvent).hasActiveElementsExactly("A", "B"))
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElementsExactly("A", "B"))
           .hasMessage(
               "Process instance [key: %d] should have active elements ['A', 'B'] but the following elements were not active:\n"
                   + "\t- 'B': completed\n"
@@ -1692,7 +1778,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElementsExactly("A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElementsExactly("A");
 
       verify(camundaDataSource, times(2)).findElementInstances(any());
     }
@@ -1709,7 +1795,7 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElementsExactly("A");
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElementsExactly("A");
 
       verify(camundaDataSource, times(2)).findElementInstances(any());
     }

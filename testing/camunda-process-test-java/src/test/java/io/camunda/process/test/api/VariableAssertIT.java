@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.api;
 
-import static io.camunda.process.test.api.CamundaAssert.assertThat;
+import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byId;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 
@@ -48,19 +48,21 @@ public class VariableAssertIT {
     processTestContext.completeUserTask(t -> t.getName().equals("User Task"));
 
     // Then
-    assertThat(processInstanceEvent).isCompleted();
+    assertThatProcessInstance(processInstanceEvent).isCompleted();
 
     withShortAwaitilityTimeouts(
         () -> {
           Assertions.assertThatThrownBy(
-                  () -> assertThat(processInstanceEvent).hasVariable("local_variable", "value"))
+                  () ->
+                      assertThatProcessInstance(processInstanceEvent)
+                          .hasVariable("local_variable", "value"))
               .hasMessage(
                   "Process instance [key: %s] should have a variable "
                       + "'local_variable' with value '\"value\"' but the variable doesn't exist.",
                   processInstanceEvent.getProcessInstanceKey());
         });
 
-    assertThat(processInstanceEvent)
+    assertThatProcessInstance(processInstanceEvent)
         .hasLocalVariable(byName("User Task"), "local_variable", "value")
         .hasLocalVariable(byId("user-task-id"), "local_variable", "value")
         .hasLocalVariableNames(byName("User Task"), "local_variable")
@@ -77,12 +79,12 @@ public class VariableAssertIT {
     // When
     processTestContext.completeJob("test");
 
-    assertThat(processInstanceEvent).hasVariable("var_key", "parent_value");
+    assertThatProcessInstance(processInstanceEvent).hasVariable("var_key", "parent_value");
 
     processTestContext.completeUserTask(t -> t.getName().equals("User Task"));
 
     // then
-    assertThat(processInstanceEvent)
+    assertThatProcessInstance(processInstanceEvent)
         .isCompleted()
         .hasVariable("var_key", "parent_value")
         .hasLocalVariableNames(byName("User Task"), "var_key")
@@ -107,7 +109,7 @@ public class VariableAssertIT {
           // Can't find key for valid element
           Assertions.assertThatThrownBy(
                   () ->
-                      assertThat(processInstanceEvent)
+                      assertThatProcessInstance(processInstanceEvent)
                           .hasLocalVariableNames("user-task-id", "unknown_key"))
               .hasMessage(
                   "Process instance [key: %s] should have the variables ['unknown_key'] "
@@ -117,7 +119,7 @@ public class VariableAssertIT {
           // Can't find element for assertion
           Assertions.assertThatThrownBy(
                   () ->
-                      assertThat(processInstanceEvent)
+                      assertThatProcessInstance(processInstanceEvent)
                           .hasLocalVariableNames("unknown-task-id", "unknown_key"))
               .hasMessage(
                   "No element [unknown-task-id] found for process instance [key: %s]",
@@ -137,7 +139,7 @@ public class VariableAssertIT {
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Can find local variables while the process is running
-    assertThat(processInstanceEvent)
+    assertThatProcessInstance(processInstanceEvent)
         .isActive()
         .hasVariable("parent_key", "parent_value")
         .hasVariable("shadowed_variable", "A")
@@ -148,7 +150,9 @@ public class VariableAssertIT {
         () ->
             // Local variables continue to not be in the process instance scope
             Assertions.assertThatThrownBy(
-                    () -> assertThat(processInstanceEvent).hasVariableNames("local_variable"))
+                    () ->
+                        assertThatProcessInstance(processInstanceEvent)
+                            .hasVariableNames("local_variable"))
                 .hasMessage(
                     "Process instance [key: %s] should have the variables "
                         + "['local_variable'] but ['local_variable'] don't exist.",
@@ -161,7 +165,7 @@ public class VariableAssertIT {
     expectedVariables.put("child_local_variable", "child_value");
     expectedVariables.put("shadowed_variable", "B");
 
-    assertThat(ProcessInstanceSelectors.byProcessId("child-process-1"))
+    assertThatProcessInstance(ProcessInstanceSelectors.byProcessId("child-process-1"))
         .isActive()
         .hasVariable("parent_key", "parent_value")
         .hasVariable("shadowed_variable", "A")
@@ -174,7 +178,9 @@ public class VariableAssertIT {
     withShortAwaitilityTimeouts(
         () ->
             Assertions.assertThatThrownBy(
-                    () -> assertThat(processInstanceEvent).hasVariable("shadowed_variable", "B"))
+                    () ->
+                        assertThatProcessInstance(processInstanceEvent)
+                            .hasVariable("shadowed_variable", "B"))
                 .hasMessage(
                     "Process instance [key: %s] should have a variable "
                         + "'shadowed_variable' with value '\"B\"' but was '\"A\"'.",
@@ -183,7 +189,7 @@ public class VariableAssertIT {
     // Exit the child process
     processTestContext.completeUserTask(t -> t.getName().equalsIgnoreCase("Child User Task"));
 
-    assertThat(processInstanceEvent)
+    assertThatProcessInstance(processInstanceEvent)
         .isCompleted()
         .hasVariable("parent_key", "parent_value")
         .hasVariable("shadowed_variable", "B")
@@ -192,7 +198,9 @@ public class VariableAssertIT {
     withShortAwaitilityTimeouts(
         () ->
             Assertions.assertThatThrownBy(
-                    () -> assertThat(processInstanceEvent).hasVariableNames("child_local_variable"))
+                    () ->
+                        assertThatProcessInstance(processInstanceEvent)
+                            .hasVariableNames("child_local_variable"))
                 .hasMessage(
                     "Process instance [key: %s] should have the variables "
                         + "['child_local_variable'] but ['child_local_variable'] don't exist.",
@@ -200,7 +208,7 @@ public class VariableAssertIT {
 
     // Then
     // Can assert local variables of child process after process is finished
-    assertThat(ProcessInstanceSelectors.byProcessId("child-process-1"))
+    assertThatProcessInstance(ProcessInstanceSelectors.byProcessId("child-process-1"))
         .isCompleted()
         .hasLocalVariableNames(
             byName("Child User Task"), "child_local_variable", "shadowed_variable")

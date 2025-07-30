@@ -15,7 +15,7 @@
  */
 package io.camunda;
 
-import static io.camunda.process.test.api.CamundaAssert.assertThat;
+import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 
 import io.camunda.client.CamundaClient;
@@ -57,7 +57,7 @@ public class ProcessUnitTest {
             .join();
 
     // when
-    assertThat(processInstance).hasActiveElements(byName("Received tracking code"));
+    assertThatProcessInstance(processInstance).hasActiveElements(byName("Received tracking code"));
 
     client
         .newPublishMessageCommand()
@@ -67,7 +67,7 @@ public class ProcessUnitTest {
         .send();
 
     // then
-    assertThat(processInstance)
+    assertThatProcessInstance(processInstance)
         .hasCompletedElements(
             byName("Collect money"),
             byName("Fetch items"),
@@ -96,12 +96,12 @@ public class ProcessUnitTest {
             .join();
 
     // when
-    assertThat(processInstance).hasActiveElements(byName("Received tracking code"));
+    assertThatProcessInstance(processInstance).hasActiveElements(byName("Received tracking code"));
 
     processTestContext.increaseTime(Duration.ofDays(2));
 
     // then
-    assertThat(processInstance)
+    assertThatProcessInstance(processInstance)
         .hasCompletedElements(byName("Request tracking code"))
         .hasActiveElements(byName("Received tracking code"))
         .isActive();
