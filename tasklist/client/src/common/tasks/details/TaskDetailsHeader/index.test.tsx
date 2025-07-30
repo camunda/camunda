@@ -14,7 +14,7 @@ const mockTasks = {
   completedTask: {
     name: 'My Task',
     processName: 'Nice Process',
-    assignee: userMocks.currentUser.userId,
+    assignee: userMocks.currentUser.username,
     taskState: 'COMPLETED',
   },
   unassignedTask: {
@@ -26,7 +26,7 @@ const mockTasks = {
   assignedTask: {
     name: 'My Task',
     processName: 'Nice Process',
-    assignee: userMocks.currentUser.userId,
+    assignee: userMocks.currentUser.username,
     taskState: 'CREATED',
   },
 } as const;

@@ -56,7 +56,7 @@ describe('AssignButton', () => {
         id={mockUnassignedTask.userTaskKey}
         assignee={undefined}
         taskState={mockUnassignedTask.state}
-        currentUser={currentUser.userId}
+        currentUser={currentUser.username}
       />,
       {wrapper: getWrapper()},
     );
@@ -67,9 +67,9 @@ describe('AssignButton', () => {
     rerender(
       <AssignButton
         id={mockAssignedTask.userTaskKey}
-        assignee={currentUser.userId}
+        assignee={currentUser.username}
         taskState={mockAssignedTask.state}
-        currentUser={currentUser.userId}
+        currentUser={currentUser.username}
       />,
     );
 
@@ -95,9 +95,9 @@ describe('AssignButton', () => {
     const {user, rerender} = render(
       <AssignButton
         id={mockAssignedTask.userTaskKey}
-        assignee={currentUser.userId}
+        assignee={currentUser.username}
         taskState={mockAssignedTask.state}
-        currentUser={currentUser.userId}
+        currentUser={currentUser.username}
       />,
       {wrapper: getWrapper()},
     );
@@ -111,7 +111,7 @@ describe('AssignButton', () => {
         id={mockUnassignedTask.userTaskKey}
         assignee={undefined}
         taskState={mockUnassignedTask.state}
-        currentUser={currentUser.userId}
+        currentUser={currentUser.username}
       />,
     );
 
@@ -137,7 +137,7 @@ describe('AssignButton', () => {
         id={mockUnassignedTask.userTaskKey}
         assignee={undefined}
         taskState={mockUnassignedTask.state}
-        currentUser={currentUser.userId}
+        currentUser={currentUser.username}
       />,
       {wrapper: getWrapper()},
     );
@@ -168,9 +168,9 @@ describe('AssignButton', () => {
     const {user} = render(
       <AssignButton
         id={mockUnassignedTask.userTaskKey}
-        assignee={currentUser.userId}
+        assignee={currentUser.username}
         taskState={mockUnassignedTask.state}
-        currentUser={currentUser.userId}
+        currentUser={currentUser.username}
       />,
       {wrapper: getWrapper()},
     );

@@ -51,7 +51,7 @@ function useTasks(
   const {refetchInterval} = options ?? {};
   const {data: currentUser} = useCurrentUser();
   const payload = getQueryVariables(filters, {
-    assignee: currentUser?.userId,
+    assignee: currentUser?.username,
     pageSize: MAX_TASKS_PER_REQUEST,
   });
   const client = useQueryClient();

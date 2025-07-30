@@ -114,7 +114,7 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
           aria-label={getNavLinkLabel({
             displayName,
             assigneeId: assignee,
-            currentUserId: currentUser.userId,
+            currentUsername: currentUser.username,
           })}
         >
           <Stack

@@ -12,7 +12,7 @@ type Appcues = {
   debug: () => void;
   page: () => void;
   identify: (
-    userId: string,
+    username: string,
     properties?: {[property: string]: unknown},
   ) => void;
   track: (

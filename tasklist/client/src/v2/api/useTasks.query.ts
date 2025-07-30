@@ -45,7 +45,7 @@ function useTasks(
   };
   const {data: currentUser, isFetched} = useCurrentUser();
   const payload = getQueryVariables(filters, {
-    currentUserId: currentUser?.userId,
+    currentUsername: currentUser?.username,
     pageSize: MAX_TASKS_PER_REQUEST,
   });
   const result = useInfiniteQuery({

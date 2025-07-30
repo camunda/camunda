@@ -18,7 +18,7 @@ const tasks: Task[] = [
     processName: 'processName',
     creationDate: '2023-05-28 10:11:12',
     completionDate: formatRFC3339(new Date()),
-    assignee: currentUser.userId,
+    assignee: currentUser.username,
     priority: 50,
     taskState: 'CREATED',
     sortValues: ['0', '1'],
@@ -91,7 +91,7 @@ const tasks: Task[] = [
 
 const tasksAssignedToDemoUser: Task[] = tasks.map((task) => ({
   ...task,
-  assignee: currentUser.userId,
+  assignee: currentUser.username,
 }));
 
 const unassignedTasks: Task[] = tasks.map((task) => ({
@@ -101,7 +101,7 @@ const unassignedTasks: Task[] = tasks.map((task) => ({
 
 const completedTasks: Task[] = tasks.map((task) => ({
   ...task,
-  assignee: task.assignee === null ? currentUser.userId : task.assignee,
+  assignee: task.assignee === null ? currentUser.username : task.assignee,
   taskState: 'COMPLETED',
 }));
 
