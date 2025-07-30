@@ -54,9 +54,12 @@ const FormJS: React.FC<Props> = ({
   const {t} = useTranslation();
   const formManagerRef = useRef<FormManager | null>(null);
   const {assignee, taskState, formVersion} = task;
-  const [submissionState, setSubmissionState] = useState<
-    NonNullable<InlineLoadingProps['status']>
-  >(() => (taskState === 'COMPLETING' ? 'active' : 'inactive'));
+  const [localSubmissionState, setLocalSubmissionState] =
+    useState<NonNullable<InlineLoadingProps['status']>>('inactive');
+
+  const submissionState =
+    taskState === 'COMPLETING' ? 'active' : localSubmissionState;
+
   const {data, isLoading} = useForm(
     {
       id,
@@ -139,17 +142,19 @@ const FormJS: React.FC<Props> = ({
                     });
                   }}
                   onSubmitStart={() => {
-                    setSubmissionState('active');
+                    setLocalSubmissionState('active');
                   }}
                   onSubmitSuccess={() => {
-                    setSubmissionState('finished');
+                    setLocalSubmissionState('finished');
                   }}
                   onSubmitError={(error) => {
                     onSubmitFailure(error as Error);
-                    setSubmissionState('error');
+                    setLocalSubmissionState('error');
                   }}
                   onValidationError={() => {
-                    setSubmissionState('inactive');
+                    if (taskState !== 'COMPLETING') {
+                      setLocalSubmissionState('inactive');
+                    }
                   }}
                 />
               ),
@@ -161,18 +166,18 @@ const FormJS: React.FC<Props> = ({
             <CompleteTaskButton
               submissionState={submissionState}
               onClick={() => {
-                setSubmissionState('active');
+                setLocalSubmissionState('active');
                 formManagerRef.current?.submit();
               }}
               onSuccess={() => {
                 onSubmitSuccess();
-                setSubmissionState('inactive');
+                setLocalSubmissionState('inactive');
               }}
               onError={() => {
                 if (taskState === 'COMPLETING') {
-                  setSubmissionState('active');
+                  setLocalSubmissionState('active');
                 } else {
-                  setSubmissionState('inactive');
+                  setLocalSubmissionState('inactive');
                 }
               }}
               isHidden={['COMPLETED', 'CANCELING', 'UPDATING'].includes(

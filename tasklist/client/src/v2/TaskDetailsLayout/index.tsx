@@ -37,7 +37,16 @@ const TaskDetailsLayout: React.FC = () => {
   const {id} = useTaskDetailsParams();
   const {t} = useTranslation();
   const {data: currentUser} = useCurrentUser();
-  const {data: task, refetch} = useTask(id);
+  const {data: task, refetch} = useTask(id, {
+    refetchInterval(query) {
+      const {data} = query.state;
+      if (data?.state === 'COMPLETING') {
+        return 1000;
+      }
+
+      return false;
+    },
+  });
   const isTaskCompleted = task?.state === 'COMPLETED';
   const {data: processXml, isLoading: processLoading} = useProcessDefinitionXml(
     task?.processDefinitionKey ?? '',

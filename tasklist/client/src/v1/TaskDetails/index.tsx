@@ -126,6 +126,8 @@ const TaskDetails: React.FC = observer(() => {
   }
 
   function handleSubmissionFailure(error: Error) {
+    refetchTask();
+
     if (error.name === completionErrorMap.taskProcessingTimeout) {
       tracking.track({eventName: 'task-completion-delayed-notification'});
       notificationsStore.displayNotification({

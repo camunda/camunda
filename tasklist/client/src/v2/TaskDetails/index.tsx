@@ -42,10 +42,14 @@ const TaskDetails: React.FC = observer(() => {
   const {goToTask: autoSelectGoToTask} = useAutoSelectNextTask();
 
   async function handleSubmission(variables: Record<string, unknown>) {
-    await completeTask({
+    const completedTask = await completeTask({
       userTaskKey,
       variables,
     });
+
+    if (completedTask.state !== 'COMPLETED') {
+      return;
+    }
 
     const filter = new URLSearchParams(window.location.search).get('filter');
     const customFilters =
