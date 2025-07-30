@@ -180,6 +180,12 @@ public class OpensearchExporter implements Exporter {
           String.format(
               "Opensearch numberOfReplicas must be >= 0. Current value: %d", numberOfReplicas));
     }
+
+    final int priority = configuration.index.getPriority();
+    if (priority < 0) {
+      throw new ExporterException(
+          "Opensearch index priority must be >= 0. Current value: %d".formatted(priority));
+    }
   }
 
   // TODO: remove this and instead allow client to be inject-able for testing
