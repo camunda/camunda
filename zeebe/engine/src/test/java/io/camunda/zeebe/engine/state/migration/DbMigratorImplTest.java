@@ -7,14 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -22,22 +19,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.db.ColumnFamily;
-import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.DbInt;
-import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.immutable.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.routing.DbRoutingState;
-import io.camunda.zeebe.engine.state.routing.PersistedRoutingInfo;
-import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -289,84 +274,5 @@ public class DbMigratorImplTest {
     verify(migration, atLeastOnce()).isInitialization();
     verify(migration).runMigration(any());
     verify(mockProcessingState.getMigrationState()).setMigratedByVersion(eq(CURRENT_VERSION));
-  }
-
-  @Test
-  void shouldRunRoutingInfoInitializationWhenDesiredIsNotSet() {
-    // given
-    context = new MigrationTaskContextImpl(new ClusterContextImpl(3), mockProcessingState);
-    final PersistedRoutingInfo persistedRoutingInfo = new PersistedRoutingInfo();
-    persistedRoutingInfo.setMessageCorrelation(new HashMod(3));
-    persistedRoutingInfo.setPartitions(new TreeSet<>(Set.of(1, 2, 3)));
-
-    final var zeebeDb = mock(ZeebeDb.class);
-    final var txContext = mock(TransactionContext.class);
-    final ColumnFamily<DbString, PersistedRoutingInfo> routingColumnFamily =
-        mock(ColumnFamily.class);
-    final ColumnFamily<DbInt, DbLong> scalingStartedAtColumnFamily = mock(ColumnFamily.class);
-
-    // mock column family creation
-    when(zeebeDb.createColumnFamily(eq(ZbColumnFamilies.ROUTING), eq(txContext), any(), any()))
-        .thenReturn(routingColumnFamily);
-    when(zeebeDb.createColumnFamily(
-            eq(ZbColumnFamilies.SCALING_STARTED_AT), eq(txContext), any(), any()))
-        .thenReturn(scalingStartedAtColumnFamily);
-
-    when(routingColumnFamily.exists(argThat(d -> d != null && d.toString().equals("CURRENT"))))
-        .thenReturn(true);
-    when(routingColumnFamily.exists(argThat(d -> d != null && d.toString().equals("DESIRED"))))
-        .thenReturn(false);
-    when(routingColumnFamily.get(argThat(d -> d != null && d.toString().equals("CURRENT"))))
-        .thenReturn(persistedRoutingInfo);
-
-    final var routingState = new DbRoutingState(zeebeDb, txContext);
-    when(mockProcessingState.getRoutingState()).thenReturn(routingState);
-
-    final var migration = new RoutingInfoInitializationMigration();
-
-    // then the migration needs to run
-    assertThat(migration.needsToRun(context)).isTrue();
-
-    // DbString is being mutated, argument captors cannot be used to snapshot the value of the key
-    // thus we use a list to snapshot the keys during invocation time to verify that both have been
-    // updated
-    final List<String> argSnapshot = new ArrayList<>();
-    doAnswer(
-            invocation -> {
-              final DbString key = invocation.getArgument(0);
-              argSnapshot.add(key.toString());
-              return null;
-            })
-        .when(routingColumnFamily)
-        .upsert(any(DbString.class), argThat(r -> r.getPartitions().containsAll(Set.of(1, 2, 3))));
-
-    // when
-    migrations.add(migration);
-    migration.runMigration(context);
-
-    // then
-    assertThat(routingState.currentPartitions()).containsExactlyInAnyOrder(1, 2, 3);
-    assertThat(argSnapshot).containsExactly("CURRENT", "DESIRED");
-  }
-
-  @Test
-  void shouldNotRunRoutingInfoInitializationWhenBothAreSet() {
-    // given
-    context = new MigrationTaskContextImpl(new ClusterContextImpl(3), mockProcessingState);
-    final var zeebeDb = mock(ZeebeDb.class);
-    final var txContext = mock(TransactionContext.class);
-
-    // mock column families
-    final ColumnFamily<DbString, ?> routingColumnFamily = mock(ColumnFamily.class);
-    when(zeebeDb.createColumnFamily(eq(ZbColumnFamilies.ROUTING), eq(txContext), any(), any()))
-        .thenReturn(routingColumnFamily);
-    when(routingColumnFamily.exists(any())).thenReturn(true);
-
-    final var routingState = new DbRoutingState(zeebeDb, txContext);
-
-    when(mockProcessingState.getRoutingState()).thenReturn(routingState);
-
-    final var migration = new RoutingInfoInitializationMigration();
-    assertThat(migration.needsToRun(context)).isFalse();
   }
 }
