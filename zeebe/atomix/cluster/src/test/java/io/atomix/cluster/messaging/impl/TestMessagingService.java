@@ -111,7 +111,11 @@ public class TestMessagingService implements ManagedMessagingService {
 
   @Override
   public CompletableFuture<Void> sendAsync(
-      final Address address, final String type, final byte[] payload, final boolean keepAlive) {
+      final Address address,
+      final String type,
+      final byte[] payload,
+      final boolean keepAlive,
+      final boolean dedicatedChannel) {
     if (isPartitioned(address)) {
       return CompletableFuture.failedFuture(new ConnectException());
     }
@@ -156,6 +160,7 @@ public class TestMessagingService implements ManagedMessagingService {
   public CompletableFuture<byte[]> sendAndReceive(
       final Address address,
       final String type,
+      final boolean dedicatedChannel,
       final byte[] payload,
       final boolean keepAlive,
       final Duration timeout) {
@@ -169,6 +174,7 @@ public class TestMessagingService implements ManagedMessagingService {
   public CompletableFuture<byte[]> sendAndReceive(
       final Address address,
       final String type,
+      final boolean dedicatedChannel,
       final byte[] payload,
       final boolean keepAlive,
       final Duration timeout,

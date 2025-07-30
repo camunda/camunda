@@ -111,7 +111,7 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   @Override
   public CompletableFuture<InstallResponse> install(
       final MemberId memberId, final InstallRequest request) {
-    return sendAndReceive(context.installSubject, request, memberId, snapshotRequestTimeout);
+    return sendAndReceive(context.installSubject, request, memberId, snapshotRequestTimeout, true);
   }
 
   @Override
@@ -310,9 +310,24 @@ public class RaftServerCommunicator implements RaftServerProtocol {
 
   private <T, U> CompletableFuture<U> sendAndReceive(
       final String subject, final T request, final MemberId memberId, final Duration timeout) {
+    return sendAndReceive(subject, request, memberId, timeout, false);
+  }
+
+  private <T, U> CompletableFuture<U> sendAndReceive(
+      final String subject,
+      final T request,
+      final MemberId memberId,
+      final Duration timeout,
+      final boolean dedicatedConnection) {
     metrics.sendMessage(memberId.id(), request.getClass().getSimpleName());
     return clusterCommunicator.send(
-        subject, request, serializer::encode, serializer::decode, memberId, timeout);
+        subject,
+        request,
+        serializer::encode,
+        serializer::decode,
+        memberId,
+        timeout,
+        dedicatedConnection);
   }
 
   private <T extends RaftMessage> T recordReceivedMetrics(final T m) {
