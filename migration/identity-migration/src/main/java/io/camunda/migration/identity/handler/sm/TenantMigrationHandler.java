@@ -13,6 +13,7 @@ import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
 import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Group;
@@ -47,10 +48,11 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
       final ManagementIdentityClient managementIdentityClient,
       final TenantServices tenantService,
       final CamundaAuthentication camundaAuthentication,
-      final Mode mode) {
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.tenantService = tenantService.withAuthentication(camundaAuthentication);
-    this.mode = mode;
+    mode = migrationProperties.getMode();
   }
 
   @Override

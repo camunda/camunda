@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
 import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Group;
@@ -53,9 +54,15 @@ public class KeycloakTenantMigrationHandlerTest {
       @Mock(answer = Answers.RETURNS_SELF) final TenantServices tenantServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.tenantServices = tenantServices;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setMode(Mode.KEYCLOAK);
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new TenantMigrationHandler(
-            managementIdentityClient, tenantServices, CamundaAuthentication.none(), Mode.KEYCLOAK);
+            managementIdentityClient,
+            tenantServices,
+            CamundaAuthentication.none(),
+            migrationProperties);
   }
 
   @Test

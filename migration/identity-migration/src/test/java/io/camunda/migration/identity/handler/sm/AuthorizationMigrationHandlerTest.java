@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
@@ -54,9 +55,14 @@ final class AuthorizationMigrationHandlerTest {
       @Mock final ManagementIdentityClient managementIdentityClient) {
     this.authorizationServices = authorizationServices;
     this.managementIdentityClient = managementIdentityClient;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new AuthorizationMigrationHandler(
-            CamundaAuthentication.none(), authorizationServices, managementIdentityClient);
+            CamundaAuthentication.none(),
+            authorizationServices,
+            managementIdentityClient,
+            migrationProperties);
   }
 
   @Test

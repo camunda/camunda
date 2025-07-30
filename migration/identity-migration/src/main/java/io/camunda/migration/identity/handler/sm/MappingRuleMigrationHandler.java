@@ -11,6 +11,7 @@ import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
@@ -46,7 +47,9 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
       final MappingRuleServices mappingRuleServices,
       final RoleServices roleServices,
       final TenantServices tenantServices,
-      final CamundaAuthentication camundaAuthentication) {
+      final CamundaAuthentication camundaAuthentication,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.mappingRuleServices = mappingRuleServices.withAuthentication(camundaAuthentication);
     this.roleServices = roleServices.withAuthentication(camundaAuthentication);

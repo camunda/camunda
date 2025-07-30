@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -47,9 +48,15 @@ public class OidcTenantMigrationHandlerTest {
       @Mock(answer = Answers.RETURNS_SELF) final TenantServices tenantServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.tenantServices = tenantServices;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setMode(Mode.OIDC);
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new TenantMigrationHandler(
-            managementIdentityClient, tenantServices, CamundaAuthentication.none(), Mode.OIDC);
+            managementIdentityClient,
+            tenantServices,
+            CamundaAuthentication.none(),
+            migrationProperties);
   }
 
   @Test

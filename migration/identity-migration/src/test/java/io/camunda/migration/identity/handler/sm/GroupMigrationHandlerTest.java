@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.Role;
@@ -64,12 +65,15 @@ public class GroupMigrationHandlerTest {
     this.managementIdentityClient = managementIdentityClient;
     this.groupService = groupService;
     this.authorizationServices = authorizationServices;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new GroupMigrationHandler(
             managementIdentityClient,
             groupService,
             authorizationServices,
-            CamundaAuthentication.none());
+            CamundaAuthentication.none(),
+            migrationProperties);
   }
 
   @Test

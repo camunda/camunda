@@ -17,6 +17,7 @@ import io.camunda.migration.identity.client.ConsoleClient;
 import io.camunda.migration.identity.client.ConsoleClient.Member;
 import io.camunda.migration.identity.client.ConsoleClient.Role;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
@@ -55,12 +56,15 @@ final class AuthorizationMigrationHandlerTest {
     this.authorizationServices = authorizationServices;
     this.managementIdentityClient = managementIdentityClient;
     this.consoleClient = consoleClient;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new AuthorizationMigrationHandler(
             CamundaAuthentication.none(),
             authorizationServices,
             consoleClient,
-            managementIdentityClient);
+            managementIdentityClient,
+            migrationProperties);
   }
 
   @Test

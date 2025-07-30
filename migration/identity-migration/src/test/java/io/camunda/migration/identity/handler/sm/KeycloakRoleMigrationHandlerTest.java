@@ -60,13 +60,15 @@ public class KeycloakRoleMigrationHandlerTest {
     this.managementIdentityClient = managementIdentityClient;
     this.roleServices = roleServices;
     this.authorizationServices = authorizationServices;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     roleMigrationHandler =
         new RoleMigrationHandler(
             CamundaAuthentication.none(),
             managementIdentityClient,
             roleServices,
             authorizationServices,
-            new IdentityMigrationProperties());
+            migrationProperties);
   }
 
   @Test

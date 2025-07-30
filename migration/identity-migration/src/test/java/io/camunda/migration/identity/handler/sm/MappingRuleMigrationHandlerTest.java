@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
@@ -61,13 +62,16 @@ public class MappingRuleMigrationHandlerTest {
     this.mappingRuleServices = mappingRuleServices;
     this.roleServices = roleServices;
     this.tenantServices = tenantServices;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     mappingRuleMigrationHandler =
         new MappingRuleMigrationHandler(
             managementIdentityClient,
             mappingRuleServices,
             roleServices,
             tenantServices,
-            CamundaAuthentication.none());
+            CamundaAuthentication.none(),
+            migrationProperties);
   }
 
   @Test

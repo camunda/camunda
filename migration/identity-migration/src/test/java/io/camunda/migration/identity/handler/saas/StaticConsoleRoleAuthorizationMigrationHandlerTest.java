@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
@@ -40,9 +41,11 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
   public StaticConsoleRoleAuthorizationMigrationHandlerTest(
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices) {
     this.authorizationServices = authorizationServices;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new StaticConsoleRoleAuthorizationMigrationHandler(
-            authorizationServices, CamundaAuthentication.none());
+            authorizationServices, CamundaAuthentication.none(), migrationProperties);
   }
 
   @Test

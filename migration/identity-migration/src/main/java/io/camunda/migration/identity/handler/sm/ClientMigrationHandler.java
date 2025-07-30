@@ -36,6 +36,7 @@ public class ClientMigrationHandler extends MigrationHandler<Client> {
       final ManagementIdentityClient managementIdentityClient,
       final AuthorizationServices authorizationService,
       final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.authorizationService = authorizationService.withAuthentication(authentication);
     this.migrationProperties = migrationProperties;

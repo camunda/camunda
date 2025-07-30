@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.RoleServices;
@@ -46,9 +47,14 @@ public class UserRoleMigrationHandlerTest {
       @Mock(answer = Answers.RETURNS_SELF) final RoleServices roleServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.roleServices = roleServices;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     userRoleMigrationHandler =
         new UserRoleMigrationHandler(
-            CamundaAuthentication.none(), managementIdentityClient, roleServices);
+            CamundaAuthentication.none(),
+            managementIdentityClient,
+            roleServices,
+            migrationProperties);
   }
 
   @Test

@@ -65,6 +65,7 @@ public class OidcRoleMigrationHandlerTest {
     final var audience = identityMigrationProperties.getOidc().getAudience();
     audience.setIdentity("identity");
     audience.setZeebe("zeebe");
+    identityMigrationProperties.setBackpressureDelay(100);
     roleMigrationHandler =
         new RoleMigrationHandler(
             CamundaAuthentication.none(),

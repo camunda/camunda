@@ -10,6 +10,7 @@ package io.camunda.migration.identity.handler.saas;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
 
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.NoopDTO;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -27,7 +28,9 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
 
   public StaticConsoleRoleAuthorizationMigrationHandler(
       final AuthorizationServices authorizationServices,
-      final CamundaAuthentication servicesAuthentication) {
+      final CamundaAuthentication servicesAuthentication,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.authorizationServices = authorizationServices.withAuthentication(servicesAuthentication);
   }
 

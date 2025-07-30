@@ -16,6 +16,7 @@ import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.handler.MigrationHandler;
@@ -51,7 +52,9 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
       final ManagementIdentityClient managementIdentityClient,
       final GroupServices groupServices,
       final AuthorizationServices authorizationServices,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.groupServices = groupServices.withAuthentication(authentication);
     this.authorizationServices = authorizationServices.withAuthentication(authentication);

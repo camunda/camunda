@@ -13,6 +13,7 @@ import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ConsoleClient;
 import io.camunda.migration.identity.client.ConsoleClient.Member;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -41,7 +42,9 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
       final CamundaAuthentication authentication,
       final ConsoleClient consoleClient,
       final ManagementIdentityClient managementIdentityClient,
-      final GroupServices groupServices) {
+      final GroupServices groupServices,
+      final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.consoleClient = consoleClient;
     this.managementIdentityClient = managementIdentityClient;
     this.groupServices = groupServices.withAuthentication(authentication);

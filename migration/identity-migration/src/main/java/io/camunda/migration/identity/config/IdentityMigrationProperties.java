@@ -30,6 +30,7 @@ public class IdentityMigrationProperties {
   private ConsoleProperties console = new ConsoleProperties();
   private ClusterProperties cluster = new ClusterProperties();
   private OidcProperties oidc = new OidcProperties();
+  private Integer backpressureDelay = 5000;
 
   public ManagementIdentityProperties getManagementIdentity() {
     return managementIdentity;
@@ -77,6 +78,14 @@ public class IdentityMigrationProperties {
 
   public void setOidc(final OidcProperties oidc) {
     this.oidc = oidc;
+  }
+
+  public Integer getBackpressureDelay() {
+    return backpressureDelay;
+  }
+
+  public void setBackpressureDelay(final Integer backpressureDelay) {
+    this.backpressureDelay = backpressureDelay;
   }
 
   public enum Mode {

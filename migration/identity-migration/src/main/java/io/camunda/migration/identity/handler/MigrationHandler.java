@@ -20,6 +20,12 @@ import org.slf4j.LoggerFactory;
 public abstract class MigrationHandler<T> {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
+  private final Integer backpressureDelay;
+
+  protected MigrationHandler(final Integer backpressureDelay) {
+    this.backpressureDelay = backpressureDelay;
+  }
+
   protected boolean isConflictError(final Throwable e) {
     return (e instanceof final CompletionException completionException
             && isConflictError(completionException.getCause()))
@@ -71,7 +77,7 @@ public abstract class MigrationHandler<T> {
         }
         logger.warn("Backpressure during {}. Retrying in 5 seconds...", contextDescription);
         try {
-          Thread.sleep(5000);
+          Thread.sleep(backpressureDelay);
         } catch (final InterruptedException ie) {
           Thread.currentThread().interrupt();
           throw new MigrationException("Retry interrupted during backpressure handling.", ie);

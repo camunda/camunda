@@ -41,6 +41,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
       final RoleServices roleServices,
       final AuthorizationServices authorizationServices,
       final IdentityMigrationProperties migrationProperties) {
+    super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.roleServices = roleServices.withAuthentication(authentication);
     this.authorizationServices = authorizationServices.withAuthentication(authentication);

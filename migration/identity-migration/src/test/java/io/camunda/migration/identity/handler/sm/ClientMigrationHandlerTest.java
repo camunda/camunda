@@ -57,12 +57,14 @@ public class ClientMigrationHandlerTest {
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.authorizationServices = authorizationServices;
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
     migrationHandler =
         new ClientMigrationHandler(
             CamundaAuthentication.none(),
             managementIdentityClient,
             authorizationServices,
-            new IdentityMigrationProperties());
+            migrationProperties);
   }
 
   @Test
