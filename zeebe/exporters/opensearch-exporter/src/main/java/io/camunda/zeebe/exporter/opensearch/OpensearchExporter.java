@@ -184,7 +184,7 @@ public class OpensearchExporter implements Exporter {
     final int priority = configuration.index.getPriority();
     if (priority < 0) {
       throw new ExporterException(
-          "Opensearch index priority must be >= 0. Current value: %d".formatted(priority));
+          "Opensearch index template priority must be >= 0. Current value: %d".formatted(priority));
     }
   }
 

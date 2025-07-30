@@ -174,10 +174,11 @@ public class ElasticsearchExporter implements Exporter {
               "Elasticsearch numberOfReplicas must be >= 0. Current value: %d", numberOfReplicas));
     }
 
-    final int priority = configuration.index.getPriority();
+    final int priority = configuration.index.getTemplatePriority();
     if (priority < 0) {
       throw new ExporterException(
-          "Elasticsearch priority must be >= 0. Current value: %d".formatted(priority));
+          "Elasticsearch index template priority must be >= 0. Current value: %d"
+              .formatted(priority));
     }
 
     final String minimumAge = configuration.retention.getMinimumAge();

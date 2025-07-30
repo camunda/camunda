@@ -229,7 +229,7 @@ public class ElasticsearchExporterConfiguration {
     // index settings
     private Integer numberOfShards = null;
     private Integer numberOfReplicas = null;
-    private int priority = DEFAULT_INDEX_TEMPLATE_PRIORITY;
+    private int templatePriority = DEFAULT_INDEX_TEMPLATE_PRIORITY;
 
     public Integer getNumberOfShards() {
       return numberOfShards;
@@ -247,12 +247,12 @@ public class ElasticsearchExporterConfiguration {
       this.numberOfReplicas = numberOfReplicas;
     }
 
-    public int getPriority() {
-      return priority;
+    public int getTemplatePriority() {
+      return templatePriority;
     }
 
-    public void setPriority(final int priority) {
-      this.priority = priority;
+    public void setTemplatePriority(final int templatePriority) {
+      this.templatePriority = templatePriority;
     }
 
     @Override
