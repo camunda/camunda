@@ -12,6 +12,7 @@ import {createInstances, deploy} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {completeTaskWithRetry} from '../../utils/completeTaskWithRetry';
 
 test.beforeAll(async () => {
   await deploy([
@@ -74,10 +75,11 @@ test.describe('HTO User Flow Tests', () => {
 
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
-      await taskPanelPage.openTask('Job_Worker_Process');
-      await taskDetailsPage.clickAssignToMeButton();
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      await completeTaskWithRetry(
+        taskPanelPage,
+        taskDetailsPage,
+        'Job_Worker_Process',
+      );
 
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');
@@ -295,11 +297,11 @@ test.describe('HTO User Flow Tests', () => {
 
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
-
-      await taskPanelPage.openTask('Zeebe_User_Task_Process');
-      await taskDetailsPage.clickAssignToMeButton();
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      await completeTaskWithRetry(
+        taskPanelPage,
+        taskDetailsPage,
+        'Zeebe_User_Task_Process',
+      );
 
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');

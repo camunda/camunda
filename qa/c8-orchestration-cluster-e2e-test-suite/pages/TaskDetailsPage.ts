@@ -62,6 +62,7 @@ class TaskDetailsPage {
   readonly addDynamicListRowButton: Locator;
   readonly processTab: Locator;
   readonly bpmnDiagram: Locator;
+  readonly assignedToMeText: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -108,6 +109,9 @@ class TaskDetailsPage {
       name: 'show associated bpmn process',
     });
     this.bpmnDiagram = page.getByTestId('diagram');
+    this.assignedToMeText = page
+      .getByTestId('assignee')
+      .getByText('Assigned to me');
   }
 
   async clickAssignToMeButton() {
