@@ -26,30 +26,32 @@ import {IdentityMappingsPage} from '@pages/IdentityMappingsPage';
 import {IdentityRolesPage} from '@pages/IdentityRolesPage';
 import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
 import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
+import {AccessDeniedPage} from '@pages/AccessDeniedPage';
 
 import {sleep} from 'utils/sleep';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
-  resetData: () => Promise<void>;
   operateHomePage: OperateHomePage;
-  operateFiltersPanelPage: OperateFiltersPanelPage;
   loginPage: LoginPage;
   taskPanelPage: TaskPanelPage;
   operateProcessesPage: OperateProcessesPage;
   operateProcessInstancePage: OperateProcessInstancePage;
+  operateFiltersPanelPage: OperateFiltersPanelPage;
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
+  resetData: () => Promise<void>;
   publicFormsPage: PublicFormsPage;
   identityHeader: IdentityHeader;
-  identityAuthorizationsPage: IdentityAuthorizationsPage;
-  identityGroupsPage: IdentityGroupsPage;
-  identityUsersPage: IdentityUsersPage;
   identityMappingsPage: IdentityMappingsPage;
+  identityUsersPage: IdentityUsersPage;
+  identityGroupsPage: IdentityGroupsPage;
+  identityAuthorizationsPage: IdentityAuthorizationsPage;
   identityRolesPage: IdentityRolesPage;
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
+  accessDeniedPage: AccessDeniedPage;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -150,6 +152,10 @@ const test = base.extend<PlaywrightFixtures>({
 
   identityRolesDetailsPage: async ({page}, use) => {
     await use(new IdentityRolesDetailsPage(page));
+  },
+
+  accessDeniedPage: async ({page}, use) => {
+    await use(new AccessDeniedPage(page));
   },
 });
 
