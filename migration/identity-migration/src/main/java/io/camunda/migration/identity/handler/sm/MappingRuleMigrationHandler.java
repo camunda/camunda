@@ -70,9 +70,12 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
         mapping -> {
           final var mappingId = normalizeID(mapping.name());
           try {
-            mappingRuleServices.createMappingRule(
+            final var mappingRule =
                 new MappingRuleDTO(
-                    mapping.claimName(), mapping.claimValue(), mapping.name(), mappingId));
+                    mapping.claimName(), mapping.claimValue(), mapping.name(), mappingId);
+            retryOnBackpressure(
+                () -> mappingRuleServices.createMappingRule(mappingRule).join(),
+                "Failed to create mapping rule with ID: " + mappingId);
             createdMappingCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
@@ -102,8 +105,11 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
         role -> {
           final var roleId = normalizeID(role.name());
           try {
-            roleServices.addMember(
-                new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING_RULE));
+            final var roleMember =
+                new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING_RULE);
+            retryOnBackpressure(
+                () -> roleServices.addMember(roleMember).join(),
+                "Failed to assign role with ID: " + roleId + " to mapping with ID: " + mappingId);
             assignedRoleCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
@@ -124,8 +130,14 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
         tenant -> {
           final var tenantId = normalizeID(tenant.tenantId());
           try {
-            tenantServices.addMember(
-                new TenantMemberRequest(tenantId, mappingId, EntityType.MAPPING_RULE));
+            final var tenantMember =
+                new TenantMemberRequest(tenantId, mappingId, EntityType.MAPPING_RULE);
+            retryOnBackpressure(
+                () -> tenantServices.addMember(tenantMember).join(),
+                "Failed to assign tenant with ID: "
+                    + tenantId
+                    + " to mapping with ID: "
+                    + mappingId);
             assignedTenantCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {

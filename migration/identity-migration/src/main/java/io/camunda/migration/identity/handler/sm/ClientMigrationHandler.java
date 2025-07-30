@@ -101,7 +101,13 @@ public class ClientMigrationHandler extends MigrationHandler<Client> {
 
               for (final var request : combinedPermissions) {
                 try {
-                  authorizationService.createAuthorization(request).join();
+                  retryOnBackpressure(
+                      () -> authorizationService.createAuthorization(request).join(),
+                      "Failed to create authorization for client '"
+                          + clientId
+                          + "' with permissions '"
+                          + request.permissionTypes()
+                          + "'");
                   logger.debug(
                       "Authorization created for client '{}' with permissions '{}'.",
                       clientId,
