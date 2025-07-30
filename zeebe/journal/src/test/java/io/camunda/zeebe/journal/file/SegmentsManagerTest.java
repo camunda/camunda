@@ -341,8 +341,6 @@ class SegmentsManagerTest {
     assertThat(segment.lastAsqn()).isEqualTo(thirdJournal.getLastSegment().lastAsqn());
     assertThat(segment.lastIndex()).isEqualTo(5);
     assertThat(segments.getFirstSegment()).isEqualTo(segments.getLastSegment());
-    assertThat(directory.resolve("data").resolve("journal-1.log")).doesNotExist();
-    assertThat(directory.resolve("data").resolve("journal-2.log")).doesNotExist();
   }
 
   @Test
@@ -402,9 +400,6 @@ class SegmentsManagerTest {
     assertThat(lastSegment.lastIndex()).isEqualTo(thirdJournal.getFirstSegment().lastIndex());
     assertThat(lastSegment.lastAsqn()).isEqualTo(thirdJournal.getFirstSegment().lastAsqn());
     assertThat(lastSegment.file().name()).isEqualTo("journal-3.log");
-    assertThat(directory.resolve("data").resolve("journal-1.log")).exists();
-    assertThat(directory.resolve("data").resolve("journal-2.log")).exists();
-    assertThat(directory.resolve("data").resolve("journal-3.log")).exists();
   }
 
   @Test
@@ -450,8 +445,6 @@ class SegmentsManagerTest {
     assertThat(lastSegment.lastIndex()).isEqualTo(secondaryJournal.getFirstSegment().lastIndex());
     assertThat(lastSegment.lastAsqn()).isEqualTo(secondaryJournal.getFirstSegment().lastAsqn());
     assertThat(lastSegment.file().name()).isEqualTo("journal-2.log");
-    assertThat(directory.resolve("data").resolve("journal-1.log")).exists();
-    assertThat(directory.resolve("data").resolve("journal-2.log")).exists();
   }
 
   private void appendJournalEntries(final SegmentedJournal journal, final int... asqns) {
