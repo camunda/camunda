@@ -51,7 +51,7 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "spring.liquibase.enabled=false",
       "camunda.database.type=rdbms",
-      "zeebe.broker.exporters.rdbms.args.maxQueueSize=0",
+      "zeebe.broker.exporters.rdbms.args.queueSize=0",
       "camunda.database.index-prefix=C8_"
     })
 class RdbmsExporterBatchOperationsIT {
@@ -74,8 +74,7 @@ class RdbmsExporterBatchOperationsIT {
             null,
             new ExporterConfiguration(
                 "foo",
-                Map.of(
-                    "maxQueueSize", 0, "exportBatchOperationItemsOnCreation", exportPendingItems)),
+                Map.of("queueSize", 0, "exportBatchOperationItemsOnCreation", exportPendingItems)),
             1,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             null));

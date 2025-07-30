@@ -83,13 +83,13 @@ public class RdbmsExporterWrapper implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    final var maxQueueSize = readMaxQueueSize(context);
+    final var queueSize = readQueueSize(context);
     final int partitionId = context.getPartitionId();
     final RdbmsWriter rdbmsWriter =
         rdbmsService.createWriter(
             new RdbmsWriterConfig.Builder()
                 .partitionId(partitionId)
-                .maxQueueSize(maxQueueSize)
+                .queueSize(queueSize)
                 .historyCleanupBatchSize(readCleanupBatchSize(context))
                 .defaultHistoryTTL(readHistoryTTL(context))
                 .minHistoryCleanupInterval(readMinHistoryCleanupInterval(context))
@@ -103,7 +103,7 @@ public class RdbmsExporterWrapper implements Exporter {
         new RdbmsExporter.Builder()
             .partitionId(partitionId)
             .flushInterval(readFlushInterval(context))
-            .maxQueueSize(maxQueueSize)
+            .queueSize(queueSize)
             .rdbmsWriter(rdbmsWriter);
 
     processCache =
@@ -166,8 +166,8 @@ public class RdbmsExporterWrapper implements Exporter {
         RdbmsWriterConfig.DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL);
   }
 
-  private int readMaxQueueSize(final Context context) {
-    return readInt(context, "maxQueueSize", DEFAULT_MAX_QUEUE_SIZE);
+  private int readQueueSize(final Context context) {
+    return readInt(context, "queueSize", DEFAULT_MAX_QUEUE_SIZE);
   }
 
   private int readCleanupBatchSize(final Context context) {
