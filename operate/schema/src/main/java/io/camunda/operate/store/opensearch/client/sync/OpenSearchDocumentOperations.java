@@ -89,8 +89,14 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
           format(
               "Shards failed executing request (indices=%s, failed shards=%s)",
               request.index(),
-              response.shards().failures().stream().map(ShardFailure::shard).toList()));
+              response.shards().failures().stream().map(this::formatShardFailure).toList()));
     }
+  }
+
+  private String formatShardFailure(final ShardFailure failure) {
+    return String.format(
+        "ShardFailure[index=%s, shard=%s, status=%s, node=%s, reason=%s]",
+        failure.index(), failure.shard(), failure.status(), failure.node(), failure.reason());
   }
 
   public <R> Map<String, Aggregate> unsafeScrollWith(
