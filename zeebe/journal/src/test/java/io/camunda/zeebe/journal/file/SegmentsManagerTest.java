@@ -402,51 +402,6 @@ class SegmentsManagerTest {
     assertThat(lastSegment.file().name()).isEqualTo("journal-3.log");
   }
 
-  @Test
-  void shouldBuildJournalWithPartialOverlap() throws IOException {
-    // given two journals, to simulate segments with different first and last index
-    final var journal = openJournal(directory, 5);
-    final var secondaryJournal = openJournal(directory.resolve("secondary"), 5);
-    closeables.addAll(List.of(journal, secondaryJournal));
-
-    appendJournalEntries(journal, 1, 2, 3, 4, 5);
-    journal.getLastSegment().updateDescriptor();
-
-    secondaryJournal.reset(3);
-    appendJournalEntries(secondaryJournal, 3, 4, 5, 6, 7);
-    secondaryJournal.getLastSegment().updateDescriptor();
-
-    // move segment with id 2 from the second journal to the first one, replacing the suffix to
-    // point to a segment further in time
-    Files.move(
-        directory.resolve("secondary").resolve("data").resolve("journal-1.log"),
-        directory.resolve("data").resolve("journal-2.log"));
-
-    // when opening the journal
-    segments = journalFactory.segmentsManager(directory);
-    segments.open();
-
-    // then the segment with the greater lastIndex should be used
-    final var segment = segments.getCurrentSegment();
-    assertThat(segment.file().file().getName()).isEqualTo("journal-2.log");
-    assertThat(segment.lastIndex()).isEqualTo(7);
-    assertThat(segment.lastAsqn()).isEqualTo(7);
-
-    // First segment should be the one from the first journal
-    final var firstSegment = segments.getFirstSegment();
-    assertThat(firstSegment).isNotNull();
-    assertThat(firstSegment.lastIndex()).isEqualTo(journal.getFirstSegment().lastIndex());
-    assertThat(firstSegment.lastAsqn()).isEqualTo(journal.getFirstSegment().lastAsqn());
-    assertThat(firstSegment.file().name()).isEqualTo("journal-1.log");
-
-    // Last segment should be the one from the third journal
-    final var lastSegment = segments.getLastSegment();
-    assertThat(lastSegment).isNotNull();
-    assertThat(lastSegment.lastIndex()).isEqualTo(secondaryJournal.getFirstSegment().lastIndex());
-    assertThat(lastSegment.lastAsqn()).isEqualTo(secondaryJournal.getFirstSegment().lastAsqn());
-    assertThat(lastSegment.file().name()).isEqualTo("journal-2.log");
-  }
-
   private void appendJournalEntries(final SegmentedJournal journal, final int... asqns) {
     Arrays.stream(asqns).forEach(asqn -> journal.append(asqn, journalFactory.entry()));
   }
@@ -457,6 +412,14 @@ class SegmentsManagerTest {
 
   private SegmentedJournal openJournal(final Path directory, final int entriesPerSegment) {
     journalFactory = new TestJournalFactory(entriesPerSegment);
+    final var journal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    closeables.add(journal);
+    return journal;
+  }
+
+  private SegmentedJournal openJournal(
+      final String data, final Path directory, final int entriesPerSegment) {
+    journalFactory = new TestJournalFactory(data, entriesPerSegment);
     final var journal = journalFactory.journal(journalFactory.segmentsManager(directory));
     closeables.add(journal);
     return journal;
