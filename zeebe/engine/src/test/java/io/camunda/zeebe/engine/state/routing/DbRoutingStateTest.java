@@ -39,9 +39,10 @@ final class DbRoutingStateTest {
     // then
     assertThat(routingState.isInitialized()).isTrue();
     assertThat(routingState.currentPartitions()).containsExactlyInAnyOrder(1, 2, 3);
+    assertThat(routingState.desiredPartitions()).containsExactlyInAnyOrder(1, 2, 3);
     assertThat(routingState.messageCorrelation())
         .isEqualTo(new RoutingState.MessageCorrelation.HashMod(3));
-    assertThat(routingState.scalingStartedAt(3)).isEqualTo(0);
+    assertThat(routingState.scalingStartedAt(3)).isZero();
   }
 
   @Test

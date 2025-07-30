@@ -73,7 +73,10 @@ public final class DbRoutingState implements MutableRoutingState {
   @Override
   public boolean isInitialized() {
     key.wrapString(CURRENT_KEY);
-    return columnFamily.exists(key);
+    final var currentPartitionExists = columnFamily.exists(key);
+    key.wrapString(DESIRED_KEY);
+    final var desiredPartitionExists = columnFamily.exists(key);
+    return currentPartitionExists && desiredPartitionExists;
   }
 
   @Override
@@ -97,7 +100,7 @@ public final class DbRoutingState implements MutableRoutingState {
     currentRoutingInfo.reset();
     currentRoutingInfo.setPartitions(partitions);
     currentRoutingInfo.setMessageCorrelation(new MessageCorrelation.HashMod(partitionCount));
-    columnFamily.insert(key, currentRoutingInfo);
+    columnFamily.upsert(key, currentRoutingInfo);
     setDesiredPartitions(partitions, 0L);
   }
 
