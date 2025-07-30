@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation} from '@tanstack/react-query';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from 'v1/api';
 import {request} from 'common/api/request';
 import type {Task, Variable} from 'v1/api/types';
 import {buildServerErrorSchema} from 'v1/api/buildServerErrorSchema';
 import {z} from 'zod';
+import {getUseTaskQueryKey} from 'v1/api/useTask.query';
 
 const messageResponseSchema = z.object({
   title: z.enum([
@@ -50,6 +51,31 @@ type Payload = {
 };
 
 function useCompleteTask() {
+  const client = useQueryClient();
+
+  function refetchTask(taskId: string) {
+    return client.fetchQuery({
+      queryKey: getUseTaskQueryKey(taskId),
+      queryFn: async () => {
+        const {response, error} = await request(api.getTask(taskId));
+
+        if (response === null) {
+          throw error;
+        }
+
+        const task = (await response.json()) as Task;
+
+        if (task.taskState === 'COMPLETED') {
+          return task;
+        }
+
+        throw new Error('Task is not completed');
+      },
+      retry: true,
+      retryDelay: 1000,
+    });
+  }
+
   return useMutation<Task, CompletionError, Payload>({
     mutationFn: async (payload) => {
       const {response, error: errorResponse} = await request(
@@ -57,27 +83,28 @@ function useCompleteTask() {
       );
 
       if (response !== null) {
-        return response.json();
+        client.invalidateQueries({queryKey: ['tasks']});
+        const task = await refetchTask(payload.taskId);
+        return task;
       }
 
-      if (errorResponse.variant === 'network-error') {
-        throw new Error('Unexpected network error', {
-          cause: errorResponse.networkError,
-        });
+      let originalError: Error | null = null;
+      if (errorResponse.variant !== 'network-error') {
+        const errorResult = completionErrorSchema.safeParse(
+          await errorResponse.response.json(),
+        );
+        if (errorResult.success) {
+          originalError = new Error('Failed to complete task');
+          originalError.name = errorResult.data.message.title;
+        }
       }
 
-      const error = new Error('Failed to complete task');
-      const errorResult = completionErrorSchema.safeParse(
-        await errorResponse.response.json(),
-      );
-
-      if (!errorResult.success) {
-        throw error;
+      if (originalError) {
+        throw originalError;
       }
 
-      error.name = errorResult.data.message.title;
-
-      throw error;
+      const task = await refetchTask(payload.taskId);
+      return task;
     },
   });
 }

@@ -41,7 +41,14 @@ const TaskDetailsLayout: React.FC = () => {
   const {data: task, refetch} = useTask(id, {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    refetchInterval: 5000,
+    refetchInterval(query) {
+      const {data} = query.state;
+      if (data?.taskState === 'COMPLETING') {
+        return 1000;
+      }
+
+      return false;
+    },
   });
   const taskState = task?.taskState;
   const isTaskCompleted = taskState === 'COMPLETED';

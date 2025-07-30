@@ -22,7 +22,7 @@ import {
   TaskDetailsRow,
 } from 'common/tasks/details/TaskDetailsLayout';
 import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {match, Pattern} from 'ts-pattern';
 import {useSelectedVariables} from 'v2/api/useSelectedVariables.query';
@@ -50,9 +50,13 @@ const FormJS: React.FC<Props> = ({
   const {t} = useTranslation();
   const formManagerRef = useRef<FormManager | null>(null);
   const {userTaskKey, state, assignee} = task;
-  const [submissionState, setSubmissionState] = useState<
+  const [localSubmissionState, setLocalSubmissionState] = useState<
     NonNullable<InlineLoadingProps['status']>
   >(() => (state === 'COMPLETING' ? 'active' : 'inactive'));
+
+  const submissionState =
+    state === 'COMPLETING' ? 'active' : localSubmissionState;
+
   const {data, isLoading} = useUserTaskForm(
     {userTaskKey},
     {
@@ -88,12 +92,6 @@ const FormJS: React.FC<Props> = ({
     state === 'ASSIGNING' ||
     (state === 'UPDATING' && assignee === null) ||
     (state === 'CANCELING' && assignee === null);
-
-  useEffect(() => {
-    if (state === 'COMPLETING') {
-      setSubmissionState('active');
-    }
-  }, [state]);
 
   const {removeFormReference} = useRemoveFormReference(task);
   return (
@@ -147,17 +145,19 @@ const FormJS: React.FC<Props> = ({
                     });
                   }}
                   onSubmitStart={() => {
-                    setSubmissionState('active');
+                    setLocalSubmissionState('active');
                   }}
                   onSubmitSuccess={() => {
-                    setSubmissionState('finished');
+                    setLocalSubmissionState('finished');
                   }}
                   onSubmitError={(error) => {
                     onSubmitFailure(error as Error);
-                    setSubmissionState('error');
+                    setLocalSubmissionState('error');
                   }}
                   onValidationError={() => {
-                    setSubmissionState('inactive');
+                    if (state !== 'COMPLETING') {
+                      setLocalSubmissionState('inactive');
+                    }
                   }}
                 />
               ),
@@ -169,18 +169,18 @@ const FormJS: React.FC<Props> = ({
             <CompleteTaskButton
               submissionState={submissionState}
               onClick={() => {
-                setSubmissionState('active');
+                setLocalSubmissionState('active');
                 formManagerRef.current?.submit();
               }}
               onSuccess={() => {
                 onSubmitSuccess();
-                setSubmissionState('inactive');
+                setLocalSubmissionState('inactive');
               }}
               onError={() => {
                 if (state === 'COMPLETING') {
-                  setSubmissionState('active');
+                  setLocalSubmissionState('active');
                 } else {
-                  setSubmissionState('inactive');
+                  setLocalSubmissionState('inactive');
                 }
               }}
               isHidden={['COMPLETED', 'CANCELING', 'UPDATING'].includes(state)}
