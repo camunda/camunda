@@ -5,16 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication;
+package io.camunda.authentication.converter;
 
 import static io.camunda.security.auth.OidcGroupsLoader.DERIVED_GROUPS_ARE_NOT_STRING_ARRAY;
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
+import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
+import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.entity.AuthenticationContext;
-import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -43,15 +45,17 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 
 @TestInstance(Lifecycle.PER_CLASS)
-public class CamundaOAuthPrincipalServiceTest {
+public class TokenClaimsConverterTest {
 
   public static final String GROUP1_NAME = "idp-g1";
   public static final String GROUP2_NAME = "idp-g2";
-  private CamundaOAuthPrincipalService camundaOAuthPrincipalService;
+  private TokenClaimsConverter converter;
 
   @Nested
   class ClientIdClaimConfiguration {
+
     private static final String APPLICATION_ID_CLAIM = "client-id";
+
     @Mock private MappingRuleServices mappingRuleServices;
     @Mock private TenantServices tenantServices;
     @Mock private RoleServices roleServices;
@@ -68,6 +72,7 @@ public class CamundaOAuthPrincipalServiceTest {
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("not-tested");
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
+
       when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(mappingRuleServices);
       when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
@@ -77,8 +82,8 @@ public class CamundaOAuthPrincipalServiceTest {
       when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(groupServices);
 
-      camundaOAuthPrincipalService =
-          new CamundaOAuthPrincipalServiceImpl(
+      converter =
+          new TokenClaimsConverter(
               mappingRuleServices,
               tenantServices,
               roleServices,
@@ -94,7 +99,7 @@ public class CamundaOAuthPrincipalServiceTest {
       // when
       final var exception =
           assertThatExceptionOfType(OAuth2AuthenticationException.class)
-              .isThrownBy(() -> camundaOAuthPrincipalService.loadOAuthContext(claims))
+              .isThrownBy(() -> converter.convert(claims))
               .actual();
 
       assertThat(exception.getMessage())
@@ -113,7 +118,7 @@ public class CamundaOAuthPrincipalServiceTest {
       // when
       final var exception =
           assertThatExceptionOfType(IllegalArgumentException.class)
-              .isThrownBy(() -> camundaOAuthPrincipalService.loadOAuthContext(claims))
+              .isThrownBy(() -> converter.convert(claims))
               .actual();
 
       assertThat(exception.getMessage())
@@ -128,18 +133,21 @@ public class CamundaOAuthPrincipalServiceTest {
           Map.of("sub", UUID.randomUUID().toString(), APPLICATION_ID_CLAIM, "app-1");
 
       // when
-      final OAuthContext oAuthContext = camundaOAuthPrincipalService.loadOAuthContext(claims);
+      final var camundaAuthentication = converter.convert(claims);
 
       // then
-      assertThat(oAuthContext).isNotNull();
-      final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
-      assertThat(authenticationContext.clientId()).isEqualTo("app-1");
+      assertThat(camundaAuthentication).isNotNull();
+      assertThat(camundaAuthentication.authenticatedClientId()).isEqualTo("app-1");
+      assertThat(camundaAuthentication.claims()).containsEntry(AUTHORIZED_CLIENT_ID, "app-1");
+      assertThat(camundaAuthentication.claims()).containsEntry(USER_TOKEN_CLAIMS, claims);
     }
   }
 
   @Nested
   class UsernameClaimConfiguration {
+
     private static final String USERNAME_CLAIM = "email";
+
     @Mock private MappingRuleServices mappingRuleServices;
     @Mock private TenantServices tenantServices;
     @Mock private RoleServices roleServices;
@@ -165,8 +173,8 @@ public class CamundaOAuthPrincipalServiceTest {
       when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(groupServices);
 
-      camundaOAuthPrincipalService =
-          new CamundaOAuthPrincipalServiceImpl(
+      converter =
+          new TokenClaimsConverter(
               mappingRuleServices,
               tenantServices,
               roleServices,
@@ -182,7 +190,7 @@ public class CamundaOAuthPrincipalServiceTest {
       // when
       final var exception =
           assertThatExceptionOfType(OAuth2AuthenticationException.class)
-              .isThrownBy(() -> camundaOAuthPrincipalService.loadOAuthContext(claims))
+              .isThrownBy(() -> converter.convert(claims))
               .actual();
 
       assertThat(exception.getMessage())
@@ -199,7 +207,7 @@ public class CamundaOAuthPrincipalServiceTest {
       // when
       final var exception =
           assertThatExceptionOfType(IllegalArgumentException.class)
-              .isThrownBy(() -> camundaOAuthPrincipalService.loadOAuthContext(claims))
+              .isThrownBy(() -> converter.convert(claims))
               .actual();
 
       assertThat(exception.getMessage())
@@ -256,17 +264,21 @@ public class CamundaOAuthPrincipalServiceTest {
           .thenReturn(List.of(tenantT1, groupTenant));
 
       // when
-      final OAuthContext oAuthContext = camundaOAuthPrincipalService.loadOAuthContext(claims);
+      final var authentication = converter.convert(claims);
 
       // then
-      assertThat(oAuthContext).isNotNull();
-      assertThat(oAuthContext.mappingRuleIds()).isEqualTo(Set.of("test-id", "test-id-2"));
-      final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
-      assertThat(authenticationContext.roles())
-          .containsAll(Set.of(roleR1.roleId(), groupRole.roleId()));
-      assertThat(authenticationContext.groups()).containsExactly("group-g1");
-      assertThat(authenticationContext.tenants())
-          .containsAll(List.of(tenantT1.tenantId(), groupTenant.tenantId()));
+      assertThat(authentication).isNotNull();
+      assertThat(authentication.authenticatedUsername()).isEqualTo("foo@camunda.test");
+      assertThat(authentication.claims()).containsEntry(AUTHORIZED_USERNAME, "foo@camunda.test");
+      assertThat(authentication.claims()).containsEntry(USER_TOKEN_CLAIMS, claims);
+      assertThat(authentication.authenticatedMappingRuleIds())
+          .containsExactlyInAnyOrder("test-id", "test-id-2");
+      assertThat(authentication.authenticatedRoleIds())
+          .containsExactlyInAnyOrder(roleR1.roleId(), groupRole.roleId());
+      assertThat(authentication.authenticatedGroupIds()).containsExactly("group-g1");
+      assertThat(authentication.claims().get(USER_GROUPS_CLAIMS)).isNull();
+      assertThat(authentication.authenticatedTenantIds())
+          .containsExactlyInAnyOrder(tenantT1.tenantId(), groupTenant.tenantId());
     }
 
     @Test
@@ -316,24 +328,25 @@ public class CamundaOAuthPrincipalServiceTest {
           .thenReturn(List.of(tenantEntity1, tenantEntity2));
 
       // when
-      final OAuthContext oAuthContext = camundaOAuthPrincipalService.loadOAuthContext(claims);
+      final var authentication = converter.convert(claims);
 
       // then
-      assertThat(oAuthContext).isNotNull();
-      assertThat(oAuthContext.mappingRuleIds()).isEqualTo(Set.of("map-1", "map-2"));
-
-      final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
-      assertThat(authenticationContext.username()).isEqualTo("scooby-doo");
-      assertThat(authenticationContext.roles()).containsExactly(roleR1.roleId());
-      assertThat(authenticationContext.groups()).containsExactly("group-g1");
-      assertThat(authenticationContext.tenants())
+      assertThat(authentication).isNotNull();
+      assertThat(authentication.authenticatedMappingRuleIds())
+          .containsExactlyInAnyOrder("map-1", "map-2");
+      assertThat(authentication.authenticatedUsername()).isEqualTo("scooby-doo");
+      assertThat(authentication.authenticatedRoleIds()).containsExactly(roleR1.roleId());
+      assertThat(authentication.authenticatedGroupIds()).containsExactly("group-g1");
+      assertThat(authentication.authenticatedTenantIds())
           .containsExactlyInAnyOrder(tenantEntity1.tenantId(), tenantEntity2.tenantId());
     }
   }
 
   @Nested
   class GroupsClaimConfiguration {
+
     private static final String GROUPS_CLAIM = "$.groups[*].['name']";
+
     @Mock private MappingRuleServices mappingRuleServices;
     @Mock private TenantServices tenantServices;
     @Mock private RoleServices roleServices;
@@ -360,8 +373,8 @@ public class CamundaOAuthPrincipalServiceTest {
       when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(groupServices);
 
-      camundaOAuthPrincipalService =
-          new CamundaOAuthPrincipalServiceImpl(
+      converter =
+          new TokenClaimsConverter(
               mappingRuleServices,
               tenantServices,
               roleServices,
@@ -382,10 +395,12 @@ public class CamundaOAuthPrincipalServiceTest {
               "user1");
 
       // when
-      final var oauthContext = camundaOAuthPrincipalService.loadOAuthContext(claims);
+      final var authentication = converter.convert(claims);
 
       // then
-      assertThat(oauthContext.authenticationContext().groups())
+      assertThat(authentication.authenticatedGroupIds())
+          .containsExactlyInAnyOrder(GROUP1_NAME, GROUP2_NAME);
+      assertThat((List<String>) authentication.claims().get(USER_GROUPS_CLAIMS))
           .containsExactlyInAnyOrder(GROUP1_NAME, GROUP2_NAME);
     }
 
@@ -394,8 +409,8 @@ public class CamundaOAuthPrincipalServiceTest {
       // given
       when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn("$.groups['name']");
 
-      camundaOAuthPrincipalService =
-          new CamundaOAuthPrincipalServiceImpl(
+      converter =
+          new TokenClaimsConverter(
               mappingRuleServices,
               tenantServices,
               roleServices,
@@ -403,11 +418,14 @@ public class CamundaOAuthPrincipalServiceTest {
               securityConfiguration);
       final Map<String, Object> claims =
           Map.of("groups", Map.of("name", GROUP1_NAME, "id", "idp-g1-id"), "sub", "user1");
+
       // when
-      final var oauthContext = camundaOAuthPrincipalService.loadOAuthContext(claims);
+      final var authentication = converter.convert(claims);
 
       // then
-      assertThat(oauthContext.authenticationContext().groups()).containsExactly(GROUP1_NAME);
+      assertThat(authentication.authenticatedGroupIds()).containsExactly(GROUP1_NAME);
+      assertThat((List<String>) authentication.claims().get(USER_GROUPS_CLAIMS))
+          .containsExactly(GROUP1_NAME);
     }
 
     @Test
@@ -424,7 +442,7 @@ public class CamundaOAuthPrincipalServiceTest {
       // when
       final var exception =
           assertThatExceptionOfType(IllegalArgumentException.class)
-              .isThrownBy(() -> camundaOAuthPrincipalService.loadOAuthContext(claims))
+              .isThrownBy(() -> converter.convert(claims))
               .actual();
 
       assertThat(exception.getMessage())

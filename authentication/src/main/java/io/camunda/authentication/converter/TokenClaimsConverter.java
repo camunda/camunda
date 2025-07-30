@@ -5,15 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication;
+package io.camunda.authentication.converter;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
+import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
+import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static io.camunda.zeebe.protocol.record.value.EntityType.CLIENT;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
-import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
-import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -22,7 +24,6 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -38,14 +39,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
-import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-@Service
-@ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
-public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalService {
+public class TokenClaimsConverter {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CamundaOAuthPrincipalServiceImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TokenClaimsConverter.class);
 
   private final MappingRuleServices mappingRuleServices;
   private final TenantServices tenantServices;
@@ -57,7 +55,7 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
   private final String clientIdClaim;
   private final String groupsClaim;
 
-  public CamundaOAuthPrincipalServiceImpl(
+  public TokenClaimsConverter(
       final MappingRuleServices mappingRuleServices,
       final TenantServices tenantServices,
       final RoleServices roleServices,
@@ -74,13 +72,14 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
     oidcGroupsLoader = new OidcGroupsLoader(groupsClaim);
   }
 
-  @Override
-  public OAuthContext loadOAuthContext(final Map<String, Object> claims)
-      throws OAuth2AuthenticationException {
-    final var authContextBuilder = new AuthenticationContextBuilder();
-    final var principals = oidcPrincipalLoader.load(claims);
+  public CamundaAuthentication convert(final Map<String, Object> tokenClaims) {
+    final var principals = oidcPrincipalLoader.load(tokenClaims);
     final var username = principals.username();
     final var clientId = principals.clientId();
+
+    // will be used when sending a broker request
+    final var authenticatedClaims = new HashMap<String, Object>();
+    authenticatedClaims.put(USER_TOKEN_CLAIMS, tokenClaims);
 
     final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
 
@@ -91,31 +90,33 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
               .formatted(usernameClaim, clientIdClaim));
     }
     if (username != null) {
-      authContextBuilder.withUsername(username);
+      authenticatedClaims.put(AUTHORIZED_USERNAME, username);
       ownerTypeToIds.put(USER, Set.of(username));
     }
 
     if (clientId != null) {
-      authContextBuilder.withClientId(clientId);
+      authenticatedClaims.put(AUTHORIZED_CLIENT_ID, clientId);
       ownerTypeToIds.put(CLIENT, Set.of(clientId));
     }
 
     final var mappingRules =
         mappingRuleServices
             .withAuthentication(CamundaAuthentication.anonymous())
-            .getMatchingMappingRules(claims);
-    final Set<String> mappingRuleIds =
-        mappingRules.map(MappingRuleEntity::mappingRuleId).collect(Collectors.toSet());
-    if (mappingRuleIds.isEmpty()) {
-      LOG.debug("No mappingRules found for these claims: {}", claims);
+            .getMatchingMappingRules(tokenClaims)
+            .map(MappingRuleEntity::mappingRuleId)
+            .collect(Collectors.toSet());
+
+    if (!mappingRules.isEmpty()) {
+      ownerTypeToIds.put(MAPPING_RULE, mappingRules);
     } else {
-      ownerTypeToIds.put(MAPPING_RULE, mappingRuleIds);
+      LOGGER.debug("No mappingRules found for these claims: {}", tokenClaims);
     }
 
     final Set<String> groups;
     final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
     if (groupsClaimPresent) {
-      groups = new HashSet<>(oidcGroupsLoader.load(claims));
+      groups = new HashSet<>(oidcGroupsLoader.load(tokenClaims));
+      authenticatedClaims.put(USER_GROUPS_CLAIMS, groups.stream().toList());
     } else {
       groups =
           groupServices
@@ -150,12 +151,14 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
             .map(TenantEntity::tenantId)
             .toList();
 
-    authContextBuilder
-        .withTenants(tenants)
-        .withGroups(groups.stream().toList())
-        .withRoles(roles.stream().toList())
-        .withGroupsClaimEnabled(groupsClaimPresent);
-
-    return new OAuthContext(mappingRuleIds, authContextBuilder.build());
+    return CamundaAuthentication.of(
+        a ->
+            a.user(username)
+                .clientId(clientId)
+                .roleIds(roles.stream().toList())
+                .groupIds(groups.stream().toList())
+                .mappingRule(mappingRules.stream().toList())
+                .tenants(tenants)
+                .claims(authenticatedClaims));
   }
 }

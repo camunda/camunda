@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
-import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.config.controllers.OidcMockMvcTestHelper;
 import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
@@ -49,8 +48,8 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
  *
  * <p>Without this (i.e. in the production setup), {@link BearerTokenAuthenticationFilter} converts
  * the JWT from the Authorization header into the {@link Authentication} object using {@link
- * CamundaJwtAuthenticationConverter}. It then adds it in the {@link SecurityContext} for further
- * access.
+ * org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter}.
+ * It then adds it in the {@link SecurityContext} for further access.
  *
  * <p>With this (i.e. in this test), we set the {@link Authentication} object already before
  * entering the filter chain (see AuthenticationRequestPostProcessor#postProcessRequest). {@link

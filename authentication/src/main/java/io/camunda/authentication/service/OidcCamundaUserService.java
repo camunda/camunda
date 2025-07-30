@@ -10,8 +10,6 @@ package io.camunda.authentication.service;
 import static io.camunda.service.authorization.Authorizations.APPLICATION_ACCESS_AUTHORIZATION;
 
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
-import io.camunda.authentication.entity.CamundaOAuthPrincipal;
-import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.TenantQuery;
@@ -22,12 +20,22 @@ import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.TenantServices;
 import jakarta.json.Json;
+import jakarta.json.JsonString;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
+import org.springframework.security.oauth2.core.oidc.StandardClaimAccessor;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.server.resource.authentication.AbstractOAuth2TokenAuthenticationToken;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -42,71 +50,119 @@ public class OidcCamundaUserService implements CamundaUserService {
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ResourceAccessProvider resourceAccessProvider;
   private final TenantServices tenantServices;
+  private final OAuth2AuthorizedClientRepository authorizedClientRepository;
+  private final HttpServletRequest request;
 
   public OidcCamundaUserService(
       final CamundaAuthenticationProvider authenticationProvider,
       final ResourceAccessProvider resourceAccessProvider,
-      final TenantServices tenantServices) {
+      final TenantServices tenantServices,
+      final OAuth2AuthorizedClientRepository authorizedClientRepository,
+      final HttpServletRequest request) {
     this.authenticationProvider = authenticationProvider;
     this.resourceAccessProvider = resourceAccessProvider;
     this.tenantServices = tenantServices;
-  }
-
-  private Optional<CamundaOAuthPrincipal> getCamundaUser() {
-    return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
-        .map(Authentication::getPrincipal)
-        .map(principal -> principal instanceof final CamundaOAuthPrincipal user ? user : null);
+    this.authorizedClientRepository = authorizedClientRepository;
+    this.request = request;
   }
 
   @Override
   public CamundaUserDTO getCurrentUser() {
-    final var authorizedApplications = getAuthorizedApplications();
-    return getCamundaUser()
-        .map(
-            user -> {
-              final var auth = user.getAuthenticationContext();
-              final var tenants = getTenantsForUser(user);
-              return new CamundaUserDTO(
-                  user.getDisplayName(),
-                  auth.username(),
-                  user.getEmail(),
-                  authorizedApplications,
-                  tenants,
-                  auth.groups(),
-                  auth.roles(),
-                  SALES_PLAN_TYPE,
-                  C8_LINKS,
-                  true);
-            })
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return Optional.ofNullable(authentication)
+        .filter(a -> !a.isAnonymous())
+        .map(this::getCurrentUser)
         .orElse(null);
   }
 
   @Override
   public String getUserToken() {
-    return getCamundaUser()
-        .map(
-            user -> {
-              if (user instanceof final CamundaOidcUser camundaOAuthPrincipal) {
-                // If the user has an access token, return it; otherwise, return the ID token to
-                // match the fallback behavior of CamundaOidcUserService#loadUser.
-                final var token =
-                    camundaOAuthPrincipal.getAccessToken() != null
-                        ? camundaOAuthPrincipal.getAccessToken()
-                        : camundaOAuthPrincipal.getIdToken().getTokenValue();
-                return Json.createValue(token).toString();
-              }
+    final var authentication = SecurityContextHolder.getContext().getAuthentication();
+    final var oidcUser = getOidcUser(authentication);
 
-              throw new UnsupportedOperationException(
-                  "Not supported for token class: " + user.getClass().getName());
-            })
-        .orElseThrow(
-            () ->
-                new UnsupportedOperationException(
-                    "User is not authenticated or does not have a valid token"));
+    if (oidcUser == null) {
+      throw new UnsupportedOperationException("User is not authenticated or is not a OIDC user");
+    }
+
+    return Optional.ofNullable(getToken(authentication, oidcUser))
+        .map(Json::createValue)
+        .map(JsonString::toString)
+        .orElseThrow(() -> new UnsupportedOperationException("User does not have a valid token"));
   }
 
-  protected List<String> getAuthorizedApplications() {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
+  protected String getToken(final Authentication authentication, final OidcUser oidcUser) {
+    return Optional.ofNullable(getAccessToken(authentication))
+        .orElseGet(() -> getIdToken(oidcUser));
+  }
+
+  protected String getAccessToken(final Authentication authentication) {
+    return Optional.of(authentication)
+        .map(OAuth2AuthenticationToken.class::cast)
+        .map(this::getAuthorizedClient)
+        .map(OAuth2AuthorizedClient::getAccessToken)
+        .map(OAuth2AccessToken::getTokenValue)
+        .orElse(null);
+  }
+
+  protected String getIdToken(final OidcUser oidcUser) {
+    return Optional.of(oidcUser)
+        .map(OidcUser::getIdToken)
+        .map(OidcIdToken::getTokenValue)
+        .orElse(null);
+  }
+
+  protected CamundaUserDTO getCurrentUser(final CamundaAuthentication authentication) {
+    final var user = getUser();
+    final var username = authentication.authenticatedUsername();
+    final var groups = authentication.authenticatedGroupIds();
+    final var roles = authentication.authenticatedRoleIds();
+    final var tenants = getTenantsForCamundaAuthentication(authentication);
+    final var authorizedApplications = getAuthorizedApplications(authentication);
+    return new CamundaUserDTO(
+        user.getFullName(),
+        username,
+        user.getEmail(),
+        authorizedApplications,
+        tenants,
+        groups,
+        roles,
+        SALES_PLAN_TYPE,
+        C8_LINKS,
+        true);
+  }
+
+  protected StandardClaimAccessor getUser() {
+    final var authentication = SecurityContextHolder.getContext().getAuthentication();
+    return Optional.ofNullable(getOidcUser(authentication))
+        .map(StandardClaimAccessor.class::cast)
+        .orElseGet(() -> getOidcTokenBasedUser(authentication));
+  }
+
+  protected OidcUser getOidcUser(final Authentication authentication) {
+    return Optional.ofNullable(authentication)
+        .map(Authentication::getPrincipal)
+        .filter(OidcUser.class::isInstance)
+        .map(OidcUser.class::cast)
+        .orElse(null);
+  }
+
+  protected StandardClaimAccessor getOidcTokenBasedUser(final Authentication authentication) {
+    return Optional.ofNullable(authentication)
+        .filter(AbstractOAuth2TokenAuthenticationToken.class::isInstance)
+        .map(AbstractOAuth2TokenAuthenticationToken.class::cast)
+        .map(AbstractOAuth2TokenAuthenticationToken::getTokenAttributes)
+        .map(OidcTokenUser::new)
+        .orElse(null);
+  }
+
+  protected OAuth2AuthorizedClient getAuthorizedClient(
+      final OAuth2AuthenticationToken authenticationToken) {
+    final var clientRegistrationId = authenticationToken.getAuthorizedClientRegistrationId();
+    return authorizedClientRepository.loadAuthorizedClient(
+        clientRegistrationId, authenticationToken, request);
+  }
+
+  protected List<String> getAuthorizedApplications(final CamundaAuthentication authentication) {
     final var applicationAccess =
         resourceAccessProvider.resolveResourceAccess(
             authentication, APPLICATION_ACCESS_AUTHORIZATION);
@@ -115,18 +171,26 @@ public class OidcCamundaUserService implements CamundaUserService {
         : List.of();
   }
 
-  private List<TenantEntity> getTenantsForUser(final CamundaOAuthPrincipal camundaUser) {
-    final var tenants = camundaUser.getAuthenticationContext().tenants();
-    return Optional.ofNullable(tenants)
+  protected List<TenantEntity> getTenantsForCamundaAuthentication(
+      final CamundaAuthentication authentication) {
+    return Optional.ofNullable(authentication.authenticatedTenantIds())
         .filter(t -> !t.isEmpty())
         .map(this::getTenants)
         .orElseGet(List::of);
   }
 
-  private List<TenantEntity> getTenants(final List<String> tenantIds) {
+  protected List<TenantEntity> getTenants(final List<String> tenantIds) {
     return tenantServices
         .withAuthentication(CamundaAuthentication.anonymous())
         .search(TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()))
         .items();
+  }
+
+  record OidcTokenUser(Map<String, Object> claims) implements StandardClaimAccessor {
+
+    @Override
+    public Map<String, Object> getClaims() {
+      return claims;
+    }
   }
 }
