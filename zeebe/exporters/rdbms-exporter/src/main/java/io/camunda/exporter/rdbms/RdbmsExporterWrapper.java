@@ -100,7 +100,7 @@ public class RdbmsExporterWrapper implements Exporter {
                 .build());
 
     final var builder =
-        new RdbmsExporterConfig.Builder()
+        new RdbmsExporter.Builder()
             .partitionId(partitionId)
             .flushInterval(readFlushInterval(context))
             .maxQueueSize(maxQueueSize)
@@ -121,7 +121,7 @@ public class RdbmsExporterWrapper implements Exporter {
     createHandlers(partitionId, rdbmsWriter, builder);
     createBatchOperationHandlers(rdbmsWriter, builder);
 
-    exporter = new RdbmsExporter(builder.build());
+    exporter = builder.build();
   }
 
   @Override
@@ -232,9 +232,7 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private void createHandlers(
-      final long partitionId,
-      final RdbmsWriter rdbmsWriter,
-      final RdbmsExporterConfig.Builder builder) {
+      final long partitionId, final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       builder.withHandler(
@@ -294,7 +292,7 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private void createBatchOperationHandlers(
-      final RdbmsWriter rdbmsWriter, final RdbmsExporterConfig.Builder builder) {
+      final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
     builder.withHandler(
         ValueType.BATCH_OPERATION_CREATION,
         new BatchOperationCreatedExportHandler(

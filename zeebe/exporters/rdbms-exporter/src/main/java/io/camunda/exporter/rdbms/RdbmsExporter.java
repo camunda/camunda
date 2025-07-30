@@ -18,6 +18,8 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -44,13 +46,18 @@ public class RdbmsExporter {
   private ScheduledTask currentFlushTask = null;
   private ScheduledTask currentCleanupTask = null;
 
-  public RdbmsExporter(final RdbmsExporterConfig config) {
-    rdbmsWriter = config.rdbmsWriter();
-    registeredHandlers = config.handlers();
+  private RdbmsExporter(
+      final int partitionId,
+      final Duration flushInterval,
+      final int maxQueueSize,
+      final RdbmsWriter rdbmsWriter,
+      final Map<ValueType, List<RdbmsExportHandler>> handlers) {
+    this.rdbmsWriter = rdbmsWriter;
+    registeredHandlers = handlers;
 
-    partitionId = config.partitionId();
-    flushInterval = config.flushInterval();
-    maxQueueSize = config.maxQueueSize();
+    this.partitionId = partitionId;
+    this.flushInterval = flushInterval;
+    this.maxQueueSize = maxQueueSize;
 
     LOG.info(
         "[RDBMS Exporter] RdbmsExporter created with Configuration: flushInterval={}, maxQueueSize={}",
@@ -227,5 +234,52 @@ public class RdbmsExporter {
       return;
     }
     rdbmsWriter.flush();
+  }
+
+  public static final class Builder {
+
+    private int partitionId;
+    private Duration flushInterval;
+    private int maxQueueSize;
+    private RdbmsWriter rdbmsWriter;
+    private Map<ValueType, List<RdbmsExportHandler>> handlers = new HashMap<>();
+
+    public Builder partitionId(final int value) {
+      partitionId = value;
+      return this;
+    }
+
+    public Builder flushInterval(final Duration value) {
+      flushInterval = value;
+      return this;
+    }
+
+    public Builder maxQueueSize(final int value) {
+      maxQueueSize = value;
+      return this;
+    }
+
+    public Builder rdbmsWriter(final RdbmsWriter value) {
+      rdbmsWriter = value;
+      return this;
+    }
+
+    public Builder handlers(final Map<ValueType, List<RdbmsExportHandler>> value) {
+      handlers = value;
+      return this;
+    }
+
+    public Builder withHandler(final ValueType valueType, final RdbmsExportHandler handler) {
+      if (!handlers.containsKey(valueType)) {
+        handlers.put(valueType, new ArrayList<>());
+      }
+      handlers.get(valueType).add(handler);
+
+      return this;
+    }
+
+    public RdbmsExporter build() {
+      return new RdbmsExporter(partitionId, flushInterval, maxQueueSize, rdbmsWriter, handlers);
+    }
   }
 }

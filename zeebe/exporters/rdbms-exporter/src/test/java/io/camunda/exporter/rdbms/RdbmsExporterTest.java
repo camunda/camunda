@@ -248,7 +248,7 @@ class RdbmsExporterTest {
   }
 
   private void createExporter(
-      final Function<RdbmsExporterConfig.Builder, RdbmsExporterConfig.Builder> builderFunction) {
+      final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction) {
     flushTask = mock(ScheduledTask.class);
     cleanupTask = mock(ScheduledTask.class);
 
@@ -276,13 +276,13 @@ class RdbmsExporterTest {
     doAnswer((invocation) -> executionQueue.flush()).when(rdbmsWriter).flush();
 
     final var builder =
-        new RdbmsExporterConfig.Builder()
+        new RdbmsExporter.Builder()
             .rdbmsWriter(rdbmsWriter)
             .partitionId(0)
             .flushInterval(Duration.ofMillis(500))
             .maxQueueSize(100);
 
-    exporter = new RdbmsExporter(builderFunction.apply(builder).build());
+    exporter = builderFunction.apply(builder).build();
     exporter.open(controller);
   }
 
