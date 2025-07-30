@@ -2065,6 +2065,56 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/form-core@npm:1.15.0":
+  version: 1.15.0
+  resolution: "@tanstack/form-core@npm:1.15.0"
+  dependencies:
+    "@tanstack/store": "npm:^0.7.2"
+  checksum: 10c0/eeb069554a16743dd89737dce29529b2249c13c361e15e7d76b5de680498a4d04c61a93c3afcfb20301ee22edb0b328d4405aeb2a3eee87c3901431ae9e689d9
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-form@npm:1.15.0":
+  version: 1.15.0
+  resolution: "@tanstack/react-form@npm:1.15.0"
+  dependencies:
+    "@tanstack/form-core": "npm:1.15.0"
+    "@tanstack/react-store": "npm:^0.7.3"
+    decode-formdata: "npm:^0.9.0"
+    devalue: "npm:^5.1.1"
+  peerDependencies:
+    "@tanstack/react-start": ^1.112.0
+    react: ^17.0.0 || ^18.0.0 || ^19.0.0
+    vinxi: ^0.5.0
+  peerDependenciesMeta:
+    "@tanstack/react-start":
+      optional: true
+    vinxi:
+      optional: true
+  checksum: 10c0/7a02bc8e6d36c38e14d90849cd33a21d9bd79d4398aa18ce393a3eae2a790e4cba8025ebb25621728db15e21182f5a67bfbc26b5f80ba6b39d90c96427cda018
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-store@npm:^0.7.3":
+  version: 0.7.3
+  resolution: "@tanstack/react-store@npm:0.7.3"
+  dependencies:
+    "@tanstack/store": "npm:0.7.2"
+    use-sync-external-store: "npm:^1.5.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/3487bdf25d43e52f2230f195c4e9266c270af44acbaa7665b87d7d1d809560aa1e84cef8065b0acbe3ca5745a616cd2be3d7bab69c06de6ff57e8eef88ee8499
+  languageName: node
+  linkType: hard
+
+"@tanstack/store@npm:0.7.2, @tanstack/store@npm:^0.7.2":
+  version: 0.7.2
+  resolution: "@tanstack/store@npm:0.7.2"
+  checksum: 10c0/7b9764d156365d0a65b8be87fc67dcad16a45dd260b43e7c90162b39a940a1c764701e6b5f9e5e1e34ec77c86348332db343c658901f67972119d6f1ddf58f1f
+  languageName: node
+  linkType: hard
+
 "@types/babel__core@npm:^7.20.5":
   version: 7.20.5
   resolution: "@types/babel__core@npm:7.20.5"
@@ -3023,6 +3073,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"decode-formdata@npm:^0.9.0":
+  version: 0.9.0
+  resolution: "decode-formdata@npm:0.9.0"
+  checksum: 10c0/8db0a57a14d4d98d4951fbdb7def91c5a5342f75b5274523e7ac56f6d9b39bb4e8f5ec616eb4fc0b501ef717084a86e63e450722a3a865313558977716c074a0
+  languageName: node
+  linkType: hard
+
 "decode-named-character-reference@npm:^1.0.0":
   version: 1.0.2
   resolution: "decode-named-character-reference@npm:1.0.2"
@@ -3066,6 +3123,13 @@ __metadata:
   version: 2.0.3
   resolution: "detect-libc@npm:2.0.3"
   checksum: 10c0/88095bda8f90220c95f162bf92cad70bd0e424913e655c20578600e35b91edc261af27531cf160a331e185c0ced93944bc7e09939143225f56312d7fd800fdb7
+  languageName: node
+  linkType: hard
+
+"devalue@npm:^5.1.1":
+  version: 5.1.1
+  resolution: "devalue@npm:5.1.1"
+  checksum: 10c0/f6717a856fd54216959abd341cb189e47a9b37d72d8419e055ae77567ff4ed0fb683b1ffb6a71067f645adae5991bffabe6468a3e2385937bff49273e71c1f51
   languageName: node
   linkType: hard
 
@@ -4022,6 +4086,7 @@ __metadata:
     "@carbon/elements": "npm:^11.57.0"
     "@carbon/react": "npm:1.78.2"
     "@playwright/test": "npm:^1.51.1"
+    "@tanstack/react-form": "npm:1.15.0"
     "@types/carbon-components-react": "npm:^7.55.13"
     "@types/carbon__elements": "npm:^11.10.3"
     "@types/event-source-polyfill": "npm:1.0.5"
@@ -6752,6 +6817,15 @@ __metadata:
     react: ">=16.8.0"
     react-dom: ">=16.8.0"
   checksum: 10c0/2ad33426ddcdaa06e2162cf585a44ef9b65a0319ca63f8d10b69b829a6bb7cfec2fb0922274f56ff4731e0e6b6123f4db5151f639f48b044f4dd522a2848a14d
+  languageName: node
+  linkType: hard
+
+"use-sync-external-store@npm:^1.5.0":
+  version: 1.5.0
+  resolution: "use-sync-external-store@npm:1.5.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/1b8663515c0be34fa653feb724fdcce3984037c78dd4a18f68b2c8be55cc1a1084c578d5b75f158d41b5ddffc2bf5600766d1af3c19c8e329bb20af2ec6f52f4
   languageName: node
   linkType: hard
 
