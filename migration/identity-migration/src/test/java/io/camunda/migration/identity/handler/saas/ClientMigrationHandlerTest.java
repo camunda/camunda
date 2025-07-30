@@ -22,9 +22,12 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -177,5 +180,30 @@ public class ClientMigrationHandlerTest {
 
     // then
     verify(authorizationServices, times(9)).createAuthorization(any());
+  }
+
+  @Test
+  public void shouldRetryWithBackpressure() {
+    // given
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+    final var members =
+        new Members(
+            List.of(),
+            List.of(
+                new Client("client", "client-id", List.of(Permission.ZEEBE, Permission.OPERATE)),
+                new Client("tasklist-client", "tasklist-client-id", List.of(Permission.TASKLIST))));
+    when(consoleClient.fetchMembers()).thenReturn(members);
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(authorizationServices, times(10)).createAuthorization(any());
   }
 }
