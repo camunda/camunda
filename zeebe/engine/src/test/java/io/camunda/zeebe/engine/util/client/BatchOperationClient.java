@@ -162,7 +162,7 @@ public final class BatchOperationClient {
 
       if (waitForStarted) {
         RecordingExporter.batchOperationCreationRecords()
-            .withIntent(BatchOperationIntent.STARTED)
+            .withIntent(BatchOperationIntent.INITIALIZED)
             .withBatchOperationKey(resultingRecord.getKey())
             .await();
       }
