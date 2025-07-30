@@ -110,6 +110,8 @@ public final class EngineRule extends ExternalResource {
       new RecordingExporterTestWatcher();
   private final int partitionCount;
   private boolean awaitIdentitySetup = false;
+  private ResetRecordingExporterMode awaitIdentitySetupResetMode =
+      ResetRecordingExporterMode.AFTER_IDENTITY_SETUP;
   private boolean initializeRoutingState = true;
 
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
@@ -193,6 +195,12 @@ public final class EngineRule extends ExternalResource {
     awaitIdentitySetup = true;
     withFeatureFlags(ff -> ff.setEnableIdentitySetup(true));
     return this;
+  }
+
+  public EngineRule withIdentitySetup(
+      final ResetRecordingExporterMode awaitIdentitySetupResetMode) {
+    this.awaitIdentitySetupResetMode = awaitIdentitySetupResetMode;
+    return withIdentitySetup();
   }
 
   public EngineRule withJobStreamer(final JobStreamer jobStreamer) {
@@ -606,7 +614,10 @@ public final class EngineRule extends ExternalResource {
           .await();
     }
 
-    RecordingExporter.reset();
+    if (awaitIdentitySetupResetMode == ResetRecordingExporterMode.AFTER_IDENTITY_SETUP) {
+      // reset the RecordingExporter to avoid that the identity setup is included in the test
+      RecordingExporter.reset();
+    }
   }
 
   public void awaitProcessingOf(final Record<?> record) {
@@ -692,5 +703,10 @@ public final class EngineRule extends ExternalResource {
   public enum ResetRecordingExporterTestWatcherMode {
     ONLY_BEFORE_AND_AFTER_ALL_TESTS,
     BEFORE_EACH_TEST
+  }
+
+  public enum ResetRecordingExporterMode {
+    AFTER_IDENTITY_SETUP,
+    NO_RESET_AFTER_IDENTITY_SETUP
   }
 }
