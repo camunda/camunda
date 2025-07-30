@@ -30,6 +30,9 @@ import org.awaitility.core.TerminalFailureException;
 
 public final class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
 
+  private static final String INITIAL_FAILURE_MESSAGE =
+      "<No assertion error occurred. Maybe, the assertion timed out before it could be tested.>";
+
   private final boolean expectFailure;
 
   private Duration assertionTimeout = CamundaAssert.DEFAULT_ASSERTION_TIMEOUT;
@@ -49,7 +52,7 @@ public final class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
 
   @Override
   public void untilAsserted(final ThrowingRunnable assertion) throws AssertionError {
-    final AtomicReference<String> failureMessage = new AtomicReference<>("<no assertion error>");
+    final AtomicReference<String> failureMessage = new AtomicReference<>(INITIAL_FAILURE_MESSAGE);
     final AtomicBoolean failFastCondition = new AtomicBoolean(false);
 
     try {

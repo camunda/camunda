@@ -28,6 +28,9 @@ import org.awaitility.core.ConditionTimeoutException;
 
 public class AwaitilityBehavior implements CamundaAssertAwaitBehavior {
 
+  private static final String INITIAL_FAILURE_MESSAGE =
+      "<No assertion error occurred. Maybe, the assertion timed out before it could be tested.>";
+
   private Duration assertionTimeout = CamundaAssert.DEFAULT_ASSERTION_TIMEOUT;
   private Duration assertionInterval = CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
 
@@ -35,7 +38,7 @@ public class AwaitilityBehavior implements CamundaAssertAwaitBehavior {
   public void untilAsserted(final ThrowingRunnable assertion) throws AssertionError {
     // If await() times out, the exception doesn't contain the assertion error. Use a reference to
     // store the error's failure message.
-    final AtomicReference<String> failureMessage = new AtomicReference<>("<no assertion error>");
+    final AtomicReference<String> failureMessage = new AtomicReference<>(INITIAL_FAILURE_MESSAGE);
     try {
       Awaitility.await()
           .timeout(assertionTimeout)
