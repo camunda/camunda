@@ -1456,7 +1456,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by(grpc_method) (rate(grpc_server_handled_total{camunda_region=~\"$region\", namespace=~\"$namespace\", grpc_method=~\"$grpc_method\"}[$__rate_interval]))",
+          "expr": "sum by(method) (rate(grpc_server_processing_duration_seconds_count{camunda_region=~\"$region\", namespace=~\"$namespace\", method=~\"$method\"}[$__rate_interval]))",
           "format": "time_series",
           "instant": false,
           "legendFormat": "__auto",
@@ -1500,7 +1500,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "grpc_method"
+              "options": "method"
             },
             "properties": [
               {
@@ -1545,7 +1545,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by(grpc_method) (rate(grpc_server_handled_total{\n    camunda_region=~\"$region\",\n    grpc_method=~\"$grpc_method\",\n    namespace=~\"$namespace\",\n    }[$__rate_interval]))",
+          "expr": "sum by(method) (rate(grpc_server_processing_duration_seconds_count{\n    camunda_region=~\"$region\",\n    method=~\"$method\",\n    namespace=~\"$namespace\",\n    }[$__rate_interval]))",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1672,7 +1672,7 @@
             "uid": "${DS_THANOS:_GLOBAL-VIEW}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95,\n  sum by (le, grpc_method) (\n    increase(grpc_server_handled_latency_seconds_bucket{\n      camunda_region=~\"$region\",\n      grpc_method=~\"$grpc_method\",\n      grpc_method!~\"ActivateJobs\"\n    }[$__rate_interval])\n  )\n)\n",
+          "expr": "histogram_quantile(0.95,\n  sum by (le, method) (\n    increase(grpc_server_processing_duration_seconds_bucket{\n      camunda_region=~\"$region\",\n      method=~\"$method\",\n      method!~\"ActivateJobs\"\n    }[$__rate_interval])\n  )\n)\n",
           "legendFormat": "__auto",
           "range": true,
           "refId": "Latency p95"
@@ -1718,7 +1718,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "grpc_method"
+              "options": "method"
             },
             "properties": [
               {
@@ -1763,7 +1763,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile(0.95,\n  sum by (le, grpc_method) (\n    increase(grpc_server_handled_latency_seconds_bucket{\n      camunda_region=~\"$region\",\n      grpc_method=~\"$grpc_method\",\n      namespace=~\"$namespace\",\n    }[$__rate_interval])\n  )\n)\n",
+          "expr": "histogram_quantile(0.95,\n  sum by (le, method) (\n    increase(grpc_server_processing_duration_seconds_bucket{\n      camunda_region=~\"$region\",\n      method=~\"$method\",\n      namespace=~\"$namespace\",\n    }[$__rate_interval])\n  )\n)\n",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1889,7 +1889,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum by(grpc_method) (rate(grpc_server_handled_total{camunda_region=~\"$region\", namespace=~\"$namespace\", grpc_method=~\"$grpc_method\", grpc_code=\"INTERNAL\"}[$__rate_interval])) / sum by(grpc_method) (rate(grpc_server_handled_total{camunda_region=~\"$region\", namespace=~\"$namespace\", grpc_method=~\"$grpc_method\"}[$__rate_interval]))",
+          "expr": "sum by(method) (rate(grpc_server_processing_duration_seconds_count{camunda_region=~\"$region\", namespace=~\"$namespace\", method=~\"$method\", grpc_code=\"INTERNAL\"}[$__rate_interval])) / sum by(method) (rate(grpc_server_processing_duration_seconds_count{camunda_region=~\"$region\", namespace=~\"$namespace\", method=~\"$method\"}[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1939,7 +1939,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "grpc_method"
+              "options": "method"
             },
             "properties": [
               {
@@ -1985,7 +1985,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "\n  sum by(grpc_method) (\n    rate(grpc_server_handled_total{\n      camunda_region=~\"$region\",\n      code!=\"OK\",\n      grpc_method=~\"$grpc_method\",\n      namespace=~\"$namespace\",\n    }[$__rate_interval])\n  )\n  /\n  sum by(grpc_method) (\n    rate(grpc_server_handled_total{\n      camunda_region=~\"$region\",\n      grpc_method=~\"$grpc_method\",\n      namespace=~\"$namespace\",\n    }[$__rate_interval])\n  )\n",
+          "expr": "\n  sum by(method) (\n    rate(grpc_server_processing_duration_seconds_count{\n      camunda_region=~\"$region\",\n      code!=\"OK\",\n      method=~\"$method\",\n      namespace=~\"$namespace\",\n    }[$__rate_interval])\n  )\n  /\n  sum by(method) (\n    rate(grpc_server_processing_duration_seconds_count{\n      camunda_region=~\"$region\",\n      method=~\"$method\",\n      namespace=~\"$namespace\",\n    }[$__rate_interval])\n  )\n",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -2100,7 +2100,7 @@
             "uid": "${DS_THANOS:_GLOBAL-VIEW}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{camunda_region=~\"$region\", namespace=~\"$namespace\", grpc_method=~\"$grpc_method\", grpc_method!~\"ActivateJobs\"}[$__rate_interval])) by (le)",
+          "expr": "sum(increase(grpc_server_processing_duration_seconds_bucket{camunda_region=~\"$region\", namespace=~\"$namespace\", method=~\"$method\", method!~\"ActivateJobs\"}[$__rate_interval])) by (le)",
           "format": "heatmap",
           "legendFormat": "__auto",
           "range": true,
@@ -3083,20 +3083,21 @@
   "templating": {
     "list": [
       {
-        "allowCustomValue": false,
+        "allValue": ".*",
+        "allowCustomValue": true,
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(namespace)",
+        "definition": "label_values(atomix_role,namespace)",
         "includeAll": true,
         "multi": true,
         "name": "namespace",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(namespace)",
+          "query": "label_values(atomix_role,namespace)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -3108,7 +3109,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(camunda_region)",
         "includeAll": true,
@@ -3125,20 +3126,21 @@
         "type": "query"
       },
       {
-        "allowCustomValue": false,
+        "allValue": ".*",
+        "allowCustomValue": true,
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(http_server_requests_seconds_count,container)",
+        "definition": "label_values(atomix_role,container)",
         "includeAll": true,
         "multi": true,
         "name": "container",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(http_server_requests_seconds_count,container)",
+          "query": "label_values(atomix_role,container)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -3150,7 +3152,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(http_server_requests_seconds_count{container=~\"$container\", uri!~\"^/($|actuator($|/.*)|\\\\*\\\\*($|/.*)|\\\\*\\\\*/\\\\{regex:\\\\[\\\\\\\\w-]+\\\\})$\"},uri)",
         "includeAll": true,
@@ -3171,16 +3173,16 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(grpc_server_handled_latency_seconds_bucket,grpc_method)",
+        "definition": "label_values(grpc_server_processing_duration_seconds_count,method)",
         "includeAll": true,
         "multi": true,
-        "name": "grpc_method",
+        "name": "method",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(grpc_server_handled_latency_seconds_bucket,grpc_method)",
+          "query": "label_values(grpc_server_processing_duration_seconds_count,method)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -3207,6 +3209,6 @@
   "timezone": "browser",
   "title": "Core Features Overview",
   "uid": "fel9lob8vajggd",
-  "version": 107,
+  "version": 109,
   "weekStart": ""
 }
