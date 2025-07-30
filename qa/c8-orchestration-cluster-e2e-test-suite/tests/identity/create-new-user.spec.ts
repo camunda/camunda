@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {LOGIN_CREDENTIALS} from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
+import {generateRandomStringAsync} from '../../utils/randomString';
 
 test.describe.parallel('login page', () => {
   test.beforeEach(async ({page, loginPage}) => {
@@ -29,14 +30,15 @@ test.describe.parallel('login page', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  const TEST_USER = {
-    username: 'Test',
-    name: 'Test User',
-    email: 'test@test.com',
-    password: 'test',
-  };
-
   test('Create new Test user', async ({page, identityUsersPage}) => {
+    const randomString = await generateRandomStringAsync(3);
+    const TEST_USER = {
+      username: 'Test' + randomString,
+      name: 'Test User' + randomString,
+      email: `test${randomString}@test.com`,
+      password: `test${randomString}`,
+    };
+
     await identityUsersPage.createUser(TEST_USER);
 
     const item = identityUsersPage.usersList.getByRole('cell', {
