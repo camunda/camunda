@@ -182,6 +182,23 @@ class BatchOperationStatusHandlerTest {
     }
 
     @Test
+    void shouldUpdateEntityOnNotFound() {
+      final var record =
+          ImmutableRecord.<T>builder()
+              .from(createFailureRecord())
+              .withRejectionType(RejectionType.NOT_FOUND)
+              .build();
+
+      final var entity = new OperationEntity();
+
+      handler.updateEntity(record, entity);
+
+      assertThat(entity.getState()).isEqualTo(OperationState.SKIPPED);
+      assertThat(entity.getErrorMessage()).isNull();
+      assertThat(entity.getCompletedDate()).isNull();
+    }
+
+    @Test
     void shouldFlushEntityFields() {
       final var entity = new OperationEntity();
       entity.setState(OperationState.COMPLETED);
@@ -269,7 +286,7 @@ class BatchOperationStatusHandlerTest {
       return factory.generateRecord(
           ValueType.PROCESS_INSTANCE_MODIFICATION,
           b ->
-              b.withRejectionType(RejectionType.NOT_FOUND)
+              b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withIntent(ProcessInstanceModificationIntent.MODIFY)
                   .withBatchOperationReference(batchOperationKey));
     }
@@ -313,7 +330,7 @@ class BatchOperationStatusHandlerTest {
       return factory.generateRecord(
           ValueType.PROCESS_INSTANCE_MIGRATION,
           b ->
-              b.withRejectionType(RejectionType.NOT_FOUND)
+              b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withIntent(ProcessInstanceMigrationIntent.MIGRATE)
                   .withBatchOperationReference(batchOperationKey));
     }
@@ -380,7 +397,7 @@ class BatchOperationStatusHandlerTest {
       return factory.generateRecord(
           ValueType.PROCESS_INSTANCE_MIGRATION,
           b ->
-              b.withRejectionType(RejectionType.NOT_FOUND)
+              b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withValue(
                       ImmutableProcessInstanceRecordValue.builder()
                           .from(factory.generateObject(ProcessInstanceRecordValue.class))
@@ -429,7 +446,7 @@ class BatchOperationStatusHandlerTest {
       return factory.generateRecord(
           ValueType.INCIDENT,
           b ->
-              b.withRejectionType(RejectionType.NOT_FOUND)
+              b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withIntent(IncidentIntent.RESOLVE)
                   .withBatchOperationReference(batchOperationKey));
     }

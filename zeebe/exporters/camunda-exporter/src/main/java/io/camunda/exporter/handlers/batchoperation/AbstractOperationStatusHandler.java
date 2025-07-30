@@ -19,6 +19,7 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.HashMap;
@@ -90,9 +91,13 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
       entity.setState(OperationState.COMPLETED);
       entity.setCompletedDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else if (isFailed(record)) {
-      entity.setState(OperationState.FAILED);
-      entity.setErrorMessage(
-          String.format(ERROR_MSG, record.getRejectionType(), record.getRejectionReason()));
+      if (record.getRejectionType() == RejectionType.NOT_FOUND) {
+        entity.setState(OperationState.SKIPPED);
+      } else {
+        entity.setState(OperationState.FAILED);
+        entity.setErrorMessage(
+            String.format(ERROR_MSG, record.getRejectionType(), record.getRejectionReason()));
+      }
     }
   }
 
