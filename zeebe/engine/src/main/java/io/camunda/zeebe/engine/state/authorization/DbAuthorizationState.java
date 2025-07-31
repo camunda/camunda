@@ -97,7 +97,10 @@ public class DbAuthorizationState implements MutableAuthorizationState {
         .getPermissionTypes()
         .forEach(
             permissionType -> {
-              permissions.addAuthorizationScope(permissionType, authorization.getResourceId());
+              permissions.addAuthorizationScope(
+                  permissionType,
+                  new AuthorizationScope(
+                      authorization.getResourceMatcher(), authorization.getResourceId()));
             });
     permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, permissions);
 
@@ -134,7 +137,10 @@ public class DbAuthorizationState implements MutableAuthorizationState {
                   persistedAuthorization.getOwnerId(),
                   persistedAuthorization.getResourceType(),
                   permissionType,
-                  Set.of(persistedAuthorization.getResourceId()));
+                  Set.of(
+                      new AuthorizationScope(
+                          persistedAuthorization.getResourceMatcher(),
+                          persistedAuthorization.getResourceId())));
             });
 
     // delete the old authorization record
@@ -157,7 +163,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   }
 
   @Override
-  public Set<AuthorizationScope> getResourceIdentifiers(
+  public Set<AuthorizationScope> getAuthorizationScopes(
       final AuthorizationOwnerType ownerType,
       final String ownerId,
       final AuthorizationResourceType resourceType,
@@ -189,7 +195,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
       final String ownerId,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
-      final Set<String> resourceIds) {
+      final Set<AuthorizationScope> resourceIds) {
     this.ownerType.wrapString(ownerType.name());
     this.ownerId.wrapString(ownerId);
     this.resourceType.wrapString(resourceType.name());
