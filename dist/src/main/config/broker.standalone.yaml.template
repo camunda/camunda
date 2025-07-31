@@ -1061,6 +1061,30 @@
         #   batchOperationCache:
         #     maxCacheSize: 10000
 
+      # RDBMS Exporter ----------
+      # An example configuration for the rdbms exporter:
+      #
+      # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_RDBMS_..."
+      #
+      # rdbms:
+        # The class name is not import, since spring is used to create the instance.
+        # Just the name of the exporter itself MUST be rdbms.
+        # className: RdbmsExporter
+        #
+        # args:
+        #   flushInterval: PT0.5S
+        #   maxQueueSize: 1000
+        #   cleanupBatchSize: 1000
+        #   defaultHistoryTTL: PT1M
+        #   defaultBatchOperationHistoryTTL: PT7D
+        #   cancelProcessInstanceHistoryTTL: PT1D
+        #   migrateProcessInstanceHistoryTTL: PT10D
+        #   modifyProcessInstanceHistoryTTL: PT7D
+        #   resolveIncidentHistoryTTL: PT5D
+        #   minHistoryCleanupInterval: PT1S
+        #   maxHistoryCleanupInterval: PT1H
+        #   historyCleanupBatchSize: 1000
+
     # processing:
       # Sets the maximum number of commands that processed within one batch.
       # The processor will process until no more follow up commands are created by the initial command
