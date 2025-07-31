@@ -27,7 +27,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "io.camunda.process.test")
+@ConfigurationProperties(prefix = "camunda.process-test")
 public class CamundaProcessTestRuntimeConfiguration {
 
   private String camundaDockerImageName =
