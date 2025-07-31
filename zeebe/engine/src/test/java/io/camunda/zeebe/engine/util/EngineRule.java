@@ -77,6 +77,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher.ResetMode;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -124,6 +125,7 @@ public final class EngineRule extends ExternalResource {
   private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
   private SearchClientsProxy searchClientsProxy;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
+  private ResetRecordingExporterTestWatcherMode resetRecordingExporterTestWatcherMode;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -157,9 +159,21 @@ public final class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
+    if (resetRecordingExporterTestWatcherMode
+        == ResetRecordingExporterTestWatcherMode.ONLY_BEFORE_AND_AFTER_ALL_TESTS) {
+      RecordingExporter.reset();
+    }
     start();
     if (awaitIdentitySetup) {
       awaitIdentitySetup();
+    }
+  }
+
+  @Override
+  protected void after() {
+    if (resetRecordingExporterTestWatcherMode
+        == ResetRecordingExporterTestWatcherMode.ONLY_BEFORE_AND_AFTER_ALL_TESTS) {
+      RecordingExporter.reset();
     }
   }
 
@@ -229,6 +243,18 @@ public final class EngineRule extends ExternalResource {
   public EngineRule withInitialRoutingState(final RoutingState routingInfo) {
     initializeRoutingState = false;
     initialRoutingState = Optional.of(routingInfo);
+    return this;
+  }
+
+  public EngineRule withResetRecordingExporterTestWatcherMode(
+      final ResetRecordingExporterTestWatcherMode resetMode) {
+    resetRecordingExporterTestWatcherMode = resetMode;
+    switch (resetMode) {
+      case ONLY_BEFORE_AND_AFTER_ALL_TESTS ->
+          // so, never on individual tests
+          recordingExporterTestWatcher.withResetMode(ResetMode.NEVER);
+      case BEFORE_EACH_TEST -> recordingExporterTestWatcher.withResetMode(ResetMode.ON_STARTING);
+    }
     return this;
   }
 
@@ -661,5 +687,10 @@ public final class EngineRule extends ExternalResource {
     public DirectBuffer getDirectBuffer() {
       return genericBuffer;
     }
+  }
+
+  public enum ResetRecordingExporterTestWatcherMode {
+    ONLY_BEFORE_AND_AFTER_ALL_TESTS,
+    BEFORE_EACH_TEST
   }
 }
