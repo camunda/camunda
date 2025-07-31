@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.Network;
@@ -29,7 +30,8 @@ import org.testcontainers.containers.SocatContainer;
 final class FaultToleranceIT {
 
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
-  private final ProtocolFactory factory = new ProtocolFactory();
+  // omit authorizations since they are removed from the records during serialization
+  private final ProtocolFactory factory = new ProtocolFactory(b -> b.withAuthorizations(Map.of()));
   private final ExporterTestController controller = new ExporterTestController();
   private final OpensearchExporter exporter = new OpensearchExporter();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
