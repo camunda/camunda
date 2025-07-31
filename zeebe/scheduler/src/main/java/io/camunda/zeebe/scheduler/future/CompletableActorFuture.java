@@ -283,12 +283,21 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   @Override
   public <U> ActorFuture<U> andThen(final Supplier<ActorFuture<U>> next, final Executor executor) {
-    return andThen(ignored -> next.get(), executor);
+    return andThen(
+        ignored -> {
+          try {
+            return next.get();
+          } catch (final Exception e) {
+            return CompletableActorFuture.completedExceptionally(e);
+          }
+        },
+        executor);
   }
 
   @Override
   public <U> ActorFuture<U> andThen(
       final Function<V, ActorFuture<U>> next, final Executor executor) {
+<<<<<<< HEAD
     final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
     onComplete(
         (thisResult, thisError) -> {
@@ -305,6 +314,34 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
                       }
                     },
                     executor);
+=======
+    return andThen(
+        (v, err) -> {
+          if (err != null) {
+            return CompletableActorFuture.completedExceptionally(err);
+          } else {
+            try {
+              return next.apply(v);
+            } catch (final Exception e) {
+              return CompletableActorFuture.completedExceptionally(e);
+            }
+          }
+        },
+        executor);
+  }
+
+  @Override
+  public <U> ActorFuture<U> andThen(
+      final BiFunction<V, Throwable, ActorFuture<U>> next, final Executor executor) {
+    final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
+    onComplete(
+        (thisResult, thisError) -> {
+          try {
+            final var future = next.apply(thisResult, thisError);
+            future.onComplete(nextFuture, executor);
+          } catch (final Exception e) {
+            nextFuture.completeExceptionally(e);
+>>>>>>> 5be725b3 (fix: `andThen` completes exceptionally when `next` throws)
           }
         },
         executor);
