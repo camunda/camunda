@@ -15,8 +15,10 @@ import org.agrona.concurrent.IdleStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @Configuration(proxyBeanMethods = false)
+@Import({IdleStrategyBasedProperties.class})
 public final class ActorIdleStrategyConfiguration {
   private final IdleStrategyBasedProperties properties;
 

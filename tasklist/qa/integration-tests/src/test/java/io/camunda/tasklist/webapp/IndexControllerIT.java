@@ -9,6 +9,8 @@ package io.camunda.tasklist.webapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestApplication;
 import org.junit.jupiter.api.Disabled;
@@ -24,7 +26,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @Disabled("Will be addressed in other issues")
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
-    classes = {TestApplication.class},
+    classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       "spring.thymeleaf.prefix = classpath:/META-INF/resources/",

@@ -17,7 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration(proxyBeanMethods = false)
 @ComponentScan("io.camunda.application.commons")
-@ComponentScan(basePackages = {"io.camunda.configuration"})
 @EnableAutoConfiguration
 public class CommonsModuleConfiguration {
   @Bean
