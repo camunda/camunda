@@ -111,9 +111,9 @@ public class OpensearchExporter implements Exporter {
 
     if (!shouldExportRecord(record)) {
       // ignore the record but still update the last exported position
-      // so that we don't block compaction.
+      // so that we don't block compaction. Don't update the controller yet, this needs to be done
+      // on the next flush.
       lastPosition = record.getPosition();
-      updateLastExportedPosition();
       return;
     }
 
