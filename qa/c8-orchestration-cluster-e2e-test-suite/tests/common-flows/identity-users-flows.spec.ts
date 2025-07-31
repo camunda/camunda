@@ -11,10 +11,9 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
-import {createTestData} from '../../utils/constants';
-import {sleep} from '../../utils/sleep';
+import {createTestData} from 'utils/constants';
 
-test.describe('Users Page Tests', () => {
+test.describe('Identity User Flows', () => {
   test.beforeEach(async ({loginPage, page}) => {
     await navigateToApp(page, 'identity');
     await loginPage.login('demo', 'demo');
@@ -44,7 +43,6 @@ test.describe('Users Page Tests', () => {
     await expect(identityUsersPage.usersList).toContainText(testUser.username);
     await identityUsersPage.deleteUser(testUser);
     await identityHeader.logout();
-    await sleep(2000);
     await expect(page).toHaveURL(
       `${relativizePath(Paths.login('identity'))}?next=/identity/`,
     );
@@ -53,27 +51,63 @@ test.describe('Users Page Tests', () => {
       await navigateToApp(page, `identity`);
       await loginPage.login(testUser.username, testUser.password);
       await expect(page).toHaveURL(new RegExp(`identity`));
-      await expect(loginPage.errorMessage).toContainText(
-        /Username and [Pp]assword do(?: not|n't) match/,
-      );
+      await loginPage.expectInvalidCredentialsError();
     });
 
     await test.step(`Deleted user cannot access Tasklist`, async () => {
       await navigateToApp(page, `tasklist`);
       await loginPage.login(testUser.username, testUser.password);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
-      await expect(loginPage.errorMessage).toContainText(
-        /Username and [Pp]assword do(?: not|n't) match/,
-      );
+      await loginPage.expectInvalidCredentialsError();
     });
 
     await test.step(`Deleted user cannot access Operate`, async () => {
       await navigateToApp(page, `operate`);
       await loginPage.login(testUser.username, testUser.password);
       await expect(page).toHaveURL(new RegExp(`operate`));
-      await expect(loginPage.errorMessage).toContainText(
-        /Username and [Pp]assword do(?: not|n't) match/,
-      );
+      await loginPage.expectInvalidCredentialsError();
+    });
+  });
+
+  // eslint-disable-next-line playwright/expect-expect
+  test('Brand new user cannot access any OC cluster apps', async ({
+    page,
+    loginPage,
+    identityUsersPage,
+    identityHeader,
+    accessDeniedPage,
+  }) => {
+    let testUser:
+      | {username: string; password: string; email?: string; name?: string}
+      | undefined;
+
+    await test.step(`Create new user`, async () => {
+      const testData = createTestData({user: true});
+      testUser = testData.user!;
+
+      await identityUsersPage.createUser({
+        username: testUser.username,
+        password: testUser.password,
+        email: testUser.email!,
+        name: testUser.name ?? testUser.username,
+      });
+    });
+
+    await test.step(`Login with the new user and verify Identity access is denied`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(testUser!.username, testUser!.password);
+
+      await accessDeniedPage.expectAccessDenied();
+    });
+
+    await test.step(`Verify Operate access is denied`, async () => {
+      await page.goto(relativizePath(`/operate`));
+      await accessDeniedPage.expectAccessDenied();
+    });
+
+    await test.step(`Verify Tasklist access is denied`, async () => {
+      await page.goto(relativizePath(`/tasklist`));
+      await accessDeniedPage.expectAccessDenied();
     });
   });
 });

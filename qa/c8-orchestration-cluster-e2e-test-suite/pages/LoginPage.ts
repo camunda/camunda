@@ -23,7 +23,7 @@ export class LoginPage {
     this.usernameInput = page.getByLabel('Username');
     this.passwordInput = page.getByRole('textbox', {name: 'password'});
     this.loginButton = page.getByRole('button', {name: 'Login'});
-    this.errorMessage = page.getByRole('alert').first();
+    this.errorMessage = page.locator('.cds--inline-notification__title');
     this.tasklistHeading = page.getByRole('heading', {name: 'Tasklist'});
     this.operateHeading = page.getByRole('heading', {name: 'Operate'});
     this.identityHeading = page.getByRole('heading', {name: 'Identity'});
@@ -52,5 +52,11 @@ export class LoginPage {
     await this.fillPassword(password);
     await expect(this.loginButton).toBeVisible({timeout: 120000});
     await this.clickLoginButton();
+  }
+
+  async expectInvalidCredentialsError(): Promise<void> {
+    await expect(this.errorMessage).toContainText(
+      /Username and [Pp]assword do(?: not|n't) match/,
+    );
   }
 }
