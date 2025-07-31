@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -19,17 +20,14 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubProcessActivityRequest;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue.AdHocSubProcessActivateElementInstructionValue;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -41,195 +39,31 @@ public class AdHocSubProcessActivityServicesTest {
   private static final String AD_HOC_SUB_PROCESS_INSTANCE_KEY = "123456";
   private static final String ELEMENT_ID = "activity1";
 
-  private AdHocSubProcessActivityServices services;
+  private static final AdHocSubProcessActivateActivitiesRequest DEFAULT_ACTIVATION_REQUEST =
+      new AdHocSubProcessActivateActivitiesRequest(
+          AD_HOC_SUB_PROCESS_INSTANCE_KEY,
+          List.of(new AdHocSubProcessActivateActivityReference(ELEMENT_ID, Map.of())),
+          false);
+  private static final BrokerResponse<AdHocSubProcessInstructionRecord> DEFAULT_BROKER_RESPONSE =
+      new BrokerResponse<>(new AdHocSubProcessInstructionRecord());
 
   @Mock private BrokerClient brokerClient;
-
   @Mock private SecurityContextProvider securityContextProvider;
-
   @Captor private ArgumentCaptor<BrokerActivateAdHocSubProcessActivityRequest> requestCaptor;
+
+  private AdHocSubProcessActivityServices services;
 
   @BeforeEach
   public void before() {
-    final CamundaAuthentication authentication = CamundaAuthentication.none();
+    final CamundaAuthentication authentication =
+        CamundaAuthentication.of(b -> b.claims(Map.of("claim", "value")));
     services =
         new AdHocSubProcessActivityServices(brokerClient, securityContextProvider, authentication);
   }
 
   @Test
-  public void shouldActivateActivitiesWithEmptyVariables() {
-    // given
-    final AdHocSubProcessActivateActivityReference element =
-        new AdHocSubProcessActivateActivityReference(ELEMENT_ID, Map.of());
-    final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(
-            AD_HOC_SUB_PROCESS_INSTANCE_KEY, List.of(element), true);
-
-    final AdHocSubProcessInstructionRecord expectedResponse =
-        new AdHocSubProcessInstructionRecord();
-    final BrokerResponse<AdHocSubProcessInstructionRecord> brokerResponse =
-        new BrokerResponse<>(expectedResponse);
-
-    when(brokerClient.sendRequest(requestCaptor.capture()))
-        .thenReturn(CompletableFuture.completedFuture(brokerResponse));
-
-    // when
-    final AdHocSubProcessInstructionRecord result = services.activateActivities(request).join();
-
-    // then
-    assertThat(result).isEqualTo(expectedResponse);
-
-    final BrokerActivateAdHocSubProcessActivityRequest capturedRequest = requestCaptor.getValue();
-    assertThat(capturedRequest.getRequestWriter().getAdHocSubProcessInstanceKey())
-        .isEqualTo(AD_HOC_SUB_PROCESS_INSTANCE_KEY);
-  }
-
-  @Test
-  public void shouldActivateActivitiesWithVariables() {
-    // given
-    final Map<String, Object> variables = Map.of("key1", "value1", "key2", 42);
-    final AdHocSubProcessActivateActivityReference element =
-        new AdHocSubProcessActivateActivityReference(ELEMENT_ID, variables);
-    final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(
-            AD_HOC_SUB_PROCESS_INSTANCE_KEY, List.of(element), false);
-
-    final AdHocSubProcessInstructionRecord expectedResponse =
-        new AdHocSubProcessInstructionRecord();
-    final BrokerResponse<AdHocSubProcessInstructionRecord> brokerResponse =
-        new BrokerResponse<>(expectedResponse);
-
-    when(brokerClient.sendRequest(requestCaptor.capture()))
-        .thenReturn(CompletableFuture.completedFuture(brokerResponse));
-
-    // when
-    final AdHocSubProcessInstructionRecord result = services.activateActivities(request).join();
-
-    // then
-    assertThat(result).isEqualTo(expectedResponse);
-
-    final BrokerActivateAdHocSubProcessActivityRequest capturedRequest = requestCaptor.getValue();
-    assertThat(capturedRequest.getRequestWriter().getAdHocSubProcessInstanceKey())
-        .isEqualTo(AD_HOC_SUB_PROCESS_INSTANCE_KEY);
-  }
-
-  @Test
-  public void shouldActivateMultipleActivities() {
-    // given
-    final AdHocSubProcessActivateActivityReference element1 =
-        new AdHocSubProcessActivateActivityReference("activity1", Map.of("var1", "value1"));
-    final AdHocSubProcessActivateActivityReference element2 =
-        new AdHocSubProcessActivateActivityReference("activity2", Map.of("var2", "value2"));
-    final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(
-            AD_HOC_SUB_PROCESS_INSTANCE_KEY, List.of(element1, element2), true);
-
-    final AdHocSubProcessInstructionRecord expectedResponse =
-        new AdHocSubProcessInstructionRecord();
-    final BrokerResponse<AdHocSubProcessInstructionRecord> brokerResponse =
-        new BrokerResponse<>(expectedResponse);
-
-    when(brokerClient.sendRequest(requestCaptor.capture()))
-        .thenReturn(CompletableFuture.completedFuture(brokerResponse));
-
-    // when
-    final AdHocSubProcessInstructionRecord result = services.activateActivities(request).join();
-
-    // then
-    assertThat(result).isEqualTo(expectedResponse);
-
-    final BrokerActivateAdHocSubProcessActivityRequest capturedRequest = requestCaptor.getValue();
-    assertThat(capturedRequest.getRequestWriter().getAdHocSubProcessInstanceKey())
-        .isEqualTo(AD_HOC_SUB_PROCESS_INSTANCE_KEY);
-    assertThat(capturedRequest.getRequestWriter().getActivateElements()).hasSize(2);
-    assertThat(capturedRequest.getRequestWriter().getActivateElements())
-        .filteredOn(AdHocSubProcessActivateElementInstructionValue::getElementId, "activity1")
-        .extracting(AdHocSubProcessActivateElementInstructionValue::getVariables)
-        .containsExactly(Map.of("var1", "value1"));
-    assertThat(capturedRequest.getRequestWriter().getActivateElements())
-        .filteredOn(AdHocSubProcessActivateElementInstructionValue::getElementId, "activity2")
-        .extracting(AdHocSubProcessActivateElementInstructionValue::getVariables)
-        .containsExactly(Map.of("var2", "value2"));
-  }
-
-  @Test
-  public void shouldActivateActivitiesWithNullVariables() {
-    // given
-    final AdHocSubProcessActivateActivityReference element =
-        new AdHocSubProcessActivateActivityReference(ELEMENT_ID, null);
-    final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(
-            AD_HOC_SUB_PROCESS_INSTANCE_KEY, List.of(element), false);
-
-    final AdHocSubProcessInstructionRecord expectedResponse =
-        new AdHocSubProcessInstructionRecord();
-    final BrokerResponse<AdHocSubProcessInstructionRecord> brokerResponse =
-        new BrokerResponse<>(expectedResponse);
-
-    when(brokerClient.sendRequest(requestCaptor.capture()))
-        .thenReturn(CompletableFuture.completedFuture(brokerResponse));
-
-    // when
-    final AdHocSubProcessInstructionRecord result = services.activateActivities(request).join();
-
-    // then
-    assertThat(result).isEqualTo(expectedResponse);
-
-    final BrokerActivateAdHocSubProcessActivityRequest capturedRequest = requestCaptor.getValue();
-    assertThat(capturedRequest.getRequestWriter().getAdHocSubProcessInstanceKey())
-        .isEqualTo(AD_HOC_SUB_PROCESS_INSTANCE_KEY);
-  }
-
-  @Test
-  public void shouldReturnNewInstanceWithAuthentication() {
-    // given
-    final CamundaAuthentication newAuthentication = CamundaAuthentication.none();
-
-    // when
-    final AdHocSubProcessActivityServices newServices =
-        services.withAuthentication(newAuthentication);
-
-    // then
-    assertThat(newServices).isNotSameAs(services);
-    assertThat(newServices).isInstanceOf(AdHocSubProcessActivityServices.class);
-  }
-
-  @Test
-  public void shouldHandleEmptyElementsList() {
-    // given
-    final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(
-            AD_HOC_SUB_PROCESS_INSTANCE_KEY, List.of(), true);
-
-    final AdHocSubProcessInstructionRecord expectedResponse =
-        new AdHocSubProcessInstructionRecord();
-    final BrokerResponse<AdHocSubProcessInstructionRecord> brokerResponse =
-        new BrokerResponse<>(expectedResponse);
-
-    when(brokerClient.sendRequest(requestCaptor.capture()))
-        .thenReturn(CompletableFuture.completedFuture(brokerResponse));
-
-    // when
-    final AdHocSubProcessInstructionRecord result = services.activateActivities(request).join();
-
-    // then
-    assertThat(result).isEqualTo(expectedResponse);
-
-    final BrokerActivateAdHocSubProcessActivityRequest capturedRequest = requestCaptor.getValue();
-    assertThat(capturedRequest.getRequestWriter().getAdHocSubProcessInstanceKey())
-        .isEqualTo(AD_HOC_SUB_PROCESS_INSTANCE_KEY);
-    assertThat(capturedRequest.getRequestWriter().getActivateElements()).isEmpty();
-  }
-
-  @Test
   public void shouldPropagateCompletableFutureFromBrokerClient() {
     // given
-    final AdHocSubProcessActivateActivityReference element =
-        new AdHocSubProcessActivateActivityReference("activity1", Map.of());
-    final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(
-            AD_HOC_SUB_PROCESS_INSTANCE_KEY, List.of(element), true);
-
     final CompletableFuture<BrokerResponse<AdHocSubProcessInstructionRecord>> brokerFuture =
         new CompletableFuture<>();
 
@@ -238,7 +72,7 @@ public class AdHocSubProcessActivityServicesTest {
 
     // when
     final CompletableFuture<AdHocSubProcessInstructionRecord> result =
-        services.activateActivities(request);
+        services.activateActivities(DEFAULT_ACTIVATION_REQUEST);
 
     // then
     assertThat(result).isNotCompleted();
@@ -248,21 +82,15 @@ public class AdHocSubProcessActivityServicesTest {
         new AdHocSubProcessInstructionRecord();
     final BrokerResponse<AdHocSubProcessInstructionRecord> brokerResponse =
         new BrokerResponse<>(expectedResponse);
+
     brokerFuture.complete(brokerResponse);
 
     assertThat(result.join()).isEqualTo(expectedResponse);
   }
 
-  @ParameterizedTest
-  @MethodSource("cancelRemainingInstancesProvider")
-  public void shouldSetCancelRemainingInstances(Boolean cancelRemainingInstances) {
+  @Test
+  public void shouldActivateActivitiesWithIncludingAuthenticationClaims() {
     // given
-    final AdHocSubProcessActivateActivityReference element =
-        new AdHocSubProcessActivateActivityReference(ELEMENT_ID, Map.of());
-    final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(
-            AD_HOC_SUB_PROCESS_INSTANCE_KEY, List.of(element), cancelRemainingInstances);
-
     final AdHocSubProcessInstructionRecord expectedResponse =
         new AdHocSubProcessInstructionRecord();
     final BrokerResponse<AdHocSubProcessInstructionRecord> brokerResponse =
@@ -272,19 +100,95 @@ public class AdHocSubProcessActivityServicesTest {
         .thenReturn(CompletableFuture.completedFuture(brokerResponse));
 
     // when
-    final AdHocSubProcessInstructionRecord result = services.activateActivities(request).join();
+    final AdHocSubProcessInstructionRecord result =
+        services.activateActivities(DEFAULT_ACTIVATION_REQUEST).join();
 
     // then
     assertThat(result).isEqualTo(expectedResponse);
-
-    final BrokerActivateAdHocSubProcessActivityRequest capturedRequest = requestCaptor.getValue();
-    assertThat(capturedRequest.getRequestWriter().getAdHocSubProcessInstanceKey())
-        .isEqualTo(AD_HOC_SUB_PROCESS_INSTANCE_KEY);
-    assertThat(capturedRequest.getRequestWriter().isCancelRemainingInstances())
-        .isEqualTo(cancelRemainingInstances != null ? cancelRemainingInstances : false);
+    assertThat(requestCaptor.getValue().getAuthorization().getClaims())
+        .containsExactly(entry("claim", "value"));
   }
 
-  private static Stream<Arguments> cancelRemainingInstancesProvider() {
-    return Stream.of(Arguments.of(true), Arguments.of(false), Arguments.of((Boolean) null));
+  @Test
+  public void shouldReturnNewServiceInstanceWithUpdatedAuthentication() {
+    // given
+    final CamundaAuthentication newAuthentication =
+        CamundaAuthentication.of(b -> b.claims(Map.of("newClaim", "newValue")));
+
+    // when
+    when(brokerClient.sendRequest(requestCaptor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
+
+    final AdHocSubProcessActivityServices newServices =
+        services.withAuthentication(newAuthentication);
+
+    newServices.activateActivities(DEFAULT_ACTIVATION_REQUEST).join();
+
+    // then
+    assertThat(newServices).isNotSameAs(services);
+    assertThat(requestCaptor.getValue().getAuthorization().getClaims())
+        .containsExactly(entry("newClaim", "newValue"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldActivateActivities(final boolean cancelRemainingInstances) {
+    // given
+    final AdHocSubProcessActivateActivitiesRequest request =
+        new AdHocSubProcessActivateActivitiesRequest(
+            AD_HOC_SUB_PROCESS_INSTANCE_KEY,
+            List.of(
+                new AdHocSubProcessActivateActivityReference("activity1", Map.of()),
+                new AdHocSubProcessActivateActivityReference("activity2", Map.of("var", "value"))),
+            cancelRemainingInstances);
+
+    when(brokerClient.sendRequest(requestCaptor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
+
+    // when
+    services.activateActivities(request).join();
+
+    // then
+    final var instruction = requestCaptor.getValue().getRequestWriter();
+    assertThat(instruction.getAdHocSubProcessInstanceKey())
+        .isEqualTo(AD_HOC_SUB_PROCESS_INSTANCE_KEY);
+    assertThat(instruction.isCancelRemainingInstances()).isEqualTo(cancelRemainingInstances);
+    assertThat(instruction.getActivateElements())
+        .satisfiesExactly(
+            element -> {
+              assertThat(element.getElementId()).isEqualTo("activity1");
+              assertThat(element.getVariables()).isEmpty();
+            },
+            element -> {
+              assertThat(element.getElementId()).isEqualTo("activity2");
+              assertThat(element.getVariables()).containsExactlyEntriesOf(Map.of("var", "value"));
+            });
+  }
+
+  @Test
+  public void shouldActivateActivitiesWithNullVariables() {
+    // given
+    final AdHocSubProcessActivateActivitiesRequest request =
+        new AdHocSubProcessActivateActivitiesRequest(
+            AD_HOC_SUB_PROCESS_INSTANCE_KEY,
+            List.of(new AdHocSubProcessActivateActivityReference(ELEMENT_ID, null)),
+            false);
+
+    when(brokerClient.sendRequest(requestCaptor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
+
+    // when
+    services.activateActivities(request).join();
+
+    // then
+    final var instruction = requestCaptor.getValue().getRequestWriter();
+    assertThat(instruction.getAdHocSubProcessInstanceKey())
+        .isEqualTo(AD_HOC_SUB_PROCESS_INSTANCE_KEY);
+    assertThat(instruction.getActivateElements())
+        .satisfiesExactly(
+            element -> {
+              assertThat(element.getElementId()).isEqualTo(ELEMENT_ID);
+              assertThat(element.getVariables()).isEmpty();
+            });
   }
 }
