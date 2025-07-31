@@ -14,11 +14,9 @@ import {
 
 const mockSearchIncidentsByProcessInstance = (processInstanceKey: string) =>
   mockPostRequest<QueryIncidentsResponseBody>(
-    (
-      endpoints.queryProcessInstanceIncidents.getUrl as (payload: {
-        processInstanceKey: string;
-      }) => string
-    )({processInstanceKey}),
+    endpoints.queryProcessInstanceIncidents.getUrl({
+      processInstanceKey,
+    }),
   );
 
 export {mockSearchIncidentsByProcessInstance};

@@ -12,15 +12,11 @@ import {
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 import {requestWithThrow, type RequestResult} from 'modules/request';
 
-const fetchProcessDefinition = async (params: {
+const fetchProcessDefinition = async (payload: {
   processDefinitionKey: string;
 }): RequestResult<ProcessDefinition> => {
   return requestWithThrow<ProcessDefinition>({
-    url: (
-      endpoints.getProcessDefinition.getUrl as (params: {
-        processDefinitionKey: string;
-      }) => string
-    )(params),
+    url: endpoints.getProcessDefinition.getUrl(payload),
     method: endpoints.getProcessDefinition.method,
   });
 };
