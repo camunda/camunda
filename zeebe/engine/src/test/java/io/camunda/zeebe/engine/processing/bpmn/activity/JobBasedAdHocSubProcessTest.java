@@ -18,11 +18,13 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
@@ -171,5 +173,59 @@ public class JobBasedAdHocSubProcessTest {
         .hasProcessDefinitionKey(adHocSubProcess.getValue().getProcessDefinitionKey())
         .hasBpmnProcessId(adHocSubProcess.getValue().getBpmnProcessId())
         .hasProcessDefinitionVersion(adHocSubProcess.getValue().getVersion());
+  }
+
+  @Test
+  public void shouldCreateIncidentOnJobFail() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A1");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var jobKey =
+        ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .withRetries(0)
+        .withErrorCode("errorCode")
+        .withErrorMessage("jobFailed")
+        .fail();
+
+    // then
+    final var adHocSubProcess =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .withElementId(AHSP_ELEMENT_ID)
+            .getFirst();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.FAILED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(AHSP_ELEMENT_ID)
+                .getFirst()
+                .getValue())
+        .hasType(JOB_TYPE)
+        .hasElementInstanceKey(adHocSubProcess.getKey())
+        .hasElementId(adHocSubProcess.getValue().getElementId())
+        .hasProcessDefinitionKey(adHocSubProcess.getValue().getProcessDefinitionKey())
+        .hasBpmnProcessId(adHocSubProcess.getValue().getBpmnProcessId())
+        .hasProcessDefinitionVersion(adHocSubProcess.getValue().getVersion());
+
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasElementId(AHSP_ELEMENT_ID)
+        .hasElementInstanceKey(adHocSubProcess.getKey())
+        .hasErrorType(ErrorType.AD_HOC_SUB_PROCESS_NO_RETRIES)
+        .hasErrorMessage("jobFailed");
   }
 }
