@@ -119,6 +119,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             this::acceptCommand,
             authCheckBehavior,
             List.of(
+                this::checkAdHocSubprocessInstanceIsActive,
                 this::checkTaskListenerJobForProvidingVariables,
                 this::checkTaskListenerJobForSupportingDenying,
                 this::checkTaskListenerJobForDenyingWithCorrections,
@@ -238,6 +239,25 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
         jobRecord.getElementInstanceKey(),
         AdHocSubProcessInstructionIntent.ACTIVATE,
         activationRecord);
+  }
+
+  // checkAdHocSubprocessInstanceIsActive
+  private Either<Rejection, JobRecord> checkAdHocSubprocessInstanceIsActive(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    if (job.getJobKind() == JobKind.AD_HOC_SUB_PROCESS) {
+      final var adHocSubProcessElementInstance =
+          elementInstanceState.getInstance(job.getElementInstanceKey());
+      if (adHocSubProcessElementInstance != null && !adHocSubProcessElementInstance.isActive()) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_STATE,
+                "Expected to complete ad-hoc sub-process job, but the ad-hoc sub-process instance is not active "
+                    + "(job key '%d', type '%s', processInstanceKey '%d')"
+                        .formatted(command.getKey(), job.getType(), job.getProcessInstanceKey())));
+      }
+    }
+
+    return Either.right(job);
   }
 
   /** We currently don't support completing task listener jobs with variables. */
