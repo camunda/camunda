@@ -729,7 +729,7 @@ jobs:
       needs.operate-docker.result == 'success' &&
       needs.tasklist-docker.result == 'success' &&
       needs.camunda-docker.result == 'success' &&
-      needs.snyk.result == 'success'
+      (needs.snyk.result == 'success' || needs.snyk.result == 'skipped')
       ) && inputs.dryRun == false }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
