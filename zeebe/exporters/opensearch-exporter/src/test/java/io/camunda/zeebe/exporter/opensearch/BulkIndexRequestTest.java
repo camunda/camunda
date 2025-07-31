@@ -149,7 +149,7 @@ final class BulkIndexRequestTest {
   final class SerializationTest {
     @Test
     void shouldIndexRecordSerialized() {
-      // given - use an empty authorization for comparison, since the bulk request
+      // given - use an empty authorization for comparison, since the bulk request will remove it
       final var record = recordFactory.generateRecord(b -> b.withAuthorizations(Map.of()));
       final var action = new BulkIndexAction("index", "id", "routing");
 
