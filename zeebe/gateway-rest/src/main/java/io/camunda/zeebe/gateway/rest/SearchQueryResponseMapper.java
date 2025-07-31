@@ -139,7 +139,7 @@ public final class SearchQueryResponseMapper {
   private SearchQueryResponseMapper() {}
 
   public static UsageMetricsResponse toUsageMetricsResponse(
-      final SearchQueryResult<UsageMetricStatisticsEntity> result, final boolean tenants) {
+      final SearchQueryResult<UsageMetricStatisticsEntity> result, final boolean withTenants) {
 
     final var statistics = result.items().getFirst();
 
@@ -150,7 +150,7 @@ public final class SearchQueryResponseMapper {
             .decisionInstances(statistics.totalEdi())
             .activeTenants(statistics.at());
 
-    if (tenants && !statistics.tenants().isEmpty()) {
+    if (withTenants && statistics.tenants() != null) {
       response.tenants(
           statistics.tenants().entrySet().stream()
               .collect(

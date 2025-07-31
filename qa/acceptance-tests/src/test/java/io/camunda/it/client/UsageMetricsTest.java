@@ -52,7 +52,6 @@ public class UsageMetricsTest {
                       .setExportInterval(EXPORT_INTERVAL));
 
   private static final String ADMIN = "admin";
-  private static final String USER1 = "user1";
   private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";
   private static final String PROCESS_ID = "service_tasks_v1";
@@ -60,13 +59,10 @@ public class UsageMetricsTest {
   @UserDefinition
   private static final TestUser ADMIN_USER = new TestUser(ADMIN, "password", List.of());
 
-  @UserDefinition
-  private static final TestUser USER1_USER = new TestUser(USER1, "password", List.of());
-
-  private static CamundaClient camundaClient;
   private static OffsetDateTime exportedTime;
 
   private static void waitForUsageMetrics(
+      final CamundaClient camundaClient,
       final OffsetDateTime startTime,
       final OffsetDateTime endTime,
       final Consumer<UsageMetricsStatistics> fnRequirements) {
@@ -86,12 +82,12 @@ public class UsageMetricsTest {
     createTenant(adminClient, TENANT_B);
     assignUserToTenant(adminClient, ADMIN, TENANT_A);
     assignUserToTenant(adminClient, ADMIN, TENANT_B);
-    assignUserToTenant(adminClient, USER1, TENANT_A);
 
     // Create PI & wait for metrics to be exported
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
     waitForUsageMetrics(
+        adminClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
         res -> assertThat(res.getProcessInstances()).isEqualTo(1));
@@ -115,6 +111,7 @@ public class UsageMetricsTest {
 
     // Wait for rPI and eDI metrics to be exported
     waitForUsageMetrics(
+        adminClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
         res -> {
@@ -124,26 +121,26 @@ public class UsageMetricsTest {
   }
 
   @Test
-  void shouldReturnMetrics() {
+  void shouldReturnMetrics(@Authenticated(ADMIN) final CamundaClient adminClient) {
     // given
     final var now = OffsetDateTime.now();
 
     // when
     final var actual =
-        camundaClient.newUsageMetricsRequest(now.minusDays(1), now.plusDays(1)).send().join();
+        adminClient.newUsageMetricsRequest(now.minusDays(1), now.plusDays(1)).send().join();
 
     // then
-    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(2, 3, 0, 2, null));
+    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(2, 3, 0, 2, Map.of()));
   }
 
   @Test
-  void shouldReturnMetricsWithTenants() {
+  void shouldReturnMetricsWithTenants(@Authenticated(ADMIN) final CamundaClient adminClient) {
     // given
     final var now = OffsetDateTime.now();
 
     // when
     final var actual =
-        camundaClient
+        adminClient
             .newUsageMetricsRequest(now.minusDays(1), now.plusDays(1))
             .withTenants(true)
             .send()
@@ -165,13 +162,13 @@ public class UsageMetricsTest {
   }
 
   @Test
-  void shouldReturnMetricsWithinInterval() {
+  void shouldReturnMetricsWithinInterval(@Authenticated(ADMIN) final CamundaClient adminClient) {
     // given
     final var now = OffsetDateTime.now();
 
     // when
     final var actual =
-        camundaClient
+        adminClient
             .newUsageMetricsRequest(now.minusDays(1), exportedTime)
             .withTenants(true)
             .send()
@@ -185,13 +182,13 @@ public class UsageMetricsTest {
   }
 
   @Test
-  void shouldReturnMetricsByTenantId() {
+  void shouldReturnMetricsByTenantId(@Authenticated(ADMIN) final CamundaClient adminClient) {
     // given
     final var now = OffsetDateTime.now();
 
     // when
     final var actual =
-        camundaClient
+        adminClient
             .newUsageMetricsRequest(now.minusDays(1), now.plusDays(1))
             .tenantId(TENANT_B)
             .withTenants(true)

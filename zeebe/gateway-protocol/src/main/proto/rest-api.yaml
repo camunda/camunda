@@ -7373,6 +7373,7 @@ components:
         - GROUP
         - USER
         - ROLE
+        - USAGE_METRIC
     OwnerTypeEnum:
       description: The type of the owner of permissions.
       enum:

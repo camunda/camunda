@@ -13,6 +13,7 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
@@ -33,6 +34,15 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
           .extracting("field", "gte", "lt")
           .containsExactly(
               "eventTime", "2021-01-01T00:00:00.000+0000", "2023-01-01T00:00:00.000+0000");
+    };
+  }
+
+  private static Consumer<SearchTermsQuery> assertTenantCheck(final List<String> tenantIds) {
+    return termsQuery -> {
+      assertThat(termsQuery.field()).isEqualTo("tenantId");
+      assertThat(termsQuery.values())
+          .extracting("value")
+          .containsExactlyInAnyOrderElementsOf(tenantIds);
     };
   }
 
@@ -162,7 +172,17 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
 
     // then
     final var queryVariant = searchQuery.queryOption();
-    assertThat(queryVariant).isInstanceOfSatisfying(SearchRangeQuery.class, assertRangeQuery());
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            searchBoolQuery -> {
+              assertThat(searchBoolQuery.must()).hasSize(2);
+              assertThat(searchBoolQuery.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(SearchRangeQuery.class, assertRangeQuery());
+              assertThat(searchBoolQuery.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermsQuery.class, assertTenantCheck(List.of("a", "b")));
+            });
   }
 
   @Test
@@ -202,6 +222,16 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
 
     // then
     final var queryVariant = searchQuery.queryOption();
-    assertThat(queryVariant).isInstanceOfSatisfying(SearchRangeQuery.class, assertRangeQuery());
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            searchBoolQuery -> {
+              assertThat(searchBoolQuery.must()).hasSize(2);
+              assertThat(searchBoolQuery.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(SearchRangeQuery.class, assertRangeQuery());
+              assertThat(searchBoolQuery.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermsQuery.class, assertTenantCheck(List.of("a", "b")));
+            });
   }
 }

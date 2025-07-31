@@ -58,6 +58,7 @@ public enum AuthorizationResourceType {
       PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
       PermissionType.UPDATE,
       PermissionType.READ),
+  USAGE_METRIC(PermissionType.READ),
   UNSPECIFIED();
 
   private final Set<PermissionType> supportedPermissionTypes;

@@ -15,6 +15,8 @@
  */
 package io.camunda.client.impl.statistics.response;
 
+import static java.util.Optional.ofNullable;
+
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
@@ -42,7 +44,7 @@ public class StatisticsResponseMapper {
   public static UsageMetricsStatistics toUsageMetricsResponse(final UsageMetricsResponse response) {
 
     Map<String, UsageMetricsStatisticsItem> tenants = null;
-    if (response.getTenants() != null && !response.getTenants().isEmpty()) {
+    if (response.getTenants() != null) {
       tenants =
           response.getTenants().entrySet().stream()
               .collect(
@@ -50,16 +52,18 @@ public class StatisticsResponseMapper {
     }
 
     return new UsageMetricsStatisticsImpl(
-        response.getProcessInstances(),
-        response.getDecisionInstances(),
-        response.getAssignees(),
-        response.getActiveTenants(),
+        ofNullable(response.getProcessInstances()).orElse(0L),
+        ofNullable(response.getDecisionInstances()).orElse(0L),
+        ofNullable(response.getAssignees()).orElse(0L),
+        ofNullable(response.getActiveTenants()).orElse(0L),
         tenants);
   }
 
   public static UsageMetricsStatisticsItem toUsageMetricsResponseItem(
       final UsageMetricsResponseItem response) {
     return new UsageMetricsStatisticsItemImpl(
-        response.getProcessInstances(), response.getDecisionInstances(), response.getAssignees());
+        ofNullable(response.getProcessInstances()).orElse(0L),
+        ofNullable(response.getDecisionInstances()).orElse(0L),
+        ofNullable(response.getAssignees()).orElse(0L));
   }
 }
