@@ -26,8 +26,9 @@ import org.springframework.context.annotation.Bean;
 @ImportAutoConfiguration({
   CamundaProcessTestProxyConfiguration.class,
   CamundaProcessTestDefaultConfiguration.class,
+  LegacyCamundaProcessTestRuntimeConfiguration.class,
+  CamundaProcessTestRuntimeConfiguration.class,
   CamundaAutoConfiguration.class,
-  CamundaProcessTestRuntimeConfiguration.class
 })
 @AutoConfigureBefore(CamundaAutoConfiguration.class)
 public class CamundaProcessTestAutoConfiguration {

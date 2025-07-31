@@ -20,16 +20,14 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 @Configuration
-@ConfigurationProperties(prefix = "camunda.process-test")
-public class CamundaProcessTestRuntimeConfiguration {
+@ConfigurationProperties(prefix = "io.camunda.process.test")
+@Deprecated
+public class LegacyCamundaProcessTestRuntimeConfiguration {
 
   private String camundaDockerImageName =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME;
@@ -50,66 +48,20 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
 
-  @Bean
-  @Primary
-  public CamundaProcessTestRuntimeConfiguration runtimeConfiguration(
-      final LegacyCamundaProcessTestRuntimeConfiguration legacyConfiguration) {
-    final CamundaProcessTestRuntimeConfiguration mergedConfig =
-        new CamundaProcessTestRuntimeConfiguration();
-
-    BeanUtils.copyProperties(legacyConfiguration, mergedConfig);
-
-    return mergedConfig;
-  }
-
-  /**
-   * Gets the Camunda docker image version.
-   *
-   * @return the camunda docker image version
-   * @deprecated use getCamundaDockerImageVersion
-   * @since 8.8.0
-   */
-  @Deprecated
-  public String getCamundaVersion() {
-    return getCamundaDockerImageVersion();
-  }
-
-  /**
-   * Sets the Camunda docker image version.
-   *
-   * @param camundaDockerImageVersion the Camunda docker image version to set
-   * @deprecated use setCamundaDockerImageVersion
-   * @since 8.8.0
-   */
-  @Deprecated
-  public void setCamundaVersion(final String camundaDockerImageVersion) {
-    this.camundaDockerImageVersion = camundaDockerImageVersion;
-  }
-
-  /**
-   * Gets the Camunda docker image version.
-   *
-   * @return the camunda docker image version
-   */
-  public String getCamundaDockerImageVersion() {
-    return camundaDockerImageVersion;
-  }
-
-  /**
-   * Sets the Camunda docker image version.
-   *
-   * @param camundaDockerImageVersion the Camunda docker image version to set
-   */
-  public void setCamundaDockerImageVersion(final String camundaDockerImageVersion) {
-    this.camundaDockerImageVersion = camundaDockerImageVersion;
-  }
-
   public String getCamundaDockerImageName() {
     return camundaDockerImageName;
   }
 
   public void setCamundaDockerImageName(final String camundaDockerImageName) {
     this.camundaDockerImageName = camundaDockerImageName;
+  }
+
+  public String getCamundaDockerImageVersion() {
+    return camundaDockerImageVersion;
+  }
+
+  public void setCamundaDockerImageVersion(final String camundaDockerImageVersion) {
+    this.camundaDockerImageVersion = camundaDockerImageVersion;
   }
 
   public Map<String, String> getCamundaEnvVars() {
