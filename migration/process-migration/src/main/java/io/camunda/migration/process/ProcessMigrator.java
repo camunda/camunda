@@ -9,6 +9,7 @@ package io.camunda.migration.process;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.api.MigrationTimeoutException;
 import io.camunda.migration.api.Migrator;
 import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.es.ElasticsearchAdapter;
@@ -21,6 +22,7 @@ import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -45,6 +47,7 @@ public class ProcessMigrator implements Migrator {
   private ScheduledFuture<?> countdownTask;
   private final ScheduledExecutorService scheduler;
   private final MetricRegistry metricRegistry;
+  private final Instant timeout;
 
   public ProcessMigrator(
       final ProcessMigrationProperties properties,
@@ -57,6 +60,7 @@ public class ProcessMigrator implements Migrator {
             : new OpensearchAdapter(properties, connect);
     scheduler = Executors.newScheduledThreadPool(1);
     metricRegistry = new MetricRegistry(meterRegistry);
+    timeout = Instant.now().plus(properties.getTimeout());
   }
 
   @Override
@@ -95,9 +99,21 @@ public class ProcessMigrator implements Migrator {
     return null;
   }
 
-  private boolean shouldContinue(final List<ProcessEntity> processes) {
+  private boolean shouldContinue(final List<ProcessEntity> processes)
+      throws MigrationTimeoutException {
     if (!processes.isEmpty()) {
       return true;
+    }
+    if (Instant.now().isAfter(timeout)) {
+      if (countdownTask != null && !countdownTask.isDone()) {
+        LOG.info("Process Migration has timed out but countdown is in progress");
+        return true;
+      } else if (countdownTask != null && countdownTask.isDone()) {
+        return false;
+      } else {
+        throw new MigrationTimeoutException(
+            "Process Migration timed out after " + properties.getTimeout());
+      }
     }
     return countdownTask == null || !countdownTask.isDone();
   }
@@ -192,6 +208,9 @@ public class ProcessMigrator implements Migrator {
     } else if (exception.getCause() instanceof final OpenSearchException ex) {
       return ex.error().reason() != null
           && !MigrationUtil.MIGRATION_REPOSITORY_NOT_EXISTS.matcher(ex.error().reason()).find();
+    } else if (exception instanceof MigrationTimeoutException) {
+      LOG.warn("Process Migration timed out after running for {}", properties.getTimeout());
+      return true;
     }
     return true;
   }
