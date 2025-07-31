@@ -190,13 +190,13 @@ public class TenantController {
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{tenantId}/mapping-rules/search")
-  public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesInTenant(
+  public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesForTenant(
       @PathVariable final String tenantId,
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            mappingRuleQuery -> searchMappingRulesInTenant(tenantId, mappingRuleQuery));
+            mappingRuleQuery -> searchMappingRulesForTenant(tenantId, mappingRuleQuery));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
@@ -332,7 +332,7 @@ public class TenantController {
     }
   }
 
-  private ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesInTenant(
+  private ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesForTenant(
       final String tenantId, final MappingRuleQuery mappingRuleQuery) {
     try {
       final var composedMappingRuleQuery = buildMappingRuleQuery(tenantId, mappingRuleQuery);

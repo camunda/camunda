@@ -76,7 +76,8 @@ public class DefaultCamundaAuthenticationConverter
 
     if (camundaPrincipal instanceof final CamundaOAuthPrincipal principal) {
       claims.put(Authorization.USER_TOKEN_CLAIMS, principal.getClaims());
-      authenticationBuilder.mapping(principal.getOAuthContext().mappingIds().stream().toList());
+      authenticationBuilder.mappingRule(
+          principal.getOAuthContext().mappingRuleIds().stream().toList());
     }
 
     return authenticationBuilder.claims(claims).build();

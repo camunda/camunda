@@ -26,7 +26,7 @@ erDiagram
     string name
     string description
   }
-  Mapping {
+  MappingRule {
     string id PK
     string name
     string claimName
@@ -42,7 +42,7 @@ erDiagram
     string[] resourceIds
   }
 
-  Mapping }o..o{ Tenant: "assigned"
+  MappingRule }o..o{ Tenant: "assigned"
   User ||--o{ Authorization: "granted"
   Authorization ||--|{ Permission: "granted"
   Group }o..o{ Tenant: "assigned"
@@ -52,9 +52,9 @@ erDiagram
   User }o..o{ Group: "member"
   User }o..o{ Role: "assigned"
   User }o..o{ Tenant: "assigned"
-  Mapping ||--o{ Authorization: "granted"
-  Mapping }o..o{ Role: "assigned"
-  Mapping }o..o{ Group: "member"
+  MappingRule ||--o{ Authorization: "granted"
+  MappingRule }o..o{ Role: "assigned"
+  MappingRule }o..o{ Group: "member"
   Role }o--o{ Tenant: "assigned"
   Client ||--o{ Authorization: "granted"
   Client }o..o{ Group: "member"
@@ -64,6 +64,6 @@ erDiagram
 
 ### Unmanaged entities
 
-Under the "simple mapping" feature, users and clients are not managed as their own entities.
+Under the "simple mapping rule" feature, users and clients are not managed as their own entities.
 All relationships such as group, role and tenant membership, and assigned authorizations, are purely
 based on the username or client id.

@@ -102,9 +102,9 @@ public class MappingRuleMigrationHandlerTest {
     mappingRuleMigrationHandler.migrate();
 
     // then
-    final var mappingCapture = ArgumentCaptor.forClass(MappingRuleDTO.class);
-    verify(mappingRuleServices, times(1)).createMappingRule(mappingCapture.capture());
-    final var mappingRuleDTO = mappingCapture.getValue();
+    final var mappingRuleCapture = ArgumentCaptor.forClass(MappingRuleDTO.class);
+    verify(mappingRuleServices, times(1)).createMappingRule(mappingRuleCapture.capture());
+    final var mappingRuleDTO = mappingRuleCapture.getValue();
     assertThat(mappingRuleDTO.mappingRuleId()).isEqualTo("rule1");
     assertThat(mappingRuleDTO.name()).isEqualTo("rule1");
     assertThat(mappingRuleDTO.claimName()).isEqualTo("claimName");
@@ -190,7 +190,7 @@ public class MappingRuleMigrationHandlerTest {
   }
 
   @Test
-  public void shouldRetryWithBackpressureOnMappingCreation() {
+  public void shouldRetryWithBackpressureOnMappingRuleCreation() {
     // given
     when(managementIdentityClient.fetchMappingRules())
         .thenReturn(
@@ -225,7 +225,7 @@ public class MappingRuleMigrationHandlerTest {
   }
 
   @Test
-  public void shouldRetryWithBackpressureOnMappingRoleAssignation() {
+  public void shouldRetryWithBackpressureOnMappingRuleRoleAssignation() {
     // given
     when(managementIdentityClient.fetchMappingRules())
         .thenReturn(
@@ -260,7 +260,7 @@ public class MappingRuleMigrationHandlerTest {
   }
 
   @Test
-  public void shouldRetryWithBackpressureOnMappingTenantAssignation() {
+  public void shouldRetryWithBackpressureOnMappingRuleTenantAssignation() {
     // given
     when(managementIdentityClient.fetchMappingRules())
         .thenReturn(

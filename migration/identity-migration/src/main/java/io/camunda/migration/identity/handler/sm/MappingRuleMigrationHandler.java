@@ -35,8 +35,8 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
   private final RoleServices roleServices;
   private final TenantServices tenantServices;
 
-  private final AtomicInteger createdMappingCount = new AtomicInteger();
-  private final AtomicInteger totalMappingCount = new AtomicInteger();
+  private final AtomicInteger createdMappingRuleCount = new AtomicInteger();
+  private final AtomicInteger totalMappingRuleCount = new AtomicInteger();
   private final AtomicInteger assignedRoleCount = new AtomicInteger();
   private final AtomicInteger assignedTenantCount = new AtomicInteger();
   private final AtomicInteger totalRoleAssignmentAttempts = new AtomicInteger();
@@ -63,91 +63,100 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
 
   @Override
   protected void process(final List<MappingRule> batch) {
-    final var mappings = managementIdentityClient.fetchMappingRules();
-    totalMappingCount.addAndGet(mappings.size());
+    final var mappingRules = managementIdentityClient.fetchMappingRules();
+    totalMappingRuleCount.addAndGet(mappingRules.size());
 
-    mappings.forEach(
-        mapping -> {
-          final var mappingId = normalizeID(mapping.name());
+    mappingRules.forEach(
+        mappingRule -> {
+          final var mappingRuleId = normalizeID(mappingRule.name());
           try {
-            final var mappingRule =
+            final var mappingRuleDTO =
                 new MappingRuleDTO(
-                    mapping.claimName(), mapping.claimValue(), mapping.name(), mappingId);
+                    mappingRule.claimName(),
+                    mappingRule.claimValue(),
+                    mappingRule.name(),
+                    mappingRuleId);
             retryOnBackpressure(
-                () -> mappingRuleServices.createMappingRule(mappingRule).join(),
-                "Failed to create mapping rule with ID: " + mappingId);
-            createdMappingCount.incrementAndGet();
+                () -> mappingRuleServices.createMappingRule(mappingRuleDTO).join(),
+                "Failed to create mapping rule with ID: " + mappingRuleId);
+            createdMappingRuleCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
-              throw new MigrationException("Failed to migrate mapping with ID: " + mappingId, e);
+              throw new MigrationException(
+                  "Failed to migrate mapping rule with ID: " + mappingRuleId, e);
             }
-            logger.debug("Mapping with ID '{}' already exists, skipping creation.", mappingId);
+            logger.debug(
+                "Mapping rule with ID '{}' already exists, skipping creation.", mappingRuleId);
           }
-          assignRolesToMapping(mapping.appliedRoles(), mappingId);
-          assignTenantsToMapping(mapping.appliedTenants(), mappingId);
+          assignRolesToMappingRule(mappingRule.appliedRoles(), mappingRuleId);
+          assignTenantsToMappingRule(mappingRule.appliedTenants(), mappingRuleId);
         });
   }
 
   @Override
   protected void logSummary() {
     logger.info(
-        "Mapping migration completed: Created {} out of {} mapping rules, the remaining existed already. Assigned {} roles out of {} attempted, the remaining were already assigned. Assigned {} tenants out of {} attempted, the remaining were already assigned.",
-        createdMappingCount.get(),
-        totalMappingCount.get(),
+        "Mapping rule migration completed: Created {} out of {} mapping rules, the remaining existed already. Assigned {} roles out of {} attempted, the remaining were already assigned. Assigned {} tenants out of {} attempted, the remaining were already assigned.",
+        createdMappingRuleCount.get(),
+        totalMappingRuleCount.get(),
         assignedRoleCount.get(),
         totalRoleAssignmentAttempts.get(),
         assignedTenantCount.get(),
         totalTenantAssignmentAttempts.get());
   }
 
-  private void assignRolesToMapping(final Set<Role> appliedRoles, final String mappingId) {
+  private void assignRolesToMappingRule(final Set<Role> appliedRoles, final String mappingRuleId) {
     appliedRoles.forEach(
         role -> {
           final var roleId = normalizeID(role.name());
           try {
             final var roleMember =
-                new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING_RULE);
+                new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
             retryOnBackpressure(
                 () -> roleServices.addMember(roleMember).join(),
-                "Failed to assign role with ID: " + roleId + " to mapping with ID: " + mappingId);
+                "Failed to assign role with ID: "
+                    + roleId
+                    + " to mapping rule with ID: "
+                    + mappingRuleId);
             assignedRoleCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException(
-                  "Failed to assign role: " + roleId + " to mapping: " + mappingId, e);
+                  "Failed to assign role: " + roleId + " to mapping rule: " + mappingRuleId, e);
             }
             logger.debug(
-                "Role '{}' already assigned to mapping '{}', skipping assignment.",
+                "Role '{}' already assigned to mapping rule '{}', skipping assignment.",
                 roleId,
-                mappingId);
+                mappingRuleId);
           }
           totalRoleAssignmentAttempts.incrementAndGet();
         });
   }
 
-  private void assignTenantsToMapping(final Set<Tenant> appliedTenants, final String mappingId) {
+  private void assignTenantsToMappingRule(
+      final Set<Tenant> appliedTenants, final String mappingRuleId) {
     appliedTenants.forEach(
         tenant -> {
           final var tenantId = normalizeID(tenant.tenantId());
           try {
             final var tenantMember =
-                new TenantMemberRequest(tenantId, mappingId, EntityType.MAPPING_RULE);
+                new TenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE);
             retryOnBackpressure(
                 () -> tenantServices.addMember(tenantMember).join(),
                 "Failed to assign tenant with ID: "
                     + tenantId
-                    + " to mapping with ID: "
-                    + mappingId);
+                    + " to mapping rule with ID: "
+                    + mappingRuleId);
             assignedTenantCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException(
-                  "Failed to assign tenant: " + tenantId + " to mapping: " + mappingId, e);
+                  "Failed to assign tenant: " + tenantId + " to mapping rule: " + mappingRuleId, e);
             }
             logger.debug(
-                "Tenant '{}' already assigned to mapping '{}', skipping assignment.",
+                "Tenant '{}' already assigned to mapping rule '{}', skipping assignment.",
                 tenantId,
-                mappingId);
+                mappingRuleId);
           }
           totalTenantAssignmentAttempts.incrementAndGet();
         });

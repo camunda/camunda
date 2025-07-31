@@ -51,7 +51,7 @@ class MappingRuleAuthorizationIT {
   private static final String RESTRICTED = "restrictedUser";
   private static final String UNAUTHORIZED = "unauthorizedUser";
   private static final String DEFAULT_PASSWORD = "password";
-  private static final String MAPPING_SEARCH_ENDPOINT = "v2/mapping-rules/search";
+  private static final String MAPPING_RULE_SEARCH_ENDPOINT = "v2/mapping-rules/search";
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -84,10 +84,10 @@ class MappingRuleAuthorizationIT {
   @Test
   void searchShouldReturnAuthorizedMappingRules(
       @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
-    final var mappingSearchResponse =
+    final var mappingRuleSearchResponse =
         searchMappingRules(userClient.getConfiguration().getRestAddress().toString(), RESTRICTED);
 
-    assertThat(mappingSearchResponse.items())
+    assertThat(mappingRuleSearchResponse.items())
         .hasSizeGreaterThanOrEqualTo(2)
         .map(MappingRuleResponse::name)
         .contains("mappingRule1", "mappingRule2");
@@ -111,7 +111,7 @@ class MappingRuleAuthorizationIT {
             .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
     final HttpRequest request =
         HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, MAPPING_SEARCH_ENDPOINT)))
+            .uri(new URI("%s%s".formatted(restAddress, MAPPING_RULE_SEARCH_ENDPOINT)))
             .POST(HttpRequest.BodyPublishers.ofString(""))
             .header("Authorization", "Basic %s".formatted(encodedCredentials))
             .build();

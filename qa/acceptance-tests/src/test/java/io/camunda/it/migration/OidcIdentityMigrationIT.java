@@ -324,7 +324,7 @@ public class OidcIdentityMigrationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var mappingRules = searchMappings(restAddress);
+              final var mappingRules = searchMappingRules(restAddress);
               assertThat(mappingRules.items())
                   .extracting(MappingRuleResponse::mappingRuleId)
                   .contains("rule_2", "rule_3");
@@ -333,7 +333,7 @@ public class OidcIdentityMigrationIT {
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var mappingRules = searchMappings(restAddress).items();
+    final var mappingRules = searchMappingRules(restAddress).items();
     assertThat(mappingRules)
         .extracting(
             MappingRuleResponse::mappingRuleId,
@@ -344,19 +344,27 @@ public class OidcIdentityMigrationIT {
             tuple("rule_2", "Rule 2", "claim1", "value1"),
             tuple("rule_3", "Rule 3", "claim2", "value2"));
 
-    final var mappingByRole = client.newMappingRulesByRoleSearchRequest("operate").send().join();
-    assertThat(mappingByRole.items()).extracting(MappingRule::getMappingRuleId).contains("rule_2");
-    final var mappingByRole2 = client.newMappingRulesByRoleSearchRequest("zeebe").send().join();
-    assertThat(mappingByRole2.items()).extracting(MappingRule::getMappingRuleId).contains("rule_2");
-    final var mappingByRole3 = client.newMappingRulesByRoleSearchRequest("tasklist").send().join();
-    assertThat(mappingByRole3.items()).extracting(MappingRule::getMappingRuleId).contains("rule_2");
+    final var mappingRuleByRole =
+        client.newMappingRulesByRoleSearchRequest("operate").send().join();
+    assertThat(mappingRuleByRole.items())
+        .extracting(MappingRule::getMappingRuleId)
+        .contains("rule_2");
+    final var mappingRuleByRole2 = client.newMappingRulesByRoleSearchRequest("zeebe").send().join();
+    assertThat(mappingRuleByRole2.items())
+        .extracting(MappingRule::getMappingRuleId)
+        .contains("rule_2");
+    final var mappingRuleByRole3 =
+        client.newMappingRulesByRoleSearchRequest("tasklist").send().join();
+    assertThat(mappingRuleByRole3.items())
+        .extracting(MappingRule::getMappingRuleId)
+        .contains("rule_2");
 
-    final var mappingByTenant = searchMappingsInTenant(restAddress, "tenant1");
-    assertThat(mappingByTenant.items())
+    final var mappingRuleByTenant = searchMappingRulesInTenant(restAddress, "tenant1");
+    assertThat(mappingRuleByTenant.items())
         .extracting(MappingRuleResponse::mappingRuleId)
         .contains("rule_3");
-    final var mappingByTenant2 = searchMappingsInTenant(restAddress, "tenant2");
-    assertThat(mappingByTenant2.items())
+    final var mappingRuleByTenant2 = searchMappingRulesInTenant(restAddress, "tenant2");
+    assertThat(mappingRuleByTenant2.items())
         .extracting(MappingRuleResponse::mappingRuleId)
         .contains("rule_3");
   }
@@ -397,7 +405,7 @@ public class OidcIdentityMigrationIT {
     return realm;
   }
 
-  private MappingResponse searchMappings(final String restAddress)
+  private MappingRulesResponse searchMappingRules(final String restAddress)
       throws URISyntaxException, IOException, InterruptedException {
     final var encodedCredentials =
         Base64.getEncoder().encodeToString("%s:%s".formatted("demo", "demo").getBytes());
@@ -410,10 +418,11 @@ public class OidcIdentityMigrationIT {
 
     final HttpResponse<String> response =
         httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), MappingResponse.class);
+    return OBJECT_MAPPER.readValue(response.body(), MappingRulesResponse.class);
   }
 
-  private MappingResponse searchMappingsInTenant(final String restAddress, final String tenantId)
+  private MappingRulesResponse searchMappingRulesInTenant(
+      final String restAddress, final String tenantId)
       throws URISyntaxException, IOException, InterruptedException {
     final var encodedCredentials =
         Base64.getEncoder().encodeToString("%s:%s".formatted("demo", "demo").getBytes());
@@ -430,10 +439,10 @@ public class OidcIdentityMigrationIT {
 
     final HttpResponse<String> response =
         httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), MappingResponse.class);
+    return OBJECT_MAPPER.readValue(response.body(), MappingRulesResponse.class);
   }
 
-  private record MappingResponse(List<MappingRuleResponse> items) {}
+  private record MappingRulesResponse(List<MappingRuleResponse> items) {}
 
   private record MappingRuleResponse(
       String claimName, String claimValue, String name, String mappingRuleId) {}

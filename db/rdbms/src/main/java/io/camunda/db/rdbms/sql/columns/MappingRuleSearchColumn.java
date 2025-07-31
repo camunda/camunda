@@ -11,7 +11,7 @@ import io.camunda.search.entities.MappingRuleEntity;
 
 public enum MappingRuleSearchColumn implements SearchColumn<MappingRuleEntity> {
   MAPPING_RULE_ID("mappingRuleId"),
-  MAPPING_KEY("mappingRuleKey"),
+  MAPPING_RULE_KEY("mappingRuleKey"),
   CLAIM_NAME("claimName"),
   CLAIM_VALUE("claimValue"),
   NAME("name");

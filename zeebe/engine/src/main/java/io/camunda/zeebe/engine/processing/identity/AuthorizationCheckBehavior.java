@@ -332,7 +332,7 @@ public final class AuthorizationCheckBehavior {
           .ifPresent(idsForClientId -> idsForClientId.forEach(authorizedResourceIds::add));
     }
 
-    // mappings can layer on top of username/client id
+    // mapping rules can layer on top of username/client id
     getPersistedMappingRules(request)
         .flatMap(
             mapping ->

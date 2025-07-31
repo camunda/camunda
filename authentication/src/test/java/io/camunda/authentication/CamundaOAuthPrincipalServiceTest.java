@@ -140,7 +140,7 @@ public class CamundaOAuthPrincipalServiceTest {
   @Nested
   class UsernameClaimConfiguration {
     private static final String USERNAME_CLAIM = "email";
-    @Mock private MappingRuleServices mappingServices;
+    @Mock private MappingRuleServices mappingRuleServices;
     @Mock private TenantServices tenantServices;
     @Mock private RoleServices roleServices;
     @Mock private GroupServices groupServices;
@@ -156,8 +156,8 @@ public class CamundaOAuthPrincipalServiceTest {
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(USERNAME_CLAIM);
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
-      when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(mappingServices);
+      when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(mappingRuleServices);
       when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(tenantServices);
       when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
@@ -167,7 +167,11 @@ public class CamundaOAuthPrincipalServiceTest {
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalServiceImpl(
-              mappingServices, tenantServices, roleServices, groupServices, securityConfiguration);
+              mappingRuleServices,
+              tenantServices,
+              roleServices,
+              groupServices,
+              securityConfiguration);
     }
 
     @Test
@@ -211,7 +215,7 @@ public class CamundaOAuthPrincipalServiceTest {
               "email", "foo@camunda.test",
               "role", "R1",
               "group", "G1");
-      when(mappingServices.getMatchingMappingRules(claims))
+      when(mappingRuleServices.getMatchingMappingRules(claims))
           .thenReturn(
               Stream.of(
                   new MappingRuleEntity("test-id", 5L, "role", "R1", "role-r1"),
@@ -256,7 +260,7 @@ public class CamundaOAuthPrincipalServiceTest {
 
       // then
       assertThat(oAuthContext).isNotNull();
-      assertThat(oAuthContext.mappingIds()).isEqualTo(Set.of("test-id", "test-id-2"));
+      assertThat(oAuthContext.mappingRuleIds()).isEqualTo(Set.of("test-id", "test-id-2"));
       final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
       assertThat(authenticationContext.roles())
           .containsAll(Set.of(roleR1.roleId(), groupRole.roleId()));
@@ -266,16 +270,16 @@ public class CamundaOAuthPrincipalServiceTest {
     }
 
     @Test
-    public void shouldLoadTenantsFromMappings() {
+    public void shouldLoadTenantsFromMappingRules() {
       // given
       final Map<String, Object> claims =
           Map.of("sub", "user@example.com", USERNAME_CLAIM, "scooby-doo");
 
-      final var mapping1 = new MappingRuleEntity("map-1", 1L, "role", "R1", "role-r1");
-      final var mapping2 = new MappingRuleEntity("map-2", 2L, "group", "G1", "group-g1");
+      final var mappingRule1 = new MappingRuleEntity("map-1", 1L, "role", "R1", "role-r1");
+      final var mappingRule2 = new MappingRuleEntity("map-2", 2L, "group", "G1", "group-g1");
 
-      when(mappingServices.getMatchingMappingRules(claims))
-          .thenReturn(Stream.of(mapping1, mapping2));
+      when(mappingRuleServices.getMatchingMappingRules(claims))
+          .thenReturn(Stream.of(mappingRule1, mappingRule2));
 
       when(groupServices.getGroupsByMemberTypeAndMemberIds(
               Map.of(
@@ -316,7 +320,7 @@ public class CamundaOAuthPrincipalServiceTest {
 
       // then
       assertThat(oAuthContext).isNotNull();
-      assertThat(oAuthContext.mappingIds()).isEqualTo(Set.of("map-1", "map-2"));
+      assertThat(oAuthContext.mappingRuleIds()).isEqualTo(Set.of("map-1", "map-2"));
 
       final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
       assertThat(authenticationContext.username()).isEqualTo("scooby-doo");
@@ -330,7 +334,7 @@ public class CamundaOAuthPrincipalServiceTest {
   @Nested
   class GroupsClaimConfiguration {
     private static final String GROUPS_CLAIM = "$.groups[*].['name']";
-    @Mock private MappingRuleServices mappingServices;
+    @Mock private MappingRuleServices mappingRuleServices;
     @Mock private TenantServices tenantServices;
     @Mock private RoleServices roleServices;
     @Mock private GroupServices groupServices;
@@ -347,8 +351,8 @@ public class CamundaOAuthPrincipalServiceTest {
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("sub");
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
       when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn(GROUPS_CLAIM);
-      when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(mappingServices);
+      when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(mappingRuleServices);
       when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(tenantServices);
       when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
@@ -358,7 +362,11 @@ public class CamundaOAuthPrincipalServiceTest {
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalServiceImpl(
-              mappingServices, tenantServices, roleServices, groupServices, securityConfiguration);
+              mappingRuleServices,
+              tenantServices,
+              roleServices,
+              groupServices,
+              securityConfiguration);
     }
 
     @Test
@@ -374,7 +382,7 @@ public class CamundaOAuthPrincipalServiceTest {
               "user1");
       final var mappingRule1 = new MappingRuleEntity("map-1", 1L, "role", "R1", "role-r1");
       final var mappingRule2 = new MappingRuleEntity("map-2", 2L, "group", "G1", "group-g1");
-      when(mappingServices.getMatchingMappingRules(claims))
+      when(mappingRuleServices.getMatchingMappingRules(claims))
           .thenReturn(Stream.of(mappingRule1, mappingRule2));
       when(groupServices.getGroupsByMemberIds(Set.of("map-1", "map-2"), EntityType.MAPPING_RULE))
           .thenReturn(List.of(new GroupEntity(1L, "local-g1", "G1", "Group G1")));
@@ -394,7 +402,11 @@ public class CamundaOAuthPrincipalServiceTest {
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalServiceImpl(
-              mappingServices, tenantServices, roleServices, groupServices, securityConfiguration);
+              mappingRuleServices,
+              tenantServices,
+              roleServices,
+              groupServices,
+              securityConfiguration);
       final Map<String, Object> claims =
           Map.of("groups", Map.of("name", GROUP1_NAME, "id", "idp-g1-id"), "sub", "user1");
       // when

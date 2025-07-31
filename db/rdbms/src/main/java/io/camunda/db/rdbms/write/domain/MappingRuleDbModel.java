@@ -20,7 +20,7 @@ public record MappingRuleDbModel(
           builderFunction) {
     return builderFunction
         .apply(
-            new MappingDbModelBuilder()
+            new MappingRuleDbModelBuilder()
                 .mappingRuleKey(mappingRuleKey)
                 .claimName(claimName)
                 .claimValue(claimValue)
@@ -29,7 +29,7 @@ public record MappingRuleDbModel(
         .build();
   }
 
-  public static class MappingDbModelBuilder implements ObjectBuilder<MappingRuleDbModel> {
+  public static class MappingRuleDbModelBuilder implements ObjectBuilder<MappingRuleDbModel> {
 
     private Long mappingRuleKey;
     private String claimName;
@@ -37,29 +37,29 @@ public record MappingRuleDbModel(
     private String name;
     private String mappingRuleId;
 
-    public MappingDbModelBuilder() {}
+    public MappingRuleDbModelBuilder() {}
 
-    public MappingDbModelBuilder mappingRuleKey(final Long mappingRuleKey) {
+    public MappingRuleDbModelBuilder mappingRuleKey(final Long mappingRuleKey) {
       this.mappingRuleKey = mappingRuleKey;
       return this;
     }
 
-    public MappingDbModelBuilder claimName(final String claimName) {
+    public MappingRuleDbModelBuilder claimName(final String claimName) {
       this.claimName = claimName;
       return this;
     }
 
-    public MappingDbModelBuilder claimValue(final String claimValue) {
+    public MappingRuleDbModelBuilder claimValue(final String claimValue) {
       this.claimValue = claimValue;
       return this;
     }
 
-    public MappingDbModelBuilder name(final String name) {
+    public MappingRuleDbModelBuilder name(final String name) {
       this.name = name;
       return this;
     }
 
-    public MappingDbModelBuilder mappingRuleId(final String mappingRuleId) {
+    public MappingRuleDbModelBuilder mappingRuleId(final String mappingRuleId) {
       this.mappingRuleId = mappingRuleId;
       return this;
     }

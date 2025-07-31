@@ -27,7 +27,7 @@ public record CamundaAuthentication(
     @JsonProperty("authenticated_group_ids") List<String> authenticatedGroupIds,
     @JsonProperty("authenticated_role_ids") List<String> authenticatedRoleIds,
     @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
-    @JsonProperty("authenticated_mapping_ids") List<String> authenticatedMappingIds,
+    @JsonProperty("authenticated_mapping_rule_ids") List<String> authenticatedMappingRuleIds,
     @JsonProperty("claims") Map<String, Object> claims)
     implements Serializable {
 
@@ -58,7 +58,7 @@ public record CamundaAuthentication(
     private final List<String> groupIds = new ArrayList<>();
     private final List<String> roleIds = new ArrayList<>();
     private final List<String> tenants = new ArrayList<>();
-    private final List<String> mappings = new ArrayList<>();
+    private final List<String> mappingRules = new ArrayList<>();
     private Map<String, Object> claims;
 
     public Builder user(final String value) {
@@ -104,13 +104,13 @@ public record CamundaAuthentication(
       return this;
     }
 
-    public Builder mapping(final String mapping) {
-      return mapping(Collections.singletonList(mapping));
+    public Builder mappingRule(final String mappingRule) {
+      return mappingRule(Collections.singletonList(mappingRule));
     }
 
-    public Builder mapping(final List<String> values) {
+    public Builder mappingRule(final List<String> values) {
       if (values != null) {
-        mappings.addAll(values);
+        mappingRules.addAll(values);
       }
       return this;
     }
@@ -127,7 +127,7 @@ public record CamundaAuthentication(
           unmodifiableList(groupIds),
           unmodifiableList(roleIds),
           unmodifiableList(tenants),
-          unmodifiableList(mappings),
+          unmodifiableList(mappingRules),
           claims);
     }
   }

@@ -76,7 +76,9 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
       <TextField
         label={t("mappingRuleName")}
         placeholder={t("enterMappingRuleName")}
-        onChange={(name) => setMappingRule((mapping) => ({ ...mapping, name }))}
+        onChange={(name) =>
+          setMappingRule((mappingRule) => ({ ...mappingRule, name }))
+        }
         value={mappingRule.name}
         helperText={t("uniqueNameForMappingRule")}
         autoFocus
@@ -89,7 +91,7 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
               label={t("claimName")}
               placeholder={t("enterClaimName")}
               onChange={(claimName) =>
-                setMappingRule((mapping) => ({ ...mapping, claimName }))
+                setMappingRule((mappingRule) => ({ ...mappingRule, claimName }))
               }
               value={mappingRule.claimName}
               helperText={t("customClaimName")}

@@ -45,7 +45,7 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
         createAuthenticatedClient(
             application.application(),
             TestStandaloneBroker.DEFAULT_MAPPING_RULE_ID,
-            TestStandaloneBroker.DEFAULT_MAPPING_CLAIM_VALUE);
+            TestStandaloneBroker.DEFAULT_MAPPING_RULE_CLAIM_VALUE);
   }
 
   @Override
@@ -58,8 +58,8 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
   }
 
   @Override
-  public CamundaClient getCamundaClient(final String mappingId) {
-    return cachedClients.get(mappingId);
+  public CamundaClient getCamundaClient(final String mappingRuleId) {
+    return cachedClients.get(mappingRuleId);
   }
 
   @Override
@@ -71,21 +71,23 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
       return gateway.newClientBuilder().preferRestOverGrpc(true).build();
     }
 
-    final var mappingId = authenticated.value();
+    final var mappingRuleId = authenticated.value();
     LOGGER.info(
-        "Retrieving Camunda client for mapping id '{}' and broker address '{}",
-        mappingId,
+        "Retrieving Camunda client for mapping rule id '{}' and broker address '{}",
+        mappingRuleId,
         gateway.restAddress());
-    return cachedClients.get(mappingId);
+    return cachedClients.get(mappingRuleId);
   }
 
-  public void createClientForMapping(final TestGateway<?> gateway, final TestMappingRule mapping) {
-    final var client = createAuthenticatedClient(gateway, mapping.id(), mapping.claimValue());
-    cachedClients.put(mapping.id(), client);
+  public void createClientForMappingRule(
+      final TestGateway<?> gateway, final TestMappingRule mappingRule) {
+    final var client =
+        createAuthenticatedClient(gateway, mappingRule.id(), mappingRule.claimValue());
+    cachedClients.put(mappingRule.id(), client);
   }
 
   private CamundaClient createAuthenticatedClient(
-      final TestGateway<?> gateway, final String mappingId, final String claimValue) {
+      final TestGateway<?> gateway, final String mappingRuleId, final String claimValue) {
     final var client =
         gateway
             .newClientBuilder()
@@ -103,7 +105,7 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
                     .credentialsCachePath(tempDirectory.resolve("default").toString())
                     .build())
             .build();
-    cachedClients.put(mappingId, client);
+    cachedClients.put(mappingRuleId, client);
     return client;
   }
 

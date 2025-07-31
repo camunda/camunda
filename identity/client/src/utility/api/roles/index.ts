@@ -49,7 +49,7 @@ export const deleteRole: ApiDefinition<undefined, { roleId: string }> = ({
   roleId,
 }) => apiDelete(`${ROLES_ENDPOINT}/${roleId}`);
 
-// ----------------- Mappings within a Role -----------------
+// ----------------- Mapping rules within a Role -----------------
 
 export type GetRoleMappingRulesParams = {
   roleId: string;

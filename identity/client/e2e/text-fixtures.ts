@@ -15,7 +15,7 @@ import { TenantsPage } from "./pages/TenantsPage";
 import { createFixture } from "./utils/createFixture";
 import { RolesPage } from "./pages/RolesPage/RolesPage";
 import { RolesDetailsPage } from "./pages/RolesPage/RolesDetailsPage";
-import { MappingsPage } from "./pages/MappingsPage";
+import { MappingRulesPage } from "./pages/MappingRulesPage";
 import { AuthorizationsPage } from "./pages/AuthorizationsPage";
 
 type Fixtures = {
@@ -26,7 +26,7 @@ type Fixtures = {
   tenantsPage: TenantsPage;
   rolesPage: RolesPage;
   rolesDetailsPage: RolesDetailsPage;
-  mappingsPage: MappingsPage;
+  mappingRulesPage: MappingRulesPage;
   authorizationsPage: AuthorizationsPage;
 };
 
@@ -38,6 +38,6 @@ export const test = base.extend<Fixtures>({
   tenantsPage: createFixture(TenantsPage),
   rolesPage: createFixture(RolesPage),
   rolesDetailsPage: createFixture(RolesDetailsPage),
-  mappingsPage: createFixture(MappingsPage),
+  mappingRulesPage: createFixture(MappingRulesPage),
   authorizationsPage: createFixture(AuthorizationsPage),
 });

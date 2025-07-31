@@ -367,7 +367,7 @@ public final class SearchQueryResponseMapper {
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toMappings)
+                .map(SearchQueryResponseMapper::toMappingRules)
                 .orElseGet(List::of));
   }
 
@@ -714,11 +714,12 @@ public final class SearchQueryResponseMapper {
     return new RoleClientResult().clientId(roleMember.id());
   }
 
-  private static List<MappingRuleResult> toMappings(final List<MappingRuleEntity> mappings) {
-    return mappings.stream().map(SearchQueryResponseMapper::toMapping).toList();
+  private static List<MappingRuleResult> toMappingRules(
+      final List<MappingRuleEntity> mappingRules) {
+    return mappingRules.stream().map(SearchQueryResponseMapper::toMappingRule).toList();
   }
 
-  public static MappingRuleResult toMapping(final MappingRuleEntity mappingRuleEntity) {
+  public static MappingRuleResult toMappingRule(final MappingRuleEntity mappingRuleEntity) {
     return new MappingRuleResult()
         .claimName(mappingRuleEntity.claimName())
         .claimValue(mappingRuleEntity.claimValue())

@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db.mapping;
+package io.camunda.it.rdbms.db.mappingrules;
 
-import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.createAndSaveRandomMappings;
+import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.createAndSaveRandomMappingRules;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -37,7 +37,7 @@ public class MappingRuleSortIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String claimName = "claimName-" + MappingRuleFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
+    createAndSaveRandomMappingRules(rdbmsWriter, b -> b.claimName(claimName));
 
     final var searchResult =
         rdbmsService
@@ -59,7 +59,7 @@ public class MappingRuleSortIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String claimName = "claimName-" + MappingRuleFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
+    createAndSaveRandomMappingRules(rdbmsWriter, b -> b.claimName(claimName));
 
     final var searchResult =
         rdbmsService
@@ -81,7 +81,7 @@ public class MappingRuleSortIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String claimName = "claimName-" + MappingRuleFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
+    createAndSaveRandomMappingRules(rdbmsWriter, b -> b.claimName(claimName));
 
     final var searchResult =
         rdbmsService
@@ -104,7 +104,7 @@ public class MappingRuleSortIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String claimName = "claimName-" + MappingRuleFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
+    createAndSaveRandomMappingRules(rdbmsWriter, b -> b.claimName(claimName));
 
     final var searchResult =
         rdbmsService
@@ -126,7 +126,7 @@ public class MappingRuleSortIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String name = "name-" + MappingRuleFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsWriter, b -> b.name(name));
+    createAndSaveRandomMappingRules(rdbmsWriter, b -> b.name(name));
 
     final var searchResult =
         rdbmsService

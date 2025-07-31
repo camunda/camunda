@@ -43,8 +43,8 @@ import org.springframework.util.unit.DataSize;
 public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker>, TestStandaloneApplication<TestStandaloneBroker> {
   public static final String DEFAULT_MAPPING_RULE_ID = "default";
-  public static final String DEFAULT_MAPPING_CLAIM_NAME = "client_id";
-  public static final String DEFAULT_MAPPING_CLAIM_VALUE = "default";
+  public static final String DEFAULT_MAPPING_RULE_CLAIM_NAME = "client_id";
+  public static final String DEFAULT_MAPPING_RULE_CLAIM_VALUE = "default";
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
   private final CamundaSecurityProperties securityConfig;
@@ -87,7 +87,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .getMappingRules()
         .add(
             new ConfiguredMappingRule(
-                DEFAULT_MAPPING_RULE_ID, DEFAULT_MAPPING_CLAIM_NAME, DEFAULT_MAPPING_CLAIM_VALUE));
+                DEFAULT_MAPPING_RULE_ID,
+                DEFAULT_MAPPING_RULE_CLAIM_NAME,
+                DEFAULT_MAPPING_RULE_CLAIM_VALUE));
     securityConfig
         .getInitialization()
         .getDefaultRoles()

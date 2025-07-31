@@ -13,8 +13,8 @@ export const Paths = {
   forbidden(application: string): string {
     return `/${application}/forbidden`;
   },
-  mappings() {
-    return '/identity/mappings';
+  mappingRules() {
+    return '/identity/mapping-rules';
   },
   users() {
     return '/identity/users';

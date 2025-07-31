@@ -24,11 +24,11 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
 
   private static final Logger LOG = LoggerFactory.getLogger(MappingRuleDbReader.class);
 
-  private final MappingRuleMapper mappingMapper;
+  private final MappingRuleMapper mappingRuleMapper;
 
-  public MappingRuleDbReader(final MappingRuleMapper mappingMapper) {
+  public MappingRuleDbReader(final MappingRuleMapper mappingRuleMapper) {
     super(MappingRuleSearchColumn.values());
-    this.mappingMapper = mappingMapper;
+    this.mappingRuleMapper = mappingRuleMapper;
   }
 
   @Override
@@ -45,16 +45,16 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
         MappingRuleDbQuery.of(
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
 
-    LOG.trace("[RDBMS DB] Search for mapping with filter {}", dbQuery);
-    final var totalHits = mappingMapper.count(dbQuery);
-    final var hits = mappingMapper.search(dbQuery);
+    LOG.trace("[RDBMS DB] Search for mapping rule with filter {}", dbQuery);
+    final var totalHits = mappingRuleMapper.count(dbQuery);
+    final var hits = mappingRuleMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
-  public Optional<MappingRuleEntity> findOne(final String mappingId) {
-    LOG.trace("[RDBMS DB] Search for mapping with mapping ID {}", mappingId);
+  public Optional<MappingRuleEntity> findOne(final String mappingRuleId) {
+    LOG.trace("[RDBMS DB] Search for mapping rule with mapping rule ID {}", mappingRuleId);
     final SearchQueryResult<MappingRuleEntity> queryResult =
-        search(MappingRuleQuery.of(b -> b.filter(f -> f.mappingRuleId(mappingId))));
+        search(MappingRuleQuery.of(b -> b.filter(f -> f.mappingRuleId(mappingRuleId))));
     return Optional.ofNullable(queryResult.items()).flatMap(hits -> hits.stream().findFirst());
   }
 

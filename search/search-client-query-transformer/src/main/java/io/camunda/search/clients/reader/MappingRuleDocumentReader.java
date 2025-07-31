@@ -75,11 +75,11 @@ public class MappingRuleDocumentReader extends DocumentBasedReader implements Ma
         .build();
   }
 
-  private MappingRuleQuery expandGroupFilter(final MappingRuleQuery mappingQuery) {
+  private MappingRuleQuery expandGroupFilter(final MappingRuleQuery mappingRuleQuery) {
     final var mappingRuleIds =
-        groupMemberReader.getGroupMembers(mappingQuery.filter().groupId(), MAPPING_RULE);
-    return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().mappingRuleIds(mappingRuleIds).build())
+        groupMemberReader.getGroupMembers(mappingRuleQuery.filter().groupId(), MAPPING_RULE);
+    return mappingRuleQuery.toBuilder()
+        .filter(mappingRuleQuery.filter().toBuilder().mappingRuleIds(mappingRuleIds).build())
         .build();
   }
 
