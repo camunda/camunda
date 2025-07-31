@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper.CleanupHistoryDto;
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
