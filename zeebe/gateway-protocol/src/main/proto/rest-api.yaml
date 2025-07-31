@@ -10791,6 +10791,7 @@ components:
           enum:
             - ACTIVE
             - COMPLETED
+            - SKIPPED
             - CANCELED
             - FAILED
         processedDate:

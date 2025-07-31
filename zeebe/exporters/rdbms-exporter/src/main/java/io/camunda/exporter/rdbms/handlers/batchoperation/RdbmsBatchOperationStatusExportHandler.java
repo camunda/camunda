@@ -18,6 +18,7 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.DateUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 
@@ -55,24 +56,30 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
   @Override
   public void export(final Record<T> record) {
     if (isCompleted(record)) {
-      batchOperationWriter.updateItem(
-          new BatchOperationItemDbModel(
-              String.valueOf(record.getBatchOperationReference()),
-              getItemKey(record),
-              getProcessInstanceKey(record),
-              BatchOperationItemState.COMPLETED,
-              DateUtil.toOffsetDateTime(record.getTimestamp()),
-              null));
+      updateItem(record, BatchOperationItemState.COMPLETED, null);
     } else if (isFailed(record)) {
-      batchOperationWriter.updateItem(
-          new BatchOperationItemDbModel(
-              String.valueOf(record.getBatchOperationReference()),
-              getItemKey(record),
-              getProcessInstanceKey(record),
-              BatchOperationItemState.FAILED,
-              DateUtil.toOffsetDateTime(record.getTimestamp()),
-              String.format(ERROR_MSG, record.getRejectionType(), record.getRejectionReason())));
+      if (record.getRejectionType() == RejectionType.NOT_FOUND) {
+        // If the item is not found, it means that the item was already removed from the engine
+        updateItem(record, BatchOperationItemState.SKIPPED, null);
+      } else {
+        updateItem(
+            record,
+            BatchOperationItemState.FAILED,
+            String.format(ERROR_MSG, record.getRejectionType(), record.getRejectionReason()));
+      }
     }
+  }
+
+  private void updateItem(
+      final Record<T> record, final BatchOperationItemState state, final String errorMessage) {
+    batchOperationWriter.updateItem(
+        new BatchOperationItemDbModel(
+            String.valueOf(record.getBatchOperationReference()),
+            getItemKey(record),
+            getProcessInstanceKey(record),
+            state,
+            DateUtil.toOffsetDateTime(record.getTimestamp()),
+            errorMessage));
   }
 
   /**

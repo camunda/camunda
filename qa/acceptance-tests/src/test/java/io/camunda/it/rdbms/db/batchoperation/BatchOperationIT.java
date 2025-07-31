@@ -290,6 +290,70 @@ public class BatchOperationIT {
   }
 
   @TestTemplate
+  public void shouldUpdateSkippedBatchItem(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(
+            writer,
+            b ->
+                b.state(BatchOperationState.ACTIVE)
+                    .endDate(null)
+                    .operationsTotalCount(0)
+                    .operationsFailedCount(0));
+
+    final var items =
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
+
+    // when
+    writer
+        .getBatchOperationWriter()
+        .updateItem(
+            new BatchOperationItemDbModel(
+                batchOperation.batchOperationKey(),
+                items.getFirst().itemKey(),
+                items.getFirst().processInstanceKey(),
+                BatchOperationItemState.SKIPPED,
+                NOW,
+                null));
+    writer.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    assertThat(updatedBatchOperation).isNotNull();
+    final BatchOperationEntity batchOperationEntity = updatedBatchOperation.items().getFirst();
+    assertThat(batchOperationEntity.endDate()).isNull();
+    assertThat(batchOperationEntity.operationsTotalCount()).isEqualTo(2);
+    assertThat(batchOperationEntity.operationsCompletedCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.operationsFailedCount()).isEqualTo(0);
+    assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.ACTIVE);
+
+    // and items have correct state
+    final var updatedItems =
+        getBatchOperationItems(rdbmsService, batchOperation.batchOperationKey()).items();
+    assertThat(updatedItems).isNotNull();
+    assertThat(updatedItems).hasSize(2);
+    final var firstItem =
+        updatedItems.stream()
+            .filter(i -> Objects.equals(i.itemKey(), items.getFirst().itemKey()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.SKIPPED);
+    assertThat(firstItem.processedDate())
+        .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+
+    final var lastItem =
+        updatedItems.stream()
+            .filter(i -> Objects.equals(i.itemKey(), items.getLast().itemKey()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(lastItem.state()).isEqualTo(BatchOperationItemState.ACTIVE);
+  }
+
+  @TestTemplate
   public void shouldCancelBatchOperationAndActiveItems(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

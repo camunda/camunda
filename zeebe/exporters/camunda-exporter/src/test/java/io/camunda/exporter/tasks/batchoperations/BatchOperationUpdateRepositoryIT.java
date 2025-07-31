@@ -220,17 +220,18 @@ abstract class BatchOperationUpdateRepositoryIT {
       // given
       final var repository = createRepository();
       // 1, 2, 4, 5 - not finished batch operations, 3 - finished batch operation
-      createOperationEntity("111", "1", OperationState.COMPLETED);
-      createOperationEntity("222", "1", OperationState.FAILED);
-      createOperationEntity("333", "2", OperationState.COMPLETED);
-      createOperationEntity("444", "3", OperationState.COMPLETED);
-      createOperationEntity("555", "4", OperationState.LOCKED);
-      createOperationEntity("666", "5", OperationState.SENT);
+      createOperationEntity("111a", "1", OperationState.COMPLETED);
+      createOperationEntity("111b", "1", OperationState.FAILED);
+      createOperationEntity("222a", "2", OperationState.COMPLETED);
+      createOperationEntity("222b", "2", OperationState.SKIPPED);
+      createOperationEntity("333a", "3", OperationState.COMPLETED);
+      createOperationEntity("444a", "4", OperationState.LOCKED);
+      createOperationEntity("555a", "5", OperationState.SENT);
 
       final var expected =
           List.of(
               new OperationsAggData("1", Map.of("COMPLETED", 1L, "FAILED", 1L)),
-              new OperationsAggData("2", Map.of("COMPLETED", 1L)),
+              new OperationsAggData("2", Map.of("COMPLETED", 1L, "SKIPPED", 1L)),
               new OperationsAggData("4", Map.of("LOCKED", 1L)),
               new OperationsAggData("5", Map.of("SENT", 1L)));
 

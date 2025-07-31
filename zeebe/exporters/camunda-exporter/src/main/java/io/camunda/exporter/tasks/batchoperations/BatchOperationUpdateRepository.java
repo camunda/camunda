@@ -58,7 +58,8 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
     }
 
     public long getCompletedOperationsCount() {
-      return stateCounts.getOrDefault(OperationState.COMPLETED.name(), 0L);
+      return stateCounts.getOrDefault(OperationState.COMPLETED.name(), 0L)
+          + stateCounts.getOrDefault(OperationState.SKIPPED.name(), 0L);
     }
 
     public long getFailedOperationsCount() {
