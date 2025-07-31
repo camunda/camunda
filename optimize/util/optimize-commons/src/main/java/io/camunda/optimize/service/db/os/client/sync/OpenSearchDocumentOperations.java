@@ -34,6 +34,7 @@ import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.ShardFailure;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -102,9 +103,16 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     if (!response.shards().failures().isEmpty()) {
       throw new OptimizeRuntimeException(
           format(
-              "Shards failed executing request (request=%s, failed shards=%s)",
-              request, response.shards().failures()));
+              "Shards failed executing request (indices=%s, failed shards=%s)",
+              request.index(),
+              response.shards().failures().stream().map(this::formatShardFailure).toList()));
     }
+  }
+
+  private String formatShardFailure(final ShardFailure failure) {
+    return String.format(
+        "ShardFailure[index=%s, shard=%s, status=%s, node=%s, reason=%s]",
+        failure.index(), failure.shard(), failure.status(), failure.node(), failure.reason());
   }
 
   public <R> Map<String, Aggregate> unsafeScrollWith(
