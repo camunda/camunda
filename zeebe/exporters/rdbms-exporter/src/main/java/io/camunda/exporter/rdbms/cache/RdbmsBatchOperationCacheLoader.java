@@ -9,7 +9,7 @@ package io.camunda.exporter.rdbms.cache;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
-import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ public class RdbmsBatchOperationCacheLoader
       final var batchOperationEntity = response.get();
       return new CachedBatchOperationEntity(
           batchOperationEntity.batchOperationKey(),
-          OperationType.valueOf(batchOperationEntity.operationType()));
+          BatchOperationType.valueOf(batchOperationEntity.operationType()));
     }
     LOG.debug("BatchOperation '{}' not found in RDBMS", key);
     return null;

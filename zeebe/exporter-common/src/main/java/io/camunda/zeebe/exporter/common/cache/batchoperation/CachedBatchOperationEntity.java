@@ -7,6 +7,6 @@
  */
 package io.camunda.zeebe.exporter.common.cache.batchoperation;
 
-import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.search.entities.BatchOperationType;
 
-public record CachedBatchOperationEntity(String batchOperationKey, OperationType type) {}
+public record CachedBatchOperationEntity(String batchOperationKey, BatchOperationType type) {}

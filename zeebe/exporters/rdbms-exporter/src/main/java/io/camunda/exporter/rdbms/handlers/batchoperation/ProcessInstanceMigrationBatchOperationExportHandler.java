@@ -8,7 +8,7 @@
 package io.camunda.exporter.rdbms.handlers.batchoperation;
 
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
-import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -27,7 +27,7 @@ public class ProcessInstanceMigrationBatchOperationExportHandler
   public ProcessInstanceMigrationBatchOperationExportHandler(
       final BatchOperationWriter batchOperationWriter,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
-    super(batchOperationWriter, batchOperationCache, OperationType.MIGRATE_PROCESS_INSTANCE);
+    super(batchOperationWriter, batchOperationCache, BatchOperationType.MIGRATE_PROCESS_INSTANCE);
   }
 
   @Override

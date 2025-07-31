@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.cache.batchoperation;
 
+import static io.camunda.exporter.utils.ExporterUtil.map;
+
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -50,7 +52,7 @@ public class OpenSearchBatchOperationCacheLoader
             BatchOperationEntity.class);
     if (response.hits() != null && !response.hits().hits().isEmpty()) {
       final var entity = response.hits().hits().getFirst().source();
-      return new CachedBatchOperationEntity(entity.getId(), entity.getType());
+      return new CachedBatchOperationEntity(entity.getId(), map(entity.getType()));
     } else {
       LOG.debug("BatchOperation '{}' not found in OpenSearch", batchOperationKey);
       return null;

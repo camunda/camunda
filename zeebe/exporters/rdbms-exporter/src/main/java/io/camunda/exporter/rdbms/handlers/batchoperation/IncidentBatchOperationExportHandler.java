@@ -8,7 +8,7 @@
 package io.camunda.exporter.rdbms.handlers.batchoperation;
 
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
-import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -26,7 +26,7 @@ public class IncidentBatchOperationExportHandler
   public IncidentBatchOperationExportHandler(
       final BatchOperationWriter batchOperationWriter,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
-    super(batchOperationWriter, batchOperationCache, OperationType.RESOLVE_INCIDENT);
+    super(batchOperationWriter, batchOperationCache, BatchOperationType.RESOLVE_INCIDENT);
   }
 
   @Override

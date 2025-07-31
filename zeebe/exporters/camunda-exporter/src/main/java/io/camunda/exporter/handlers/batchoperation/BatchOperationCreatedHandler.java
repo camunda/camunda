@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import static io.camunda.exporter.utils.ExporterUtil.map;
+
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
@@ -76,7 +78,7 @@ public class BatchOperationCreatedHandler
 
     // update local cache so that the batch operation info is available immediately to operation
     // status handlers
-    final var cachedEntity = new CachedBatchOperationEntity(entity.getId(), entity.getType());
+    final var cachedEntity = new CachedBatchOperationEntity(entity.getId(), map(entity.getType()));
     batchOperationCache.put(cachedEntity.batchOperationKey(), cachedEntity);
   }
 
