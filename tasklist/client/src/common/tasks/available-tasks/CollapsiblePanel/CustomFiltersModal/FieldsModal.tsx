@@ -45,8 +45,6 @@ type FormValues = NamedCustomFilters & {
   action: 'apply' | 'save' | 'edit';
 };
 
-type LocaleKey = NonNullable<React.ComponentProps<typeof DatePicker>['locale']>;
-
 const DEFAULT_FORM_VALUES: NamedCustomFilters = {
   assignee: 'all',
   status: 'all',
@@ -343,7 +341,7 @@ const FieldsModal: React.FC<Props> = ({
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat={t('globalWrittenCalendarDateFormat')}
-                              locale={i18n.resolvedLanguage as LocaleKey}
+                              locale={{locale: i18n.resolvedLanguage}}
                             >
                               <DatePickerInput
                                 id="due-date-from"
@@ -364,7 +362,7 @@ const FieldsModal: React.FC<Props> = ({
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat={t('globalWrittenCalendarDateFormat')}
-                              locale={i18n.resolvedLanguage as LocaleKey}
+                              locale={{locale: i18n.resolvedLanguage}}
                             >
                               <DatePickerInput
                                 id="due-date-to"
@@ -394,7 +392,7 @@ const FieldsModal: React.FC<Props> = ({
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat={t('globalWrittenCalendarDateFormat')}
-                              locale={i18n.resolvedLanguage as LocaleKey}
+                              locale={{locale: i18n.resolvedLanguage}}
                             >
                               <DatePickerInput
                                 id="follow-up-date-from"
@@ -415,7 +413,7 @@ const FieldsModal: React.FC<Props> = ({
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat={t('globalWrittenCalendarDateFormat')}
-                              locale={i18n.resolvedLanguage as LocaleKey}
+                              locale={{locale: i18n.resolvedLanguage}}
                             >
                               <DatePickerInput
                                 id="follow-up-date-to"
