@@ -160,7 +160,7 @@ class RequestMapperTest {
             adHocSubProcessInstanceKey, instruction);
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
     final var request = result.get();
     assertThat(request.adHocSubProcessInstanceKey()).isEqualTo(adHocSubProcessInstanceKey);
     assertThat(request.cancelRemainingInstances()).isTrue();
@@ -196,7 +196,7 @@ class RequestMapperTest {
             adHocSubProcessInstanceKey, instruction);
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
     final var request = result.get();
     assertThat(request.adHocSubProcessInstanceKey()).isEqualTo(adHocSubProcessInstanceKey);
     assertThat(request.cancelRemainingInstances()).isFalse();
@@ -224,7 +224,7 @@ class RequestMapperTest {
             adHocSubProcessInstanceKey, instruction);
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
     final var request = result.get();
     assertThat(request.adHocSubProcessInstanceKey()).isEqualTo(adHocSubProcessInstanceKey);
     assertThat(request.cancelRemainingInstances()).isNull();
@@ -251,7 +251,7 @@ class RequestMapperTest {
             adHocSubProcessInstanceKey, instruction);
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
     final var request = result.get();
     assertThat(request.elements()).hasSize(1);
     assertThat(request.elements().get(0).elementId()).isEqualTo("activity1");
@@ -277,7 +277,7 @@ class RequestMapperTest {
             adHocSubProcessInstanceKey, instruction);
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
     final var request = result.get();
     assertThat(request.elements()).hasSize(1);
     assertThat(request.elements().get(0).elementId()).isEqualTo("activity1");
@@ -302,7 +302,7 @@ class RequestMapperTest {
             adHocSubProcessInstanceKey, instruction);
 
     // then
-    assertTrue(result.isLeft());
+    assertThat(result.isLeft()).isTrue();
     final var problemDetail = result.getLeft();
     assertThat(problemDetail.getStatus()).isEqualTo(400); // Bad Request
     assertThat(problemDetail.getDetail()).contains("elementId");
@@ -323,7 +323,7 @@ class RequestMapperTest {
             adHocSubProcessInstanceKey, instruction);
 
     // then
-    assertTrue(result.isLeft());
+    assertThat(result.isLeft()).isTrue();
     final var problemDetail = result.getLeft();
     assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
     assertThat(problemDetail.getStatus()).isEqualTo(400);
