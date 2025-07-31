@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.auth;
 
-import static io.camunda.security.auth.Authorization.WILDCARD;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.Authorization;
@@ -16,6 +16,7 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,16 +38,17 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
 
     // fetch the authorization entities for the authenticated user
     final var securityContext = createSecurityContext(authentication, requiredAuthorization);
-    final var resourceIds = authorizationChecker.retrieveAuthorizedResourceIds(securityContext);
+    final var authorizationScopes =
+        authorizationChecker.retrieveAuthorizedAuthorizationScopes(securityContext);
 
-    if (resourceIds.contains(WILDCARD)) {
+    if (authorizationScopes.contains(WILDCARD)) {
       // no authorization check required, user can access
       // the respective resources.
       return ResourceAccess.wildcard(
           resultingAuthorization.resourceId(WILDCARD.getResourceId()).build());
     }
 
-    if (resourceIds.isEmpty()) {
+    if (authorizationScopes.isEmpty()) {
       return ResourceAccess.denied(resultingAuthorization.build());
     }
 
@@ -86,7 +88,8 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
       final Authorization<T> requiredAuthorization,
       final String resourceId) {
     final var securityContext = createSecurityContext(authentication, requiredAuthorization);
-    final var isAuthorized = authorizationChecker.isAuthorized(resourceId, securityContext);
+    final var isAuthorized =
+        authorizationChecker.isAuthorized(AuthorizationScope.of(resourceId), securityContext);
     final var checkedAuthorization =
         Authorization.of(
             a ->
