@@ -166,7 +166,7 @@ final class BulkIndexRequestTest {
 
     @Test
     void shouldWriteOperationsAsNDJson() throws IOException {
-      // given - use an empty authorization for comparison, since the bulk request
+      // given - use an empty authorization for comparison, since the bulk request will remove it
       final var records =
           recordFactory.generateRecords(b -> b.withAuthorizations(Map.of())).limit(2).toList();
       final var actions =
