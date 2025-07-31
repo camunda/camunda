@@ -257,13 +257,17 @@ public final class EngineRule extends ExternalResource {
   public EngineRule withResetRecordingExporterTestWatcherMode(
       final ResetRecordingExporterTestWatcherMode resetMode) {
     resetRecordingExporterTestWatcherMode = resetMode;
-    switch (resetMode) {
-      case ONLY_BEFORE_AND_AFTER_ALL_TESTS ->
-          // so, never on individual tests
-          recordingExporterTestWatcher.withResetMode(ResetMode.NEVER);
-      case BEFORE_EACH_TEST -> recordingExporterTestWatcher.withResetMode(ResetMode.ON_STARTING);
-    }
-    return this;
+    return switch (resetMode) {
+      case ONLY_BEFORE_AND_AFTER_ALL_TESTS -> {
+        // so, never on individual tests
+        recordingExporterTestWatcher.withResetMode(ResetMode.NEVER);
+        yield this;
+      }
+      case BEFORE_EACH_TEST -> {
+        recordingExporterTestWatcher.withResetMode(ResetMode.ON_STARTING);
+        yield this;
+      }
+    };
   }
 
   private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
