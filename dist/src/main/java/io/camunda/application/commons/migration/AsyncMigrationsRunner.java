@@ -60,7 +60,7 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
 
   private void startMigrators(final ApplicationArguments args) throws Exception {
     final Exception migrationsExceptions = new Exception("migration failed");
-    boolean migrationFailed = false;
+    boolean migrationSucceeded = true;
     try (final var executor =
         Executors.newFixedThreadPool(
             migrators.size(), new CustomizableThreadFactory("migration-"))) {
@@ -69,14 +69,14 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
         try {
           result.get();
         } catch (final ExecutionException e) {
-          migrationFailed = shouldFailMigration(e.getCause());
+          migrationSucceeded = !shouldFailMigration(e.getCause());
           LOG.error("Migrator failed", e.getCause());
           migrationsExceptions.addSuppressed(e.getCause());
         }
       }
     }
 
-    eventPublisher.publishEvent(new ProcessMigrationFinishedEvent(migrationFailed));
+    eventPublisher.publishEvent(new ProcessMigrationFinishedEvent(migrationSucceeded));
 
     if (migrationsExceptions.getSuppressed().length > 0) {
       throw migrationsExceptions;
