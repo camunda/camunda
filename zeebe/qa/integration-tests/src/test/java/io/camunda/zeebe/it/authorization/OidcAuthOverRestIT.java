@@ -200,16 +200,6 @@ public class OidcAuthOverRestIT {
   void shouldBeUnauthorizedWithMappingWithoutPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
-    final var claimName = UUID.randomUUID().toString();
-    final var claimValue = UUID.randomUUID().toString();
-    defaultMappingRuleClient
-        .newCreateMappingRuleCommand()
-        .mappingRuleId(UUID.randomUUID().toString())
-        .claimName(claimName)
-        .claimValue(claimValue)
-        .name(claimValue)
-        .send()
-        .join();
 
     // when
     final var deployFuture =
