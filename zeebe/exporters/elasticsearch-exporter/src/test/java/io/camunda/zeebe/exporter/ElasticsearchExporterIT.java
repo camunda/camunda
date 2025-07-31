@@ -75,7 +75,8 @@ final class ElasticsearchExporterIT {
 
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
-  private final ProtocolFactory factory = new ProtocolFactory();
+  // omit authorizations since they are removed from the records during serialization
+  private final ProtocolFactory factory = new ProtocolFactory(b -> b.withAuthorizations(Map.of()));
   private final ExporterTestController controller = new ExporterTestController();
   private final ElasticsearchExporter exporter = new ElasticsearchExporter();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);

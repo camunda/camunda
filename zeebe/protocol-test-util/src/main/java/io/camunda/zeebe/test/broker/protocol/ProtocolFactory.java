@@ -64,6 +64,7 @@ public final class ProtocolFactory {
   private final CustomRandomizerRegistry randomizerRegistry;
   private final EasyRandomParameters parameters;
   private final EasyRandom random;
+  private final UnaryOperator<Builder<?>> defaultModifier;
 
   /**
    * Every call to this constructor will always return a factory which produces the exact same
@@ -76,6 +77,18 @@ public final class ProtocolFactory {
   }
 
   /**
+   * Similar to {@link #ProtocolFactory()}, but allows passing a default modifier which is applied
+   * to all generated records. Be careful, as this is applied to every record regardless of the
+   * value parameter, it will be cast back into the appropriate type. So don't make assumption on
+   * the parameter type as part of this modifier, and always return a compatible builder type.
+   *
+   * @param defaultModifier a default modifier to apply to all generate records
+   */
+  public ProtocolFactory(final UnaryOperator<Builder<?>> defaultModifier) {
+    this(0, defaultModifier);
+  }
+
+  /**
    * Returns a factory with the given seed for the initial randomization. This enables you to
    * reproduce past results if you know the seed. Note that you will need to also effectively
    * reproduce the same steps as in the past; the seed by itself is not enough. So if you have a
@@ -85,6 +98,20 @@ public final class ProtocolFactory {
    * @param seed the seed to use
    */
   public ProtocolFactory(final long seed) {
+    this(seed, UnaryOperator.identity());
+  }
+
+  /**
+   * Similar to {@link #ProtocolFactory(long)}, but allows passing a default modifier, as in {@link
+   * #ProtocolFactory(UnaryOperator)}. The same warnings and restrictions apply.
+   *
+   * @param seed the seed to use
+   * @param defaultModifier the default modifier to apply to all generated records; cannot be null
+   */
+  public ProtocolFactory(final long seed, final UnaryOperator<Builder<?>> defaultModifier) {
+    this.defaultModifier =
+        Objects.requireNonNull(defaultModifier, "must specify a default modifier");
+
     randomizerRegistry = new CustomRandomizerRegistry();
     parameters = getDefaultParameters().seed(seed).scanClasspathForConcreteTypes(true);
     random = new EasyRandom(parameters);
@@ -393,11 +420,13 @@ public final class ProtocolFactory {
 
     //noinspection unchecked
     final Builder<T> builder =
-        ImmutableRecord.builder()
-            .from(seedRecord)
-            .withValueType(valueType)
-            .withValue(value)
-            .withIntent(intent);
+        (Builder<T>)
+            defaultModifier.apply(
+                ImmutableRecord.builder()
+                    .from(seedRecord)
+                    .withValueType(valueType)
+                    .withValue(value)
+                    .withIntent(intent));
 
     return Objects.requireNonNull(modifier.apply(builder), "must return a non null builder")
         .build();
