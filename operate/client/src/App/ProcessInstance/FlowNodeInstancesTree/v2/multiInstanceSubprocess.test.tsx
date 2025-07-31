@@ -181,7 +181,6 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     const withinMultiInstanceFlowNode = within(
       screen.getByTestId(
         `tree-node-${
-          // eslint-disable-next-line testing-library/no-node-access
           flowNodeInstances.level1Poll[processInstanceId]!.children[1]!.id
         }`,
       ),
