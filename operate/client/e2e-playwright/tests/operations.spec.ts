@@ -93,8 +93,7 @@ test.describe('Operations', () => {
     await expect(page.getByTestId('operations-entry')).toHaveCount(40);
   });
 
-  // TODO: Unskip after https://github.com/camunda/camunda/issues/24084 is fixed
-  test.skip('Retry and Cancel single instance @roundtrip', async ({
+  test('Retry and Cancel single instance @roundtrip', async ({
     commonPage,
     processesPage,
     processesPage: {filtersPanel},
@@ -124,7 +123,7 @@ test.describe('Operations', () => {
 
     // expect spinner to show and disappear
     await expect(processesPage.operationSpinner).toBeVisible();
-    await expect(processesPage.operationSpinner).toBeHidden();
+    await expect(processesPage.operationSpinner).toBeHidden({timeout: 30000});
 
     // cancel single instance using operation button
     await page
@@ -175,8 +174,7 @@ test.describe('Operations', () => {
     await commonPage.collapseOperationsPanel();
   });
 
-  // TODO: Unskip after https://github.com/camunda/camunda/issues/24084 is fixed
-  test.skip('Retry and cancel multiple instances @roundtrip', async ({
+  test('Retry and cancel multiple instances @roundtrip', async ({
     commonPage,
     processesPage: {filtersPanel},
     page,
@@ -221,7 +219,7 @@ test.describe('Operations', () => {
     // wait for instance to finish in operation list (end time is present, progess bar gone)
     await expect(
       operationsListItems.nth(0).getByText(DATE_REGEX),
-    ).toBeVisible();
+    ).toBeVisible({timeout: 30000});
 
     await expect(
       operationsListItems.nth(0).getByRole('progressbar'),
