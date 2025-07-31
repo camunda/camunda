@@ -61,6 +61,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
@@ -148,7 +149,8 @@ public class CompactRecordLogger {
           entry("AUTHORIZATION", "AUTH"),
           entry("ASYNC_REQUEST", "ASYNC"),
           entry("COMPENSATION_SUB", "COMP_SUB"),
-          entry("USAGE_METRICS", "USG_MTRCS"));
+          entry("USAGE_METRICS", "USG_MTRCS"),
+          entry("CREATE_WITH_AWAITING_RESULT", "WITH_RESULT"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -227,6 +229,7 @@ public class CompactRecordLogger {
         this::summarizeBatchOperationPartitionLifecycle);
     valueLoggers.put(ValueType.BATCH_OPERATION_EXECUTION, this::summarizeBatchOperationExecution);
     valueLoggers.put(ValueType.USAGE_METRIC, this::summarizeUsageMetrics);
+    valueLoggers.put(ValueType.PROCESS_INSTANCE_RESULT, this::summarizeProcessInstanceResult);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1367,6 +1370,15 @@ public class CompactRecordLogger {
     }
 
     return sb.toString();
+  }
+
+  private String summarizeProcessInstanceResult(final Record<?> record) {
+    final var value = (ProcessInstanceResultRecordValue) record.getValue();
+    return new StringBuilder()
+        .append(
+            summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
+        .append(formatVariables(value))
+        .toString();
   }
 
   private String formatPinnedTime(final long time) {
