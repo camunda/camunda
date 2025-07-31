@@ -17,6 +17,7 @@ import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsA
 import io.camunda.search.aggregation.result.ProcessDefinitionLatestVersionAggregationResult;
 import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.UsageMetricsAggregationResult;
+import io.camunda.search.aggregation.result.UsageMetricsTUAggregationResult;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryRequest;
@@ -31,6 +32,7 @@ import io.camunda.search.clients.transformers.aggregation.result.ProcessDefiniti
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionLatestVersionAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.UsageMetricsAggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.UsageMetricsTUAggregationResultTransformer;
 import io.camunda.search.clients.transformers.entity.AuthorizationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.BatchOperationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.BatchOperationItemEntityTransformer;
@@ -480,5 +482,7 @@ public final class ServiceTransformers {
         new ProcessDefinitionLatestVersionAggregationResultTransformer());
     mappers.put(
         UsageMetricsAggregationResult.class, new UsageMetricsAggregationResultTransformer());
+    mappers.put(
+        UsageMetricsTUAggregationResult.class, new UsageMetricsTUAggregationResultTransformer());
   }
 }
