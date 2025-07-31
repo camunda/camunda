@@ -168,11 +168,12 @@ public class AdHocSubProcessInstructionActivateProcessor
         adHocSubProcessElementInstance.getState());
 
     // activate the elements
-    for (final var elementValue : command.getValue().getActivateElements()) {
+    for (final var elementValue : command.getValue().activateElements()) {
       bpmnAdHocSubProcessBehavior.activateElement(
-          bpmnElementContext,
           adHocSubProcessElement,
-          adHocSubProcessElement.getAdHocActivitiesById().get(elementValue.getElementId()));
+          bpmnElementContext,
+          elementValue.getElementId(),
+          elementValue.getVariablesBuffer());
     }
 
     stateWriter.appendFollowUpEvent(

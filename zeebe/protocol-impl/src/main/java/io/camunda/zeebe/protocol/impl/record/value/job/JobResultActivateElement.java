@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.job;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
@@ -57,5 +58,10 @@ public final class JobResultActivateElement extends UnpackedObject
   public JobResultActivateElement setVariables(final DirectBuffer variables) {
     variablesProp.setValue(variables);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProp.getValue();
   }
 }
