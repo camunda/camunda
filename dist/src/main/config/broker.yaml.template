@@ -789,6 +789,7 @@
         #
         #     numberOfShards: 3
         #     numberOfReplicas: 0
+        #     templatePriority: 100
         #
         #     command: false
         #     event: true
@@ -872,6 +873,7 @@
         #
         #     numberOfShards: 3
         #     numberOfReplicas: 0
+        #     templatePriority: 100
         #
         #     command: false
         #     event: true

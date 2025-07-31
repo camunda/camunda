@@ -455,7 +455,9 @@ final class ElasticsearchExporterTest {
       config.index.setTemplatePriority(-1);
 
       // when - then
-      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+      assertThatCode(() -> exporter.configure(context))
+          .isInstanceOf(ExporterException.class)
+          .hasMessage("Elasticsearch index template priority must be >= 0. Current value: -1");
     }
   }
 
