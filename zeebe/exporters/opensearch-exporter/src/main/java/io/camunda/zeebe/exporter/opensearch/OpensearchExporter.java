@@ -110,6 +110,10 @@ public class OpensearchExporter implements Exporter {
   public void export(final Record<?> record) {
 
     if (!shouldExportRecord(record)) {
+      // ignore the record but still update the last exported position
+      // so that we don't block compaction.
+      lastPosition = record.getPosition();
+      updateLastExportedPosition();
       return;
     }
 
