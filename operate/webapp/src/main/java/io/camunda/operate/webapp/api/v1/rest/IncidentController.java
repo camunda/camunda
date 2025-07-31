@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.webapp.api.v1.rest.IncidentController.URI;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 
 import io.camunda.operate.webapp.api.v1.dao.IncidentDao;
 import io.camunda.operate.webapp.api.v1.entities.Error;
@@ -23,8 +25,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.security.auth.Authorization;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -161,7 +161,7 @@ public class IncidentController extends ErrorController implements SearchControl
     logger.debug("search for query {}", query);
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, Incident.class, MESSAGE_SORT_VALIDATOR);
-    checkIdentityReadPermission();
+    permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
     return incidentDao.search(query);
   }
 
@@ -202,15 +202,7 @@ public class IncidentController extends ErrorController implements SearchControl
   @Override
   public Incident byKey(
       @Parameter(description = "Key of incident", required = true) @PathVariable final Long key) {
-    checkIdentityReadPermission();
+    permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
     return incidentDao.byKey(key);
-  }
-
-  private void checkIdentityReadPermission() {
-    if (!permissionsService.hasPermissionForIncident(
-        Authorization.WILDCARD, PermissionType.READ_PROCESS_INSTANCE)) {
-      throw new ForbiddenException(
-          "No read permission for process instances and related resources");
-    }
   }
 }

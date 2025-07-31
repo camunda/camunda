@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.security.permission;
 
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -111,43 +112,14 @@ public class PermissionsService {
         decisionId, AuthorizationResourceType.DECISION_DEFINITION, permissionType);
   }
 
-  /**
-   * hasPermissionForDecisionRequirementsDefinition
-   *
-   * @return true if the user has the given permission for the decision requirements
-   */
-  public boolean hasPermissionForDecisionRequirementsDefinition(
-      final String decisionId, final PermissionType permissionType) {
-    return hasPermissionForResourceType(
-        decisionId, AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION, permissionType);
-  }
-
-  /**
-   * hasPermissionForProcess
-   *
-   * @return true if the user has the given permission for the process
-   */
-  public boolean hasPermissionForFlowNodeInstance(
-      final String flownodeId, final PermissionType permissionType) {
-    return hasPermissionForResourceType(
-        flownodeId, AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
-  }
-
-  /**
-   * hasPermissionForIncident
-   *
-   * @return true if the user has the given permission for the process
-   */
-  public boolean hasPermissionForIncident(
-      final String incidentId, final PermissionType permissionType) {
-    return hasPermissionForResourceType(
-        incidentId, AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
-  }
-
-  public boolean hasPermissionForVariable(
-      final String variableId, final PermissionType permissionType) {
-    return hasPermissionForResourceType(
-        variableId, AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
+  public void verifyWildcardResourcePermission(
+      final AuthorizationResourceType resourceType, final PermissionType permissionType) {
+    if (!hasPermissionForResourceType(Authorization.WILDCARD, resourceType, permissionType)) {
+      throw new ForbiddenException(
+          "%s:%s:%s permissions required to access this resource."
+              .formatted(
+                  resourceType.toString(), Authorization.WILDCARD, permissionType.toString()));
+    }
   }
 
   /**

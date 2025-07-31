@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.webapp.api.v1.rest.FlowNodeInstanceController.URI;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.Error;
@@ -21,8 +23,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.security.auth.Authorization;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -150,7 +150,7 @@ public class FlowNodeInstanceController extends ErrorController
     logger.debug("search for query {}", query);
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, FlowNodeInstance.class);
-    checkIdentityReadPermission();
+    permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
     return flowNodeInstanceDao.search(query);
   }
 
@@ -192,15 +192,7 @@ public class FlowNodeInstanceController extends ErrorController
   public FlowNodeInstance byKey(
       @Parameter(description = "Key of flownode instance", required = true) @PathVariable
           final Long key) {
-    checkIdentityReadPermission();
+    permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
     return flowNodeInstanceDao.byKey(key);
-  }
-
-  private void checkIdentityReadPermission() {
-    if (!permissionsService.hasPermissionForFlowNodeInstance(
-        Authorization.WILDCARD, PermissionType.READ_PROCESS_INSTANCE)) {
-      throw new ForbiddenException(
-          "No read permission for process instances and related resources");
-    }
   }
 }

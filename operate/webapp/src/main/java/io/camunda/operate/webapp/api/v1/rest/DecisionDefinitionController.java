@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.webapp.api.v1.rest.DecisionDefinitionController.URI;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_DEFINITION;
 
 import io.camunda.operate.webapp.api.v1.dao.DecisionDefinitionDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionDefinition;
@@ -21,8 +23,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.security.auth.Authorization;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -152,7 +152,8 @@ public class DecisionDefinitionController extends ErrorController
       @RequestBody(required = false) Query<DecisionDefinition> query) {
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, DecisionDefinition.class, SEARCH_SORT_VALIDATOR);
-    checkIdentityReadPermission();
+    permissionsService.verifyWildcardResourcePermission(
+        DECISION_DEFINITION, READ_DECISION_DEFINITION);
     return decisionDefinitionDao.search(query);
   }
 
@@ -194,14 +195,8 @@ public class DecisionDefinitionController extends ErrorController
   public DecisionDefinition byKey(
       @Parameter(description = "Key of decision definition", required = true) @PathVariable
           final Long key) {
-    checkIdentityReadPermission();
+    permissionsService.verifyWildcardResourcePermission(
+        DECISION_DEFINITION, READ_DECISION_DEFINITION);
     return decisionDefinitionDao.byKey(key);
-  }
-
-  private void checkIdentityReadPermission() {
-    if (!permissionsService.hasPermissionForDecision(
-        Authorization.WILDCARD, PermissionType.READ_DECISION_DEFINITION)) {
-      throw new ForbiddenException("No read permission for decision definitions");
-    }
   }
 }

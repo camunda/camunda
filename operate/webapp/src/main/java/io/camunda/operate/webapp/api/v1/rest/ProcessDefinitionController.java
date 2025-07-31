@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.webapp.api.v1.rest.ProcessDefinitionController.URI;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_DEFINITION;
 
 import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
 import io.camunda.operate.webapp.api.v1.entities.Error;
@@ -21,8 +23,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.security.auth.Authorization;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -142,7 +142,8 @@ public class ProcessDefinitionController extends ErrorController
     logger.debug("search for query {}", query);
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, ProcessDefinition.class);
-    checkIdentityReadPermission();
+    permissionsService.verifyWildcardResourcePermission(
+        PROCESS_DEFINITION, READ_PROCESS_DEFINITION);
     return processDefinitionDao.search(query);
   }
 
@@ -184,7 +185,8 @@ public class ProcessDefinitionController extends ErrorController
   public ProcessDefinition byKey(
       @Parameter(description = "Key of process definition", required = true) @Valid @PathVariable
           final Long key) {
-    checkIdentityReadPermission();
+    permissionsService.verifyWildcardResourcePermission(
+        PROCESS_DEFINITION, READ_PROCESS_DEFINITION);
     return processDefinitionDao.byKey(key);
   }
 
@@ -229,14 +231,8 @@ public class ProcessDefinitionController extends ErrorController
   public String xmlByKey(
       @Parameter(description = "Key of process definition", required = true) @Valid @PathVariable
           final Long key) {
-    checkIdentityReadPermission();
+    permissionsService.verifyWildcardResourcePermission(
+        PROCESS_DEFINITION, READ_PROCESS_DEFINITION);
     return processDefinitionDao.xmlByKey(key);
-  }
-
-  private void checkIdentityReadPermission() {
-    if (!permissionsService.hasPermissionForProcess(
-        Authorization.WILDCARD, PermissionType.READ_PROCESS_DEFINITION)) {
-      throw new ForbiddenException("No read permission for process definitions");
-    }
   }
 }
