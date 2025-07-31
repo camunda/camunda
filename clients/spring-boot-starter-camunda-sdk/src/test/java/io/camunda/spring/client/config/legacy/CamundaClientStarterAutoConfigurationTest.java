@@ -45,7 +45,7 @@ import org.springframework.test.util.ReflectionTestUtils;
     properties = {
       "zeebe.client.broker.gatewayAddress=localhost:1234",
       "zeebe.client.broker.grpcAddress=https://localhost:1234",
-      "zeebe.client.broker.restAddress=https://localhost:8080",
+      "zeebe.client.broker.restAddress=https://localhost:8088",
       "zeebe.client.requestTimeout=99s",
       "zeebe.client.job.timeout=99s",
       "zeebe.client.job.pollInterval=99s",
@@ -104,7 +104,7 @@ public class CamundaClientStarterAutoConfigurationTest {
         applicationContext.getBean(CamundaClientConfiguration.class);
     assertThat(configuration.getGatewayAddress()).isEqualTo("localhost:1234");
     assertThat(configuration.getGrpcAddress().toString()).isEqualTo("https://localhost:1234");
-    assertThat(configuration.getRestAddress().toString()).isEqualTo("https://localhost:8080");
+    assertThat(configuration.getRestAddress().toString()).isEqualTo("https://localhost:8088");
     assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(99));
     assertThat(configuration.getCaCertificatePath()).isEqualTo("aPath");
     assertThat(configuration.isPlaintextConnectionEnabled()).isFalse(); // grpc address is https

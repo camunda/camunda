@@ -39,7 +39,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     properties = {
       "zeebe.client.gateway.address=localhost12345",
       "zeebe.client.broker.grpcAddress=https://localhost:1234",
-      "zeebe.client.broker.restAddress=https://localhost:8080",
+      "zeebe.client.broker.restAddress=https://localhost:8088",
       "zeebe.client.job.pollinterval=99s",
       "zeebe.client.worker.name=testName",
       "zeebe.client.cloud.secret=processOrchestration"
@@ -56,7 +56,7 @@ public class JavaClientPropertiesTest {
 
   @Test
   public void hasRestAddress() {
-    assertThat(properties.getRestAddress().toString()).isEqualTo("https://localhost:8080");
+    assertThat(properties.getRestAddress().toString()).isEqualTo("https://localhost:8088");
   }
 
   @Test
@@ -103,7 +103,7 @@ public class JavaClientPropertiesTest {
     void shouldThrowExceptionOnInvalidRestURI() {
       assertThatThrownBy(
               () -> {
-                new CamundaClientProperties().setRestAddress(new URI("invalid:8080"));
+                new CamundaClientProperties().setRestAddress(new URI("invalid:8088"));
               })
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("'restAddress' must be an absolute URI");
