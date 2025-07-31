@@ -7647,6 +7647,9 @@ components:
         displayName:
           description: The display name of the user.
           type: string
+        email:
+          description: The email of the user.
+          type: string
         authorizedApplications:
           description: The applications the user is authorized to use.
           type: array
