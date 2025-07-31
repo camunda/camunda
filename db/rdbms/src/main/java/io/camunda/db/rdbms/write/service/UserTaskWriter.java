@@ -7,8 +7,8 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
+import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
@@ -117,7 +117,7 @@ public class UserTaskWriter {
             WriteStatementType.UPDATE,
             processInstanceKey,
             "io.camunda.db.rdbms.sql.UserTaskMapper.updateHistoryCleanupDate",
-            new HistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
+            new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
                 .processInstanceKey(processInstanceKey)
                 .historyCleanupDate(historyCleanupDate)
                 .build()));

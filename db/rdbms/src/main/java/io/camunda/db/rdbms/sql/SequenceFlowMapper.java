@@ -11,7 +11,7 @@ import io.camunda.db.rdbms.write.domain.SequenceFlowDbModel;
 import io.camunda.search.query.SequenceFlowQuery;
 import java.util.List;
 
-public interface SequenceFlowMapper extends HistoryCleanupMapper {
+public interface SequenceFlowMapper extends ProcessBasedHistoryCleanupMapper {
 
   List<SequenceFlowDbModel> search(SequenceFlowQuery processInstanceKey);
 }

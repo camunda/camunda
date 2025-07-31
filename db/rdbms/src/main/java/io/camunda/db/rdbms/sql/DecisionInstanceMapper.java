@@ -12,7 +12,7 @@ import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import java.util.List;
 
-public interface DecisionInstanceMapper extends HistoryCleanupMapper {
+public interface DecisionInstanceMapper extends ProcessBasedHistoryCleanupMapper {
 
   void insert(DecisionInstanceDbModel decisionInstance);
 

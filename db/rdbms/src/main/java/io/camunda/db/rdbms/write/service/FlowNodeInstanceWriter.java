@@ -10,8 +10,8 @@ package io.camunda.db.rdbms.write.service;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.EndFlowNodeDto;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.UpdateIncidentDto;
-import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
+import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -117,7 +117,7 @@ public class FlowNodeInstanceWriter {
             WriteStatementType.UPDATE,
             processInstanceKey,
             "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateHistoryCleanupDate",
-            new HistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
+            new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
                 .processInstanceKey(processInstanceKey)
                 .historyCleanupDate(historyCleanupDate)
                 .build()));

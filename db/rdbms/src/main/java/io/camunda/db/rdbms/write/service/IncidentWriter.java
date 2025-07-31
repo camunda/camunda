@@ -8,9 +8,9 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.IncidentMapper;
+import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel.Builder;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -89,7 +89,7 @@ public class IncidentWriter {
             WriteStatementType.UPDATE,
             processInstanceKey,
             "io.camunda.db.rdbms.sql.IncidentMapper.updateHistoryCleanupDate",
-            new HistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
+            new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
                 .processInstanceKey(processInstanceKey)
                 .historyCleanupDate(historyCleanupDate)
                 .build()));

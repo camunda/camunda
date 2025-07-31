@@ -12,7 +12,7 @@ import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import java.util.List;
 
-public interface UserTaskMapper extends HistoryCleanupMapper {
+public interface UserTaskMapper extends ProcessBasedHistoryCleanupMapper {
 
   void insert(UserTaskDbModel taskDbModel);
 
