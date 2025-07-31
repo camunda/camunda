@@ -43,7 +43,7 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
       mappingRuleId: "",
@@ -53,8 +53,6 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
     },
     mode: "all",
   });
-
-  const submitDisabled = loading || isSubmitting;
 
   const onSubmit = async (data: FormData) => {
     const { success } = await apiCall({
@@ -83,7 +81,6 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
       onClose={onClose}
       loading={loading}
       error={error}
-      submitDisabled={submitDisabled}
       confirmLabel={t("createMappingRule")}
       onSubmit={handleSubmit(onSubmit)}
     >
