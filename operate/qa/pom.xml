@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-parent</artifactId>
-    <version>8.5.16-SNAPSHOT</version>
+    <version>8.5.17-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>operate-qa</artifactId>
@@ -31,7 +31,7 @@
     <!-- properties for ImportSeveralVersionsTest and import-old-zeebe-tests module -->
     <version.zeebe.old>8.1.0</version.zeebe.old>
     <version.zeebe.docker.current>8.5.18</version.zeebe.docker.current>
-    <version.identity.docker.current>8.5.16</version.identity.docker.current>
+    <version.identity.docker.current>8.5.17</version.identity.docker.current>
 
   </properties>
 
