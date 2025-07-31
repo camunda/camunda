@@ -337,6 +337,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withProperty("logging.level.org.mybatis", "DEBUG");
     withProperty("zeebe.broker.exporters.rdbms.args.flushInterval", "PT0S");
     withProperty("zeebe.broker.exporters.rdbms.args.defaultHistoryTTL", "PT2S");
+    withProperty("zeebe.broker.exporters.rdbms.args.defaultBatchOperationHistoryTTL", "PT2S");
     withProperty("zeebe.broker.exporters.rdbms.args.minHistoryCleanupInterval", "PT2S");
     withProperty("zeebe.broker.exporters.rdbms.args.maxHistoryCleanupInterval", "PT5S");
     withExporter("rdbms", cfg -> cfg.setClassName("-"));

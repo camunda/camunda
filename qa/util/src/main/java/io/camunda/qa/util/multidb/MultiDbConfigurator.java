@@ -267,6 +267,9 @@ public class MultiDbConfigurator {
     testApplication.withProperty(
         "zeebe.broker.exporters.rdbms.args.defaultHistoryTTL", retentionEnabled ? "PT1S" : "PT1H");
     testApplication.withProperty(
+        "zeebe.broker.exporters.rdbms.args.defaultBatchOperationHistoryTTL",
+        retentionEnabled ? "PT1S" : "PT1H");
+    testApplication.withProperty(
         "zeebe.broker.exporters.rdbms.args.minHistoryCleanupInterval",
         retentionEnabled ? "PT1S" : "PT1H");
     testApplication.withProperty(

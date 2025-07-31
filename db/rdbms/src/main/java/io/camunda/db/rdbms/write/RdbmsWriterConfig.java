@@ -14,6 +14,10 @@ public record RdbmsWriterConfig(
     int partitionId,
     int queueSize,
     Duration defaultHistoryTTL,
+    Duration cancelProcessInstanceHistoryTTL,
+    Duration migrateProcessInstanceHistoryTTL,
+    Duration modifyProcessInstanceHistoryTTL,
+    Duration resolveIncidentHistoryTTL,
     Duration minHistoryCleanupInterval,
     Duration maxHistoryCleanupInterval,
     int historyCleanupBatchSize,
@@ -30,6 +34,7 @@ public record RdbmsWriterConfig(
 
   public static final int DEFAULT_QUEUE_SIZE = 1000;
   public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
+  public static final Duration DEFAULT_BATCH_OPERATION_HISTORY_TTL = Duration.ofDays(5);
   public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(1);
   public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
   public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 1000;
@@ -45,6 +50,10 @@ public record RdbmsWriterConfig(
     private int partitionId;
     private int queueSize = DEFAULT_QUEUE_SIZE;
     private Duration defaultHistoryTTL = DEFAULT_HISTORY_TTL;
+    private Duration cancelProcessInstanceHistoryTTL = DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+    private Duration migrateProcessInstanceHistoryTTL = DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+    private Duration modifyProcessInstanceHistoryTTL = DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+    private Duration resolveIncidentHistoryTTL = DEFAULT_BATCH_OPERATION_HISTORY_TTL;
     private Duration minHistoryCleanupInterval = DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
     private Duration maxHistoryCleanupInterval = DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
     private int historyCleanupBatchSize = DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
@@ -64,6 +73,27 @@ public record RdbmsWriterConfig(
 
     public Builder defaultHistoryTTL(final Duration defaultHistoryTTL) {
       this.defaultHistoryTTL = defaultHistoryTTL;
+      return this;
+    }
+
+    public Builder cancelProcessInstanceHistoryTTL(final Duration cancelProcessInstanceHistoryTTL) {
+      this.cancelProcessInstanceHistoryTTL = cancelProcessInstanceHistoryTTL;
+      return this;
+    }
+
+    public Builder migrateProcessInstanceHistoryTTL(
+        final Duration migrateProcessInstanceHistoryTTL) {
+      this.migrateProcessInstanceHistoryTTL = migrateProcessInstanceHistoryTTL;
+      return this;
+    }
+
+    public Builder modifyProcessInstanceHistoryTTL(final Duration modifyProcessInstanceHistoryTTL) {
+      this.modifyProcessInstanceHistoryTTL = modifyProcessInstanceHistoryTTL;
+      return this;
+    }
+
+    public Builder resolveIncidentHistoryTTL(final Duration resolveIncidentHistoryTTL) {
+      this.resolveIncidentHistoryTTL = resolveIncidentHistoryTTL;
       return this;
     }
 
@@ -99,6 +129,10 @@ public record RdbmsWriterConfig(
           partitionId,
           queueSize,
           defaultHistoryTTL,
+          cancelProcessInstanceHistoryTTL,
+          migrateProcessInstanceHistoryTTL,
+          modifyProcessInstanceHistoryTTL,
+          resolveIncidentHistoryTTL,
           minHistoryCleanupInterval,
           maxHistoryCleanupInterval,
           historyCleanupBatchSize,
