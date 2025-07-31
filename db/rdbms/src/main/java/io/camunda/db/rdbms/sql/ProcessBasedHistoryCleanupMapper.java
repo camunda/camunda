@@ -10,16 +10,15 @@ package io.camunda.db.rdbms.sql;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 
-public interface HistoryCleanupMapper {
+public interface ProcessBasedHistoryCleanupMapper {
 
-  int scheduleForHistoryCleanup(UpdateHistoryCleanupDateDto dto);
+  int updateHistoryCleanupDate(UpdateHistoryCleanupDateDto dto);
 
   int cleanupHistory(CleanupHistoryDto dto);
 
   record UpdateHistoryCleanupDateDto(long processInstanceKey, OffsetDateTime historyCleanupDate) {
 
-    public static class Builder
-        implements ObjectBuilder<ProcessInstanceMapper.UpdateHistoryCleanupDateDto> {
+    public static class Builder implements ObjectBuilder<UpdateHistoryCleanupDateDto> {
 
       private long processInstanceKey;
       private OffsetDateTime historyCleanupDate;

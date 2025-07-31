@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.sql;
 
-import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
+import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.write.domain.UsageMetricDbModel.UsageMetricStatisticsDbModel;
 import io.camunda.db.rdbms.write.domain.UsageMetricDbModel.UsageMetricTenantStatisticsDbModel;
 import io.camunda.search.filter.UsageMetricsFilter;
