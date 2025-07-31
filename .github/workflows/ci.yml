@@ -384,6 +384,15 @@ jobs:
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[UT] Zeebe - ${{ matrix.component }} - ${{matrix.suiteName}}"
+      - name: Write matrix outputs for test analysis
+        uses: cloudposse/github-action-matrix-outputs-write@v1
+        id: matrix-write
+        with:
+          matrix-step-name: ${{ github.job }}
+          matrix-key: ${{ matrix.component }}-${{ matrix.suiteName }}-${{ github.run_attempt }}
+          outputs: |-
+            flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
+            hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -882,6 +891,15 @@ jobs:
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[IT] ${{ matrix.name }}"
+      - name: Write matrix outputs for test analysis
+        uses: cloudposse/github-action-matrix-outputs-write@v1
+        id: matrix-write
+        with:
+          matrix-step-name: ${{ github.job }}
+          matrix-key: ${{ matrix.module }} - [IT] ${{ matrix.name }} - ${{ matrix.owner }} - ${{ github.run_attempt }}
+          outputs: |-
+            flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
+            hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1021,6 +1039,16 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - name: Read Zeebe unit tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@v1
+        id: zeebe-matrix-read
+        with:
+          matrix-step-name: zeebe-unit-tests
+      - name: Read Integration tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@v1
+        id: integration-matrix-read
+        with:
+          matrix-step-name: integration-tests
       - name: Collect flaky test results
         id: collect-results
         run: |
@@ -1032,13 +1060,15 @@ jobs:
             local job_name="$1"
             local flaky_tests="$2"
 
-            if [[ -n "$flaky_tests" && "$flaky_tests" != "" ]]; then
-              # Escape quotes and newlines for JSON
-              escaped_flaky_tests=$(echo "$flaky_tests" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+            flaky_tests=$(echo "$flaky_tests" | xargs)
 
-              # Add to JSON array
-              flaky_data=$(echo "$flaky_data" | jq --arg job "$job_name" --arg tests "$escaped_flaky_tests" '. += [{"job": $job, "flaky_tests": $tests}]')
-            fi
+              if [[ -n "$flaky_tests" ]]; then
+                escaped_flaky_tests=$(echo "$flaky_tests" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+
+                echo "Adding job: $job_name with flaky test: $flaky_tests"
+
+                flaky_data=$(echo "$flaky_data" | jq --arg job "$job_name" --arg tests "$escaped_flaky_tests" '. += [{"job": $job, "flaky_tests": $tests}]')
+              fi
           }
 
           # Collect from general-unit-tests
@@ -1048,25 +1078,17 @@ jobs:
           fi
 
           # Collect from zeebe-unit-tests matrix jobs
-          # Matrix job outputs are available but we need to iterate through them
-          # Note: GitHub Actions doesn't provide a direct way to iterate matrix outputs
-          # We'll need to check each known matrix combination
-          declare -a zeebe_matrix_combinations=(
-            "General-CoreFeatures"
-            "Protocol-CoreFeatures"
-            "Gateway-CoreFeatures"
-            "Exporter-DataLayer"
-            "Backup-DistributedPlatform"
-            "Distributed-DistributedPlatform"
-          )
-
-          # For zeebe-unit-tests, we can only access the result, not individual matrix outputs
-          # This is a GitHub Actions limitation - matrix job outputs are not accessible
-          # We'll add a placeholder and note this needs to be handled differently
           if [[ "${{ needs.zeebe-unit-tests.result }}" != "skipped" ]]; then
-            echo "# TODO: Matrix job outputs for zeebe-unit-tests cannot be accessed directly"
-            echo "# GitHub Actions doesn't expose individual matrix job outputs to dependent jobs"
-            echo "# This will need to be handled in a future step with a different approach"
+            zeebe_json='${{ steps.zeebe-matrix-read.outputs.result }}'
+            echo "Raw zeebe-unit-tests matrix JSON:"
+            echo "$zeebe_json" | jq '.'
+
+            # Parse flakyTests entries and add non-empty ones to flaky_data
+            while IFS= read -r entry; do
+              job_name=$(echo "$entry" | jq -r '.key')
+              flaky_tests=$(echo "$entry" | jq -r '.value // ""')
+              add_job_data "zeebe-unit-tests/$job_name" "$flaky_tests"
+            done < <(echo "$zeebe_json" | jq -c '.flakyTests | to_entries[]')
           fi
 
           # Collect from elasticsearch-integration-tests
@@ -1094,11 +1116,17 @@ jobs:
           fi
 
           # Collect from integration-tests matrix jobs
-          # Same limitation as zeebe-unit-tests - matrix outputs not accessible
           if [[ "${{ needs.integration-tests.result }}" != "skipped" ]]; then
-            echo "# TODO: Matrix job outputs for integration-tests cannot be accessed directly"
-            echo "# GitHub Actions doesn't expose individual matrix job outputs to dependent jobs"
-            echo "# This will need to be handled in a future step with a different approach"
+            integration_json='${{ steps.integration-matrix-read.outputs.result }}'
+            echo "Raw integration-tests matrix JSON:"
+            echo "$integration_json" | jq '.'
+
+            # Parse flakyTests entries and add non-empty ones to flaky_data
+            while IFS= read -r entry; do
+              job_name=$(echo "$entry" | jq -r '.key')
+              flaky_tests=$(echo "$entry" | jq -r '.value // ""')
+              add_job_data "integration-tests/$job_name" "$flaky_tests"
+            done < <(echo "$integration_json" | jq -c '.flakyTests | to_entries[]')
           fi
 
           # Collect from docker-checks
