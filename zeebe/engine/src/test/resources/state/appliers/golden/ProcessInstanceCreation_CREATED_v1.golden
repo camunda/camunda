@@ -19,13 +19,13 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-final class ProcessInstanceCreationCreatedApplier
+final class ProcessInstanceCreationCreatedV1Applier
     implements TypedEventApplier<ProcessInstanceCreationIntent, ProcessInstanceCreationRecord> {
 
   private final ProcessState processState;
   private final MutableElementInstanceState elementInstanceState;
 
-  public ProcessInstanceCreationCreatedApplier(
+  public ProcessInstanceCreationCreatedV1Applier(
       final MutableProcessState processState,
       final MutableElementInstanceState elementInstanceState) {
     this.processState = processState;
