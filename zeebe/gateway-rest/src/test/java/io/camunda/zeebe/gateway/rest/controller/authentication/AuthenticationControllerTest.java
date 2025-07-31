@@ -13,7 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.authentication.service.CamundaUserService;
-import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +39,8 @@ public class AuthenticationControllerTest extends RestControllerTest {
             "camundaUSer",
             "camunda.user@email.com",
             List.of("test application"),
-            List.of(new TenantDTO(100L, "testTenantId", "testTenantNem", "testTenantDescription")),
+            List.of(
+                new TenantEntity(100L, "testTenantId", "testTenantNem", "testTenantDescription")),
             List.of("test group"),
             List.of("test role"),
             "test plan",
