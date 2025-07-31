@@ -43,14 +43,11 @@ public class AdHocSubProcessActivityServicesTest {
 
   private AdHocSubProcessActivityServices services;
 
-  @Mock
-  private BrokerClient brokerClient;
+  @Mock private BrokerClient brokerClient;
 
-  @Mock
-  private SecurityContextProvider securityContextProvider;
+  @Mock private SecurityContextProvider securityContextProvider;
 
-  @Captor
-  private ArgumentCaptor<BrokerActivateAdHocSubProcessActivityRequest> requestCaptor;
+  @Captor private ArgumentCaptor<BrokerActivateAdHocSubProcessActivityRequest> requestCaptor;
 
   @BeforeEach
   public void before() {
@@ -201,7 +198,8 @@ public class AdHocSubProcessActivityServicesTest {
   public void shouldHandleEmptyElementsList() {
     // given
     final AdHocSubProcessActivateActivitiesRequest request =
-        new AdHocSubProcessActivateActivitiesRequest(AD_HOC_SUB_PROCESS_INSTANCE_KEY, List.of(), true);
+        new AdHocSubProcessActivateActivitiesRequest(
+            AD_HOC_SUB_PROCESS_INSTANCE_KEY, List.of(), true);
 
     final AdHocSubProcessInstructionRecord expectedResponse =
         new AdHocSubProcessInstructionRecord();
@@ -279,7 +277,6 @@ public class AdHocSubProcessActivityServicesTest {
     // then
     assertThat(result).isEqualTo(expectedResponse);
 
-
     final BrokerActivateAdHocSubProcessActivityRequest capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.getRequestWriter().getAdHocSubProcessInstanceKey())
         .isEqualTo(AD_HOC_SUB_PROCESS_INSTANCE_KEY);
@@ -288,7 +285,6 @@ public class AdHocSubProcessActivityServicesTest {
   }
 
   private static Stream<Arguments> cancelRemainingInstancesProvider() {
-    return Stream.of(
-        Arguments.of(true), Arguments.of(false), Arguments.of((Boolean) null));
+    return Stream.of(Arguments.of(true), Arguments.of(false), Arguments.of((Boolean) null));
   }
 }

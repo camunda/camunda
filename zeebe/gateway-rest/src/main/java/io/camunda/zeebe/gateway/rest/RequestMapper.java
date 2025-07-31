@@ -876,7 +876,8 @@ public class RequestMapper {
                                 element.getElementId(),
                                 getMapOrEmpty(element, e -> e.getVariables())))
                     .toList(),
-                request.getCancelRemainingInstances()));
+                request.getCancelRemainingInstances() != null
+                    && request.getCancelRemainingInstances()));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>
