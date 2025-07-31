@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.distribution;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -75,7 +76,6 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
@@ -180,8 +180,8 @@ public class CommandDistributionIdempotencyTest {
                       .authorization()
                       .newAuthorization()
                       .withOwnerId(user.getValue().getUsername())
-                      .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-                      .withResourceId("*")
+                      .withResourceMatcher(WILDCARD.getMatcher())
+                      .withResourceId(WILDCARD.getResourceId())
                       .withResourceType(AuthorizationResourceType.USER)
                       .withPermissions(PermissionType.READ)
                       .create();
@@ -200,8 +200,8 @@ public class CommandDistributionIdempotencyTest {
                           .authorization()
                           .newAuthorization()
                           .withOwnerId(user.getValue().getUsername())
-                          .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-                          .withResourceId("*")
+                          .withResourceMatcher(WILDCARD.getMatcher())
+                          .withResourceId(WILDCARD.getResourceId())
                           .withResourceType(AuthorizationResourceType.USER)
                           .withPermissions(PermissionType.READ)
                           .create()
@@ -224,8 +224,8 @@ public class CommandDistributionIdempotencyTest {
                           .authorization()
                           .newAuthorization()
                           .withOwnerId(user.getValue().getUsername())
-                          .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-                          .withResourceId("*")
+                          .withResourceMatcher(WILDCARD.getMatcher())
+                          .withResourceId(WILDCARD.getResourceId())
                           .withResourceType(AuthorizationResourceType.USER)
                           .withPermissions(PermissionType.READ)
                           .create()

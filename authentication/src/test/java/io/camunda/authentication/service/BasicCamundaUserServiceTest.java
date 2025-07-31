@@ -9,6 +9,7 @@ package io.camunda.authentication.service;
 
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.APPLICATION_ACCESS_AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -145,7 +146,8 @@ public class BasicCamundaUserServiceTest {
     final var currentUser = basicCamundaUserService.getCurrentUser();
 
     // then
-    assertThat(currentUser.authorizedApplications()).containsExactlyInAnyOrder("*");
+    assertThat(currentUser.authorizedApplications())
+        .containsExactlyInAnyOrder(WILDCARD.getResourceId());
   }
 
   @Test

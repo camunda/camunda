@@ -97,7 +97,10 @@ public class AuthorizationChecker {
                                   f.ownerTypeToOwnerIds(ownerIds)
                                       .resourceType(resourceType.name())
                                       .permissionTypes(permissionType)
-                                      .resourceIds(List.of(WILDCARD, resourceId)))
+                                      .resourceIds(
+                                          List.of(
+                                              AuthorizationScope.WILDCARD.getResourceId(),
+                                              authorizationScope.getResourceId())))
                           .page(p -> p.size(1)));
           return authorizationReader.search(query, ResourceAccessChecks.disabled()).total() > 0;
         },
@@ -127,7 +130,10 @@ public class AuthorizationChecker {
                               f ->
                                   f.ownerTypeToOwnerIds(ownerIds)
                                       .resourceType(resourceType.name())
-                                      .resourceIds(List.of(WILDCARD, resourceId)))
+                                      .resourceIds(
+                                          List.of(
+                                              AuthorizationScope.WILDCARD.getResourceId(),
+                                              resourceId)))
                           .unlimited());
           final var authorizationEntities =
               authorizationReader.search(query, ResourceAccessChecks.disabled()).items();

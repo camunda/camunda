@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 
@@ -134,7 +135,6 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableResult;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchResult;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collections;
@@ -1090,9 +1090,8 @@ public final class SearchQueryResponseMapper {
   }
 
   public static AuthorizationResult toAuthorization(final AuthorizationEntity authorization) {
-    // TODO: handle with WILDCARD constant
     final var resourceId =
-        (AuthorizationResourceMatcher.ANY.value() == authorization.resourceMatcher())
+        (WILDCARD.getMatcher().value() == authorization.resourceMatcher())
             ? "*"
             : authorization.resourceId();
     return new AuthorizationResult()

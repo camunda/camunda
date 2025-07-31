@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -98,8 +99,8 @@ public class AuthorizationCreatedUpdatedHandlerTest {
             .withAuthorizationKey(456L)
             .withOwnerId("foo")
             .withOwnerType(AuthorizationOwnerType.USER)
-            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-            .withResourceId("*")
+            .withResourceMatcher(WILDCARD.getMatcher())
+            .withResourceId(WILDCARD.getResourceId())
             .withPermissionTypes(List.of(PermissionType.CREATE, PermissionType.DELETE))
             .build();
 

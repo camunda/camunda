@@ -15,6 +15,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -114,11 +115,14 @@ public class PermissionsService {
 
   public void verifyWildcardResourcePermission(
       final AuthorizationResourceType resourceType, final PermissionType permissionType) {
-    if (!hasPermissionForResourceType(Authorization.WILDCARD, resourceType, permissionType)) {
+    if (!hasPermissionForResourceType(
+        AuthorizationScope.WILDCARD_CHAR, resourceType, permissionType)) {
       throw new ForbiddenException(
           "%s:%s:%s permissions required to access this resource."
               .formatted(
-                  resourceType.toString(), Authorization.WILDCARD, permissionType.toString()));
+                  resourceType.toString(),
+                  AuthorizationScope.WILDCARD_CHAR,
+                  permissionType.toString()));
     }
   }
 
