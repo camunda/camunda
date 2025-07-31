@@ -261,4 +261,34 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasResourceType(AuthorizationResourceType.USAGE_METRIC)
                     .hasOnlyPermissionTypes(PermissionType.READ));
   }
+
+  @Test
+  public void shouldCreateConnectorsRoleByDefault() {
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
+                .authorizationRecords()
+                .withOwnerId(DefaultRole.CONNECTORS.getId()))
+        .extracting(Record::getValue)
+        .describedAs("Expect all connectors role authorizations to be owned by the connectors role")
+        .allSatisfy(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasOwnerId(DefaultRole.CONNECTORS.getId())
+                    .hasOwnerType(AuthorizationOwnerType.ROLE))
+        .describedAs(
+            "Expect the connectors role authorizations to have specific resource permissions")
+        .satisfiesExactlyInAnyOrder(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ_PROCESS_DEFINITION,
+                        PermissionType.UPDATE_PROCESS_INSTANCE),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.MESSAGE)
+                    .hasOnlyPermissionTypes(PermissionType.CREATE));
+  }
 }
