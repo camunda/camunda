@@ -20,7 +20,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +45,9 @@ public class UserDeletedApplierTest {
   @Test
   void shouldDeleteAuthorizationsForAUser() {
     // given
+    final var authScope1 = AuthorizationScope.id("process1");
+    final var authScope2 = AuthorizationScope.id("process2");
+    final var authScope3 = AuthorizationScope.id("definition1");
     final var userRecord =
         new UserRecord()
             .setUserKey(1L)
@@ -58,8 +61,8 @@ public class UserDeletedApplierTest {
         1L,
         new AuthorizationRecord()
             .setAuthorizationKey(1L)
-            .setResourceMatcher(AuthorizationResourceMatcher.ID)
-            .setResourceId("process1")
+            .setResourceMatcher(authScope1.matcher())
+            .setResourceId(authScope1.resourceId())
             .setResourceType(PROCESS_DEFINITION)
             .setOwnerId(userRecord.getUsername())
             .setOwnerType(AuthorizationOwnerType.USER)
@@ -68,8 +71,8 @@ public class UserDeletedApplierTest {
         2L,
         new AuthorizationRecord()
             .setAuthorizationKey(2L)
-            .setResourceMatcher(AuthorizationResourceMatcher.ID)
-            .setResourceId("process2")
+            .setResourceMatcher(authScope2.matcher())
+            .setResourceId(authScope2.resourceId())
             .setResourceType(PROCESS_DEFINITION)
             .setOwnerId(userRecord.getUsername())
             .setOwnerType(AuthorizationOwnerType.USER)
@@ -78,24 +81,24 @@ public class UserDeletedApplierTest {
         3L,
         new AuthorizationRecord()
             .setAuthorizationKey(3L)
-            .setResourceMatcher(AuthorizationResourceMatcher.ID)
-            .setResourceId("definition1")
+            .setResourceMatcher(authScope3.matcher())
+            .setResourceId(authScope3.resourceId())
             .setResourceType(DECISION_DEFINITION)
             .setOwnerId(userRecord.getUsername())
             .setOwnerType(AuthorizationOwnerType.USER)
             .setPermissionTypes(Set.of(DELETE)));
 
     assertThat(
-            authorizationState.getResourceIdentifiers(
+            authorizationState.getAuthorizationScopes(
                 AuthorizationOwnerType.USER, userRecord.getUsername(), PROCESS_DEFINITION, CREATE))
         .hasSize(2)
-        .containsExactlyInAnyOrder("process1", "process2");
+        .containsExactlyInAnyOrder(authScope1, authScope2);
 
     assertThat(
-            authorizationState.getResourceIdentifiers(
+            authorizationState.getAuthorizationScopes(
                 AuthorizationOwnerType.USER, userRecord.getUsername(), DECISION_DEFINITION, DELETE))
         .hasSize(1)
-        .containsExactlyInAnyOrder("definition1");
+        .containsExactlyInAnyOrder(authScope3);
 
     // when
     userDeletedApplier.applyState(userRecord.getUserKey(), userRecord);
