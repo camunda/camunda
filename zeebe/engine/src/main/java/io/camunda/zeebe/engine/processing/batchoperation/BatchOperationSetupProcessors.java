@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.handlers.CancelProcessI
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResolveIncidentBatchOperationExecutor;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -74,6 +75,10 @@ public final class BatchOperationSetupProcessors {
             ValueType.BATCH_OPERATION_CREATION,
             BatchOperationIntent.START,
             new BatchOperationStartProcessor(writers, batchOperationMetrics))
+        .onCommand(
+            ValueType.BATCH_OPERATION_INITIALIZATION,
+            BatchOperationIntent.CONTINUE_INITIALIZATION,
+            new BatchOperationContinueInitializationProcessor(writers))
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.FAIL,
@@ -140,8 +145,7 @@ public final class BatchOperationSetupProcessors {
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
-                new BatchOperationItemProvider(
-                    searchClientsProxy, engineConfiguration, batchOperationMetrics),
+                new ItemProviderFactory(searchClientsProxy, batchOperationMetrics, partitionId),
                 engineConfiguration,
                 partitionId,
                 batchOperationMetrics));

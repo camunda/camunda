@@ -17,5 +17,6 @@ package io.camunda.zeebe.protocol.record.value;
 
 public enum BatchOperationErrorType {
   QUERY_FAILED,
+  RESULT_BUFFER_SIZE_EXCEEDED,
   UNKNOWN
 }

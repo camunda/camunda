@@ -17,5 +17,6 @@ package io.camunda.client.api.search.enums;
 
 public enum BatchOperationErrorType {
   QUERY_FAILED,
+  RESULT_BUFFER_SIZE_EXCEEDED,
   UNKNOWN_ENUM_VALUE;
 }

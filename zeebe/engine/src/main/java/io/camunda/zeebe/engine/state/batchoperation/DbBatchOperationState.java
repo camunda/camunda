@@ -109,6 +109,28 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public void continueInitialization(
+      final long batchOperationKey,
+      final String searchResultCursor,
+      final int searchQueryPageSize) {
+    LOGGER.trace("Setting the next init step for batch operation with key {}", batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
+    final var batchOperation = get(batchOperationKey);
+    if (batchOperation.isPresent()) {
+      batchOperation.get().setInitializationSearchCursor(searchResultCursor);
+      batchOperation.get().setInitializationSearchQueryPageSize(searchQueryPageSize);
+      batchOperationColumnFamily.update(batchKey, batchOperation.get());
+
+      // again add to pending batch operations, since it is not yet started and needs at least one
+      // more initialization step
+      pendingBatchOperationColumnFamily.upsert(batchKey, DbNil.INSTANCE);
+    } else {
+      LOGGER.error(
+          "Batch operation with key {} not found, cannot set next init step.", batchOperationKey);
+    }
+  }
+
+  @Override
   public void fail(final long batchOperationKey) {
     LOGGER.trace("Failing batch operation with key {}", batchOperationKey);
     batchKey.wrapLong(batchOperationKey);

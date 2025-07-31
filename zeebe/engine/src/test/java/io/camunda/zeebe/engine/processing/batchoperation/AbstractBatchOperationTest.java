@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
@@ -53,6 +52,8 @@ abstract class AbstractBatchOperationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
+  protected static final int DEFAULT_QUERY_PAGE_SIZE = 10000;
+
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -71,6 +72,7 @@ abstract class AbstractBatchOperationTest {
                   cfg.getInitialization()
                       .getDefaultRoles()
                       .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))))
+          .withEngineConfig(cfg -> cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE))
           .withSearchClientsProxy(searchClientsProxy);
 
   @Before
@@ -187,7 +189,10 @@ abstract class AbstractBatchOperationTest {
         piAndIncidentKeys.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
     final var incidentResult =
         new SearchQueryResult.Builder<IncidentEntity>()
-            .items(incidentKeys.stream().map(this::mockIncidentEntity).collect(Collectors.toList()))
+            .items(
+                incidentKeys.stream()
+                    .map(k -> fakeIncidentEntity(k, k))
+                    .collect(Collectors.toList()))
             .total(incidentKeys.size())
             .build();
     when(searchClientsProxy.searchIncidents(Mockito.any(IncidentQuery.class)))
@@ -278,10 +283,22 @@ abstract class AbstractBatchOperationTest {
         null);
   }
 
-  protected IncidentEntity mockIncidentEntity(final long incidentKey) {
-    final var entity = mock(IncidentEntity.class);
-    when(entity.incidentKey()).thenReturn(incidentKey);
-    return entity;
+  protected IncidentEntity fakeIncidentEntity(
+      final long incidentKey, final long processInstanceKey) {
+    return new IncidentEntity(
+        incidentKey,
+        -1L, // processDefinitionKey
+        null, // processDefinitionId
+        processInstanceKey, // processInstanceKey
+        IncidentEntity.ErrorType.UNSPECIFIED,
+        "Fake incident message",
+        "flowNodeId",
+        -1L, // flowNodeInstanceKey
+        null, // creationTime
+        IncidentEntity.IncidentState.ACTIVE,
+        -1L, // jobKey
+        null // tenantId
+        );
   }
 
   protected UserRecordValue createUser() {

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.batchoperation;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
@@ -18,6 +20,7 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -101,6 +104,12 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
    */
   private final DocumentProperty authenticationProp = new DocumentProperty("authentication");
 
+  private final StringProperty initializationSearchCursorProp =
+      new StringProperty("initializationSearchCursor", "");
+
+  private final IntegerProperty initializationSearchQueryPageSizeProp =
+      new IntegerProperty("initializationSearchQueryPageSize", -1);
+
   /**
    * The partition ids that are part of the batch operation. This is used to track which partitions
    * existed when the batch operation was created and on which partitions the batch operation runs.
@@ -119,7 +128,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new ArrayProperty<>("errors", BatchOperationError::new);
 
   public PersistedBatchOperation() {
-    super(14);
+    super(16);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
@@ -128,6 +137,8 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(modificationPlanProp)
         .declareProperty(chunkKeysProp)
         .declareProperty(initializedProp)
+        .declareProperty(initializationSearchCursorProp)
+        .declareProperty(initializationSearchQueryPageSizeProp)
         .declareProperty(authenticationProp)
         .declareProperty(partitionsProp)
         .declareProperty(finishedPartitionsProp)
@@ -257,6 +268,32 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   public PersistedBatchOperation setAuthentication(final DirectBuffer authentication) {
     authenticationProp.setValue(authentication);
     return this;
+  }
+
+  public String getInitializationSearchCursor() {
+    return bufferAsString(initializationSearchCursorProp.getValue());
+  }
+
+  public PersistedBatchOperation setInitializationSearchCursor(final String cursor) {
+    initializationSearchCursorProp.setValue(cursor);
+    return this;
+  }
+
+  public int getInitializationSearchQueryPageSize() {
+    return initializationSearchQueryPageSizeProp.getValue();
+  }
+
+  public PersistedBatchOperation setInitializationSearchQueryPageSize(final int pageSize) {
+    initializationSearchQueryPageSizeProp.setValue(pageSize);
+    return this;
+  }
+
+  public int getInitializationSearchQueryPageSize(final int defaultValue) {
+    if (initializationSearchQueryPageSizeProp.getValue() == -1) {
+      return defaultValue;
+    }
+
+    return initializationSearchQueryPageSizeProp.getValue();
   }
 
   public <T> T getEntityFilter(final Class<T> clazz) {
