@@ -96,17 +96,13 @@ describe('Processes', () => {
     );
   });
 
-  it.skip('should render an empty state message', async () => {
+  it('should render an empty state message', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
-      http.get(
+      http.post(
         '/v2/process-definitions/search',
         () => {
-          return HttpResponse.json(
-            getQueryProcessDefinitionsResponseMock([
-              getProcessDefinitionMock(),
-            ]),
-          );
+          return HttpResponse.json(getQueryProcessDefinitionsResponseMock([]));
         },
         {once: true},
       ),
@@ -166,16 +162,16 @@ describe('Processes', () => {
     expect(screen.getAllByTestId('process-tile')).toHaveLength(2);
   });
 
-  it.skip('should open a dialog with the start form', async () => {
+  it('should open a dialog with the start form', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    const mockProcess = getProcessDefinitionMock();
+    const mockProcess = getProcessDefinitionMock({hasStartForm: true});
     nodeMockServer.use(
       http.post('/v2/process-definitions/search', () => {
         return HttpResponse.json(
           getQueryProcessDefinitionsResponseMock([mockProcess]),
         );
       }),
-      http.get('/v2/forms/:formKey', () => {
+      http.get('/v2/process-definitions/:processDefinitionKey/form', () => {
         return HttpResponse.json(formMocks.form);
       }),
     );
@@ -203,7 +199,7 @@ describe('Processes', () => {
     ).toBeInTheDocument();
     expect(await screen.findByText('A sample text')).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      pages.internalStartProcessFromForm(mockProcess.processDefinitionId),
+      pages.internalStartProcessFromForm(mockProcess.processDefinitionKey),
     );
   });
 
@@ -228,7 +224,7 @@ describe('Processes', () => {
     );
   });
 
-  it.skip('should show the filter dropdown', async () => {
+  it('should show the filter dropdown', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
       http.post('/v2/process-definitions/search', () => {
@@ -247,7 +243,7 @@ describe('Processes', () => {
     expect(screen.getByTitle('All Processes')).toBeVisible();
   });
 
-  it.skip('should render a tenant dropdown', async () => {
+  it('should render a tenant dropdown', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     mockGetClientConfig.mockReturnValue({
       ...actualGetClientConfig(),
@@ -284,7 +280,7 @@ describe('Processes', () => {
     );
   });
 
-  it.skip('should render a tenant dropdown with the current tenant selected', async () => {
+  it('should render a tenant dropdown with the current tenant selected', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     window.localStorage.setItem('tenantId', '"tenantA"');
     mockGetClientConfig.mockReturnValue({
@@ -354,7 +350,7 @@ describe('Processes', () => {
     ).not.toBeInTheDocument();
   });
 
-  it.skip('should render the start form with the correct URL', async () => {
+  it('should render the start form with the correct URL', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     const mockProcess = getProcessDefinitionMock();
     nodeMockServer.use(
@@ -363,14 +359,14 @@ describe('Processes', () => {
           getQueryProcessDefinitionsResponseMock([mockProcess]),
         );
       }),
-      http.get('/v2/forms/:formKey', () => {
+      http.get('/v2/process-definitions/:processDefinitionKey/form', () => {
         return HttpResponse.json(formMocks.form);
       }),
     );
 
     render(<Component />, {
       wrapper: getWrapper([
-        pages.internalStartProcessFromForm(mockProcess.processDefinitionId),
+        pages.internalStartProcessFromForm(mockProcess.processDefinitionKey),
       ]),
     });
 
@@ -385,11 +381,11 @@ describe('Processes', () => {
     ).toBeInTheDocument();
     expect(await screen.findByText('A sample text')).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      pages.internalStartProcessFromForm(mockProcess.processDefinitionId),
+      pages.internalStartProcessFromForm(mockProcess.processDefinitionKey),
     );
   });
 
-  it.skip('should show a toast message when opened start form process does not exist', async () => {
+  it('should show a toast message when opened start form process does not exist', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     const wrongBpmnProcessId = 'wrong-bpmn-process-id';
     nodeMockServer.use(

@@ -53,8 +53,9 @@ function getTags(process: MultiModeProcess): ProcessTagVariant[] {
   const tags: ProcessTagVariant[] = [];
 
   if (
-    'startEventFormId' in process &&
-    typeof process.startEventFormId === 'string'
+    ('startEventFormId' in process &&
+      typeof process?.startEventFormId === 'string') ||
+    ('hasStartForm' in process && process.hasStartForm === true)
   ) {
     tags.push('start-form');
   }
@@ -75,7 +76,7 @@ function getNormalizedProcess(process: MultiModeProcess): {
 
   return {
     bpmnProcessId: process.processDefinitionId,
-    hasStartForm: false,
+    hasStartForm: process.hasStartForm,
   };
 }
 
