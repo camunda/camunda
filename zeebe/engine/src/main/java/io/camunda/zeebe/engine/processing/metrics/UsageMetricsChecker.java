@@ -7,16 +7,20 @@
  */
 package io.camunda.zeebe.engine.processing.metrics;
 
+import static java.util.Optional.ofNullable;
+
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +31,8 @@ public class UsageMetricsChecker implements Task {
   private final Duration exportInterval;
   private final InstantSource clock;
   private ReadonlyStreamProcessorContext processingContext;
-  private boolean shouldReschedule = false;
+  private volatile boolean shouldReschedule = false;
+  private final AtomicReference<ScheduledTask> scheduledTask = new AtomicReference<>(null);
 
   public UsageMetricsChecker(final Duration exportInterval, final InstantSource clock) {
     this.exportInterval = exportInterval;
@@ -35,14 +40,18 @@ public class UsageMetricsChecker implements Task {
   }
 
   public void schedule(final boolean immediately) {
+    final ScheduledTask nextTask;
     if (immediately) {
-      processingContext.getScheduleService().runAtAsync(0L, this);
+      nextTask = processingContext.getScheduleService().runAtAsync(0L, this);
     } else {
+      nextTask =
+          processingContext
+              .getScheduleService()
+              .runAt(clock.millis() + exportInterval.toMillis(), this);
       LOG.trace("UsageMetricsChecker scheduled");
-      processingContext
-          .getScheduleService()
-          .runAt(clock.millis() + exportInterval.toMillis(), this);
     }
+
+    ofNullable(scheduledTask.getAndSet(nextTask)).ifPresent(ScheduledTask::cancel);
   }
 
   @Override

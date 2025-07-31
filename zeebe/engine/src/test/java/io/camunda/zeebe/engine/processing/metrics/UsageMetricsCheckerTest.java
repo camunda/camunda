@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import java.time.InstantSource;
@@ -110,5 +112,23 @@ public class UsageMetricsCheckerTest {
     verify(mockProcessingScheduleService).runAt(2, checker);
     assertThat(recordCaptor.getValue())
         .isEqualTo(new UsageMetricRecord().setIntervalType(IntervalType.ACTIVE));
+  }
+
+  @Test
+  public void shouldCancelPreviousTaskWhenRescheduled() {
+    // given
+    when(mockClock.millis()).thenReturn(1L);
+    final var task1 = mock(ScheduledTask.class);
+    when(mockProcessingScheduleService.runAt(2, checker)).thenReturn(task1);
+    checker.schedule(false);
+
+    // when
+    checker.schedule(true);
+
+    // then
+    verify(mockProcessingContext, times(2)).getScheduleService();
+    verify(mockProcessingScheduleService).runAt(2, checker);
+    verify(mockProcessingScheduleService).runAtAsync(0, checker);
+    verify(task1).cancel();
   }
 }
