@@ -16,6 +16,7 @@ import {
   Authorization,
   createAuthorization,
   OwnerType,
+  PermissionType,
   PermissionTypes,
   ResourceType,
 } from "src/utility/api/authorizations";
@@ -31,45 +32,84 @@ type ResourcePermissionsType = {
 };
 
 const resourcePermissions: ResourcePermissionsType = {
-  APPLICATION: ["ACCESS"],
-  AUTHORIZATION: ["UPDATE", "CREATE", "READ", "DELETE"],
+  APPLICATION: [PermissionType.ACCESS],
+  AUTHORIZATION: [
+    PermissionType.UPDATE,
+    PermissionType.CREATE,
+    PermissionType.READ,
+    PermissionType.DELETE,
+  ],
   BATCH: [
-    "CREATE",
-    "CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE",
-    "CREATE_BATCH_OPERATION_RESOLVE_INCIDENT",
-    "CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE",
-    "CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE",
-    "CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE",
-    "CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE",
-    "CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION",
-    "CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION",
-    "READ",
-    "UPDATE",
+    PermissionType.CREATE,
+    PermissionType.CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE,
+    PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT,
+    PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE,
+    PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE,
+    PermissionType.CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE,
+    PermissionType.CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE,
+    PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
+    PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION,
+    PermissionType.READ,
+    PermissionType.UPDATE,
   ],
   DECISION_DEFINITION: [
-    "DELETE_DECISION_INSTANCE",
-    "CREATE_DECISION_INSTANCE",
-    "READ_DECISION_INSTANCE",
-    "READ_DECISION_DEFINITION",
+    PermissionType.DELETE_DECISION_INSTANCE,
+    PermissionType.CREATE_DECISION_INSTANCE,
+    PermissionType.READ_DECISION_INSTANCE,
+    PermissionType.READ_DECISION_DEFINITION,
   ],
-  DECISION_REQUIREMENTS_DEFINITION: ["UPDATE", "READ", "DELETE"],
-  RESOURCE: ["CREATE", "DELETE_DRD", "DELETE_PROCESS", "DELETE_FORM"],
-  GROUP: ["UPDATE", "CREATE", "READ", "DELETE"],
-  MAPPING_RULE: ["UPDATE", "CREATE", "READ", "DELETE"],
-  MESSAGE: ["CREATE", "READ"],
+  DECISION_REQUIREMENTS_DEFINITION: [
+    PermissionType.UPDATE,
+    PermissionType.READ,
+    PermissionType.DELETE,
+  ],
+  RESOURCE: [
+    PermissionType.CREATE,
+    PermissionType.DELETE_DRD,
+    PermissionType.DELETE_PROCESS,
+    PermissionType.DELETE_FORM,
+  ],
+  GROUP: [
+    PermissionType.UPDATE,
+    PermissionType.CREATE,
+    PermissionType.READ,
+    PermissionType.DELETE,
+  ],
+  MAPPING_RULE: [
+    PermissionType.UPDATE,
+    PermissionType.CREATE,
+    PermissionType.READ,
+    PermissionType.DELETE,
+  ],
+  MESSAGE: [PermissionType.CREATE, PermissionType.READ],
   PROCESS_DEFINITION: [
-    "CREATE_PROCESS_INSTANCE",
-    "DELETE_PROCESS_INSTANCE",
-    "UPDATE_USER_TASK",
-    "READ_PROCESS_INSTANCE",
-    "READ_USER_TASK",
-    "UPDATE_PROCESS_INSTANCE",
-    "READ_PROCESS_DEFINITION",
+    PermissionType.CREATE_PROCESS_INSTANCE,
+    PermissionType.DELETE_PROCESS_INSTANCE,
+    PermissionType.UPDATE_USER_TASK,
+    PermissionType.READ_PROCESS_INSTANCE,
+    PermissionType.READ_USER_TASK,
+    PermissionType.UPDATE_PROCESS_INSTANCE,
+    PermissionType.READ_PROCESS_DEFINITION,
   ],
-  ROLE: ["UPDATE", "CREATE", "READ", "DELETE"],
-  SYSTEM: ["UPDATE", "READ"],
-  TENANT: ["UPDATE", "CREATE", "READ", "DELETE"],
-  USER: ["UPDATE", "CREATE", "READ", "DELETE"],
+  ROLE: [
+    PermissionType.UPDATE,
+    PermissionType.CREATE,
+    PermissionType.READ,
+    PermissionType.DELETE,
+  ],
+  SYSTEM: [PermissionType.UPDATE, PermissionType.READ],
+  TENANT: [
+    PermissionType.UPDATE,
+    PermissionType.CREATE,
+    PermissionType.READ,
+    PermissionType.DELETE,
+  ],
+  USER: [
+    PermissionType.UPDATE,
+    PermissionType.CREATE,
+    PermissionType.READ,
+    PermissionType.DELETE,
+  ],
 };
 
 const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
@@ -210,7 +250,7 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
         {resourcePermissions[resourceType].map((permission) => (
           <Checkbox
             key={permission}
-            labelText={t(permission)}
+            labelText={PermissionType[permission]}
             id={permission}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               handleChangeCheckbox(e.target.checked, permission)
