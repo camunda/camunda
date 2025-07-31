@@ -49,23 +49,23 @@ public class OperateV1ApiGroupPermissionsIT {
           .withBasicAuth()
           .withAdditionalProfile(Profile.OPERATE);
 
-  private static final String AUTHORIZED_USERNAME = "operateV1GroupAuthorizedUser";
+  private static final String GROUP_AUTHORIZED_USERNAME = "operateV1GroupAuthorizedUser";
   private static final String UNAUTHORIZED_USERNAME = "operateV1GroupUnauthorizedUser";
   private static final String DMN_MODEL_RESOURCE =
       String.format("decisions/%s", "decision_model.dmn");
   private static String decisionInstanceId;
 
   @AutoClose
-  private static final TestRestOperateClient AUTHORIZED_OPERATE_CLIENT =
-      STANDALONE_CAMUNDA.newOperateClient(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME);
+  private static final TestRestOperateClient GROUP_AUTHORIZED_OPERATE_CLIENT =
+      STANDALONE_CAMUNDA.newOperateClient(GROUP_AUTHORIZED_USERNAME, GROUP_AUTHORIZED_USERNAME);
 
   @AutoClose
   private static final TestRestOperateClient UNAUTHORIZED_OPERATE_CLIENT =
       STANDALONE_CAMUNDA.newOperateClient(UNAUTHORIZED_USERNAME, UNAUTHORIZED_USERNAME);
 
   @UserDefinition
-  private static final TestUser AUTHORIZED_USER =
-      new TestUser(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME, List.of());
+  private static final TestUser GROUP_AUTHORIZED_USER =
+      new TestUser(GROUP_AUTHORIZED_USERNAME, GROUP_AUTHORIZED_USERNAME, List.of());
 
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER =
@@ -82,7 +82,7 @@ public class OperateV1ApiGroupPermissionsIT {
               new Permissions(DECISION_DEFINITION, READ_DECISION_DEFINITION, List.of("*")),
               new Permissions(DECISION_DEFINITION, READ_DECISION_INSTANCE, List.of("*")),
               new Permissions(DECISION_REQUIREMENTS_DEFINITION, READ, List.of("*"))),
-          List.of(new Membership(AUTHORIZED_USERNAME, EntityType.USER)));
+          List.of(new Membership(GROUP_AUTHORIZED_USERNAME, EntityType.USER)));
 
   @BeforeAll
   public static void beforeAll(final CamundaClient adminClient) throws Exception {
@@ -109,20 +109,10 @@ public class OperateV1ApiGroupPermissionsIT {
   void shouldBePermittedToSearchDecisionDefinitionUsingV1Api(final CamundaClient client)
       throws Exception {
     final int statusCode =
-        AUTHORIZED_OPERATE_CLIENT.searchRequest("v1/decision-definitions", "{}").statusCode();
+        GROUP_AUTHORIZED_OPERATE_CLIENT.searchRequest("v1/decision-definitions", "{}").statusCode();
     assertThat(statusCode)
         .describedAs("Is authorized to search decision definitions")
         .isEqualTo(HttpStatus.OK.value());
-  }
-
-  @Test
-  void shouldBeUnauthorizedToGetDecisionDefinitionV1Api(final CamundaClient client)
-      throws Exception {
-    final int statusCode =
-        UNAUTHORIZED_OPERATE_CLIENT.getRequest("v1/decision-definitions/%s", 1L).statusCode();
-    assertThat(statusCode)
-        .describedAs("Is unauthorized to get the decision definition")
-        .isEqualTo(HttpStatus.FORBIDDEN.value());
   }
 
   @Test
@@ -136,20 +126,10 @@ public class OperateV1ApiGroupPermissionsIT {
   }
 
   @Test
-  void shouldBePermittedToGetDecisionInstanceUsingV1Api() throws Exception {
-    final int statusCode =
-        AUTHORIZED_OPERATE_CLIENT
-            .getRequest("v1/decision-instances/%s", decisionInstanceId)
-            .statusCode();
-    assertThat(statusCode)
-        .describedAs("Is authorized to get decision instances")
-        .isEqualTo(HttpStatus.OK.value());
-  }
-
-  @Test
   void shouldBePermittedToSearchDecisionRequirementsUsingV1Api(final CamundaClient client)
       throws Exception {
-    final int statusCode = AUTHORIZED_OPERATE_CLIENT.searchRequest("v1/drd", "{}").statusCode();
+    final int statusCode =
+        GROUP_AUTHORIZED_OPERATE_CLIENT.searchRequest("v1/drd", "{}").statusCode();
     assertThat(statusCode)
         .describedAs("Is authorized to search decision definitions")
         .isEqualTo(HttpStatus.OK.value());

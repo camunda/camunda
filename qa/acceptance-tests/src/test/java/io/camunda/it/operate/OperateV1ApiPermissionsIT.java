@@ -8,19 +8,33 @@
 package io.camunda.it.operate;
 
 import static io.camunda.client.api.search.enums.PermissionType.DELETE_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.PermissionType.READ_DECISION_DEFINITION;
+import static io.camunda.client.api.search.enums.PermissionType.READ_DECISION_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.ResourceType.DECISION_DEFINITION;
+import static io.camunda.client.api.search.enums.ResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForDecisionToBeEvaluated;
+import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
+import io.camunda.qa.util.auth.GroupDefinition;
+import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.RoleDefinition;
+import io.camunda.qa.util.auth.TestGroup;
+import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -28,12 +42,18 @@ import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpStatus;
 
 @MultiDbTest
@@ -48,42 +68,110 @@ public class OperateV1ApiPermissionsIT {
           .withBasicAuth()
           .withAdditionalProfile(Profile.OPERATE);
 
+  // endpoint urls
+  private static final String PROCESS_INSTANCE_ENDPOINT = "v1/process-instances";
+  private static final String PROCESS_INSTANCE_GET_ENDPOINT_PATTERN =
+      PROCESS_INSTANCE_ENDPOINT + "/%s";
+  private static final String PROCESS_DEFINITION_ENDPOINT = "v1/process-definitions";
+  private static final String PROCESS_DEFINITION_GET_ENDPOINT_PATTERN =
+      PROCESS_DEFINITION_ENDPOINT + "/%s";
+  private static final String PROCESS_DEFINITION_GET_XML_ENDPOINT_PATTERN =
+      PROCESS_DEFINITION_ENDPOINT + "/%s/xml";
+  private static final String FLOWNODE_INSTANCES_ENDPOINT = "v1/flownode-instances";
+  private static final String FLOWNODE_INSTANCES_GET_ENDPOINT_PATTERN =
+      FLOWNODE_INSTANCES_ENDPOINT + "/%s";
+  private static final String INCIDENT_ENDPOINT = "v1/incidents";
+  private static final String INCIDENT_GET_ENDPOINT_PATTERN = INCIDENT_ENDPOINT + "/%s";
+  private static final String VARIABLES_ENDPOINT = "v1/incidents";
+  private static final String VARIABLES_GET_ENDPOINT_PATTERN = VARIABLES_ENDPOINT + "/%s";
+
+  private static final String DECISION_DEFINITIONS_ENDPOINT = "v1/decision-definitions";
+  private static final String DECISION_DEFINITIONS_GET_ENDPOINT_PATTERN =
+      DECISION_DEFINITIONS_ENDPOINT + "/%s";
+
+  private static final String DECISION_INSTANCES_ENDPOINT = "v1/decision-instances";
+  private static final String DECISION_INSTANCES_GET_ENDPOINT_PATTERN =
+      DECISION_INSTANCES_ENDPOINT + "/%s";
+  private static final String DECISION_REQUIREMENTS_ENDPOINT = "v1/drd";
+  private static final String DECISION_REQUIREMENTS_GET_ENDPOINT_PATTERN =
+      DECISION_REQUIREMENTS_ENDPOINT + "/%s";
+  private static final String DECISION_REQUIREMENTS_GET_XML_ENDPOINT_PATTERN =
+      DECISION_REQUIREMENTS_ENDPOINT + "/%s/xml";
+
+  // searchable keys
   private static final String PROCESS_ID = "processId";
-  private static final String READ_AUTHORIZED_USERNAME = "operateV1ReadAuthorizedUser";
-  private static final String DELETE_AUTHORIZED_USERNAME = "operateV1DeleteAuthorizedUser";
-  private static final String UNAUTHORIZED_USERNAME = "operateV1UnauthorizedUser";
   private static long processInstanceKey;
   private static long processInstanceToDeleteKey;
   private static long processDefinitionKey;
   private static long flowNodeInstanceKey;
+  private static long incidentKey;
+  private static long variableKey;
+  private static long decisionDefinitionKey;
+  private static String decisionInstanceId;
+  private static long decisionRequirementsKey;
+
+  // Users
+  private static final String AUTHORIZED_USERNAME = "operateV1AuthorizedUser";
+  private static final String ROLE_AUTHORIZED_USERNAME = "operateV1RoleAuthorizedUser";
+  private static final String GROUP_AUTHORIZED_USERNAME = "operateV1GroupAuthorizedUser";
+  private static final String UNAUTHORIZED_USERNAME = "operateV1UnauthorizedUser";
 
   @AutoClose
-  private static final TestRestOperateClient READ_AUTHORIZED_OPERATE_CLIENT =
-      STANDALONE_CAMUNDA.newOperateClient(READ_AUTHORIZED_USERNAME, READ_AUTHORIZED_USERNAME);
+  private static final TestRestOperateClient AUTHORIZED_OPERATE_CLIENT =
+      STANDALONE_CAMUNDA.newOperateClient(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME);
 
   @AutoClose
-  private static final TestRestOperateClient MODIFY_AUTHORIZED_OPERATE_CLIENT =
-      STANDALONE_CAMUNDA.newOperateClient(DELETE_AUTHORIZED_USERNAME, DELETE_AUTHORIZED_USERNAME);
+  private static final TestRestOperateClient ROLE_AUTHORIZED_OPERATE_CLIENT =
+      STANDALONE_CAMUNDA.newOperateClient(ROLE_AUTHORIZED_USERNAME, ROLE_AUTHORIZED_USERNAME);
+
+  @AutoClose
+  private static final TestRestOperateClient GROUP_AUTHORIZED_OPERATE_CLIENT =
+      STANDALONE_CAMUNDA.newOperateClient(GROUP_AUTHORIZED_USERNAME, GROUP_AUTHORIZED_USERNAME);
 
   @AutoClose
   private static final TestRestOperateClient UNAUTHORIZED_OPERATE_CLIENT =
       STANDALONE_CAMUNDA.newOperateClient(UNAUTHORIZED_USERNAME, UNAUTHORIZED_USERNAME);
 
-  @UserDefinition
-  private static final TestUser READ_AUTHORIZED_USER =
-      new TestUser(
-          READ_AUTHORIZED_USERNAME,
-          READ_AUTHORIZED_USERNAME,
-          List.of(
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
+  private static final List<Permissions> AUTHORIZED_PERMISSIONS =
+      List.of(
+          new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
+          new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
+          new Permissions(PROCESS_DEFINITION, DELETE_PROCESS_INSTANCE, List.of("*")),
+          new Permissions(DECISION_DEFINITION, READ_DECISION_DEFINITION, List.of("*")),
+          new Permissions(DECISION_DEFINITION, READ_DECISION_INSTANCE, List.of("*")),
+          new Permissions(DECISION_REQUIREMENTS_DEFINITION, READ, List.of("*")));
 
   @UserDefinition
-  private static final TestUser MODIFY_AUTHORIZED_USER =
-      new TestUser(
-          DELETE_AUTHORIZED_USERNAME,
-          DELETE_AUTHORIZED_USERNAME,
-          List.of(new Permissions(PROCESS_DEFINITION, DELETE_PROCESS_INSTANCE, List.of("*"))));
+  private static final TestUser AUTHORIZED_USER =
+      new TestUser(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME, AUTHORIZED_PERMISSIONS);
+
+  private static final String ROLE_ID = Strings.newRandomValidIdentityId();
+
+  @RoleDefinition
+  private static final TestRole AUTHORIZED_ROLE =
+      new TestRole(
+          ROLE_ID,
+          "operate_v1_auth_role",
+          AUTHORIZED_PERMISSIONS,
+          List.of(new Membership(ROLE_AUTHORIZED_USERNAME, EntityType.USER)));
+
+  @UserDefinition
+  private static final TestUser ROLE_AUTHORIZED_USER =
+      new TestUser(ROLE_AUTHORIZED_USERNAME, ROLE_AUTHORIZED_USERNAME, List.of());
+
+  private static final String GROUP_ID = Strings.newRandomValidIdentityId();
+
+  @GroupDefinition
+  private static final TestGroup AUTHORIZED_GROUP =
+      new TestGroup(
+          GROUP_ID,
+          "operate_v1_auth_group",
+          AUTHORIZED_PERMISSIONS,
+          List.of(new Membership(GROUP_AUTHORIZED_USERNAME, EntityType.USER)));
+
+  @UserDefinition
+  private static final TestUser GROUP_AUTHORIZED_USER =
+      new TestUser(GROUP_AUTHORIZED_USERNAME, GROUP_AUTHORIZED_USERNAME, List.of());
 
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER =
@@ -103,11 +191,7 @@ public class OperateV1ApiPermissionsIT {
             .getProcessDefinitionKey();
     waitForProcessesToBeDeployed(adminClient, 1);
     processInstanceKey = startProcessInstance(adminClient, PROCESS_ID).getProcessInstanceKey();
-    processInstanceToDeleteKey =
-        startProcessInstance(adminClient, PROCESS_ID).getProcessInstanceKey();
-    waitForProcessInstancesToStart(adminClient, f -> f.processDefinitionId(PROCESS_ID), 2);
-    adminClient.newCancelInstanceCommand(processInstanceToDeleteKey).send().join();
-    waitForProcessInstanceToBeTerminated(adminClient, processInstanceToDeleteKey);
+    waitForElementInstances(adminClient, f -> f.processInstanceKey(processInstanceKey), 2);
     flowNodeInstanceKey =
         adminClient
             .newElementInstanceSearchRequest()
@@ -117,35 +201,396 @@ public class OperateV1ApiPermissionsIT {
             .items()
             .getFirst()
             .getElementInstanceKey();
+
+    // add variable
+    adminClient
+        .newSetVariablesCommand(processInstanceKey)
+        .variable("testVariableA", "a")
+        .local(false)
+        .send()
+        .join();
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(adminClient.newVariableSearchRequest().send().join().items())
+                    .describedAs("Wait until variable exists")
+                    .hasSize(1));
+    variableKey =
+        adminClient.newVariableSearchRequest().send().join().items().getFirst().getVariableKey();
+    // create incident
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(adminClient.newJobSearchRequest().send().join().items())
+                    .describedAs("Wait until job exists")
+                    .hasSize(1));
+    final long jobKey =
+        adminClient.newJobSearchRequest().send().join().items().getFirst().getJobKey();
+    adminClient.newFailCommand(jobKey).retries(0).send().join();
+    waitUntilProcessInstanceHasIncidents(adminClient, 1);
+    incidentKey =
+        adminClient.newIncidentSearchRequest().send().join().items().getFirst().getIncidentKey();
+
+    // DMN
+    final long decisionKey =
+        adminClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath(String.format("decisions/%s", "decision_model.dmn"))
+            .send()
+            .join()
+            .getDecisions()
+            .getFirst()
+            .getDecisionKey();
+    adminClient
+        .newEvaluateDecisionCommand()
+        .decisionKey(decisionKey)
+        .variables("{\"input1\": \"A\"}")
+        .send()
+        .join();
+    waitForDecisionToBeEvaluated(adminClient, 1);
+    decisionDefinitionKey =
+        adminClient
+            .newDecisionDefinitionSearchRequest()
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getDecisionKey();
+    decisionInstanceId =
+        adminClient
+            .newDecisionInstanceSearchRequest()
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getDecisionInstanceId();
+    decisionRequirementsKey =
+        adminClient
+            .newDecisionRequirementsSearchRequest()
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getDecisionRequirementsKey();
+
+    // process for deletion
+    processInstanceToDeleteKey =
+        startProcessInstance(adminClient, PROCESS_ID).getProcessInstanceKey();
+    waitForProcessInstancesToStart(adminClient, f -> f.processDefinitionId(PROCESS_ID), 2);
+    adminClient.newCancelInstanceCommand(processInstanceToDeleteKey).send().join();
+    waitForProcessInstanceToBeTerminated(adminClient, processInstanceToDeleteKey);
   }
 
-  // Process Instances
-  @Test
-  void shouldBeUnauthorizedToGetProcessInstanceUsingV1Api() throws Exception {
-    final int statusCode =
-        UNAUTHORIZED_OPERATE_CLIENT
-            .getRequest("v1/process-instances/%s", processInstanceKey)
-            .statusCode();
-    assertThat(statusCode)
-        .describedAs("Is unauthorized to get the process instance")
-        .isEqualTo(HttpStatus.FORBIDDEN.value());
-  }
-
-  @Test
-  void shouldBePermittedToSearchProcessInstanceUsingV1Api(final CamundaClient client)
+  @ParameterizedTest
+  @MethodSource("getRequestParameters")
+  void shouldEvaluateGetRequest(
+      final TestRestOperateClient client,
+      final String endpoint,
+      final int expectedStatus,
+      final String key)
       throws Exception {
-    final int statusCode =
-        READ_AUTHORIZED_OPERATE_CLIENT.searchRequest("v1/process-instances", "{}").statusCode();
-    assertThat(statusCode)
-        .describedAs("Is authorized to get the process instance")
-        .isEqualTo(HttpStatus.OK.value());
+    final int statusCode = client.getRequest(endpoint, key).statusCode();
+    assertThat(statusCode).isEqualTo(expectedStatus);
+  }
+
+  @ParameterizedTest
+  @MethodSource("searchRequestParameters")
+  void shouldEvaluateSearchRequest(
+      final TestRestOperateClient client, final String endpoint, final int expectedStatus)
+      throws Exception {
+    final int statusCode = client.searchRequest(endpoint, "{}").statusCode();
+    assertThat(statusCode).isEqualTo(expectedStatus);
+  }
+
+  private static Stream<Arguments> getRequestParameters() {
+    return Stream.of(
+        // Process Instances
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT,
+            PROCESS_INSTANCE_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(processInstanceKey)),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT,
+            PROCESS_INSTANCE_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(processInstanceKey)),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT,
+            PROCESS_INSTANCE_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(processInstanceKey)),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            PROCESS_INSTANCE_GET_ENDPOINT_PATTERN,
+            HttpStatus.FORBIDDEN.value(),
+            String.valueOf(processInstanceKey)),
+        // Process Definitions
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT,
+            PROCESS_DEFINITION_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(processDefinitionKey)),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT,
+            PROCESS_DEFINITION_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(processDefinitionKey)),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT,
+            PROCESS_DEFINITION_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(processDefinitionKey)),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            PROCESS_DEFINITION_GET_ENDPOINT_PATTERN,
+            HttpStatus.FORBIDDEN.value(),
+            String.valueOf(processDefinitionKey)),
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT,
+            PROCESS_DEFINITION_GET_XML_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(processDefinitionKey)),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT,
+            PROCESS_DEFINITION_GET_XML_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(processDefinitionKey)),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT,
+            PROCESS_DEFINITION_GET_XML_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(processDefinitionKey)),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            PROCESS_DEFINITION_GET_XML_ENDPOINT_PATTERN,
+            HttpStatus.FORBIDDEN.value(),
+            String.valueOf(processDefinitionKey)),
+        // Flownode Instances
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT,
+            FLOWNODE_INSTANCES_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(flowNodeInstanceKey)),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT,
+            FLOWNODE_INSTANCES_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(flowNodeInstanceKey)),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT,
+            FLOWNODE_INSTANCES_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(flowNodeInstanceKey)),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            FLOWNODE_INSTANCES_GET_ENDPOINT_PATTERN,
+            HttpStatus.FORBIDDEN.value(),
+            String.valueOf(flowNodeInstanceKey)),
+        // Incident
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT,
+            INCIDENT_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(incidentKey)),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT,
+            INCIDENT_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(incidentKey)),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT,
+            INCIDENT_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(incidentKey)),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            INCIDENT_GET_ENDPOINT_PATTERN,
+            HttpStatus.FORBIDDEN.value(),
+            String.valueOf(incidentKey)),
+        // Variables
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT,
+            VARIABLES_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(variableKey)),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT,
+            VARIABLES_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(variableKey)),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT,
+            VARIABLES_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(variableKey)),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            VARIABLES_GET_ENDPOINT_PATTERN,
+            HttpStatus.FORBIDDEN.value(),
+            String.valueOf(variableKey)),
+        // Decision Definitions
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT,
+            DECISION_DEFINITIONS_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionDefinitionKey)),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT,
+            DECISION_DEFINITIONS_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionDefinitionKey)),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT,
+            DECISION_DEFINITIONS_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionDefinitionKey)),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            DECISION_DEFINITIONS_GET_ENDPOINT_PATTERN,
+            HttpStatus.FORBIDDEN.value(),
+            String.valueOf(decisionDefinitionKey)),
+        // Decision Instances
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT,
+            DECISION_INSTANCES_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionInstanceId)),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT,
+            DECISION_INSTANCES_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionInstanceId)),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT,
+            DECISION_INSTANCES_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionInstanceId)),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            DECISION_INSTANCES_GET_ENDPOINT_PATTERN,
+            HttpStatus.FORBIDDEN.value(),
+            String.valueOf(decisionInstanceId)),
+        // Decision Requirements
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT,
+            DECISION_REQUIREMENTS_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionRequirementsKey)),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT,
+            DECISION_REQUIREMENTS_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionRequirementsKey)),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT,
+            DECISION_REQUIREMENTS_GET_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionRequirementsKey)),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            DECISION_REQUIREMENTS_GET_ENDPOINT_PATTERN,
+            HttpStatus.FORBIDDEN.value(),
+            String.valueOf(decisionRequirementsKey)),
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT,
+            DECISION_REQUIREMENTS_GET_XML_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionRequirementsKey)),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT,
+            DECISION_REQUIREMENTS_GET_XML_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionRequirementsKey)),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT,
+            DECISION_REQUIREMENTS_GET_XML_ENDPOINT_PATTERN,
+            HttpStatus.OK.value(),
+            String.valueOf(decisionRequirementsKey)),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            DECISION_REQUIREMENTS_GET_XML_ENDPOINT_PATTERN,
+            HttpStatus.FORBIDDEN.value(),
+            String.valueOf(decisionRequirementsKey)));
+  }
+
+  private static Stream<Arguments> searchRequestParameters() {
+    return Stream.of(
+        // Process Instances
+        Arguments.of(AUTHORIZED_OPERATE_CLIENT, PROCESS_INSTANCE_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT, PROCESS_INSTANCE_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT, PROCESS_INSTANCE_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT, PROCESS_INSTANCE_ENDPOINT, HttpStatus.FORBIDDEN.value()),
+        // Process Definitions
+        Arguments.of(AUTHORIZED_OPERATE_CLIENT, PROCESS_DEFINITION_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT, PROCESS_DEFINITION_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT, PROCESS_DEFINITION_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT, PROCESS_DEFINITION_ENDPOINT, HttpStatus.FORBIDDEN.value()),
+        // Flownode Instances
+        Arguments.of(AUTHORIZED_OPERATE_CLIENT, FLOWNODE_INSTANCES_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT, FLOWNODE_INSTANCES_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT, FLOWNODE_INSTANCES_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT, FLOWNODE_INSTANCES_ENDPOINT, HttpStatus.FORBIDDEN.value()),
+        // Incidents
+        Arguments.of(AUTHORIZED_OPERATE_CLIENT, INCIDENT_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(ROLE_AUTHORIZED_OPERATE_CLIENT, INCIDENT_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(GROUP_AUTHORIZED_OPERATE_CLIENT, INCIDENT_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(UNAUTHORIZED_OPERATE_CLIENT, INCIDENT_ENDPOINT, HttpStatus.FORBIDDEN.value()),
+        // Variables
+        Arguments.of(AUTHORIZED_OPERATE_CLIENT, VARIABLES_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(ROLE_AUTHORIZED_OPERATE_CLIENT, VARIABLES_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(GROUP_AUTHORIZED_OPERATE_CLIENT, VARIABLES_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(UNAUTHORIZED_OPERATE_CLIENT, VARIABLES_ENDPOINT, HttpStatus.FORBIDDEN.value()),
+        // Decision Definitions
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT, DECISION_DEFINITIONS_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT, DECISION_DEFINITIONS_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT, DECISION_DEFINITIONS_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            DECISION_DEFINITIONS_ENDPOINT,
+            HttpStatus.FORBIDDEN.value()),
+        // Decision Instances
+        Arguments.of(AUTHORIZED_OPERATE_CLIENT, DECISION_INSTANCES_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT, DECISION_INSTANCES_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT, DECISION_INSTANCES_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT, DECISION_INSTANCES_ENDPOINT, HttpStatus.FORBIDDEN.value()),
+        // Decision Requirements
+        Arguments.of(
+            AUTHORIZED_OPERATE_CLIENT, DECISION_REQUIREMENTS_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            ROLE_AUTHORIZED_OPERATE_CLIENT, DECISION_REQUIREMENTS_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            GROUP_AUTHORIZED_OPERATE_CLIENT, DECISION_REQUIREMENTS_ENDPOINT, HttpStatus.OK.value()),
+        Arguments.of(
+            UNAUTHORIZED_OPERATE_CLIENT,
+            DECISION_REQUIREMENTS_ENDPOINT,
+            HttpStatus.FORBIDDEN.value()));
+  }
+
+  private static Stream<Arguments> deleteRequestParameters() {
+    return Stream.of(); // TODO
   }
 
   @Test
   void shouldBeUnauthorizedToDeleteProcessInstanceUsingV1Api(final CamundaClient client)
       throws Exception {
     final int statusCode =
-        READ_AUTHORIZED_OPERATE_CLIENT
+        AUTHORIZED_OPERATE_CLIENT
             .deleteRequest("v1/process-instances", processInstanceKey)
             .statusCode();
     assertThat(statusCode)
@@ -157,58 +602,12 @@ public class OperateV1ApiPermissionsIT {
   @Disabled // depends on fix for https://github.com/camunda/camunda/issues/36067
   void shouldBePermittedToDeleteProcessInstanceUsingV1Api(final CamundaClient client)
       throws Exception {
-    final int statusCode =
-        MODIFY_AUTHORIZED_OPERATE_CLIENT
-            .deleteRequest("v1/process-instances", processInstanceToDeleteKey)
-            .statusCode();
-    assertThat(statusCode)
-        .describedAs("Is authorized to delete the process instance")
-        .isEqualTo(HttpStatus.OK.value());
-  }
-
-  // Process Instances
-  @Test
-  void shouldBePermittedToGetProcessDefinitionsUsingV1Api(final CamundaClient client)
-      throws Exception {
-    final int statusCode =
-        READ_AUTHORIZED_OPERATE_CLIENT
-            .getRequest("v1/process-definitions/%s", processDefinitionKey)
-            .statusCode();
-    assertThat(statusCode)
-        .describedAs("Is authorized to get the process definitions")
-        .isEqualTo(HttpStatus.OK.value());
-  }
-
-  @Test
-  void shouldBeUnauthorizedToSearchProcessDefinitionsUsingV1Api(final CamundaClient client)
-      throws Exception {
-    final int statusCode =
-        UNAUTHORIZED_OPERATE_CLIENT.searchRequest("v1/process-definitions", "{}").statusCode();
-    assertThat(statusCode)
-        .describedAs("Is unauthorized to get the process definition")
-        .isEqualTo(HttpStatus.FORBIDDEN.value());
-  }
-
-  // Flownode Instaneces
-  @Test
-  void shouldBeUnauthorizedToGetFlowNodeInstanceUsingV1Api(final CamundaClient client)
-      throws Exception {
-    final int statusCode =
-        UNAUTHORIZED_OPERATE_CLIENT
-            .getRequest("v1/flownode-instances/%s", flowNodeInstanceKey)
-            .statusCode();
-    assertThat(statusCode)
-        .describedAs("Is unauthorized to get the flownode instance")
-        .isEqualTo(HttpStatus.FORBIDDEN.value());
-  }
-
-  @Test
-  void shouldBePermittedToSearchFlowNodeInstanceUsingV1Api(final CamundaClient client)
-      throws Exception {
-    final int statusCode =
-        READ_AUTHORIZED_OPERATE_CLIENT.searchRequest("v1/flownode-instances", "{}").statusCode();
-    assertThat(statusCode)
-        .describedAs("Is authorized to search flownode instances")
-        .isEqualTo(HttpStatus.OK.value());
+    //    final int statusCode =
+    //        MODIFY_AUTHORIZED_OPERATE_CLIENT
+    //            .deleteRequest("v1/process-instances", processInstanceToDeleteKey)
+    //            .statusCode();
+    //    assertThat(statusCode)
+    //        .describedAs("Is authorized to delete the process instance")
+    //        .isEqualTo(HttpStatus.OK.value());
   }
 }

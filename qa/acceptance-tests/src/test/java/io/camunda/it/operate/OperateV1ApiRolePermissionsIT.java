@@ -52,22 +52,22 @@ public class OperateV1ApiRolePermissionsIT {
           .withAdditionalProfile(Profile.OPERATE)
           .withProperty("camunda.tasklist.webappEnabled", "false");
 
-  private static final String AUTHORIZED_USERNAME = "operateV1RoleAuthorizedUser";
+  private static final String ROLE_AUTHORIZED_USERNAME = "operateV1RoleAuthorizedUser";
   private static final String UNAUTHORIZED_USERNAME = "operateV1RoleUnauthorizedUser";
   private static final String PROCESS_ID = "processId";
   private static long processInstanceKey;
 
   @AutoClose
-  private static final TestRestOperateClient AUTHORIZED_OPERATE_CLIENT =
-      STANDALONE_CAMUNDA.newOperateClient(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME);
+  private static final TestRestOperateClient ROLE_AUTHORIZED_OPERATE_CLIENT =
+      STANDALONE_CAMUNDA.newOperateClient(ROLE_AUTHORIZED_USERNAME, ROLE_AUTHORIZED_USERNAME);
 
   @AutoClose
   private static final TestRestOperateClient UNAUTHORIZED_OPERATE_CLIENT =
       STANDALONE_CAMUNDA.newOperateClient(UNAUTHORIZED_USERNAME, UNAUTHORIZED_USERNAME);
 
   @UserDefinition
-  private static final TestUser AUTHORIZED_USER =
-      new TestUser(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME, List.of());
+  private static final TestUser ROLE_AUTHORIZED_USER =
+      new TestUser(ROLE_AUTHORIZED_USERNAME, ROLE_AUTHORIZED_USERNAME, List.of());
 
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER =
@@ -81,7 +81,7 @@ public class OperateV1ApiRolePermissionsIT {
           ROLE_ID,
           "operate_v1_auth_role",
           List.of(new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))),
-          List.of(new Membership(AUTHORIZED_USERNAME, EntityType.USER)));
+          List.of(new Membership(ROLE_AUTHORIZED_USERNAME, EntityType.USER)));
 
   @BeforeAll
   public static void beforeAll(final CamundaClient adminClient) throws Exception {
@@ -119,37 +119,19 @@ public class OperateV1ApiRolePermissionsIT {
   @Test
   void shouldBePermittedToSearchIncidentUsingV1Api() throws Exception {
     final int statusCode =
-        AUTHORIZED_OPERATE_CLIENT.searchRequest("v1/incidents", "{}").statusCode();
+        ROLE_AUTHORIZED_OPERATE_CLIENT.searchRequest("v1/incidents", "{}").statusCode();
     assertThat(statusCode)
         .describedAs("Is authorized to search incidents")
         .isEqualTo(HttpStatus.OK.value());
-  }
-
-  @Test
-  void shouldBeUnauthorizedToGetIncidentUsingV1Api() throws Exception {
-    final int statusCode =
-        UNAUTHORIZED_OPERATE_CLIENT.getRequest("v1/incidents/%s", 1L).statusCode();
-    assertThat(statusCode)
-        .describedAs("Is unauthorized to get the incident")
-        .isEqualTo(HttpStatus.FORBIDDEN.value());
   }
 
   // Variables
   @Test
   void shouldBePermittedToSearchVariablesUsingV1Api() throws Exception {
     final int statusCode =
-        AUTHORIZED_OPERATE_CLIENT.searchRequest("v1/variables", "{}").statusCode();
+        ROLE_AUTHORIZED_OPERATE_CLIENT.searchRequest("v1/variables", "{}").statusCode();
     assertThat(statusCode)
         .describedAs("Is authorized to get variable")
         .isEqualTo(HttpStatus.OK.value());
-  }
-
-  @Test
-  void shouldBeUnauthorizedToGetVariablesUsingV1Api() throws Exception {
-    final int statusCode =
-        UNAUTHORIZED_OPERATE_CLIENT.getRequest("v1/variables/%s", 1L).statusCode();
-    assertThat(statusCode)
-        .describedAs("Is unauthorized to get variables")
-        .isEqualTo(HttpStatus.FORBIDDEN.value());
   }
 }
