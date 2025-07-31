@@ -380,5 +380,6 @@ public class AdHocSubProcessActivityServicesTest {
     final BrokerActivateAdHocSubProcessActivityRequest capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.getRequestWriter().getAdHocSubProcessInstanceKey())
         .isEqualTo(adHocSubProcessInstanceKey);
+    assertThat(capturedRequest.getRequestWriter().isCancelRemainingInstances()).isFalse();
   }
 }

@@ -81,7 +81,8 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                 },
                 {"elementId": "B"},
                 {"elementId": "C"}
-              ]
+              ],
+              "cancelRemainingInstances": true
             }
             """)
           .exchange()
@@ -94,6 +95,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                   request -> {
                     assertThat(request.adHocSubProcessInstanceKey())
                         .isEqualTo(AD_HOC_SUBPROCESS_INSTANCE_KEY);
+                    assertThat(request.cancelRemainingInstances()).isTrue();
 
                     assertThat(request.elements())
                         .extracting(AdHocSubProcessActivateActivityReference::elementId)
