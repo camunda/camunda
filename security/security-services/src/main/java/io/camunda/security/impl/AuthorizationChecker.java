@@ -7,8 +7,6 @@
  */
 package io.camunda.security.impl;
 
-import static io.camunda.security.auth.Authorization.WILDCARD;
-
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
@@ -16,6 +14,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.HashMap;
@@ -30,8 +29,8 @@ import java.util.stream.Collectors;
 
 /**
  * The AuthorizationChecker class provides methods for checking resource authorization by
- * interacting with the AuthorizationSearchClient. It retrieves authorized resource ids or checks if
- * a specific resource id is authorized, based on the provided SecurityContext.
+ * interacting with the AuthorizationSearchClient. It retrieves authorized authorization scopes or
+ * checks if a specific authorization scope is authorized, based on the provided SecurityContext.
  */
 public class AuthorizationChecker {
 
@@ -42,14 +41,16 @@ public class AuthorizationChecker {
   }
 
   /**
-   * Retrieves a list of authorized resource ids for the given SecurityContext. The resource ids
-   * represent resources that the user or one of their groups or roles, as specified in the
-   * SecurityContext, has access to based on the defined resource type and permission type.
+   * Retrieves a list of authorized authorization scopes for the given SecurityContext. The
+   * authorization scopes represent resources that the user or one of their groups or roles, as
+   * specified in the SecurityContext, has access to based on the defined resource type and
+   * permission type.
    *
    * @param securityContext the context containing authorization and authentication information
-   * @return a list of authorized resource ids for the user or group in the SecurityContext
+   * @return a list of authorized authorization scopes for the user or group in the SecurityContext
    */
-  public List<String> retrieveAuthorizedResourceIds(final SecurityContext securityContext) {
+  public List<AuthorizationScope> retrieveAuthorizedAuthorizationScopes(
+      final SecurityContext securityContext) {
     final var authentication = securityContext.authentication();
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
@@ -67,22 +68,23 @@ public class AuthorizationChecker {
                           .unlimited());
           return authorizationReader.search(query, ResourceAccessChecks.disabled()).items().stream()
               .filter(e -> e.permissionTypes().contains(permissionType))
-              .map(AuthorizationEntity::resourceId)
+              .map(authorizationEntity -> AuthorizationScope.of(authorizationEntity.resourceId()))
               .toList();
         },
         List::of);
   }
 
   /**
-   * Checks if a specific resource id is authorized for the user or one of their groups or roles
-   * defined in the provided SecurityContext. The authorization check is based on the resource type
-   * and permission type in the SecurityContext.
+   * Checks if a specific authorization scope is authorized for the user or one of their groups or
+   * roles defined in the provided SecurityContext. The authorization check is based on the resource
+   * type and permission type in the SecurityContext.
    *
-   * @param resourceId the resource id to check authorization for
+   * @param authorizationScope the authorization scope to check authorization for
    * @param securityContext the context containing authorization and authentication information
-   * @return true if the resource id is authorized, false otherwise
+   * @return true if the authorization scope is authorized, false otherwise
    */
-  public boolean isAuthorized(final String resourceId, final SecurityContext securityContext) {
+  public boolean isAuthorized(
+      final AuthorizationScope authorizationScope, final SecurityContext securityContext) {
     final var authentication = securityContext.authentication();
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
