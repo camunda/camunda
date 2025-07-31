@@ -385,7 +385,7 @@ final class OpensearchExporterTest {
     }
 
     @Test
-    void shouldUpdatePositionWhenSkippingDisabledValueType() {
+    void shouldNotUpdatePositionWhenSkippingDisabledValueType() {
       // given
       TestSupport.setIndexingForValueType(config.index, ValueType.PROCESS_INSTANCE, false);
       final var record =
@@ -401,9 +401,31 @@ final class OpensearchExporterTest {
       exporter.export(record);
 
       // then
-      assertThat(controller.getPosition()).isEqualTo(10L);
+      assertThat(controller.getPosition()).isEqualTo(-1);
       verify(client, never()).index(any(), any());
       verify(client, never()).flush();
+    }
+
+    @Test
+    void shouldUpdatePositionWhenSkippingDisabledValueTypeAndFlushingAfterwards() {
+      // given
+      TestSupport.setIndexingForValueType(config.index, ValueType.PROCESS_INSTANCE, false);
+      final var record =
+          ImmutableRecord.builder()
+              .withPosition(10L)
+              .withBrokerVersion(VersionUtil.getVersionLowerCase())
+              .withValueType(ValueType.PROCESS_INSTANCE)
+              .build();
+      exporter.configure(context);
+      exporter.open(controller);
+      exporter.export(record);
+
+      // when
+      when(client.shouldFlush()).thenReturn(true);
+      controller.runScheduledTasks(Duration.ofSeconds(10));
+
+      // then
+      assertThat(controller.getPosition()).isEqualTo(10L);
     }
 
     @Test
