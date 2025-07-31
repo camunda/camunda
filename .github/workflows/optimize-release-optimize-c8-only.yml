@@ -199,6 +199,10 @@ jobs:
           git config --global user.name "github-actions[release]"
           git config --global user.email "github-actions[release]@users.noreply.github.com"
 
+      - name: Clean Release
+        run: |
+          mvn release:clean
+
       - name: Prepare release
         run: |
           ./mvnw -f optimize \
