@@ -409,7 +409,9 @@ final class OpensearchExporterTest {
       config.index.setPriority(-1);
 
       // when - then
-      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+      assertThatCode(() -> exporter.configure(context))
+          .isInstanceOf(ExporterException.class)
+          .hasMessage("Opensearch index template priority must be >= 0. Current value: -1");
     }
   }
 
