@@ -11,6 +11,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
 import java.util.regex.PatternSyntaxException;
@@ -70,8 +71,7 @@ public class CamundaSecurityConfiguration {
     final var idRegex = initializationCfg.getIdentifierRegex();
     try {
       final var idPattern = initializationCfg.getIdentifierPattern();
-      // TODO: use AuthorizationScope.WILDCARD_CHAR from #36158
-      if (idPattern != null && idPattern.matcher("*").matches()) {
+      if (idPattern != null && idPattern.matcher(AuthorizationScope.WILDCARD_CHAR).matches()) {
         throw new IllegalStateException(
             "The configured identifier pattern (%s=%s) allows the asterisk ('*') which is a reserved character. Please use a different pattern."
                 .formatted("camunda.security.initialization.identifierRegex", idRegex));

@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.authorization;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterMode;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterTestWatcherMode;
@@ -57,10 +57,7 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOwnerId(DefaultRole.ADMIN.getId())
                     .hasOwnerType(AuthorizationOwnerType.ROLE))
         .describedAs("Expect all admin role authorizations to have the wildcard resource ID")
-        .allSatisfy(
-            auth ->
-                Assertions.assertThat(auth)
-                    .hasResourceId(AuthorizationCheckBehavior.WILDCARD_PERMISSION))
+        .allSatisfy(auth -> Assertions.assertThat(auth).hasResourceId(WILDCARD.getResourceId()))
         .describedAs("Expect the admin role authorizations to have specific resource permissions")
         .satisfiesExactlyInAnyOrder(
             auth ->
@@ -203,10 +200,7 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOwnerType(AuthorizationOwnerType.ROLE))
         .describedAs(
             "Expect all readonly-admin role authorizations to have the wildcard resource ID")
-        .allSatisfy(
-            auth ->
-                Assertions.assertThat(auth)
-                    .hasResourceId(AuthorizationCheckBehavior.WILDCARD_PERMISSION))
+        .allSatisfy(auth -> Assertions.assertThat(auth).hasResourceId(WILDCARD.getResourceId()))
         .describedAs(
             "Expect the readonly-admin role authorizations to have specific read permissions only")
         .satisfiesExactlyInAnyOrder(
@@ -327,10 +321,7 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOwnerId(DefaultRole.RPA.getId())
                     .hasOwnerType(AuthorizationOwnerType.ROLE))
         .describedAs("Expect all RPA role authorizations to have the wildcard resource ID")
-        .allSatisfy(
-            auth ->
-                Assertions.assertThat(auth)
-                    .hasResourceId(AuthorizationCheckBehavior.WILDCARD_PERMISSION))
+        .allSatisfy(auth -> Assertions.assertThat(auth).hasResourceId(WILDCARD.getResourceId()))
         .describedAs("Expect the RPA role authorizations to have specific resource permissions")
         .satisfiesExactlyInAnyOrder(
             auth ->

@@ -61,8 +61,8 @@ public class UserDeletedApplierTest {
         1L,
         new AuthorizationRecord()
             .setAuthorizationKey(1L)
-            .setResourceMatcher(authScope1.matcher())
-            .setResourceId(authScope1.resourceId())
+            .setResourceMatcher(authScope1.getMatcher())
+            .setResourceId(authScope1.getResourceId())
             .setResourceType(PROCESS_DEFINITION)
             .setOwnerId(userRecord.getUsername())
             .setOwnerType(AuthorizationOwnerType.USER)
@@ -71,8 +71,8 @@ public class UserDeletedApplierTest {
         2L,
         new AuthorizationRecord()
             .setAuthorizationKey(2L)
-            .setResourceMatcher(authScope2.matcher())
-            .setResourceId(authScope2.resourceId())
+            .setResourceMatcher(authScope2.getMatcher())
+            .setResourceId(authScope2.getResourceId())
             .setResourceType(PROCESS_DEFINITION)
             .setOwnerId(userRecord.getUsername())
             .setOwnerType(AuthorizationOwnerType.USER)
@@ -81,8 +81,8 @@ public class UserDeletedApplierTest {
         3L,
         new AuthorizationRecord()
             .setAuthorizationKey(3L)
-            .setResourceMatcher(authScope3.matcher())
-            .setResourceId(authScope3.resourceId())
+            .setResourceMatcher(authScope3.getMatcher())
+            .setResourceId(authScope3.getResourceId())
             .setResourceType(DECISION_DEFINITION)
             .setOwnerId(userRecord.getUsername())
             .setOwnerType(AuthorizationOwnerType.USER)

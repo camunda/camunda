@@ -49,7 +49,6 @@ public final class AuthorizationCheckBehavior {
       "Expected to %s with key '%s', but no %s was found";
   public static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
       "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
-  public static final String WILDCARD_PERMISSION = "*";
   private final AuthorizationState authorizationState;
   private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
@@ -307,7 +306,7 @@ public final class AuthorizationCheckBehavior {
   public Set<AuthorizationScope> getAllAuthorizedResourceIdentifiers(
       final AuthorizationRequest request) {
     if (!authorizationsEnabled || isAuthorizedAnonymousUser(request.getCommand())) {
-      return Set.of(AuthorizationScope.wildcard());
+      return Set.of(AuthorizationScope.WILDCARD);
     }
 
     final var authorizedResourceIds = new HashSet<AuthorizationScope>();
@@ -510,7 +509,7 @@ public final class AuthorizationCheckBehavior {
       this.resourceType = resourceType;
       this.permissionType = permissionType;
       authorizationScopes = new HashSet<>();
-      authorizationScopes.add(AuthorizationScope.wildcard());
+      authorizationScopes.add(AuthorizationScope.WILDCARD);
       this.tenantId = tenantId;
       this.isNewResource = isNewResource;
       this.isTenantOwnedResource = isTenantOwnedResource;
@@ -581,7 +580,7 @@ public final class AuthorizationCheckBehavior {
     public String getForbiddenErrorMessage() {
       final var resourceIdsContainsOnlyWildcard =
           authorizationScopes.size() == 1
-              && authorizationScopes.contains(AuthorizationScope.wildcard());
+              && authorizationScopes.contains(AuthorizationScope.WILDCARD);
       return resourceIdsContainsOnlyWildcard
           ? FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType)
           : FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(

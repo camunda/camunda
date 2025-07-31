@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -105,8 +106,7 @@ public class AuthorizationServices
   }
 
   private AuthorizationResourceMatcher getResourceMatcher(final String resourceId) {
-    // TODO: use WILDCARD constant or find another place to set the matcher
-    return "*".equals(resourceId)
+    return AuthorizationScope.WILDCARD.getResourceId().equals(resourceId)
         ? AuthorizationResourceMatcher.ANY
         : AuthorizationResourceMatcher.ID;
   }

@@ -11,7 +11,9 @@ import java.util.Objects;
 
 public class AuthorizationScope {
 
-  public static final String WILDCARD = "*";
+  private static final String WILDCARD_CHAR = "*";
+  public static final AuthorizationScope WILDCARD =
+      new AuthorizationScope(AuthorizationResourceMatcher.ANY, WILDCARD_CHAR);
 
   private AuthorizationResourceMatcher matcher;
   private String resourceId;
@@ -55,17 +57,20 @@ public class AuthorizationScope {
     return false;
   }
 
-  public static AuthorizationScope wildcard() {
-    return new AuthorizationScope(AuthorizationResourceMatcher.ANY, null);
-  }
-
-  public static AuthorizationScope id(final String resourceId) {
+  public static AuthorizationScope id(final String resourceId) throws IllegalArgumentException {
+    if (WILDCARD_CHAR.equals(resourceId)) {
+      final String errorMsg =
+          String.format(
+              "Resource ID cannot be the wildcard character '%s'. For declaring WILDCARD access, please use the AuthorizationScope.WILDCARD constant.",
+              WILDCARD_CHAR);
+      throw new IllegalArgumentException(errorMsg);
+    }
     return new AuthorizationScope(AuthorizationResourceMatcher.ID, resourceId);
   }
 
   public static AuthorizationScope of(final String resourceId) {
-    if (WILDCARD.equals(resourceId)) {
-      return wildcard();
+    if (WILDCARD_CHAR.equals(resourceId)) {
+      return WILDCARD;
     }
 
     return id(resourceId);
