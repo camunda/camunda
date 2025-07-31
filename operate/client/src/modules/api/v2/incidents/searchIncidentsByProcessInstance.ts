@@ -8,19 +8,17 @@
 
 import {
   endpoints,
-  type QueryIncidentsRequestBody,
   type QueryIncidentsResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {requestWithThrow, type RequestResult} from 'modules/request';
+import {type RequestResult, requestWithThrow} from 'modules/request';
 
-const searchIncidents = async (
-  payload: QueryIncidentsRequestBody,
-): RequestResult<QueryIncidentsResponseBody> => {
+const searchIncidentsByProcessInstance = async (payload: {
+  processInstanceKey: string;
+}): RequestResult<QueryIncidentsResponseBody> => {
   return requestWithThrow<QueryIncidentsResponseBody>({
-    url: endpoints.queryIncidents.getUrl(),
-    method: endpoints.queryIncidents.method,
-    body: payload,
+    url: endpoints.queryProcessInstanceIncidents.getUrl(payload),
+    method: endpoints.queryProcessInstanceIncidents.method,
   });
 };
 
-export {searchIncidents};
+export {searchIncidentsByProcessInstance};
