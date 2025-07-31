@@ -15,4 +15,4 @@
  */
 package io.camunda.client.api.response;
 
-public interface RemoveUserFromTenantResponse {}
+public interface UnassignUserFromTenantResponse {}

@@ -60,7 +60,6 @@ import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
-import io.camunda.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
@@ -75,6 +74,7 @@ import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
@@ -2128,7 +2128,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   AssignUserToTenantCommandStep1 newAssignUserToTenantCommand();
 
   /**
-   * Command to remove a user from a tenant.
+   * Command to unassign a user from a tenant.
    *
    * <p>Example usage:
    *
@@ -2140,12 +2140,12 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *   .send();
    * </pre>
    *
-   * <p>This command sends an HTTP DELETE request to remove the specified user from the given
+   * <p>This command sends an HTTP DELETE request to unassign the specified user from the given
    * tenant.
    *
-   * @return a builder for the remove user from tenant command
+   * @return a builder for the unassign user from tenant command
    */
-  RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand();
+  UnassignUserFromTenantCommandStep1 newUnassignUserFromTenantCommand();
 
   /**
    * Command to assign a group to a tenant.

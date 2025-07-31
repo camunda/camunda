@@ -15,20 +15,20 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.response.RemoveUserFromTenantResponse;
+import io.camunda.client.api.response.UnassignUserFromTenantResponse;
 
-/** Command to remove a user from a tenant. */
-public interface RemoveUserFromTenantCommandStep1 {
+/** Command to unassign a user from a tenant. */
+public interface UnassignUserFromTenantCommandStep1 {
 
   /**
-   * Sets the username for the removal of assignment.
+   * Sets the username for unassignment.
    *
    * @return the builder for this command.
    */
-  RemoveUserFromTenantCommandStep2 username(String username);
+  UnassignUserFromTenantCommandStep2 username(String username);
 
-  interface RemoveUserFromTenantCommandStep2
-      extends FinalCommandStep<RemoveUserFromTenantResponse> {
+  interface UnassignUserFromTenantCommandStep2
+      extends FinalCommandStep<UnassignUserFromTenantResponse> {
 
     /**
      * Sets the tenant ID.
@@ -37,6 +37,6 @@ public interface RemoveUserFromTenantCommandStep1 {
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    RemoveUserFromTenantCommandStep2 tenantId(String tenantId);
+    UnassignUserFromTenantCommandStep2 tenantId(String tenantId);
   }
 }
