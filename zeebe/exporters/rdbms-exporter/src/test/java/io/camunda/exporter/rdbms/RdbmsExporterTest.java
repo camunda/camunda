@@ -117,9 +117,9 @@ class RdbmsExporterTest {
   }
 
   @Test
-  void shouldUpdatePositionAfterEachRecordWhenMaxQueueSizeIsZero() {
+  void shouldUpdatePositionAfterEachRecordWhenQueueSizeIsZero() {
     // given
-    createExporter(b -> b.maxQueueSize(0).withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+    createExporter(b -> b.queueSize(0).withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
 
     // when
     exporter.export(mockRecord(ValueType.JOB, 1));
@@ -172,7 +172,7 @@ class RdbmsExporterTest {
   }
 
   @Test
-  void shouldNotRegisterFlushIntervalTimerWhenMaxQueueSizeIsZero() {
+  void shouldNotRegisterFlushIntervalTimerWhenQueueSizeIsZero() {
     // given
     createExporter(b -> b.flushInterval(Duration.ZERO));
 
@@ -248,7 +248,7 @@ class RdbmsExporterTest {
   }
 
   private void createExporter(
-      final Function<RdbmsExporterConfig.Builder, RdbmsExporterConfig.Builder> builderFunction) {
+      final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction) {
     flushTask = mock(ScheduledTask.class);
     cleanupTask = mock(ScheduledTask.class);
 
@@ -276,13 +276,13 @@ class RdbmsExporterTest {
     doAnswer((invocation) -> executionQueue.flush()).when(rdbmsWriter).flush();
 
     final var builder =
-        new RdbmsExporterConfig.Builder()
+        new RdbmsExporter.Builder()
             .rdbmsWriter(rdbmsWriter)
             .partitionId(0)
             .flushInterval(Duration.ofMillis(500))
-            .maxQueueSize(100);
+            .queueSize(100);
 
-    exporter = new RdbmsExporter(builderFunction.apply(builder).build());
+    exporter = builderFunction.apply(builder).build();
     exporter.open(controller);
   }
 

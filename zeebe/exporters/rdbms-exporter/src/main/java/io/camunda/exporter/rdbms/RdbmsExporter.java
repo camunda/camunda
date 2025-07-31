@@ -18,13 +18,15 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
-public class RdbmsExporter {
+public final class RdbmsExporter {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsExporter.class);
 
@@ -36,7 +38,7 @@ public class RdbmsExporter {
 
   // configuration
   private final Duration flushInterval;
-  private final int maxQueueSize;
+  private final int queueSize;
 
   // volatile runtime properties
   private ExporterPositionModel exporterRdbmsPosition;
@@ -44,18 +46,23 @@ public class RdbmsExporter {
   private ScheduledTask currentFlushTask = null;
   private ScheduledTask currentCleanupTask = null;
 
-  public RdbmsExporter(final RdbmsExporterConfig config) {
-    rdbmsWriter = config.rdbmsWriter();
-    registeredHandlers = config.handlers();
+  private RdbmsExporter(
+      final int partitionId,
+      final Duration flushInterval,
+      final int queueSize,
+      final RdbmsWriter rdbmsWriter,
+      final Map<ValueType, List<RdbmsExportHandler>> handlers) {
+    this.rdbmsWriter = rdbmsWriter;
+    registeredHandlers = handlers;
 
-    partitionId = config.partitionId();
-    flushInterval = config.flushInterval();
-    maxQueueSize = config.maxQueueSize();
+    this.partitionId = partitionId;
+    this.flushInterval = flushInterval;
+    this.queueSize = queueSize;
 
     LOG.info(
-        "[RDBMS Exporter] RdbmsExporter created with Configuration: flushInterval={}, maxQueueSize={}",
+        "[RDBMS Exporter] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
         flushInterval,
-        maxQueueSize);
+        queueSize);
   }
 
   public void open(final Controller controller) {
@@ -205,7 +212,7 @@ public class RdbmsExporter {
   }
 
   private boolean flushAfterEachRecord() {
-    return flushInterval.isZero() || maxQueueSize <= 0;
+    return flushInterval.isZero() || queueSize <= 0;
   }
 
   private void flushAndReschedule() {
@@ -227,5 +234,52 @@ public class RdbmsExporter {
       return;
     }
     rdbmsWriter.flush();
+  }
+
+  public static final class Builder {
+
+    private int partitionId;
+    private Duration flushInterval;
+    private int queueSize;
+    private RdbmsWriter rdbmsWriter;
+    private Map<ValueType, List<RdbmsExportHandler>> handlers = new HashMap<>();
+
+    public Builder partitionId(final int value) {
+      partitionId = value;
+      return this;
+    }
+
+    public Builder flushInterval(final Duration value) {
+      flushInterval = value;
+      return this;
+    }
+
+    public Builder queueSize(final int value) {
+      queueSize = value;
+      return this;
+    }
+
+    public Builder rdbmsWriter(final RdbmsWriter value) {
+      rdbmsWriter = value;
+      return this;
+    }
+
+    public Builder handlers(final Map<ValueType, List<RdbmsExportHandler>> value) {
+      handlers = value;
+      return this;
+    }
+
+    public Builder withHandler(final ValueType valueType, final RdbmsExportHandler handler) {
+      if (!handlers.containsKey(valueType)) {
+        handlers.put(valueType, new ArrayList<>());
+      }
+      handlers.get(valueType).add(handler);
+
+      return this;
+    }
+
+    public RdbmsExporter build() {
+      return new RdbmsExporter(partitionId, flushInterval, queueSize, rdbmsWriter, handlers);
+    }
   }
 }

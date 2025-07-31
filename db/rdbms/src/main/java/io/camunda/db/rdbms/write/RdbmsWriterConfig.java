@@ -12,7 +12,7 @@ import java.time.Duration;
 
 public record RdbmsWriterConfig(
     int partitionId,
-    int maxQueueSize,
+    int queueSize,
     Duration defaultHistoryTTL,
     Duration minHistoryCleanupInterval,
     Duration maxHistoryCleanupInterval,
@@ -28,7 +28,7 @@ public record RdbmsWriterConfig(
      */
     boolean exportBatchOperationItemsOnCreation) {
 
-  public static final int DEFAULT_QUEUE_SIZE = -1;
+  public static final int DEFAULT_QUEUE_SIZE = 1000;
   public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
   public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(1);
   public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
@@ -43,7 +43,7 @@ public record RdbmsWriterConfig(
   public static class Builder implements ObjectBuilder<RdbmsWriterConfig> {
 
     private int partitionId;
-    private int maxQueueSize = DEFAULT_QUEUE_SIZE;
+    private int queueSize = DEFAULT_QUEUE_SIZE;
     private Duration defaultHistoryTTL = DEFAULT_HISTORY_TTL;
     private Duration minHistoryCleanupInterval = DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
     private Duration maxHistoryCleanupInterval = DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
@@ -57,8 +57,8 @@ public record RdbmsWriterConfig(
       return this;
     }
 
-    public Builder maxQueueSize(final int maxQueueSize) {
-      this.maxQueueSize = maxQueueSize;
+    public Builder queueSize(final int queueSize) {
+      this.queueSize = queueSize;
       return this;
     }
 
@@ -97,7 +97,7 @@ public record RdbmsWriterConfig(
     public RdbmsWriterConfig build() {
       return new RdbmsWriterConfig(
           partitionId,
-          maxQueueSize,
+          queueSize,
           defaultHistoryTTL,
           minHistoryCleanupInterval,
           maxHistoryCleanupInterval,

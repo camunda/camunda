@@ -75,7 +75,7 @@ zeebe:
         className: io.camunda.exporter.rdbms.RdbmsExporter
         args:
           flushInterval: PT0.5S
-          maxQueueSize: 1000
+          queueSize: 1000
       #elasticsearch:
       #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
       #  args:
