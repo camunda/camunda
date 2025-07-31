@@ -101,9 +101,7 @@ describe('stores/flowNodeInstance', () => {
         [PROCESS_INSTANCE_ID]: {
           ...mockFlowNodeInstances.level1[PROCESS_INSTANCE_ID],
           children: [
-            // eslint-disable-next-line testing-library/no-node-access
             ...mockFlowNodeInstances.level1[PROCESS_INSTANCE_ID]!.children,
-            // eslint-disable-next-line testing-library/no-node-access
             ...mockFlowNodeInstances.level1Next[PROCESS_INSTANCE_ID]!.children,
           ],
         },
@@ -141,9 +139,7 @@ describe('stores/flowNodeInstance', () => {
         [PROCESS_INSTANCE_ID]: {
           ...mockFlowNodeInstances.level1[PROCESS_INSTANCE_ID],
           children: [
-            // eslint-disable-next-line testing-library/no-node-access
             ...mockFlowNodeInstances.level1Prev[PROCESS_INSTANCE_ID]!.children,
-            // eslint-disable-next-line testing-library/no-node-access
             ...mockFlowNodeInstances.level1[PROCESS_INSTANCE_ID]!.children,
           ],
         },
