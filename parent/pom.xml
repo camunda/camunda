@@ -99,7 +99,7 @@
     <version.rest-assured>5.5.5</version.rest-assured>
     <version.spring>6.2.9</version.spring>
     <version.spring-security>6.5.2</version.spring-security>
-    <version.spring-boot>3.4.8</version.spring-boot>
+    <version.spring-boot>3.5.4</version.spring-boot>
     <version.tomcat>10.1.43</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
