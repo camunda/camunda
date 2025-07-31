@@ -12,6 +12,7 @@ import static org.testcontainers.images.PullPolicy.alwaysPull;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.RetryOperation;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
 import jakarta.annotation.PreDestroy;
@@ -24,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -489,6 +491,20 @@ public class TestContainerUtil {
       final long startTime = System.currentTimeMillis();
       Testcontainers.exposeHostPorts(ELS_PORT);
       broker = new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + version));
+      final var exposedPorts =
+          new ArrayList<>(
+              List.of(
+                  ZeebePort.GATEWAY_GRPC.getPort(),
+                  ZeebePort.COMMAND.getPort(),
+                  ZeebePort.INTERNAL.getPort(),
+                  ZeebePort.MONITORING.getPort()));
+      // Expose REST port only for versions >= 8.5.0
+      if (SemanticVersion.parse(version)
+          .map(v -> v.compareTo(SemanticVersion.parse("8.5.0").get()) >= 0)
+          .orElse(true)) {
+        exposedPorts.add(ZeebePort.GATEWAY_REST.getPort());
+      }
+      broker.setExposedPorts(exposedPorts);
       if (testContext.getNetwork() != null) {
         broker.withNetwork(testContext.getNetwork());
       }
