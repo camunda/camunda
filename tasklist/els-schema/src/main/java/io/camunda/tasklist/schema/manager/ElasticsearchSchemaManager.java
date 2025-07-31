@@ -11,6 +11,7 @@ import static io.camunda.tasklist.es.RetryElasticsearchClient.DEFAULT_SHARDS;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REPLICA;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_SHARDS;
+import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +26,7 @@ import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.ElasticsearchJSONUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -321,7 +323,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         indexDescriptor.getFullQualifiedName());
   }
 
-  private void createTemplate(final TemplateDescriptor templateDescriptor) {
+  @VisibleForTesting
+  void createTemplate(final TemplateDescriptor templateDescriptor) {
     createTemplate(templateDescriptor, null);
   }
 
@@ -367,6 +370,10 @@ public class ElasticsearchSchemaManager implements SchemaManager {
             .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
             .template(template)
             .componentTemplates(List.of(getComponentTemplateName()))
+            .priority(
+                ofNullable(tasklistProperties.getElasticsearch().getIndexTemplatePriority())
+                    .map(Long::valueOf)
+                    .orElse(null))
             .build();
     final PutComposableIndexTemplateRequest request =
         new PutComposableIndexTemplateRequest()

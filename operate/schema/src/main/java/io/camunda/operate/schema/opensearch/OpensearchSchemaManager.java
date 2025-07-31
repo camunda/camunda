@@ -548,6 +548,7 @@ public class OpensearchSchemaManager implements SchemaManager {
               .indexPatterns(templateDescriptor.getIndexPattern())
               .template(template)
               .composedOf(componentTemplateName())
+              .priority(operateProperties.getOpensearch().getIndexTemplatePriority())
               .build();
       return request;
     } catch (final Exception ex) {

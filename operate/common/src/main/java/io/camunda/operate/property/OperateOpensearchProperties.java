@@ -17,6 +17,7 @@ public class OperateOpensearchProperties extends OpensearchProperties {
   private static final String DEFAULT_REFRESH_INTERVAL = "1s";
 
   private String indexPrefix = DEFAULT_INDEX_PREFIX;
+  private Integer indexTemplatePriority;
   private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
   private Map<String, Integer> numberOfShardsForIndices = Map.of();
   private int numberOfReplicas = DEFAULT_NUMBER_OF_REPLICAS;
@@ -81,5 +82,13 @@ public class OperateOpensearchProperties extends OpensearchProperties {
 
   public int getNumberOfShards(final String indexName) {
     return numberOfShardsForIndices.getOrDefault(indexName, numberOfShards);
+  }
+
+  public Integer getIndexTemplatePriority() {
+    return indexTemplatePriority;
+  }
+
+  public void setIndexTemplatePriority(final Integer indexTemplatePriority) {
+    this.indexTemplatePriority = indexTemplatePriority;
   }
 }

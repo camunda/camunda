@@ -8,6 +8,7 @@
 package io.camunda.operate.schema.elasticsearch;
 
 import static io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.NUMBERS_OF_SHARDS;
+import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -433,6 +434,10 @@ public class ElasticsearchSchemaManager implements SchemaManager {
             .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
             .template(template)
             .componentTemplates(List.of(componentTemplateName()))
+            .priority(
+                ofNullable(operateProperties.getElasticsearch().getIndexTemplatePriority())
+                    .map(Long::valueOf)
+                    .orElse(null))
             .build();
     final PutComposableIndexTemplateRequest request =
         new PutComposableIndexTemplateRequest()

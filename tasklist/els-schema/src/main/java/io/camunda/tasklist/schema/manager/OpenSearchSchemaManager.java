@@ -311,6 +311,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
             .template(getTemplateFrom(templateDescriptor))
             .name(templateDescriptor.getTemplateName())
             .composedOf(List.of(getComponentTemplateName()))
+            .priority(tasklistProperties.getOpenSearch().getIndexTemplatePriority())
             .build(),
         overwrite);
   }
