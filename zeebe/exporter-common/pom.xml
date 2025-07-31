@@ -36,11 +36,6 @@
       <artifactId>caffeine</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>webapps-schema</artifactId>
-    </dependency>
-
     <!-- testing -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>

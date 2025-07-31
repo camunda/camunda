@@ -37,7 +37,9 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
             ProcessEntity.class);
     if (response.found()) {
       final var processEntity = response.source();
-      final var processDiagramData = ProcessCacheUtil.extractProcessDiagramData(processEntity);
+      final var processDiagramData =
+          ProcessCacheUtil.extractProcessDiagramData(
+              processEntity.getBpmnXml(), processEntity.getBpmnProcessId());
       return new CachedProcessEntity(
           processEntity.getName(),
           processEntity.getVersionTag(),

@@ -9,7 +9,6 @@ package io.camunda.zeebe.exporter.common.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
@@ -23,11 +22,10 @@ public class ProcessCacheUtilTest {
     // given
     final String processId = "testProcessId";
     final var model = buildModel(processId, List.of("C_Activity", "A_Activity", "D_Activity"));
-    final var process =
-        new ProcessEntity().setBpmnXml(Bpmn.convertToString(model)).setBpmnProcessId(processId);
+    final var bpmnXml = Bpmn.convertToString(model);
     // when
     final var callActivities =
-        ProcessCacheUtil.extractProcessDiagramData(process).callActivityIds();
+        ProcessCacheUtil.extractProcessDiagramData(bpmnXml, processId).callActivityIds();
     // then
     assertThat(callActivities).containsExactly("A_Activity", "C_Activity", "D_Activity");
   }
