@@ -60,7 +60,7 @@ public class BasicCamundaUserService implements CamundaUserService {
               final var tenants = getTenantsForUser(user);
               return new CamundaUserDTO(
                   user.getDisplayName(),
-                  user.getDisplayName(), // migrated for historical purposes username -> displayName
+                  auth.username(),
                   user.getEmail(),
                   authorizedApplications,
                   tenants,
