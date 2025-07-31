@@ -18,7 +18,7 @@ public record BatchOperationEntity(
     // Engine BatchOperation Key is a Long
     String batchOperationKey,
     BatchOperationState state,
-    String operationType,
+    BatchOperationType operationType,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
     Integer operationsTotalCount,

@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.webapps.schema.entities.operation.BatchOperationErrorEntity;
@@ -37,8 +38,7 @@ class BatchOperationEntityTransformerTest {
     assertThat(searchEntity).isNotNull();
     assertThat(searchEntity.batchOperationKey()).isEqualTo("1");
     assertThat(searchEntity.state().name()).isEqualTo(BatchOperationState.ACTIVE.name());
-    assertThat(searchEntity.operationType())
-        .isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE.name());
+    assertThat(searchEntity.operationType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     assertThat(searchEntity.operationsTotalCount()).isEqualTo(42);
     assertThat(searchEntity.operationsFailedCount()).isEqualTo(1);
     assertThat(searchEntity.operationsCompletedCount()).isEqualTo(41);
@@ -70,8 +70,7 @@ class BatchOperationEntityTransformerTest {
     assertThat(searchEntity).isNotNull();
     assertThat(searchEntity.batchOperationKey()).isEqualTo("1");
     assertThat(searchEntity.state().name()).isEqualTo(BatchOperationState.ACTIVE.name());
-    assertThat(searchEntity.operationType())
-        .isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE.name());
+    assertThat(searchEntity.operationType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     assertThat(searchEntity.operationsTotalCount()).isEqualTo(42);
     assertThat(searchEntity.operationsFailedCount()).isEqualTo(1);
     assertThat(searchEntity.operationsCompletedCount()).isEqualTo(41);
@@ -99,8 +98,7 @@ class BatchOperationEntityTransformerTest {
     assertThat(searchEntity).isNotNull();
     assertThat(searchEntity.batchOperationKey()).isEqualTo(uuid);
     assertThat(searchEntity.state().name()).isEqualTo(BatchOperationState.INCOMPLETED.name());
-    assertThat(searchEntity.operationType())
-        .isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE.name());
+    assertThat(searchEntity.operationType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     assertThat(searchEntity.operationsTotalCount()).isEqualTo(42);
     assertThat(searchEntity.operationsFailedCount()).isEqualTo(0);
     assertThat(searchEntity.operationsCompletedCount()).isEqualTo(41);

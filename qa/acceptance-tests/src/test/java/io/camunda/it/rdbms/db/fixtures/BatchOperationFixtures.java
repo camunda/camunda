@@ -8,7 +8,6 @@
 package io.camunda.it.rdbms.db.fixtures;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.RANDOM;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.randomEnum;
 
 import io.camunda.db.rdbms.write.RdbmsWriter;
@@ -17,6 +16,7 @@ import io.camunda.db.rdbms.write.domain.BatchOperationDbModel.Builder;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.search.entities.BatchOperationType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
@@ -35,7 +35,7 @@ public final class BatchOperationFixtures {
         new Builder()
             .batchOperationKey(key)
             .state(randomEnum(BatchOperationState.class))
-            .operationType("some-operation" + RANDOM.nextInt(1000))
+            .operationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .startDate(OffsetDateTime.now())
             .endDate(OffsetDateTime.now().plusSeconds(1))
             .operationsTotalCount(0)

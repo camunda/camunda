@@ -59,7 +59,7 @@ public class BatchOperationCreatedExportHandler
     return new BatchOperationDbModel.Builder()
         .batchOperationKey(batchOperationKey)
         .state(BatchOperationState.ACTIVE)
-        .operationType(value.getBatchOperationType().name())
+        .operationType(BatchOperationType.valueOf(value.getBatchOperationType().name()))
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .build();
   }
