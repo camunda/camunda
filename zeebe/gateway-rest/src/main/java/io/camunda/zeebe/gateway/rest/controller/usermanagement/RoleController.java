@@ -53,9 +53,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/roles")
 public class RoleController {
   private final RoleServices roleServices;
-  private final UserServices userServices;
   private final MappingRuleServices mappingServices;
-  private final GroupServices groupServices;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public RoleController(
@@ -65,9 +63,7 @@ public class RoleController {
       final GroupServices groupServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.roleServices = roleServices;
-    this.userServices = userServices;
     this.mappingServices = mappingServices;
-    this.groupServices = groupServices;
     this.authenticationProvider = authenticationProvider;
   }
 
