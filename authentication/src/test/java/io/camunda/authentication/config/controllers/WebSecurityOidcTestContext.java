@@ -7,8 +7,7 @@
  */
 package io.camunda.authentication.config.controllers;
 
-import io.camunda.authentication.CamundaJwtAuthenticationConverter;
-import io.camunda.authentication.CamundaOAuthPrincipalService;
+import io.camunda.service.MappingRuleServices;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,13 +16,7 @@ import org.springframework.context.annotation.Configuration;
 public class WebSecurityOidcTestContext {
 
   @Bean
-  public CamundaJwtAuthenticationConverter createJwtConverter(
-      CamundaOAuthPrincipalService camundaOAuthPrincipalService) {
-    return new CamundaJwtAuthenticationConverter(camundaOAuthPrincipalService);
-  }
-
-  @Bean
-  public CamundaOAuthPrincipalService createOAuthPrincipalService() {
-    return new TestCamundaOAuthPrincipalService();
+  public MappingRuleServices createMappingRuleServices() {
+    return new MappingRuleServices(null, null, null, null);
   }
 }

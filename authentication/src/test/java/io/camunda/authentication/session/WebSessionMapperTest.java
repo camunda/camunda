@@ -7,11 +7,12 @@
  */
 package io.camunda.authentication.session;
 
+import static io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder.CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
 import io.camunda.search.entities.PersistentWebSessionEntity;
+import io.camunda.security.auth.CamundaAuthentication;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
@@ -19,8 +20,6 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.convert.support.GenericConversionService;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextImpl;
 
 public class WebSessionMapperTest {
 
@@ -35,15 +34,12 @@ public class WebSessionMapperTest {
   }
 
   @Test
-  void toPersistentSessionWithCamundaPrincipal() {
+  void toPersistentSessionWithCamundaAuthentication() {
     // given
-    final var securityContext = new SecurityContextImpl();
-    final UsernamePasswordAuthenticationToken authenticationToken =
-        new UsernamePasswordAuthenticationToken(new CamundaOidcUser(null, null, null, null), null);
-    securityContext.setAuthentication(authenticationToken);
+    final CamundaAuthentication authentication = CamundaAuthentication.of(a -> a.user("foo"));
 
     final WebSession webSession = new WebSession("sessionId");
-    webSession.setAttribute("securityContext", securityContext);
+    webSession.setAttribute(CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY, authentication);
 
     // when
     final var persistentWebSession = webSessionMapper.toPersistentWebSession(webSession);
@@ -51,8 +47,8 @@ public class WebSessionMapperTest {
     assertThat(persistentWebSession).isNotNull();
     assertThat(persistentWebSession.id()).isEqualTo("sessionId");
     assertThat(persistentWebSession.attributes()).hasSize(1);
-    assertThat(persistentWebSession.attributes().get("securityContext"))
-        .isEqualTo(webSessionAttributeConverter.serialize(securityContext));
+    assertThat(persistentWebSession.attributes().get(CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY))
+        .isEqualTo(webSessionAttributeConverter.serialize(authentication));
   }
 
   @Test
@@ -118,14 +114,11 @@ public class WebSessionMapperTest {
   }
 
   @Test
-  void fromPersistentSessionWithCamundaPrincipal() {
+  void fromPersistentSessionWithCamundaAuthentication() {
     // given
     final var now = Instant.now();
     final var maxInactiveInterval = Duration.ofSeconds(1800);
-    final var securityContext = new SecurityContextImpl();
-    final UsernamePasswordAuthenticationToken authenticationToken =
-        new UsernamePasswordAuthenticationToken(new CamundaOidcUser(null, null, null, null), null);
-    securityContext.setAuthentication(authenticationToken);
+    final CamundaAuthentication authentication = CamundaAuthentication.of(a -> a.user("foo"));
 
     final var persistentSession =
         new PersistentWebSessionEntity(
@@ -133,7 +126,9 @@ public class WebSessionMapperTest {
             now.toEpochMilli(),
             now.toEpochMilli(),
             maxInactiveInterval.toSeconds(),
-            Map.of("securityContext", webSessionAttributeConverter.serialize(securityContext)));
+            Map.of(
+                CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY,
+                webSessionAttributeConverter.serialize(authentication)));
 
     // when
     final var webSession = webSessionMapper.fromPersistentWebSession(persistentSession);
@@ -144,7 +139,10 @@ public class WebSessionMapperTest {
     assertThat(webSession.getLastAccessedTime().toEpochMilli()).isEqualTo(now.toEpochMilli());
     assertThat(webSession.getMaxInactiveInterval()).isEqualTo(maxInactiveInterval);
     assertThat(webSession.getAttributeNames()).hasSize(1);
-    assertThat((SecurityContextImpl) webSession.getAttribute("securityContext")).isNotNull();
+    assertThat(
+            (CamundaAuthentication)
+                webSession.getAttribute(CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY))
+        .isEqualTo(authentication);
   }
 
   private record TestAttribute(String attribute, String value) implements Serializable {}
