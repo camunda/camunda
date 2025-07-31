@@ -144,8 +144,7 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter tenantId(final String tenantId) {
-    tenantId(b -> b.eq(tenantId));
-    return this;
+    return tenantId(b -> b.eq(tenantId));
   }
 
   @Override
