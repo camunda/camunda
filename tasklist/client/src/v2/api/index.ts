@@ -153,6 +153,17 @@ const api = {
       },
     });
   },
+  getProcessStartForm: (
+    body: Pick<ProcessDefinition, 'processDefinitionKey'>,
+  ) => {
+    return new Request(getFullURL(endpoints.getProcessStartForm.getUrl(body)), {
+      ...BASE_REQUEST_OPTIONS,
+      method: endpoints.getProcessStartForm.method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  },
 } as const;
 
 export {api};
