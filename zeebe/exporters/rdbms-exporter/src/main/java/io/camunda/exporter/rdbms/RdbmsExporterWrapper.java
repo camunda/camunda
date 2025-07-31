@@ -9,7 +9,6 @@ package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
@@ -76,17 +75,7 @@ public class RdbmsExporterWrapper implements Exporter {
 
     final int partitionId = context.getPartitionId();
     final RdbmsWriter rdbmsWriter =
-        rdbmsService.createWriter(
-            new RdbmsWriterConfig.Builder()
-                .partitionId(partitionId)
-                .queueSize(config.getQueueSize())
-                .historyCleanupBatchSize(config.getHistoryCleanupBatchSize())
-                .defaultHistoryTTL(config.getDefaultHistoryTTL())
-                .minHistoryCleanupInterval(config.getMinHistoryCleanupInterval())
-                .maxHistoryCleanupInterval(config.getMaxHistoryCleanupInterval())
-                .batchOperationItemInsertBlockSize(config.getBatchOperationItemInsertBlockSize())
-                .exportBatchOperationItemsOnCreation(config.isExportBatchOperationItemsOnCreation())
-                .build());
+        rdbmsService.createWriter(config.createRdbmsWriterConfig(partitionId));
 
     final var builder =
         new RdbmsExporter.Builder()

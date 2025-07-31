@@ -192,6 +192,19 @@ public class ExporterConfiguration {
     }
   }
 
+  public RdbmsWriterConfig createRdbmsWriterConfig(int partitionId) {
+    return new RdbmsWriterConfig.Builder()
+        .partitionId(partitionId)
+        .queueSize(queueSize)
+        .defaultHistoryTTL(defaultHistoryTTL)
+        .minHistoryCleanupInterval(minHistoryCleanupInterval)
+        .maxHistoryCleanupInterval(maxHistoryCleanupInterval)
+        .historyCleanupBatchSize(historyCleanupBatchSize)
+        .batchOperationItemInsertBlockSize(batchOperationItemInsertBlockSize)
+        .exportBatchOperationItemsOnCreation(exportBatchOperationItemsOnCreation)
+        .build();
+  }
+
   public static class CacheConfiguration {
     private int maxSize = DEFAULT_MAX_CACHE_SIZE;
 
