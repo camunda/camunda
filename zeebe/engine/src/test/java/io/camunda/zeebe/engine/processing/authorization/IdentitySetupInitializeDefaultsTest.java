@@ -169,4 +169,96 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasResourceType(AuthorizationResourceType.USAGE_METRIC)
                     .hasOnlyPermissionTypes(PermissionType.READ));
   }
+
+  @Test
+  public void shouldCreateReadOnlyAdminRoleByDefault() {
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
+                .authorizationRecords()
+                .withOwnerId("readonly-admin"))
+        .extracting(Record::getValue)
+        .describedAs(
+            "Expect all readonly-admin role authorizations to be owned by the readonly-admin role")
+        .allSatisfy(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasOwnerId("readonly-admin")
+                    .hasOwnerType(AuthorizationOwnerType.ROLE))
+        .describedAs(
+            "Expect all readonly-admin role authorizations to have the wildcard resource ID")
+        .allSatisfy(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceId(AuthorizationCheckBehavior.WILDCARD_PERMISSION))
+        .describedAs(
+            "Expect the readonly-admin role authorizations to have specific read permissions only")
+        .satisfiesExactlyInAnyOrder(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.AUTHORIZATION)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.MAPPING_RULE)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.MESSAGE)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.APPLICATION)
+                    .hasOnlyPermissionTypes(PermissionType.ACCESS),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.SYSTEM)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.TENANT)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.RESOURCE)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ_PROCESS_DEFINITION,
+                        PermissionType.READ_PROCESS_INSTANCE,
+                        PermissionType.READ_USER_TASK),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.DECISION_DEFINITION)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ_DECISION_DEFINITION,
+                        PermissionType.READ_DECISION_INSTANCE),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.GROUP)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.USER)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.ROLE)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.BATCH)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.USAGE_METRIC)
+                    .hasOnlyPermissionTypes(PermissionType.READ));
+  }
 }
