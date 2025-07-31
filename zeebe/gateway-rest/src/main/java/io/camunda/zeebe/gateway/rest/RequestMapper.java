@@ -63,8 +63,8 @@ import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
+import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
@@ -829,24 +829,24 @@ public class RequestMapper {
                 tenantId));
   }
 
-  public static Either<ProblemDetail, TenantDTO> toTenantCreateDto(
+  public static Either<ProblemDetail, TenantRequest> toTenantCreateDto(
       final TenantCreateRequest tenantCreateRequest) {
     return getResult(
         TenantRequestValidator.validateTenantCreateRequest(tenantCreateRequest),
         () ->
-            new TenantDTO(
+            new TenantRequest(
                 null,
                 tenantCreateRequest.getTenantId(),
                 tenantCreateRequest.getName(),
                 tenantCreateRequest.getDescription()));
   }
 
-  public static Either<ProblemDetail, TenantDTO> toTenantUpdateDto(
+  public static Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
       final String tenantId, final TenantUpdateRequest tenantUpdateRequest) {
     return getResult(
         TenantRequestValidator.validateTenantUpdateRequest(tenantUpdateRequest),
         () ->
-            new TenantDTO(
+            new TenantRequest(
                 null,
                 tenantId,
                 tenantUpdateRequest.getName(),

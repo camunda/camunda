@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.entity;
 
-import io.camunda.service.TenantServices.TenantDTO;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +15,7 @@ public record AuthenticationContext(
     String username,
     String clientId,
     List<String> roles,
-    List<TenantDTO> tenants,
+    List<String> tenants,
     List<String> groups,
     boolean groupsClaimEnabled)
     implements Serializable {
@@ -25,7 +24,7 @@ public record AuthenticationContext(
     private String username;
     private String clientId;
     private List<String> roles = new ArrayList<>();
-    private List<TenantDTO> tenants = new ArrayList<>();
+    private List<String> tenants = new ArrayList<>();
     private List<String> groups = new ArrayList<>();
     private boolean groupsClaimEnabled = false;
 
@@ -44,7 +43,7 @@ public record AuthenticationContext(
       return this;
     }
 
-    public AuthenticationContextBuilder withTenants(final List<TenantDTO> tenants) {
+    public AuthenticationContextBuilder withTenants(final List<String> tenants) {
       this.tenants = tenants;
       return this;
     }

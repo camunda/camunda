@@ -7,15 +7,19 @@
  */
 package io.camunda.search.filter;
 
+import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
+
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
 public record TenantFilter(
     Long key,
-    String tenantId,
+    List<String> tenantIds,
     String name,
     String joinParentId,
     EntityType entityType,
@@ -31,7 +35,7 @@ public record TenantFilter(
   public Builder toBuilder() {
     return new Builder()
         .key(key)
-        .tenantId(tenantId)
+        .tenantIds(tenantIds)
         .name(name)
         .joinParentId(joinParentId)
         .memberType(entityType)
@@ -43,7 +47,7 @@ public record TenantFilter(
   public static final class Builder implements ObjectBuilder<TenantFilter> {
 
     private Long key;
-    private String tenantId;
+    private List<String> tenantIds;
     private String name;
     private String joinParentId;
     private EntityType entityType;
@@ -56,8 +60,12 @@ public record TenantFilter(
       return this;
     }
 
-    public Builder tenantId(final String value) {
-      tenantId = value;
+    public Builder tenantId(final String value, final String... values) {
+      return tenantIds(collectValues(value, values));
+    }
+
+    public Builder tenantIds(final List<String> values) {
+      tenantIds = addValuesToList(tenantIds, values);
       return this;
     }
 
@@ -95,7 +103,7 @@ public record TenantFilter(
     public TenantFilter build() {
       return new TenantFilter(
           key,
-          tenantId,
+          tenantIds,
           name,
           joinParentId,
           entityType,

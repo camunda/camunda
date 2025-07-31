@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.OAuthContext;
-import io.camunda.service.TenantServices.TenantDTO;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -72,7 +71,7 @@ public class CamundaOidcUserServiceTest {
                     .withUsername("test")
                     .withRoles(List.of(roleR1))
                     .withGroups(List.of("G1"))
-                    .withTenants(List.of(new TenantDTO(1L, "tenant-1", "Tenant One", "desc")))
+                    .withTenants(List.of("tenant-1"))
                     .build()));
 
     // when
@@ -87,7 +86,7 @@ public class CamundaOidcUserServiceTest {
     final AuthenticationContext authenticationContext = camundaUser.getAuthenticationContext();
     assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));
     assertThat(authenticationContext.tenants()).hasSize(1);
-    assertThat(authenticationContext.tenants().get(0).tenantId()).isEqualTo("tenant-1");
+    assertThat(authenticationContext.tenants().getFirst()).isEqualTo("tenant-1");
     assertThat(authenticationContext.groups()).containsExactly("G1");
   }
 

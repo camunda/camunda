@@ -18,7 +18,6 @@ import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.auth.Authorization;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -125,10 +124,7 @@ public class DefaultCamundaAuthenticationConverterTest {
   void authenticationContainsTenantIdsInAuthenticationContext() {
     // given
     final var username = "test-user";
-    final var tenants =
-        List.of(
-            new TenantDTO(1L, "tenant-1", "Tenant One", "First"),
-            new TenantDTO(2L, "tenant-2", "Tenant Two", "Second"));
+    final var tenants = List.of("tenant-1", "tenant-2");
     final var authenticationContext =
         new AuthenticationContextBuilder().withUsername(username).withTenants(tenants).build();
 

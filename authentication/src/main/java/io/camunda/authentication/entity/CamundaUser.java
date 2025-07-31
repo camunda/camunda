@@ -9,7 +9,6 @@ package io.camunda.authentication.entity;
 
 import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
 import io.camunda.security.entity.ClusterMetadata;
-import io.camunda.service.TenantServices.TenantDTO;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -101,7 +100,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
     private String email;
     private List<String> roles = List.of();
     private List<? extends GrantedAuthority> authorities = List.of();
-    private List<TenantDTO> tenants = List.of();
+    private List<String> tenants = List.of();
     private List<String> groups = List.of();
     private String salesPlanType;
     private Map<ClusterMetadata.AppName, String> c8Links = Map.of();
@@ -148,7 +147,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
       return this;
     }
 
-    public CamundaUserBuilder withTenants(final List<TenantDTO> tenants) {
+    public CamundaUserBuilder withTenants(final List<String> tenants) {
       this.tenants = Objects.requireNonNullElse(tenants, List.of());
       return this;
     }

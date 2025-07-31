@@ -11,12 +11,12 @@ import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aC
 
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Objects;
@@ -81,7 +81,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
             .withAuthentication(CamundaAuthentication.anonymous())
             .getTenantsByUserAndGroupsAndRoles(username, groups, roles)
             .stream()
-            .map(TenantDTO::fromEntity)
+            .map(TenantEntity::tenantId)
             .toList();
 
     return aCamundaUser()

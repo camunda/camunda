@@ -27,7 +27,6 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
@@ -263,7 +262,7 @@ public class CamundaOAuthPrincipalServiceTest {
           .containsAll(Set.of(roleR1.roleId(), groupRole.roleId()));
       assertThat(authenticationContext.groups()).containsExactly("group-g1");
       assertThat(authenticationContext.tenants())
-          .containsAll(List.of(TenantDTO.fromEntity(tenantT1), TenantDTO.fromEntity(groupTenant)));
+          .containsAll(List.of(tenantT1.tenantId(), groupTenant.tenantId()));
     }
 
     @Test
@@ -324,8 +323,7 @@ public class CamundaOAuthPrincipalServiceTest {
       assertThat(authenticationContext.roles()).containsExactly(roleR1.roleId());
       assertThat(authenticationContext.groups()).containsExactly("group-g1");
       assertThat(authenticationContext.tenants())
-          .containsExactlyInAnyOrder(
-              TenantDTO.fromEntity(tenantEntity1), TenantDTO.fromEntity(tenantEntity2));
+          .containsExactlyInAnyOrder(tenantEntity1.tenantId(), tenantEntity2.tenantId());
     }
   }
 

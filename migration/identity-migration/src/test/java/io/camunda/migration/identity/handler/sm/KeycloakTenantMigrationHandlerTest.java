@@ -24,8 +24,8 @@ import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TenantServices;
-import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
+import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -77,7 +77,7 @@ public class KeycloakTenantMigrationHandlerTest {
                 new Tenant("tenant1", "Tenant 1"),
                 new Tenant("tenant2", "Tenant 2"),
                 new Tenant("<default>", "Default Tenant")));
-    when(tenantServices.createTenant(any(TenantDTO.class)))
+    when(tenantServices.createTenant(any(TenantRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
     when(tenantServices.addMember(any(TenantMemberRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
@@ -111,7 +111,7 @@ public class KeycloakTenantMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    final var tenantCapture = ArgumentCaptor.forClass(TenantDTO.class);
+    final var tenantCapture = ArgumentCaptor.forClass(TenantRequest.class);
     verify(tenantServices, times(2)).createTenant(tenantCapture.capture());
     final var capturedTenants = tenantCapture.getAllValues();
     assertThat(capturedTenants).hasSize(2);
@@ -160,7 +160,7 @@ public class KeycloakTenantMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(tenantServices, times(0)).createTenant(any(TenantDTO.class));
+    verify(tenantServices, times(0)).createTenant(any(TenantRequest.class));
     verify(tenantServices, times(0)).addMember(any(TenantMemberRequest.class));
     verify(managementIdentityClient, times(1)).fetchTenants();
   }
@@ -173,7 +173,7 @@ public class KeycloakTenantMigrationHandlerTest {
                 new Tenant("tenant1", "Tenant 1"),
                 new Tenant("tenant2", "Tenant 2"),
                 new Tenant("<default>", "Default Tenant")));
-    when(tenantServices.createTenant(any(TenantDTO.class)))
+    when(tenantServices.createTenant(any(TenantRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     when(managementIdentityClient.fetchTenantUsers(anyString()))
@@ -188,7 +188,7 @@ public class KeycloakTenantMigrationHandlerTest {
 
     // then
     // only for the non default tenants
-    verify(tenantServices, times(2)).createTenant(any(TenantDTO.class));
+    verify(tenantServices, times(2)).createTenant(any(TenantRequest.class));
     verify(tenantServices, times(0)).addMember(any(TenantMemberRequest.class));
     verify(managementIdentityClient, times(1)).fetchTenants();
     // once for every tenant
@@ -202,7 +202,7 @@ public class KeycloakTenantMigrationHandlerTest {
     // given
     when(managementIdentityClient.fetchTenants())
         .thenReturn(List.of(new Tenant("tenant1", "Tenant 1"), new Tenant("tenant2", "Tenant 2")));
-    when(tenantServices.createTenant(any(TenantDTO.class)))
+    when(tenantServices.createTenant(any(TenantRequest.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(
@@ -243,7 +243,7 @@ public class KeycloakTenantMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(tenantServices, times(2)).createTenant(any(TenantDTO.class));
+    verify(tenantServices, times(2)).createTenant(any(TenantRequest.class));
     verify(tenantServices, times(9)).addMember(any(TenantMemberRequest.class));
   }
 
@@ -256,7 +256,7 @@ public class KeycloakTenantMigrationHandlerTest {
                 new Tenant("tenant1", "Tenant 1"),
                 new Tenant("tenant2", "Tenant 2"),
                 new Tenant("<default>", "Default Tenant")));
-    when(tenantServices.createTenant(any(TenantDTO.class)))
+    when(tenantServices.createTenant(any(TenantRequest.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(
@@ -295,7 +295,7 @@ public class KeycloakTenantMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(tenantServices, times(3)).createTenant(any(TenantDTO.class));
+    verify(tenantServices, times(3)).createTenant(any(TenantRequest.class));
     verify(tenantServices, times(12)).addMember(any(TenantMemberRequest.class));
   }
 
@@ -308,7 +308,7 @@ public class KeycloakTenantMigrationHandlerTest {
                 new Tenant("tenant1", "Tenant 1"),
                 new Tenant("tenant2", "Tenant 2"),
                 new Tenant("<default>", "Default Tenant")));
-    when(tenantServices.createTenant(any(TenantDTO.class)))
+    when(tenantServices.createTenant(any(TenantRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
     when(tenantServices.addMember(any(TenantMemberRequest.class)))
         .thenReturn(
@@ -347,7 +347,7 @@ public class KeycloakTenantMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(tenantServices, times(2)).createTenant(any(TenantDTO.class));
+    verify(tenantServices, times(2)).createTenant(any(TenantRequest.class));
     verify(tenantServices, times(13)).addMember(any(TenantMemberRequest.class));
   }
 }

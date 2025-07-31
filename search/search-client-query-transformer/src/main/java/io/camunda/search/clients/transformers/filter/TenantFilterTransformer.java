@@ -79,7 +79,7 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
   private SearchQuery buildCoreFilters(final TenantFilter filter) {
     return and(
         filter.key() == null ? null : term(KEY, filter.key()),
-        filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
+        filter.tenantIds() == null ? null : stringTerms(TENANT_ID, filter.tenantIds()),
         filter.name() == null ? null : term(NAME, filter.name()),
         filter.joinParentId() == null
             ? term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType())

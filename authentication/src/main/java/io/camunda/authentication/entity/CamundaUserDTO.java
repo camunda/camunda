@@ -7,8 +7,8 @@
  */
 package io.camunda.authentication.entity;
 
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.entity.ClusterMetadata;
-import io.camunda.service.TenantServices.TenantDTO;
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +19,7 @@ public record CamundaUserDTO(
     String username,
     String email,
     List<String> authorizedApplications,
-    List<TenantDTO> tenants,
+    List<TenantEntity> tenants,
     List<String> groups,
     List<String> roles,
     String salesPlanType,

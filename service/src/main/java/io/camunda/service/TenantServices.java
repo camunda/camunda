@@ -25,7 +25,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteReq
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +71,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
         brokerClient, securityContextProvider, tenantSearchClient, authentication);
   }
 
-  public CompletableFuture<TenantRecord> createTenant(final TenantDTO request) {
+  public CompletableFuture<TenantRecord> createTenant(final TenantRequest request) {
     return sendBrokerRequest(
         new BrokerTenantCreateRequest()
             .setTenantId(request.tenantId())
@@ -80,7 +79,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .setDescription(request.description()));
   }
 
-  public CompletableFuture<TenantRecord> updateTenant(final TenantDTO request) {
+  public CompletableFuture<TenantRecord> updateTenant(final TenantRequest request) {
     return sendBrokerRequest(
         new BrokerTenantUpdateRequest(request.tenantId())
             .setName(request.name())
@@ -155,12 +154,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
                 .getTenant(tenantId));
   }
 
-  public record TenantDTO(Long key, String tenantId, String name, String description)
-      implements Serializable {
-    public static TenantDTO fromEntity(final TenantEntity entity) {
-      return new TenantDTO(entity.key(), entity.tenantId(), entity.name(), entity.description());
-    }
-  }
+  public record TenantRequest(Long key, String tenantId, String name, String description) {}
 
   public record TenantMemberRequest(String tenantId, String entityId, EntityType entityType) {}
 }

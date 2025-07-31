@@ -10,14 +10,17 @@ package io.camunda.authentication.service;
 import static io.camunda.service.authorization.Authorizations.APPLICATION_ACCESS_AUTHORIZATION;
 
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
-import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOAuthPrincipal;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.query.TenantQuery;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.service.TenantServices;
 import jakarta.json.Json;
 import java.util.List;
 import java.util.Map;
@@ -38,12 +41,15 @@ public class OidcCamundaUserService implements CamundaUserService {
 
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ResourceAccessProvider resourceAccessProvider;
+  private final TenantServices tenantServices;
 
   public OidcCamundaUserService(
       final CamundaAuthenticationProvider authenticationProvider,
-      final ResourceAccessProvider resourceAccessProvider) {
+      final ResourceAccessProvider resourceAccessProvider,
+      final TenantServices tenantServices) {
     this.authenticationProvider = authenticationProvider;
     this.resourceAccessProvider = resourceAccessProvider;
+    this.tenantServices = tenantServices;
   }
 
   private Optional<CamundaOAuthPrincipal> getCamundaUser() {
@@ -58,7 +64,8 @@ public class OidcCamundaUserService implements CamundaUserService {
     return getCamundaUser()
         .map(
             user -> {
-              final AuthenticationContext auth = user.getAuthenticationContext();
+              final var auth = user.getAuthenticationContext();
+              final var tenants = getTenantsForUser(user);
               return new CamundaUserDTO(
                   auth.username(),
                   null,
@@ -66,7 +73,7 @@ public class OidcCamundaUserService implements CamundaUserService {
                   auth.username(),
                   user.getEmail(),
                   authorizedApplications,
-                  auth.tenants(),
+                  tenants,
                   auth.groups(),
                   auth.roles(),
                   SALES_PLAN_TYPE,
@@ -108,5 +115,20 @@ public class OidcCamundaUserService implements CamundaUserService {
     return applicationAccess.allowed()
         ? applicationAccess.authorization().resourceIds()
         : List.of();
+  }
+
+  private List<TenantEntity> getTenantsForUser(final CamundaOAuthPrincipal camundaUser) {
+    final var tenants = camundaUser.getAuthenticationContext().tenants();
+    return Optional.ofNullable(tenants)
+        .filter(t -> !t.isEmpty())
+        .map(this::getTenants)
+        .orElseGet(List::of);
+  }
+
+  private List<TenantEntity> getTenants(final List<String> tenantIds) {
+    return tenantServices
+        .withAuthentication(CamundaAuthentication.anonymous())
+        .search(TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()))
+        .items();
   }
 }
