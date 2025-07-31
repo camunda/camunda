@@ -14,7 +14,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * directly activate a multi-instance body, which is not supported at this time.
  *
  * <p>This exception can be handled by the processor in {@link
- * io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor#tryHandleError(TypedRecord,
+ * io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor#tryHandleError(TypedRecord,
  * Throwable)}.
  */
 public class UnsupportedMultiInstanceBodyActivationException extends RuntimeException {

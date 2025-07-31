@@ -23,10 +23,8 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
-import io.camunda.zeebe.engine.processing.job.DefaultJobCommandPreconditionGuard;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandPreconditionChecker;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
@@ -92,14 +90,6 @@ public class AuthorizationArchTest {
                 ArchConditions.callMethod(
                     JobUpdateBehaviour.class, "isAuthorized", TypedRecord.class, JobRecord.class))
             // Or the processor should have delegated authorization to the
-            // DefaultJobCommandPreconditionGuard
-            .or(
-                ArchConditions.callMethod(
-                    DefaultJobCommandPreconditionGuard.class,
-                    "onCommand",
-                    TypedRecord.class,
-                    CommandControl.class))
-            // Or the processor should have delegated authorization to the
             // UserTaskCommandPreconditionChecker
             .or(
                 ArchConditions.callMethod(
@@ -124,7 +114,6 @@ public class AuthorizationArchTest {
       @Override
       public boolean test(final JavaClass javaClass) {
         return Predicates.assignableFrom(JobUpdateBehaviour.class)
-            .or(Predicates.assignableFrom(DefaultJobCommandPreconditionGuard.class))
             .or(Predicates.assignableFrom(UserTaskCommandPreconditionChecker.class))
             .or(Predicates.assignableFrom(PermissionsBehavior.class))
             .test(javaClass);
