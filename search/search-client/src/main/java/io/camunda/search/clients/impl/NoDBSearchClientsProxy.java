@@ -31,6 +31,7 @@ import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
+import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -295,6 +296,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public UsageMetricStatisticsEntity usageMetricStatistics(final UsageMetricsQuery query) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public UsageMetricTUStatisticsEntity usageMetricTUStatistics(final UsageMetricsQuery query) {
     throw new NoSecondaryStorageException();
   }
 

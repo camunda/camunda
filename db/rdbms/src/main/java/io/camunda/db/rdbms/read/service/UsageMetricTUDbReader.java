@@ -11,13 +11,14 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.db.rdbms.read.mapper.UsageMetricTUEntityMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
+import io.camunda.search.clients.reader.UsageMetricsTUReader;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UsageMetricTUDbReader {
+public class UsageMetricTUDbReader implements UsageMetricsTUReader {
 
   private static final Logger LOG = LoggerFactory.getLogger(UsageMetricTUDbReader.class);
   private final UsageMetricTUMapper usageMetricTUMapper;

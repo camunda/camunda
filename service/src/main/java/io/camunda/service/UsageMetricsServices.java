@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
+import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.Authorization;
@@ -16,10 +17,13 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.util.collection.Tuple;
 
 public final class UsageMetricsServices
     extends SearchQueryService<
-        UsageMetricsServices, UsageMetricsQuery, UsageMetricStatisticsEntity> {
+        UsageMetricsServices,
+        UsageMetricsQuery,
+        Tuple<UsageMetricStatisticsEntity, UsageMetricTUStatisticsEntity>> {
 
   private final UsageMetricsSearchClient usageMetricsSearchClient;
 
@@ -33,17 +37,22 @@ public final class UsageMetricsServices
   }
 
   @Override
-  public SearchQueryResult<UsageMetricStatisticsEntity> search(final UsageMetricsQuery query) {
+  public SearchQueryResult<Tuple<UsageMetricStatisticsEntity, UsageMetricTUStatisticsEntity>>
+      search(final UsageMetricsQuery query) {
     if (query == null) {
       throw new IllegalArgumentException("Query must not be null");
     }
     validateStartAndEndTime(query);
-    return SearchQueryResult.of(
+    final UsageMetricsSearchClient authUsageMetricsSearchClient =
         usageMetricsSearchClient
+            // TODO add proper authorization with https://github.com/camunda/camunda/issues/34708
             .withSecurityContext(
-                securityContextProvider.provideSecurityContext(
-                    authentication, Authorization.of(a -> a.usageMetric().read())))
-            .usageMetricStatistics(query));
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.usageMetric().read())));
+    return SearchQueryResult.of(
+        Tuple.of(
+            authUsageMetricsSearchClient.usageMetricStatistics(query),
+            authUsageMetricsSearchClient.usageMetricTUStatistics(query)));
   }
 
   private void validateStartAndEndTime(final UsageMetricsQuery query) {

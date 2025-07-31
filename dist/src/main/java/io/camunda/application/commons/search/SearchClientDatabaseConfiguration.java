@@ -38,6 +38,7 @@ import io.camunda.search.clients.reader.SequenceFlowReader;
 import io.camunda.search.clients.reader.TenantMemberReader;
 import io.camunda.search.clients.reader.TenantReader;
 import io.camunda.search.clients.reader.UsageMetricsReader;
+import io.camunda.search.clients.reader.UsageMetricsTUReader;
 import io.camunda.search.clients.reader.UserReader;
 import io.camunda.search.clients.reader.UserTaskReader;
 import io.camunda.search.clients.reader.VariableReader;
@@ -125,6 +126,7 @@ public class SearchClientDatabaseConfiguration {
       final TenantReader tenantReader,
       final TenantMemberReader tenantMemberReader,
       final UsageMetricsReader usageMetricsReader,
+      final UsageMetricsTUReader usageMetricsTUReader,
       final UserReader userReader,
       final UserTaskReader userTaskReader,
       final VariableReader variableReader) {
@@ -153,6 +155,7 @@ public class SearchClientDatabaseConfiguration {
         tenantReader,
         tenantMemberReader,
         usageMetricsReader,
+        usageMetricsTUReader,
         userReader,
         userTaskReader,
         variableReader);
