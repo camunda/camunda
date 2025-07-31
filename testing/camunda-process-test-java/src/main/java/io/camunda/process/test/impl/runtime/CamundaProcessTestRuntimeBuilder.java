@@ -24,13 +24,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Objects;
 
 public class CamundaProcessTestRuntimeBuilder {
-
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(CamundaProcessTestRuntimeBuilder.class);
 
   private ContainerFactory containerFactory = new ContainerFactory();
 
@@ -65,6 +61,9 @@ public class CamundaProcessTestRuntimeBuilder {
   private boolean connectorsEnabled = false;
   private final Map<String, String> connectorsSecrets = new HashMap<>();
 
+  private final boolean isGlobalRuntimeEnabled =
+      CamundaProcessTestRuntimeDefaults.GLOBAL_CPT_RUNTIME_ENABLED;
+  private boolean ignoreGlobalRuntime = false;
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
   private CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
@@ -201,6 +200,11 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  public CamundaProcessTestRuntimeBuilder withIgnoringGlobalRuntime() {
+    this.ignoreGlobalRuntime = true;
+    return this;
+  }
+
   public CamundaProcessTestRuntimeBuilder withRemoteCamundaClientBuilderFactory(
       final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory) {
     this.remoteCamundaClientBuilderFactory = remoteCamundaClientBuilderFactory;
@@ -222,15 +226,19 @@ public class CamundaProcessTestRuntimeBuilder {
   // ============ Build =================
 
   public CamundaProcessTestRuntime build() {
-    switch (runtimeMode) {
-      case MANAGED:
-        return new CamundaProcessTestContainerRuntime(this, containerFactory);
-      case REMOTE:
-        return new CamundaProcessTestRemoteRuntime(this);
-      default:
-        LOGGER.warn("Unknown runtime mode: {}. Fall back to MANAGED runtime mode.", runtimeMode);
-        return new CamundaProcessTestContainerRuntime(this, containerFactory);
+    if (shouldUseGlobalRuntime()) {
+      return CamundaProcessTestGlobalRuntime.INSTANCE.getRuntime();
     }
+
+    return buildRuntime();
+  }
+
+  private CamundaProcessTestRuntime buildRuntime() {
+    if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
+      return new CamundaProcessTestRemoteRuntime(this);
+    }
+
+    return new CamundaProcessTestContainerRuntime(this, containerFactory);
   }
 
   // ============ Getters =================
@@ -307,6 +315,10 @@ public class CamundaProcessTestRuntimeBuilder {
     return runtimeMode;
   }
 
+  public boolean isIgnoreGlobalRuntime() {
+    return ignoreGlobalRuntime;
+  }
+
   public CamundaClientBuilderFactory getRemoteCamundaClientBuilderFactory() {
     return remoteCamundaClientBuilderFactory;
   }
@@ -317,5 +329,39 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public URI getRemoteConnectorsRestApiAddress() {
     return remoteConnectorsRestApiAddress;
+  }
+
+  // ============ Global Runtime =================
+
+  private boolean shouldUseGlobalRuntime() {
+    return isGlobalRuntimeEnabled
+        && !ignoreGlobalRuntime
+        && hasCompatibleConfiguration(CamundaProcessTestGlobalRuntime.INSTANCE.getRuntimeBuilder());
+  }
+
+  private boolean hasCompatibleConfiguration(final CamundaProcessTestRuntimeBuilder other) {
+    return connectorsEnabled == other.connectorsEnabled
+        && Objects.equals(camundaDockerImageName, other.camundaDockerImageName)
+        && Objects.equals(camundaDockerImageVersion, other.camundaDockerImageVersion)
+        && Objects.equals(elasticsearchDockerImageName, other.elasticsearchDockerImageName)
+        && Objects.equals(elasticsearchDockerImageVersion, other.elasticsearchDockerImageVersion)
+        && Objects.equals(connectorsDockerImageName, other.connectorsDockerImageName)
+        && Objects.equals(connectorsDockerImageVersion, other.connectorsDockerImageVersion)
+        && Objects.equals(camundaEnvVars, other.camundaEnvVars)
+        && Objects.equals(elasticsearchEnvVars, other.elasticsearchEnvVars)
+        && Objects.equals(connectorsEnvVars, other.connectorsEnvVars)
+        && Objects.equals(camundaExposedPorts, other.camundaExposedPorts)
+        && Objects.equals(elasticsearchExposedPorts, other.elasticsearchExposedPorts)
+        && Objects.equals(connectorsExposedPorts, other.connectorsExposedPorts)
+        && Objects.equals(camundaLoggerName, other.camundaLoggerName)
+        && Objects.equals(elasticsearchLoggerName, other.elasticsearchLoggerName)
+        && Objects.equals(connectorsLoggerName, other.connectorsLoggerName)
+        && Objects.equals(connectorsSecrets, other.connectorsSecrets)
+        && runtimeMode == other.runtimeMode
+        && Objects.equals(
+            remoteCamundaClientBuilderFactory, other.remoteCamundaClientBuilderFactory)
+        && Objects.equals(
+            remoteCamundaMonitoringApiAddress, other.remoteCamundaMonitoringApiAddress)
+        && Objects.equals(remoteConnectorsRestApiAddress, other.remoteConnectorsRestApiAddress);
   }
 }

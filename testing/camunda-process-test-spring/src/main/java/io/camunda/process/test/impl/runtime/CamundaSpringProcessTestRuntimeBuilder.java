@@ -29,21 +29,23 @@ import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
 
 public class CamundaSpringProcessTestRuntimeBuilder {
 
-  public static CamundaProcessTestRuntime buildRuntime(
+  public static CamundaProcessTestRuntimeBuilder mergeRuntimeConfiguration(
       final CamundaProcessTestRuntimeBuilder runtimeBuilder,
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
 
     final CamundaProcessTestRuntimeMode runtimeMode = runtimeConfiguration.getRuntimeMode();
-    runtimeBuilder.withRuntimeMode(runtimeMode);
-
-    if (runtimeMode == CamundaProcessTestRuntimeMode.MANAGED || runtimeMode == null) {
-      configureManagedRuntime(runtimeBuilder, runtimeConfiguration);
-
-    } else if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
-      configureRemoteRuntime(runtimeBuilder, runtimeConfiguration);
+    if (runtimeConfiguration.isIgnoreGlobalRuntime()) {
+      runtimeBuilder.withIgnoringGlobalRuntime();
     }
 
-    return runtimeBuilder.build();
+    runtimeBuilder.withRuntimeMode(runtimeMode);
+    if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
+      configureRemoteRuntime(runtimeBuilder, runtimeConfiguration);
+    } else {
+      configureManagedRuntime(runtimeBuilder, runtimeConfiguration);
+    }
+
+    return runtimeBuilder;
   }
 
   private static void configureManagedRuntime(
