@@ -284,7 +284,7 @@ public class ProcessInstanceController extends ErrorController
     final QueryValidator<SequenceFlow> queryValidator = new QueryValidator<>();
     queryValidator.validate(query, SequenceFlow.class);
     permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
-    processInstanceDao.byKey(key); // this is just to throw error if not found
+    checkIfExists(key);
     final Results<SequenceFlow> results = sequenceFlowDao.search(query);
     return results.getItems().stream()
         .map(SequenceFlow::getActivityId)
@@ -338,7 +338,11 @@ public class ProcessInstanceController extends ErrorController
       @Parameter(description = "Key of process instance", required = true) @PathVariable
           final Long key) {
     permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
-    processInstanceDao.byKey(key); // this is just to throw error if not found
+    checkIfExists(key);
     return flowNodeStatisticsDao.getFlowNodeStatisticsForProcessInstance(key);
+  }
+
+  public void checkIfExists(final long key) {
+    processInstanceDao.byKey(key);
   }
 }
