@@ -213,11 +213,9 @@ public class AdHocSubProcessProcessor
       final BpmnElementContext context,
       final List<String> elementsToActivate) {
 
-    elementsToActivate.stream()
-        .map(element.getAdHocActivitiesById()::get)
-        .forEach(
-            elementToActivate ->
-                adHocSubProcessBehavior.activateElement(context, element, elementToActivate));
+    elementsToActivate.forEach(
+        elementToActivate ->
+            adHocSubProcessBehavior.activateElement(context, element, elementToActivate));
   }
 
   @Override
