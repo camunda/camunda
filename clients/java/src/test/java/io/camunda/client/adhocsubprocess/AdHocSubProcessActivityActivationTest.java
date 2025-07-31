@@ -25,6 +25,8 @@ import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivityReference;
 import io.camunda.client.util.ClientRestTest;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -90,6 +92,53 @@ public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
     assertThatThrownBy(() -> command.activateElements(new String[] {}))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("elementIds must not be empty");
+  }
+
+  @Test
+  void shouldActivateElementWithVariables() {
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", "bar");
+    variables.put("count", 42);
+
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .activateElement("A", variables)
+        .send()
+        .join();
+
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
+    assertThat(request.getElements()).hasSize(1);
+
+    final AdHocSubProcessActivateActivityReference element = request.getElements().get(0);
+    assertThat(element.getElementId()).isEqualTo("A");
+    assertThat(element.getVariables()).isEqualTo(variables);
+  }
+
+  @Test
+  void shouldActivateElementsWithAndWithoutVariables() {
+    final Map<String, Object> variablesA = new HashMap<>();
+    variablesA.put("type", "task");
+    variablesA.put("priority", 1);
+
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .activateElement("A", variablesA)
+        .activateElement("B") // no variables
+        .send()
+        .join();
+
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
+    assertThat(request.getElements()).hasSize(2);
+
+    final AdHocSubProcessActivateActivityReference elementA = request.getElements().get(0);
+    assertThat(elementA.getElementId()).isEqualTo("A");
+    assertThat(elementA.getVariables()).isEqualTo(variablesA);
+
+    final AdHocSubProcessActivateActivityReference elementB = request.getElements().get(1);
+    assertThat(elementB.getElementId()).isEqualTo("B");
+    assertThat(elementB.getVariables()).isEmpty();
   }
 
   static Stream<

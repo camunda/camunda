@@ -872,7 +872,9 @@ public class RequestMapper {
                 request.getElements().stream()
                     .map(
                         element ->
-                            new AdHocSubProcessActivateActivityReference(element.getElementId()))
+                            new AdHocSubProcessActivateActivityReference(
+                                element.getElementId(),
+                                getMapOrEmpty(element, e -> e.getVariables())))
                     .toList()));
   }
 

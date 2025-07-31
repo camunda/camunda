@@ -6856,6 +6856,10 @@ components:
         elementId:
           description: The ID of the element that should be activated.
           type: string
+        variables:
+          description: Variables to be set when activating the element.
+          type: object
+          additionalProperties: true
       required:
         - elementId
     DecisionDefinitionSearchQuerySortRequest:
