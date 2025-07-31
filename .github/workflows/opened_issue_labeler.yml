@@ -17,3 +17,4 @@ jobs:
       with:
         configuration-path: .github/opened_issue_labeler.yml
         enable-versioned-regex: 0
+        repo-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
