@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.impl.record.RecordMetadata.CURRENT_BROKE
 import io.camunda.application.initializers.StandaloneSchemaManagerInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyGatewayBasedProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
@@ -102,7 +103,10 @@ public class StandaloneSchemaManager implements CommandLineRunner {
 
   @EnableAutoConfiguration
   // TODO: Use unified configuration when it is available
-  @EnableConfigurationProperties(LegacyBrokerBasedProperties.class)
+  @EnableConfigurationProperties({
+    LegacyBrokerBasedProperties.class,
+    LegacyGatewayBasedProperties.class
+  })
   @ComponentScan(
       basePackages = "io.camunda.application.commons.search",
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
