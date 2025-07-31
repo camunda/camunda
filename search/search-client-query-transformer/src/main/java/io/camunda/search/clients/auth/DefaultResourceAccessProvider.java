@@ -42,13 +42,16 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
     if (resourceIds.contains(WILDCARD)) {
       // no authorization check required, user can access
       // the respective resources.
-      return ResourceAccess.wildcard(resultingAuthorization.resourceId(WILDCARD).build());
+      return ResourceAccess.wildcard(
+          resultingAuthorization.resourceId(WILDCARD.getResourceId()).build());
     }
 
     if (resourceIds.isEmpty()) {
       return ResourceAccess.denied(resultingAuthorization.build());
     }
 
+    final var resourceIds =
+        authorizationScopes.stream().map(AuthorizationScope::getResourceId).distinct().toList();
     final var authorizationWithResolvedResourceIds =
         resultingAuthorization.resourceIds(resourceIds).build();
     return ResourceAccess.allowed(authorizationWithResolvedResourceIds);

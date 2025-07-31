@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.authorization;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
@@ -190,7 +191,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
-            .setResourceMatcher(AuthorizationResourceMatcher.ANY)
+            .setResourceMatcher(WILDCARD.getMatcher())
             .setResourceId("*")
             .setResourceType(resourceType)
             .setPermissionTypes(Set.of(PermissionType.READ, PermissionType.ACCESS));
@@ -203,8 +204,8 @@ public class AuthorizationStateTest {
     assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
     assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
-    assertThat(authorization.getResourceMatcher()).isEqualTo(AuthorizationResourceMatcher.ANY);
-    assertThat(authorization.getResourceId()).isEqualTo("*");
+    assertThat(authorization.getResourceMatcher()).isEqualTo(WILDCARD.getMatcher());
+    assertThat(authorization.getResourceId()).isEqualTo(WILDCARD.getResourceId());
     assertThat(authorization.getResourceType()).isEqualTo(resourceType);
     assertThat(authorization.getPermissionTypes())
         .containsExactlyInAnyOrderElementsOf(Set.of(PermissionType.READ, PermissionType.ACCESS));
@@ -212,12 +213,12 @@ public class AuthorizationStateTest {
     final var authorizationScopes =
         authorizationState.getAuthorizationScopes(
             ownerType, ownerId, resourceType, PermissionType.READ);
-    assertThat(authorizationScopes).containsExactly(AuthorizationScope.wildcard());
+    assertThat(authorizationScopes).containsExactly(WILDCARD);
 
     final var anotherAuthorizationScopes =
         authorizationState.getAuthorizationScopes(
             ownerType, ownerId, resourceType, PermissionType.ACCESS);
-    assertThat(anotherAuthorizationScopes).containsExactly(AuthorizationScope.wildcard());
+    assertThat(anotherAuthorizationScopes).containsExactly(WILDCARD);
 
     final var anotherAuthorizationScopes2 =
         authorizationState.getAuthorizationScopes(

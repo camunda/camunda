@@ -155,7 +155,7 @@ final class JobBatchCollector {
 
   private boolean isAuthorizedForJob(
       final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
-    return authorizedProcessIds.contains(AuthorizationScope.wildcard())
+    return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
         || authorizedProcessIds.contains(jobRecord.getBpmnProcessId());
   }
 
