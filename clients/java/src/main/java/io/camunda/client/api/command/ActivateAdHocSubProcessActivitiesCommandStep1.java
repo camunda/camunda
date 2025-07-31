@@ -77,6 +77,15 @@ public interface ActivateAdHocSubProcessActivitiesCommandStep1 {
     return activateElements(Arrays.asList(elementIds));
   }
 
+  /**
+   * Set whether to cancel remaining instances of the ad-hoc sub-process.
+   *
+   * @param cancelRemainingInstances true to cancel remaining instances, false otherwise
+   * @return the builder for this command
+   */
+  ActivateAdHocSubProcessActivitiesCommandStep2 cancelRemainingInstances(
+      boolean cancelRemainingInstances);
+
   interface ActivateAdHocSubProcessActivitiesCommandStep2
       extends ActivateAdHocSubProcessActivitiesCommandStep1,
           FinalCommandStep<ActivateAdHocSubProcessActivitiesResponse> {}

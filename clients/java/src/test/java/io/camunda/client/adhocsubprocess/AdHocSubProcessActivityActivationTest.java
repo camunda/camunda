@@ -141,6 +141,47 @@ public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
     assertThat(elementB.getVariables()).isEmpty();
   }
 
+  @Test
+  void shouldSetCancelRemainingInstancesToTrue() {
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .activateElement("A")
+        .cancelRemainingInstances(true)
+        .send()
+        .join();
+
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
+    assertThat(request.getCancelRemainingInstances()).isTrue();
+  }
+
+  @Test
+  void shouldSetCancelRemainingInstancesToFalse() {
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .activateElement("A")
+        .cancelRemainingInstances(false)
+        .send()
+        .join();
+
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
+    assertThat(request.getCancelRemainingInstances()).isFalse();
+  }
+
+  @Test
+  void shouldDefaultCancelRemainingInstancesToFalse() {
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .activateElement("A")
+        .send()
+        .join();
+
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
+    assertThat(request.getCancelRemainingInstances()).isFalse();
+  }
+
   static Stream<
           Function<
               ActivateAdHocSubProcessActivitiesCommandStep1,
