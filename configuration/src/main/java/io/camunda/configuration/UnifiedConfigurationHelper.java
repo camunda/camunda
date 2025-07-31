@@ -8,7 +8,6 @@
 package io.camunda.configuration;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -21,28 +20,9 @@ import org.springframework.stereotype.Component;
 @Component("unifiedConfigurationHelper")
 public class UnifiedConfigurationHelper {
 
-  private static final Map<String, Set<String>> LEGACY_PROPERTIES =
-      Map.of(
-          "camunda.data.secondary-storage.elasticsearch.url",
-          Set.of(
-              "camunda.database.url",
-              "camunda.operate.elasticsearch.url",
-              "camunda.operate.zeebeElasticsearch.url",
-              "camunda.tasklist.elasticsearch.url",
-              "camunda.tasklist.zeebeElasticsearch.url"),
-          "camunda.data.secondary-storage.type",
-          Set.of("camunda.database.type"),
-          "camunda.cluster.metadata.sync-delay",
-          Set.of("zeebe.broker.cluster.configManager.gossip.syncDelay"),
-          "camunda.cluster.metadata.sync-request-timeout",
-          Set.of("zeebe.broker.cluster.configManager.gossip.syncRequestTimeout"),
-          "camunda.cluster.metadata.gossip-fanout",
-          Set.of("zeebe.broker.cluster.configManager.gossip.gossipFanout"));
-
   private static final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
 
   private static Environment environment;
-  private static Map<String, Set<String>> legacyPropertiesDict = LEGACY_PROPERTIES;
 
   public UnifiedConfigurationHelper(@Autowired final Environment environment) {
     // We need to pin the environment object statically so that it can be used to perform the
@@ -54,14 +34,15 @@ public class UnifiedConfigurationHelper {
       final String newProperty,
       final T newValue,
       final Class<T> expectedType,
-      final BackwardsCompatibilityMode backwardsCompatibilityMode) {
+      final BackwardsCompatibilityMode backwardsCompatibilityMode,
+      final Set<String> legacyProperties) {
     // Input validation
     if (backwardsCompatibilityMode == null) {
       throw new UnifiedConfigurationException("backwardsCompatibilityMode cannot be null");
     }
-
-    // Tools
-    final Set<String> legacyProperties = legacyPropertiesDict.get(newProperty);
+    if (legacyProperties == null) {
+      throw new UnifiedConfigurationException("legacyProperties cannot be null");
+    }
 
     return switch (backwardsCompatibilityMode) {
       case NOT_SUPPORTED ->
@@ -232,11 +213,6 @@ public class UnifiedConfigurationHelper {
       case "Duration" -> (T) DurationStyle.detectAndParse(strValue);
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
-  }
-
-  public static void setCustomLegacyProperties(
-      final Map<String, Set<String>> legacyPropertiesDict) {
-    UnifiedConfigurationHelper.legacyPropertiesDict = legacyPropertiesDict;
   }
 
   /* Setters used by tests to inject the mock objects */
