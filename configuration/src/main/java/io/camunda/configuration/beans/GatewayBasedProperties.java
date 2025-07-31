@@ -8,7 +8,6 @@
 package io.camunda.configuration.beans;
 
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
 // NOTE: This class has been moved away from dist. The reason for this is that as, for now,
 //  we're storing the unified configuration objects and beans in the configuration module,
@@ -21,5 +20,4 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 //  such refactoring happens, we can bring back GatewayBasedProperties within dist, as there will
 //  be no more circular dependency issues.
 
-@ConfigurationProperties("zeebe.gateway")
 public class GatewayBasedProperties extends GatewayCfg {}

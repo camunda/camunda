@@ -19,6 +19,7 @@ public class Camunda {
   public static final String PREFIX = "camunda";
 
   private Cluster cluster = new Cluster();
+  private Api api = new Api();
 
   public Cluster getCluster() {
     return cluster;
@@ -26,5 +27,13 @@ public class Camunda {
 
   public void setCluster(final Cluster cluster) {
     this.cluster = cluster;
+  }
+
+  public Api getApi() {
+    return api;
+  }
+
+  public void setApi(final Api api) {
+    this.api = api;
   }
 }
