@@ -46,11 +46,15 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
                 brokerRequest.addElement(
                     element.elementId(), getDocumentOrEmpty(element.variables())));
 
+    brokerRequest.cancelRemainingInstances(request.cancelRemainingInstances);
+
     return sendBrokerRequest(brokerRequest);
   }
 
   public record AdHocSubProcessActivateActivitiesRequest(
-      String adHocSubProcessInstanceKey, List<AdHocSubProcessActivateActivityReference> elements) {
+      String adHocSubProcessInstanceKey,
+      List<AdHocSubProcessActivateActivityReference> elements,
+      Boolean cancelRemainingInstances) {
     public record AdHocSubProcessActivateActivityReference(
         String elementId, Map<String, Object> variables) {}
   }

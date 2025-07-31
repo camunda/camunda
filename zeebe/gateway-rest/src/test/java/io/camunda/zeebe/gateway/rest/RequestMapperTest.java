@@ -9,8 +9,11 @@ package io.camunda.zeebe.gateway.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivityReference;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
@@ -19,6 +22,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOp
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ProblemDetail;
 
@@ -131,5 +135,197 @@ class RequestMapperTest {
     final var problemDetail = result.getLeft();
     assertThat(problemDetail.getStatus()).isEqualTo(400);
     assertThat(problemDetail.getDetail()).isEqualTo("No targetElementId provided.");
+  }
+
+  @Test
+  void shouldMapToAdHocSubProcessActivateActivitiesRequest() {
+    // given
+    final var element1 = new AdHocSubProcessActivateActivityReference();
+    element1.setElementId("activity1");
+    element1.setVariables(Map.of("var1", "value1", "count", 42));
+
+    final var element2 = new AdHocSubProcessActivateActivityReference();
+    element2.setElementId("activity2");
+    element2.setVariables(Map.of("var2", "value2"));
+
+    final var instruction = new AdHocSubProcessActivateActivitiesInstruction();
+    instruction.setElements(List.of(element1, element2));
+    instruction.setCancelRemainingInstances(true);
+
+    final String adHocSubProcessInstanceKey = "123456";
+
+    // when
+    final Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest> result =
+        RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, instruction);
+
+    // then
+    assertTrue(result.isRight());
+    final var request = result.get();
+    assertThat(request.adHocSubProcessInstanceKey()).isEqualTo(adHocSubProcessInstanceKey);
+    assertThat(request.cancelRemainingInstances()).isTrue();
+    assertThat(request.elements())
+        .hasSize(2)
+        .satisfies(
+            elements -> {
+              assertThat(elements.get(0).elementId()).isEqualTo("activity1");
+              assertThat(elements.get(0).variables())
+                  .containsExactlyInAnyOrderEntriesOf(Map.of("var1", "value1", "count", 42));
+              assertThat(elements.get(1).elementId()).isEqualTo("activity2");
+              assertThat(elements.get(1).variables())
+                  .containsExactlyInAnyOrderEntriesOf(Map.of("var2", "value2"));
+            });
+  }
+
+  @Test
+  void shouldMapToAdHocSubProcessActivateActivitiesRequestWithCancelRemainingInstancesFalse() {
+    // given
+    final var element = new AdHocSubProcessActivateActivityReference();
+    element.setElementId("activity1");
+    element.setVariables(Map.of("key", "value"));
+
+    final var instruction = new AdHocSubProcessActivateActivitiesInstruction();
+    instruction.setElements(List.of(element));
+    instruction.setCancelRemainingInstances(false);
+
+    final String adHocSubProcessInstanceKey = "789012";
+
+    // when
+    final Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest> result =
+        RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, instruction);
+
+    // then
+    assertTrue(result.isRight());
+    final var request = result.get();
+    assertThat(request.adHocSubProcessInstanceKey()).isEqualTo(adHocSubProcessInstanceKey);
+    assertThat(request.cancelRemainingInstances()).isFalse();
+    assertThat(request.elements()).hasSize(1);
+    assertThat(request.elements().get(0).elementId()).isEqualTo("activity1");
+    assertThat(request.elements().get(0).variables())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("key", "value"));
+  }
+
+  @Test
+  void shouldMapToAdHocSubProcessActivateActivitiesRequestWithNullCancelRemainingInstances() {
+    // given
+    final var element = new AdHocSubProcessActivateActivityReference();
+    element.setElementId("activity1");
+
+    final var instruction = new AdHocSubProcessActivateActivitiesInstruction();
+    instruction.setElements(List.of(element));
+    instruction.setCancelRemainingInstances(null);
+
+    final String adHocSubProcessInstanceKey = "345678";
+
+    // when
+    final Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest> result =
+        RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, instruction);
+
+    // then
+    assertTrue(result.isRight());
+    final var request = result.get();
+    assertThat(request.adHocSubProcessInstanceKey()).isEqualTo(adHocSubProcessInstanceKey);
+    assertThat(request.cancelRemainingInstances()).isNull();
+    assertThat(request.elements()).hasSize(1);
+    assertThat(request.elements().get(0).elementId()).isEqualTo("activity1");
+  }
+
+  @Test
+  void shouldMapToAdHocSubProcessActivateActivitiesRequestWithEmptyVariables() {
+    // given
+    final var element = new AdHocSubProcessActivateActivityReference();
+    element.setElementId("activity1");
+    element.setVariables(Map.of());
+
+    final var instruction = new AdHocSubProcessActivateActivitiesInstruction();
+    instruction.setElements(List.of(element));
+    instruction.setCancelRemainingInstances(true);
+
+    final String adHocSubProcessInstanceKey = "111222";
+
+    // when
+    final Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest> result =
+        RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, instruction);
+
+    // then
+    assertTrue(result.isRight());
+    final var request = result.get();
+    assertThat(request.elements()).hasSize(1);
+    assertThat(request.elements().get(0).elementId()).isEqualTo("activity1");
+    assertThat(request.elements().get(0).variables()).isEmpty();
+  }
+
+  @Test
+  void shouldMapToAdHocSubProcessActivateActivitiesRequestWithNullVariables() {
+    // given
+    final var element = new AdHocSubProcessActivateActivityReference();
+    element.setElementId("activity1");
+    element.setVariables(null);
+
+    final var instruction = new AdHocSubProcessActivateActivitiesInstruction();
+    instruction.setElements(List.of(element));
+    instruction.setCancelRemainingInstances(true);
+
+    final String adHocSubProcessInstanceKey = "333444";
+
+    // when
+    final Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest> result =
+        RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, instruction);
+
+    // then
+    assertTrue(result.isRight());
+    final var request = result.get();
+    assertThat(request.elements()).hasSize(1);
+    assertThat(request.elements().get(0).elementId()).isEqualTo("activity1");
+    assertThat(request.elements().get(0).variables()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnProblemDetailForInvalidAdHocSubProcessActivationRequest() {
+    // given
+    final var element = new AdHocSubProcessActivateActivityReference();
+    element.setElementId(null); // Invalid - null element ID
+
+    final var instruction = new AdHocSubProcessActivateActivitiesInstruction();
+    instruction.setElements(List.of(element));
+    instruction.setCancelRemainingInstances(true);
+
+    final String adHocSubProcessInstanceKey = "555666";
+
+    // when
+    final Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest> result =
+        RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, instruction);
+
+    // then
+    assertTrue(result.isLeft());
+    final var problemDetail = result.getLeft();
+    assertThat(problemDetail.getStatus()).isEqualTo(400); // Bad Request
+    assertThat(problemDetail.getDetail()).contains("elementId");
+  }
+
+  @Test
+  void shouldMapToAdHocSubProcessActivateActivitiesRequestWithEmptyElementsList() {
+    // given
+    final var instruction = new AdHocSubProcessActivateActivitiesInstruction();
+    instruction.setElements(List.of());
+    instruction.setCancelRemainingInstances(true);
+
+    final String adHocSubProcessInstanceKey = "777888";
+
+    // when
+    final Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest> result =
+        RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
+            adHocSubProcessInstanceKey, instruction);
+
+    // then
+    assertTrue(result.isLeft());
+    final var problemDetail = result.getLeft();
+    assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(problemDetail.getStatus()).isEqualTo(400);
   }
 }

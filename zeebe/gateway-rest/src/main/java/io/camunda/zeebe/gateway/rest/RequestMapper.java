@@ -875,7 +875,8 @@ public class RequestMapper {
                             new AdHocSubProcessActivateActivityReference(
                                 element.getElementId(),
                                 getMapOrEmpty(element, e -> e.getVariables())))
-                    .toList()));
+                    .toList(),
+                request.getCancelRemainingInstances()));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>
