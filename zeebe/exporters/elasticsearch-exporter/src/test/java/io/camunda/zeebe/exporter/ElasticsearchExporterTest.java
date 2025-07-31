@@ -326,6 +326,28 @@ final class ElasticsearchExporterTest {
     }
 
     @Test
+    void shouldUpdatePositionWhenSkippingDisabledRecordType() {
+      // given
+      TestSupport.setIndexingForValueType(config.index, ValueType.PROCESS_INSTANCE, false);
+      final var record =
+          ImmutableRecord.builder()
+              .withPosition(10L)
+              .withBrokerVersion(VersionUtil.getVersionLowerCase())
+              .withValueType(ValueType.PROCESS_INSTANCE)
+              .build();
+      exporter.configure(context);
+      exporter.open(controller);
+
+      // when
+      exporter.export(record);
+
+      // then
+      assertThat(controller.getPosition()).isEqualTo(10L);
+      verify(client, never()).index(any(), any());
+      verify(client, never()).flush();
+    }
+
+    @Test
     void shouldNotUpdatePositionOnFlushErrors() {
       // given
       final var record =
