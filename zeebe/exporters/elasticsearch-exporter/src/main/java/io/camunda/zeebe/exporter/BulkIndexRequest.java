@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
@@ -32,6 +33,7 @@ final class BulkIndexRequest implements ContentProducer {
 
   // The property of the ES record template to store the sequence of the record.
   private static final String RECORD_SEQUENCE_PROPERTY = "sequence";
+  private static final String RECORD_AUTHORIZATIONS_PROPERTY = "authorizations";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -135,5 +137,6 @@ final class BulkIndexRequest implements ContentProducer {
   record BulkOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
+  @JsonIgnoreProperties({RECORD_AUTHORIZATIONS_PROPERTY})
   private static final class RecordSequenceMixin {}
 }

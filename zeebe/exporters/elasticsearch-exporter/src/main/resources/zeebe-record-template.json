@@ -36,9 +36,6 @@
         "rejectionReason": {
           "type": "text"
         },
-        "authorizations": {
-          "enabled": false
-        },
         "valueType": {
           "type": "keyword"
         },

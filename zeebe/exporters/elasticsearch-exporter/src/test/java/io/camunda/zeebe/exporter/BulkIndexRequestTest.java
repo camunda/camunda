@@ -77,6 +77,7 @@ final class BulkIndexRequestTest {
     // The sequence property is not part of the record itself. It is added additionally in the
     // Elasticsearch exporter. We need to do the same in the test to get the correct memory usage.
     recordAsMap.put("sequence", recordSequence.sequence());
+    recordAsMap.remove("authorizations");
     return MAPPER.writeValueAsBytes(recordAsMap).length;
   }
 
@@ -148,8 +149,8 @@ final class BulkIndexRequestTest {
   final class SerializationTest {
     @Test
     void shouldIndexRecordSerialized() {
-      // given
-      final var record = recordFactory.generateRecord();
+      // given - use an empty authorization for comparison, since the bulk request will remove it
+      final var record = recordFactory.generateRecord(b -> b.withAuthorizations(Map.of()));
       final var action = new BulkIndexAction("index", "id", "routing");
 
       // when
@@ -165,8 +166,9 @@ final class BulkIndexRequestTest {
 
     @Test
     void shouldWriteOperationsAsNDJson() throws IOException {
-      // given
-      final var records = recordFactory.generateRecords().limit(2).toList();
+      // given - use an empty authorization for comparison, since the bulk request will remove it
+      final var records =
+          recordFactory.generateRecords(b -> b.withAuthorizations(Map.of())).limit(2).toList();
       final var actions =
           List.of(
               new BulkIndexAction("index", "id", "routing"),
@@ -221,6 +223,25 @@ final class BulkIndexRequestTest {
           .extracting(source -> source.get("sequence"))
           .describedAs("Expect that the records are serialized with the sequences")
           .containsExactly(recordSequences.get(0).sequence(), recordSequences.get(1).sequence());
+    }
+
+    @Test
+    void shouldIndexRecordWithoutAuthorizations() {
+      // given
+      final var records = recordFactory.generateRecords().limit(1).toList();
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), records.get(0), new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("authorizations"))
+          .describedAs("Expect that the records are NOT serialized with authorizations")
+          .containsExactly(new Object[] {null});
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {
