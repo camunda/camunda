@@ -249,32 +249,6 @@ public class BatchOperationExecutionSchedulerTest {
   }
 
   @Test
-  public void shouldContinueInitializationWhenExecuteFailed() {
-    // given
-    when(itemProvider.fetchItemPage(any(), anyInt()))
-        .thenReturn(createItemPage(new long[] {1, 2, 3}, "3", true));
-    when(taskResultBuilder.appendCommandRecord(
-            anyLong(), eq(BatchOperationExecutionIntent.EXECUTE), any(), any()))
-        .thenReturn(false);
-
-    // when our scheduler fires
-    execute();
-
-    // then
-    verify(taskResultBuilder)
-        .appendCommandRecord(
-            anyLong(),
-            eq(BatchOperationIntent.CONTINUE_INITIALIZATION),
-            initializeRecordArgumentCaptor.capture(),
-            any());
-
-    // and should contain an errors
-    final var recordValue = initializeRecordArgumentCaptor.getValue();
-    assertThat(recordValue).isNotNull();
-    assertThat(recordValue.getSearchResultCursor()).isEqualTo("3");
-  }
-
-  @Test
   public void shouldAppendChunkForBatchOperations() {
     // given
     when(itemProvider.fetchItemPage(any(), anyInt())).thenReturn(createItemPage(1L, 2L, 3L));

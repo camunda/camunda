@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
@@ -35,10 +36,12 @@ import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +59,16 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   public static final String ERROR_MSG_FAILED_FIRST_CHUNK_APPEND =
       "Unable to append first chunk of batch operation items. Number of items: %d";
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationExecutionScheduler.class);
+
+  private static final UnifiedRecordValue EMPTY_EXECUTION_RECORD =
+      new BatchOperationExecutionRecord().setBatchOperationKey(-1L);
+  private static final UnifiedRecordValue EMPTY_INITIALIZATION_RECORD =
+      new BatchOperationInitializationRecord()
+          .setBatchOperationKey(-1L)
+          .setSearchQueryPageSize(0) // random int
+          // random cursor string. 1024 chars should be enough for any cursor without sorting
+          .setSearchResultCursor(RandomStringUtils.insecure().next(1024));
+
   private final Duration pollingInterval;
   private final int chunkSize;
   private final int queryPageSize;
@@ -186,22 +199,16 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
   private void startExecutionPhase(
       final TaskResultBuilder resultBuilder, final InitLoopState state) {
-    if (appendExecution(state.batchOperation.getKey(), resultBuilder)) {
-      // start some metrics for the execution phase
-      metrics.recordItemsPerPartition(
-          state.batchOperation.getNumTotalItems() + state.keysAdded,
-          state.batchOperation.getBatchOperationType());
-      metrics.startStartExecuteLatencyMeasure(
-          state.batchOperation.getKey(), state.batchOperation.getBatchOperationType());
-      metrics.startTotalExecutionLatencyMeasure(
-          state.batchOperation.getKey(), state.batchOperation.getBatchOperationType());
-    } else {
-      // It seems we were unable to append the execution command to the result builder,
-      // so we need to add another init loop to retry. The lastSearchResultCursor now points to the
-      // end of the result, so the next run will fetch an empty page and then adds the EXECUTE
-      // command.
-      continueInitialization(resultBuilder, state);
-    }
+    appendExecution(state.batchOperation.getKey(), resultBuilder);
+
+    // start some metrics for the execution phase
+    metrics.recordItemsPerPartition(
+        state.batchOperation.getNumTotalItems() + state.keysAdded,
+        state.batchOperation.getBatchOperationType());
+    metrics.startStartExecuteLatencyMeasure(
+        state.batchOperation.getKey(), state.batchOperation.getBatchOperationType());
+    metrics.startTotalExecutionLatencyMeasure(
+        state.batchOperation.getKey(), state.batchOperation.getBatchOperationType());
   }
 
   private void handleFailedChunkAppend(
@@ -250,8 +257,12 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     final FollowUpCommandMetadata metadata =
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperation.getKey()));
 
-    // we first ask the taskResultBuilder if we even can append the all the records
-    final var canAppend = taskResultBuilder.canAppendRecords(chunkRecords, metadata);
+    // we first ask the taskResultBuilder if we even can append the all the records. We also check
+    // for adding an EXECUTE and a CONTINUE_INITIALIZATION record
+    final List<UnifiedRecordValue> sizeCheckRecords = new ArrayList<>(chunkRecords);
+    sizeCheckRecords.add(EMPTY_EXECUTION_RECORD);
+    sizeCheckRecords.add(EMPTY_INITIALIZATION_RECORD);
+    final var canAppend = taskResultBuilder.canAppendRecords(sizeCheckRecords, metadata);
 
     if (canAppend) {
       chunkRecords.forEach(
