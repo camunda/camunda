@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -272,7 +273,7 @@ class BatchOperationControllerTest extends RestControllerTest {
     return new BatchOperationEntity(
         batchOperationKey,
         BatchOperationState.COMPLETED,
-        "CANCEL_PROCESS_INSTANCE",
+        BatchOperationType.CANCEL_PROCESS_INSTANCE,
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
         10,
@@ -286,7 +287,7 @@ class BatchOperationControllerTest extends RestControllerTest {
     return new BatchOperationEntity(
         batchOperationKey,
         BatchOperationState.PARTIALLY_COMPLETED,
-        "CANCEL_PROCESS_INSTANCE",
+        BatchOperationType.CANCEL_PROCESS_INSTANCE,
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
         10,

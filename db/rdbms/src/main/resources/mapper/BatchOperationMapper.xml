@@ -11,7 +11,7 @@
       <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
       <arg column="STATE"
         javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationState"/>
-      <arg column="OPERATION_TYPE" javaType="java.lang.String"/>
+      <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"/>
       <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="OPERATIONS_TOTAL_COUNT" javaType="int"/>

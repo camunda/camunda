@@ -13,7 +13,7 @@ import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
-import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -32,14 +32,14 @@ import io.camunda.zeebe.util.VisibleForTesting;
 public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordValue>
     implements RdbmsExportHandler<T> {
   public static final String ERROR_MSG = "%s: %s";
-  @VisibleForTesting final OperationType relevantOperationType;
+  @VisibleForTesting final BatchOperationType relevantOperationType;
   private final BatchOperationWriter batchOperationWriter;
   private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
 
   public RdbmsBatchOperationStatusExportHandler(
       final BatchOperationWriter batchOperationWriter,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache,
-      final OperationType relevantOperationType) {
+      final BatchOperationType relevantOperationType) {
     this.batchOperationWriter = batchOperationWriter;
     this.batchOperationCache = batchOperationCache;
     this.relevantOperationType = relevantOperationType;

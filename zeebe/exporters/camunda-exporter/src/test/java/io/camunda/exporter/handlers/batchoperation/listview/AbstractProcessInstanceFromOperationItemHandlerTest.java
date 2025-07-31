@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers.batchoperation.listview;
 
+import static io.camunda.exporter.utils.ExporterUtil.map;
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -53,7 +54,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
             Optional.of(
                 new CachedBatchOperationEntity(
                     String.valueOf(record.getBatchOperationReference()),
-                    underTest.getRelevantOperationType())));
+                    map(underTest.getRelevantOperationType()))));
 
     assertThat(underTest.handlesRecord(record)).isTrue();
   }
@@ -67,7 +68,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
             Optional.of(
                 new CachedBatchOperationEntity(
                     String.valueOf(record.getBatchOperationReference()),
-                    underTest.getRelevantOperationType())));
+                    map(underTest.getRelevantOperationType()))));
 
     assertThat(underTest.handlesRecord(record)).isTrue();
   }
@@ -85,7 +86,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
             Optional.of(
                 new CachedBatchOperationEntity(
                     String.valueOf(record.getBatchOperationReference()),
-                    underTest.getRelevantOperationType())));
+                    map(underTest.getRelevantOperationType()))));
     // When
     final boolean result = underTest.handlesRecord(record);
 
@@ -107,7 +108,8 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
         .thenReturn(
             Optional.of(
                 new CachedBatchOperationEntity(
-                    String.valueOf(record.getBatchOperationReference()), irrelevantOperationType)));
+                    String.valueOf(record.getBatchOperationReference()),
+                    map(irrelevantOperationType))));
 
     // When
     final boolean result = underTest.handlesRecord(record);

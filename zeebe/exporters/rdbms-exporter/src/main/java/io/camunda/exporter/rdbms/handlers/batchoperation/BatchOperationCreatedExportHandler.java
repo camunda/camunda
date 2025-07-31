@@ -11,7 +11,7 @@ import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
-import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -50,7 +50,7 @@ public class BatchOperationCreatedExportHandler
         String.valueOf(record.getKey()),
         new CachedBatchOperationEntity(
             String.valueOf(record.getValue().getBatchOperationKey()),
-            OperationType.valueOf(record.getValue().getBatchOperationType().name())));
+            BatchOperationType.valueOf(record.getValue().getBatchOperationType().name())));
   }
 
   private BatchOperationDbModel map(final Record<BatchOperationCreationRecordValue> record) {
@@ -59,7 +59,7 @@ public class BatchOperationCreatedExportHandler
     return new BatchOperationDbModel.Builder()
         .batchOperationKey(batchOperationKey)
         .state(BatchOperationState.ACTIVE)
-        .operationType(value.getBatchOperationType().name())
+        .operationType(BatchOperationType.valueOf(value.getBatchOperationType().name()))
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .build();
   }

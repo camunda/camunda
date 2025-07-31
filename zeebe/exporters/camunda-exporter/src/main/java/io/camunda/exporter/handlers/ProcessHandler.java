@@ -20,7 +20,9 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
@@ -90,7 +92,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
             entity.getVersionTag(),
             Integer.toString(entity.getVersion()),
             entity.getCallActivityIds(),
-            ProcessCacheUtil.getFlowNodesMap(entity.getFlowNodes()));
+            getFlowNodesMap(entity.getFlowNodes()));
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 
@@ -126,5 +128,14 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
                         entity.setIsFormEmbedded(!ExporterUtil.isEmpty(formLink.formKey()));
                       });
             });
+  }
+
+  private static Map<String, String> getFlowNodesMap(final List<ProcessFlowNodeEntity> flowNodes) {
+    final Map<String, String> flowNodesMap = new HashMap<>();
+    for (final ProcessFlowNodeEntity flowNode : flowNodes) {
+      flowNodesMap.put(flowNode.getId(), flowNode.getName());
+    }
+
+    return flowNodesMap;
   }
 }

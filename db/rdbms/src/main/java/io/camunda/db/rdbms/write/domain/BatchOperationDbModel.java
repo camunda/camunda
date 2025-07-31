@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
 
   private String batchOperationKey;
   private BatchOperationState state;
-  private String operationType;
+  private BatchOperationType operationType;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
   private Integer operationsTotalCount;
@@ -29,7 +30,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
   public BatchOperationDbModel(
       final String batchOperationKey,
       final BatchOperationState state,
-      final String operationType,
+      final BatchOperationType operationType,
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
       final Integer operationsTotalCount,
@@ -48,7 +49,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
   public BatchOperationDbModel(
       final String batchOperationKey,
       final BatchOperationState state,
-      final String operationType,
+      final BatchOperationType operationType,
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
       final Integer operationsTotalCount,
@@ -91,11 +92,11 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
     this.state = state;
   }
 
-  public String operationType() {
+  public BatchOperationType operationType() {
     return operationType;
   }
 
-  public void operationType(final String operationType) {
+  public void operationType(final BatchOperationType operationType) {
     this.operationType = operationType;
   }
 
@@ -163,7 +164,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
   public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
     private String batchOperationKey;
     private BatchOperationState state;
-    private String operationType;
+    private BatchOperationType operationType;
     private OffsetDateTime startDate;
     private OffsetDateTime endDate;
     private Integer operationsTotalCount = 0;
@@ -188,7 +189,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
       return this;
     }
 
-    public Builder operationType(final String operationType) {
+    public Builder operationType(final BatchOperationType operationType) {
       this.operationType = operationType;
       return this;
     }

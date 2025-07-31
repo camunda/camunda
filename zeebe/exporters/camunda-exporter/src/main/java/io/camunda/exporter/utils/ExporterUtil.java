@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.utils;
 
+import io.camunda.search.entities.BatchOperationType;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -81,5 +83,13 @@ public final class ExporterUtil {
     }
 
     return null;
+  }
+
+  public static BatchOperationType map(final OperationType operationType) {
+    return BatchOperationType.valueOf(operationType.name());
+  }
+
+  public static OperationType map(final BatchOperationType operationType) {
+    return OperationType.valueOf(operationType.name());
   }
 }

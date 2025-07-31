@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import static io.camunda.exporter.utils.ExporterUtil.map;
+
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -74,7 +76,7 @@ public abstract class AbstractOperationHandler<T extends ExporterEntity<T>, R ex
     return cachedEntity
         .filter(
             cachedBatchOperationEntity ->
-                cachedBatchOperationEntity.type() == relevantOperationType)
+                map(cachedBatchOperationEntity.type()) == relevantOperationType)
         .isPresent();
   }
 }

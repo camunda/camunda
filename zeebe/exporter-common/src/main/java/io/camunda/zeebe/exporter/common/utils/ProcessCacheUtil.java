@@ -8,8 +8,6 @@
 package io.camunda.zeebe.exporter.common.utils;
 
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.webapps.schema.entities.ProcessEntity;
-import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.ProcessDiagramData;
@@ -69,16 +67,6 @@ public final class ProcessCacheUtil {
     return processCache.getAll(processDefinitionKeys).values().stream()
         .map(CachedProcessEntity::callElementIds)
         .toList();
-  }
-
-  /**
-   * Returns relevant data from process diagram
-   *
-   * @param processEntity
-   * @return ProcessDiagramData
-   */
-  public static ProcessDiagramData extractProcessDiagramData(final ProcessEntity processEntity) {
-    return extractProcessDiagramData(processEntity.getBpmnXml(), processEntity.getBpmnProcessId());
   }
 
   /**
@@ -144,14 +132,5 @@ public final class ProcessCacheUtil {
   public static Map<String, String> getFlowNodesMap(Collection<FlowNode> flowNodes) {
     return flowNodes.stream()
         .collect(HashMap::new, (map, fn) -> map.put(fn.getId(), fn.getName()), HashMap::putAll);
-  }
-
-  public static Map<String, String> getFlowNodesMap(List<ProcessFlowNodeEntity> flowNodes) {
-    final Map<String, String> flowNodesMap = new HashMap<>();
-    for (ProcessFlowNodeEntity flowNode : flowNodes) {
-      flowNodesMap.put(flowNode.getId(), flowNode.getName());
-    }
-
-    return flowNodesMap;
   }
 }

@@ -14,8 +14,8 @@ import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createSaveR
 import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.insertBatchOperationsItems;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringKey;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.randomEnum;
 import static io.camunda.util.FilterUtil.mapDefaultToOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,6 +31,7 @@ import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.BatchOperationItemFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -496,7 +497,7 @@ public class BatchOperationIT {
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
-                        .operationTypes(batchOperation.operationType())
+                        .operationTypes(batchOperation.operationType().name())
                         .build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
@@ -557,7 +558,7 @@ public class BatchOperationIT {
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
                         .batchOperationKeys(batchOperation.batchOperationKey())
-                        .operationTypes(batchOperation.operationType())
+                        .operationTypes(batchOperation.operationType().name())
                         .states(batchOperation.state().name())
                         .build(),
                     BatchOperationSort.of(b -> b),
@@ -574,7 +575,7 @@ public class BatchOperationIT {
   public void shouldFindAllBatchOperationsPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
-    final String operationType = nextStringId();
+    final BatchOperationType operationType = randomEnum(BatchOperationType.class);
     createAndSaveRandomBatchOperations(
         rdbmsService.createWriter(0), b -> b.operationType(operationType));
 
@@ -583,7 +584,7 @@ public class BatchOperationIT {
             .getBatchOperationReader()
             .search(
                 new BatchOperationQuery(
-                    new BatchOperationFilter.Builder().operationTypes(operationType).build(),
+                    new BatchOperationFilter.Builder().operationTypes(operationType.name()).build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 

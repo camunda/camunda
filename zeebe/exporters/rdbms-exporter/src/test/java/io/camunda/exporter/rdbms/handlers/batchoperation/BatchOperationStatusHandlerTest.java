@@ -15,7 +15,7 @@ import static org.mockito.Mockito.mock;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
-import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
@@ -87,7 +87,7 @@ class BatchOperationStatusHandlerTest {
     void shouldNotHandleSuccessRecordWhenNotRelevantType() {
       Mockito.reset(batchOperationCache);
       final var otherOperationType =
-          Arrays.stream(OperationType.values())
+          Arrays.stream(BatchOperationType.values())
               .filter(t -> !t.equals(handler.relevantOperationType))
               .findAny()
               .get();
@@ -129,7 +129,7 @@ class BatchOperationStatusHandlerTest {
     void shouldNotHandleFailureRecordWhenNotRelevantType() {
       Mockito.reset(batchOperationCache);
       final var otherOperationType =
-          Arrays.stream(OperationType.values())
+          Arrays.stream(BatchOperationType.values())
               .filter(t -> !t.equals(handler.relevantOperationType))
               .findAny()
               .get();

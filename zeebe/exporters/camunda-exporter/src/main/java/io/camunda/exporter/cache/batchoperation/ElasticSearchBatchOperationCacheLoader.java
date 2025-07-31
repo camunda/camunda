@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.cache.batchoperation;
 
+import static io.camunda.exporter.utils.ExporterUtil.map;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.search.SourceConfigBuilders;
@@ -51,7 +53,7 @@ public class ElasticSearchBatchOperationCacheLoader
             BatchOperationEntity.class);
     if (response.hits() != null && !response.hits().hits().isEmpty()) {
       final var entity = response.hits().hits().getFirst().source();
-      return new CachedBatchOperationEntity(entity.getId(), entity.getType());
+      return new CachedBatchOperationEntity(entity.getId(), map(entity.getType()));
     } else {
       LOG.debug("BatchOperation '{}' not found in Elasticsearch", batchOperationKey);
       return null;

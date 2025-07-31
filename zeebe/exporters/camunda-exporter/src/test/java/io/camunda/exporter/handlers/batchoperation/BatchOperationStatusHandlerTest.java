@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import static io.camunda.exporter.utils.ExporterUtil.map;
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -63,7 +64,7 @@ class BatchOperationStatusHandlerTest {
           .thenReturn(
               Optional.of(
                   new CachedBatchOperationEntity(
-                      String.valueOf(batchOperationKey), handler.getRelevantOperationType())));
+                      String.valueOf(batchOperationKey), map(handler.getRelevantOperationType()))));
     }
 
     @Test
@@ -97,7 +98,7 @@ class BatchOperationStatusHandlerTest {
           .thenReturn(
               Optional.of(
                   new CachedBatchOperationEntity(
-                      String.valueOf(batchOperationKey), otherOperationType)));
+                      String.valueOf(batchOperationKey), map(otherOperationType))));
 
       final var record =
           ImmutableRecord.<T>builder()
@@ -139,7 +140,7 @@ class BatchOperationStatusHandlerTest {
           .thenReturn(
               Optional.of(
                   new CachedBatchOperationEntity(
-                      String.valueOf(batchOperationKey), otherOperationType)));
+                      String.valueOf(batchOperationKey), map(otherOperationType))));
 
       final var record =
           ImmutableRecord.<T>builder()

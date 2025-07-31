@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatException;
 import io.camunda.exporter.DefaultExporterResourceProvider;
 import io.camunda.exporter.cache.batchoperation.ElasticSearchBatchOperationCacheLoader;
 import io.camunda.exporter.cache.batchoperation.OpenSearchBatchOperationCacheLoader;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
@@ -91,7 +92,7 @@ class BatchOperationCacheIT {
 
     // then
     final var expectedCachedBatchOperationEntity =
-        new CachedBatchOperationEntity("3", OperationType.RESOLVE_INCIDENT);
+        new CachedBatchOperationEntity("3", BatchOperationType.RESOLVE_INCIDENT);
     assertThat(batchOperation).isPresent().get().isEqualTo(expectedCachedBatchOperationEntity);
   }
 
