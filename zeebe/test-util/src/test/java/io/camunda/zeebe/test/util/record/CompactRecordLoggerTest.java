@@ -33,10 +33,31 @@ class CompactRecordLoggerTest {
     compactRecordLogger = new CompactRecordLogger(List.of());
   }
 
-  @ParameterizedTest
-  @EnumSource(ValueType.class)
-  public void testAllValueTypesAreSupported(final ValueType valueType) {
-    assertThat(compactRecordLogger.getSupportedValueTypes()).contains(valueType);
+  @ParameterizedTest(name = "has compact logging for {0}")
+  @EnumSource(
+      value = ValueType.class,
+      // Excluding ValueTypes not yet supported by CompactRecordLogger.
+      // They will be covered in follow-up PRs as part of:
+      // https://github.com/camunda/camunda/issues/31825.
+      mode = EnumSource.Mode.EXCLUDE,
+      names = {
+        "ESCALATION",
+        "IDENTITY_SETUP",
+        "SCALE",
+        "FORM",
+        "PROCESS_INSTANCE_MIGRATION",
+        "CHECKPOINT",
+        "BATCH_OPERATION_INITIALIZATION"
+      })
+  public void shouldHaveCompactLoggerForValueType(final ValueType valueType) {
+    assertThat(compactRecordLogger.getSupportedValueTypes())
+        .as(
+            """
+                    Expected CompactRecordLogger to support logging for value type '%s'.
+                    If you're introducing a new record, make sure to add a compact logger for it.
+                """,
+            valueType)
+        .contains(valueType);
   }
 
   @Test
