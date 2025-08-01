@@ -8,6 +8,9 @@
 package io.camunda.tasklist.util;
 
 import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
@@ -38,7 +41,11 @@ import org.springframework.context.annotation.Profile;
 @Import({
   WebappsModuleConfiguration.class,
   CommonsModuleConfiguration.class,
-  TestTasklistPropertiesOverride.class
+  TestTasklistPropertiesOverride.class,
+  // Unified Configuration classes
+  UnifiedConfiguration.class,
+  UnifiedConfigurationHelper.class,
+  GatewayBasedPropertiesOverride.class,
 })
 public class TestApplication {
 
