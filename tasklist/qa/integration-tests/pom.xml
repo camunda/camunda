@@ -470,6 +470,12 @@
       <artifactId>zeebe-exporter-api</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>configuration</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
