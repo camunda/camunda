@@ -34,8 +34,6 @@ import co.elastic.clients.transport.TransportException;
 import co.elastic.clients.util.ObjectBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
@@ -78,11 +76,7 @@ anymore, it will be done in a follow-up PR
 */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {
-      TestApplication.class,
-      UnifiedConfiguration.class,
-      UnifiedConfigurationHelper.class,
-    },
+    classes = {TestApplication.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",

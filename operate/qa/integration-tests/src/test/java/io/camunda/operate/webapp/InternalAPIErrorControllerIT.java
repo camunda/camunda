@@ -13,8 +13,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -43,7 +41,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 // of the abstract InternalAPIErrorController class
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
+    classes = {TestApplication.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",

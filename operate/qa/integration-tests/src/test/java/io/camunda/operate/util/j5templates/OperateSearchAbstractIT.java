@@ -13,8 +13,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
@@ -42,11 +40,7 @@ import org.springframework.test.web.servlet.MvcResult;
  * have finished.
  */
 @SpringBootTest(
-    classes = {
-      TestApplication.class,
-      UnifiedConfigurationHelper.class,
-      UnifiedConfiguration.class,
-    },
+    classes = {TestApplication.class},
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
