@@ -13,6 +13,8 @@ import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,41 +26,42 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
   private final SearchEngineConfiguration searchEngineConfiguration;
   private final SchemaManagerMetrics schemaManagerMetrics;
+  private final boolean awaitSchemaInitialization;
   private final AtomicBoolean isShutdown = new AtomicBoolean(false);
 
   public SearchEngineSchemaInitializer(
       final SearchEngineConfiguration searchEngineConfiguration,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final boolean awaitSchemaInitialization) {
     this.searchEngineConfiguration = searchEngineConfiguration;
     schemaManagerMetrics = new SchemaManagerMetrics(meterRegistry);
+    this.awaitSchemaInitialization = awaitSchemaInitialization;
   }
 
   @Override
   public void afterPropertiesSet() throws Exception {
     LOGGER.info("Initializing search engine schema...");
-    try (final var clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect());
-        final var executor = Executors.newSingleThreadExecutor()) {
-      final IndexDescriptors indexDescriptors =
-          new IndexDescriptors(
-              searchEngineConfiguration.connect().getIndexPrefix(),
-              searchEngineConfiguration.connect().getTypeEnum().isElasticSearch());
-      final SchemaManager schemaManager =
-          new SchemaManager(
-                  clientAdapter.getSearchEngineClient(),
-                  indexDescriptors.indices(),
-                  indexDescriptors.templates(),
-                  searchEngineConfiguration,
-                  clientAdapter.objectMapper())
-              .withMetrics(schemaManagerMetrics);
-      if (!addShutdownHook(executor)) {
-        // skipping schema initialization as JVM is shutting down
-        return;
-      }
-      executor.submit(schemaManager::startup).get();
+    final var executor = Executors.newSingleThreadExecutor();
+    if (!addShutdownHook(executor)) {
+      // skipping schema initialization as JVM is shutting down
+      return;
+    }
+    final var future = CompletableFuture.runAsync(this::startupSchemaManager, executor);
+    if (awaitSchemaInitialization) {
+      synchronousSchemaInitialization(future, executor);
+    } else {
+      asyncSchemaInitialization(future, executor);
+    }
+  }
+
+  private void synchronousSchemaInitialization(
+      final CompletableFuture<Void> future, final ExecutorService executor) throws Exception {
+    try {
+      future.get();
+      LOGGER.info("Search engine schema initialization complete.");
     } catch (final InterruptedException ie) {
       LOGGER.debug("Schema initialization task was interrupted.", ie);
       Thread.currentThread().interrupt();
-      return;
     } catch (final Exception e) {
       if (isShutdown.get()) {
         LOGGER.debug("Schema initialization interrupted with shutdown.", e);
@@ -66,8 +69,46 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
         return;
       }
       throw e;
+    } finally {
+      executor.close();
     }
-    LOGGER.info("Search engine schema initialization complete.");
+  }
+
+  private void asyncSchemaInitialization(
+      final CompletableFuture<Void> future, final ExecutorService executor) {
+    future.whenCompleteAsync(
+        (result, error) -> {
+          if (error != null) {
+            LOGGER.warn("Failed to initialize search engine schema", error);
+          } else {
+            LOGGER.info("Search engine schema initialization complete.");
+          }
+          executor.close();
+        });
+  }
+
+  private void startupSchemaManager() {
+    final var indexDescriptors =
+        new IndexDescriptors(
+            searchEngineConfiguration.connect().getIndexPrefix(),
+            searchEngineConfiguration.connect().getTypeEnum().isElasticSearch());
+    final ClientAdapter clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect());
+    try {
+      new SchemaManager(
+              clientAdapter.getSearchEngineClient(),
+              indexDescriptors.indices(),
+              indexDescriptors.templates(),
+              searchEngineConfiguration,
+              clientAdapter.objectMapper())
+          .withMetrics(schemaManagerMetrics)
+          .startup();
+    } finally {
+      try {
+        clientAdapter.close();
+      } catch (final IOException e) {
+        LOGGER.debug("Failed to close search client", e);
+      }
+    }
   }
 
   /**
