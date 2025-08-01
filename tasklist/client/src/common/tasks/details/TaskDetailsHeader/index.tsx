@@ -104,26 +104,29 @@ const TaskDetailsHeader: React.FC<Props> = ({
             ),
           )
           .with(
-            {
-              taskState: Pattern.union('UPDATING', 'CANCELING'),
-              assignee: null,
-            },
-            ({taskState}) => (
-              <ActiveTransitionLoadingText taskState={taskState} />
-            ),
-          )
-          .with(
-            {taskState: Pattern.union('UPDATING', 'CANCELING', 'COMPLETING')},
+            {taskState: Pattern.union('UPDATING', 'CANCELING')},
             ({assignee}) => (
-              <span className={styles.taskAssignee} data-testid="assignee">
-                <AssigneeTag
-                  currentUser={user}
-                  assignee={assignee}
-                  isShortFormat={false}
-                />
-              </span>
+              <>
+                <ActiveTransitionLoadingText taskState={taskState} />
+                <span className={styles.taskAssignee} data-testid="assignee">
+                  <AssigneeTag
+                    currentUser={user}
+                    assignee={assignee}
+                    isShortFormat={false}
+                  />
+                </span>
+              </>
             ),
           )
+          .with({taskState: 'COMPLETING'}, ({assignee}) => (
+            <span className={styles.taskAssignee} data-testid="assignee">
+              <AssigneeTag
+                currentUser={user}
+                assignee={assignee}
+                isShortFormat={false}
+              />
+            </span>
+          ))
           .with({taskState: 'ASSIGNING'}, () => (
             <span className={styles.assignButtonContainer}>{assignButton}</span>
           ))
