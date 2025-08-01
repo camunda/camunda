@@ -5,7 +5,7 @@
     "config:recommended"
   ],
   "commitMessagePrefix": "deps:",
-  "baseBranches": [
+  "baseBranchPatterns": [
     "/^stable\\/8\\.([5-9]|[1-9][0-9])/",
     "stable/operate-8.5",
     "main"
@@ -312,6 +312,16 @@
       "addLabels": [
         "automerge"
       ]
+    },
+    {
+      "description": "Skip maven-surefire-plugin updates, as 3.5.3 version has a bug preventing ArchUnit tests from running. https://issues.apache.org/jira/browse/SUREFIRE-2298",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "org.apache.maven.plugins:maven-surefire-plugin"
+      ],
+      "enabled": false
     }
   ],
   "dockerfile": {

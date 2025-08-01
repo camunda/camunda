@@ -23,12 +23,14 @@ import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.enums.JobResultType;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CompleteJobResponseImpl;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
+import io.camunda.client.protocol.rest.JobResult.TypeEnum;
 import io.camunda.client.protocol.rest.JobResultActivateElement;
 import io.camunda.client.protocol.rest.JobResultAdHocSubProcess;
 import io.camunda.client.protocol.rest.JobResultCorrections;
@@ -144,7 +146,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
         .candidateGroups(jobResult.getCorrections().getCandidateGroups())
         .priority(jobResult.getCorrections().getPriority());
     resultRest
-        .type(jobResult.getType())
+        .type(getJobResultTypeEnum(jobResult.getType()))
         .denied(jobResult.isDenied())
         .deniedReason(jobResult.getDeniedReason())
         .corrections(correctionsRest);
@@ -176,11 +178,22 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
       correctionsGrpc.setPriority(jobResult.getCorrections().getPriority());
     }
     resultGrpc
-        .setType(jobResult.getType().getValue())
+        .setType(getJobResultTypeEnum(jobResult.getType()).getValue())
         .setDenied(jobResult.isDenied())
         .setDeniedReason(jobResult.getDeniedReason() == null ? "" : jobResult.getDeniedReason())
         .setCorrections(correctionsGrpc);
     grpcRequestObjectBuilder.setResult(resultGrpc);
+  }
+
+  private TypeEnum getJobResultTypeEnum(final JobResultType type) {
+    switch (type) {
+      case USER_TASK:
+        return TypeEnum.USER_TASK;
+      case AD_HOC_SUB_PROCESS:
+        return TypeEnum.AD_HOC_SUB_PROCESS;
+      default:
+        throw new IllegalArgumentException("Unsupported job result type: " + type);
+    }
   }
 
   private void setJobResult(final CompleteAdHocSubProcessJobResultImpl jobResult) {
@@ -206,7 +219,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
                 })
             .collect(Collectors.toList());
     resultRest
-        .type(jobResult.getType())
+        .type(getJobResultTypeEnum(jobResult.getType()))
         .activateElements(activateElements)
         .isCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled())
         .isCancelRemainingInstances(jobResult.isCancelRemainingInstances());
@@ -216,7 +229,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private void setGrpcJobResult(final CompleteAdHocSubProcessJobResultImpl jobResult) {
     final JobResult.Builder resultGrpc = JobResult.newBuilder();
     resultGrpc
-        .setType(jobResult.getType().getValue())
+        .setType(getJobResultTypeEnum(jobResult.getType()).getValue())
         .setIsCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled())
         .setIsCancelRemainingInstances(jobResult.isCancelRemainingInstances());
     jobResult.getActivateElements().stream()
