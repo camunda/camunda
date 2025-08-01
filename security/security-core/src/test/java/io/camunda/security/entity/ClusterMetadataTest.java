@@ -7,7 +7,7 @@
  */
 package io.camunda.security.entity;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.security.entity.ClusterMetadata.AppName;
@@ -24,7 +24,7 @@ class ClusterMetadataTest {
       for (final AppName appName : AppName.values()) {
         final JsonProperty jsonProperty =
             AppName.class.getField(appName.name()).getAnnotation(JsonProperty.class);
-        assertEquals(jsonProperty.value(), appName.getValue());
+        assertThat(appName.getValue()).isEqualTo(jsonProperty.value());
       }
     }
   }
