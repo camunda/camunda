@@ -18,6 +18,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -31,6 +32,11 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
   private final StringProperty ownerIdProp = new StringProperty("ownerId");
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>("ownerType", AuthorizationOwnerType.class);
+  private final EnumProperty<AuthorizationResourceMatcher> resourceMatcherProp =
+      new EnumProperty<>(
+          "resourceMatcher",
+          AuthorizationResourceMatcher.class,
+          AuthorizationResourceMatcher.UNSPECIFIED);
   private final StringProperty resourceIdProp = new StringProperty("resourceId");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>("resourceType", AuthorizationResourceType.class);
@@ -38,10 +44,11 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
       new ArrayProperty<>("permissionTypes", StringValue::new);
 
   public PersistedAuthorization() {
-    super(6);
+    super(7);
     declareProperty(authorizationKeyProp)
         .declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
+        .declareProperty(resourceMatcherProp)
         .declareProperty(resourceIdProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(permissionTypesProp);
@@ -51,6 +58,7 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
     setAuthorizationKey(authorizationRecord.getAuthorizationKey())
         .setOwnerId(authorizationRecord.getOwnerId())
         .setOwnerType(authorizationRecord.getOwnerType())
+        .setResourceMatcher(authorizationRecord.getResourceMatcher())
         .setResourceId(authorizationRecord.getResourceId())
         .setResourceType(authorizationRecord.getResourceType())
         .setPermissionTypes(authorizationRecord.getPermissionTypes());
@@ -80,6 +88,16 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
 
   public PersistedAuthorization setOwnerType(final AuthorizationOwnerType ownerType) {
     ownerTypeProp.setValue(ownerType);
+    return this;
+  }
+
+  public AuthorizationResourceMatcher getResourceMatcher() {
+    return resourceMatcherProp.getValue();
+  }
+
+  public PersistedAuthorization setResourceMatcher(
+      final AuthorizationResourceMatcher resourceMatcher) {
+    resourceMatcherProp.setValue(resourceMatcher);
     return this;
   }
 

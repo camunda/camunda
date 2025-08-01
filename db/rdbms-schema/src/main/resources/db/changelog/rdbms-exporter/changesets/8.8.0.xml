@@ -458,6 +458,7 @@
       <column name="OWNER_ID" type="VARCHAR(255)" />
       <column name="OWNER_TYPE" type="VARCHAR(255)" />
       <column name="RESOURCE_TYPE" type="VARCHAR(255)" />
+      <column name="RESOURCE_MATCHER" type="SMALLINT" />
       <column name="RESOURCE_ID" type="VARCHAR(255)" />
       <column name="PERMISSION_TYPE" type="VARCHAR(255)" />
     </createTable>

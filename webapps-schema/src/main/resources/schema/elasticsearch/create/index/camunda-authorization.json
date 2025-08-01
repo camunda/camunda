@@ -17,6 +17,9 @@
       "resourceType": {
         "type": "keyword"
       },
+      "resourceMatcher": {
+        "type": "short"
+      },
       "resourceId": {
         "type": "keyword"
       },

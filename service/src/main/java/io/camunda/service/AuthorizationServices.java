@@ -23,6 +23,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
@@ -66,6 +67,7 @@ public class AuthorizationServices
             .setOwnerId(request.ownerId())
             .setOwnerType(request.ownerType())
             .setResourceType(request.resourceType())
+            .setResourceMatcher(getResourceMatcher(request.resourceId()))
             .setResourceId(request.resourceId())
             .setPermissionTypes(request.permissionTypes());
     return sendBrokerRequest(brokerRequest);
@@ -95,10 +97,18 @@ public class AuthorizationServices
             .setAuthorizationKey(request.authorizationKey())
             .setOwnerId(request.ownerId())
             .setOwnerType(request.ownerType())
+            .setResourceMatcher(getResourceMatcher(request.resourceId()))
             .setResourceId(request.resourceId())
             .setResourceType(request.resourceType())
             .setPermissionTypes(request.permissionTypes());
     return sendBrokerRequest(brokerRequest);
+  }
+
+  private AuthorizationResourceMatcher getResourceMatcher(final String resourceId) {
+    // TODO: use WILDCARD constant or find another place to set the matcher
+    return "*".equals(resourceId)
+        ? AuthorizationResourceMatcher.ANY
+        : AuthorizationResourceMatcher.ID;
   }
 
   public record CreateAuthorizationRequest(

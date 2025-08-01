@@ -26,6 +26,7 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Set;
@@ -75,6 +76,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       "foo",
                       OwnerTypeEnum.USER.getValue(),
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
+                      AuthorizationResourceMatcher.ID.value(),
                       "2",
                       Set.of(PermissionType.CREATE))))
           .startCursor("f")
@@ -101,6 +103,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
             "ownerId",
             OwnerTypeEnum.USER.getValue(),
             ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
+            AuthorizationResourceMatcher.ID.value(),
             "resourceId",
             Set.of(PermissionType.CREATE));
 

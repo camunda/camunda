@@ -60,6 +60,7 @@ public class AuthorizationDeletedHandler
         .setOwnerId(value.getOwnerId())
         .setOwnerType(value.getOwnerType().name())
         .setResourceType(value.getResourceType().name())
+        .setResourceMatcher(value.getResourceMatcher().value())
         .setResourceId(value.getResourceId())
         .setPermissionTypes(new HashSet<>(value.getPermissionTypes()));
   }

@@ -18,6 +18,7 @@ public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEnt
   private String ownerId;
   private String ownerType;
   private String resourceType;
+  private Short resourceMatcher;
   private String resourceId;
   private Set<PermissionType> permissionTypes;
 
@@ -47,6 +48,15 @@ public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEnt
 
   public AuthorizationEntity setOwnerType(final String ownerType) {
     this.ownerType = ownerType;
+    return this;
+  }
+
+  public short getResourceMatcher() {
+    return resourceMatcher;
+  }
+
+  public AuthorizationEntity setResourceMatcher(final short resourceMatcher) {
+    this.resourceMatcher = resourceMatcher;
     return this;
   }
 

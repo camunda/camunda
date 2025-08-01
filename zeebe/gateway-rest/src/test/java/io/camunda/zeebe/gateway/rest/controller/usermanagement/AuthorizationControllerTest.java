@@ -26,6 +26,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.net.URI;
@@ -79,6 +80,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(AuthorizationOwnerType.USER)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .setPermissionTypes(Set.of(PermissionType.CREATE));
@@ -181,6 +183,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(AuthorizationOwnerType.USER)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId(resourceId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .setPermissionTypes(Set.of(PermissionType.CREATE));

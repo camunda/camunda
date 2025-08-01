@@ -75,6 +75,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
@@ -179,6 +180,7 @@ public class CommandDistributionIdempotencyTest {
                       .authorization()
                       .newAuthorization()
                       .withOwnerId(user.getValue().getUsername())
+                      .withResourceMatcher(AuthorizationResourceMatcher.ANY)
                       .withResourceId("*")
                       .withResourceType(AuthorizationResourceType.USER)
                       .withPermissions(PermissionType.READ)
@@ -198,6 +200,7 @@ public class CommandDistributionIdempotencyTest {
                           .authorization()
                           .newAuthorization()
                           .withOwnerId(user.getValue().getUsername())
+                          .withResourceMatcher(AuthorizationResourceMatcher.ANY)
                           .withResourceId("*")
                           .withResourceType(AuthorizationResourceType.USER)
                           .withPermissions(PermissionType.READ)
@@ -221,6 +224,7 @@ public class CommandDistributionIdempotencyTest {
                           .authorization()
                           .newAuthorization()
                           .withOwnerId(user.getValue().getUsername())
+                          .withResourceMatcher(AuthorizationResourceMatcher.ANY)
                           .withResourceId("*")
                           .withResourceType(AuthorizationResourceType.USER)
                           .withPermissions(PermissionType.READ)

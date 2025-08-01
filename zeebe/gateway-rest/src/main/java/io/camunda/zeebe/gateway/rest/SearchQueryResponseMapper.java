@@ -127,6 +127,7 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableResult;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchResult;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
 import java.util.List;
@@ -1045,12 +1046,17 @@ public final class SearchQueryResponseMapper {
   }
 
   public static AuthorizationResult toAuthorization(final AuthorizationEntity authorization) {
+    // TODO: handle with WILDCARD constant
+    final var resourceId =
+        (AuthorizationResourceMatcher.ANY.value() == authorization.resourceMatcher())
+            ? "*"
+            : authorization.resourceId();
     return new AuthorizationResult()
         .authorizationKey(KeyUtil.keyToString(authorization.authorizationKey()))
         .ownerId(authorization.ownerId())
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
-        .resourceId(authorization.resourceId())
+        .resourceId(resourceId)
         .permissionTypes(
             authorization.permissionTypes().stream()
                 .map(PermissionType::name)

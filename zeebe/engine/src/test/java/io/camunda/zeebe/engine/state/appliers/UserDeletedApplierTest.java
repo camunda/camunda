@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,7 @@ public class UserDeletedApplierTest {
         1L,
         new AuthorizationRecord()
             .setAuthorizationKey(1L)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId("process1")
             .setResourceType(PROCESS_DEFINITION)
             .setOwnerId(userRecord.getUsername())
@@ -66,6 +68,7 @@ public class UserDeletedApplierTest {
         2L,
         new AuthorizationRecord()
             .setAuthorizationKey(2L)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId("process2")
             .setResourceType(PROCESS_DEFINITION)
             .setOwnerId(userRecord.getUsername())
@@ -75,6 +78,7 @@ public class UserDeletedApplierTest {
         3L,
         new AuthorizationRecord()
             .setAuthorizationKey(3L)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID)
             .setResourceId("definition1")
             .setResourceType(DECISION_DEFINITION)
             .setOwnerId(userRecord.getUsername())

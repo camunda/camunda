@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -46,6 +47,7 @@ public class UpdateAuthorizationMultipartitionTest {
             .newAuthorization()
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
             .withResourceId("resourceId")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
@@ -115,6 +117,7 @@ public class UpdateAuthorizationMultipartitionTest {
             .newAuthorization()
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
             .withResourceId("resourceId")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
@@ -145,6 +148,7 @@ public class UpdateAuthorizationMultipartitionTest {
             .newAuthorization()
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
             .withResourceId("resourceId")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
@@ -176,6 +180,7 @@ public class UpdateAuthorizationMultipartitionTest {
             .newAuthorization()
             .withOwnerId("valid-owner")
             .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
             .withResourceId("res-id")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
@@ -192,6 +197,7 @@ public class UpdateAuthorizationMultipartitionTest {
             .updateAuthorization(existingKey)
             .withOwnerId(nonexistentMappingRuleId)
             .withOwnerType(AuthorizationOwnerType.MAPPING_RULE)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
             .withResourceId("res-id")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)

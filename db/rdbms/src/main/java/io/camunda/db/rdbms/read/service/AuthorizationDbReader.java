@@ -83,6 +83,7 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
         model.ownerId(),
         model.ownerType(),
         model.resourceType(),
+        model.resourceMatcher(),
         model.resourceId(),
         new HashSet<>(model.permissionTypes()));
   }

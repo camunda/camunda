@@ -23,6 +23,7 @@ import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.sort.AuthorizationSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -59,7 +60,9 @@ public class AuthorizationIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
 
-    final var authorization = AuthorizationFixtures.createRandomized(b -> b.resourceId("foo"));
+    final var authorization =
+        AuthorizationFixtures.createRandomized(
+            b -> b.resourceMatcher(AuthorizationResourceMatcher.ID.value()).resourceId("foo"));
     createAndSaveAuthorization(rdbmsWriter, authorization);
 
     final var authorizationUpdate =
@@ -69,6 +72,7 @@ public class AuthorizationIT {
                     .ownerId(authorization.ownerId())
                     .ownerType(authorization.ownerType())
                     .resourceType(authorization.resourceType())
+                    .resourceMatcher(authorization.resourceMatcher())
                     .resourceId("bar")
                     .permissionTypes(authorization.permissionTypes()));
     rdbmsWriter.getAuthorizationWriter().updateAuthorization(authorizationUpdate);
@@ -81,6 +85,7 @@ public class AuthorizationIT {
             .orElse(null);
 
     assertThat(instance).isNotNull();
+    assertThat(instance.resourceMatcher()).isEqualTo(AuthorizationResourceMatcher.ID.value());
     assertThat(instance.resourceId()).isEqualTo("bar");
   }
 

@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
@@ -75,6 +76,7 @@ public class IdentitySetupInitializeTest {
         .withAuthorization(
             new AuthorizationRecord()
                 .setResourceType(AuthorizationResourceType.TENANT)
+                .setResourceMatcher(AuthorizationResourceMatcher.ID)
                 .setResourceId(tenantId)
                 .setPermissionTypes(Set.of(PermissionType.READ))
                 .setOwnerType(AuthorizationOwnerType.ROLE)

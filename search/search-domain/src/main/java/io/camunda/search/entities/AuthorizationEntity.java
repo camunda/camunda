@@ -17,5 +17,6 @@ public record AuthorizationEntity(
     String ownerId,
     String ownerType,
     String resourceType,
+    Short resourceMatcher,
     String resourceId,
     Set<PermissionType> permissionTypes) {}

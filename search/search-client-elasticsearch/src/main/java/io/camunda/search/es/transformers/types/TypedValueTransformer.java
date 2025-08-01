@@ -22,6 +22,8 @@ public final class TypedValueTransformer extends ElasticsearchTransformer<TypedV
   public FieldValue apply(final TypedValue value) {
     if (value.isString()) {
       return FieldValue.of(value.stringValue());
+    } else if (value.isShort()) {
+      return FieldValue.of(value.shortValue());
     } else if (value.isInteger()) {
       return FieldValue.of(value.intValue());
     } else if (value.isLong()) {

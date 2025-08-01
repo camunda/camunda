@@ -12,6 +12,7 @@ import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel.Builder;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Set;
@@ -37,6 +38,7 @@ public final class AuthorizationFixtures extends CommonFixtures {
             .ownerId(ownerId)
             .ownerType(randomEnum(OwnerType.class).name())
             .resourceType(randomEnum(ResourceType.class).name())
+            .resourceMatcher(randomEnum(AuthorizationResourceMatcher.class).value())
             .resourceId(nextStringId())
             .permissionTypes(Set.of(randomPermissionType1, randomPermissionType2));
 

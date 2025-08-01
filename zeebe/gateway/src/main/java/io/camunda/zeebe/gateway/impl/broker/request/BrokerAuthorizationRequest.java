@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -39,6 +40,12 @@ public class BrokerAuthorizationRequest extends BrokerExecuteCommand<Authorizati
 
   public BrokerAuthorizationRequest setOwnerType(final AuthorizationOwnerType ownerType) {
     requestDto.setOwnerType(ownerType);
+    return this;
+  }
+
+  public BrokerAuthorizationRequest setResourceMatcher(
+      final AuthorizationResourceMatcher resourceMatcher) {
+    requestDto.setResourceMatcher(resourceMatcher);
     return this;
   }
 

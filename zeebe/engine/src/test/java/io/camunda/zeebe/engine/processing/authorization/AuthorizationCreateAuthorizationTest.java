@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -62,6 +63,7 @@ public class AuthorizationCreateAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
         .withResourceId("*")
         .withPermissions(PermissionType.CREATE)
         .create(DEFAULT_USER.getUsername());
@@ -87,6 +89,7 @@ public class AuthorizationCreateAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
         .withResourceId("*")
         .withPermissions(PermissionType.CREATE)
         .create(user.getUsername());
@@ -112,6 +115,7 @@ public class AuthorizationCreateAuthorizationTest {
             .withOwnerId(user.getUsername())
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
             .withResourceId("*")
             .withPermissions(PermissionType.CREATE)
             .expectRejection()
@@ -145,6 +149,7 @@ public class AuthorizationCreateAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
         .withResourceId("*")
         .withPermissions(permissionType)
         .create(DEFAULT_USER.getUsername());
