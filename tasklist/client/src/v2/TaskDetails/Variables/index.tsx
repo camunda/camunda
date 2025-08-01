@@ -36,6 +36,7 @@ import styles from 'common/tasks/variables-editor/styles.module.scss';
 import cn from 'classnames';
 import {useFetchFullVariable} from 'v2/api/useFetchFullVariable.mutation';
 import {tryParseJSON} from 'v2/features/tasks/details/tryParseJSON';
+import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';
 
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
@@ -80,8 +81,12 @@ const Variables: React.FC<Props> = ({
     },
   );
   const [editingVariable, setEditingVariable] = useState<string | undefined>();
-  const [submissionState, setSubmissionState] =
-    useState<NonNullable<InlineLoadingProps['status']>>('inactive');
+  const [localSubmissionState, setLocalSubmissionState] = useState<
+    NonNullable<InlineLoadingProps['status']>
+  >(() => (state === 'COMPLETING' ? 'active' : 'inactive'));
+
+  const submissionState =
+    state === 'COMPLETING' ? 'active' : localSubmissionState;
   const canCompleteTask =
     user.userId === assignee && state === 'CREATED' && status === 'success';
   const hasEmptyNewVariable = (values: FormValues | undefined) =>
@@ -117,16 +122,16 @@ const Variables: React.FC<Props> = ({
         );
 
         try {
-          setSubmissionState('active');
+          setLocalSubmissionState('active');
           await onSubmit({
             ...existingVariables,
             ...newVariables,
           });
 
-          setSubmissionState('finished');
+          setLocalSubmissionState('finished');
         } catch (error) {
           onSubmitFailure(error as Error);
-          setSubmissionState('error');
+          setLocalSubmissionState('error');
         }
       }}
       initialValues={variables.reduce(
@@ -267,11 +272,15 @@ const Variables: React.FC<Props> = ({
                   <CompleteTaskButton
                     submissionState={submissionState}
                     onSuccess={() => {
-                      setSubmissionState('inactive');
                       onSubmitSuccess();
+                      setLocalSubmissionState('inactive');
                     }}
                     onError={() => {
-                      setSubmissionState('inactive');
+                      if (state === 'COMPLETING') {
+                        setLocalSubmissionState('active');
+                      } else {
+                        setLocalSubmissionState('inactive');
+                      }
                     }}
                     isHidden={state === 'COMPLETED'}
                     isDisabled={
