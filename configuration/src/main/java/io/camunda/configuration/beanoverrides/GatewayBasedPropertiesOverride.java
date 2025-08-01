@@ -40,9 +40,21 @@ public class GatewayBasedPropertiesOverride {
     final GatewayBasedProperties override = new GatewayBasedProperties();
     BeanUtils.copyProperties(legacyGatewayBasedProperties, override);
 
-    // TODO: Populate the bean using unifiedConfiguration
-    //  override.setSampleField(unifiedConfiguration.getSampleField());
+    // from camunda.cluster.* sections
+    populateFromCluster(override);
 
     return override;
+  }
+
+  private void populateFromCluster(final GatewayBasedProperties override) {
+    populateFromClusterNetwork(override);
+    // Rest of camunda.cluster.* sections
+  }
+
+  private void populateFromClusterNetwork(final GatewayBasedProperties override) {
+    final var network =
+        unifiedConfiguration.getCamunda().getCluster().getNetwork().withGatewayNetworkProperties();
+
+    override.getCluster().setHost(network.getHost());
   }
 }
