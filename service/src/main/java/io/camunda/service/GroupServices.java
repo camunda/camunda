@@ -89,27 +89,6 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
                 .getGroup(groupId));
   }
 
-  public GroupEntity getGroupByName(final String name) {
-    return search(GroupQuery.of(b -> b.filter(f -> f.name(name)).singleResult()))
-        .items()
-        .getFirst();
-  }
-
-  public List<GroupEntity> getGroupsByMemberId(final String memberId, final EntityType memberType) {
-    return search(
-            GroupQuery.of(
-                b -> b.filter(f -> f.memberId(memberId).childMemberType(memberType)).unlimited()))
-        .items();
-  }
-
-  public List<GroupEntity> getGroupsByMemberIds(
-      final Set<String> memberIds, final EntityType memberType) {
-    return search(
-            GroupQuery.of(
-                b -> b.filter(f -> f.memberIds(memberIds).childMemberType(memberType)).unlimited()))
-        .items();
-  }
-
   public CompletableFuture<GroupRecord> updateGroup(
       final String groupId, final String name, final String description) {
     return sendBrokerRequest(

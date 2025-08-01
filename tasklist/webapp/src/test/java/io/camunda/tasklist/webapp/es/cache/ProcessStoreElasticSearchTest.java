@@ -15,8 +15,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.entity.AuthenticationContext;
-import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
@@ -55,9 +53,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -245,28 +240,14 @@ class ProcessStoreElasticSearchTest {
     assertThat(processesWithCondition).isNotNull();
   }
 
-  private void mockAuthenticationOverIdentity(final Boolean isAuthorizated) {
+  private void mockAuthenticationOverIdentity(final Boolean isAuthorized) {
     // Mock IdentityProperties
     springContextHolder.setApplicationContext(mock(ConfigurableApplicationContext.class));
     when(securityConfiguration.getAuthorizations())
         .thenReturn(mock(AuthorizationsConfiguration.class));
     when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
 
-    // Mock Authentication
-    final Authentication auth = mock(Authentication.class);
-    final CamundaUser camundaUser = mock(CamundaUser.class);
-    final AuthenticationContext authenticationContext = mock(AuthenticationContext.class);
-    when(auth.getPrincipal()).thenReturn(camundaUser);
-    when(camundaUser.getUserKey()).thenReturn(123L);
-    when(camundaUser.getAuthenticationContext()).thenReturn(authenticationContext);
-    when(authenticationContext.roles()).thenReturn(List.of());
-
-    // Mock SecurityContextHolder
-    final SecurityContext securityContext = mock(SecurityContext.class);
-    SecurityContextHolder.getContext().setAuthentication(auth);
-    when(securityContext.getAuthentication()).thenReturn(auth);
-
-    if (isAuthorizated) {
+    if (isAuthorized) {
       when(resourceAccessProvider.resolveResourceAccess(any(), any()))
           .thenReturn(ResourceAccess.wildcard(Authorization.of(b -> b.resourceIds(List.of("*")))));
     } else {

@@ -17,7 +17,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
@@ -57,9 +56,6 @@ import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -252,25 +248,14 @@ class ProcessStoreOpenSearchTest {
     assertThat(processesWithCondition).isNotNull();
   }
 
-  private void mockAuthenticationOverIdentity(final Boolean isAuthorizated) {
+  private void mockAuthenticationOverIdentity(final Boolean isAuthorized) {
     // Mock IdentityProperties
     springContextHolder.setApplicationContext(mock(ConfigurableApplicationContext.class));
     when(securityConfiguration.getAuthorizations())
         .thenReturn(mock(AuthorizationsConfiguration.class));
     when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
 
-    // Mock Authentication
-    final org.springframework.security.core.Authentication auth = mock(Authentication.class);
-    final CamundaUser camundaUser = mock(CamundaUser.class);
-    when(auth.getPrincipal()).thenReturn(camundaUser);
-    when(camundaUser.getUserKey()).thenReturn(123L);
-
-    // Mock SecurityContextHolder
-    final SecurityContext securityContext = mock(SecurityContext.class);
-    SecurityContextHolder.getContext().setAuthentication(auth);
-    when(securityContext.getAuthentication()).thenReturn(auth);
-
-    if (isAuthorizated) {
+    if (isAuthorized) {
       when(resourceAccessProvider.resolveResourceAccess(any(), any()))
           .thenReturn(ResourceAccess.wildcard(Authorization.of(b -> b.resourceIds(List.of("*")))));
     } else {
