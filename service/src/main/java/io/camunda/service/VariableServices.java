@@ -18,6 +18,10 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateGlobalVariableRequest;
+import io.camunda.zeebe.protocol.impl.record.value.variable.GlobalVariableRecord;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public final class VariableServices
     extends SearchQueryService<VariableServices, VariableQuery, VariableEntity> {
@@ -60,5 +64,11 @@ public final class VariableServices
                         withAuthorization(
                             VARIABLE_READ_AUTHORIZATION, VariableEntity::processDefinitionId)))
                 .getVariable(key));
+  }
+
+  public CompletableFuture<GlobalVariableRecord> createVariable(
+      final Map<String, Object> variables) {
+    return sendBrokerRequest(
+        new BrokerCreateGlobalVariableRequest().setVariables(getDocumentOrEmpty(variables)));
   }
 }
