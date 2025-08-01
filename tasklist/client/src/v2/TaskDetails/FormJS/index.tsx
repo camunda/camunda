@@ -88,11 +88,6 @@ const FormJS: React.FC<Props> = ({
   const canCompleteTask =
     user.username === assignee && state === 'CREATED' && hasFetchedVariables;
 
-  const shouldHideBottomPanel =
-    state === 'ASSIGNING' ||
-    (state === 'UPDATING' && assignee === null) ||
-    (state === 'CANCELING' && assignee === null);
-
   const {removeFormReference} = useRemoveFormReference(task);
   return (
     <ScrollableContent data-testid="embedded-form" tabIndex={-1}>
@@ -164,33 +159,28 @@ const FormJS: React.FC<Props> = ({
             )
             .otherwise(() => null)}
         </Layer>
-        {!shouldHideBottomPanel && (
-          <DetailsFooter>
-            <CompleteTaskButton
-              submissionState={submissionState}
-              onClick={() => {
+        <DetailsFooter>
+          <CompleteTaskButton
+            submissionState={submissionState}
+            onClick={() => {
+              setLocalSubmissionState('active');
+              formManagerRef.current?.submit();
+            }}
+            onSuccess={() => {
+              onSubmitSuccess();
+              setLocalSubmissionState('inactive');
+            }}
+            onError={() => {
+              if (state === 'COMPLETING') {
                 setLocalSubmissionState('active');
-                formManagerRef.current?.submit();
-              }}
-              onSuccess={() => {
-                onSubmitSuccess();
+              } else {
                 setLocalSubmissionState('inactive');
-              }}
-              onError={() => {
-                if (state === 'COMPLETING') {
-                  setLocalSubmissionState('active');
-                } else {
-                  setLocalSubmissionState('inactive');
-                }
-              }}
-              isHidden={['COMPLETED', 'CANCELING', 'UPDATING'].includes(state)}
-              isDisabled={!canCompleteTask}
-            />
-            {['UPDATING', 'CANCELING'].includes(state) && (
-              <ActiveTransitionLoadingText taskState={state} />
-            )}
-          </DetailsFooter>
-        )}
+              }
+            }}
+            isHidden={state === 'COMPLETED'}
+            isDisabled={!canCompleteTask}
+          />
+        </DetailsFooter>
       </TaskDetailsContainer>
     </ScrollableContent>
   );
