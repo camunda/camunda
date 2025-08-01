@@ -17,7 +17,6 @@ package io.camunda.spring.client.jobhandling.result;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +28,6 @@ import io.camunda.client.api.response.DocumentReferenceBatchResponse;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.spring.client.jobhandling.DocumentContext;
 import java.util.List;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
