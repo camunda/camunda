@@ -22,11 +22,14 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AdHocSubProcessProcessor
@@ -41,6 +44,13 @@ public class AdHocSubProcessProcessor
   private final ExpressionProcessor expressionProcessor;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
+
+  private final EnumMap<ZeebeAdHocImplementationType, AdHocSubProcessBehavior>
+      adHocSubProcessBehaviors =
+          new EnumMap<>(
+              Map.ofEntries(
+                  Map.entry(ZeebeAdHocImplementationType.BPMN, new BpmnBehavior()),
+                  Map.entry(ZeebeAdHocImplementationType.JOB_WORKER, new JobWorkerBehavior())));
 
   public AdHocSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -70,20 +80,7 @@ public class AdHocSubProcessProcessor
   @Override
   public Either<Failure, ?> finalizeActivation(
       final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
-
-    return readActivateElementsCollection(element, context)
-        .flatMap(
-            elementsToActivate ->
-                eventSubscriptionBehavior
-                    .subscribeToEvents(element, context)
-                    .map(ok -> elementsToActivate))
-        .thenDo(
-            elementsToActivate -> {
-              final var activated =
-                  stateTransitionBehavior.transitionToActivated(context, element.getEventType());
-
-              activateElements(element, activated, elementsToActivate);
-            });
+    return behaviorFor(element).finalizeActivation(element, context);
   }
 
   @Override
@@ -115,7 +112,8 @@ public class AdHocSubProcessProcessor
   public TransitionOutcome onTerminate(
       final ExecutableAdHocSubProcess element, final BpmnElementContext terminating) {
 
-    if (element.hasExecutionListeners()) {
+    if (element.hasExecutionListeners()
+        || element.getImplementationType() == ZeebeAdHocImplementationType.JOB_WORKER) {
       jobBehavior.cancelJob(terminating);
     }
     eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
@@ -134,6 +132,10 @@ public class AdHocSubProcessProcessor
   public void finalizeTermination(
       final ExecutableAdHocSubProcess element, final BpmnElementContext terminated) {
     stateTransitionBehavior.executeRuntimeInstructions(element, terminated);
+  }
+
+  private AdHocSubProcessBehavior behaviorFor(final ExecutableAdHocSubProcess adHocSubProcess) {
+    return adHocSubProcessBehaviors.get(adHocSubProcess.getImplementationType());
   }
 
   private void terminate(
@@ -223,19 +225,8 @@ public class AdHocSubProcessProcessor
       final ExecutableAdHocSubProcess adHocSubProcess,
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext) {
-    final Expression completionConditionExpression = adHocSubProcess.getCompletionCondition();
-    if (completionConditionExpression == null) {
-      return Either.right(null);
-    }
-
-    return expressionProcessor
-        .evaluateBooleanExpression(
-            completionConditionExpression, adHocSubProcessContext.getElementInstanceKey())
-        .mapLeft(
-            failure ->
-                new Failure(
-                    "Failed to evaluate completion condition. " + failure.getMessage(),
-                    ErrorType.EXTRACT_VALUE_ERROR));
+    return behaviorFor(adHocSubProcess)
+        .beforeExecutionPathCompleted(adHocSubProcess, adHocSubProcessContext, childContext);
   }
 
   @Override
@@ -244,34 +235,9 @@ public class AdHocSubProcessProcessor
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext,
       final Boolean satisfiesCompletionCondition) {
-    if (satisfiesCompletionCondition == null) {
-      // completion condition is not set - complete the ad-hoc sub-process if possible (no other
-      // activity is active), otherwise skip completion as the same block will be evaluated when
-      // the next activity is completed
-      if (stateBehavior.canBeCompleted(childContext)) {
-        stateTransitionBehavior.completeElement(adHocSubProcessContext);
-      }
-
-      return;
-    }
-
-    if (satisfiesCompletionCondition) {
-      if (adHocSubProcess.isCancelRemainingInstances()) {
-        // terminate all remaining child instances & directly complete ad-hoc sub-process if there
-        // is no child activity left - otherwise see onChildTerminated
-        final boolean hasNoActiveChildren =
-            stateTransitionBehavior.terminateChildInstances(adHocSubProcessContext);
-        if (hasNoActiveChildren) {
-          stateTransitionBehavior.completeElement(adHocSubProcessContext);
-        }
-      } else {
-        // complete ad-hoc sub-process if possible, otherwise skip completion as the same block
-        // will be evaluated when the next activity is completed
-        if (stateBehavior.canBeCompleted(childContext)) {
-          stateTransitionBehavior.completeElement(adHocSubProcessContext);
-        }
-      }
-    }
+    behaviorFor(adHocSubProcess)
+        .afterExecutionPathCompleted(
+            adHocSubProcess, adHocSubProcessContext, childContext, satisfiesCompletionCondition);
   }
 
   @Override
@@ -289,6 +255,142 @@ public class AdHocSubProcessProcessor
       // complete the ad-hoc sub-process because its completion condition was met previously and
       // all remaining child instances were terminated.
       stateTransitionBehavior.completeElement(adHocSubProcessContext);
+    }
+  }
+
+  private interface AdHocSubProcessBehavior {
+
+    Either<Failure, ?> finalizeActivation(
+        final ExecutableAdHocSubProcess element, final BpmnElementContext context);
+
+    Either<Failure, ?> beforeExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext);
+
+    void afterExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext,
+        final Boolean satisfiesCompletionCondition);
+  }
+
+  private final class BpmnBehavior implements AdHocSubProcessBehavior {
+
+    @Override
+    public Either<Failure, ?> finalizeActivation(
+        final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+      return readActivateElementsCollection(element, context)
+          .flatMap(
+              elementsToActivate ->
+                  eventSubscriptionBehavior
+                      .subscribeToEvents(element, context)
+                      .map(ok -> elementsToActivate))
+          .thenDo(
+              elementsToActivate -> {
+                final var activated =
+                    stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+
+                activateElements(element, activated, elementsToActivate);
+              });
+    }
+
+    @Override
+    public Either<Failure, ?> beforeExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext) {
+      final Expression completionConditionExpression = adHocSubProcess.getCompletionCondition();
+      if (completionConditionExpression == null) {
+        return Either.right(null);
+      }
+
+      return expressionProcessor
+          .evaluateBooleanExpression(
+              completionConditionExpression, adHocSubProcessContext.getElementInstanceKey())
+          .mapLeft(
+              failure ->
+                  new Failure(
+                      "Failed to evaluate completion condition. " + failure.getMessage(),
+                      ErrorType.EXTRACT_VALUE_ERROR));
+    }
+
+    @Override
+    public void afterExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext,
+        final Boolean satisfiesCompletionCondition) {
+      if (satisfiesCompletionCondition == null) {
+        // completion condition is not set - complete the ad-hoc sub-process if possible (no other
+        // activity is active), otherwise skip completion as the same block will be evaluated when
+        // the next activity is completed
+        if (stateBehavior.canBeCompleted(childContext)) {
+          stateTransitionBehavior.completeElement(adHocSubProcessContext);
+        }
+
+        return;
+      }
+
+      if (satisfiesCompletionCondition) {
+        if (adHocSubProcess.isCancelRemainingInstances()) {
+          // terminate all remaining child instances & directly complete ad-hoc sub-process if there
+          // is no child activity left - otherwise see onChildTerminated
+          final boolean hasNoActiveChildren =
+              stateTransitionBehavior.terminateChildInstances(adHocSubProcessContext);
+          if (hasNoActiveChildren) {
+            stateTransitionBehavior.completeElement(adHocSubProcessContext);
+          }
+        } else {
+          // complete ad-hoc sub-process if possible, otherwise skip completion as the same block
+          // will be evaluated when the next activity is completed
+          if (stateBehavior.canBeCompleted(childContext)) {
+            stateTransitionBehavior.completeElement(adHocSubProcessContext);
+          }
+        }
+      }
+    }
+  }
+
+  private final class JobWorkerBehavior implements AdHocSubProcessBehavior {
+
+    @Override
+    public Either<Failure, ?> finalizeActivation(
+        final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+      return jobBehavior
+          .evaluateJobExpressions(element.getJobWorkerProperties(), context)
+          .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
+          .thenDo(
+              jobProperties -> {
+                jobBehavior.createNewAdHocSubProcessJob(context, element, jobProperties);
+                stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+              });
+    }
+
+    @Override
+    public Either<Failure, ?> beforeExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext) {
+      return SUCCESS;
+    }
+
+    @Override
+    public void afterExecutionPathCompleted(
+        final ExecutableAdHocSubProcess adHocSubProcess,
+        final BpmnElementContext adHocSubProcessContext,
+        final BpmnElementContext childContext,
+        final Boolean satisfiesCompletionCondition) {
+      // There should only be 1 active Job for the ad-hoc sub-process. We should cancel any active
+      // job before creating the new one.
+      jobBehavior.cancelJob(adHocSubProcessContext);
+
+      jobBehavior
+          .evaluateJobExpressions(adHocSubProcess.getJobWorkerProperties(), adHocSubProcessContext)
+          .thenDo(
+              jobProperties ->
+                  jobBehavior.createNewAdHocSubProcessJob(
+                      adHocSubProcessContext, adHocSubProcess, jobProperties));
     }
   }
 }

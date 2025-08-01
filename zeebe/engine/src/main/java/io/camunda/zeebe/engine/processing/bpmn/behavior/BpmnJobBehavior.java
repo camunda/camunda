@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
@@ -315,6 +316,18 @@ public final class BpmnJobBehavior {
                     extractUserTaskHeaders(
                         taskRecordValue, changedAttributes, listener.getJobWorkerProperties())))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+  }
+
+  public void createNewAdHocSubProcessJob(
+      final BpmnElementContext context,
+      final ExecutableAdHocSubProcess element,
+      final JobProperties jobProperties) {
+    writeJobCreatedEvent(
+        context,
+        jobProperties,
+        JobKind.AD_HOC_SUB_PROCESS,
+        JobListenerEventType.UNSPECIFIED,
+        element.getJobWorkerProperties().getTaskHeaders());
   }
 
   private Either<Failure, JobProperties> evaluateTaskListenerJobExpressions(
