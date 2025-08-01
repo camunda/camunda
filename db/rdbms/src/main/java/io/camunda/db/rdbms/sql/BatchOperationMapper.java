@@ -74,6 +74,10 @@ public interface BatchOperationMapper {
 
     public BatchOperationErrorDto truncateErrorMessage(
         final int sizeLimit, final Integer byteLimit) {
+      if (message == null) {
+        return this;
+      }
+
       final var truncatedValue = TruncateUtil.truncateValue(message, sizeLimit, byteLimit);
 
       if (truncatedValue.length() < message.length()) {

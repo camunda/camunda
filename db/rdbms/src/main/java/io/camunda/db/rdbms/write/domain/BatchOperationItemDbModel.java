@@ -26,9 +26,13 @@ public record BatchOperationItemDbModel(
 
   public BatchOperationItemDbModel truncateErrorMessage(
       final int sizeLimit, final Integer byteLimit) {
+    if (errorMessage == null) {
+      return this;
+    }
+
     final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, byteLimit);
 
-    if (truncatedValue.length() < errorMessage.length()) {
+    if (truncatedValue != null && truncatedValue.length() < errorMessage.length()) {
       LOG.warn(
           "Truncated error message for batchOperation {} item {}, original message was: {}",
           batchOperationKey,
