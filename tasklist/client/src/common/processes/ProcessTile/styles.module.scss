@@ -31,6 +31,12 @@
   height: fit-content;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+}
+
 .title {
   @include textOverflowEllipsis;
   @include type.type-style('productive-heading-02');
