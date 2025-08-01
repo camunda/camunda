@@ -40,6 +40,8 @@ public class GatewayBasedPropertiesOverride {
     final GatewayBasedProperties override = new GatewayBasedProperties();
     BeanUtils.copyProperties(legacyGatewayBasedProperties, override);
 
+    // from camunda.cluster.* sections
+    populateFromCluster(override);
     populateFromLongPolling(override);
 
     // TODO: Populate the bean using unifiedConfiguration
@@ -55,5 +57,17 @@ public class GatewayBasedPropertiesOverride {
     longPollingCfg.setTimeout(longPolling.getTimeout());
     longPollingCfg.setProbeTimeout(longPolling.getProbeTimeout());
     longPollingCfg.setMinEmptyResponses(longPolling.getMinEmptyResponses());
+  }
+
+  private void populateFromCluster(final GatewayBasedProperties override) {
+    populateFromClusterNetwork(override);
+    // Rest of camunda.cluster.* sections
+  }
+
+  private void populateFromClusterNetwork(final GatewayBasedProperties override) {
+    final var network =
+        unifiedConfiguration.getCamunda().getCluster().getNetwork().withGatewayNetworkProperties();
+
+    override.getCluster().setHost(network.getHost());
   }
 }

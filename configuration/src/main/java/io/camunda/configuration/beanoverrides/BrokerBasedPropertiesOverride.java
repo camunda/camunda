@@ -67,6 +67,7 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setClusterSize(cluster.getSize());
 
     populateFromClusterMetadata(override);
+    populateFromClusterNetwork(override);
     // Rest of camunda.cluster.* sections
   }
 
@@ -78,6 +79,13 @@ public class BrokerBasedPropertiesOverride {
     final var configManagerGossipConfig =
         new ClusterConfigurationGossiperConfig(syncDelay, syncTimeout, gossipFanout);
     override.getCluster().setConfigManager(new ConfigManagerCfg(configManagerGossipConfig));
+  }
+
+  private void populateFromClusterNetwork(final BrokerBasedProperties override) {
+    final var network =
+        unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
+
+    override.getNetwork().setHost(network.getHost());
   }
 
   private void populateFromSystem(final BrokerBasedProperties override) {
