@@ -213,21 +213,30 @@ public class OperateV1ApiPermissionsIT {
         adminClient.newIncidentSearchRequest().send().join().items().getFirst().getIncidentKey();
 
     // DMN
-    final long decisionKey =
+    final var decisionDeployment =
         adminClient
             .newDeployResourceCommand()
             .addResourceFromClasspath(String.format("decisions/%s", "decision_model.dmn"))
             .send()
             .join()
             .getDecisions()
-            .getFirst()
-            .getDecisionKey();
-    adminClient
-        .newEvaluateDecisionCommand()
-        .decisionKey(decisionKey)
-        .variables("{\"input1\": \"A\"}")
-        .send()
-        .join();
+            .getFirst();
+    final long decisionKey = decisionDeployment.getDecisionKey();
+    final String dmnDecisionId = decisionDeployment.getDmnDecisionId();
+    deployResource(
+            adminClient,
+            Bpmn.createExecutableProcess("dmn_process")
+                .startEvent()
+                .businessRuleTask("dmn_task")
+                .zeebeCalledDecisionId(dmnDecisionId)
+                .zeebeResultVariable("{\"output1\": \"B\"}")
+                .endEvent()
+                .done(),
+            "dmn_process.bpmn")
+        .getProcesses()
+        .getFirst();
+    final long dmnInstanceKey =
+        startProcessInstance(adminClient, "dmn_process").getProcessInstanceKey();
     waitForDecisionToBeEvaluated(adminClient, 1);
     decisionDefinitionKey =
         adminClient
