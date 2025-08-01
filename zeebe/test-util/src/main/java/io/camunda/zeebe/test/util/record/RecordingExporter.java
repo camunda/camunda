@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -66,6 +67,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -383,6 +385,16 @@ public final class RecordingExporter implements Exporter {
   public static VariableDocumentRecordStream variableDocumentRecords(
       final VariableDocumentIntent intent) {
     return variableDocumentRecords().withIntent(intent);
+  }
+
+  public static GlobalVariableRecordStream globalVariableRecords(
+      final GlobalVariableIntent intent) {
+    return globalVariableRecords().withIntent(intent);
+  }
+
+  private static GlobalVariableRecordStream globalVariableRecords() {
+    return new GlobalVariableRecordStream(
+        records(ValueType.GLOBAL_VARIABLE, GlobalVariableRecordValue.class));
   }
 
   public static ProcessInstanceCreationRecordStream processInstanceCreationRecords() {
