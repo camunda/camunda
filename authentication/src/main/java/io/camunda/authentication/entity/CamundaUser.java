@@ -49,10 +49,6 @@ public final class CamundaUser extends User implements CamundaPrincipal {
     return displayName;
   }
 
-  public String getUserId() {
-    return getUsername();
-  }
-
   public String getSalesPlanType() {
     return salesPlanType;
   }
