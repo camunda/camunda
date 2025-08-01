@@ -12,13 +12,19 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
+import io.camunda.zeebe.gateway.protocol.rest.GlobalVariableCreateQuery;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQuery;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,6 +50,21 @@ public class VariableController {
       @RequestBody(required = false) final VariableSearchQuery query) {
     return SearchQueryRequestMapper.toVariableQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  @CamundaPutMapping(path = "/create")
+  public CompletableFuture<ResponseEntity<Object>> createVariable(
+      @RequestBody final GlobalVariableCreateQuery globalVariableCreateQuery) {
+    return RequestMapper.executeServiceMethod(
+        () -> {
+          assert globalVariableCreateQuery.getKey() != null;
+          assert globalVariableCreateQuery.getValue() != null;
+          return variableServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .createVariable(
+                  Map.of(globalVariableCreateQuery.getKey(), globalVariableCreateQuery.getValue()));
+        },
+        ResponseMapper::toGlobalVariableCreateResponse);
   }
 
   private ResponseEntity<Object> search(final VariableQuery query) {
