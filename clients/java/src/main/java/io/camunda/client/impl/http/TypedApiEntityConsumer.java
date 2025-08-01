@@ -92,7 +92,7 @@ public interface TypedApiEntityConsumer<T> {
     }
 
     @Override
-    public ApiEntity<T> generateContent() throws IOException {
+    public ApiEntity<T> generateContent() {
       try {
         if (isResponse) {
           return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
