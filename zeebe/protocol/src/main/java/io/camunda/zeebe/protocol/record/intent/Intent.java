@@ -37,6 +37,7 @@ public interface Intent {
           TimerIntent.class,
           VariableIntent.class,
           VariableDocumentIntent.class,
+          GlobalVariableIntent.class,
           ProcessInstanceCreationIntent.class,
           ErrorIntent.class,
           ProcessIntent.class,
@@ -118,6 +119,8 @@ public interface Intent {
         return VariableIntent.from(intent);
       case VARIABLE_DOCUMENT:
         return VariableDocumentIntent.from(intent);
+      case GLOBAL_VARIABLE:
+        return GlobalVariableIntent.from(intent);
       case PROCESS_INSTANCE_CREATION:
         return ProcessInstanceCreationIntent.from(intent);
       case ERROR:
@@ -243,6 +246,8 @@ public interface Intent {
         return VariableIntent.valueOf(intent);
       case VARIABLE_DOCUMENT:
         return VariableDocumentIntent.valueOf(intent);
+      case GLOBAL_VARIABLE:
+        return GlobalVariableIntent.valueOf(intent);
       case PROCESS_INSTANCE_CREATION:
         return ProcessInstanceCreationIntent.valueOf(intent);
       case ERROR:
