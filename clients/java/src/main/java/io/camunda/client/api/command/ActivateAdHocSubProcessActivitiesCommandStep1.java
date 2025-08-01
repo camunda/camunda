@@ -88,5 +88,6 @@ public interface ActivateAdHocSubProcessActivitiesCommandStep1 {
 
   interface ActivateAdHocSubProcessActivitiesCommandStep2
       extends ActivateAdHocSubProcessActivitiesCommandStep1,
+          CommandWithVariables<ActivateAdHocSubProcessActivitiesCommandStep2>,
           FinalCommandStep<ActivateAdHocSubProcessActivitiesResponse> {}
 }
