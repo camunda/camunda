@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.store.MetricsStore;
@@ -33,7 +35,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {TestApplication.class},
+    classes = {
+      TestApplication.class,
+      UnifiedConfiguration.class,
+      UnifiedConfigurationHelper.class,
+    },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
