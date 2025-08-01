@@ -247,7 +247,8 @@ public class RdbmsConfiguration {
       final JobMapper jobMapper,
       final SequenceFlowMapper sequenceFlowMapper,
       final UsageMetricMapper usageMetricMapper,
-      final UsageMetricTUMapper usageMetricTUMapper) {
+      final UsageMetricTUMapper usageMetricTUMapper,
+      final BatchOperationMapper batchOperationMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -264,7 +265,8 @@ public class RdbmsConfiguration {
         jobMapper,
         sequenceFlowMapper,
         usageMetricMapper,
-        usageMetricTUMapper);
+        usageMetricTUMapper,
+        batchOperationMapper);
   }
 
   @Bean

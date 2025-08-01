@@ -79,6 +79,11 @@ zeebe:
           queueSize: 1000
           cleanupBatchSize: 1000
           defaultHistoryTTL: PT1M
+          defaultBatchOperationHistoryTTL: PT7D
+          cancelProcessInstanceHistoryTTL: PT1D
+          migrateProcessInstanceHistoryTTL: PT10D
+          modifyProcessInstanceHistoryTTL: PT7D
+          resolveIncidentHistoryTTL: PT5D
           minHistoryCleanupInterval: PT1S
           maxHistoryCleanupInterval: PT1H
           historyCleanupBatchSize: 1000
