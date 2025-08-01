@@ -36,7 +36,6 @@ import java.time.Duration;
 import java.util.UUID;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
@@ -149,7 +148,6 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   private WaitAllStrategy newDefaultWaitStrategy() {
     return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
-        .withStrategy(new HostPortWaitStrategy())
         .withStrategy(newDefaultBrokerReadyCheck())
         .withStrategy(newDefaultTopologyReadyCheck())
         .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
