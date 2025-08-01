@@ -96,6 +96,11 @@ public class ConfigTest {
     assertThat(authCfg.getBasic().getUsername()).isEqualTo("benchmark-user");
     assertThat(authCfg.getBasic().getPassword()).isEqualTo("benchmark-password");
 
+    assertThat(authCfg.getOauth().getAudience()).isEqualTo("zeebe");
+    assertThat(authCfg.getOauth().getClientId()).isEqualTo("benchmark-client");
+    assertThat(authCfg.getOauth().getClientSecret()).isEqualTo("benchmark-secret");
+    assertThat(authCfg.getOauth().getAuthzUrl()).isEqualTo("http://localhost:9090/auth");
+
     // starter
     final var starterCfg = appCfg.getStarter();
     assertThat(starterCfg).isNotNull();
