@@ -15,12 +15,12 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Applies state changes for `ProcessInstance:Element_Migrated` */
-final class ProcessInstanceElementMigratedApplier
+final class ProcessInstanceElementMigratedV1Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
 
-  public ProcessInstanceElementMigratedApplier(
+  public ProcessInstanceElementMigratedV1Applier(
       final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
   }
