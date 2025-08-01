@@ -78,8 +78,7 @@ public class ExporterConfiguration {
     return defaultBatchOperationHistoryTTL;
   }
 
-  public void setDefaultBatchOperationHistoryTTL(
-      final Duration defaultBatchOperationHistoryTTL) {
+  public void setDefaultBatchOperationHistoryTTL(final Duration defaultBatchOperationHistoryTTL) {
     this.defaultBatchOperationHistoryTTL = defaultBatchOperationHistoryTTL;
   }
 

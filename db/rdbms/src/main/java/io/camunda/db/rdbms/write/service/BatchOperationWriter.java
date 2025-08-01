@@ -9,11 +9,13 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
+import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemStatusUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateTotalCountDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.CleanupBatchOperationHistoryDto;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
@@ -37,6 +39,7 @@ public class BatchOperationWriter {
   private final ExecutionQueue executionQueue;
   private final BatchOperationDbReader reader;
   private final VendorDatabaseProperties vendorDatabaseProperties;
+  private final BatchOperationMapper mapper;
 
   private final int itemInsertBlockSize;
   private final boolean exportPendingBatchOperationItems;
@@ -44,11 +47,13 @@ public class BatchOperationWriter {
   public BatchOperationWriter(
       final BatchOperationDbReader reader,
       final ExecutionQueue executionQueue,
+      final BatchOperationMapper mapper,
       final RdbmsWriterConfig config,
       final VendorDatabaseProperties vendorDatabaseProperties) {
     this.reader = reader;
     this.executionQueue = executionQueue;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
+    this.mapper = mapper;
     itemInsertBlockSize = config.batchOperationItemInsertBlockSize();
     exportPendingBatchOperationItems = config.exportBatchOperationItemsOnCreation();
   }
@@ -219,5 +224,26 @@ public class BatchOperationWriter {
             batchOperationKey,
             "io.camunda.db.rdbms.sql.BatchOperationMapper.insertErrors",
             truncatedErrors));
+  }
+
+  public void scheduleForHistoryCleanup(
+      final String batchOperationKey, final OffsetDateTime historyCleanupDate) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.UPDATE,
+            batchOperationKey,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.updateHistoryCleanupDate",
+            new BatchOperationMapper.UpdateHistoryCleanupDateDto(
+                batchOperationKey, historyCleanupDate)));
+  }
+
+  public int cleanupHistory(final OffsetDateTime cleanupDate, final int rowsToRemove) {
+    return mapper.cleanupHistory(new CleanupBatchOperationHistoryDto(cleanupDate, rowsToRemove));
+  }
+
+  public int cleanupItemHistory(final OffsetDateTime cleanupDate, final int rowsToRemove) {
+    return mapper.cleanupItemHistory(
+        new CleanupBatchOperationHistoryDto(cleanupDate, rowsToRemove));
   }
 }
