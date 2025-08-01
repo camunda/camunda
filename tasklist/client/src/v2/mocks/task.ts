@@ -33,7 +33,7 @@ const unassignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
 
 const assignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   userTaskKey: uniqueId.next().value,
-  assignee: currentUser.userId,
+  assignee: currentUser.username,
   creationDate: '2024-01-01T00:00:00.000Z',
   priority: 50,
   state: 'CREATED',
@@ -54,7 +54,7 @@ const assignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
 
 const completedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   userTaskKey: uniqueId.next().value,
-  assignee: currentUser.userId,
+  assignee: currentUser.username,
   creationDate: '2024-01-01T00:00:00.000Z',
   completionDate: '2025-01-01T00:00:00.000Z',
   priority: 50,
@@ -78,7 +78,7 @@ const assignedTaskWithForm = (
   customFields: Partial<UserTask> = {},
 ): UserTask => ({
   userTaskKey: uniqueId.next().value,
-  assignee: currentUser.userId,
+  assignee: currentUser.username,
   creationDate: '2024-01-01T00:00:00.000Z',
   priority: 50,
   state: 'CREATED',

@@ -58,8 +58,6 @@ public class CamundaUserDetailsService implements UserDetailsService {
             .findFirst()
             .orElseThrow(() -> new UsernameNotFoundException(username));
 
-    final Long userKey = storedUser.userKey();
-
     final var groups =
         groupServices
             .withAuthentication(CamundaAuthentication.anonymous())
@@ -85,7 +83,6 @@ public class CamundaUserDetailsService implements UserDetailsService {
             .toList();
 
     return aCamundaUser()
-        .withUserKey(userKey)
         .withName(storedUser.name())
         .withUsername(storedUser.username())
         .withPassword(storedUser.password())

@@ -67,8 +67,6 @@ public class OidcCamundaUserService implements CamundaUserService {
               final var auth = user.getAuthenticationContext();
               final var tenants = getTenantsForUser(user);
               return new CamundaUserDTO(
-                  auth.username(),
-                  null,
                   user.getDisplayName(),
                   auth.username(),
                   user.getEmail(),

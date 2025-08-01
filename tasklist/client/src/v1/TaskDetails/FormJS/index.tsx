@@ -88,7 +88,9 @@ const FormJS: React.FC<Props> = ({
   const hasFetchedVariables =
     extractedVariables.length === 0 || status === 'success';
   const canCompleteTask =
-    user.userId === assignee && taskState === 'CREATED' && hasFetchedVariables;
+    user.username === assignee &&
+    taskState === 'CREATED' &&
+    hasFetchedVariables;
   const {removeFormReference} = useRemoveFormReference(task);
 
   const shouldHideBottomPanel =

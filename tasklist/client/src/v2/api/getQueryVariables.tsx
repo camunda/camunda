@@ -26,7 +26,7 @@ const SORT_BY_FIELD: Record<
 
 const getQueryVariables = (
   filters: Omit<TaskFilters, 'assignee'>,
-  {currentUserId, pageSize}: {pageSize: number; currentUserId?: string},
+  {currentUsername, pageSize}: {pageSize: number; currentUsername?: string},
 ): QueryUserTasksRequestBody => {
   const {filter, sortBy, sortOrder, ...remainingFilters} = filters;
   const BASE_QUERY_VARIABLES: QueryUserTasksRequestBody = {
@@ -51,7 +51,7 @@ const getQueryVariables = (
       return {
         ...BASE_QUERY_VARIABLES,
         filter: {
-          assignee: currentUserId!,
+          assignee: currentUsername!,
           state: 'CREATED',
           ...parsedFilters,
         },

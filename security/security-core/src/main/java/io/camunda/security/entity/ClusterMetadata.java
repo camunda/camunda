@@ -98,6 +98,10 @@ public class ClusterMetadata implements Serializable {
     @JsonProperty("connectors")
     CONNECTORS;
 
+    public String getValue() {
+      return name().toLowerCase();
+    }
+
     @Override
     public String toString() {
       return super.toString().toLowerCase();

@@ -25,7 +25,7 @@ const tasks: UserTask[] = [
 
 const tasksAssignedToDemoUser: UserTask[] = tasks.map((task) => ({
   ...task,
-  assignee: currentUser.userId,
+  assignee: currentUser.username,
 }));
 
 const unassignedTasks: UserTask[] = tasks.map((task) => ({
@@ -34,7 +34,7 @@ const unassignedTasks: UserTask[] = tasks.map((task) => ({
 
 const completedTasks: UserTask[] = tasks.map((task) => ({
   ...task,
-  assignee: task.assignee === null ? currentUser.userId : task.assignee,
+  assignee: task.assignee === null ? currentUser.username : task.assignee,
   taskState: 'COMPLETED',
 }));
 

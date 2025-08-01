@@ -247,7 +247,7 @@ async function mockCurrentUser(page: Page) {
     route.fulfill({
       status: 200,
       body: JSON.stringify({
-        userId: 'demo',
+        username: 'demo',
         displayName: 'demo',
         salesPlanType: null,
         roles: null,

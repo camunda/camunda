@@ -11,7 +11,7 @@ import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 describe('isForbidden', () => {
   const baseUser: CurrentUser = {
-    userId: '123',
+    username: '123',
     displayName: 'Test User',
     salesPlanType: null,
     roles: [],
@@ -21,7 +21,6 @@ describe('isForbidden', () => {
     canLogout: true,
     authorizedApplications: [],
     apiUser: false,
-    userKey: 2251799813685250,
     email: 'test@camunda.com',
   };
 

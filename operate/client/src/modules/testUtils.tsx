@@ -174,8 +174,7 @@ const createVariableV2 = (options: Partial<Variable> = {}): Variable => {
 };
 
 const createUser = (options: Partial<CurrentUser> = {}): CurrentUser => ({
-  userId: 'demo',
-  userKey: 123,
+  username: 'demo',
   displayName: 'firstname lastname',
   email: 'firstname.lastname@camunda.com',
   authorizedApplications: [],

@@ -9,7 +9,9 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toMap;
 
+import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
@@ -42,6 +44,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationError;
@@ -51,6 +54,7 @@ import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResul
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionTypeEnum;
@@ -131,6 +135,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -155,7 +160,7 @@ public final class SearchQueryResponseMapper {
       response.tenants(
           statistics.tenants().entrySet().stream()
               .collect(
-                  Collectors.toMap(
+                  toMap(
                       Entry::getKey,
                       e ->
                           new UsageMetricsResponseItem()
@@ -876,6 +881,26 @@ public final class SearchQueryResponseMapper {
 
   public static UserResult toUser(final UserEntity user) {
     return new UserResult().username(user.username()).email(user.email()).name(user.name());
+  }
+
+  public static CamundaUserResult toCamundaUser(final CamundaUserDTO camundaUser) {
+    return new CamundaUserResult()
+        .displayName(camundaUser.displayName())
+        .username(camundaUser.username())
+        .email(camundaUser.email())
+        .authorizedApplications(camundaUser.authorizedApplications())
+        .tenants(toTenants(camundaUser.tenants()))
+        .groups(camundaUser.groups())
+        .roles(camundaUser.roles())
+        .salesPlanType(camundaUser.salesPlanType())
+        .c8Links(toCamundaUserResultC8Links(camundaUser.c8Links()))
+        .canLogout(camundaUser.canLogout());
+  }
+
+  private static Map<String, String> toCamundaUserResultC8Links(
+      final Map<AppName, String> c8Links) {
+    return c8Links.entrySet().stream()
+        .collect(toMap(e -> e.getKey().getValue(), Map.Entry::getValue, (v1, v2) -> v1));
   }
 
   private static List<DecisionInstanceResult> toDecisionInstances(

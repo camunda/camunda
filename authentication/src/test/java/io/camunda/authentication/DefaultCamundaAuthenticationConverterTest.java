@@ -263,11 +263,7 @@ public class DefaultCamundaAuthenticationConverterTest {
 
   private Authentication getUsernamePasswordAuthenticationInContext(final String username) {
     return new UsernamePasswordAuthenticationToken(
-        CamundaUserBuilder.aCamundaUser()
-            .withUsername(username)
-            .withPassword("admin")
-            .withUserKey(1L)
-            .build(),
+        CamundaUserBuilder.aCamundaUser().withUsername(username).withPassword("admin").build(),
         null);
   }
 }

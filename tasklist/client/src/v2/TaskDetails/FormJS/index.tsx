@@ -82,7 +82,7 @@ const FormJS: React.FC<Props> = ({
     extractedVariables.length === 0 || status === 'success';
 
   const canCompleteTask =
-    user.userId === assignee && state === 'CREATED' && hasFetchedVariables;
+    user.username === assignee && state === 'CREATED' && hasFetchedVariables;
 
   const shouldHideBottomPanel =
     state === 'ASSIGNING' ||

@@ -16,14 +16,14 @@ type Data = ProcessInstance[];
 
 function useProcessInstances() {
   const {data: currentUser} = useCurrentUser();
-  const userId = currentUser?.userId;
+  const username = currentUser?.username;
 
   return useQuery<Data, RequestError>({
-    queryKey: ['processInstances', userId],
+    queryKey: ['processInstances', username],
     queryFn: async () => {
       const {response, error} = await request(
         api.searchProcessInstances({
-          userId: userId!,
+          username: username!,
           pageSize: 50,
         }),
       );
@@ -35,7 +35,7 @@ function useProcessInstances() {
       throw error ?? new Error('Failed to fetch process instances');
     },
     refetchInterval: 5000,
-    enabled: userId !== undefined,
+    enabled: username !== undefined,
   });
 }
 

@@ -91,7 +91,7 @@ const AppHeader: React.FC = observer(() => {
   useEffect(() => {
     if (currentUser !== undefined) {
       tracking.identifyUser({
-        userId: currentUser.userId,
+        username: currentUser.username,
         salesPlanType: currentUser.salesPlanType,
         roles: currentUser.roles,
       });

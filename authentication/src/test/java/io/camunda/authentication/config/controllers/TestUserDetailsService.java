@@ -18,7 +18,7 @@ public class TestUserDetailsService implements UserDetailsService {
   public static final String DEMO_USERNAME = "demo";
 
   @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+  public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
     if (!DEMO_USERNAME.equals(username)) {
       throw new UsernameNotFoundException(
           "This service only manages the demo user; "
@@ -26,7 +26,6 @@ public class TestUserDetailsService implements UserDetailsService {
     }
 
     return aCamundaUser()
-        .withUserKey(123L)
         .withName(DEMO_USERNAME)
         .withUsername(username)
         .withPassword(DEMO_USERNAME)

@@ -33,20 +33,20 @@ import {CustomFiltersModal} from './CustomFiltersModal';
 import {DeleteFilterModal} from './CustomFiltersModal/DeleteFilterModal';
 import {useTranslation} from 'react-i18next';
 
-function getCustomFilterParams(options: {userId: string; filter: string}) {
-  const {userId, filter} = options;
+function getCustomFilterParams(options: {username: string; filter: string}) {
+  const {username, filter} = options;
   const customFilters = getStateLocally('customFilters') ?? {};
   const filters = customFilters[filter];
 
   return filters === undefined
     ? {}
-    : prepareCustomFiltersParams(filters, userId);
+    : prepareCustomFiltersParams(filters, username);
 }
 
 function getNavLinkSearchParam(options: {
   currentParams: URLSearchParams;
   filter: MultiModeTaskFilters['filter'];
-  userId: string;
+  username: string;
 }): string {
   const CUSTOM_FILTERS_PARAMS = [
     'state',
@@ -65,7 +65,7 @@ function getNavLinkSearchParam(options: {
     'tenantIds',
     'taskVariables',
   ] as const;
-  const {filter, userId, currentParams} = options;
+  const {filter, username, currentParams} = options;
   const {sortBy, ...convertedParams} = Object.fromEntries(
     currentParams.entries(),
   );
@@ -77,7 +77,7 @@ function getNavLinkSearchParam(options: {
   ];
   const customFilterParams = NON_CUSTOM_FILTERS.includes(filter)
     ? {}
-    : getCustomFilterParams({userId, filter});
+    : getCustomFilterParams({username, filter});
 
   const updatedParams = new URLSearchParams({
     ...convertedParams,
@@ -119,7 +119,7 @@ const CollapsiblePanel: React.FC = () => {
   const [searchParams] = useSearchParams();
   const customFilters = Object.entries(getStateLocally('customFilters') ?? {});
   const {data} = useCurrentUser();
-  const userId = data?.userId ?? '';
+  const username = data?.username ?? '';
   const filtersModal = (
     <CustomFiltersModal
       key="custom-filters-modal"
@@ -136,7 +136,7 @@ const CollapsiblePanel: React.FC = () => {
           search: getNavLinkSearchParam({
             currentParams: searchParams,
             filter,
-            userId,
+            username,
           }),
         });
       }}
@@ -147,7 +147,7 @@ const CollapsiblePanel: React.FC = () => {
           search: getNavLinkSearchParam({
             currentParams: searchParams,
             filter: 'all-open',
-            userId,
+            username,
           }),
         });
       }}
@@ -234,7 +234,7 @@ const CollapsiblePanel: React.FC = () => {
                   search: getNavLinkSearchParam({
                     currentParams: searchParams,
                     filter: 'all-open',
-                    userId,
+                    username,
                   }),
                 }}
                 isActive={filter === 'all-open'}
@@ -248,7 +248,7 @@ const CollapsiblePanel: React.FC = () => {
                   search: getNavLinkSearchParam({
                     currentParams: searchParams,
                     filter: 'assigned-to-me',
-                    userId,
+                    username,
                   }),
                 }}
                 isActive={filter === 'assigned-to-me'}
@@ -262,7 +262,7 @@ const CollapsiblePanel: React.FC = () => {
                   search: getNavLinkSearchParam({
                     currentParams: searchParams,
                     filter: 'unassigned',
-                    userId,
+                    username,
                   }),
                 }}
                 isActive={filter === 'unassigned'}
@@ -276,7 +276,7 @@ const CollapsiblePanel: React.FC = () => {
                   search: getNavLinkSearchParam({
                     currentParams: searchParams,
                     filter: 'completed',
-                    userId,
+                    username,
                   }),
                 }}
                 isActive={filter === 'completed'}
@@ -291,7 +291,7 @@ const CollapsiblePanel: React.FC = () => {
                     search: getNavLinkSearchParam({
                       currentParams: searchParams,
                       filter: filterId,
-                      userId,
+                      username,
                     }),
                   }}
                   isActive={filter === filterId}
@@ -355,7 +355,7 @@ const CollapsiblePanel: React.FC = () => {
             search: getNavLinkSearchParam({
               currentParams: searchParams,
               filter: 'all-open',
-              userId,
+              username,
             }),
           });
           setCustomFilterToDelete(undefined);

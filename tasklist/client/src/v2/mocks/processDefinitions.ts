@@ -24,6 +24,7 @@ function getProcessDefinitionMock(
     tenantId: DEFAULT_TENANT_ID,
     version: 1,
     name: `Process ${id}`,
+    hasStartForm: false,
     ...customFields,
   };
 }

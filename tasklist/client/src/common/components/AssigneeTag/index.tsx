@@ -54,9 +54,9 @@ const AssigneeTag: React.FC<Props> = ({
   isShortFormat = true,
 }) => {
   const {t} = useTranslation();
-  const {userId} = currentUser;
+  const {username} = currentUser;
   const isAssigned = typeof assignee === 'string';
-  const isAssignedToCurrentUser = assignee === userId;
+  const isAssignedToCurrentUser = assignee === username;
 
   if (!isAssigned) {
     return (

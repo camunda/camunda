@@ -11,14 +11,14 @@ import {t} from 'i18next';
 function getNavLinkLabel({
   displayName,
   assigneeId,
-  currentUserId,
+  currentUsername,
 }: {
   displayName: string;
   assigneeId: string | null | undefined;
-  currentUserId: string;
+  currentUsername: string;
 }) {
   const isAssigned = typeof assigneeId === 'string';
-  const isAssignedToCurrentUser = assigneeId === currentUserId;
+  const isAssignedToCurrentUser = assigneeId === currentUsername;
   if (isAssigned) {
     if (isAssignedToCurrentUser) {
       return t('availableTasksNavLinkAssignedToMe', {name: displayName});
