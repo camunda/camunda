@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractObjectAssert;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.condition.VerboseCondition;
 
 /** Convenience class to assert certain properties of a Zeebe cluster {@link Topology}. */
@@ -78,6 +79,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
   public TopologyAssert isHealthy() {
     isNotNull();
 
+    boolean healthyPartitionsExists = false;
     for (final BrokerInfo broker : actual.getBrokers()) {
       for (final PartitionInfo partition : broker.getPartitions()) {
         if (partition.getHealth() != PartitionBrokerHealth.HEALTHY) {
@@ -85,8 +87,13 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
               "Expected all partitions to be healthy, but partition <%d> of broker <%d> is <%s>",
               partition.getPartitionId(), broker.getNodeId(), partition.getHealth());
         }
+        healthyPartitionsExists = true;
       }
     }
+
+    Assertions.assertThat(healthyPartitionsExists)
+        .describedAs("At least one healthy partition exists")
+        .isTrue();
 
     return this;
   }
