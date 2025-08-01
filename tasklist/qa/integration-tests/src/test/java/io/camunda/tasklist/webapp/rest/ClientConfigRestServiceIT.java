@@ -12,9 +12,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import org.junit.jupiter.api.*;
@@ -37,8 +39,10 @@ import org.springframework.web.context.WebApplicationContext;
       TasklistProfileService.class,
       ClientConfig.class,
       ClientConfigRestService.class,
-      TestTasklistPropertiesOverride.class,
-      SecurityConfiguration.class
+      SecurityConfiguration.class,
+      TasklistPropertiesOverride.class,
+      UnifiedConfiguration.class,
+      UnifiedConfigurationHelper.class
     },
     properties = {
       TasklistProperties.PREFIX + ".enterprise=true",
