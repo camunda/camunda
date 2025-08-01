@@ -10,6 +10,7 @@ package io.camunda.zeebe.config;
 public final class AuthCfg {
   private AuthType type = AuthType.NONE;
   private BasicCfg basic = new BasicCfg();
+  private OAuthConfig oauth = new OAuthConfig();
 
   public AuthType getType() {
     return type;
@@ -27,9 +28,18 @@ public final class AuthCfg {
     this.basic = basic;
   }
 
+  public OAuthConfig getOauth() {
+    return oauth;
+  }
+
+  public void setOauth(final OAuthConfig oauth) {
+    this.oauth = oauth;
+  }
+
   public enum AuthType {
     NONE,
-    BASIC
+    BASIC,
+    OAUTH
   }
 
   public static final class BasicCfg {
@@ -50,6 +60,45 @@ public final class AuthCfg {
 
     public void setPassword(final String password) {
       this.password = password;
+    }
+  }
+
+  public static final class OAuthConfig {
+    private String clientId;
+    private String clientSecret;
+    private String audience;
+    private String authzUrl;
+
+    public String getClientId() {
+      return clientId;
+    }
+
+    public void setClientId(final String clientId) {
+      this.clientId = clientId;
+    }
+
+    public String getClientSecret() {
+      return clientSecret;
+    }
+
+    public void setClientSecret(final String clientSecret) {
+      this.clientSecret = clientSecret;
+    }
+
+    public String getAudience() {
+      return audience;
+    }
+
+    public void setAudience(final String audience) {
+      this.audience = audience;
+    }
+
+    public String getAuthzUrl() {
+      return authzUrl;
+    }
+
+    public void setAuthzUrl(final String authzUrl) {
+      this.authzUrl = authzUrl;
     }
   }
 }
