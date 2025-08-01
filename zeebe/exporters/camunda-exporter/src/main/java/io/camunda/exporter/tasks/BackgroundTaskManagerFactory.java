@@ -122,8 +122,10 @@ public final class BackgroundTaskManagerFactory {
       if (partitionId == START_PARTITION_ID) {
         tasks.add(buildBatchOperationArchiverJob());
         tasks.add(new ApplyRolloverPeriodJob(archiverRepository));
-        tasks.add(buildBatchOperationUpdateTask());
       }
+    }
+    if (partitionId == START_PARTITION_ID) {
+      tasks.add(buildBatchOperationUpdateTask());
     }
     executor.setCorePoolSize(tasks.size());
     return tasks;
