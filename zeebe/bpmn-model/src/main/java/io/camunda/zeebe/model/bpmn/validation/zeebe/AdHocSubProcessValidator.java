@@ -18,7 +18,6 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
-import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -48,11 +47,6 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
     if (hasEndEvent(flowElements)) {
       validationResultCollector.addError(0, "Must not contain an end event.");
     }
-
-    if (hasSingleIntermediateCatchEvent(flowElements)) {
-      validationResultCollector.addError(
-          0, "Any intermediate catch event must have an outgoing sequence flow.");
-    }
   }
 
   private static boolean hasStartEvent(final Collection<FlowElement> flowElements) {
@@ -61,12 +55,5 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
 
   private static boolean hasEndEvent(final Collection<FlowElement> flowElements) {
     return flowElements.stream().anyMatch(EndEvent.class::isInstance);
-  }
-
-  private static boolean hasSingleIntermediateCatchEvent(
-      final Collection<FlowElement> flowElements) {
-    return flowElements.stream()
-        .filter(IntermediateCatchEvent.class::isInstance)
-        .anyMatch(flowElement -> ((IntermediateCatchEvent) flowElement).getOutgoing().isEmpty());
   }
 }
