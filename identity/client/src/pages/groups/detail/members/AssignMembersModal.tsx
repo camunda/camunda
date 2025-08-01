@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import { assignGroupMember } from "src/utility/api/membership";
@@ -35,21 +35,32 @@ const AssignMembersModal: FC<
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
 
+  const [search, setSearch] = useState<Record<string, unknown>>({});
+
+  const handleSearchChange = (search: string) => {
+    if (search === "") {
+      setSearch({});
+      return;
+    }
+
+    setSearch({ filter: { username: { $like: `*${search}*` } } });
+  };
+
   const {
     data: userSearchResults,
     loading,
     reload,
     error,
-  } = useApi(searchUser);
+  } = useApi(searchUser, search);
 
   const [callAssignUser] = useApiCall(assignGroupMember);
 
-  const unassignedUsers =
-    userSearchResults?.items.filter(
-      ({ username }) =>
-        !assignedUsers.some((user) => user.username === username) &&
-        !selectedUsers.some((user) => user.username === username),
-    ) || [];
+  const unassignedFilter = useCallback(
+    ({ username }: User) =>
+      !assignedUsers.some((user) => user.username === username) &&
+      !selectedUsers.some((user) => user.username === username),
+    [assignedUsers, selectedUsers],
+  );
 
   const onSelectUser = (user: User) => {
     setSelectedUsers([...selectedUsers, user]);
@@ -132,11 +143,14 @@ const AssignMembersModal: FC<
       )}
       <DropdownSearch
         autoFocus
-        items={unassignedUsers}
+        items={userSearchResults?.items || []}
+        keyAttribute="username"
         itemTitle={({ username }) => username}
         itemSubTitle={({ email }) => email}
         placeholder={t("searchByNameOrEmail")}
         onSelect={onSelectUser}
+        onChange={handleSearchChange}
+        filter={unassignedFilter}
       />
       {!loading && error && (
         <TranslatedErrorInlineNotification

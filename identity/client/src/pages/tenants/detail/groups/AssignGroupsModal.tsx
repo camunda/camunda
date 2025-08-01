@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
@@ -33,22 +33,30 @@ const AssignGroupsModal: FC<
   const [loadingAssignGroup, setLoadingAssignGroup] = useState(false);
   const [currentInputValue, setCurrentInputValue] = useState("");
 
+  const [search, setSearch] = useState<Record<string, unknown>>({});
+  useEffect(() => {
+    if (currentInputValue === "") {
+      setSearch({});
+      return;
+    }
+    setSearch({ filter: { groupId: { $like: `*${currentInputValue}*` } } });
+  }, [currentInputValue]);
+
   const {
     data: groupSearchResults,
     loading,
     reload,
     error,
-  } = useApi(searchGroups);
+  } = useApi(searchGroups, search);
 
   const [callAssignGroup] = useApiCall(assignTenantGroup);
 
-  const unassignedGroups =
-    groupSearchResults?.items.filter(
-      ({ groupId }) =>
-        !assignedGroups.some((group) => group.groupId === groupId) &&
-        !selectedGroups.some((group) => group.groupId === groupId) &&
-        groupId.toLowerCase().includes(currentInputValue.toLowerCase()),
-    ) || [];
+  const unassignedFilter = useCallback(
+    ({ groupId }: Group) =>
+      !assignedGroups.some((group) => group.groupId === groupId) &&
+      !selectedGroups.some((group) => group.groupId === groupId),
+    [assignedGroups, selectedGroups],
+  );
 
   const handleDropdownChange = (value: string) => {
     setCurrentInputValue(value);
@@ -124,12 +132,13 @@ const AssignGroupsModal: FC<
       )}
       <DropdownSearch
         autoFocus
-        items={unassignedGroups}
+        items={groupSearchResults?.items || []}
         itemTitle={({ groupId }) => groupId}
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByGroupId")}
         onSelect={onSelectGroup}
         onChange={handleDropdownChange}
+        filter={unassignedFilter}
       />
       {!loading && error && (
         <TranslatedErrorInlineNotification
