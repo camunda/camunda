@@ -56,7 +56,7 @@ public class BackupRestoreTest {
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreTest.class);
-  private static final String TASKLIST_TEST_DOCKER_IMAGE = "localhost:5000/camunda/tasklist";
+  private static final String TASKLIST_TEST_DOCKER_IMAGE = "camunda/tasklist";
 
   @Autowired private TasklistAPICaller tasklistAPICaller;
 
