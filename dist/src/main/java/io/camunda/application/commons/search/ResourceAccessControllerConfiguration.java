@@ -38,6 +38,7 @@ public class ResourceAccessControllerConfiguration {
       havingValue = "true",
       matchIfMissing = true)
   public ResourceAccessProvider resourceAccessProvider(final AuthorizationChecker checker) {
+    System.out.println("*** CREATING DefaultResourceAccessProvider - AUTHORIZATIONS ENABLED ***");
     return new DefaultResourceAccessProvider(checker);
   }
 
@@ -47,6 +48,7 @@ public class ResourceAccessControllerConfiguration {
       name = "enabled",
       havingValue = "false")
   public ResourceAccessProvider disabledResourceAccessProvider() {
+    System.out.println("*** CREATING DisabledResourceAccessProvider - AUTHORIZATIONS DISABLED ***");
     return new DisabledResourceAccessProvider();
   }
 

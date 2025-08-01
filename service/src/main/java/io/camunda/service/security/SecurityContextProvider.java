@@ -16,10 +16,15 @@ public class SecurityContextProvider {
 
   public SecurityContext provideSecurityContext(
       final CamundaAuthentication authentication, final Authorization authorization) {
-    return new Builder()
-        .withAuthentication(authentication)
-        .withAuthorization(authorization)
-        .build();
+    System.out.println("*** SecurityContextProvider.provideSecurityContext()");
+    System.out.println("*** Authentication: " + authentication);
+    System.out.println("*** Authorization: " + authorization);
+
+    final var securityContext =
+        new Builder().withAuthentication(authentication).withAuthorization(authorization).build();
+
+    System.out.println("*** Built SecurityContext: " + securityContext);
+    return securityContext;
   }
 
   public SecurityContext provideSecurityContext(final CamundaAuthentication authentication) {

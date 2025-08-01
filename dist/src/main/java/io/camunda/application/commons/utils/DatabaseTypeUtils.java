@@ -16,6 +16,10 @@ public final class DatabaseTypeUtils {
 
   public static boolean isSecondaryStorageEnabled(final Environment env) {
     final String dbType = env.getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
-    return !"none".equalsIgnoreCase(dbType);
+    System.out.println(
+        "*** DatabaseTypeUtils.isSecondaryStorageEnabled() - dbType: '" + dbType + "'");
+    final boolean enabled = !"none".equalsIgnoreCase(dbType);
+    System.out.println("*** Secondary storage enabled: " + enabled);
+    return enabled;
   }
 }

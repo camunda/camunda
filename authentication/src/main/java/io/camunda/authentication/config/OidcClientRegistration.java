@@ -47,7 +47,15 @@ public final class OidcClientRegistration {
       builder.jwkSetUri(configuration.getJwkSetUri());
     }
     if (configuration.getScope() != null) {
-      builder.scope(configuration.getScope());
+      // For client credentials flow with MS Entra, scopes must end with /.default
+      if ("client_credentials".equals(configuration.getGrantType())
+          && configuration.getScope() != null
+          && !configuration.getScope().contains("/.default")) {
+        // Use the client ID with /.default suffix for MS Entra client credentials
+        builder.scope(configuration.getClientId() + "/.default");
+      } else {
+        builder.scope(configuration.getScope());
+      }
     }
     if (configuration.getGrantType() != null) {
       builder.authorizationGrantType(new AuthorizationGrantType(configuration.getGrantType()));

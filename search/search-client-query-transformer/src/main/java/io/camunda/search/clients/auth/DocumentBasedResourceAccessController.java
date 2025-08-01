@@ -52,8 +52,14 @@ public class DocumentBasedResourceAccessController implements ResourceAccessCont
   public <T> T doSearch(
       final SecurityContext securityContext,
       final Function<ResourceAccessChecks, T> resourceChecksApplier) {
+    System.out.println("*** DocumentBasedResourceAccessController.doSearch()");
     final var authentication = securityContext.authentication();
     final var authorization = securityContext.authorization();
+    System.out.println("*** Authentication: " + authentication);
+    System.out.println("*** Authorization: " + authorization);
+    System.out.println(
+        "*** ResourceAccessProvider: " + resourceAccessProvider.getClass().getName());
+    System.out.println("*** TenantAccessProvider: " + tenantAccessProvider.getClass().getName());
     return doPreFiltering(authentication, authorization, resourceChecksApplier);
   }
 
@@ -85,22 +91,39 @@ public class DocumentBasedResourceAccessController implements ResourceAccessCont
 
   protected ResourceAccess resolveResourcesAccess(
       final CamundaAuthentication authentication, final Authorization<?> authorization) {
-    return resourceAccessProvider.resolveResourceAccess(authentication, authorization);
+    System.out.println(
+        "*** resolveResourcesAccess() - calling resourceAccessProvider.resolveResourceAccess()");
+    System.out.println(
+        "*** ResourceAccessProvider type: " + resourceAccessProvider.getClass().getName());
+    final var resourceAccess =
+        resourceAccessProvider.resolveResourceAccess(authentication, authorization);
+    System.out.println("*** ResourceAccess result: " + resourceAccess);
+    System.out.println("*** ResourceAccess wildcard: " + resourceAccess.wildcard());
+    System.out.println("*** ResourceAccess denied: " + resourceAccess.denied());
+    System.out.println("*** ResourceAccess authorization: " + resourceAccess.authorization());
+    return resourceAccess;
   }
 
   protected AuthorizationCheck createAuthorizationCheck(final ResourceAccess resourceAccess) {
-    return Optional.of(resourceAccess)
-        .filter(f -> !f.wildcard())
-        .map(
-            r ->
-                Optional.ofNullable(r.authorization())
-                    .map(AuthorizationCheck::enabled)
-                    .orElseThrow(
-                        () ->
-                            new CamundaSearchException(
-                                ERROR_RESOURCE_ACCESS_DOES_NOT_CONTAIN_AUTHORIZATION.formatted(
-                                    resourceAccess))))
-        .orElseGet(AuthorizationCheck::disabled);
+    System.out.println("*** createAuthorizationCheck() - ResourceAccess: " + resourceAccess);
+    System.out.println("*** ResourceAccess wildcard: " + resourceAccess.wildcard());
+
+    final var authCheck =
+        Optional.of(resourceAccess)
+            .filter(f -> !f.wildcard())
+            .map(
+                r ->
+                    Optional.ofNullable(r.authorization())
+                        .map(AuthorizationCheck::enabled)
+                        .orElseThrow(
+                            () ->
+                                new CamundaSearchException(
+                                    ERROR_RESOURCE_ACCESS_DOES_NOT_CONTAIN_AUTHORIZATION.formatted(
+                                        resourceAccess))))
+            .orElseGet(AuthorizationCheck::disabled);
+
+    System.out.println("*** AuthorizationCheck result: " + authCheck);
+    return authCheck;
   }
 
   protected TenantCheck determineTenantCheck(final CamundaAuthentication authentication) {
