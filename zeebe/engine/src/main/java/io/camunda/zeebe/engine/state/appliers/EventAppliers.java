@@ -264,7 +264,7 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.ELEMENT_MIGRATED,
         1,
-        new ProcessInstanceElementMigratedV1Applier(elementInstanceState, processState));
+        new ProcessInstanceElementMigratedV1Applier(elementInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_MIGRATED,
         2,
@@ -723,5 +723,9 @@ public final class EventAppliers implements EventApplier {
     }
 
     applierForVersion.applyState(key, value);
+  }
+
+  public Map<Intent, Map<Integer, TypedEventApplier>> getRegisteredAppliers() {
+    return Map.copyOf(mapping);
   }
 }
