@@ -8,11 +8,7 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_REGEX;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.MAX_LENGTH;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
@@ -45,13 +41,7 @@ public class MappingRuleValidator {
 
   private static List<String> validateId(final String mappingRuleId) {
     final List<String> violations = new ArrayList<>();
-    if (mappingRuleId == null || mappingRuleId.isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingRuleId"));
-    } else if (mappingRuleId.length() > MAX_LENGTH) {
-      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("mappingRuleId", MAX_LENGTH));
-    } else if (!ID_PATTERN.matcher(mappingRuleId).matches()) {
-      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("mappingRuleId", ID_REGEX));
-    }
+    IdentifierValidator.validateId(mappingRuleId, "mappingRuleId", violations, ID_PATTERN);
     return violations;
   }
 
