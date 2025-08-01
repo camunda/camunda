@@ -11,6 +11,8 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.StandaloneIdentityMigration;
 import io.camunda.application.commons.migration.BlockingMigrationsRunner;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -29,7 +31,11 @@ public final class TestStandaloneIdentityMigration
   private final IdentityMigrationProperties config;
 
   public TestStandaloneIdentityMigration(final IdentityMigrationProperties migrationProperties) {
-    super(StandaloneIdentityMigration.class, BlockingMigrationsRunner.class);
+    super(
+        StandaloneIdentityMigration.class,
+        BlockingMigrationsRunner.class,
+        UnifiedConfigurationHelper.class,
+        UnifiedConfiguration.class);
     config = migrationProperties;
 
     migrationProperties.getCluster().setPort(SocketUtil.getNextAddress().getPort());

@@ -9,8 +9,10 @@ package io.camunda.tasklist.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +23,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
-    classes = {TestApplicationWithNoBeans.class, TestTasklistPropertiesOverride.class},
+    classes = {
+      TestApplicationWithNoBeans.class,
+      TasklistPropertiesOverride.class,
+      UnifiedConfiguration.class,
+      UnifiedConfigurationHelper.class
+    },
     webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test-properties")
 public class PropertiesTest {

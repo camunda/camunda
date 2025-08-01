@@ -12,12 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.util.OperateAbstractIT;
-import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
@@ -40,11 +42,13 @@ import org.springframework.test.web.servlet.MvcResult;
     classes = {
       TestApplicationWithNoBeans.class,
       FlowNodeInstanceRestService.class,
-      TestOperatePropertiesOverride.class,
+      OperatePropertiesOverride.class,
       OperateProfileService.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
-      DatabaseInfo.class
+      DatabaseInfo.class,
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class
     })
 public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
 

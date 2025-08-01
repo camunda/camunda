@@ -13,7 +13,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 //  we're storing the unified configuration objects and beans in the configuration module,
 //  the fact that dist depends on configuration doesn't allow us to declare that configuration
 //  depends on dist, to extend and override these classes. Nevertheless, depending on dist is
-//  a conceptual misreprentation of what the configuration module belongs to.
+//  a conceptual misrepresentation of what the configuration module belongs to.
 //
 //  As we are planning, as a future refactoring, to move all the configuration classes and beans
 //  within dist (reason: configuration should be part of the Presentation layer of the app), when

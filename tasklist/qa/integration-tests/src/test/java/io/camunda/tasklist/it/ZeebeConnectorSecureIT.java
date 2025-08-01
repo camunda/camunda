@@ -12,11 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.property.ZeebeProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.util.CertificateUtil;
-import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.zeebe.ZeebeConnector;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.File;
@@ -35,7 +37,12 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 @SpringBootTest(
-    classes = {ZeebeConnector.class, TestTasklistPropertiesOverride.class},
+    classes = {
+      ZeebeConnector.class,
+      TasklistPropertiesOverride.class,
+      UnifiedConfiguration.class,
+      UnifiedConfigurationHelper.class
+    },
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",

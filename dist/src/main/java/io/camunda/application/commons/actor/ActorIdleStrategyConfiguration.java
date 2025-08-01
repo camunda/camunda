@@ -7,31 +7,28 @@
  */
 package io.camunda.application.commons.actor;
 
-import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategyProperties;
+import io.camunda.configuration.beans.IdleStrategyBasedProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
-import java.time.Duration;
 import java.util.function.Supplier;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.lang.Nullable;
+import org.springframework.context.annotation.Import;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(IdleStrategyProperties.class)
+@Import({IdleStrategyBasedProperties.class})
 public final class ActorIdleStrategyConfiguration {
-  private final IdleStrategyProperties properties;
+  private final IdleStrategyBasedProperties properties;
 
   @Autowired
-  public ActorIdleStrategyConfiguration(final IdleStrategyProperties properties) {
+  public ActorIdleStrategyConfiguration(final IdleStrategyBasedProperties properties) {
     this.properties = properties;
   }
 
   public ActorIdleStrategyConfiguration() {
-    this(new IdleStrategyProperties(null, null, null, null));
+    this(new IdleStrategyBasedProperties(null, null, null, null));
   }
 
   @Bean
@@ -41,35 +38,6 @@ public final class ActorIdleStrategyConfiguration {
         properties.maxYields(),
         properties.minParkPeriodNs(),
         properties.maxParkPeriodNs());
-  }
-
-  @ConfigurationProperties(prefix = "zeebe.actor.idle")
-  public record IdleStrategyProperties(
-      @Nullable Long maxSpins,
-      @Nullable Long maxYields,
-      @Nullable Duration minParkPeriod,
-      @Nullable Duration maxParkPeriod) {
-    @Override
-    public Long maxSpins() {
-      return maxSpins == null ? ActorSchedulerBuilder.DEFAULT_MAX_SPINS : maxSpins;
-    }
-
-    @Override
-    public Long maxYields() {
-      return maxYields == null ? ActorSchedulerBuilder.DEFAULT_MAX_YIELDS : maxYields;
-    }
-
-    public long minParkPeriodNs() {
-      return minParkPeriod == null
-          ? ActorSchedulerBuilder.DEFAULT_MIN_PARK_PERIOD_NS
-          : minParkPeriod.toNanos();
-    }
-
-    public long maxParkPeriodNs() {
-      return maxParkPeriod == null
-          ? ActorSchedulerBuilder.DEFAULT_MAX_PARK_PERIOD_NS
-          : maxParkPeriod.toNanos();
-    }
   }
 
   public record IdleStrategySupplier(

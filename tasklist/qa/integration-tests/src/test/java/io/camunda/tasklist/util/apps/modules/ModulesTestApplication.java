@@ -7,13 +7,15 @@
  */
 package io.camunda.tasklist.util.apps.modules;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
-import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
@@ -54,10 +56,12 @@ import org.springframework.context.annotation.Profile;
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import({
-  TestTasklistPropertiesOverride.class,
   WebappsModuleConfiguration.class,
   ImporterSecurityModuleConfiguration.class,
   WebappManagementModuleConfiguration.class,
+  TasklistPropertiesOverride.class,
+  UnifiedConfiguration.class,
+  UnifiedConfigurationHelper.class
 })
 public class ModulesTestApplication {
 

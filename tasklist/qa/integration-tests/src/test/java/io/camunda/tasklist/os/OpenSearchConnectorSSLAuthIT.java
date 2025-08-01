@@ -9,8 +9,10 @@ package io.camunda.tasklist.os;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.io.File;
 import java.util.Map;
@@ -35,8 +37,10 @@ import org.testcontainers.utility.MountableFile;
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
-      TestTasklistPropertiesOverride.class,
-      OpenSearchConnector.class
+      OpenSearchConnector.class,
+      TasklistPropertiesOverride.class,
+      UnifiedConfiguration.class,
+      UnifiedConfigurationHelper.class
     })
 @ContextConfiguration(initializers = {OpenSearchConnectorSSLAuthIT.ElasticsearchStarter.class})
 @Profile("opensearch-test")

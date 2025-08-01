@@ -13,12 +13,14 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.util.OperateAbstractIT;
-import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.DecisionRestService;
@@ -43,7 +45,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
-      TestOperatePropertiesOverride.class
+      OperatePropertiesOverride.class,
+      UnifiedConfiguration.class,
+      UnifiedConfigurationHelper.class
     })
 public class DecisionRestServiceIT extends OperateAbstractIT {
 

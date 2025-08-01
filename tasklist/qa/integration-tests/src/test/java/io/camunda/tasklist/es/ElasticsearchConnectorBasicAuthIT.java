@@ -11,6 +11,8 @@ import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARC
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
@@ -36,7 +38,9 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
     classes = {
       TestElasticsearchSchemaManager.class,
       TestApplication.class,
-      SearchEngineHealthIndicator.class
+      SearchEngineHealthIndicator.class,
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class
     },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",

@@ -10,6 +10,8 @@ package io.camunda.tasklist.os;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestOpenSearchSchemaManager;
@@ -36,7 +38,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     classes = {
       TestOpenSearchSchemaManager.class,
       TestApplication.class,
-      SearchEngineHealthIndicator.class
+      SearchEngineHealthIndicator.class,
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class
     },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",

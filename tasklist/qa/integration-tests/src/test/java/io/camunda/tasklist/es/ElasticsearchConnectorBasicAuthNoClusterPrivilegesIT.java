@@ -16,6 +16,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.security.IndicesPrivileges;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
@@ -52,7 +54,9 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
     classes = {
       TestElasticsearchSchemaManager.class,
       TestApplication.class,
-      SearchEngineHealthIndicator.class
+      SearchEngineHealthIndicator.class,
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class
     },
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
