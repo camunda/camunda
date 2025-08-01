@@ -40,8 +40,8 @@ public @interface ConditionalOnSecondaryStorageType {
       if (strType == null) {
         // TODO: Once we clear the legacy properties from the test envs we have, remove the case
         //  that uses  camunda.database.type
-        strType = Optional.ofNullable(
-            env.getProperty("camunda.database.type")).orElse("elasticsearch");
+        strType =
+            Optional.ofNullable(env.getProperty("camunda.database.type")).orElse("elasticsearch");
       }
 
       final var type = SecondaryStorageType.valueOf(strType.toLowerCase());
