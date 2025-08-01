@@ -88,7 +88,7 @@ public class ZeebeResourcesHelper implements CloseableSilently {
 
   public long createSingleJob(
       final String type, final Consumer<ServiceTaskBuilder> consumer, final String variables) {
-    return createJobs(type, consumer, variables, 1).get(0);
+    return createJobs(type, consumer, variables, 1).getFirst();
   }
 
   public List<Long> createJobs(final String type, final int amount) {
