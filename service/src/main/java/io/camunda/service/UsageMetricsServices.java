@@ -7,6 +7,8 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.UsageMetricsQueryMapper.mapToUsageMetricsTUQuery;
+
 import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
@@ -44,15 +46,13 @@ public final class UsageMetricsServices
     }
     validateStartAndEndTime(query);
     final UsageMetricsSearchClient authUsageMetricsSearchClient =
-        usageMetricsSearchClient
-            // TODO add proper authorization with https://github.com/camunda/camunda/issues/34708
-            .withSecurityContext(
+        usageMetricsSearchClient.withSecurityContext(
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.usageMetric().read())));
     return SearchQueryResult.of(
         Tuple.of(
             authUsageMetricsSearchClient.usageMetricStatistics(query),
-            authUsageMetricsSearchClient.usageMetricTUStatistics(query)));
+            authUsageMetricsSearchClient.usageMetricTUStatistics(mapToUsageMetricsTUQuery(query))));
   }
 
   private void validateStartAndEndTime(final UsageMetricsQuery query) {

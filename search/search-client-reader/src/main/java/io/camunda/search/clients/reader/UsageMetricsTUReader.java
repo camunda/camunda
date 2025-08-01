@@ -8,11 +8,11 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
-import io.camunda.search.query.UsageMetricsQuery;
+import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
 
 public interface UsageMetricsTUReader extends SearchClientReader {
 
   UsageMetricTUStatisticsEntity usageMetricTUStatistics(
-      UsageMetricsQuery query, ResourceAccessChecks resourceAccessChecks);
+      UsageMetricsTUQuery query, ResourceAccessChecks resourceAccessChecks);
 }

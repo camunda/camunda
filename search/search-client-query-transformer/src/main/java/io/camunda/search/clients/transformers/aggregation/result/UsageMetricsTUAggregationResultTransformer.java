@@ -7,13 +7,14 @@
  */
 package io.camunda.search.clients.transformers.aggregation.result;
 
-import io.camunda.search.aggregation.UsageMetricsAggregation;
+import static io.camunda.search.aggregation.UsageMetricsTUAggregation.AGGREGATION_TERMS_ASSIGNEE_HASH;
+import static io.camunda.search.aggregation.UsageMetricsTUAggregation.AGGREGATION_TERMS_TENANT_ID;
+
 import io.camunda.search.aggregation.result.UsageMetricsTUAggregationResult;
 import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant.Builder;
-import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -21,48 +22,30 @@ import java.util.Map.Entry;
 public class UsageMetricsTUAggregationResultTransformer
     implements AggregationResultTransformer<UsageMetricsTUAggregationResult> {
 
-  private long extractMetricCount(
-      final AggregationResult eventTypes, final UsageMetricsEventType metricName) {
-    final var metric = eventTypes.aggregations().get(metricName.name());
-    if (metric != null) {
-      return metric
-          .aggregations()
-          .get(UsageMetricsAggregation.AGGREGATION_SUM_EVENT_TYPE)
-          .docCount();
-    }
-    return 0;
-  }
-
   @Override
   public UsageMetricsTUAggregationResult apply(final Map<String, AggregationResult> aggregations) {
 
-    final boolean withTenants =
-        !aggregations.containsKey(UsageMetricsAggregation.AGGREGATION_TERMS_EVENT_TYPE);
+    final boolean withTenants = aggregations.containsKey(AGGREGATION_TERMS_TENANT_ID);
     final UsageMetricTUStatisticsEntity res;
 
-    if (withTenants) {
-      final var tenantsAgg = aggregations.get(UsageMetricsAggregation.AGGREGATION_TERMS_TENANT_ID);
+    final var totalTu = aggregations.get(AGGREGATION_TERMS_ASSIGNEE_HASH).docCount();
 
-      long totalTu = 0;
+    if (withTenants) {
+      final var tenantsAgg = aggregations.get(AGGREGATION_TERMS_TENANT_ID);
+
       final var tenants =
           new HashMap<String, UsageMetricTUStatisticsEntityTenant>(
               tenantsAgg.aggregations().size());
       for (final Entry<String, AggregationResult> entry : tenantsAgg.aggregations().entrySet()) {
         final String tenantId = entry.getKey();
-        final AggregationResult tenantIdSet = entry.getValue();
+        final AggregationResult tenantIdAgg = entry.getValue();
 
-        final var eventTypesAgg =
-            tenantIdSet.aggregations().get(UsageMetricsAggregation.AGGREGATION_TERMS_EVENT_TYPE);
-        final long tenantTu = extractMetricCount(eventTypesAgg, UsageMetricsEventType.TU);
-        totalTu += tenantTu;
+        final long tenantTu =
+            tenantIdAgg.aggregations().get(AGGREGATION_TERMS_ASSIGNEE_HASH).docCount();
         tenants.put(tenantId, new Builder().tu(tenantTu).build());
       }
       res = new UsageMetricTUStatisticsEntity(totalTu, tenants);
     } else {
-      final var eventTypesAgg =
-          aggregations.get(UsageMetricsAggregation.AGGREGATION_TERMS_EVENT_TYPE);
-      final long totalTu = extractMetricCount(eventTypesAgg, UsageMetricsEventType.TU);
-
       res = new UsageMetricTUStatisticsEntity(totalTu, null);
     }
 

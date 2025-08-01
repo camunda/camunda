@@ -18,15 +18,12 @@ import java.util.Optional;
 public class UsageMetricTUEntityMapper {
 
   public static UsageMetricTUStatisticsEntity toEntity(
-      final List<UsageMetricTUTenantStatisticsDbModel> dbModels) {
-
-    long totalTu = 0;
+      final List<UsageMetricTUTenantStatisticsDbModel> dbModels, final Long totalTu) {
 
     final var tenants = new HashMap<String, UsageMetricTUStatisticsEntityTenant>(dbModels.size());
 
     for (final UsageMetricTUTenantStatisticsDbModel dbModel : dbModels) {
       final long tenantTu = Optional.ofNullable(dbModel.tu()).orElse(0L);
-      totalTu += tenantTu;
       tenants.put(dbModel.tenantId(), new Builder().tu(tenantTu).build());
     }
 
