@@ -8,6 +8,7 @@
 package io.camunda.application.commons.security;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -38,6 +39,12 @@ public class CamundaSecurityConfiguration {
   }
 
   @Bean
+  public InitializationConfiguration initializationConfiguration(
+      final SecurityConfiguration securityConfiguration) {
+    return securityConfiguration.getInitialization();
+  }
+
+  @Bean
   public MultiTenancyConfiguration multiTenancyConfiguration(
       final SecurityConfiguration securityConfiguration) {
     return securityConfiguration.getMultiTenancy();
@@ -56,6 +63,16 @@ public class CamundaSecurityConfiguration {
                   true,
                   "camunda.security.authentication.unprotected-api",
                   true));
+    }
+
+    final var initializationCfg = camundaSecurityProperties.getInitialization();
+    final var idRegex = initializationCfg.getIdentifierRegex();
+    final var idPattern = initializationCfg.getIdentifierPattern();
+    // TODO: use AuthorizationScope.WILDCARD_CHAR from #36158
+    if (idPattern != null && idPattern.matcher("*").matches()) {
+      throw new IllegalStateException(
+          "The configured identifier pattern (%s=%s) allows the asterisk ('*') which is reserved characted. Please use a different pattern."
+              .formatted("camunda.security.initialization.identifierRegex", idRegex));
     }
   }
 
