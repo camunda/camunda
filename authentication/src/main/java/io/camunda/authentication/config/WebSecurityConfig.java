@@ -8,6 +8,8 @@
 package io.camunda.authentication.config;
 
 import static com.nimbusds.jose.JOSEObjectType.JWT;
+import static io.camunda.search.util.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES256;
@@ -29,7 +31,10 @@ import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.search.util.ConditionalOnSecondaryStorageDisabled;
+import io.camunda.search.util.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -388,6 +393,7 @@ public class WebSecurityConfig {
 
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+  @ConditionalOnSecondaryStorageEnabled
   public static class BasicConfiguration {
     @Bean
     @ConditionalOnMissingBean(UserDetailsService.class)
@@ -523,6 +529,13 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public OidcGroupsLoader oidcGroupsLoader(final SecurityConfiguration securityConfiguration) {
+      final String groupsClaim =
+          securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
+      return new OidcGroupsLoader(groupsClaim);
+    }
+
+    @Bean
     public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
         final SecurityConfiguration securityConfiguration) {
       final var decoderFactory = new OidcIdTokenDecoderFactory();
@@ -635,6 +648,7 @@ public class WebSecurityConfig {
 
     @Bean
     @Order(ORDER_WEBAPP_API)
+    @ConditionalOnSecondaryStorageEnabled
     public SecurityFilterChain oidcWebappSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
@@ -752,6 +766,34 @@ public class WebSecurityConfig {
       }
     }
   }
+
+  /**
+   * Configuration that provides fail-fast behavior when Basic Authentication is configured but
+   * secondary storage is disabled (camunda.database.type=none). This prevents misleading security
+   * flows and provides clear error messages.
+   */
+  @Configuration
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+  @ConditionalOnSecondaryStorageDisabled
+  public static class BasicAuthenticationNoDbConfiguration {
+
+    @Bean
+    public BasicAuthenticationNoDbFailFastBean basicAuthenticationNoDbFailFastBean() {
+      throw new IllegalStateException(
+          "Basic Authentication is not supported when secondary storage is disabled ("
+              + PROPERTY_CAMUNDA_DATABASE_TYPE
+              + "="
+              + CAMUNDA_DATABASE_TYPE_NONE
+              + "). Basic Authentication requires access to user data "
+              + "stored in secondary storage. Please either enable secondary storage by configuring "
+              + PROPERTY_CAMUNDA_DATABASE_TYPE
+              + "to a supported database type, or use another authentication method by "
+              + "updating the camunda.security.authentication.method configuration.");
+    }
+  }
+
+  /** Marker bean for Basic Auth no-db fail-fast configuration. */
+  public static class BasicAuthenticationNoDbFailFastBean {}
 
   protected static class NoContentResponseHandler
       implements AuthenticationSuccessHandler, LogoutSuccessHandler {

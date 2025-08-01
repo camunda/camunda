@@ -5,9 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.backup;
+package io.camunda.search.util;
 
-import io.camunda.search.util.DatabaseTypeUtils;
+import static io.camunda.search.util.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -16,24 +18,24 @@ import java.lang.annotation.Target;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
-/** This condition is used to enable or disable the webapps backup functionality */
+/**
+ * Conditional annotation that activates beans only when secondary storage is disabled
+ * (camunda.database.type=none).
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
-@Conditional(ConditionalOnBackupWebappsEnabled.BackupWebappsEnabledAndDatabaseTypeCondition.class)
-public @interface ConditionalOnBackupWebappsEnabled {
-  String BACKUP_WEBAPPS_ENABLED = "camunda.backup.webapps.enabled";
+@Conditional(ConditionalOnSecondaryStorageDisabled.NoSecondaryStorageCondition.class)
+public @interface ConditionalOnSecondaryStorageDisabled {
 
-  class BackupWebappsEnabledAndDatabaseTypeCondition implements Condition {
+  class NoSecondaryStorageCondition implements Condition {
+
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-      final Environment env = context.getEnvironment();
-      final String backupEnabled = env.getProperty(BACKUP_WEBAPPS_ENABLED);
-      return "true".equalsIgnoreCase(backupEnabled)
-          && DatabaseTypeUtils.isSecondaryStorageEnabled(env);
+      final String dbType = context.getEnvironment().getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
+      return CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(dbType);
     }
   }
 }
