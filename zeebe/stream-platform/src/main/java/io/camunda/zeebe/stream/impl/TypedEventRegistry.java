@@ -62,6 +62,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.GlobalVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -141,6 +142,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.ASYNC_REQUEST, AsyncRequestRecord.class);
     registry.put(ValueType.MULTI_INSTANCE, MultiInstanceRecord.class);
     registry.put(ValueType.RUNTIME_INSTRUCTION, RuntimeInstructionRecord.class);
+    registry.put(ValueType.GLOBAL_VARIABLE, GlobalVariableRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 
