@@ -13,6 +13,10 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.TenantDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}TENANT t
+    <if test="filter.memberIds != null">
+      JOIN ${prefix}TENANT_MEMBER tm ON t.TENANT_ID = tm.TENANT_ID
+      AND tm.ENTITY_TYPE = #{filter.childMemberType}
+    </if>
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
   </select>
 
@@ -21,10 +25,11 @@
     SELECT * FROM (
     SELECT
     TENANT_KEY,
-    TENANT_ID,
+    t.TENANT_ID,
     NAME,
     DESCRIPTION
-    FROM ${prefix}TENANT
+    FROM ${prefix}TENANT t
+    LEFT JOIN ${prefix}TENANT_MEMBER tm ON t.TENANT_ID = tm.TENANT_ID
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -40,6 +45,13 @@
       <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.name != null">AND NAME = #{filter.name}</if>
+    <if test="filter.memberIds != null">
+      AND tm.ENTITY_ID IN
+      <foreach collection="filter.memberIds" item="memberId" open="(" separator="," close=")">
+        #{memberId}
+      </foreach>
+      AND tm.ENTITY_TYPE = #{filter.childMemberType}
+    </if>
   </sql>
 
   <resultMap id="tenantResultMap" type="io.camunda.db.rdbms.write.domain.TenantDbModel">

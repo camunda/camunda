@@ -69,6 +69,16 @@
         close=")">#{value}
       </foreach>
     </if>
+    <if test="filter.ownerTypeToOwnerIds != null and !filter.ownerTypeToOwnerIds.isEmpty()">
+      <foreach collection="filter.ownerTypeToOwnerIds" index="ownerType" item="values" open="AND (" separator=" OR "
+        close=")">
+          OWNER_TYPE = #{ownerType} AND OWNER_ID IN
+        <foreach collection="values" item="value" open="(" separator=" , "
+          close=")">
+            #{value}
+        </foreach>
+      </foreach>
+    </if>
     <if test="filter.resourceIds != null and !filter.resourceIds.isEmpty()">
       AND RESOURCE_ID IN
       <foreach collection="filter.resourceIds" item="value" open="(" separator=", "
