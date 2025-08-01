@@ -7,8 +7,12 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
+import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.BatchOperationEntity;
 import java.time.OffsetDateTime;
+import org.slf4j.Logger;
 
 public record BatchOperationItemDbModel(
     String batchOperationKey,
@@ -16,4 +20,27 @@ public record BatchOperationItemDbModel(
     long processInstanceKey,
     BatchOperationEntity.BatchOperationItemState state,
     OffsetDateTime processedDate,
-    String errorMessage) {}
+    String errorMessage) {
+
+  private static final Logger LOG = getLogger(BatchOperationItemDbModel.class);
+
+  public BatchOperationItemDbModel truncateErrorMessage(
+      final int sizeLimit, final Integer byteLimit) {
+    if (errorMessage == null) {
+      return this;
+    }
+
+    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, byteLimit);
+
+    if (truncatedValue != null && truncatedValue.length() < errorMessage.length()) {
+      LOG.warn(
+          "Truncated error message for batchOperation {} item {}, original message was: {}",
+          batchOperationKey,
+          itemKey,
+          errorMessage);
+    }
+
+    return new BatchOperationItemDbModel(
+        batchOperationKey, itemKey, processInstanceKey, state, processedDate, truncatedValue);
+  }
+}

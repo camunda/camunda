@@ -11,11 +11,14 @@ import io.camunda.db.rdbms.read.domain.BatchOperationDbQuery;
 import io.camunda.db.rdbms.read.domain.BatchOperationItemDbQuery;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
+import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface BatchOperationMapper {
 
@@ -66,5 +69,25 @@ public interface BatchOperationMapper {
 
   record BatchOperationErrorsDto(String batchOperationKey, List<BatchOperationErrorDto> errors) {}
 
-  record BatchOperationErrorDto(Integer partitionId, String type, String message) {}
+  record BatchOperationErrorDto(Integer partitionId, String type, String message) {
+    public static final Logger LOG = LoggerFactory.getLogger(BatchOperationErrorDto.class);
+
+    public BatchOperationErrorDto truncateErrorMessage(
+        final int sizeLimit, final Integer byteLimit) {
+      if (message == null) {
+        return this;
+      }
+
+      final var truncatedValue = TruncateUtil.truncateValue(message, sizeLimit, byteLimit);
+
+      if (truncatedValue.length() < message.length()) {
+        LOG.warn(
+            "Truncated error message for batch operation partition {}, original message was: {}",
+            partitionId,
+            message);
+      }
+
+      return new BatchOperationErrorDto(partitionId, type, truncatedValue);
+    }
+  }
 }
