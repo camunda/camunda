@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -60,60 +61,68 @@ class CompactRecordLoggerTest {
         .contains(valueType);
   }
 
-  @Test
-  void shouldSummarizeUsageMetricsWithCounterCorrectly() {
-    // given
-    final var logger = new CompactRecordLogger(java.util.List.of());
-    final var mockRecord = mock(Record.class);
-    final var value = mock(UsageMetricRecordValue.class);
+  /**
+   * Tests the summarization logic for records via the `summarizeXyz(...)` methods in {@link
+   * CompactRecordLogger}.
+   */
+  @Nested
+  class CompactSummaryTest {
 
-    // when
-    when(mockRecord.getValueType()).thenReturn(ValueType.USAGE_METRIC);
-    when(mockRecord.getValue()).thenReturn(value);
-    when(value.getEventType()).thenReturn(EventType.RPI);
-    when(value.getIntervalType()).thenReturn(IntervalType.ACTIVE);
-    when(value.getStartTime()).thenReturn(1718000000000L);
-    when(value.getEndTime()).thenReturn(1718003600000L);
-    when(value.getResetTime()).thenReturn(1718001800000L);
-    when(value.getVariables()).thenReturn(Map.of("tenant1", 42L, "tenant2", 84L));
+    @Test
+    void shouldSummarizeUsageMetricsWithCounterCorrectly() {
+      // given
+      final var logger = new CompactRecordLogger(java.util.List.of());
+      final var mockRecord = mock(Record.class);
+      final var value = mock(UsageMetricRecordValue.class);
 
-    final String result = logger.summarizeUsageMetrics(mockRecord);
+      // when
+      when(mockRecord.getValueType()).thenReturn(ValueType.USAGE_METRIC);
+      when(mockRecord.getValue()).thenReturn(value);
+      when(value.getEventType()).thenReturn(EventType.RPI);
+      when(value.getIntervalType()).thenReturn(IntervalType.ACTIVE);
+      when(value.getStartTime()).thenReturn(1718000000000L);
+      when(value.getEndTime()).thenReturn(1718003600000L);
+      when(value.getResetTime()).thenReturn(1718001800000L);
+      when(value.getVariables()).thenReturn(Map.of("tenant1", 42L, "tenant2", 84L));
 
-    // then
-    final String expected =
-        "RPI:ACTIVE start[2024-06-10T09:13:20] end[2024-06-10T10:13:20] reset[2024-06-10T09:43:20] vars: {tenant1=42, tenant2=84}";
-    assertThat(result).isEqualTo(expected);
-  }
+      final String result = logger.summarizeUsageMetrics(mockRecord);
 
-  @Test
-  void shouldSummarizeUsageMetricsWithSetCorrectly() {
-    // given
-    final var logger = new CompactRecordLogger(java.util.List.of());
-    final var mockRecord = mock(Record.class);
-    final var value = mock(UsageMetricRecordValue.class);
+      // then
+      final String expected =
+          "RPI:ACTIVE start[2024-06-10T09:13:20] end[2024-06-10T10:13:20] reset[2024-06-10T09:43:20] vars: {tenant1=42, tenant2=84}";
+      assertThat(result).isEqualTo(expected);
+    }
 
-    // when
-    when(mockRecord.getValueType()).thenReturn(ValueType.USAGE_METRIC);
-    when(mockRecord.getValue()).thenReturn(value);
-    when(value.getEventType()).thenReturn(EventType.TU);
-    when(value.getIntervalType()).thenReturn(IntervalType.ACTIVE);
-    when(value.getStartTime()).thenReturn(1718000000000L);
-    when(value.getEndTime()).thenReturn(1718003600000L);
-    when(value.getResetTime()).thenReturn(1718001800000L);
-    when(value.getVariables())
-        .thenReturn(
-            java.util.Map.of("tenant1", Set.of(1234567L, 7654321L), "tenant2", Set.of(9876543L)));
+    @Test
+    void shouldSummarizeUsageMetricsWithSetCorrectly() {
+      // given
+      final var logger = new CompactRecordLogger(java.util.List.of());
+      final var mockRecord = mock(Record.class);
+      final var value = mock(UsageMetricRecordValue.class);
 
-    final String result = logger.summarizeUsageMetrics(mockRecord);
+      // when
+      when(mockRecord.getValueType()).thenReturn(ValueType.USAGE_METRIC);
+      when(mockRecord.getValue()).thenReturn(value);
+      when(value.getEventType()).thenReturn(EventType.TU);
+      when(value.getIntervalType()).thenReturn(IntervalType.ACTIVE);
+      when(value.getStartTime()).thenReturn(1718000000000L);
+      when(value.getEndTime()).thenReturn(1718003600000L);
+      when(value.getResetTime()).thenReturn(1718001800000L);
+      when(value.getVariables())
+          .thenReturn(
+              java.util.Map.of("tenant1", Set.of(1234567L, 7654321L), "tenant2", Set.of(9876543L)));
 
-    // then
-    assertThat(result)
-        .startsWith(
-            "TU:ACTIVE start[2024-06-10T09:13:20] end[2024-06-10T10:13:20] reset[2024-06-10T09:43:20] vars: {")
-        .satisfies(
-            r ->
-                assertThat(r)
-                    .containsAnyOf("tenant1=[7654321, 1234567]", "tenant1=[1234567, 7654321]")
-                    .contains("tenant2=[9876543]"));
+      final String result = logger.summarizeUsageMetrics(mockRecord);
+
+      // then
+      assertThat(result)
+          .startsWith(
+              "TU:ACTIVE start[2024-06-10T09:13:20] end[2024-06-10T10:13:20] reset[2024-06-10T09:43:20] vars: {")
+          .satisfies(
+              r ->
+                  assertThat(r)
+                      .containsAnyOf("tenant1=[7654321, 1234567]", "tenant1=[1234567, 7654321]")
+                      .contains("tenant2=[9876543]"));
+    }
   }
 }
