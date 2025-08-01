@@ -19,12 +19,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
-import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -52,15 +50,14 @@ public class Starter extends App {
   private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private final AppCfg appCfg;
 
-  Starter(final AppCfg appCfg) {
-    this.appCfg = appCfg;
+  Starter(final AppCfg config) {
+    super(config);
   }
 
   @Override
   public void run() {
-    final StarterCfg starterCfg = appCfg.getStarter();
+    final StarterCfg starterCfg = config.getStarter();
     final int rate = starterCfg.getRate();
     final String processId = starterCfg.getProcessId();
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(5_000);
@@ -218,20 +215,7 @@ public class Starter extends App {
   }
 
   private CamundaClient createCamundaClient() {
-    final CamundaClientBuilder builder =
-        CamundaClient.newClientBuilder()
-            .grpcAddress(URI.create(appCfg.getBrokerUrl()))
-            .restAddress(URI.create(appCfg.getBrokerRestUrl()))
-            .preferRestOverGrpc(appCfg.isPreferRest())
-            .numJobWorkerExecutionThreads(0)
-            .withProperties(System.getProperties())
-            .withInterceptors(monitoringInterceptor);
-
-    if (!appCfg.isTls()) {
-      builder.usePlaintext();
-    }
-
-    return builder.build();
+    return newClientBuilder().numJobWorkerExecutionThreads(0).build();
   }
 
   private void deployProcess(final CamundaClient client, final StarterCfg starterCfg) {
