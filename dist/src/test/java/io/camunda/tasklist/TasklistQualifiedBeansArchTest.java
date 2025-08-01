@@ -19,7 +19,6 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.util.Set;
-import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,48 +27,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
     packages = "io.camunda.tasklist",
     importOptions = ImportOption.DoNotIncludeTests.class)
 public class TasklistQualifiedBeansArchTest {
-
-  private static final String TASKLIST_OS_ASYNC_CLIENT_QUALIFIER = "tasklistOsAsyncClient";
-
-  @ArchTest
-  public static final ArchRule AUTOWIRED_ASYNC_OS_CLIENT_FIELDS_SHOULD_HAVE_QUALIFIER =
-      fields()
-          .that()
-          .areAnnotatedWith(Autowired.class)
-          .and()
-          .haveRawType(OpenSearchAsyncClient.class)
-          .should(
-              new ArchCondition<>(
-                  "have @Qualifier(\"" + TASKLIST_OS_ASYNC_CLIENT_QUALIFIER + "\")") {
-                @Override
-                public void check(final JavaField field, final ConditionEvents events) {
-                  final boolean hasQualifier = field.isAnnotatedWith(Qualifier.class);
-                  if (!hasQualifier) {
-                    events.add(
-                        SimpleConditionEvent.violated(
-                            field,
-                            "Field "
-                                + field.getFullName()
-                                + "in class "
-                                + field.getOwner().getFullName()
-                                + " is missing @Qualifier(\""
-                                + TASKLIST_OS_ASYNC_CLIENT_QUALIFIER
-                                + "\")"));
-                  } else if (!TASKLIST_OS_ASYNC_CLIENT_QUALIFIER.equals(
-                      field.getAnnotationOfType(Qualifier.class).value())) {
-                    events.add(
-                        SimpleConditionEvent.violated(
-                            field,
-                            "Field "
-                                + field.getFullName()
-                                + "in class "
-                                + field.getOwner().getFullName()
-                                + " has @Qualifier(\"%s\")"
-                                    .formatted(
-                                        field.getAnnotationOfType(Qualifier.class).value())));
-                  }
-                }
-              });
 
   private static final String TASKLIST_OBJECT_MAPPER_QUALIFIER = "tasklistObjectMapper";
 
