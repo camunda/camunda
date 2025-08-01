@@ -18,6 +18,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -68,6 +69,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     super(
         // Unified Configuration classes
         UnifiedConfiguration.class,
+        UnifiedConfigurationHelper.class,
         TasklistPropertiesOverride.class,
         OperatePropertiesOverride.class,
         // ---

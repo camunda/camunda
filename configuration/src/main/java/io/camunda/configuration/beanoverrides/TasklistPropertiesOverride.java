@@ -8,6 +8,8 @@
 
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.SecondaryStorage;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import org.springframework.beans.BeanUtils;
@@ -38,7 +40,16 @@ public class TasklistPropertiesOverride {
     final TasklistProperties override = new TasklistProperties();
     BeanUtils.copyProperties(legacyTasklistProperties, override);
 
-    // TODO: Populate the bean using unifiedConfiguration
+    final SecondaryStorage database =
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+
+    override.setDatabase(database.getType().name());
+
+    if (SecondaryStorageType.elasticsearch.equals(database.getType())) {
+      override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
+    }
+
+    // TODO: Populate the rest of the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());
 
     return override;

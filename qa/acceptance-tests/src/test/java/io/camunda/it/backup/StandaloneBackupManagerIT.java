@@ -162,21 +162,21 @@ final class StandaloneBackupManagerIT {
                     .putUser(r -> r.username(APP_USER).password(APP_PASSWORD).roles(APP_ROLE))
                     .created());
 
+    final String esUrl = "http://" + es.getHttpHostAddress();
+
     // Connect to ES in Standalone Schema Manager
-    schemaManager.withProperty("camunda.database.url", "http://" + es.getHttpHostAddress());
+    io.camunda.it.TestHelper.setupElasticsearchUrl(schemaManager, esUrl);
+
     // Connect to ES in Camunda
+    io.camunda.it.TestHelper.setupElasticsearchUrl(camunda, esUrl);
     camunda
-        .withProperty("camunda.database.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.tasklist.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty(
-            "camunda.tasklist.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
+        .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
         .updateExporterArgs(
             CamundaExporter.class.getSimpleName(),
-            args -> ((Map) args.get("connect")).put("url", "http://" + es.getHttpHostAddress()));
+            args -> ((Map) args.get("connect")).put("url", esUrl));
+
     // Connect to ES in Backup Manager
-    backupManager.withProperty("camunda.database.url", "http://" + es.getHttpHostAddress());
+    io.camunda.it.TestHelper.setupElasticsearchUrl(backupManager, esUrl);
   }
 
   @Test
