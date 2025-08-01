@@ -6,20 +6,79 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation} from '@tanstack/react-query';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from 'v2/api';
-import {request} from 'common/api/request';
+import {request, requestErrorSchema} from 'common/api/request';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {getUseTaskQueryKey} from './useTask.query';
+import {notificationsStore} from 'common/notifications/notifications.store';
 
 function useAssignTask() {
+  const client = useQueryClient();
+
+  function refetchTask(userTaskKey: string) {
+    return client.fetchQuery({
+      queryKey: getUseTaskQueryKey(userTaskKey),
+      queryFn: async () => {
+        const {response, error} = await request(api.getTask({userTaskKey}));
+
+        if (response === null) {
+          throw error;
+        }
+
+        const task = (await response.json()) as UserTask;
+
+        if (task.state === 'ASSIGNING') {
+          throw new Error('Task is still assigning');
+        }
+
+        return task;
+      },
+      retry: true,
+      retryDelay: 1000,
+    });
+  }
+
   return useMutation({
     mutationFn: async (params: Parameters<typeof api.assignTask>[0]) => {
-      const {response, error} = await request(api.assignTask(params));
+      const {error} = await request(api.assignTask(params));
 
-      if (response !== null) {
-        return null;
+      if (error !== null) {
+        const {data: parsedError, success} =
+          requestErrorSchema.safeParse(error);
+
+        if (success && parsedError.variant === 'failed-response') {
+          const errorData = await parsedError.response.json();
+
+          if (errorData.title === 'DEADLINE_EXCEEDED') {
+            const currentTask = client.getQueryData(
+              getUseTaskQueryKey(params.userTaskKey),
+            ) as UserTask;
+            if (currentTask) {
+              client.setQueryData(getUseTaskQueryKey(params.userTaskKey), {
+                ...currentTask,
+                state: 'ASSIGNING' as const,
+                assignee: undefined,
+              });
+            }
+
+            notificationsStore.displayNotification({
+              kind: 'info',
+              title: 'Task assignment delayed',
+              subtitle:
+                'Assignment is taking longer than expected to process. It will complete shortly.',
+              isDismissable: true,
+            });
+
+            const task = await refetchTask(params.userTaskKey);
+            return task;
+          }
+        }
+
+        throw error;
       }
 
-      throw error;
+      return null;
     },
   });
 }
