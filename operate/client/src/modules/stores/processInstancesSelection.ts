@@ -165,6 +165,28 @@ class ProcessInstancesSelection {
     );
   }
 
+  get checkedRunningProcessInstanceIds() {
+    const {selectionMode, selectedProcessInstanceIds} = this.state;
+    const runningInstances =
+      processInstancesStore.state.processInstances.filter((instance) =>
+        ['ACTIVE', 'INCIDENT'].includes(instance.state),
+      );
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedProcessInstanceIds.filter((id) =>
+        runningInstances.some((instance) => instance.id === id),
+      );
+    }
+
+    const allRunningInstanceIds = runningInstances.map(
+      (instance) => instance.id,
+    );
+
+    return allRunningInstanceIds.filter(
+      (id) => !selectedProcessInstanceIds.includes(id),
+    );
+  }
+
   get checkedProcessInstanceIds() {
     const {selectionMode, selectedProcessInstanceIds} = this.state;
 

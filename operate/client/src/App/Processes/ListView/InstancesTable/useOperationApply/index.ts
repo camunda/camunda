@@ -22,8 +22,12 @@ type ApplyBatchOperationParams = {
 };
 
 function useOperationApply() {
-  const {selectedProcessInstanceIds, excludedProcessInstanceIds, reset} =
-    processInstancesSelectionStore;
+  const {
+    selectedProcessInstanceIds,
+    excludedProcessInstanceIds,
+    checkedRunningProcessInstanceIds,
+    reset,
+  } = processInstancesSelectionStore;
 
   return {
     applyBatchOperation: ({
@@ -34,16 +38,22 @@ function useOperationApply() {
       const query = getProcessInstancesRequestFilters();
       const filterIds = query.ids || [];
 
-      // if ids are selected, ignore ids from filter
-      // if no ids are selected, apply ids from filter
+      const shouldFilterToRunningInstances =
+        operationType === 'CANCEL_PROCESS_INSTANCE' ||
+        operationType === 'RESOLVE_INCIDENT';
+
       const ids: string[] =
         selectedProcessInstanceIds.length > 0
-          ? selectedProcessInstanceIds
+          ? shouldFilterToRunningInstances
+            ? checkedRunningProcessInstanceIds
+            : selectedProcessInstanceIds
           : filterIds;
 
       if (selectedProcessInstanceIds.length > 0) {
         processInstancesStore.markProcessInstancesWithActiveOperations({
-          ids: selectedProcessInstanceIds,
+          ids: shouldFilterToRunningInstances
+            ? checkedRunningProcessInstanceIds
+            : selectedProcessInstanceIds,
           operationType,
         });
       } else {
