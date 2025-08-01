@@ -27,8 +27,10 @@ test.beforeEach(async ({ loginPage, tenantsPage }) => {
   await loginPage.login(LOGIN_CREDENTIALS);
 });
 
-test.describe.serial("tenants CRUD", () => {
-  test.skip("creates a tenant", async ({ page, tenantsPage }) => {
+// this is skipped as it is not currently possible to run e2e tests in isTenantsApiEnabled mode.
+// TODO: renable when https://github.com/camunda/camunda/issues/36092 is implemented
+test.describe.skip("tenants CRUD", () => {
+  test("creates a tenant", async ({ page, tenantsPage }) => {
     await expect(
       tenantsPage.tenantsList.getByRole("cell", { name: NEW_TENANT.name }),
     ).not.toBeVisible();
@@ -48,7 +50,7 @@ test.describe.serial("tenants CRUD", () => {
     await waitForItemInList(page, item);
   });
 
-  test.skip("assign a user", async ({ page, tenantsPage }) => {
+  test("assign a user", async ({ page, tenantsPage }) => {
     await tenantsPage.openTenantDetails(NEW_TENANT.tenantId).click();
 
     await tenantsPage.assignUserButton.click();
@@ -69,7 +71,7 @@ test.describe.serial("tenants CRUD", () => {
     });
   });
 
-  test.skip("remove a user", async ({ page, tenantsPage }) => {
+  test("remove a user", async ({ page, tenantsPage }) => {
     await tenantsPage.openTenantDetails(NEW_TENANT.tenantId).click();
     await tenantsPage.removeUserButton(USER.name).click();
     await expect(tenantsPage.removeUserModal).toBeVisible();
@@ -87,7 +89,7 @@ test.describe.serial("tenants CRUD", () => {
     });
   });
 
-  test.skip("deletes a tenant", async ({ page, tenantsPage }) => {
+  test("deletes a tenant", async ({ page, tenantsPage }) => {
     await expect(
       tenantsPage.tenantsList.getByRole("cell", { name: NEW_TENANT.name }),
     ).toBeVisible();
