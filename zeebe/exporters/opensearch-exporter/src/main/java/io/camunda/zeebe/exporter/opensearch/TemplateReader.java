@@ -46,13 +46,18 @@ final class TemplateReader {
     final Template template = readTemplate(findResourceForTemplate(valueType));
 
     // update prefix in template in case it was changed in configuration
-    template.composedOf().set(0, config.prefix + "-" + VersionUtil.getVersionLowerCase());
-
-    template.patterns().set(0, searchPattern);
-    template.template().aliases().clear();
-    template.template().aliases().put(aliasName, Collections.emptyMap());
-
-    return template;
+    return Template.MutableCopyBuilder.copyOf(template)
+        .updateComposedOf(
+            composedOf ->
+                composedOf.set(0, config.prefix + "-" + VersionUtil.getVersionLowerCase()))
+        .updatePatterns(patterns -> patterns.set(0, searchPattern))
+        .updateAliases(
+            aliases -> {
+              aliases.clear();
+              aliases.put(aliasName, Collections.emptyMap());
+            })
+        .withPriority(Long.valueOf(config.getPriority()))
+        .build();
   }
 
   private String findResourceForTemplate(final ValueType valueType) {
