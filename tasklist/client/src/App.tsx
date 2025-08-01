@@ -94,6 +94,10 @@ const v2Routes = createRoutesFromElements(
       <Route path="forbidden" element={<Forbidden />} />
       <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
         <Route index lazy={() => import('./v2/ProcessesTab')} />
+        <Route
+          path=":processDefinitionKey/start"
+          lazy={() => import('./v2/ProcessesTab')}
+        />
       </Route>
       <Route
         path="/"

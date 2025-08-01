@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type InlineLoadingProps, Stack} from '@carbon/react';
+import {type InlineLoadingProps, Stack, Tag} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {AsyncActionButton} from 'common/components/AsyncActionButton';
 import {useTranslation} from 'react-i18next';
@@ -53,8 +53,9 @@ function getTags(process: MultiModeProcess): ProcessTagVariant[] {
   const tags: ProcessTagVariant[] = [];
 
   if (
-    'startEventFormId' in process &&
-    typeof process.startEventFormId === 'string'
+    ('startEventFormId' in process &&
+      typeof process?.startEventFormId === 'string') ||
+    ('hasStartForm' in process && process.hasStartForm === true)
   ) {
     tags.push('start-form');
   }
@@ -75,7 +76,7 @@ function getNormalizedProcess(process: MultiModeProcess): {
 
   return {
     bpmnProcessId: process.processDefinitionId,
-    hasStartForm: false,
+    hasStartForm: process.hasStartForm,
   };
 }
 
@@ -114,7 +115,15 @@ const ProcessTile: React.FC<Props> = ({
     <div className={cn(className, styles.container)} {...props}>
       <Stack className={styles.content} data-testid="process-tile-content">
         <Stack className={styles.titleWrapper}>
-          <h4 className={styles.title}>{displayName}</h4>
+          <div className={styles.titleRow}>
+            <h4 className={styles.title}>{displayName}</h4>
+            {'processDefinitionKey' in process &&
+              typeof process.version === 'number' && (
+                <Tag size="sm" type="cyan">
+                  v{process.version}
+                </Tag>
+              )}
+          </div>
           <span className={styles.subtitle}>
             {displayName === bpmnProcessId ? '' : bpmnProcessId}
           </span>

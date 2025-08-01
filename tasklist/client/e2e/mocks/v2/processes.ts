@@ -15,6 +15,7 @@ const mockProcesses = [
     processDefinitionId: 'multipleVersions',
     tenantId: '<default>',
     processDefinitionKey: '0',
+    hasStartForm: false,
   },
   {
     resourceName: 'orderProcess.bpmn',
@@ -22,6 +23,7 @@ const mockProcesses = [
     processDefinitionId: 'orderProcess',
     tenantId: '<default>',
     processDefinitionKey: '1',
+    hasStartForm: false,
   },
 ] satisfies Array<ProcessDefinition>;
 
