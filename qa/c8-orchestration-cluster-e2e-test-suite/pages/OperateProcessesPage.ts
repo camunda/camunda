@@ -83,7 +83,7 @@ class OperateProcessesPage {
       .getByTestId('data-list')
       .getByTestId('cell-endDate')
       .first();
-    this.versionCell = page.locator('[data-testid="process-version-select"]');
+    this.versionCell = page.getByTestId('process-version-select');
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {

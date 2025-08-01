@@ -314,7 +314,7 @@ test.describe('Process Instances Filters', () => {
 
     await test.step('Check that process instances table is filtered correctly', async () => {
       await expect
-        .poll(() => page.getByText('2 results').isVisible({timeout: 120000}))
+        .poll(() => page.getByText('2 results').isVisible({timeout: 60000}))
         .toBe(true);
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
