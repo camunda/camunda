@@ -21,7 +21,32 @@ import org.springframework.http.ProblemDetail;
 public final class RoleRequestValidator {
   private RoleRequestValidator() {}
 
-  public static void validateRoleName(final String name, final List<String> violations) {
+  public static Optional<ProblemDetail> validateCreateRequest(final RoleCreateRequest request) {
+    return validate(
+        violations -> {
+          validateRoleId(request.getRoleId(), violations);
+          validateRoleName(request.getName(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateUpdateRequest(final RoleUpdateRequest request) {
+    return validate(
+        violations -> {
+          validateRoleName(request.getName(), violations);
+          validateRoleDescription(request.getDescription(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateMemberRequest(
+      final String roleId, final String memberId, final EntityType memberType) {
+    return validate(
+        violations -> {
+          validateRoleId(roleId, violations);
+          validateMemberId(memberId, memberType, violations);
+        });
+  }
+
+  private static void validateRoleName(final String name, final List<String> violations) {
     if (name == null || name.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
     }
@@ -32,11 +57,11 @@ public final class RoleRequestValidator {
     IdentifierValidator.validateId(id, propertyName, violations, ID_PATTERN);
   }
 
-  public static void validateRoleId(final String id, final List<String> violations) {
+  private static void validateRoleId(final String id, final List<String> violations) {
     validateId(id, "roleId", violations);
   }
 
-  public static void validateMemberId(
+  private static void validateMemberId(
       final String entityId, final EntityType entityType, final List<String> violations) {
     switch (entityType) {
       case USER:
@@ -53,35 +78,10 @@ public final class RoleRequestValidator {
     }
   }
 
-  public static void validateRoleDescription(
+  private static void validateRoleDescription(
       final String description, final List<String> violations) {
     if (description == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
     }
-  }
-
-  public static Optional<ProblemDetail> validateUpdateRequest(final RoleUpdateRequest request) {
-    return validate(
-        violations -> {
-          validateRoleName(request.getName(), violations);
-          validateRoleDescription(request.getDescription(), violations);
-        });
-  }
-
-  public static Optional<ProblemDetail> validateCreateRequest(final RoleCreateRequest request) {
-    return validate(
-        violations -> {
-          validateRoleId(request.getRoleId(), violations);
-          validateRoleName(request.getName(), violations);
-        });
-  }
-
-  public static Optional<ProblemDetail> validateMemberRequest(
-      final String roleId, final String memberId, final EntityType memberType) {
-    return validate(
-        violations -> {
-          validateRoleId(roleId, violations);
-          validateMemberId(memberId, memberType, violations);
-        });
   }
 }

@@ -33,7 +33,7 @@ public class TenantRequestValidatorTest {
             .description("A new tenant for testing");
 
     // when
-    final var validationResult = TenantRequestValidator.validateTenantCreateRequest(request);
+    final var validationResult = TenantRequestValidator.validateCreateRequest(request);
 
     // then
     assertThat(validationResult).isEmpty();
@@ -64,7 +64,7 @@ public class TenantRequestValidatorTest {
             .description("A new tenant for testing");
 
     // when
-    final var validationResult = TenantRequestValidator.validateTenantCreateRequest(request);
+    final var validationResult = TenantRequestValidator.validateCreateRequest(request);
 
     // then
     assertThat(validationResult)

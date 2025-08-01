@@ -20,13 +20,11 @@ import java.util.Optional;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.http.ProblemDetail;
 
-public final class UserValidator {
+public final class UserRequestValidator {
 
-  public static Optional<ProblemDetail> validateUserUpdateRequest(final UserUpdateRequest request) {
-    return validate(violations -> violations.addAll(validateUserEmail(request.getEmail())));
-  }
+  private UserRequestValidator() {}
 
-  public static Optional<ProblemDetail> validateUserCreateRequest(final UserRequest request) {
+  public static Optional<ProblemDetail> validateCreateRequest(final UserRequest request) {
     return validate(
         violations -> {
           validateUsername(request, violations);
@@ -35,6 +33,10 @@ public final class UserValidator {
           }
           violations.addAll(validateUserEmail(request.getEmail()));
         });
+  }
+
+  public static Optional<ProblemDetail> validateUpdateRequest(final UserUpdateRequest request) {
+    return validate(violations -> violations.addAll(validateUserEmail(request.getEmail())));
   }
 
   private static void validateUsername(final UserRequest request, final List<String> violations) {

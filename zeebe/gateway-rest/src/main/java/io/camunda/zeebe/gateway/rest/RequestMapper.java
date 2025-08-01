@@ -17,7 +17,6 @@ import static io.camunda.zeebe.gateway.rest.validator.EvaluateDecisionRequestVal
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
-import static io.camunda.zeebe.gateway.rest.validator.MappingRuleValidator.validateMappingRuleRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
@@ -33,8 +32,6 @@ import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.v
 import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
-import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
-import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
@@ -109,9 +106,10 @@ import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.validator.DocumentValidator;
 import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
-import io.camunda.zeebe.gateway.rest.validator.MappingRuleValidator;
+import io.camunda.zeebe.gateway.rest.validator.MappingRuleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
+import io.camunda.zeebe.gateway.rest.validator.UserRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
@@ -204,7 +202,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, UserDTO> toUserUpdateRequest(
       final UserUpdateRequest updateRequest, final String username) {
     return getResult(
-        validateUserUpdateRequest(updateRequest),
+        UserRequestValidator.validateUpdateRequest(updateRequest),
         () ->
             new UserDTO(
                 username,
@@ -476,7 +474,7 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, UserDTO> toUserDTO(final UserRequest request) {
     return getResult(
-        validateUserCreateRequest(request),
+        UserRequestValidator.validateCreateRequest(request),
         () ->
             new UserDTO(
                 request.getUsername(),
@@ -488,7 +486,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleDTO(
       final MappingRuleCreateRequest request) {
     return getResult(
-        MappingRuleValidator.validateMappingRuleRequest(request),
+        MappingRuleRequestValidator.validateCreateRequest(request),
         () ->
             new MappingRuleDTO(
                 request.getClaimName(),
@@ -500,7 +498,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleDTO(
       final String mappingRuleId, final MappingRuleUpdateRequest request) {
     return getResult(
-        validateMappingRuleRequest(request),
+        MappingRuleRequestValidator.validateUpdateRequest(request),
         () ->
             new MappingRuleDTO(
                 request.getClaimName(), request.getClaimValue(), request.getName(), mappingRuleId));
@@ -832,7 +830,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, TenantRequest> toTenantCreateDto(
       final TenantCreateRequest tenantCreateRequest) {
     return getResult(
-        TenantRequestValidator.validateTenantCreateRequest(tenantCreateRequest),
+        TenantRequestValidator.validateCreateRequest(tenantCreateRequest),
         () ->
             new TenantRequest(
                 null,
@@ -844,7 +842,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
       final String tenantId, final TenantUpdateRequest tenantUpdateRequest) {
     return getResult(
-        TenantRequestValidator.validateTenantUpdateRequest(tenantUpdateRequest),
+        TenantRequestValidator.validateUpdateRequest(tenantUpdateRequest),
         () ->
             new TenantRequest(
                 null,

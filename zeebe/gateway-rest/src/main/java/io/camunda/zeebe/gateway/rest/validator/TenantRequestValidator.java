@@ -23,8 +23,7 @@ public final class TenantRequestValidator {
 
   private TenantRequestValidator() {}
 
-  public static Optional<ProblemDetail> validateTenantCreateRequest(
-      final TenantCreateRequest request) {
+  public static Optional<ProblemDetail> validateCreateRequest(final TenantCreateRequest request) {
     return validate(
         violations -> {
           validateTenantId(request.getTenantId(), violations);
@@ -32,8 +31,7 @@ public final class TenantRequestValidator {
         });
   }
 
-  public static Optional<ProblemDetail> validateTenantUpdateRequest(
-      final TenantUpdateRequest request) {
+  public static Optional<ProblemDetail> validateUpdateRequest(final TenantUpdateRequest request) {
     return validate(
         violations -> {
           validateTenantName(request.getName(), violations);
@@ -77,7 +75,7 @@ public final class TenantRequestValidator {
     }
   }
 
-  public static void validateMemberId(
+  private static void validateMemberId(
       final String entityId, final EntityType entityType, final List<String> violations) {
     switch (entityType) {
       case USER:

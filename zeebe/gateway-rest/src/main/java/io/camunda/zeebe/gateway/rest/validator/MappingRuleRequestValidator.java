@@ -18,24 +18,26 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
-public class MappingRuleValidator {
+public final class MappingRuleRequestValidator {
 
-  public static Optional<ProblemDetail> validateMappingRuleRequest(
-      final MappingRuleUpdateRequest request) {
-    return validate(
-        violations -> {
-          violations.addAll(validateClaims(request.getClaimName(), request.getClaimValue()));
-          violations.addAll(validateName(request.getName()));
-        });
-  }
+  private MappingRuleRequestValidator() {}
 
-  public static Optional<ProblemDetail> validateMappingRuleRequest(
+  public static Optional<ProblemDetail> validateCreateRequest(
       final MappingRuleCreateRequest request) {
     return validate(
         violations -> {
           violations.addAll(validateClaims(request.getClaimName(), request.getClaimValue()));
           violations.addAll(validateName(request.getName()));
           violations.addAll(validateId(request.getMappingRuleId()));
+        });
+  }
+
+  public static Optional<ProblemDetail> validateUpdateRequest(
+      final MappingRuleUpdateRequest request) {
+    return validate(
+        violations -> {
+          violations.addAll(validateClaims(request.getClaimName(), request.getClaimValue()));
+          violations.addAll(validateName(request.getName()));
         });
   }
 
