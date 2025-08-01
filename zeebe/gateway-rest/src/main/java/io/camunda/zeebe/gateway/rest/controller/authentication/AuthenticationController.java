@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.authentication;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
+import static io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper.toCamundaUser;
+
 import io.camunda.authentication.service.CamundaUserService;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import org.springframework.context.annotation.Profile;
@@ -27,11 +29,11 @@ public class AuthenticationController {
   }
 
   @CamundaGetMapping(path = "/me")
-  public ResponseEntity<CamundaUserDTO> getCurrentUser() {
+  public ResponseEntity<CamundaUserResult> getCurrentUser() {
     final var authenticatedUser = camundaUserService.getCurrentUser();
 
     return authenticatedUser == null
         ? ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
-        : ResponseEntity.ok(authenticatedUser);
+        : ResponseEntity.ok(toCamundaUser(authenticatedUser));
   }
 }
