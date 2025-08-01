@@ -16,6 +16,10 @@ import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.GlobalVariableEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.NamespacedContext;
+import io.camunda.zeebe.engine.processing.expression.VariableStateEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -23,7 +27,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -70,7 +73,19 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     expressionBehavior =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
-            new VariableStateEvaluationContextLookup(processingState.getVariableState()));
+            CombinedEvaluationContext.withContexts(
+                NamespacedContext.create()
+                    .register(
+                        "camunda",
+                        NamespacedContext.create()
+                            .register(
+                                "vars",
+                                NamespacedContext.create()
+                                    .register(
+                                        "env",
+                                        new GlobalVariableEvaluationContext(
+                                            processingState.getVariableState())))),
+                new VariableStateEvaluationContext(processingState.getVariableState())));
 
     variableBehavior =
         new VariableBehavior(

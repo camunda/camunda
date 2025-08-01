@@ -57,6 +57,7 @@ import io.camunda.zeebe.engine.processing.tenant.TenantProcessors;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
+import io.camunda.zeebe.engine.processing.variable.GlobalVariableCreateProcessor;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -69,6 +70,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -254,6 +256,13 @@ public final class EngineProcessors {
         processingState,
         partitionsCount,
         config.isCommandDistributionPaused());
+    addGlobalVariableCreateProcessor(
+        typedRecordProcessors,
+        keyGenerator,
+        bpmnBehaviors,
+        writers,
+        authCheckBehavior,
+        commandDistributionBehavior);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -342,6 +351,24 @@ public final class EngineProcessors {
         typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
 
     return typedRecordProcessors;
+  }
+
+  private static void addGlobalVariableCreateProcessor(
+      final TypedRecordProcessors typedRecordProcessors,
+      final KeyGenerator keyGenerator,
+      final BpmnBehaviorsImpl bpmnBehaviors,
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final CommandDistributionBehavior commandDistributionBehavior) {
+    typedRecordProcessors.onCommand(
+        ValueType.GLOBAL_VARIABLE,
+        GlobalVariableIntent.CREATE,
+        new GlobalVariableCreateProcessor(
+            keyGenerator,
+            bpmnBehaviors.variableBehavior(),
+            writers,
+            authCheckBehavior,
+            commandDistributionBehavior));
   }
 
   private static TypedRecordProcessor<UserTaskRecord> createUserTaskProcessor(
