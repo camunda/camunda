@@ -11,6 +11,8 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
@@ -40,7 +42,13 @@ import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 @SpringBootTest(
-    classes = {ElasticsearchConnector.class, DatabaseInfo.class, OperatePropertiesOverride.class},
+    classes = {
+      ElasticsearchConnector.class,
+      DatabaseInfo.class,
+      OperatePropertiesOverride.class,
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class
+    },
     properties = OperateProperties.PREFIX + ".database=elasticsearch")
 public class ElasticsearchConnectorIT {
 

@@ -13,6 +13,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
@@ -45,7 +47,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
       OperatePropertiesOverride.class,
-      SecurityConfiguration.class
+      SecurityConfiguration.class,
+      UnifiedConfiguration.class,
+      UnifiedConfigurationHelper.class
     },
     properties = {
       // OperateProperties.PREFIX + ".cloud.organizationId=organizationId",//  -- leave out to test

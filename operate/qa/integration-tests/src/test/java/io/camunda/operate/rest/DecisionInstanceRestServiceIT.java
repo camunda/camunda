@@ -9,6 +9,8 @@ package io.camunda.operate.rest;
 
 import static org.mockito.Mockito.when;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
@@ -34,7 +36,9 @@ import org.springframework.test.web.servlet.MvcResult;
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
-      OperatePropertiesOverride.class
+      OperatePropertiesOverride.class,
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class
     })
 public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
 

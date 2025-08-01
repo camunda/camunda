@@ -13,6 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
@@ -38,7 +40,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
       OperatePropertiesOverride.class,
-      CamundaSecurityProperties.class
+      CamundaSecurityProperties.class,
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class
     },
     properties = {
       OperateProperties.PREFIX + ".enterprise=true",

@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
@@ -44,7 +46,9 @@ import org.springframework.test.web.servlet.MvcResult;
       OperateProfileService.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
-      DatabaseInfo.class
+      DatabaseInfo.class,
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class
     })
 public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
 
