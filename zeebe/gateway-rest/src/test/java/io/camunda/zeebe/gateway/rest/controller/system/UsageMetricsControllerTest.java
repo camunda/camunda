@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.controller;
+package io.camunda.zeebe.gateway.rest.controller.system;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -31,7 +31,7 @@ import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(UsageMetricsController.class)
 public class UsageMetricsControllerTest extends RestControllerTest {
-  static final String USAGE_METRICS_URL = "/v2/usage-metrics";
+  static final String USAGE_METRICS_URL = "/v2/system/usage-metrics";
 
   static final String EXPECTED_SEARCH_RESPONSE =
       """
@@ -149,7 +149,7 @@ public class UsageMetricsControllerTest extends RestControllerTest {
           "detail":"The provided startTime 'foo' cannot be parsed as a date according to RFC 3339, \
         section 5.6. The provided endTime 'bar' cannot be parsed as a date according to RFC 3339, \
         section 5.6.",
-          "instance":"/v2/usage-metrics"
+          "instance":"/v2/system/usage-metrics"
         }
         """;
     // when/then
@@ -176,7 +176,7 @@ public class UsageMetricsControllerTest extends RestControllerTest {
           "title":"INVALID_ARGUMENT",
           "status":400,
           "detail":"The startTime and endTime must both be specified.",
-          "instance":"/v2/usage-metrics"
+          "instance":"/v2/system/usage-metrics"
         }
         """;
     // when/then
@@ -203,7 +203,7 @@ public class UsageMetricsControllerTest extends RestControllerTest {
           "title":"INVALID_ARGUMENT",
           "status":400,
           "detail":"The startTime and endTime must both be specified.",
-          "instance":"/v2/usage-metrics"
+          "instance":"/v2/system/usage-metrics"
         }
         """;
     // when/then
@@ -230,7 +230,7 @@ public class UsageMetricsControllerTest extends RestControllerTest {
           "title":"INVALID_ARGUMENT",
           "status":400,
           "detail":"The startTime and endTime must both be specified.",
-          "instance":"/v2/usage-metrics"
+          "instance":"/v2/system/usage-metrics"
         }
         """;
     // when/then

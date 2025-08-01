@@ -50,7 +50,7 @@ public class UsageMetricsStatisticsTest extends ClientRestTest {
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getUrl())
         .isEqualTo(
-            "/v2/usage-metrics?startTime=%s&endTime=%s",
+            "/v2/system/usage-metrics?startTime=%s&endTime=%s",
             formatDateTime(startTime), formatDateTime(endTime));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
     assertThat(request.getBodyAsString()).isEmpty();
@@ -72,7 +72,7 @@ public class UsageMetricsStatisticsTest extends ClientRestTest {
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getUrl())
         .isEqualTo(
-            "/v2/usage-metrics?withTenants=true&tenantId=tenant1&startTime=%s&endTime=%s",
+            "/v2/system/usage-metrics?withTenants=true&tenantId=tenant1&startTime=%s&endTime=%s",
             formatDateTime(startTime), formatDateTime(endTime));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
     assertThat(request.getBodyAsString()).isEmpty();
