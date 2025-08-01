@@ -45,7 +45,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class MappingRuleDeleteProcessor
     implements DistributedTypedRecordProcessor<MappingRuleRecord> {
 
-  private static final String MAPPING_NOT_FOUND_ERROR_MESSAGE =
+  private static final String MAPPING_RULE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete mapping rule with id '%s', but a mapping rule with this id does not exist.";
   private final MappingRuleState mappingRuleState;
   private final TenantState tenantState;
@@ -86,7 +86,7 @@ public class MappingRuleDeleteProcessor
     final String id = record.getMappingRuleId();
     final var persistedMappingRuleOptional = mappingRuleState.get(id);
     if (persistedMappingRuleOptional.isEmpty()) {
-      final var errorMessage = MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(id);
+      final var errorMessage = MAPPING_RULE_NOT_FOUND_ERROR_MESSAGE.formatted(id);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -118,10 +118,10 @@ public class MappingRuleDeleteProcessor
     mappingRuleState
         .get(record.getMappingRuleId())
         .ifPresentOrElse(
-            persistedMapping -> deleteMappingRule(persistedMapping, command.getKey()),
+            persistedMappingRule -> deleteMappingRule(persistedMappingRule, command.getKey()),
             () -> {
               final var errorMessage =
-                  MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingRuleKey());
+                  MAPPING_RULE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingRuleKey());
               rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
             });
 
@@ -129,8 +129,8 @@ public class MappingRuleDeleteProcessor
   }
 
   private void deleteMappingRule(final PersistedMappingRule mappingRule, final long key) {
-    final var mappingId = mappingRule.getMappingRuleId();
-    deleteAuthorizations(mappingId);
+    final var mappingRuleId = mappingRule.getMappingRuleId();
+    deleteAuthorizations(mappingRuleId);
     for (final var tenantId :
         membershipState.getMemberships(
             EntityType.MAPPING_RULE, mappingRule.getMappingRuleId(), RelationType.TENANT)) {
@@ -145,7 +145,7 @@ public class MappingRuleDeleteProcessor
               .setEntityType(EntityType.MAPPING_RULE));
     }
     for (final var roleId :
-        membershipState.getMemberships(EntityType.MAPPING_RULE, mappingId, RelationType.ROLE)) {
+        membershipState.getMemberships(EntityType.MAPPING_RULE, mappingRuleId, RelationType.ROLE)) {
       final var role = roleState.getRole(roleId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           role.getRoleKey(),
@@ -153,7 +153,7 @@ public class MappingRuleDeleteProcessor
           new RoleRecord()
               .setRoleKey(role.getRoleKey())
               .setRoleId(roleId)
-              .setEntityId(mappingId)
+              .setEntityId(mappingRuleId)
               .setEntityType(EntityType.MAPPING_RULE));
     }
     for (final var groupId :
@@ -175,12 +175,12 @@ public class MappingRuleDeleteProcessor
         new MappingRuleRecord().setMappingRuleId(mappingRule.getMappingRuleId()));
   }
 
-  private void deleteAuthorizations(final String mappingId) {
-    final var authorizationKeysForMapping =
+  private void deleteAuthorizations(final String mappingRuleId) {
+    final var authorizationKeysForMappingRule =
         authorizationState.getAuthorizationKeysForOwner(
-            AuthorizationOwnerType.MAPPING_RULE, mappingId);
+            AuthorizationOwnerType.MAPPING_RULE, mappingRuleId);
 
-    authorizationKeysForMapping.forEach(
+    authorizationKeysForMappingRule.forEach(
         authorizationKey -> {
           final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
           stateWriter.appendFollowUpEvent(

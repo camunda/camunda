@@ -150,7 +150,7 @@ export class MappingRulesPage {
     this.usersNavItem = page.getByText("Users");
   }
 
-  async navigateToMappings() {
+  async navigateToMappingRules() {
     await this.page.goto(relativizePath(Paths.mappingRules()));
   }
 }

@@ -78,19 +78,19 @@ public class DbMappingRuleState implements MutableMappingRuleState {
     mappingRuleId.wrapString(mappingRuleRecord.getMappingRuleId());
     get(mappingRuleRecord.getMappingRuleId())
         .ifPresentOrElse(
-            persistedMapping -> {
-              // remove old record from mapping by claim
-              claimName.wrapString(persistedMapping.getClaimName());
-              claimValue.wrapString(persistedMapping.getClaimValue());
+            persistedMappingRule -> {
+              // remove old record from mapping rule by claim
+              claimName.wrapString(persistedMappingRule.getClaimName());
+              claimValue.wrapString(persistedMappingRule.getClaimValue());
               mappingRuleColumnFamily.deleteExisting(claim);
 
-              persistedMapping.setName(mappingRuleRecord.getName());
-              persistedMapping.setClaimName(mappingRuleRecord.getClaimName());
-              persistedMapping.setClaimValue(mappingRuleRecord.getClaimValue());
+              persistedMappingRule.setName(mappingRuleRecord.getName());
+              persistedMappingRule.setClaimName(mappingRuleRecord.getClaimName());
+              persistedMappingRule.setClaimValue(mappingRuleRecord.getClaimValue());
 
-              claimName.wrapString(persistedMapping.getClaimName());
-              claimValue.wrapString(persistedMapping.getClaimValue());
-              mappingRuleColumnFamily.insert(claim, persistedMapping);
+              claimName.wrapString(persistedMappingRule.getClaimName());
+              claimValue.wrapString(persistedMappingRule.getClaimValue());
+              mappingRuleColumnFamily.insert(claim, persistedMappingRule);
               claimByIdColumnFamily.update(mappingRuleId, fkClaim);
             },
             () -> {
@@ -105,10 +105,10 @@ public class DbMappingRuleState implements MutableMappingRuleState {
   public void delete(final String id) {
     get(id)
         .ifPresentOrElse(
-            persistedMapping -> {
-              mappingRuleId.wrapString(persistedMapping.getMappingRuleId());
-              claimName.wrapString(persistedMapping.getClaimName());
-              claimValue.wrapString(persistedMapping.getClaimValue());
+            persistedMappingRule -> {
+              mappingRuleId.wrapString(persistedMappingRule.getMappingRuleId());
+              claimName.wrapString(persistedMappingRule.getClaimName());
+              claimValue.wrapString(persistedMappingRule.getClaimValue());
               mappingRuleColumnFamily.deleteExisting(claim);
               claimByIdColumnFamily.deleteExisting(mappingRuleId);
             },
