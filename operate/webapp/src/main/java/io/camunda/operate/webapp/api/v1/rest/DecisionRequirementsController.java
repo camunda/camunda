@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.webapp.api.v1.rest.DecisionRequirementsController.URI;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 
 import io.camunda.operate.webapp.api.v1.dao.DecisionRequirementsDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
@@ -15,9 +17,11 @@ import io.camunda.operate.webapp.api.v1.entities.Error;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -44,6 +48,7 @@ public class DecisionRequirementsController extends ErrorController
   public static final String AS_XML = "/xml";
 
   @Autowired private DecisionRequirementsDao decisionRequirementsDao;
+  @Autowired private PermissionsService permissionsService;
 
   @Operation(
       summary = "Get decision requirements as XML by key",
@@ -65,6 +70,13 @@ public class DecisionRequirementsController extends ErrorController
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -79,6 +91,7 @@ public class DecisionRequirementsController extends ErrorController
   public String xmlByKey(
       @Parameter(description = "Key of decision requirements", required = true) @Valid @PathVariable
           final Long key) {
+    permissionsService.verifyWildcardResourcePermission(DECISION_REQUIREMENTS_DEFINITION, READ);
     return decisionRequirementsDao.xmlByKey(key);
   }
 
@@ -107,7 +120,14 @@ public class DecisionRequirementsController extends ErrorController
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class)))
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
       })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       description = "Search examples",
@@ -158,6 +178,7 @@ public class DecisionRequirementsController extends ErrorController
   public Results<DecisionRequirements> search(
       @RequestBody(required = false) Query<DecisionRequirements> query) {
     query = (query == null) ? new Query<>() : query;
+    permissionsService.verifyWildcardResourcePermission(DECISION_REQUIREMENTS_DEFINITION, READ);
     return decisionRequirementsDao.search(query);
   }
 
@@ -181,6 +202,13 @@ public class DecisionRequirementsController extends ErrorController
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -192,6 +220,7 @@ public class DecisionRequirementsController extends ErrorController
   public DecisionRequirements byKey(
       @Parameter(description = "Key of decision requirements", required = true) @PathVariable
           final Long key) {
+    permissionsService.verifyWildcardResourcePermission(DECISION_REQUIREMENTS_DEFINITION, READ);
     return decisionRequirementsDao.byKey(key);
   }
 }

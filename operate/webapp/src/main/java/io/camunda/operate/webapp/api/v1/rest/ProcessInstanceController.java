@@ -8,6 +8,9 @@
 package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.webapp.api.v1.rest.ProcessInstanceController.URI;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.DELETE_PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeStatisticsDao;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
@@ -21,9 +24,11 @@ import io.camunda.operate.webapp.api.v1.entities.QueryValidator;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -61,6 +66,7 @@ public class ProcessInstanceController extends ErrorController
   @Autowired private ProcessInstanceDao processInstanceDao;
   @Autowired private SequenceFlowDao sequenceFlowDao;
   @Autowired private FlowNodeStatisticsDao flowNodeStatisticsDao;
+  @Autowired private PermissionsService permissionsService;
 
   @Operation(
       summary = "Search process instances",
@@ -87,7 +93,14 @@ public class ProcessInstanceController extends ErrorController
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class)))
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
       })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       description = "Search process instances",
@@ -133,6 +146,7 @@ public class ProcessInstanceController extends ErrorController
     logger.debug("search for query {}", query);
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, ProcessInstance.class);
+    permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
     return processInstanceDao.search(query);
   }
 
@@ -156,6 +170,13 @@ public class ProcessInstanceController extends ErrorController
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -167,6 +188,7 @@ public class ProcessInstanceController extends ErrorController
   public ProcessInstance byKey(
       @Parameter(description = "Key of process instance", required = true) @PathVariable
           final Long key) {
+    permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
     return processInstanceDao.byKey(key);
   }
 
@@ -190,6 +212,13 @@ public class ProcessInstanceController extends ErrorController
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -204,7 +233,8 @@ public class ProcessInstanceController extends ErrorController
   public ChangeStatus delete(
       @Parameter(description = "Key of process instance", required = true) @Valid @PathVariable
           final Long key) {
-    // TODO: check for permissions https://github.com/camunda/camunda/issues/32408
+    permissionsService.verifyWildcardResourcePermission(
+        PROCESS_DEFINITION, DELETE_PROCESS_INSTANCE);
     return processInstanceDao.delete(key);
   }
 
@@ -228,6 +258,13 @@ public class ProcessInstanceController extends ErrorController
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -239,7 +276,6 @@ public class ProcessInstanceController extends ErrorController
   public List<String> sequenceFlowsByKey(
       @Parameter(description = "Key of process instance", required = true) @PathVariable
           final Long key) {
-    processInstanceDao.byKey(key); // this is just to throw error if not found
     final Query<SequenceFlow> query =
         new Query<SequenceFlow>()
             .setFilter(new SequenceFlow().setProcessInstanceKey(key))
@@ -247,6 +283,8 @@ public class ProcessInstanceController extends ErrorController
     logger.debug("search for query {}", query);
     final QueryValidator<SequenceFlow> queryValidator = new QueryValidator<>();
     queryValidator.validate(query, SequenceFlow.class);
+    permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
+    checkIfExists(key);
     final Results<SequenceFlow> results = sequenceFlowDao.search(query);
     return results.getItems().stream()
         .map(SequenceFlow::getActivityId)
@@ -281,6 +319,13 @@ public class ProcessInstanceController extends ErrorController
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -292,7 +337,12 @@ public class ProcessInstanceController extends ErrorController
   public Collection<FlowNodeStatistics> getStatistics(
       @Parameter(description = "Key of process instance", required = true) @PathVariable
           final Long key) {
-    processInstanceDao.byKey(key); // this is just to throw error if not found
+    permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
+    checkIfExists(key);
     return flowNodeStatisticsDao.getFlowNodeStatisticsForProcessInstance(key);
+  }
+
+  public void checkIfExists(final long key) {
+    processInstanceDao.byKey(key);
   }
 }
