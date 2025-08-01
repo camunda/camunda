@@ -31,8 +31,9 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
@@ -42,22 +43,19 @@ import org.junit.rules.TestWatcher;
 
 public class JobBasedAdHocSubProcessTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  public static final String JOB_TYPE = "jobType";
   private static final String PROCESS_ID = "process";
   private static final String AHSP_ELEMENT_ID = "ad-hoc";
   private static final String AHSP_INNER_ELEMENT_ID =
       "ad-hoc" + ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
-  private static final String VARIABLES_JSON = "{'foo':'bar', 'baz': 10}";
-  private static final DirectBuffer VARIABLES_MSGPACK =
-      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(VARIABLES_JSON));
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
-  private BpmnModelInstance process(final Consumer<AdHocSubProcessBuilder> modifier) {
+  private BpmnModelInstance process(
+      final String jobType, final Consumer<AdHocSubProcessBuilder> modifier) {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .adHocSubProcess(AHSP_ELEMENT_ID, modifier)
         .zeebeImplementation(ZeebeAdHocImplementationType.JOB_WORKER)
-        .zeebeJobType(JOB_TYPE)
+        .zeebeJobType(jobType)
         .endEvent()
         .done();
   }
@@ -67,6 +65,7 @@ public class JobBasedAdHocSubProcessTest {
     // given
     final BpmnModelInstance process =
         process(
+            UUID.randomUUID().toString(),
             adHocSubProcess -> {
               adHocSubProcess.task("A1").task("A2");
               adHocSubProcess.task("B");
@@ -83,7 +82,8 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldActivateAdHocSubProcess() {
     // given
-    final BpmnModelInstance process = process(adHocSubProcess -> adHocSubProcess.task("A"));
+    final BpmnModelInstance process =
+        process(UUID.randomUUID().toString(), adHocSubProcess -> adHocSubProcess.task("A"));
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
@@ -116,11 +116,9 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldCreateJobOnActivation() {
     // given
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
-        process(
-            adHocSubProcess -> {
-              adHocSubProcess.task("A1");
-            });
+        process(jobType, adHocSubProcess -> adHocSubProcess.task("A1"));
     ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
@@ -140,7 +138,7 @@ public class JobBasedAdHocSubProcessTest {
                 .withElementId(AHSP_ELEMENT_ID)
                 .getFirst()
                 .getValue())
-        .hasType(JOB_TYPE)
+        .hasType(jobType)
         .hasRetries(3)
         .hasElementInstanceKey(adHocSubProcess.getKey())
         .hasElementId(adHocSubProcess.getValue().getElementId())
@@ -152,18 +150,14 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldRecreateJobOnInnerInstanceCompletion() {
     // given
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
-        process(adHocSubProcess -> adHocSubProcess.task("A1").task("A2"));
+        process(jobType, adHocSubProcess -> adHocSubProcess.task("A1").task("A2"));
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var jobKey =
-        ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
-    final var jobResult =
-        new JobResult()
-            .setActivateElements(List.of(new JobResultActivateElement().setElementId("A1")));
 
     // when
-    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+    completeJobWithActivateElements(jobType, activateElement("A1"));
 
     // then
     final var adHocSubProcess =
@@ -188,25 +182,19 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldCancelExistingJobsBeforeRecreatingOnInnerInstanceCompletion() {
     // given
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
         process(
+            jobType,
             adHocSubProcess -> {
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
             });
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var jobKey =
-        ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
-    final var jobResult =
-        new JobResult()
-            .setActivateElements(
-                List.of(
-                    new JobResultActivateElement().setElementId("A"),
-                    new JobResultActivateElement().setElementId("B")));
 
     // when
-    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+    completeJobWithActivateElements(jobType, activateElement("A"), activateElement("B"));
 
     // then
     final var adHocSubProcess =
@@ -233,8 +221,10 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldActivateSecondSetOfElements() {
     // given
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
         process(
+            jobType,
             adHocSubProcess -> {
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
@@ -242,21 +232,10 @@ public class JobBasedAdHocSubProcessTest {
             });
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    var jobKey = ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
-    var jobResult =
-        new JobResult()
-            .setActivateElements(
-                List.of(
-                    new JobResultActivateElement().setElementId("A"),
-                    new JobResultActivateElement().setElementId("B")));
-    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+    completeJobWithActivateElements(jobType, activateElement("A"), activateElement("B"));
 
     // when
-    jobKey = ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
-    jobResult =
-        new JobResult()
-            .setActivateElements(List.of(new JobResultActivateElement().setElementId("C")));
-    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+    completeJobWithActivateElements(jobType, activateElement("C"));
 
     // then
     Assertions.assertThat(
@@ -293,11 +272,9 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldCancelJobOnTermination() {
     // given
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
-        process(
-            adHocSubProcess -> {
-              adHocSubProcess.task("A1");
-            });
+        process(jobType, adHocSubProcess -> adHocSubProcess.task("A1"));
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -318,7 +295,7 @@ public class JobBasedAdHocSubProcessTest {
                 .withElementId(AHSP_ELEMENT_ID)
                 .getFirst()
                 .getValue())
-        .hasType(JOB_TYPE)
+        .hasType(jobType)
         .hasRetries(3)
         .hasElementInstanceKey(adHocSubProcess.getKey())
         .hasElementId(adHocSubProcess.getValue().getElementId())
@@ -330,8 +307,10 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldActivateElementsOnJobCompletion() {
     // given
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
         process(
+            jobType,
             adHocSubProcess -> {
               adHocSubProcess.task("A1").task("A2");
               adHocSubProcess.task("B");
@@ -339,17 +318,9 @@ public class JobBasedAdHocSubProcessTest {
             });
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var jobKey =
-        ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
-    final var jobResult =
-        new JobResult()
-            .setActivateElements(
-                List.of(
-                    new JobResultActivateElement().setElementId("A1"),
-                    new JobResultActivateElement().setElementId("B")));
 
     // when
-    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+    completeJobWithActivateElements(jobType, activateElement("A1"), activateElement("B"));
 
     // then
     Assertions.assertThat(
@@ -383,8 +354,10 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldCreateVariablesOnActivatedElementScope() {
     // given
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
         process(
+            jobType,
             adHocSubProcess -> {
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
@@ -393,17 +366,8 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final var jobKey =
-        ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
-    final var jobResult =
-        new JobResult()
-            .setActivateElements(
-                List.of(
-                    new JobResultActivateElement()
-                        .setElementId("A")
-                        .setVariables(VARIABLES_MSGPACK),
-                    new JobResultActivateElement().setElementId("B")));
-    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+    completeJobWithActivateElements(
+        jobType, activateElement("A", Map.of("foo", "bar", "baz", 10)), activateElement("B"));
 
     final var elementA =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -435,5 +399,23 @@ public class JobBasedAdHocSubProcessTest {
         .doesNotContain(
             tuple("foo", "\"bar\"", elementB.getFlowScopeKey()),
             tuple("baz", "10", elementB.getFlowScopeKey()));
+  }
+
+  private void completeJobWithActivateElements(
+      final String jobType, final JobResultActivateElement... activateElements) {
+    final var jobKey =
+        ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
+    final var jobResult = new JobResult().setActivateElements(List.of(activateElements));
+    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+  }
+
+  private JobResultActivateElement activateElement(final String elementId) {
+    return new JobResultActivateElement().setElementId(elementId);
+  }
+
+  private JobResultActivateElement activateElement(final String elementId, final Object variables) {
+    return new JobResultActivateElement()
+        .setElementId(elementId)
+        .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
   }
 }
