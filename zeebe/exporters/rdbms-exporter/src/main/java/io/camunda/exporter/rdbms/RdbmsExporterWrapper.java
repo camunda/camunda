@@ -193,7 +193,10 @@ public class RdbmsExporterWrapper implements Exporter {
         new BatchOperationChunkExportHandler(rdbmsWriter.getBatchOperationWriter()));
     builder.withHandler(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-        new BatchOperationLifecycleManagementExportHandler(rdbmsWriter.getBatchOperationWriter()));
+        new BatchOperationLifecycleManagementExportHandler(
+            rdbmsWriter.getBatchOperationWriter(),
+            rdbmsWriter.getHistoryCleanupService(),
+            batchOperationCache));
 
     // Handlers per batch operation to track status
     builder.withHandler(
