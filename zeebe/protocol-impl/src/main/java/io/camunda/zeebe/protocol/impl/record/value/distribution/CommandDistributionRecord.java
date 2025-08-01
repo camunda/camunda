@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.GlobalVariableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -79,6 +80,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
         BatchOperationLifecycleManagementRecord::new);
     RECORDS_BY_TYPE.put(
         ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE, BatchOperationPartitionLifecycleRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.GLOBAL_VARIABLE, GlobalVariableRecord::new);
   }
 
   private final IntegerProperty partitionIdProperty = new IntegerProperty(PARTITION_ID_KEY);
