@@ -67,7 +67,7 @@ public class UsageMetricsStatisticsRequestImpl implements UsageMetricsStatistics
       queryParams.put("tenantId", tenantId);
     }
     httpClient.get(
-        "/usage-metrics",
+        "/system/usage-metrics",
         queryParams,
         httpRequestConfig.build(),
         UsageMetricsResponse.class,

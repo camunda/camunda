@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
 @RequiresSecondaryStorage
-@RequestMapping("/v2/usage-metrics")
+@RequestMapping("/v2/system/usage-metrics")
 public class UsageMetricsController {
 
   private final UsageMetricsServices usageMetricsServices;

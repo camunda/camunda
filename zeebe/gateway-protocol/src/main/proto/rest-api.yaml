@@ -4868,7 +4868,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /usage-metrics:
+
+  /system/usage-metrics:
     get:
       tags:
         - Usage metrics
@@ -4919,6 +4920,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
   /deployments:
     post:
       tags:
