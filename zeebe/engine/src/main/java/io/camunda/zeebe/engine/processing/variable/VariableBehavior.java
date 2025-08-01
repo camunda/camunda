@@ -14,9 +14,11 @@ import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * A behavior which allows processors to mutate the variable state. Use this anywhere where you
@@ -201,5 +203,15 @@ public final class VariableBehavior {
 
   private void applyEntryToRecord(final DocumentEntry entry) {
     variableRecord.setName(entry.getName()).setValue(entry.getValue());
+  }
+
+  public void mergeGlobalVariables(final long scopeKey, final DirectBuffer variablesBuffer) {
+    mergeDocument(
+        scopeKey,
+        -1,
+        -1,
+        new UnsafeBuffer(new byte[0]),
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        variablesBuffer);
   }
 }
