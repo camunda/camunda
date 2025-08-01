@@ -35,6 +35,11 @@ public class ConfigTest {
     assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
 
+    // authentication
+    final var authCfg = appCfg.getAuth();
+    assertThat(authCfg).isNotNull();
+    assertThat(authCfg.getType()).isEqualTo(AuthCfg.AuthType.NONE);
+
     // starter
     final var starterCfg = appCfg.getStarter();
     assertThat(starterCfg).isNotNull();
@@ -83,6 +88,13 @@ public class ConfigTest {
     assertThat(appCfg.isPreferRest()).isTrue();
     assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
+
+    // authentication
+    final var authCfg = appCfg.getAuth();
+    assertThat(authCfg).isNotNull();
+    assertThat(authCfg.getType()).isEqualTo(AuthCfg.AuthType.BASIC);
+    assertThat(authCfg.getBasic().getUsername()).isEqualTo("benchmark-user");
+    assertThat(authCfg.getBasic().getPassword()).isEqualTo("benchmark-password");
 
     // starter
     final var starterCfg = appCfg.getStarter();
