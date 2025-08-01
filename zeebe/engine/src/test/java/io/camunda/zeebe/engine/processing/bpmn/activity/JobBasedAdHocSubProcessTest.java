@@ -14,7 +14,10 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -27,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
@@ -39,6 +43,8 @@ public class JobBasedAdHocSubProcessTest {
   public static final String JOB_TYPE = "jobType";
   private static final String PROCESS_ID = "process";
   private static final String AHSP_ELEMENT_ID = "ad-hoc";
+  private static final String AHSP_INNER_ELEMENT_ID =
+      "ad-hoc" + ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
   private BpmnModelInstance process(final Consumer<AdHocSubProcessBuilder> modifier) {
@@ -227,5 +233,58 @@ public class JobBasedAdHocSubProcessTest {
         .hasElementInstanceKey(adHocSubProcess.getKey())
         .hasErrorType(ErrorType.AD_HOC_SUB_PROCESS_NO_RETRIES)
         .hasErrorMessage("jobFailed");
+  }
+
+  @Test
+  public void shouldActivateElementsOnJobCompletion() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A1").task("A2");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var jobKey =
+        ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
+    final var jobResult =
+        new JobResult()
+            .setActivateElements(
+                List.of(
+                    new JobResultActivateElement().setElementId("A1"),
+                    new JobResultActivateElement().setElementId("B")));
+
+    // when
+    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitByCount(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
+                            && r.getValue().getElementId().equals(AHSP_INNER_ELEMENT_ID),
+                    2))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AHSP_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(AHSP_INNER_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(AHSP_INNER_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A1", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("A2", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                AHSP_INNER_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_COMPLETED), // inner instance for B
+            tuple("A2", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                AHSP_INNER_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_COMPLETED)) // inner instance for A
+        .doesNotContain(tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 }
