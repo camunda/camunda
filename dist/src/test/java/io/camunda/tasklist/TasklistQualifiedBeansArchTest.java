@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.tasklist;
+package io.camunda.tasklist;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 
@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 @AnalyzeClasses(
     packages = "io.camunda.tasklist",
     importOptions = ImportOption.DoNotIncludeTests.class)
-public class TasklistQualifiedBeansArchIT {
+public class TasklistQualifiedBeansArchTest {
 
   private static final String TASKLIST_OS_ASYNC_CLIENT_QUALIFIER = "tasklistOsAsyncClient";
 
