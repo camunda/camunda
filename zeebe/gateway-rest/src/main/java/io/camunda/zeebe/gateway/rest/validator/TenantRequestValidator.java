@@ -8,11 +8,7 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_REGEX;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.MAX_LENGTH;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
@@ -55,19 +51,17 @@ public final class TenantRequestValidator {
   }
 
   private static void validateTenantId(final String id, final List<String> violations) {
-    validateId(id, "tenantId", violations);
+    IdentifierValidator.validateId(
+        id,
+        "tenantId",
+        violations,
+        ID_PATTERN,
+        tenantId -> !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(id));
   }
 
   private static void validateId(
       final String id, final String propertyName, final List<String> violations) {
-    if (id == null || id.isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(propertyName));
-    } else if (id.length() > MAX_LENGTH) {
-      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(propertyName, MAX_LENGTH));
-    } else if (!ID_PATTERN.matcher(id).matches()
-        && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(id)) {
-      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(propertyName, ID_REGEX));
-    }
+    IdentifierValidator.validateId(id, propertyName, violations, ID_PATTERN);
   }
 
   private static void validateTenantName(final String name, final List<String> violations) {
