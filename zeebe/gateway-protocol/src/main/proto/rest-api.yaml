@@ -48,9 +48,9 @@ tags:
   - name: Role
   - name: Setup
   - name: Signal
+  - name: System
   - name: Tenant
   - name: User
-  - name: Usage metrics
   - name: User task
   - name: Variable
 
@@ -4872,7 +4872,7 @@ paths:
   /system/usage-metrics:
     get:
       tags:
-        - Usage metrics
+        - System
       operationId: getUsageMetrics
       summary: Get usage metrics
       description: Retrieve the usage metrics based on given criteria.
