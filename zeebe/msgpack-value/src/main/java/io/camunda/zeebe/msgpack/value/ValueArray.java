@@ -8,12 +8,15 @@
 package io.camunda.zeebe.msgpack.value;
 
 import java.util.RandomAccess;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public interface ValueArray<T> extends Iterable<T>, RandomAccess {
   T add();
 
   T add(final int index);
+
+  void remove(final Set<T> values);
 
   Stream<T> stream();
 }
