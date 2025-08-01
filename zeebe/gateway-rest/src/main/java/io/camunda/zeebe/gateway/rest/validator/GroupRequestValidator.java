@@ -22,6 +22,35 @@ public final class GroupRequestValidator {
 
   private GroupRequestValidator() {}
 
+  public static Optional<ProblemDetail> validateCreateRequest(final GroupCreateRequest request) {
+    return validate(
+        violations -> {
+          validateGroupId(request.getGroupId(), violations);
+          validateGroupName(request.getName(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateUpdateRequest(
+      final String groupId, final GroupUpdateRequest request) {
+    return validate(
+        violations -> {
+          validateGroupId(groupId, violations);
+          validateGroupName(request.getName(), violations);
+          if (request.getDescription() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateMemberRequest(
+      final String roleId, final String memberId, final EntityType memberType) {
+    return validate(
+        violations -> {
+          validateGroupId(roleId, violations);
+          validateMemberId(memberId, memberType, violations);
+        });
+  }
+
   private static void validateId(
       final String id, final String propertyName, final List<String> violations) {
     IdentifierValidator.validateId(id, propertyName, violations, ID_PATTERN);
@@ -37,7 +66,7 @@ public final class GroupRequestValidator {
     }
   }
 
-  public static void validateMemberId(
+  private static void validateMemberId(
       final String entityId, final EntityType entityType, final List<String> violations) {
     switch (entityType) {
       case USER:
@@ -52,34 +81,5 @@ public final class GroupRequestValidator {
       default:
         validateId(entityId, "entityId", violations);
     }
-  }
-
-  public static Optional<ProblemDetail> validateUpdateRequest(
-      final String groupId, final GroupUpdateRequest request) {
-    return validate(
-        violations -> {
-          validateGroupId(groupId, violations);
-          validateGroupName(request.getName(), violations);
-          if (request.getDescription() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
-          }
-        });
-  }
-
-  public static Optional<ProblemDetail> validateCreateRequest(final GroupCreateRequest request) {
-    return validate(
-        violations -> {
-          validateGroupId(request.getGroupId(), violations);
-          validateGroupName(request.getName(), violations);
-        });
-  }
-
-  public static Optional<ProblemDetail> validateMemberRequest(
-      final String roleId, final String memberId, final EntityType memberType) {
-    return validate(
-        violations -> {
-          validateGroupId(roleId, violations);
-          validateMemberId(memberId, memberType, violations);
-        });
   }
 }
