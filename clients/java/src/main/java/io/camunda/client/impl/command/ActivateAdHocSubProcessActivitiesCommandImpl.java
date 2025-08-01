@@ -26,10 +26,12 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivityReference;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class ActivateAdHocSubProcessActivitiesCommandImpl
+    extends CommandWithVariables<ActivateAdHocSubProcessActivitiesCommandStep2>
     implements ActivateAdHocSubProcessActivitiesCommandStep1,
         ActivateAdHocSubProcessActivitiesCommandStep2 {
 
@@ -38,12 +40,14 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
   private final RequestConfig.Builder httpRequestConfig;
 
   private final String adHocSubProcessInstanceKey;
+  private AdHocSubProcessActivateActivityReference latestActivateElement;
   private final AdHocSubProcessActivateActivitiesInstruction httpRequestObject;
 
   public ActivateAdHocSubProcessActivitiesCommandImpl(
       final HttpClient httpClient,
       final JsonMapper jsonMapper,
       final String adHocSubProcessInstanceKey) {
+    super(jsonMapper);
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -54,8 +58,23 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
 
   @Override
   public ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(final String elementId) {
-    httpRequestObject.addElementsItem(
-        new AdHocSubProcessActivateActivityReference().elementId(elementId));
+    latestActivateElement = new AdHocSubProcessActivateActivityReference().elementId(elementId);
+    httpRequestObject.addElementsItem(latestActivateElement);
+    return this;
+  }
+
+  @Override
+  public ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(
+      final String elementId, final Map<String, Object> variables) {
+    activateElement(elementId);
+    latestActivateElement.setVariables(variables);
+    return this;
+  }
+
+  @Override
+  public ActivateAdHocSubProcessActivitiesCommandStep2 cancelRemainingInstances(
+      final boolean cancelRemainingInstances) {
+    httpRequestObject.cancelRemainingInstances(cancelRemainingInstances);
     return this;
   }
 
@@ -76,5 +95,12 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
         httpRequestConfig.build(),
         result);
     return result;
+  }
+
+  @Override
+  protected ActivateAdHocSubProcessActivitiesCommandStep2 setVariablesInternal(
+      final String variables) {
+    latestActivateElement.setVariables(jsonMapper.fromJsonAsMap(variables));
+    return this;
   }
 }

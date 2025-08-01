@@ -17,27 +17,37 @@ package io.camunda.client.adhocsubprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1.ActivateAdHocSubProcessActivitiesCommandStep2;
 import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivityReference;
 import io.camunda.client.util.ClientRestTest;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
 
   private static final String AD_HOC_SUBPROCESS_INSTANCE_KEY = "123456789";
 
   @ParameterizedTest
-  @MethodSource("requestModifiers")
+  @MethodSource("activateElementsWithoutVariablesModifiers")
   void shouldActivateAdHocSubProcessActivities(
       final Function<
               ActivateAdHocSubProcessActivitiesCommandStep1,
@@ -71,6 +81,68 @@ public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
         .containsExactly("A", "B", "C", "D", "E");
   }
 
+  @Test
+  void shouldActivateAdHocSubProcessActivitiesWithVariables() {
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .activateElement("A", mapOf(entry("A", "aValue")))
+        .activateElement("B")
+        .variables(mapOf(entry("B", "bValue")))
+        .activateElement("C")
+        .variables("{\"C\": \"cValue\", \"C2\": \"cValue2\"}")
+        .activateElements(Collections.singletonList("D"))
+        .activateElement("E")
+        .activateElement("F")
+        .variables(new ByteArrayInputStream("{\"F\": \"fValue\"}".getBytes(StandardCharsets.UTF_8)))
+        .activateElement("G")
+        .variable("G", "gValue")
+        .send()
+        .join();
+
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
+    assertThat(request.getElements())
+        .extracting(
+            AdHocSubProcessActivateActivityReference::getElementId,
+            AdHocSubProcessActivateActivityReference::getVariables)
+        .containsExactly(
+            tuple("A", Collections.singletonMap("A", "aValue")),
+            tuple("B", Collections.singletonMap("B", "bValue")),
+            tuple("C", mapOf(Arrays.asList(entry("C", "cValue"), entry("C2", "cValue2")))),
+            tuple("D", Collections.emptyMap()),
+            tuple("E", Collections.emptyMap()),
+            tuple("F", Collections.singletonMap("F", "fValue")),
+            tuple("G", Collections.singletonMap("G", "gValue")));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldSetCancelRemainingInstances(final boolean cancelRemainingInstances) {
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .activateElement("A")
+        .cancelRemainingInstances(cancelRemainingInstances)
+        .send()
+        .join();
+
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
+    assertThat(request.getCancelRemainingInstances()).isEqualTo(cancelRemainingInstances);
+  }
+
+  @Test
+  void shouldDefaultCancelRemainingInstancesToFalse() {
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .activateElement("A")
+        .send()
+        .join();
+
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
+    assertThat(request.getCancelRemainingInstances()).isFalse();
+  }
+
   @ParameterizedTest
   @NullAndEmptySource
   void throwsExceptionWhenElementsCollectionIsNullOrEmpty(final Collection<String> elementIds) {
@@ -96,10 +168,22 @@ public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
           Function<
               ActivateAdHocSubProcessActivitiesCommandStep1,
               ActivateAdHocSubProcessActivitiesCommandStep2>>
-      requestModifiers() {
+      activateElementsWithoutVariablesModifiers() {
     return Stream.of(
         command -> command.activateElement("A").activateElement("B").activateElement("C"),
         command -> command.activateElements("A", "B", "C"),
         command -> command.activateElements(Arrays.asList("A", "B", "C")));
+  }
+
+  private static Map<String, Object> mapOf(final Entry<String, Object> entry) {
+    return mapOf(Collections.singletonList(entry));
+  }
+
+  private static Map<String, Object> mapOf(final List<Entry<String, Object>> entries) {
+    final Map<String, Object> map = new HashMap<>();
+    for (final Entry<String, Object> entry : entries) {
+      map.put(entry.getKey(), entry.getValue());
+    }
+    return map;
   }
 }

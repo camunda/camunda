@@ -18,6 +18,7 @@ package io.camunda.client.api.command;
 import io.camunda.client.api.response.ActivateAdHocSubProcessActivitiesResponse;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 
 public interface ActivateAdHocSubProcessActivitiesCommandStep1 {
 
@@ -29,6 +30,17 @@ public interface ActivateAdHocSubProcessActivitiesCommandStep1 {
    * @return the builder for this command
    */
   ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(final String elementId);
+
+  /**
+   * Create an {@link io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction}
+   * for the given element id with variables.
+   *
+   * @param elementId the id of the element to activate
+   * @param variables variables to be set when activating the element
+   * @return the builder for this command
+   */
+  ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(
+      final String elementId, final Map<String, Object> variables);
 
   /**
    * Create an {@link io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction}
@@ -65,7 +77,17 @@ public interface ActivateAdHocSubProcessActivitiesCommandStep1 {
     return activateElements(Arrays.asList(elementIds));
   }
 
+  /**
+   * Set whether to cancel remaining instances of the ad-hoc sub-process.
+   *
+   * @param cancelRemainingInstances true to cancel remaining instances, false otherwise
+   * @return the builder for this command
+   */
+  ActivateAdHocSubProcessActivitiesCommandStep2 cancelRemainingInstances(
+      boolean cancelRemainingInstances);
+
   interface ActivateAdHocSubProcessActivitiesCommandStep2
       extends ActivateAdHocSubProcessActivitiesCommandStep1,
+          CommandWithVariables<ActivateAdHocSubProcessActivitiesCommandStep2>,
           FinalCommandStep<ActivateAdHocSubProcessActivitiesResponse> {}
 }

@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubProcessActivityRequest;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcessActivityServices> {
@@ -38,15 +39,23 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
         new BrokerActivateAdHocSubProcessActivityRequest()
             .setAdHocSubProcessInstanceKey(request.adHocSubProcessInstanceKey());
 
-    request.elements().stream()
-        .map(AdHocSubProcessActivateActivityReference::elementId)
-        .forEach(brokerRequest::addElement);
+    request
+        .elements()
+        .forEach(
+            element ->
+                brokerRequest.addElement(
+                    element.elementId(), getDocumentOrEmpty(element.variables())));
+
+    brokerRequest.cancelRemainingInstances(request.cancelRemainingInstances());
 
     return sendBrokerRequest(brokerRequest);
   }
 
   public record AdHocSubProcessActivateActivitiesRequest(
-      String adHocSubProcessInstanceKey, List<AdHocSubProcessActivateActivityReference> elements) {
-    public record AdHocSubProcessActivateActivityReference(String elementId) {}
+      String adHocSubProcessInstanceKey,
+      List<AdHocSubProcessActivateActivityReference> elements,
+      boolean cancelRemainingInstances) {
+    public record AdHocSubProcessActivateActivityReference(
+        String elementId, Map<String, Object> variables) {}
   }
 }
