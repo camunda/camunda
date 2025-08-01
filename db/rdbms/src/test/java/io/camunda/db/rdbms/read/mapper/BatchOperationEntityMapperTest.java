@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.read.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorDto;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -67,5 +68,23 @@ class BatchOperationEntityMapperTest {
     assertThat(errorEntity.partitionId()).isEqualTo(42);
     assertThat(errorEntity.type()).isEqualTo("SOME_ERROR");
     assertThat(errorEntity.message()).isEqualTo("trace");
+  }
+
+  @Test
+  void shouldTruncateBatchOperationErrorMessageWithLargeValue() {
+    final var truncatedMessage =
+        new BatchOperationErrorDto(1, "errorType", "errorMessage").truncateErrorMessage(10, null);
+
+    assertThat(truncatedMessage.message().length()).isEqualTo(10);
+    assertThat(truncatedMessage.message()).isEqualTo("errorMessa");
+  }
+
+  @Test
+  void shouldTruncateBatchOperationErrorMessageWithLargeBytes() {
+    final var truncatedMessage =
+        new BatchOperationErrorDto(1, "errorType", "ääääääääää").truncateErrorMessage(50, 5);
+
+    assertThat(truncatedMessage.message().length()).isEqualTo(2);
+    assertThat(truncatedMessage.message()).isEqualTo("ää");
   }
 }

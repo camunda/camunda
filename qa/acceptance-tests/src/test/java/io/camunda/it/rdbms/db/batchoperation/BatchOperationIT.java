@@ -516,6 +516,44 @@ public class BatchOperationIT {
   }
 
   @TestTemplate
+  public void shouldFinishBatchOperationWithErrorWithLargeMessage(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+
+    final String batchOperationKey = batchOperation.batchOperationKey();
+    createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 2);
+
+    final var errors =
+        new BatchOperationErrorsDto(
+            batchOperationKey,
+            List.of(new BatchOperationErrorDto(1, "QUERY_FAILED", "x".repeat(9000))));
+
+    // when
+    final OffsetDateTime endDate = OffsetDateTime.now();
+    writer.getBatchOperationWriter().finishWithErrors(batchOperationKey, endDate, errors);
+    writer.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    assertThat(updatedBatchOperation).isNotNull();
+    final BatchOperationEntity batchOperationEntity = updatedBatchOperation.items().getFirst();
+    assertThat(batchOperationEntity.errors()).isNotNull();
+    assertThat(batchOperationEntity.errors()).hasSize(1);
+    final var error =
+        batchOperationEntity.errors().stream()
+            .filter(e -> e.partitionId() == 1)
+            .findFirst()
+            .orElseThrow();
+    assertThat(error.message().length()).isEqualTo(4000);
+  }
+
+  @TestTemplate
   public void shouldFindBatchOperationByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 

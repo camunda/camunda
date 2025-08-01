@@ -26,6 +26,7 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -199,12 +200,23 @@ public class BatchOperationWriter {
   }
 
   void insertErrors(final String batchOperationKey, final BatchOperationErrorsDto errors) {
+    final BatchOperationErrorsDto truncatedErrors =
+        new BatchOperationErrorsDto(
+            batchOperationKey,
+            errors.errors().stream()
+                .map(
+                    error ->
+                        error.truncateErrorMessage(
+                            vendorDatabaseProperties.errorMessageSize(),
+                            vendorDatabaseProperties.charColumnMaxBytes()))
+                .collect(Collectors.toList()));
+
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.BATCH_OPERATION,
             WriteStatementType.INSERT,
             batchOperationKey,
             "io.camunda.db.rdbms.sql.BatchOperationMapper.insertErrors",
-            errors));
+            truncatedErrors));
   }
 }
