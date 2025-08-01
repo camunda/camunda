@@ -199,6 +199,10 @@ jobs:
           git config --global user.name "github-actions[release]"
           git config --global user.email "github-actions[release]@users.noreply.github.com"
 
+      - name: Clean Release
+        run: |
+          mvn release:clean
+
       - name: Prepare release
         run: |
           ./mvnw -f optimize \
@@ -340,6 +344,7 @@ jobs:
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
           ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
           IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
+          OPERATE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
 
       - name: Wait for Optimize to start
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/ready
