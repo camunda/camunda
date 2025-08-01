@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.record.Record;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -32,6 +34,8 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -45,6 +49,9 @@ public class JobBasedAdHocSubProcessTest {
   private static final String AHSP_ELEMENT_ID = "ad-hoc";
   private static final String AHSP_INNER_ELEMENT_ID =
       "ad-hoc" + ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+  private static final String VARIABLES_JSON = "{'foo':'bar', 'baz': 10}";
+  private static final DirectBuffer VARIABLES_MSGPACK =
+      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(VARIABLES_JSON));
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
   private BpmnModelInstance process(final Consumer<AdHocSubProcessBuilder> modifier) {
@@ -427,5 +434,62 @@ public class JobBasedAdHocSubProcessTest {
                 AHSP_INNER_ELEMENT_ID,
                 ProcessInstanceIntent.ELEMENT_COMPLETED)) // inner instance for A
         .doesNotContain(tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldCreateVariablesOnActivatedElementScope() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final var jobKey =
+        ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
+    final var jobResult =
+        new JobResult()
+            .setActivateElements(
+                List.of(
+                    new JobResultActivateElement()
+                        .setElementId("A")
+                        .setVariables(VARIABLES_MSGPACK),
+                    new JobResultActivateElement().setElementId("B")));
+    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+
+    final var elementA =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst()
+            .getValue();
+    final var elementB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .getFirst()
+            .getValue();
+
+    ENGINE.signal().withSignalName("signal").broadcast();
+
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == SignalIntent.BROADCASTED)
+                .variableRecords()
+                .withProcessInstanceKey(processInstanceKey))
+        .extracting(
+            r -> r.getValue().getName(),
+            r -> r.getValue().getValue(),
+            r -> r.getValue().getScopeKey())
+        .containsOnly(
+            tuple("foo", "\"bar\"", elementA.getFlowScopeKey()),
+            tuple("baz", "10", elementA.getFlowScopeKey()))
+        .doesNotContain(
+            tuple("foo", "\"bar\"", elementB.getFlowScopeKey()),
+            tuple("baz", "10", elementB.getFlowScopeKey()));
   }
 }
