@@ -31,9 +31,14 @@ public class ConfigTest {
     // then
     assertThat(appCfg.getBrokerUrl()).isEqualTo("http://localhost:26500");
     assertThat(appCfg.getBrokerRestUrl()).isEqualTo("http://localhost:8080");
-    assertThat(appCfg.isPreferRest()).isEqualTo(false);
+    assertThat(appCfg.isPreferRest()).isFalse();
     assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
+
+    // authentication
+    final var authCfg = appCfg.getAuth();
+    assertThat(authCfg).isNotNull();
+    assertThat(authCfg.getType()).isEqualTo(AuthCfg.AuthType.NONE);
 
     // starter
     final var starterCfg = appCfg.getStarter();
@@ -48,7 +53,7 @@ public class ConfigTest {
     assertThat(starterCfg.getPayloadPath()).isEqualTo("bpmn/big_payload.json");
     assertThat(starterCfg.isWithResults()).isFalse();
     assertThat(starterCfg.getWithResultsTimeout()).hasSeconds(60);
-    assertThat(starterCfg.getDurationLimit()).isEqualTo(0);
+    assertThat(starterCfg.getDurationLimit()).isZero();
     assertThat(starterCfg.getMsgName()).isEqualTo("msg");
     assertThat(starterCfg.isStartViaMessage()).isFalse();
 
@@ -80,9 +85,16 @@ public class ConfigTest {
     // then
     assertThat(appCfg.getBrokerUrl()).isEqualTo("http://localhost:26500");
     assertThat(appCfg.getBrokerRestUrl()).isEqualTo("http://localhost:8081");
-    assertThat(appCfg.isPreferRest()).isEqualTo(true);
+    assertThat(appCfg.isPreferRest()).isTrue();
     assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
+
+    // authentication
+    final var authCfg = appCfg.getAuth();
+    assertThat(authCfg).isNotNull();
+    assertThat(authCfg.getType()).isEqualTo(AuthCfg.AuthType.BASIC);
+    assertThat(authCfg.getBasic().getUsername()).isEqualTo("benchmark-user");
+    assertThat(authCfg.getBasic().getPassword()).isEqualTo("benchmark-password");
 
     // starter
     final var starterCfg = appCfg.getStarter();
@@ -102,7 +114,7 @@ public class ConfigTest {
     assertThat(starterCfg.getPayloadPath()).isEqualTo("bpmn/realistic/realisticPayload.json");
     assertThat(starterCfg.isWithResults()).isFalse();
     assertThat(starterCfg.getWithResultsTimeout()).hasSeconds(60);
-    assertThat(starterCfg.getDurationLimit()).isEqualTo(0);
+    assertThat(starterCfg.getDurationLimit()).isZero();
     assertThat(starterCfg.getMsgName()).isEqualTo("msg");
     assertThat(starterCfg.isStartViaMessage()).isFalse();
 

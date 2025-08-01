@@ -17,11 +17,17 @@ package io.camunda.zeebe;
 
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.response.Topology;
+import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.AppConfigLoader;
+import io.camunda.zeebe.config.AuthCfg.AuthType;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.ClientInterceptor;
+import io.grpc.Status.Code;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
@@ -37,6 +43,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.time.Duration;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -50,6 +57,11 @@ abstract class App implements Runnable {
       new ThrottledLogger(LoggerFactory.getLogger(App.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(App.class);
   private static HTTPServer monitoringServer;
+  protected final AppCfg config;
+
+  protected App(final AppCfg config) {
+    this.config = config;
+  }
 
   static void createApp(final Function<AppCfg, Runnable> appFactory) {
     final AppCfg appCfg = AppConfigLoader.load();
@@ -107,10 +119,48 @@ abstract class App implements Runnable {
                       .forEach(p -> LOG.info("{} - {}", p.getPartitionId(), p.getRole()));
                 });
         break;
+      } catch (final ClientStatusException e) {
+        final var statusCode = e.getStatusCode();
+        if (statusCode.equals(Code.UNAUTHENTICATED) || statusCode.equals(Code.PERMISSION_DENIED)) {
+          LOG.error(
+              "Failed to retrieve topology due to authentication error; check your config", e);
+          System.exit(1);
+        }
       } catch (final Exception e) {
         THROTTLED_LOGGER.warn("Topology request failed", e);
       }
     }
+  }
+
+  protected CamundaClientBuilder newClientBuilder() {
+    final CamundaClientBuilder builder =
+        CamundaClient.newClientBuilder()
+            .grpcAddress(URI.create(config.getBrokerUrl()))
+            .restAddress(URI.create(config.getBrokerRestUrl()))
+            .preferRestOverGrpc(config.isPreferRest())
+            .withProperties(System.getProperties())
+            .withInterceptors(monitoringInterceptor);
+
+    if (!config.isTls()) {
+      builder.usePlaintext();
+    }
+
+    final var credentialsProvider =
+        switch (config.getAuth().getType()) {
+          case NONE -> new NoopCredentialsProvider();
+          case BASIC ->
+              CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
+                  .username(config.getAuth().getBasic().getUsername())
+                  .password(config.getAuth().getBasic().getPassword())
+                  .applyEnvironmentOverrides(true)
+                  .build();
+          default ->
+              throw new IllegalStateException(
+                  "Expect app.auth.type to be one of %s, but was '%s'"
+                      .formatted(AuthType.values(), config.getAuth().getType()));
+        };
+
+    return builder.credentialsProvider(credentialsProvider);
   }
 
   protected String readVariables(final String payloadPath) {

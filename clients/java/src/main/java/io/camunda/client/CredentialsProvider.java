@@ -15,6 +15,7 @@
  */
 package io.camunda.client;
 
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.grpc.Metadata;
@@ -46,6 +47,13 @@ public interface CredentialsProvider {
    */
   static OAuthCredentialsProviderBuilder newCredentialsProviderBuilder() {
     return new OAuthCredentialsProviderBuilder();
+  }
+
+  /**
+   * @return a builder to configure authentication use basic auth
+   */
+  static BasicAuthCredentialsProviderBuilder newBasicAuthCredentialsProviderBuilder() {
+    return new BasicAuthCredentialsProviderBuilder();
   }
 
   /**
