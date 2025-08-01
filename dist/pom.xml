@@ -456,6 +456,11 @@
       <artifactId>java-jwt</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.opensearch.client</groupId>
+      <artifactId>opensearch-java</artifactId>
+    </dependency>
+
     <!-- /end -->
 
     <dependency>
@@ -660,6 +665,7 @@
             <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>org.apache.httpcomponents.client5:httpclient5</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>org.apache.httpcomponents.core5:httpcore5</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.opensearch.client:opensearch-java</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
