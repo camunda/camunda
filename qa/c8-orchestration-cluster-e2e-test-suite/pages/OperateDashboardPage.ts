@@ -8,7 +8,7 @@
 
 import {Page, Locator} from '@playwright/test';
 
-export class Dashboard {
+export class OperateDashboardPage {
   private page: Page;
   readonly metricPanel: Locator;
 
