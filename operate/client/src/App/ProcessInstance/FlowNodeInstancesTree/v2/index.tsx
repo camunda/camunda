@@ -271,7 +271,8 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         }}
         onToggle={
           isFoldable
-            ? (event) => {
+            ? // @ts-expect-error - Carbon types are wrong
+              (event) => {
                 event.stopPropagation();
                 return (flowNodeInstance.isPlaceholder &&
                   hasVisibleChildPlaceholders) ||

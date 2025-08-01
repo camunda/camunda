@@ -105,7 +105,7 @@ const InstancesTable: React.FC = observer(() => {
         title="Decision Instances"
         count={filteredDecisionInstancesCount}
       />
-      <SortableTable
+      <SortableTable<Record<string, React.ReactNode>, React.ReactNode[]>
         state={getTableState()}
         emptyMessage={getEmptyListMessage()}
         onVerticalScrollStartReach={async (scrollDown) => {

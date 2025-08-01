@@ -77,7 +77,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
 
   return (
     <>
-      <SortableTable
+      <SortableTable<Record<string, React.ReactNode>, React.ReactNode[]>
         state="content"
         selectionType="row"
         columnsWithNoContentPadding={['operations', 'errorMessage']}

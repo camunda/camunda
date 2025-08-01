@@ -11,42 +11,31 @@ import {observer} from 'mobx-react';
 import {ComboBox as BaseComboBox} from '@carbon/react';
 
 type Item = {id: string; label: string};
-type Props = {
-  id: string;
-  value: string;
-  titleText?: string;
-  placeholder?: string;
-  onChange: (data: {[selectedItem: string]: Item | null | undefined}) => void;
-  items: Item[];
-  disabled?: boolean;
-  title?: string;
-};
 
-const ComboBox: React.FC<Props> = observer(
-  ({id, items, onChange, value, disabled, ...props}) => {
+const ComboBox: React.FC<React.ComponentProps<typeof BaseComboBox<Item>>> =
+  observer(({id, items, onChange, value, disabled, ...props}) => {
     const getItemById = (id: string) => {
       return items.find((item) => item.id === id);
     };
 
     return (
-      <BaseComboBox
+      <BaseComboBox<Item>
         id={id}
         items={items}
         onChange={onChange}
-        selectedItem={getItemById(value) ?? null}
+        selectedItem={typeof value === 'string' ? getItemById(value) : null}
         disabled={disabled || items.length === 0}
         shouldFilterItem={(data) => {
           const {inputValue, item} = data;
           return (
-            inputValue !== undefined &&
-            item.label.toLowerCase().includes(inputValue?.toLowerCase())
+            inputValue !== null &&
+            item.label.toLowerCase().includes(inputValue.toLowerCase())
           );
         }}
         size="sm"
         {...props}
       />
     );
-  },
-);
+  });
 
 export {ComboBox};

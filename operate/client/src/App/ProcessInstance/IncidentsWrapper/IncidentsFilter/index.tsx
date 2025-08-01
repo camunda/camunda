@@ -40,7 +40,7 @@ const IncidentsFilter: React.FC = observer(() => {
             titleText="Filter by Flow Node"
             hideLabel
             onChange={({selectedItems}) => {
-              setFlowNodeSelection(selectedItems);
+              setFlowNodeSelection(selectedItems ?? []);
             }}
             size="sm"
           />
@@ -56,7 +56,7 @@ const IncidentsFilter: React.FC = observer(() => {
             titleText="Filter by Incident Type"
             hideLabel
             onChange={({selectedItems}) => {
-              setErrorTypeSelection(selectedItems);
+              setErrorTypeSelection(selectedItems ?? []);
             }}
             size="sm"
           />
