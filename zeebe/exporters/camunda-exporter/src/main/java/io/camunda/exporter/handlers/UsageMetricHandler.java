@@ -27,6 +27,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,22 +93,21 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
     recordValue
         .getSetValues()
         .forEach(
-            (tenantId, set) -> {
-              collection.add(
-                  createUsageMetricEntity(
-                      recordKey, partitionId, timestamp, tenantId, eventType, null));
-              set.forEach(
-                  setValue ->
-                      tuCollection.add(
-                          createUsageMetricTUEntity(
-                              recordKey, partitionId, timestamp, tenantId, setValue)));
-            });
+            (tenantId, set) ->
+                set.stream()
+                    .map(
+                        setValue ->
+                            createUsageMetricTUEntity(
+                                recordKey, partitionId, timestamp, tenantId, setValue))
+                    .forEach(tuCollection::add));
   }
 
   @Override
   public void flush(final UsageMetricsBatch batch, final BatchRequest batchRequest) {
-    batch.variables().forEach(e -> batchRequest.add(indexName, e));
-    batch.tuVariables().forEach(e -> batchRequest.add(tuIndexName, e));
+    Optional.ofNullable(batch.variables())
+        .ifPresent(l -> l.forEach(e -> batchRequest.add(indexName, e)));
+    Optional.ofNullable(batch.tuVariables())
+        .ifPresent(l -> l.forEach(e -> batchRequest.add(tuIndexName, e)));
   }
 
   @Override

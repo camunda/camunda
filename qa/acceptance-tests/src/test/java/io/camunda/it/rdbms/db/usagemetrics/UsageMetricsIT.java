@@ -9,7 +9,6 @@ package io.camunda.it.rdbms.db.usagemetrics;
 
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.EDI;
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.RPI;
-import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.TU;
 import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,7 +30,9 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UsageMetricsFilter.Builder;
+import io.camunda.search.filter.UsageMetricsTUFilter;
 import io.camunda.search.query.UsageMetricsQuery;
+import io.camunda.search.query.UsageMetricsTUQuery;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -114,15 +115,11 @@ public class UsageMetricsIT {
     // given
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 11L);
     writeMetric(usageMetricWriter, EDI, NOW, TENANT1, 11L);
-    writeMetric(usageMetricWriter, TU, NOW, TENANT1, 1L);
     writeMetric(usageMetricWriter, RPI, NOW_MINUS_5M, TENANT1, 2L);
     writeMetric(usageMetricWriter, RPI, NOW_MINUS_5M, TENANT2, 3L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT2, 3L);
-    writeMetric(usageMetricWriter, TU, NOW_MINUS_5M, TENANT2, 2L);
     writeMetric(usageMetricWriter, RPI, NOW_MINUS_10M, TENANT2, 3L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_10M, TENANT2, 3L);
-    writeMetric(usageMetricWriter, TU, NOW_MINUS_10M, TENANT2, 1L);
-    writeMetric(usageMetricWriter, TU, NOW_MINUS_10M, TENANT1, 1L);
     rdbmsWriter.flush();
 
     // when
@@ -157,13 +154,13 @@ public class UsageMetricsIT {
     // when
     final var actualTU =
         usageMetricTUDbReader.usageMetricTUStatistics(
-            UsageMetricsQuery.of(q -> q.filter(f -> f.withTenants(true))), null);
+            UsageMetricsTUQuery.of(q -> q.filter(f -> f.withTenants(true))), null);
 
     // then
     assertThat(actualTU)
         .isEqualTo(
             new UsageMetricTUStatisticsEntity(
-                5,
+                3,
                 Map.of(
                     TENANT1,
                     new UsageMetricTUStatisticsEntityTenant(2L),
@@ -176,11 +173,9 @@ public class UsageMetricsIT {
     // given
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 11L);
     writeMetric(usageMetricWriter, EDI, NOW, TENANT1, 11L);
-    writeMetric(usageMetricWriter, TU, NOW, TENANT1, 2L);
     writeMetric(usageMetricWriter, RPI, NOW_MINUS_5M, TENANT1, 2L);
     writeMetric(usageMetricWriter, RPI, NOW_MINUS_5M, TENANT2, 3L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT2, 3L);
-    writeMetric(usageMetricWriter, TU, NOW_MINUS_5M, TENANT2, 3L);
     rdbmsWriter.flush();
 
     // when
@@ -202,7 +197,7 @@ public class UsageMetricsIT {
 
     // when
     final var actualTU =
-        usageMetricTUDbReader.usageMetricTUStatistics(UsageMetricsQuery.of(q -> q), null);
+        usageMetricTUDbReader.usageMetricTUStatistics(UsageMetricsTUQuery.of(q -> q), null);
 
     // then
     assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(3, null));
@@ -213,9 +208,7 @@ public class UsageMetricsIT {
     // given
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 1L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT1, 1L);
-    writeMetric(usageMetricWriter, TU, NOW_MINUS_5M, TENANT1, 2L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_10M, TENANT2, 1L);
-    writeMetric(usageMetricWriter, TU, NOW_MINUS_10M, TENANT2, 1L);
     rdbmsWriter.flush();
 
     // when
@@ -238,11 +231,14 @@ public class UsageMetricsIT {
     rdbmsWriter.flush();
 
     // when
-    final UsageMetricsFilter filter =
-        new Builder().startTime(NOW.minusMinutes(6)).endTime(NOW.plusMinutes(6)).build();
+    final UsageMetricsTUFilter filter =
+        new UsageMetricsTUFilter.Builder()
+            .startTime(NOW.minusMinutes(6))
+            .endTime(NOW.plusMinutes(6))
+            .build();
     final var actualTU =
         usageMetricTUDbReader.usageMetricTUStatistics(
-            UsageMetricsQuery.of(q -> q.filter(filter)), null);
+            UsageMetricsTUQuery.of(q -> q.filter(filter)), null);
 
     // then
     assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(2, null));
@@ -254,9 +250,7 @@ public class UsageMetricsIT {
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 1L);
     writeMetric(usageMetricWriter, RPI, NOW, TENANT2, 1L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT2, 1L);
-    writeMetric(usageMetricWriter, TU, NOW_MINUS_5M, TENANT2, 1L);
     writeMetric(usageMetricWriter, EDI, NOW_MINUS_10M, TENANT2, 1L);
-    writeMetric(usageMetricWriter, TU, NOW_MINUS_10M, TENANT2, 1L);
     rdbmsWriter.flush();
 
     // when
@@ -289,15 +283,15 @@ public class UsageMetricsIT {
     rdbmsWriter.flush();
 
     // when
-    final UsageMetricsFilter filter =
-        new Builder()
+    final UsageMetricsTUFilter filter =
+        new UsageMetricsTUFilter.Builder()
             .startTime(NOW.minusMinutes(6))
             .endTime(NOW.plusMinutes(6))
             .withTenants(true)
             .build();
     final var actualTU =
         usageMetricTUDbReader.usageMetricTUStatistics(
-            UsageMetricsQuery.of(q -> q.filter(filter)), null);
+            UsageMetricsTUQuery.of(q -> q.filter(filter)), null);
 
     // then
     assertThat(actualTU)
@@ -334,10 +328,11 @@ public class UsageMetricsIT {
     rdbmsWriter.flush();
 
     // when
-    final UsageMetricsFilter filter = new Builder().tenantId(TENANT1).withTenants(true).build();
+    final UsageMetricsTUFilter filter =
+        new UsageMetricsTUFilter.Builder().tenantId(TENANT1).withTenants(true).build();
     final var actualTU =
         usageMetricTUDbReader.usageMetricTUStatistics(
-            UsageMetricsQuery.of(q -> q.filter(filter)), null);
+            UsageMetricsTUQuery.of(q -> q.filter(filter)), null);
 
     // then
     assertThat(actualTU)

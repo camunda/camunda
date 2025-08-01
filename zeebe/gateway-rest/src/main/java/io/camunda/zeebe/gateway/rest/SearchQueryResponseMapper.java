@@ -138,6 +138,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -165,7 +166,7 @@ public final class SearchQueryResponseMapper {
     if (withTenants) {
       final Map<String, UsageMetricStatisticsEntityTenant> tenants1 = statistics.tenants();
       final Map<String, UsageMetricTUStatisticsEntityTenant> tenants2 = tuStatistics.tenants();
-      final var allTenantKeys = new java.util.HashSet<>(tenants1.keySet());
+      final var allTenantKeys = new HashSet<>(tenants1.keySet());
       allTenantKeys.addAll(tenants2.keySet());
 
       final Map<String, UsageMetricsResponseItem> mergedTenants =
