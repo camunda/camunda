@@ -94,11 +94,6 @@ const Variables: React.FC<Props> = ({
   const variables = data?.items ?? [];
   const isJsonEditorModalOpen = editingVariable !== undefined;
 
-  const shouldHideBottomPanel =
-    state === 'ASSIGNING' ||
-    (state === 'UPDATING' && assignee === null) ||
-    (state === 'CANCELING' && assignee === null);
-
   if (isLoading) {
     return null;
   }
@@ -263,47 +258,40 @@ const Variables: React.FC<Props> = ({
                   )
                   .otherwise(() => null)}
 
-                {!shouldHideBottomPanel && (
-                  <div className={styles.footer}>
-                    {hasEmptyNewVariable(values) && (
-                      <IconButton
-                        className={styles.inlineIcon}
-                        label={t('variablesFillAllFieldsWarning')}
-                        align="top"
-                      >
-                        <Information size={20} />
-                      </IconButton>
-                    )}
+                <div className={styles.footer}>
+                  {hasEmptyNewVariable(values) && (
+                    <IconButton
+                      className={styles.inlineIcon}
+                      label={t('variablesFillAllFieldsWarning')}
+                      align="top"
+                    >
+                      <Information size={20} />
+                    </IconButton>
+                  )}
 
-                    <CompleteTaskButton
-                      submissionState={submissionState}
-                      onSuccess={() => {
-                        onSubmitSuccess();
+                  <CompleteTaskButton
+                    submissionState={submissionState}
+                    onSuccess={() => {
+                      onSubmitSuccess();
+                      setLocalSubmissionState('inactive');
+                    }}
+                    onError={() => {
+                      if (state === 'COMPLETING') {
+                        setLocalSubmissionState('active');
+                      } else {
                         setLocalSubmissionState('inactive');
-                      }}
-                      onError={() => {
-                        if (state === 'COMPLETING') {
-                          setLocalSubmissionState('active');
-                        } else {
-                          setLocalSubmissionState('inactive');
-                        }
-                      }}
-                      isHidden={['COMPLETED', 'CANCELING', 'UPDATING'].includes(
-                        state,
-                      )}
-                      isDisabled={
-                        submitting ||
-                        hasValidationErrors ||
-                        validating ||
-                        hasEmptyNewVariable(values) ||
-                        !canCompleteTask
                       }
-                    />
-                    {['UPDATING', 'CANCELING'].includes(state) && (
-                      <ActiveTransitionLoadingText taskState={state} />
-                    )}
-                  </div>
-                )}
+                    }}
+                    isHidden={state === 'COMPLETED'}
+                    isDisabled={
+                      submitting ||
+                      hasValidationErrors ||
+                      validating ||
+                      hasEmptyNewVariable(values) ||
+                      !canCompleteTask
+                    }
+                  />
+                </div>
               </TaskDetailsContainer>
 
               <Suspense>
