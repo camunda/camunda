@@ -853,7 +853,7 @@ paths:
     post:
       tags:
         - Tenant
-      operationId: searchMappingsForTenant
+      operationId: searchMappingRulesForTenant
       summary: Search mapping rules for tenant
       description: Retrieves a filtered and sorted list of MappingRules for a specified tenant.
       parameters:
@@ -3423,7 +3423,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The role or mapping with the given ID was not found.
+          description: The role or mapping rule with the given ID was not found.
           content:
             application/problem+json:
               schema:
@@ -7604,7 +7604,7 @@ components:
           items:
             $ref: "#/components/schemas/MappingRuleSearchQuerySortRequest"
         filter:
-          description: The mapping search filters.
+          description: The mapping rule search filters.
           allOf:
             - $ref: "#/components/schemas/MappingRuleFilter"
     UserFilter:
@@ -7635,10 +7635,10 @@ components:
           description: The value of the claim to match.
         name:
           type: string
-          description: The name of the mapping.
+          description: The name of the mapping rule.
         mappingRuleId:
           type: string
-          description: The ID of the mapping.
+          description: The ID of the mapping rule.
     CamundaUserResult:
       type: object
       properties:
@@ -8272,7 +8272,7 @@ components:
           description: The value of the claim to map.
         name:
           type: string
-          description: The name of the mapping.
+          description: The name of the mapping rule.
       required:
         - claimName
         - claimValue
@@ -8284,7 +8284,7 @@ components:
       properties:
         mappingRuleId:
           type: string
-          description: The unique ID of the mapping.
+          description: The unique ID of the mapping rule.
       required:
         - mappingRuleId
     MappingRuleUpdateRequest:
@@ -8302,10 +8302,10 @@ components:
           description: The value of the claim to map.
         name:
           type: string
-          description: The name of the mapping.
+          description: The name of the mapping rule.
         mappingRuleId:
           type: string
-          description: The unique ID of the mapping.
+          description: The unique ID of the mapping rule.
     MappingRuleCreateResult:
       type: object
       allOf:
@@ -8335,10 +8335,10 @@ components:
           description: The value of the claim to map.
         name:
           type: string
-          description: The name of the mapping.
+          description: The name of the mapping rule.
         mappingRuleId:
           type: string
-          description: The ID of the mapping.
+          description: The ID of the mapping rule.
 
     TopologyResponse:
       description: The response of a topology request.

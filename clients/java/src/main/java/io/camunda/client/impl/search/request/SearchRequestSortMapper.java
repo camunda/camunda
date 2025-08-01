@@ -16,7 +16,6 @@
 package io.camunda.client.impl.search.request;
 
 import io.camunda.client.protocol.rest.*;
-import io.camunda.client.protocol.rest.MappingRuleSearchQuerySortRequest.FieldEnum;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -286,20 +285,14 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
-  public static List<MappingRuleSearchQuerySortRequest> toMappingSearchQuerySortRequest(
+  public static List<MappingRuleSearchQuerySortRequest> toMappingRuleSearchQuerySortRequest(
       final List<SearchRequestSort> requests) {
     return requests.stream()
         .map(
             r -> {
               final MappingRuleSearchQuerySortRequest request =
                   new MappingRuleSearchQuerySortRequest();
-              // Remove when https://github.com/camunda/camunda/issues/32586 is done
-              if (r.getField() != null && r.getField().equals("mappingId")) {
-                request.setField(FieldEnum.MAPPING_RULE_ID);
-              } else {
-                request.setField(
-                    MappingRuleSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
-              }
+              request.setField(MappingRuleSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
               request.setOrder(r.getOrder());
               return request;
             })

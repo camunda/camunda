@@ -9,7 +9,7 @@ package io.camunda.it.rdbms.db.fixtures;
 
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
-import io.camunda.db.rdbms.write.domain.MappingRuleDbModel.MappingDbModelBuilder;
+import io.camunda.db.rdbms.write.domain.MappingRuleDbModel.MappingRuleDbModelBuilder;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -23,10 +23,10 @@ public final class MappingRuleFixtures extends CommonFixtures {
   }
 
   public static MappingRuleDbModel createRandomized(
-      final Function<MappingDbModelBuilder, MappingDbModelBuilder> builderFunction) {
+      final Function<MappingRuleDbModelBuilder, MappingRuleDbModelBuilder> builderFunction) {
     final var id = nextKey();
     final var builder =
-        new MappingDbModelBuilder()
+        new MappingRuleDbModelBuilder()
             .mappingRuleId(String.valueOf(id))
             .mappingRuleKey(id)
             .claimName("claimName-" + UUID.randomUUID())
@@ -36,9 +36,9 @@ public final class MappingRuleFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomMappings(
+  public static void createAndSaveRandomMappingRules(
       final RdbmsWriter rdbmsWriter,
-      final Function<MappingDbModelBuilder, MappingDbModelBuilder> builderFunction) {
+      final Function<MappingRuleDbModelBuilder, MappingRuleDbModelBuilder> builderFunction) {
     for (int i = 0; i < 20; i++) {
       rdbmsWriter
           .getMappingRuleWriter()
@@ -47,15 +47,15 @@ public final class MappingRuleFixtures extends CommonFixtures {
     rdbmsWriter.flush();
   }
 
-  public static void createAndSaveMapping(
+  public static void createAndSaveMappingRule(
       final RdbmsWriter rdbmsWriter, final MappingRuleDbModel mappingRule) {
-    createAndSaveMappings(rdbmsWriter, List.of(mappingRule));
+    createAndSaveMappingRules(rdbmsWriter, List.of(mappingRule));
   }
 
-  public static void createAndSaveMappings(
+  public static void createAndSaveMappingRules(
       final RdbmsWriter rdbmsWriter, final List<MappingRuleDbModel> mappingRuleList) {
-    for (final MappingRuleDbModel mapping : mappingRuleList) {
-      rdbmsWriter.getMappingRuleWriter().create(mapping);
+    for (final MappingRuleDbModel mappingRule : mappingRuleList) {
+      rdbmsWriter.getMappingRuleWriter().create(mappingRule);
     }
     rdbmsWriter.flush();
   }

@@ -174,9 +174,9 @@ public class AuthorizationChecker {
       ownerTypeToOwnerIds.put(EntityType.ROLE, new HashSet<>(authenticatedRoleIds));
     }
 
-    final var authenticatedMappingIds = authentication.authenticatedMappingIds();
-    if (authenticatedMappingIds != null && !authenticatedMappingIds.isEmpty()) {
-      ownerTypeToOwnerIds.put(EntityType.MAPPING_RULE, new HashSet<>(authenticatedMappingIds));
+    final var authenticatedMappingRuleIds = authentication.authenticatedMappingRuleIds();
+    if (authenticatedMappingRuleIds != null && !authenticatedMappingRuleIds.isEmpty()) {
+      ownerTypeToOwnerIds.put(EntityType.MAPPING_RULE, new HashSet<>(authenticatedMappingRuleIds));
     }
 
     return ownerTypeToOwnerIds;

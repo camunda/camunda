@@ -80,7 +80,7 @@ public class MappingRuleController {
     try {
       return ResponseEntity.ok()
           .body(
-              SearchQueryResponseMapper.toMapping(
+              SearchQueryResponseMapper.toMappingRule(
                   mappingRuleServices
                       .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getMappingRule(mappingRuleId)));

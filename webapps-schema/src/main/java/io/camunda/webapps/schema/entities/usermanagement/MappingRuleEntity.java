@@ -24,8 +24,8 @@ public class MappingRuleEntity extends AbstractExporterEntity<MappingRuleEntity>
     return key;
   }
 
-  public MappingRuleEntity setKey(final Long mappingKey) {
-    key = mappingKey;
+  public MappingRuleEntity setKey(final Long mappingRuleKey) {
+    key = mappingRuleKey;
     return this;
   }
 

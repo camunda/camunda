@@ -128,10 +128,10 @@ public class MappingRuleCreateProcessor
     mappingRuleState
         .get(record.getMappingRuleId())
         .ifPresentOrElse(
-            existingMapping -> {
+            existingMappingRule -> {
               final var errorMessage =
                   MAPPING_RULE_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
-                      existingMapping.getMappingRuleId());
+                      existingMappingRule.getMappingRuleId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
             () ->

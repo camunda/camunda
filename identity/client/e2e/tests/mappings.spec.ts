@@ -13,15 +13,15 @@ import { relativizePath } from "../utils/relativizePaths";
 import { LOGIN_CREDENTIALS } from "../utils/constants";
 import { waitForItemInList } from "../utils/waitForItemInList";
 
-const NEW_MAPPING = {
-  mappingId: "testMappingId",
-  name: "Test Mapping",
+const NEW_MAPPING_RULE = {
+  mappingRuleId: "testMappingRuleId",
+  name: "Test Mapping rule",
   claimName: "testClaimName",
   claimValue: "testValue",
 };
 
-const EDITED_MAPPING = {
-  name: "Edited Mapping",
+const EDITED_MAPPING_RULE = {
+  name: "Edited Mapping rule",
   claimName: "editedClaimName",
   claimValue: "editedClaimValue",
 };
@@ -29,80 +29,80 @@ const EDITED_MAPPING = {
 test.beforeEach(async ({ page, loginPage }) => {
   await loginPage.navigateToLogin();
   await loginPage.login(LOGIN_CREDENTIALS);
-  await expect(page).toHaveURL(relativizePath(Paths.mappings()));
+  await expect(page).toHaveURL(relativizePath(Paths.mappingRules()));
 });
 
 // this is skipped as it is not currently possible to run e2e tests in OIDC mode.
 // TODO: renable when https://github.com/camunda/camunda/issues/31750 is implemented
-test.describe.skip("mappings CRUD", () => {
-  test("create a mapping", async ({ page, mappingsPage }) => {
+test.describe.skip("mapping rules CRUD", () => {
+  test("create a mapping rule", async ({ page, mappingRulesPage }) => {
     await expect(
-      mappingsPage.mappingsList.getByRole("cell", { name: NEW_MAPPING.name }),
+      mappingRulesPage.mappingRulesList.getByRole("cell", { name: NEW_MAPPING_RULE.name }),
     ).not.toBeVisible();
 
-    await expect(mappingsPage.usersNavItem).not.toBeVisible();
+    await expect(mappingRulesPage.usersNavItem).not.toBeVisible();
 
-    await mappingsPage.createMappingButton.click();
-    await expect(mappingsPage.createMappingModal).toBeVisible();
-    await mappingsPage.createMappingIdField.fill(NEW_MAPPING.mappingId);
-    await mappingsPage.createMappingNameField.fill(NEW_MAPPING.name);
-    await mappingsPage.createMappingClaimNameField.fill(NEW_MAPPING.claimName);
-    await mappingsPage.createMappingClaimValueField.fill(
-      NEW_MAPPING.claimValue,
+    await mappingRulesPage.createMappingRuleButton.click();
+    await expect(mappingRulesPage.createMappingRuleModal).toBeVisible();
+    await mappingRulesPage.createMappingRuleIdField.fill(NEW_MAPPING_RULE.mappingRuleId);
+    await mappingRulesPage.createMappingRuleNameField.fill(NEW_MAPPING_RULE.name);
+    await mappingRulesPage.createMappingRuleClaimNameField.fill(NEW_MAPPING_RULE.claimName);
+    await mappingRulesPage.createMappingRuleClaimValueField.fill(
+      NEW_MAPPING_RULE.claimValue,
     );
-    await mappingsPage.createMappingModalCreateButton.click();
-    await expect(mappingsPage.createMappingModal).not.toBeVisible();
+    await mappingRulesPage.createMappingRuleModalCreateButton.click();
+    await expect(mappingRulesPage.createMappingRuleModal).not.toBeVisible();
 
-    const item = mappingsPage.mappingsList.getByRole("cell", {
-      name: NEW_MAPPING.name,
+    const item = mappingRulesPage.mappingRulesList.getByRole("cell", {
+      name: NEW_MAPPING_RULE.name,
     });
 
     await waitForItemInList(page, item, {
-      emptyStateLocator: mappingsPage.emptyState,
+      emptyStateLocator: mappingRulesPage.emptyState,
     });
   });
 
-  test("edit a mapping", async ({ page, mappingsPage }) => {
+  test("edit a mapping rule", async ({ page, mappingRulesPage }) => {
     await expect(
-      mappingsPage.mappingsList.getByRole("cell", { name: NEW_MAPPING.name }),
+      mappingRulesPage.mappingRulesList.getByRole("cell", { name: NEW_MAPPING_RULE.name }),
     ).toBeVisible();
 
-    await mappingsPage.editMappingButton(NEW_MAPPING.name).click();
-    await expect(mappingsPage.editMappingModal).toBeVisible();
-    await mappingsPage.editMappingNameField.fill(EDITED_MAPPING.name);
-    await mappingsPage.editMappingClaimNameField.fill(EDITED_MAPPING.claimName);
-    await mappingsPage.editMappingClaimValueField.fill(
-      EDITED_MAPPING.claimValue,
+    await mappingRulesPage.editMappingRuleButton(NEW_MAPPING_RULE.name).click();
+    await expect(mappingRulesPage.editMappingRuleModal).toBeVisible();
+    await mappingRulesPage.editMappingRuleNameField.fill(EDITED_MAPPING_RULE.name);
+    await mappingRulesPage.editMappingRuleClaimNameField.fill(EDITED_MAPPING_RULE.claimName);
+    await mappingRulesPage.editMappingRuleClaimValueField.fill(
+      EDITED_MAPPING_RULE.claimValue,
     );
-    await mappingsPage.editMappingModalUpdateButton.click();
-    await expect(mappingsPage.editMappingModal).not.toBeVisible();
+    await mappingRulesPage.editMappingRuleModalUpdateButton.click();
+    await expect(mappingRulesPage.editMappingRuleModal).not.toBeVisible();
 
-    const item = mappingsPage.mappingsList.getByRole("cell", {
-      name: EDITED_MAPPING.name,
+    const item = mappingRulesPage.mappingRulesList.getByRole("cell", {
+      name: EDITED_MAPPING_RULE.name,
     });
 
     await waitForItemInList(page, item);
   });
 
-  test("delete a mapping", async ({ page, mappingsPage }) => {
+  test("delete a mapping rule", async ({ page, mappingRulesPage }) => {
     await expect(
-      mappingsPage.mappingsList.getByRole("cell", {
-        name: EDITED_MAPPING.name,
+      mappingRulesPage.mappingRulesList.getByRole("cell", {
+        name: EDITED_MAPPING_RULE.name,
       }),
     ).toBeVisible();
 
-    await mappingsPage.deleteMappingButton(EDITED_MAPPING.name).click();
-    await expect(mappingsPage.deleteMappingModal).toBeVisible();
-    await mappingsPage.deleteMappingModalDeleteButton.click();
-    await expect(mappingsPage.deleteMappingModal).not.toBeVisible();
+    await mappingRulesPage.deleteMappingRuleButton(EDITED_MAPPING_RULE.name).click();
+    await expect(mappingRulesPage.deleteMappingRuleModal).toBeVisible();
+    await mappingRulesPage.deleteMappingRuleModalDeleteButton.click();
+    await expect(mappingRulesPage.deleteMappingRuleModal).not.toBeVisible();
 
-    const item = mappingsPage.mappingsList.getByRole("cell", {
-      name: EDITED_MAPPING.name,
+    const item = mappingRulesPage.mappingRulesList.getByRole("cell", {
+      name: EDITED_MAPPING_RULE.name,
     });
 
     await waitForItemInList(page, item, {
       shouldBeVisible: false,
-      emptyStateLocator: mappingsPage.emptyState,
+      emptyStateLocator: mappingRulesPage.emptyState,
     });
   });
 });

@@ -125,7 +125,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableTenantState tenantState;
   private final MutableRoleState roleState;
   private final MutableGroupState groupState;
-  private final MutableMappingRuleState mappingState;
+  private final MutableMappingRuleState mappingRuleState;
   private final MutableBatchOperationState batchOperationState;
   private final MutableMembershipState membershipState;
   private final MutableUsageMetricState usageMetricState;
@@ -183,7 +183,7 @@ public class ProcessingDbState implements MutableProcessingState {
     roleState = new DbRoleState(zeebeDb, transactionContext);
     groupState = new DbGroupState(zeebeDb, transactionContext);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
-    mappingState = new DbMappingRuleState(zeebeDb, transactionContext);
+    mappingRuleState = new DbMappingRuleState(zeebeDb, transactionContext);
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
     membershipState = new DbMembershipState(zeebeDb, transactionContext);
     usageMetricState =
@@ -348,7 +348,7 @@ public class ProcessingDbState implements MutableProcessingState {
 
   @Override
   public MutableMappingRuleState getMappingRuleState() {
-    return mappingState;
+    return mappingRuleState;
   }
 
   @Override

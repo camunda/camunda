@@ -368,19 +368,19 @@ public class CamundaMultiDBExtension
     }
     setupUserInKeycloak(
         TestStandaloneBroker.DEFAULT_MAPPING_RULE_ID,
-        TestStandaloneBroker.DEFAULT_MAPPING_CLAIM_VALUE);
+        TestStandaloneBroker.DEFAULT_MAPPING_RULE_CLAIM_VALUE);
 
     return keycloakContainer;
   }
 
   private void createEntities(final Class<?> testClass, final Boolean shouldSetupKeycloak) {
     final var users = findUsers(testClass, null, ModifierSupport::isStatic);
-    final var mappings = findMappings(testClass, null, ModifierSupport::isStatic);
+    final var mappingRules = findMappingRules(testClass, null, ModifierSupport::isStatic);
     final var groups = findGroups(testClass, null, ModifierSupport::isStatic);
     final var roles = findRoles(testClass, null, ModifierSupport::isStatic);
     entityManager
         .withUser(users)
-        .withMappings(mappings)
+        .withMappingRules(mappingRules)
         .withGroups(groups)
         .withRoles(roles)
         .await();
@@ -397,24 +397,24 @@ public class CamundaMultiDBExtension
           }
         });
 
-    mappings.forEach(
-        mapping -> {
+    mappingRules.forEach(
+        mappingRule -> {
           try {
             final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForMapping(applicationUnderTest.application, mapping);
+            clientFactory.createClientForMappingRule(applicationUnderTest.application, mappingRule);
           } catch (final ClassCastException e) {
             LOGGER.warn(
-                "Could not create client for mapping, as the application is not configured for OIDC authentication",
+                "Could not create client for mapping rule, as the application is not configured for OIDC authentication",
                 e);
           }
 
           if (shouldSetupKeycloak) {
-            setupUserInKeycloak(mapping.id(), mapping.claimValue());
+            setupUserInKeycloak(mappingRule.id(), mappingRule.claimValue());
           }
         });
   }
 
-  private void setupUserInKeycloak(final String mappingId, final String claimValue) {
+  private void setupUserInKeycloak(final String mappingRuleId, final String claimValue) {
     final var clientRepresentation = new ClientRepresentation();
     clientRepresentation.setClientId(claimValue);
     clientRepresentation.setEnabled(true);
@@ -425,7 +425,7 @@ public class CamundaMultiDBExtension
     final var userRepresentation = new UserRepresentation();
     userRepresentation.setId(claimValue);
     userRepresentation.setUsername(claimValue);
-    userRepresentation.setServiceAccountClientId(mappingId);
+    userRepresentation.setServiceAccountClientId(mappingRuleId);
     userRepresentation.setEnabled(true);
 
     try (final var keycloak = keycloakContainer.getKeycloakAdminClient()) {
@@ -509,7 +509,7 @@ public class CamundaMultiDBExtension
     return findFields(testClass, testInstance, predicate, TestRole.class, RoleDefinition.class);
   }
 
-  private List<TestMappingRule> findMappings(
+  private List<TestMappingRule> findMappingRules(
       final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
     return findFields(
         testClass, testInstance, predicate, TestMappingRule.class, MappingRuleDefinition.class);

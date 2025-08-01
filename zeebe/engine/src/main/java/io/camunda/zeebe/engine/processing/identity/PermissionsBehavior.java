@@ -30,7 +30,7 @@ public class PermissionsBehavior {
       "Expected to update authorization with key %s, but an authorization with this key does not exist";
   public static final String AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION =
       "Expected to delete authorization with key %s, but an authorization with this key does not exist";
-  public static final String MAPPING_DOES_NOT_EXIST_ERROR_MESSAGE =
+  public static final String MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE =
       "Expected to create or update authorization with ownerId '%s', but a mapping rule with this ID does not exist.";
 
   private final AuthorizationState authorizationState;
@@ -115,7 +115,7 @@ public class PermissionsBehavior {
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,
-              MAPPING_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getOwnerId())));
+              MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getOwnerId())));
     }
 
     return Either.right(record);

@@ -140,7 +140,7 @@ public final class EventAppliers implements EventApplier {
     registerGroupAppliers(state);
     registerScalingAppliers(state);
     registerTenantAppliers(state);
-    registerMappingAppliers(state);
+    registerMappingRuleAppliers(state);
     registerBatchOperationAppliers(state);
     registerIdentitySetupAppliers();
     registerAsyncRequestAppliers(state);
@@ -619,7 +619,7 @@ public final class EventAppliers implements EventApplier {
     register(TenantIntent.DELETED, new TenantDeletedApplier(state.getTenantState()));
   }
 
-  private void registerMappingAppliers(final MutableProcessingState state) {
+  private void registerMappingRuleAppliers(final MutableProcessingState state) {
     register(MappingRuleIntent.CREATED, new MappingRuleCreatedApplier(state.getMappingRuleState()));
     register(MappingRuleIntent.DELETED, new MappingRuleDeletedApplier(state.getMappingRuleState()));
     register(MappingRuleIntent.UPDATED, new MappingRuleUpdatedApplier(state.getMappingRuleState()));

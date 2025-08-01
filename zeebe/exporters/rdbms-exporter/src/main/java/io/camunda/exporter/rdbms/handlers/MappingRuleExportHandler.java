@@ -8,7 +8,7 @@
 package io.camunda.exporter.rdbms.handlers;
 
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
-import io.camunda.db.rdbms.write.domain.MappingRuleDbModel.MappingDbModelBuilder;
+import io.camunda.db.rdbms.write.domain.MappingRuleDbModel.MappingRuleDbModelBuilder;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
@@ -44,7 +44,7 @@ public class MappingRuleExportHandler implements RdbmsExportHandler<MappingRuleR
 
   private MappingRuleDbModel map(final Record<MappingRuleRecordValue> record) {
     final var value = record.getValue();
-    return new MappingDbModelBuilder()
+    return new MappingRuleDbModelBuilder()
         .mappingRuleId(value.getMappingRuleId())
         .mappingRuleKey(value.getMappingRuleKey())
         .claimName(value.getClaimName())

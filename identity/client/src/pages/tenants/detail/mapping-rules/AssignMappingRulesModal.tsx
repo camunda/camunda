@@ -55,8 +55,8 @@ const AssignMappingRulesModal: FC<
         ),
     ) || [];
 
-  const onSelectMappingRule = (mapping: MappingRule) => {
-    setSelectedMappingRules([...selectedMappingRules, mapping]);
+  const onSelectMappingRule = (mappingRule: MappingRule) => {
+    setSelectedMappingRules([...selectedMappingRules, mappingRule]);
   };
 
   const onUnselectMappingRule =

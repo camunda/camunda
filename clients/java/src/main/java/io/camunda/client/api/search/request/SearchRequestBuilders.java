@@ -289,13 +289,13 @@ public final class SearchRequestBuilders {
     return sort;
   }
 
-  public static MappingRuleFilter mappingFilter(final Consumer<MappingRuleFilter> fn) {
+  public static MappingRuleFilter mappingRuleFilter(final Consumer<MappingRuleFilter> fn) {
     final MappingRuleFilter filter = new MappingRuleFilterImpl();
     fn.accept(filter);
     return filter;
   }
 
-  public static MappingRuleSort mappingSort(final Consumer<MappingRuleSort> fn) {
+  public static MappingRuleSort mappingRuleSort(final Consumer<MappingRuleSort> fn) {
     final MappingRuleSort sort = new MappingRuleSortImpl();
     fn.accept(sort);
     return sort;

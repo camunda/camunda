@@ -117,17 +117,17 @@ public final class AuthorizationCheckBehavior {
       }
     }
 
-    final var mappingAuthorized =
+    final var mappingRuleAuthorized =
         isEntityAuthorized(
             request,
             EntityType.MAPPING_RULE,
             getPersistedMappingRules(request)
                 .map(PersistedMappingRule::getMappingRuleId)
                 .collect(Collectors.toSet()));
-    if (mappingAuthorized.isRight()) {
+    if (mappingRuleAuthorized.isRight()) {
       return Either.right(null);
     } else {
-      aggregatedRejections.add(mappingAuthorized.getLeft());
+      aggregatedRejections.add(mappingRuleAuthorized.getLeft());
     }
 
     return getRejection(aggregatedRejections);
@@ -332,14 +332,14 @@ public final class AuthorizationCheckBehavior {
           .ifPresent(idsForClientId -> idsForClientId.forEach(authorizedResourceIds::add));
     }
 
-    // mappings can layer on top of username/client id
+    // mapping rules can layer on top of username/client id
     getPersistedMappingRules(request)
         .flatMap(
-            mapping ->
+            mappingRule ->
                 getAuthorizedResourceIdentifiers(
                     request.command,
                     EntityType.MAPPING_RULE,
-                    mapping.getMappingRuleId(),
+                    mappingRule.getMappingRuleId(),
                     request.getResourceType(),
                     request.getPermissionType()))
         .forEach(authorizedResourceIds::add);
@@ -464,14 +464,14 @@ public final class AuthorizationCheckBehavior {
       return new AuthenticatedAuthorizedTenants(tenantIds);
     }
 
-    final var tenantsOfMapping =
+    final var tenantsOfMappingRule =
         getPersistedMappingRules(command)
             .flatMap(
-                mapping ->
+                mappingRule ->
                     getAuthorizedTenantIds(
-                        command, EntityType.MAPPING_RULE, mapping.getMappingRuleId()))
+                        command, EntityType.MAPPING_RULE, mappingRule.getMappingRuleId()))
             .collect(Collectors.toSet());
-    return new AuthenticatedAuthorizedTenants(tenantsOfMapping);
+    return new AuthenticatedAuthorizedTenants(tenantsOfMappingRule);
   }
 
   private Stream<PersistedMappingRule> getPersistedMappingRules(

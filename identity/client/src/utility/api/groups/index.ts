@@ -92,7 +92,7 @@ export const unassignGroupRole: ApiDefinition<
 > = ({ groupId, roleId }) =>
   apiDelete(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
 
-// ----------------- Mappings within a Group -----------------
+// ----------------- Mapping rules within a Group -----------------
 
 export type GetGroupMappingRulesParams = {
   groupId: string;

@@ -24,7 +24,7 @@ public final class EntityManager {
   final Map<String, TestUser> users = new ConcurrentHashMap<>();
   final Map<String, TestGroup> groups = new ConcurrentHashMap<>();
   final Map<String, TestRole> roles = new ConcurrentHashMap<>();
-  final Map<String, TestMappingRule> mappings = new ConcurrentHashMap<>();
+  final Map<String, TestMappingRule> mappingRules = new ConcurrentHashMap<>();
   private final CamundaClient defaultClient;
 
   public EntityManager(final CamundaClient defaultClient) {
@@ -88,18 +88,18 @@ public final class EntityManager {
     return this;
   }
 
-  public EntityManager withMappings(final List<TestMappingRule> mappings) {
-    mappings.stream()
-        .filter(mapping -> !this.mappings.containsKey(mapping.id()))
+  public EntityManager withMappingRules(final List<TestMappingRule> mappingRules) {
+    mappingRules.stream()
+        .filter(mappingRule -> !this.mappingRules.containsKey(mappingRule.id()))
         .forEach(
-            mapping -> {
-              this.mappings.put(mapping.id(), mapping);
+            mappingRule -> {
+              this.mappingRules.put(mappingRule.id(), mappingRule);
               defaultClient
                   .newCreateMappingRuleCommand()
-                  .mappingRuleId(mapping.id())
-                  .claimName(mapping.claimName())
-                  .claimValue(mapping.claimValue())
-                  .name(mapping.id())
+                  .mappingRuleId(mappingRule.id())
+                  .claimName(mappingRule.claimName())
+                  .claimValue(mappingRule.claimValue())
+                  .name(mappingRule.id())
                   .send()
                   .join();
             });

@@ -91,7 +91,7 @@ const MappingRules: FC<MappingRulesProps> = ({ tenantId }) => {
             key: "mappingRuleId",
             isSortable: true,
           },
-          { header: t("mappingName"), key: "name", isSortable: true },
+          { header: t("mappingRuleName"), key: "name", isSortable: true },
           { header: t("claimName"), key: "claimName", isSortable: true },
           { header: t("claimValue"), key: "claimValue", isSortable: true },
         ]}

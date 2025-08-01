@@ -51,7 +51,7 @@ public final class IdentitySetupInitializeProcessor
     createRoles(initializationKey, setupRecord.getRoles());
     createDefaultTenant(initializationKey, setupRecord.getDefaultTenant());
     createUsers(initializationKey, setupRecord.getUsers());
-    createMappings(initializationKey, setupRecord.getMappingRules());
+    createMappingRules(initializationKey, setupRecord.getMappingRules());
     createRoleMembers(initializationKey, setupRecord.getRoleMembers());
     createTenantMembers(initializationKey, setupRecord.getTenantMembers());
     createAuthorizations(initializationKey, setupRecord.getAuthorizations());
@@ -68,9 +68,10 @@ public final class IdentitySetupInitializeProcessor
     users.forEach(user -> commandWriter.appendFollowUpCommand(key, UserIntent.CREATE, user));
   }
 
-  private void createMappings(final long key, final List<MappingRuleRecordValue> mappings) {
-    mappings.forEach(
-        mapping -> commandWriter.appendFollowUpCommand(key, MappingRuleIntent.CREATE, mapping));
+  private void createMappingRules(final long key, final List<MappingRuleRecordValue> mappingRules) {
+    mappingRules.forEach(
+        mappingRule ->
+            commandWriter.appendFollowUpCommand(key, MappingRuleIntent.CREATE, mappingRule));
   }
 
   private void createRoles(final long key, final Collection<RoleRecordValue> defaultRole) {

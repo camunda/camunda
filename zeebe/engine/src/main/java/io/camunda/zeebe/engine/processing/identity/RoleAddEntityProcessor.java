@@ -140,7 +140,8 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       final EntityType entityType,
       final String entityId) {
     return switch (entityType) {
-      case USER, CLIENT -> true; // With simple mappings, any username or client id can be assigned
+      case USER, CLIENT ->
+          true; // With simple mapping rules, any username or client id can be assigned
       case GROUP ->
           authorizations.get(Authorization.USER_GROUPS_CLAIMS) != null
               || groupState.get(entityId).isPresent();

@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db.mapping;
+package io.camunda.it.rdbms.db.mappingrules;
 
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveGroup;
 import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.*;
-import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.createAndSaveMapping;
+import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.createAndSaveMappingRule;
 import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRole;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,14 +58,14 @@ public class MappingRuleSpecificFilterIT {
   }
 
   @Test
-  public void shouldFilterMappingsForGroup() {
-    // Create and save a mapping
+  public void shouldFilterMappingRulesForGroup() {
+    // Create and save a mapping rule
     final var mappingRule1 = MappingRuleFixtures.createRandomized();
     final var mappingRule2 = MappingRuleFixtures.createRandomized();
     final var mappingRule3 = MappingRuleFixtures.createRandomized();
-    createAndSaveMapping(rdbmsWriter, mappingRule1);
-    createAndSaveMapping(rdbmsWriter, mappingRule2);
-    createAndSaveMapping(rdbmsWriter, mappingRule3);
+    createAndSaveMappingRule(rdbmsWriter, mappingRule1);
+    createAndSaveMappingRule(rdbmsWriter, mappingRule2);
+    createAndSaveMappingRule(rdbmsWriter, mappingRule3);
 
     final var group = GroupFixtures.createRandomized(b -> b);
     final var anotherGroup = GroupFixtures.createRandomized(b -> b);
@@ -76,18 +76,18 @@ public class MappingRuleSpecificFilterIT {
     assignMappingRuleToGroup(group.groupId(), mappingRule2.mappingRuleId());
     assignMappingRuleToGroup(anotherGroup.groupId(), mappingRule3.mappingRuleId());
 
-    final var mappings =
+    final var mappingRules =
         mappingRuleReader.search(
             new MappingRuleQuery(
                 new MappingRuleFilter.Builder().groupId(group.groupId()).build(),
                 MappingRuleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
-    assertThat(mappings.total()).isEqualTo(2);
+    assertThat(mappingRules.total()).isEqualTo(2);
   }
 
   @Test
-  public void shouldFilterMappingsForRole() {
+  public void shouldFilterMappingRulesForRole() {
     final var role = RoleFixtures.createRandomized(b -> b);
     final var anotherRole = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriter, role);
@@ -99,7 +99,7 @@ public class MappingRuleSpecificFilterIT {
     Arrays.asList(mappingRuleId1, mappingRuleId2, mappingRuleId3)
         .forEach(
             mappingId ->
-                createAndSaveMapping(
+                createAndSaveMappingRule(
                     rdbmsWriter, createRandomized(m -> m.mappingRuleId(mappingId))));
 
     assignMappingRuleToRole(role.roleId(), mappingRuleId1);

@@ -41,8 +41,8 @@ import org.mockito.ArgumentCaptor;
 
 public class MappingRuleServicesTest {
 
-  ArgumentCaptor<BrokerMappingRuleDeleteRequest> mappingDeleteRequestArgumentCaptor;
-  ArgumentCaptor<BrokerMappingRuleUpdateRequest> mappingUpdateRequestArgumentCaptor;
+  ArgumentCaptor<BrokerMappingRuleDeleteRequest> mappingRuleDeleteRequestArgumentCaptor;
+  ArgumentCaptor<BrokerMappingRuleUpdateRequest> mappingRuleUpdateRequestArgumentCaptor;
   private MappingRuleServices services;
   private MappingRuleSearchClient client;
   private CamundaAuthentication authentication;
@@ -57,9 +57,9 @@ public class MappingRuleServicesTest {
     result = mock(SearchQueryResult.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     when(client.searchMappingRules(any())).thenReturn(result);
-    mappingDeleteRequestArgumentCaptor =
+    mappingRuleDeleteRequestArgumentCaptor =
         ArgumentCaptor.forClass(BrokerMappingRuleDeleteRequest.class);
-    mappingUpdateRequestArgumentCaptor =
+    mappingRuleUpdateRequestArgumentCaptor =
         ArgumentCaptor.forClass(BrokerMappingRuleUpdateRequest.class);
     services =
         new MappingRuleServices(
@@ -110,7 +110,7 @@ public class MappingRuleServicesTest {
   }
 
   @Test
-  public void shouldReturnSingleMappingForFind() {
+  public void shouldReturnSingleMappingRuleForFind() {
     // given
     final var entity = mock(MappingRuleEntity.class);
     when(client.getMappingRule(any(String.class))).thenReturn(entity);
@@ -132,17 +132,17 @@ public class MappingRuleServicesTest {
         new MappingRuleServices(
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
-    final var mappingRecord = new MappingRuleRecord();
-    mappingRecord.setMappingRuleId("id");
+    final var mappingRuleRecord = new MappingRuleRecord();
+    mappingRuleRecord.setMappingRuleId("id");
     when(mockBrokerClient.sendRequest(any()))
-        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRuleRecord)));
 
     //  when
     testMappingRuleServices.deleteMappingRule("id");
 
     // then
-    verify(mockBrokerClient).sendRequest(mappingDeleteRequestArgumentCaptor.capture());
-    final var request = mappingDeleteRequestArgumentCaptor.getValue();
+    verify(mockBrokerClient).sendRequest(mappingRuleDeleteRequestArgumentCaptor.capture());
+    final var request = mappingRuleDeleteRequestArgumentCaptor.getValue();
     assertThat(request.getRequestWriter().getMappingRuleId()).isEqualTo("id");
   }
 
@@ -156,24 +156,24 @@ public class MappingRuleServicesTest {
         new MappingRuleServices(
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
-    final var mappingRecord = new MappingRuleRecord();
-    mappingRecord.setMappingRuleId("id");
+    final var mappingRuleRecord = new MappingRuleRecord();
+    mappingRuleRecord.setMappingRuleId("id");
     when(mockBrokerClient.sendRequest(any()))
-        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRuleRecord)));
 
     final var mappingRuleDTO =
         new MappingRuleDTO(
             "newClaimName",
             "newClaimValue",
             "newMappingRuleName",
-            mappingRecord.getMappingRuleId());
+            mappingRuleRecord.getMappingRuleId());
 
     //  when
     testMappingRuleServices.updateMappingRule(mappingRuleDTO);
 
     // then
-    verify(mockBrokerClient).sendRequest(mappingUpdateRequestArgumentCaptor.capture());
-    final var request = mappingUpdateRequestArgumentCaptor.getValue();
+    verify(mockBrokerClient).sendRequest(mappingRuleUpdateRequestArgumentCaptor.capture());
+    final var request = mappingRuleUpdateRequestArgumentCaptor.getValue();
     assertThat(request.getRequestWriter().getMappingRuleId())
         .isEqualTo(mappingRuleDTO.mappingRuleId());
     assertThat(request.getRequestWriter().getClaimName()).isEqualTo(mappingRuleDTO.claimName());
@@ -182,7 +182,7 @@ public class MappingRuleServicesTest {
   }
 
   @Test
-  public void getMatchingMappingsRule() {
+  public void getMatchingMappingRules() {
     // given
     final Map<String, Object> claims =
         Map.of("c1", "v1", "c2", List.of("v2.1", "v2.2"), "c3", 300, "c4", true);

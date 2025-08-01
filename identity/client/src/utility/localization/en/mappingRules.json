@@ -1,6 +1,6 @@
 {
   "noMappingRules": "You don't have any mapping rules yet",
-  "mappingRuleJWTToken": "Mapping of JWT token",
+  "mappingRuleJWTToken": "Mapping rule of JWT token",
   "createMappingRule": "Create a mapping rule",
   "learnMoreMappingRule": "Learn more about mapping rule",
   "mappingRuleId": "Mapping rule ID",

@@ -7,8 +7,8 @@
  */
 package io.camunda.qa.util.cluster;
 
-import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPPING_CLAIM_NAME;
-import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPPING_CLAIM_VALUE;
+import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPPING_RULE_CLAIM_NAME;
+import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPPING_RULE_CLAIM_VALUE;
 import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPPING_RULE_ID;
 
 import io.atomix.cluster.MemberId;
@@ -111,7 +111,9 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         .getMappingRules()
         .add(
             new ConfiguredMappingRule(
-                DEFAULT_MAPPING_RULE_ID, DEFAULT_MAPPING_CLAIM_NAME, DEFAULT_MAPPING_CLAIM_VALUE));
+                DEFAULT_MAPPING_RULE_ID,
+                DEFAULT_MAPPING_RULE_CLAIM_NAME,
+                DEFAULT_MAPPING_RULE_CLAIM_VALUE));
     securityConfig
         .getInitialization()
         .getDefaultRoles()

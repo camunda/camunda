@@ -31,7 +31,7 @@ public class UnassignMappingRuleFromGroupCommandImpl
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private String mappingId;
+  private String mappingRuleId;
   private String groupId;
 
   public UnassignMappingRuleFromGroupCommandImpl(final HttpClient httpClient) {
@@ -41,7 +41,7 @@ public class UnassignMappingRuleFromGroupCommandImpl
 
   @Override
   public UnassignMappingRuleFromGroupStep2 mappingRuleId(final String mappingRuleId) {
-    mappingId = mappingRuleId;
+    this.mappingRuleId = mappingRuleId;
     return this;
   }
 
@@ -61,11 +61,11 @@ public class UnassignMappingRuleFromGroupCommandImpl
   @Override
   public CamundaFuture<UnassignMappingRuleFromGroupResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
-    ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingId);
+    ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingRuleId);
     final HttpCamundaFuture<UnassignMappingRuleFromGroupResponse> result =
         new HttpCamundaFuture<>();
     httpClient.delete(
-        "/groups/" + groupId + "/mapping-rules/" + mappingId,
+        "/groups/" + groupId + "/mapping-rules/" + mappingRuleId,
         null,
         httpRequestConfig.build(),
         result);

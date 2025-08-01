@@ -498,12 +498,12 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleDTO(
-      final String mappingId, final MappingRuleUpdateRequest request) {
+      final String mappingRuleId, final MappingRuleUpdateRequest request) {
     return getResult(
         validateMappingRuleRequest(request),
         () ->
             new MappingRuleDTO(
-                request.getClaimName(), request.getClaimValue(), request.getName(), mappingId));
+                request.getClaimName(), request.getClaimValue(), request.getName(), mappingRuleId));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(

@@ -22,7 +22,7 @@ import {IdentityHeader} from '@pages/IdentityHeader';
 import {IdentityAuthorizationsPage} from '@pages/IdentityAuthorizationsPage';
 import {IdentityGroupsPage} from '@pages/IdentityGroupsPage';
 import {IdentityUsersPage} from '@pages/IdentityUsersPage';
-import {IdentityMappingsPage} from '@pages/IdentityMappingsPage';
+import {IdentityMappingRulesPage} from '@pages/IdentityMappingRulesPage';
 import {IdentityRolesPage} from '@pages/IdentityRolesPage';
 import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
 import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
@@ -44,7 +44,7 @@ type PlaywrightFixtures = {
   resetData: () => Promise<void>;
   publicFormsPage: PublicFormsPage;
   identityHeader: IdentityHeader;
-  identityMappingsPage: IdentityMappingsPage;
+  identityMappingRulesPage: IdentityMappingRulesPage;
   identityUsersPage: IdentityUsersPage;
   identityGroupsPage: IdentityGroupsPage;
   identityAuthorizationsPage: IdentityAuthorizationsPage;
@@ -126,8 +126,8 @@ const test = base.extend<PlaywrightFixtures>({
   identityHeader: async ({page}, use) => {
     await use(new IdentityHeader(page));
   },
-  identityMappingsPage: async ({page}, use) => {
-    await use(new IdentityMappingsPage(page));
+  identityMappingRulesPage: async ({page}, use) => {
+    await use(new IdentityMappingRulesPage(page));
   },
 
   identityUsersPage: async ({page}, use) => {

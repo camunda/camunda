@@ -45,11 +45,12 @@ public class MappingRulesByGroupSearchTest {
   }
 
   @Test
-  void shouldReturnMappingsByGroup() {
-    final var mappings = camundaClient.newMappingRulesByGroupSearchRequest(GROUP_ID).send().join();
+  void shouldReturnMappingRulesByGroup() {
+    final var mappingRules =
+        camundaClient.newMappingRulesByGroupSearchRequest(GROUP_ID).send().join();
 
-    assertThat(mappings.items().size()).isEqualTo(2);
-    assertThat(mappings.items())
+    assertThat(mappingRules.items().size()).isEqualTo(2);
+    assertThat(mappingRules.items())
         .extracting(
             MappingRule::getMappingRuleId,
             MappingRule::getClaimName,
@@ -69,31 +70,31 @@ public class MappingRulesByGroupSearchTest {
   }
 
   @Test
-  void shouldReturnMappingsByGroupFiltered() {
-    final var mappings =
+  void shouldReturnMappingRulesByGroupFiltered() {
+    final var mappingRules =
         camundaClient
             .newMappingRulesByGroupSearchRequest(GROUP_ID)
             .filter(fn -> fn.mappingRuleId(MAPPING_RULE_ID_1))
             .send()
             .join();
 
-    assertThat(mappings.items().size()).isEqualTo(1);
-    assertThat(mappings.items())
+    assertThat(mappingRules.items().size()).isEqualTo(1);
+    assertThat(mappingRules.items())
         .extracting(MappingRule::getMappingRuleId)
         .containsExactly(MAPPING_RULE_ID_1);
   }
 
   @Test
-  void shouldReturnMappingByGroupSorted() {
-    final var mappings =
+  void shouldReturnMappingRuleByGroupSorted() {
+    final var mappingRules =
         camundaClient
             .newMappingRulesByGroupSearchRequest(GROUP_ID)
             .sort(fn -> fn.mappingRuleId().desc())
             .send()
             .join();
 
-    assertThat(mappings.items().size()).isEqualTo(2);
-    assertThat(mappings.items())
+    assertThat(mappingRules.items().size()).isEqualTo(2);
+    assertThat(mappingRules.items())
         .extracting(MappingRule::getMappingRuleId)
         .containsExactly(MAPPING_RULE_ID_2, MAPPING_RULE_ID_1);
   }
@@ -144,9 +145,9 @@ public class MappingRulesByGroupSearchTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var mappings =
+              final var mappingRules =
                   camundaClient.newMappingRulesByGroupSearchRequest(GROUP_ID).send().join();
-              assertThat(mappings.items().size()).isEqualTo(2);
+              assertThat(mappingRules.items().size()).isEqualTo(2);
             });
   }
 }

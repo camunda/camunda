@@ -42,8 +42,8 @@ public class PersistedMappingRule extends UnpackedObject
     return mappingRuleKeyProp.getValue();
   }
 
-  public PersistedMappingRule setMappingRuleKey(final long mappingKey) {
-    mappingRuleKeyProp.setValue(mappingKey);
+  public PersistedMappingRule setMappingRuleKey(final long mappingRuleKey) {
+    mappingRuleKeyProp.setValue(mappingRuleKey);
     return this;
   }
 

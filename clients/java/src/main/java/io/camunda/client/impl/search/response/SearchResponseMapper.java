@@ -357,7 +357,7 @@ public final class SearchResponseMapper {
     return new SearchResponseImpl<>(instances, page);
   }
 
-  public static SearchResponse<MappingRule> toMappingsResponse(
+  public static SearchResponse<MappingRule> toMappingRulesResponse(
       final MappingRuleSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<MappingRule> instances =

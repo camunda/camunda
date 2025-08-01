@@ -268,8 +268,8 @@ import io.camunda.client.impl.search.request.GroupsByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentsByProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.JobSearchRequestImpl;
-import io.camunda.client.impl.search.request.MappingsByGroupSearchRequestImpl;
-import io.camunda.client.impl.search.request.MappingsByRoleSearchRequestImpl;
+import io.camunda.client.impl.search.request.MappingRulesByGroupSearchRequestImpl;
+import io.camunda.client.impl.search.request.MappingRulesByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.MessageSubscriptionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
@@ -1277,12 +1277,12 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public MappingRulesByGroupSearchRequest newMappingRulesByGroupSearchRequest(
       final String groupId) {
-    return new MappingsByGroupSearchRequestImpl(httpClient, jsonMapper, groupId);
+    return new MappingRulesByGroupSearchRequestImpl(httpClient, jsonMapper, groupId);
   }
 
   @Override
   public MappingRulesByRoleSearchRequest newMappingRulesByRoleSearchRequest(final String roleId) {
-    return new MappingsByRoleSearchRequestImpl(httpClient, jsonMapper, roleId);
+    return new MappingRulesByRoleSearchRequestImpl(httpClient, jsonMapper, roleId);
   }
 
   @Override

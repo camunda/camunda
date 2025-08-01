@@ -120,7 +120,7 @@ export const unassignTenantRole: ApiDefinition<
 > = ({ tenantId, roleId }) =>
   apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/roles/${roleId}`);
 
-// ----------------- Mappings within a Tenant -----------------
+// ----------------- Mapping rules within a Tenant -----------------
 
 export type GetTenantMappingRulesParams = {
   tenantId: string;

@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 public class AssignRoleToMappingRuleTest extends ClientRestTest {
 
   public static final String ROLE_ID = "roleId";
-  public static final String MAPPING_RULE_ID = "mappingId";
+  public static final String MAPPING_RULE_ID = "mappingRuleId";
 
   @Test
   void shouldAssignRoleToMappingRule() {

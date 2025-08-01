@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db.mapping;
+package io.camunda.it.rdbms.db.mappingrules;
 
-import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.createAndSaveMapping;
-import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.createAndSaveRandomMappings;
+import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.createAndSaveMappingRule;
+import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.createAndSaveRandomMappingRules;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -32,12 +32,12 @@ public class MappingRuleIT {
   private static final long PARTITION_ID = 0L;
 
   @TestTemplate
-  public void shouldSaveAndFindMappingByKey(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSaveAndFindMappingRuleByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final MappingRuleDbModel randomizedMappingRule = MappingRuleFixtures.createRandomized();
-    createAndSaveMapping(rdbmsWriter, randomizedMappingRule);
+    createAndSaveMappingRule(rdbmsWriter, randomizedMappingRule);
 
     final var mappingRule =
         rdbmsService
@@ -49,47 +49,47 @@ public class MappingRuleIT {
   }
 
   @TestTemplate
-  public void shouldDeleteMapping(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldDeleteMappingRule(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
-    // Create and save a mapping
+    // Create and save a mapping rule
     final MappingRuleDbModel randomizedMappingRule = MappingRuleFixtures.createRandomized();
-    createAndSaveMapping(rdbmsWriter, randomizedMappingRule);
+    createAndSaveMappingRule(rdbmsWriter, randomizedMappingRule);
 
-    // Verify the mapping is saved
+    // Verify the mapping rule is saved
     final var mappingRuleId = randomizedMappingRule.mappingRuleId();
     final var mappingRule = rdbmsService.getMappingRuleReader().findOne(mappingRuleId).orElse(null);
     assertThat(mappingRule).isNotNull();
     assertThat(mappingRule).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
 
-    // Delete the mapping
+    // Delete the mapping rule
     final RdbmsWriter writer = rdbmsService.createWriter(1L);
     writer.getMappingRuleWriter().delete(mappingRuleId);
     writer.flush();
 
-    // Verify the mapping is deleted
-    final var deletedMappingResult = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
-    assertThat(deletedMappingResult).isEmpty();
+    // Verify the mapping rule is deleted
+    final var deletedMappingRuleResult = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
+    assertThat(deletedMappingRuleResult).isEmpty();
   }
 
   @TestTemplate
-  public void shouldFindMappingByClaimName(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindMappingRuleByClaimName(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
-    // Create and save a mapping
-    final MappingRuleDbModel randomizedMapping = MappingRuleFixtures.createRandomized();
-    createAndSaveMapping(rdbmsWriter, randomizedMapping);
+    // Create and save a mapping rule
+    final MappingRuleDbModel randomizedMappingRule = MappingRuleFixtures.createRandomized();
+    createAndSaveMappingRule(rdbmsWriter, randomizedMappingRule);
 
-    // Search for the mapping by claimName
+    // Search for the mapping rule by claimName
     final var searchResult =
         rdbmsService
             .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder()
-                        .claimName(randomizedMapping.claimName())
+                        .claimName(randomizedMappingRule.claimName())
                         .build(),
                     MappingRuleSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
@@ -100,17 +100,17 @@ public class MappingRuleIT {
     assertThat(searchResult.items()).hasSize(1);
     final var instance = searchResult.items().getFirst();
     assertThat(instance).isNotNull();
-    assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedMapping);
+    assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
   }
 
   @TestTemplate
-  public void shouldFindMappingByClaimValue(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindMappingRuleByClaimValue(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     // Create and save a mapping rule
-    final MappingRuleDbModel randomizedMapping = MappingRuleFixtures.createRandomized();
-    createAndSaveMapping(rdbmsWriter, randomizedMapping);
+    final MappingRuleDbModel randomizedMappingRule = MappingRuleFixtures.createRandomized();
+    createAndSaveMappingRule(rdbmsWriter, randomizedMappingRule);
 
     // Search for the mapping rule by claimValue
     final var searchResult =
@@ -119,7 +119,7 @@ public class MappingRuleIT {
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder()
-                        .claimValue(randomizedMapping.claimValue())
+                        .claimValue(randomizedMappingRule.claimValue())
                         .build(),
                     MappingRuleSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
@@ -130,16 +130,16 @@ public class MappingRuleIT {
     assertThat(searchResult.items()).hasSize(1);
     final var instance = searchResult.items().getFirst();
     assertThat(instance).isNotNull();
-    assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedMapping);
+    assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
   }
 
   @TestTemplate
-  public void shouldFindAllMappingsPaged(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindAllMappingRulesPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String claimName = "claimName-" + MappingRuleFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
+    createAndSaveRandomMappingRules(rdbmsWriter, b -> b.claimName(claimName));
 
     final var searchResult =
         rdbmsService
@@ -156,26 +156,27 @@ public class MappingRuleIT {
   }
 
   @TestTemplate
-  public void shouldFindMappingWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindMappingRuleWithFullFilter(
+      final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final MappingRuleDbReader mappingRuleReader = rdbmsService.getMappingRuleReader();
 
     final String claimName = "claimName-" + MappingRuleFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
-    final MappingRuleDbModel randomizedMapping =
+    createAndSaveRandomMappingRules(rdbmsWriter, b -> b.claimName(claimName));
+    final MappingRuleDbModel randomizedMappingRule =
         MappingRuleFixtures.createRandomized(b -> b.claimName(claimName));
-    createAndSaveMapping(rdbmsWriter, randomizedMapping);
+    createAndSaveMappingRule(rdbmsWriter, randomizedMappingRule);
 
     final var searchResult =
         mappingRuleReader.search(
             new MappingRuleQuery(
                 new MappingRuleFilter.Builder()
-                    .mappingRuleKey(randomizedMapping.mappingRuleKey())
-                    .mappingRuleId(randomizedMapping.mappingRuleId())
-                    .claimName(randomizedMapping.claimName())
-                    .claimValue(randomizedMapping.claimValue())
-                    .name(randomizedMapping.name())
+                    .mappingRuleKey(randomizedMappingRule.mappingRuleKey())
+                    .mappingRuleId(randomizedMappingRule.mappingRuleId())
+                    .claimName(randomizedMappingRule.claimName())
+                    .claimValue(randomizedMappingRule.claimValue())
+                    .name(randomizedMappingRule.name())
                     .build(),
                 MappingRuleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
@@ -183,6 +184,6 @@ public class MappingRuleIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().mappingRuleId())
-        .isEqualTo(randomizedMapping.mappingRuleId());
+        .isEqualTo(randomizedMappingRule.mappingRuleId());
   }
 }

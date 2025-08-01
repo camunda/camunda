@@ -24,11 +24,11 @@ public class CamundaOidcUser implements OidcUser, CamundaOAuthPrincipal, Seriali
   public CamundaOidcUser(
       final OidcUser oidcUser,
       final String accessToken,
-      final Set<String> mappingIds,
+      final Set<String> mappingRuleIds,
       final AuthenticationContext authentication) {
     user = oidcUser;
     this.accessToken = accessToken;
-    oAuthContext = new OAuthContext(mappingIds, authentication);
+    oAuthContext = new OAuthContext(mappingRuleIds, authentication);
   }
 
   public CamundaOidcUser(
@@ -88,8 +88,8 @@ public class CamundaOidcUser implements OidcUser, CamundaOAuthPrincipal, Seriali
     return user.getName();
   }
 
-  public Set<String> getMappingIds() {
-    return oAuthContext.mappingIds();
+  public Set<String> getMappingRuleIds() {
+    return oAuthContext.mappingRuleIds();
   }
 
   public String getAccessToken() {
