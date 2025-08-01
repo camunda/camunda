@@ -91,7 +91,9 @@ public final class BackgroundTaskManagerFactory {
 
   public BackgroundTaskManager build() {
     executor = buildExecutor();
-    archiverRepository = buildArchiverRepository();
+    if (config.getHistory().isArchiverEnabled()) {
+      archiverRepository = buildArchiverRepository();
+    }
     incidentRepository = buildIncidentRepository();
     batchOperationUpdateRepository = buildBatchOperationUpdateRepository();
 
@@ -112,16 +114,17 @@ public final class BackgroundTaskManagerFactory {
     final List<RunnableTask> tasks = new ArrayList<>();
 
     tasks.add(buildIncidentMarkerTask());
-    tasks.add(buildProcessInstanceArchiverJob());
-    if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
-      tasks.add(buildProcessInstanceToBeArchivedCountJob());
+    if (config.getHistory().isArchiverEnabled()) {
+      tasks.add(buildProcessInstanceArchiverJob());
+      if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
+        tasks.add(buildProcessInstanceToBeArchivedCountJob());
+      }
+      if (partitionId == START_PARTITION_ID) {
+        tasks.add(buildBatchOperationArchiverJob());
+        tasks.add(new ApplyRolloverPeriodJob(archiverRepository));
+        tasks.add(buildBatchOperationUpdateTask());
+      }
     }
-    if (partitionId == START_PARTITION_ID) {
-      tasks.add(buildBatchOperationArchiverJob());
-      tasks.add(new ApplyRolloverPeriodJob(archiverRepository));
-      tasks.add(buildBatchOperationUpdateTask());
-    }
-
     executor.setCorePoolSize(tasks.size());
     return tasks;
   }
