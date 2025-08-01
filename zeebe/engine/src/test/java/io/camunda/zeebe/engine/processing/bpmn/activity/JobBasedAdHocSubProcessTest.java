@@ -145,6 +145,147 @@ public class JobBasedAdHocSubProcessTest {
   }
 
   @Test
+  public void shouldRecreateJobOnInnerInstanceCompletion() {
+    // given
+    final BpmnModelInstance process =
+        process(adHocSubProcess -> adHocSubProcess.task("A1").task("A2"));
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var jobKey =
+        ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
+    final var jobResult =
+        new JobResult()
+            .setActivateElements(List.of(new JobResultActivateElement().setElementId("A1")));
+
+    // when
+    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+
+    // then
+    final var adHocSubProcess =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .withElementId(AHSP_ELEMENT_ID)
+            .getFirst();
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(AHSP_ELEMENT_ID)
+                .limit(3))
+        .extracting(Record::getIntent, job -> job.getValue().getElementInstanceKey())
+        .containsSequence(
+            tuple(JobIntent.CREATED, adHocSubProcess.getKey()),
+            tuple(JobIntent.COMPLETED, adHocSubProcess.getKey()),
+            tuple(JobIntent.CREATED, adHocSubProcess.getKey()));
+  }
+
+  @Test
+  public void shouldCancelExistingJobsBeforeRecreatingOnInnerInstanceCompletion() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var jobKey =
+        ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
+    final var jobResult =
+        new JobResult()
+            .setActivateElements(
+                List.of(
+                    new JobResultActivateElement().setElementId("A"),
+                    new JobResultActivateElement().setElementId("B")));
+
+    // when
+    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+
+    // then
+    final var adHocSubProcess =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .withElementId(AHSP_ELEMENT_ID)
+            .getFirst();
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(AHSP_ELEMENT_ID)
+                .limit(5))
+        .extracting(Record::getIntent, job -> job.getValue().getElementInstanceKey())
+        .containsSequence(
+            tuple(JobIntent.CREATED, adHocSubProcess.getKey()),
+            tuple(JobIntent.COMPLETED, adHocSubProcess.getKey()),
+            tuple(JobIntent.CREATED, adHocSubProcess.getKey()),
+            tuple(JobIntent.CANCELED, adHocSubProcess.getKey()),
+            tuple(JobIntent.CREATED, adHocSubProcess.getKey()));
+  }
+
+  @Test
+  public void shouldActivateSecondSetOfElements() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    var jobKey = ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
+    var jobResult =
+        new JobResult()
+            .setActivateElements(
+                List.of(
+                    new JobResultActivateElement().setElementId("A"),
+                    new JobResultActivateElement().setElementId("B")));
+    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+
+    // when
+    jobKey = ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
+    jobResult =
+        new JobResult()
+            .setActivateElements(List.of(new JobResultActivateElement().setElementId("C")));
+    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitByCount(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
+                            && r.getValue().getElementId().equals(AHSP_INNER_ELEMENT_ID),
+                    3))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AHSP_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                AHSP_INNER_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED), // inner instance for A
+            tuple(
+                AHSP_INNER_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED), // inner instance for B
+            tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                AHSP_INNER_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED), // inner instance for C
+            tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
   public void shouldCancelJobOnTermination() {
     // given
     final BpmnModelInstance process =
