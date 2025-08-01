@@ -77,6 +77,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher.ResetMode;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -109,6 +110,8 @@ public final class EngineRule extends ExternalResource {
       new RecordingExporterTestWatcher();
   private final int partitionCount;
   private boolean awaitIdentitySetup = false;
+  private ResetRecordingExporterMode awaitIdentitySetupResetMode =
+      ResetRecordingExporterMode.AFTER_IDENTITY_SETUP;
   private boolean initializeRoutingState = true;
 
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
@@ -124,6 +127,7 @@ public final class EngineRule extends ExternalResource {
   private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
   private SearchClientsProxy searchClientsProxy;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
+  private ResetRecordingExporterTestWatcherMode resetRecordingExporterTestWatcherMode;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -157,9 +161,21 @@ public final class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
+    if (resetRecordingExporterTestWatcherMode
+        == ResetRecordingExporterTestWatcherMode.ONLY_BEFORE_AND_AFTER_ALL_TESTS) {
+      RecordingExporter.reset();
+    }
     start();
     if (awaitIdentitySetup) {
       awaitIdentitySetup();
+    }
+  }
+
+  @Override
+  protected void after() {
+    if (resetRecordingExporterTestWatcherMode
+        == ResetRecordingExporterTestWatcherMode.ONLY_BEFORE_AND_AFTER_ALL_TESTS) {
+      RecordingExporter.reset();
     }
   }
 
@@ -179,6 +195,12 @@ public final class EngineRule extends ExternalResource {
     awaitIdentitySetup = true;
     withFeatureFlags(ff -> ff.setEnableIdentitySetup(true));
     return this;
+  }
+
+  public EngineRule withIdentitySetup(
+      final ResetRecordingExporterMode awaitIdentitySetupResetMode) {
+    this.awaitIdentitySetupResetMode = awaitIdentitySetupResetMode;
+    return withIdentitySetup();
   }
 
   public EngineRule withJobStreamer(final JobStreamer jobStreamer) {
@@ -230,6 +252,22 @@ public final class EngineRule extends ExternalResource {
     initializeRoutingState = false;
     initialRoutingState = Optional.of(routingInfo);
     return this;
+  }
+
+  public EngineRule withResetRecordingExporterTestWatcherMode(
+      final ResetRecordingExporterTestWatcherMode resetMode) {
+    resetRecordingExporterTestWatcherMode = resetMode;
+    return switch (resetMode) {
+      case ONLY_BEFORE_AND_AFTER_ALL_TESTS -> {
+        // so, never on individual tests
+        recordingExporterTestWatcher.withResetMode(ResetMode.NEVER);
+        yield this;
+      }
+      case BEFORE_EACH_TEST -> {
+        recordingExporterTestWatcher.withResetMode(ResetMode.ON_STARTING);
+        yield this;
+      }
+    };
   }
 
   private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
@@ -580,7 +618,10 @@ public final class EngineRule extends ExternalResource {
           .await();
     }
 
-    RecordingExporter.reset();
+    if (awaitIdentitySetupResetMode == ResetRecordingExporterMode.AFTER_IDENTITY_SETUP) {
+      // reset the RecordingExporter to avoid that the identity setup is included in the test
+      RecordingExporter.reset();
+    }
   }
 
   public void awaitProcessingOf(final Record<?> record) {
@@ -661,5 +702,15 @@ public final class EngineRule extends ExternalResource {
     public DirectBuffer getDirectBuffer() {
       return genericBuffer;
     }
+  }
+
+  public enum ResetRecordingExporterTestWatcherMode {
+    ONLY_BEFORE_AND_AFTER_ALL_TESTS,
+    BEFORE_EACH_TEST
+  }
+
+  public enum ResetRecordingExporterMode {
+    AFTER_IDENTITY_SETUP,
+    NO_RESET_AFTER_IDENTITY_SETUP
   }
 }

@@ -229,6 +229,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
         .addAuthorization(
             new AuthorizationRecord()
                 .setOwnerId(rpaRoleId)
+                .setOwnerType(AuthorizationOwnerType.ROLE)
                 .setResourceType(AuthorizationResourceType.RESOURCE)
                 .setResourceMatcher(AuthorizationResourceMatcher.ANY)
                 .setResourceId(WILDCARD_PERMISSION)
@@ -236,6 +237,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
         .addAuthorization(
             new AuthorizationRecord()
                 .setOwnerId(rpaRoleId)
+                .setOwnerType(AuthorizationOwnerType.ROLE)
                 .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                 .setResourceMatcher(AuthorizationResourceMatcher.ANY)
                 .setResourceId(WILDCARD_PERMISSION)

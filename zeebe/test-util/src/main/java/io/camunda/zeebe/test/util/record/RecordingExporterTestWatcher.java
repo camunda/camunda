@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 public final class RecordingExporterTestWatcher extends TestWatcher {
 
   public static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test.records");
+  private ResetMode resetMode = ResetMode.ON_STARTING;
 
   @Override
   protected void failed(final Throwable e, final Description description) {
@@ -23,6 +24,26 @@ public final class RecordingExporterTestWatcher extends TestWatcher {
 
   @Override
   protected void starting(final Description description) {
-    RecordingExporter.reset();
+    if (resetMode == ResetMode.ON_STARTING) {
+      RecordingExporter.reset();
+    }
+  }
+
+  @Override
+  protected void finished(final Description description) {
+    if (resetMode == ResetMode.ON_FINISHED) {
+      RecordingExporter.reset();
+    }
+  }
+
+  public RecordingExporterTestWatcher withResetMode(final ResetMode resetMode) {
+    this.resetMode = resetMode;
+    return this;
+  }
+
+  public enum ResetMode {
+    ON_STARTING,
+    ON_FINISHED,
+    NEVER
   }
 }
