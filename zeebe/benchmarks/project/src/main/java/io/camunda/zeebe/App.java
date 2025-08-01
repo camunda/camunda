@@ -25,6 +25,7 @@ import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.AppConfigLoader;
 import io.camunda.zeebe.config.AuthCfg.AuthType;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.ClientInterceptor;
 import io.grpc.Status.Code;
@@ -44,34 +45,52 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 abstract class App implements Runnable {
-
-  protected static ClientInterceptor monitoringInterceptor;
-  protected static PrometheusMeterRegistry registry;
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(App.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(App.class);
-  private static HTTPServer monitoringServer;
+
   protected final AppCfg config;
+  protected PrometheusMeterRegistry registry;
+  protected ClientInterceptor monitoringInterceptor;
+
+  private HTTPServer monitoringServer;
+  private final Path credentialsCachePath;
 
   protected App(final AppCfg config) {
     this.config = config;
+
+    Path credentialsCachePath = null;
+    try {
+      credentialsCachePath = Files.createTempDirectory(".camunda").resolve("credentials.json");
+    } catch (IOException e) {
+      LOG.warn(
+          """
+          Failed to create credentials cache directory; there will be no credentials cache, and \
+          you may run into rate limiting issues with your IdP""",
+          e);
+    }
+
+    this.credentialsCachePath = credentialsCachePath;
   }
 
-  static void createApp(final Function<AppCfg, Runnable> appFactory) {
+  static void createApp(final Function<AppCfg, App> appFactory) {
     final AppCfg appCfg = AppConfigLoader.load();
-    startMonitoringServer(appCfg);
-    Runtime.getRuntime().addShutdownHook(new Thread(App::stopMonitoringServer));
 
-    appFactory.apply(appCfg).run();
+    final var app = appFactory.apply(appCfg);
+    Runtime.getRuntime().addShutdownHook(new Thread(app::onShutdown));
+    app.startMonitoringServer();
+    app.run();
   }
 
-  private static void startMonitoringServer(final AppCfg appCfg) {
+  private void startMonitoringServer() {
     registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
     registry.config().meterFilter(new PrometheusRenameFilter());
 
@@ -79,7 +98,7 @@ abstract class App implements Runnable {
       // you can set the daemon flag to false if you want the server to block
       monitoringServer =
           HTTPServer.builder()
-              .port(appCfg.getMonitoringPort())
+              .port(config.getMonitoringPort())
               .registry(registry.getPrometheusRegistry())
               .buildAndStart();
     } catch (final IOException e) {
@@ -91,7 +110,7 @@ abstract class App implements Runnable {
   }
 
   @SuppressWarnings("resource") // closeable metrics will be closed when the registry is closed
-  private static void registerDefaultInstrumentation() {
+  private void registerDefaultInstrumentation() {
     new ClassLoaderMetrics().bindTo(registry);
     new JvmMemoryMetrics().bindTo(registry);
     new JvmGcMetrics().bindTo(registry);
@@ -99,10 +118,18 @@ abstract class App implements Runnable {
     new JvmThreadMetrics().bindTo(registry);
   }
 
-  private static void stopMonitoringServer() {
+  private void onShutdown() {
     if (monitoringServer != null) {
       monitoringServer.stop();
       monitoringServer = null;
+    }
+
+    if (credentialsCachePath != null) {
+      try {
+        FileUtil.deleteFolderIfExists(credentialsCachePath.getParent());
+      } catch (IOException e) {
+        LOG.debug("Failed to delete credentials cache directory", e);
+      }
     }
   }
 
@@ -145,19 +172,35 @@ abstract class App implements Runnable {
       builder.usePlaintext();
     }
 
+    final var auth = config.getAuth();
     final var credentialsProvider =
-        switch (config.getAuth().getType()) {
+        switch (auth.getType()) {
           case NONE -> new NoopCredentialsProvider();
           case BASIC ->
               CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
-                  .username(config.getAuth().getBasic().getUsername())
-                  .password(config.getAuth().getBasic().getPassword())
+                  .username(auth.getBasic().getUsername())
+                  .password(auth.getBasic().getPassword())
                   .applyEnvironmentOverrides(true)
                   .build();
+          case OAUTH -> {
+            final var cachePath =
+                credentialsCachePath != null
+                    ? credentialsCachePath.toAbsolutePath().toString()
+                    : null;
+
+            yield CredentialsProvider.newCredentialsProviderBuilder()
+                .clientId(auth.getOauth().getClientId())
+                .clientSecret(auth.getOauth().getClientSecret())
+                .audience(auth.getOauth().getAudience())
+                .authorizationServerUrl(auth.getOauth().getAuthzUrl())
+                .credentialsCachePath(cachePath)
+                .applyEnvironmentOverrides(true)
+                .build();
+          }
           default ->
               throw new IllegalStateException(
                   "Expect app.auth.type to be one of %s, but was '%s'"
-                      .formatted(AuthType.values(), config.getAuth().getType()));
+                      .formatted(AuthType.values(), auth.getType()));
         };
 
     return builder.credentialsProvider(credentialsProvider);
