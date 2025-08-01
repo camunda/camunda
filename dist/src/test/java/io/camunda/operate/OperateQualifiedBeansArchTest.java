@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.operate;
+package io.camunda.operate;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 
@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 @AnalyzeClasses(
     packages = "io.camunda.operate",
     importOptions = ImportOption.DoNotIncludeTests.class)
-public class OperateQualifiedBeansArchIT {
+public class OperateQualifiedBeansArchTest {
 
   private static final String OPERATE_OBJECT_MAPPER_QUALIFIER = "operateObjectMapper";
 
