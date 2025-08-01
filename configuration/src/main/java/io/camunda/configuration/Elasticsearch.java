@@ -7,8 +7,7 @@
  */
 package io.camunda.configuration;
 
-import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED;
-
+import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
 
 public class Elasticsearch {
@@ -27,7 +26,11 @@ public class Elasticsearch {
 
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".url", url, String.class, SUPPORTED, LEGACY_URL_PROPERTIES);
+        PREFIX + ".url",
+        url,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        LEGACY_URL_PROPERTIES);
   }
 
   public void setUrl(String url) {
