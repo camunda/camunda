@@ -11,7 +11,7 @@ import java.util.Objects;
 
 public class AuthorizationScope {
 
-  private static final String WILDCARD_CHAR = "*";
+  public static final String WILDCARD_CHAR = "*";
   public static final AuthorizationScope WILDCARD =
       new AuthorizationScope(AuthorizationResourceMatcher.ANY, WILDCARD_CHAR);
 
