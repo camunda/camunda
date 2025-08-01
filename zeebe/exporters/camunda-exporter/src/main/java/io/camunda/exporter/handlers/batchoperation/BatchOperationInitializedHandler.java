@@ -16,18 +16,18 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOp
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class BatchOperationStartedHandler
-    implements ExportHandler<BatchOperationEntity, BatchOperationCreationRecordValue> {
+public class BatchOperationInitializedHandler
+    implements ExportHandler<BatchOperationEntity, BatchOperationInitializationRecordValue> {
 
   private final String indexName;
 
-  public BatchOperationStartedHandler(final String indexName) {
+  public BatchOperationInitializedHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -42,12 +42,12 @@ public class BatchOperationStartedHandler
   }
 
   @Override
-  public boolean handlesRecord(final Record<BatchOperationCreationRecordValue> record) {
-    return record.getIntent().equals(BatchOperationIntent.STARTED);
+  public boolean handlesRecord(final Record<BatchOperationInitializationRecordValue> record) {
+    return record.getIntent().equals(BatchOperationIntent.INITIALIZED);
   }
 
   @Override
-  public List<String> generateIds(final Record<BatchOperationCreationRecordValue> record) {
+  public List<String> generateIds(final Record<BatchOperationInitializationRecordValue> record) {
     return List.of(String.valueOf(record.getValue().getBatchOperationKey()));
   }
 
@@ -58,7 +58,8 @@ public class BatchOperationStartedHandler
 
   @Override
   public void updateEntity(
-      final Record<BatchOperationCreationRecordValue> record, final BatchOperationEntity entity) {
+      final Record<BatchOperationInitializationRecordValue> record,
+      final BatchOperationEntity entity) {
     entity
         .setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .setState(BatchOperationState.ACTIVE);

@@ -18,15 +18,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
-public final class BatchOperationContinueInitializationProcessor
+public final class BatchOperationInitializeProcessor
     implements TypedRecordProcessor<BatchOperationInitializationRecord> {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(BatchOperationContinueInitializationProcessor.class);
+      LoggerFactory.getLogger(BatchOperationInitializeProcessor.class);
 
   private final StateWriter stateWriter;
 
-  public BatchOperationContinueInitializationProcessor(final Writers writers) {
+  public BatchOperationInitializeProcessor(final Writers writers) {
     stateWriter = writers.state();
   }
 
@@ -34,11 +34,9 @@ public final class BatchOperationContinueInitializationProcessor
   public void processRecord(final TypedRecord<BatchOperationInitializationRecord> command) {
     final var recordValue = command.getValue();
     LOGGER.debug(
-        "Marking batch operation {} as for continued initialization {}",
-        command.getValue().getBatchOperationKey(),
-        command.getValue());
+        "Marking batch operation {} as initializing", command.getValue().getBatchOperationKey());
 
     stateWriter.appendFollowUpEvent(
-        command.getKey(), BatchOperationIntent.INITIALIZATION_CONTINUED, recordValue);
+        command.getKey(), BatchOperationIntent.INITIALIZING, recordValue);
   }
 }
