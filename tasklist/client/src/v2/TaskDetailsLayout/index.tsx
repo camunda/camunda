@@ -40,7 +40,7 @@ const TaskDetailsLayout: React.FC = () => {
   const {data: task, refetch} = useTask(id, {
     refetchInterval(query) {
       const {data} = query.state;
-      if (data?.state === 'COMPLETING') {
+      if (data?.state === 'COMPLETING' || data?.state === 'ASSIGNING') {
         return 1000;
       }
 
