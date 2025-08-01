@@ -26,13 +26,13 @@ import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
 
-public class RemoveUserFromTenantTest extends ClientRestTest {
+public class UnassignUserFromTenantTest extends ClientRestTest {
 
   private static final String TENANT_ID = "tenant-id";
   private static final String USERNAME = "username";
 
   @Test
-  void shouldRemoveUserFromTenant() {
+  void shouldUnassignUserFromTenant() {
     // when
     client.newUnassignUserFromTenantCommand().username(USERNAME).tenantId(TENANT_ID).send().join();
 
