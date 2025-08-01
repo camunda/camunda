@@ -45,6 +45,7 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionResult;
+import io.camunda.zeebe.gateway.protocol.rest.GlobalVariableCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobKindEnum;
@@ -87,6 +88,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.GlobalVariableRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
@@ -732,6 +734,11 @@ public final class ResponseMapper {
                     .inputName(evaluatedInputValue.getInputName())
                     .inputValue(evaluatedInputValue.getInputValue()))
         .toList();
+  }
+
+  public static ResponseEntity<Object> toGlobalVariableCreateResponse(
+      final GlobalVariableRecord unused) {
+    return new ResponseEntity<>(new GlobalVariableCreateResult().created(true), HttpStatus.CREATED);
   }
 
   static class RestJobActivationResult

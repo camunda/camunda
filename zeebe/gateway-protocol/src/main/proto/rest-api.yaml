@@ -1407,6 +1407,38 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /variables/create:
+    put:
+      tags:
+        - Variable
+      operationId: createVariables
+      summary: Create variables
+      description: |
+        Create cluster level variables
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GlobalVariableCreateQuery"
+      responses:
+        "201":
+          description: >
+            The variable creation status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GlobalVariableCreateResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
   /variables/{variableKey}:
     get:
       tags:
@@ -5844,6 +5876,16 @@ components:
           description: The variable search filters.
           allOf:
             - $ref: "#/components/schemas/VariableFilter"
+    GlobalVariableCreateQuery:
+      type: object
+      properties:
+        key:
+          type: string
+          description: The variable name
+        value:
+          type: object
+          description: The variable value, can be a string or any JSON object
+      description: An object containing exactly one key-value pair representing a variable.
     VariableFilter:
       description: Variable filter request.
       type: object
@@ -5885,6 +5927,12 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/VariableSearchResult"
+    GlobalVariableCreateResult:
+      type: object
+      properties:
+        created:
+          description: The status of the creation.
+          type: boolean
     VariableSearchResult:
       description: Variable search response item.
       type: object
