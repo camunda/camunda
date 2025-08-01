@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemStatusUpdateDto;
@@ -34,6 +35,7 @@ public class BatchOperationWriter {
 
   private final ExecutionQueue executionQueue;
   private final BatchOperationDbReader reader;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
 
   private final int itemInsertBlockSize;
   private final boolean exportPendingBatchOperationItems;
@@ -41,9 +43,11 @@ public class BatchOperationWriter {
   public BatchOperationWriter(
       final BatchOperationDbReader reader,
       final ExecutionQueue executionQueue,
-      final RdbmsWriterConfig config) {
+      final RdbmsWriterConfig config,
+      final VendorDatabaseProperties vendorDatabaseProperties) {
     this.reader = reader;
     this.executionQueue = executionQueue;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
     itemInsertBlockSize = config.batchOperationItemInsertBlockSize();
     exportPendingBatchOperationItems = config.exportBatchOperationItemsOnCreation();
   }
@@ -90,7 +94,9 @@ public class BatchOperationWriter {
             WriteStatementType.UPDATE,
             item.batchOperationKey(),
             "io.camunda.db.rdbms.sql.BatchOperationMapper.upsertItem",
-            item));
+            item.truncateErrorMessage(
+                vendorDatabaseProperties.errorMessageSize(),
+                vendorDatabaseProperties.charColumnMaxBytes())));
 
     if (item.state() == BatchOperationItemState.FAILED) {
       executionQueue.executeInQueue(
