@@ -66,6 +66,19 @@ public interface JsonMapper {
   <T> T fromJson(final String json, final Class<T> typeClass);
 
   /**
+   * Transform an object (POJO, map, list, etc.) into another equivalent object of type {@code T}.
+   *
+   * @param value the object to transform
+   * @param typeClass the Java type to transform into
+   * @param <T> the type of the returned object
+   * @return the POJO transformed from the other POJO
+   * @throws InternalClientException on serialization/deserialization error
+   */
+  default <T> T transform(final Object value, final Class<T> typeClass) {
+    return fromJson(toJson(value), typeClass);
+  }
+
+  /**
    * Deserializes a JSON string into a string to object map.
    *
    * @param json the JSON string to deserialize
@@ -97,7 +110,7 @@ public interface JsonMapper {
    *
    * @param propertyName the property name that contains the JSON string
    * @param jsonInput the JSON string
-   * @return the same JSON string, that passed in
+   * @return the same JSON string as passed in
    * @throws InternalClientException on serialization/deserialization error
    */
   String validateJson(final String propertyName, final String jsonInput);

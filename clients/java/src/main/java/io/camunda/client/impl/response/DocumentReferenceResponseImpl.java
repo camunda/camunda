@@ -15,18 +15,33 @@
  */
 package io.camunda.client.impl.response;
 
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.camunda.client.api.response.DocumentMetadata;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.impl.response.DocumentReferenceResponseImpl.DocumentReferenceDeserializer;
+import io.camunda.client.impl.response.DocumentReferenceResponseImpl.DocumentReferenceSerializer;
+import io.camunda.client.protocol.rest.DocumentReference;
+import java.io.IOException;
 
+@JsonSerialize(using = DocumentReferenceSerializer.class)
+@JsonDeserialize(using = DocumentReferenceDeserializer.class)
 public class DocumentReferenceResponseImpl implements DocumentReferenceResponse {
-
+  private final DocumentReference documentReference;
   private final String documentId;
   private final String storeId;
   private final String contentHash;
   private final DocumentMetadata metadata;
 
-  public DocumentReferenceResponseImpl(
-      final io.camunda.client.protocol.rest.DocumentReference documentReference) {
+  public DocumentReferenceResponseImpl(final DocumentReference documentReference) {
+    this.documentReference = documentReference;
     documentId = documentReference.getDocumentId();
     storeId = documentReference.getStoreId();
     contentHash = documentReference.getContentHash();
@@ -52,5 +67,51 @@ public class DocumentReferenceResponseImpl implements DocumentReferenceResponse 
   @Override
   public DocumentMetadata getMetadata() {
     return metadata;
+  }
+
+  public DocumentReference getDocumentReference() {
+    return documentReference;
+  }
+
+  public static class DocumentReferenceSerializer
+      extends StdSerializer<DocumentReferenceResponseImpl> {
+
+    public DocumentReferenceSerializer() {
+      this(null);
+    }
+
+    public DocumentReferenceSerializer(final Class<DocumentReferenceResponseImpl> t) {
+      super(t);
+    }
+
+    @Override
+    public void serialize(
+        final DocumentReferenceResponseImpl value,
+        final JsonGenerator gen,
+        final SerializerProvider provider)
+        throws IOException {
+      gen.writeObject(value.getDocumentReference());
+    }
+  }
+
+  public static class DocumentReferenceDeserializer
+      extends StdDeserializer<DocumentReferenceResponseImpl> {
+
+    public DocumentReferenceDeserializer() {
+      this(null);
+    }
+
+    public DocumentReferenceDeserializer(final Class<DocumentReferenceResponseImpl> t) {
+      super(t);
+    }
+
+    @Override
+    public DocumentReferenceResponseImpl deserialize(
+        final JsonParser p, final DeserializationContext ctxt)
+        throws IOException, JacksonException {
+      final DocumentReference documentReference =
+          p.getCodec().readValue(p, DocumentReference.class);
+      return new DocumentReferenceResponseImpl(documentReference);
+    }
   }
 }

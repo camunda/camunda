@@ -18,15 +18,9 @@ package io.camunda.spring.client.jobhandling.parameter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 
-public class VariablesAsTypeResolver implements ParameterResolver {
-  private final Class<?> variablesType;
-
-  public VariablesAsTypeResolver(final Class<?> variablesType) {
-    this.variablesType = variablesType;
-  }
-
+public class CustomHeadersParameterResolver implements ParameterResolver {
   @Override
   public Object resolve(final JobClient jobClient, final ActivatedJob job) {
-    return job.getVariablesAsType(variablesType);
+    return job.getCustomHeaders();
   }
 }
