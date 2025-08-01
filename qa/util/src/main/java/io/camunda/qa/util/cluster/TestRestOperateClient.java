@@ -7,14 +7,22 @@
  */
 package io.camunda.qa.util.cluster;
 
+import static java.util.Collections.emptyList;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
@@ -32,12 +40,15 @@ import org.testcontainers.containers.GenericContainer;
 
 public class TestRestOperateClient implements AutoCloseable {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER =
+      new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new JavaTimeModule());
 
   private final URI endpoint;
   private final HttpClient httpClient;
   private String username;
   private String password;
+
+  private final String batchOperationEndpoint;
 
   public TestRestOperateClient(final URI endpoint, final String username, final String password) {
     this(endpoint);
@@ -57,6 +68,21 @@ public class TestRestOperateClient implements AutoCloseable {
   public TestRestOperateClient(final URI endpoint) {
     this.endpoint = endpoint;
     httpClient = HttpClient.newBuilder().cookieHandler(new CookieManager()).build();
+
+    batchOperationEndpoint = String.format("%sapi/process-instances/batch-operation", endpoint);
+  }
+
+  public static ListViewQueryDto createBasicListQueryDto() {
+    return new ListViewQueryDto()
+        .setRunning(true)
+        .setActive(true)
+        .setIncidents(true)
+        .setFinished(false)
+        .setCompleted(false)
+        .setCanceled(false)
+        .setRetriesLeft(false)
+        .setIds(emptyList())
+        .setExcludeIds(emptyList());
   }
 
   private HttpRequest loginRequest() {
@@ -256,6 +282,66 @@ public class TestRestOperateClient implements AutoCloseable {
 
   public URI getEndpoint() {
     return endpoint;
+  }
+
+  public Either<Exception, BatchOperationEntity> migrateProcessInstanceBatchOperationWith(
+      final MigrationPlan migrationPlan) {
+    return migrateProcessInstanceBatchOperationRequest(migrationPlan)
+        .flatMap(this::sendRequest)
+        .flatMap(r -> mapResult(r, BatchOperationEntity.class));
+  }
+
+  public Either<Exception, BatchOperationEntity> cancelProcessInstancesBatchOperationRequest(
+      final ListViewQueryDto query) {
+    final CreateBatchOperationRequestDto createBatchOperation =
+        new CreateBatchOperationRequestDto();
+
+    createBatchOperation.setOperationType(OperationType.CANCEL_PROCESS_INSTANCE);
+    createBatchOperation.setQuery(query);
+
+    return createBatchOperation(createBatchOperation)
+        .flatMap(this::sendRequest)
+        .flatMap(r -> mapResult(r, BatchOperationEntity.class));
+  }
+
+  private Either<Exception, HttpRequest> migrateProcessInstanceBatchOperationRequest(
+      final MigrationPlan migrationPlan) {
+    final CreateBatchOperationRequestDto createBatchOperation =
+        new CreateBatchOperationRequestDto();
+
+    createBatchOperation.setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE);
+    createBatchOperation.setQuery(createBasicListQueryDto());
+
+    final MigrationPlanDto migrationPlanDto = new MigrationPlanDto();
+    migrationPlanDto.setTargetProcessDefinitionKey(
+        String.valueOf(migrationPlan.getTargetProcessDefinitionKey()));
+    migrationPlanDto.setMappingInstructions(
+        migrationPlan.getMappingInstructions().stream()
+            .map(
+                mappingInstruction ->
+                    new MigrationPlanDto.MappingInstruction()
+                        .setSourceElementId(mappingInstruction.getSourceElementId())
+                        .setTargetElementId(mappingInstruction.getTargetElementId()))
+            .toList());
+
+    createBatchOperation.setMigrationPlan(migrationPlanDto);
+
+    return createBatchOperation(createBatchOperation);
+  }
+
+  private Either<Exception, HttpRequest> createBatchOperation(
+      final CreateBatchOperationRequestDto createBatchOperationRequestDto) {
+    final HttpRequest request;
+    try {
+      final String jsonBody = OBJECT_MAPPER.writeValueAsString(createBatchOperationRequestDto);
+      request =
+          createBuilder(batchOperationEndpoint)
+              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+              .build();
+    } catch (final URISyntaxException | JsonProcessingException e) {
+      return Either.left(e);
+    }
+    return Either.right(request);
   }
 
   @Override
