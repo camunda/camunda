@@ -32,6 +32,7 @@ public record SearchClientReaders(
     TenantReader tenantReader,
     TenantMemberReader tenantMemberReader,
     UsageMetricsReader usageMetricsReader,
+    UsageMetricsTUReader usageMetricsTUReader,
     UserReader userReader,
     UserTaskReader userTaskReader,
     VariableReader variableReader) {}

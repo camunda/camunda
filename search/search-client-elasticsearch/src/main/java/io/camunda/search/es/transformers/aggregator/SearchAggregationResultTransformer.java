@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeBucket;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketAggregateBase;
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
@@ -61,6 +62,10 @@ public class SearchAggregationResultTransformer<T>
         .docCount(aggregate.docCount())
         .aggregations(transformAggregation(aggregate.aggregations()))
         .build();
+  }
+
+  private AggregationResult transformLTermsBucketAggregate(final LongTermsAggregate aggregate) {
+    return new Builder().docCount((long) aggregate.buckets().array().size()).build();
   }
 
   private AggregationResult transformSingleMetricAggregate(
@@ -176,6 +181,7 @@ public class SearchAggregationResultTransformer<T>
             case Filter -> res = transformSingleBucketAggregate(aggregate.filter());
             case Filters -> res = transformMultiBucketAggregate(aggregate.filters());
             case Sterms -> res = transformMultiBucketAggregate(aggregate.sterms());
+            case Lterms -> res = transformLTermsBucketAggregate(aggregate.lterms());
             case Composite -> res = transformMultiBucketAggregate(aggregate.composite());
             case TopHits -> res = transformTopHitsAggregate(key, aggregate.topHits());
             case Sum -> res = transformSingleMetricAggregate(aggregate.sum());

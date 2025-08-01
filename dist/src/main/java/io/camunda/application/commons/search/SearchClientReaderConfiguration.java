@@ -76,10 +76,11 @@ import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -288,13 +289,13 @@ public class SearchClientReaderConfiguration {
   @Bean
   public UsageMetricsReader usageMetricsReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new UsageMetricsDocumentReader(executor, descriptors.get(MetricIndex.class));
+    return new UsageMetricsDocumentReader(executor, descriptors.get(UsageMetricIndex.class));
   }
 
   @Bean
   public UsageMetricsTUReader usageMetricsTUReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new UsageMetricsTUDocumentReader(executor, descriptors.get(MetricIndex.class));
+    return new UsageMetricsTUDocumentReader(executor, descriptors.get(UsageMetricTUIndex.class));
   }
 
   @Bean
