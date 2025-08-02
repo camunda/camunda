@@ -16,6 +16,10 @@ on:
         description: "The suite under test. ie, DataLayer or CoreFeatures"
         required: true
         type: string
+      suiteName:
+        description: "Well formatted name of the suite under test. ie, 'Data Layer' or 'Core Features'"
+        required: true
+        type: string
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
@@ -78,7 +82,7 @@ jobs:
           job_name: "${{inputs.componentName}}-unit-tests/${{inputs.suite}}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "team: ${{inputs.suite}}"
+          user_description: "${{inputs.suiteName}}"
           detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}

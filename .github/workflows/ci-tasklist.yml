@@ -55,6 +55,7 @@ jobs:
     with:
       componentName: "Tasklist"
       suite: ${{ matrix.suite }}
+      suiteName: ${{ matrix.suiteName }}
 
   tasklist-frontend-tests:
     name: "[UT] Front End"
