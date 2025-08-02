@@ -72,6 +72,10 @@ public class UnifiedConfigurationHelper {
       }
     }
 
+    if (legacyValues.isEmpty()) {
+      return null;
+    }
+
     if (legacyValues.size() > 1) {
       throw new UnifiedConfigurationException(
           String.format(
