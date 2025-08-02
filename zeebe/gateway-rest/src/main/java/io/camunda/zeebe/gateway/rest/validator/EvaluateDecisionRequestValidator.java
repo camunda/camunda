@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateKeyFormat;
 
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import java.util.List;
@@ -34,6 +35,9 @@ public class EvaluateDecisionRequestValidator {
                 ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
                     List.of("decisionDefinitionId", "decisionDefinitionKey")));
           }
+          // Validate decisionDefinitionKey format if provided
+          validateKeyFormat(
+              request.getDecisionDefinitionKey(), "decisionDefinitionKey", violations);
         });
   }
 }
