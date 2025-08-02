@@ -22,6 +22,9 @@ public class Cluster {
   /** Configuration for the distributed metadata manager in the cluster. */
   private Metadata metadata = new Metadata();
 
+  /** Network configuration for cluster communication. */
+  private Network network = new Network();
+
   /**
    * Specifies the unique id of this broker node in a cluster. The id should be between 0 and number
    * of nodes in the cluster (exclusive).
@@ -46,6 +49,14 @@ public class Cluster {
 
   public void setMetadata(final Metadata metadata) {
     this.metadata = metadata;
+  }
+
+  public Network getNetwork() {
+    return network;
+  }
+
+  public void setNetwork(final Network network) {
+    this.network = network;
   }
 
   public int getNodeId() {
