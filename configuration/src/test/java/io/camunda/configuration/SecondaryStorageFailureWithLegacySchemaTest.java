@@ -60,6 +60,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               "camunda.tasklist.elasticsearch.url=http://legacy-mismatching-url:4321",
               "camunda.operate.elasticsearch.url=http://legacy-mismatching-url:4321");
 
+  /* TODO: Re-enable this once the properties are not backwards compatible
   @Test
   void testOperateshouldFailWhenUsingLegacyDatabaseProperties() {
     operateRunner.run(
@@ -72,7 +73,9 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               .hasMessageNotContaining("conflicts");
         });
   }
+  */
 
+  /* TODO: Re-enable this once the properties are not backwards compatible
   @Test
   void testTasklistshouldFailWhenUsingLegacyDatabaseProperties() {
     tasklistRunner.run(
@@ -85,6 +88,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               .hasMessageNotContaining("conflicts");
         });
   }
+   */
 
   @Test
   void testTasklistshouldFailWhenUsingLegacyDatabasePropertiesDontMatchNewProperties() {
