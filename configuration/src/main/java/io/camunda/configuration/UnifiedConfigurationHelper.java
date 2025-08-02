@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -66,7 +67,13 @@ public class UnifiedConfigurationHelper {
     for (final String legacyProperty : legacyProperties) {
       final String strValue = environment.getProperty(legacyProperty);
       final T legacyValue = parseLegacyValue(strValue, expectedType);
-      legacyValues.add(legacyValue);
+      if (legacyValue != null) {
+        legacyValues.add(legacyValue);
+      }
+    }
+
+    if (legacyValues.isEmpty()) {
+      return null;
     }
 
     if (legacyValues.size() > 1) {
@@ -211,6 +218,7 @@ public class UnifiedConfigurationHelper {
       case "Integer" -> (T) Integer.valueOf(strValue);
       case "Boolean" -> (T) Boolean.valueOf(strValue);
       case "Duration" -> (T) DurationStyle.detectAndParse(strValue);
+      case "SecondaryStorageType" -> (T) SecondaryStorageType.valueOf(strValue.toLowerCase());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }

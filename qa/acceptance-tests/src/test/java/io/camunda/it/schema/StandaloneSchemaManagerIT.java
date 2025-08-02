@@ -172,25 +172,23 @@ final class StandaloneSchemaManagerIT {
                     .putUser(r -> r.username(APP_USER).password(APP_PASSWORD).roles(APP_ROLE))
                     .created());
 
+    final String esUrl = "http://" + es.getHttpHostAddress();
+
     // Connect to ES in Standalone Schema Manager
+    io.camunda.it.TestHelper.setupElasticsearchUrl(schemaManager, esUrl);
     schemaManager
-        .withProperty("camunda.database.url", "http://" + es.getHttpHostAddress())
-        .withProperty(
-            "zeebe.broker.exporters.elasticsearch.args.url", "http://" + es.getHttpHostAddress());
+        .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
+        .withProperty("zeebe.broker.exporters.elasticsearch.args.url", esUrl);
+
     // Connect to ES in Camunda
+    io.camunda.it.TestHelper.setupElasticsearchUrl(camunda, esUrl);
     camunda
-        .withProperty("camunda.database.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.tasklist.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty(
-            "camunda.tasklist.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
+        .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
         .updateExporterArgs(
             CamundaExporter.class.getSimpleName(),
-            args -> ((Map) args.get("connect")).put("url", "http://" + es.getHttpHostAddress()))
+            args -> ((Map) args.get("connect")).put("url", esUrl))
         .updateExporterArgs(
-            ElasticsearchExporter.class.getSimpleName(),
-            args -> args.put("url", "http://" + es.getHttpHostAddress()));
+            ElasticsearchExporter.class.getSimpleName(), args -> args.put("url", esUrl));
   }
 
   @Test

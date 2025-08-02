@@ -19,6 +19,7 @@ public class Camunda {
   public static final String PREFIX = "camunda";
 
   private Cluster cluster = new Cluster();
+  private Data data = new Data();
 
   public Cluster getCluster() {
     return cluster;
@@ -26,5 +27,13 @@ public class Camunda {
 
   public void setCluster(final Cluster cluster) {
     this.cluster = cluster;
+  }
+
+  public Data getData() {
+    return data;
+  }
+
+  public void setData(Data data) {
+    this.data = data;
   }
 }

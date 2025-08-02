@@ -41,7 +41,8 @@ import org.springframework.test.context.TestPropertySource;
 @DataJdbcTest
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
-@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
+@TestPropertySource(
+    properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class HistoryCleanupIT {
 
   private static final List<String> TABLE_NAMES =
