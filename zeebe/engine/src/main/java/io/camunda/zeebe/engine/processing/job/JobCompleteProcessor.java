@@ -10,7 +10,10 @@ package io.camunda.zeebe.engine.processing.job;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessUtils;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -104,12 +107,14 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private final DefaultJobCommandPreconditionGuard defaultProcessor;
   private final JobProcessingMetrics jobMetrics;
   private final EventHandle eventHandle;
+  private final ProcessingState processState;
 
   public JobCompleteProcessor(
       final ProcessingState state,
       final JobProcessingMetrics jobMetrics,
       final EventHandle eventHandle,
       final AuthorizationCheckBehavior authCheckBehavior) {
+    processState = state;
     userTaskState = state.getUserTaskState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
@@ -119,6 +124,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             this::acceptCommand,
             authCheckBehavior,
             List.of(
+                this::checkAdHocSubprocessActivationTargetsAreValid,
                 this::checkAdHocSubprocessInstanceIsActive,
                 this::checkTaskListenerJobForProvidingVariables,
                 this::checkTaskListenerJobForSupportingDenying,
@@ -245,7 +251,36 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
         activationRecord);
   }
 
-  // checkAdHocSubprocessInstanceIsActive
+  private Either<Rejection, JobRecord> checkAdHocSubprocessActivationTargetsAreValid(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+
+    if (job.getJobKind() == JobKind.AD_HOC_SUB_PROCESS) {
+      final ExecutableAdHocSubProcess executableAdHocSubProcess =
+          processState
+              .getProcessState()
+              .getProcessByKeyAndTenant(job.getProcessDefinitionKey(), job.getTenantId())
+              .getProcess()
+              .getElementById(job.getElementId(), ExecutableAdHocSubProcess.class);
+
+      final List<String> elementsToBeActivated =
+          command.getValue().getResult().getActivateElements().stream()
+              .map(JobResultActivateElementValue::getElementId)
+              .toList();
+
+      final Either<Failure, List<String>> validation =
+          AdHocSubProcessUtils.validateActiveElementAreInProcess(
+              executableAdHocSubProcess, elementsToBeActivated);
+
+      if (validation.isRight()) {
+        return Either.right(job);
+      } else {
+        return Either.left(
+            new Rejection(RejectionType.INVALID_ARGUMENT, validation.getLeft().getMessage()));
+      }
+    }
+    return Either.right(job);
+  }
+
   private Either<Rejection, JobRecord> checkAdHocSubprocessInstanceIsActive(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     if (job.getJobKind() == JobKind.AD_HOC_SUB_PROCESS) {
