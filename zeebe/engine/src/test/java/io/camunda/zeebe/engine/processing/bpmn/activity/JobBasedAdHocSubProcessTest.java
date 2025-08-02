@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -455,6 +456,42 @@ public class JobBasedAdHocSubProcessTest {
         .doesNotContain(
             tuple("foo", "\"bar\"", elementB.getFlowScopeKey()),
             tuple("baz", "10", elementB.getFlowScopeKey()));
+  }
+
+  @Test
+  public void shouldNotActivateElementsThatDoNotExistAndReject() {
+    // given
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeJobWithActivateElements(
+        jobType, activateElement("DoesntExist"), activateElement("NotThere"));
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.COMPLETE).onlyCommandRejections().getFirst())
+        .extracting(Record::getRejectionType, Record::getRejectionReason)
+        .containsOnly(
+            RejectionType.INVALID_ARGUMENT,
+            "Failed to activate ad-hoc elements. No BPMN elements found with ids: 'DoesntExist', 'NotThere'.");
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitByCount(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
+                            && r.getValue().getElementId().equals(AHSP_INNER_ELEMENT_ID),
+                    2))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .doesNotContain(tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   private void completeJobWithActivateElements(
