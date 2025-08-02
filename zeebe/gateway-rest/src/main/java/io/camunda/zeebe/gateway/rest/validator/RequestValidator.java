@@ -9,10 +9,12 @@ package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_DATE_PARSING;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_KEY_FORMAT;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -67,6 +69,20 @@ public final class RequestValidator {
       violations.add(
           ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
               "operationReference", operationReference, "> 0"));
+    }
+  }
+
+  /**
+   * Validates that a string-encoded key can be parsed as a valid Long.
+   *
+   * @param keyValue the string value to validate
+   * @param fieldName the name of the field for error messaging
+   * @param violations the list to add validation errors to
+   */
+  public static void validateKeyFormat(
+      final String keyValue, final String fieldName, final List<String> violations) {
+    if (keyValue != null && KeyUtil.tryParseLong(keyValue).isEmpty()) {
+      violations.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, keyValue));
     }
   }
 }
