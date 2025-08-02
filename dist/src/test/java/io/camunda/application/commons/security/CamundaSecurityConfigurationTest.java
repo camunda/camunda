@@ -10,6 +10,9 @@ package io.camunda.application.commons.security;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.SpringApplication;
@@ -25,7 +28,12 @@ public class CamundaSecurityConfigurationTest {
 
     assertThatThrownBy(
             () -> {
-              final SpringApplication app = new SpringApplication(CommonsModuleConfiguration.class);
+              final SpringApplication app =
+                  new SpringApplication(
+                      CommonsModuleConfiguration.class,
+                      UnifiedConfiguration.class,
+                      UnifiedConfigurationHelper.class,
+                      GatewayBasedPropertiesOverride.class);
               app.run();
             })
         .isInstanceOf(BeanCreationException.class)

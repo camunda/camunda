@@ -102,7 +102,7 @@ public class StandaloneSchemaManager implements CommandLineRunner {
 
   @EnableAutoConfiguration
   // TODO: Use unified configuration when it is available
-  @EnableConfigurationProperties(LegacyBrokerBasedProperties.class)
+  @EnableConfigurationProperties({LegacyBrokerBasedProperties.class})
   @ComponentScan(
       basePackages = "io.camunda.application.commons.search",
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
