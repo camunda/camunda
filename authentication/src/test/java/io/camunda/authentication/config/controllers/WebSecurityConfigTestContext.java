@@ -98,6 +98,7 @@ public class WebSecurityConfigTestContext {
    * So that camunda.security properties can be used in tests; must be prefixed with
    * 'camunda.security' because this prefix is hardcoded in AuthenticationProperties.
    */
+  @SuppressWarnings("ConfigurationProperties")
   @Bean
   @ConfigurationProperties("camunda.security")
   public SecurityConfiguration createSecurityConfiguration() {
