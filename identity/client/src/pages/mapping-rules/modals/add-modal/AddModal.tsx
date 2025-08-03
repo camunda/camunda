@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { FC } from "react";
+import { useForm, Controller } from "react-hook-form";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
@@ -20,7 +21,13 @@ import {
 } from "../components";
 import { spacing05 } from "@carbon/elements";
 import { Stack } from "@carbon/react";
-import { useValidation } from "./use-validation";
+
+type FormData = {
+  mappingRuleId: string;
+  mappingRuleName: string;
+  claimName: string;
+  claimValue: string;
+};
 
 export const AddMappingRuleModal: FC<UseModalProps> = ({
   open,
@@ -32,35 +39,27 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
   const [apiCall, { loading, error }] = useApiCall(createMappingRule, {
     suppressErrorNotification: true,
   });
-  const [mappingRuleId, setMappingRuleId] = useState("");
-  const [mappingRuleName, setMappingRuleName] = useState("");
-  const [claimName, setClaimName] = useState("");
-  const [claimValue, setClaimValue] = useState("");
-
-  const submitDisabled = loading;
 
   const {
-    isMappingRuleIdValid,
-    isMappingRuleNameValid,
-    isClaimNameValid,
-    isClaimValueValid,
-    validateMappingRuleId,
-    validateMappingRuleName,
-    validateClaimName,
-    validateClaimValue,
-    validateForm,
-  } = useValidation({ mappingRuleId, mappingRuleName, claimName, claimValue });
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
+    defaultValues: {
+      mappingRuleId: "",
+      mappingRuleName: "",
+      claimName: "",
+      claimValue: "",
+    },
+    mode: "all",
+  });
 
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
+  const onSubmit = async (data: FormData) => {
     const { success } = await apiCall({
-      mappingRuleId: mappingRuleId,
-      name: mappingRuleName,
-      claimName,
-      claimValue,
+      mappingRuleId: data.mappingRuleId,
+      name: data.mappingRuleName,
+      claimName: data.claimName,
+      claimValue: data.claimValue,
     });
 
     if (success) {
@@ -68,7 +67,7 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
         kind: "success",
         title: t("mappingRuleCreated"),
         subtitle: t("mappingRuleCreatedSuccessfully", {
-          name: mappingRuleName,
+          name: data.mappingRuleName,
         }),
       });
       onSuccess();
@@ -82,51 +81,78 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
       onClose={onClose}
       loading={loading}
       error={error}
-      submitDisabled={submitDisabled}
       confirmLabel={t("createMappingRule")}
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
     >
-      <TextField
-        label={t("mappingRuleId")}
-        placeholder={t("enterMappingRuleId")}
-        onChange={setMappingRuleId}
-        validate={validateMappingRuleId}
-        value={mappingRuleId}
-        helperText={t("uniqueIdForMappingRule")}
-        errors={isMappingRuleIdValid ? [] : [t("mappingRuleIdRequired")]}
-        autoFocus
+      <Controller
+        name="mappingRuleId"
+        control={control}
+        rules={{
+          required: t("mappingRuleIdRequired"),
+        }}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            label={t("mappingRuleId")}
+            placeholder={t("enterMappingRuleId")}
+            helperText={t("uniqueIdForMappingRule")}
+            errors={errors.mappingRuleId?.message}
+            autoFocus
+          />
+        )}
       />
-      <TextField
-        label={t("mappingRuleName")}
-        placeholder={t("enterMappingRuleName")}
-        onChange={setMappingRuleName}
-        validate={validateMappingRuleName}
-        value={mappingRuleName}
-        helperText={t("uniqueNameForMappingRule")}
-        errors={isMappingRuleNameValid ? [] : [t("mappingRuleNameRequired")]}
+      <Controller
+        name="mappingRuleName"
+        control={control}
+        rules={{
+          required: t("mappingRuleNameRequired"),
+        }}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            label={t("mappingRuleName")}
+            placeholder={t("enterMappingRuleName")}
+            helperText={t("uniqueNameForMappingRule")}
+            errors={errors.mappingRuleName?.message}
+          />
+        )}
       />
       <MappingRuleContainer>
         <Stack gap={spacing05}>
           <h3>{t("mappingRule")}</h3>
           <CustomStack orientation="horizontal">
-            <TextField
-              label={t("claimName")}
-              placeholder={t("enterClaimName")}
-              onChange={setClaimName}
-              validate={validateClaimName}
-              value={claimName}
-              helperText={t("customClaimName")}
-              errors={isClaimNameValid ? [] : [t("claimNameRequired")]}
+            <Controller
+              name="claimName"
+              control={control}
+              rules={{
+                required: t("claimNameRequired"),
+              }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label={t("claimName")}
+                  placeholder={t("enterClaimName")}
+                  helperText={t("customClaimName")}
+                  errors={errors.claimName?.message}
+                />
+              )}
             />
             <EqualSignContainer>=</EqualSignContainer>
-            <TextField
-              label={t("claimValue")}
-              placeholder={t("enterClaimValue")}
-              onChange={setClaimValue}
-              validate={validateClaimValue}
-              value={claimValue}
-              helperText={t("valueForClaim")}
-              errors={isClaimValueValid ? [] : [t("claimValueRequired")]}
+            <Controller
+              name="claimValue"
+              control={control}
+              rules={{
+                required: t("claimValueRequired"),
+              }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label={t("claimValue")}
+                  placeholder={t("enterClaimValue")}
+                  helperText={t("valueForClaim")}
+                  errors={errors.claimValue?.message}
+                />
+              )}
             />
           </CustomStack>
         </Stack>
