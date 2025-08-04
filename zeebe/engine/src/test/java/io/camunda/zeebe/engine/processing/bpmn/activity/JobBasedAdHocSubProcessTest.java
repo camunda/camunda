@@ -483,7 +483,12 @@ public class JobBasedAdHocSubProcessTest {
             "Failed to activate ad-hoc elements. No BPMN elements found with ids: 'DoesntExist', 'NotThere'.");
 
     Assertions.assertThat(
-            RecordingExporter.processInstanceRecords()
+            RecordingExporter.records()
+                .limit(
+                    r ->
+                        r.getIntent().equals(JobIntent.COMPLETE)
+                            && r.getRejectionType().equals(RejectionType.INVALID_ARGUMENT))
+                .processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limitByCount(
                     r ->
