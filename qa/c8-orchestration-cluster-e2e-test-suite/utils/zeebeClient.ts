@@ -8,6 +8,18 @@
 
 import {Camunda8} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
+import {
+  IOutputVariables,
+  ZBWorkerTaskHandler,
+} from '@camunda8/sdk/dist/zeebe/types';
+
+export type ProcessDeployment = {
+  processDefinitionVersion: number;
+  processDefinitionId: string;
+  processDefinitionKey: string;
+  resourceName: string;
+  tenantId: string;
+};
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -34,6 +46,7 @@ function generateManyVariables(): Record<string, string> {
 }
 
 const zeebe = c8.getCamundaRestClient();
+const zeebeGrpc = c8.getZeebeGrpcApiClient();
 const deploy = async (processFilePaths: string[]) => {
   try {
     const results = await zeebe.deployResourcesFromFiles(processFilePaths);
@@ -74,4 +87,30 @@ const createSingleInstance = async (
   });
 };
 
-export {deploy, createInstances, generateManyVariables, createSingleInstance};
+const createWorker = (
+  taskType: string,
+  shouldFail: boolean,
+  variables?: IOutputVariables,
+  taskHandler: ZBWorkerTaskHandler = (job) => {
+    if (shouldFail) {
+      return job.fail({errorMessage: 'task failed'});
+    } else {
+      return job.complete(variables ?? {});
+    }
+  },
+  pollInterval = 300,
+) => {
+  return zeebeGrpc.createWorker({
+    taskType,
+    taskHandler,
+    pollInterval,
+  });
+};
+
+export {
+  deploy,
+  createInstances,
+  generateManyVariables,
+  createSingleInstance,
+  createWorker,
+};

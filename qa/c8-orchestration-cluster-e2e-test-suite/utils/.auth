@@ -2,7 +2,7 @@
   "cookies": [
     {
       "name": "camunda-session",
-      "value": "E6460CA4AB66AA3B1AF33B0DB43E4609",
+      "value": "9773194A25E081B0DE590BF44E570BD5",
       "domain": "localhost",
       "path": "/",
       "expires": -1,
@@ -12,7 +12,7 @@
     },
     {
       "name": "X-CSRF-TOKEN",
-      "value": "a76bbda0-3856-4640-9919-7a0c5b008e03",
+      "value": "caa54b33-18f4-425e-abd5-526aa0a6c5de",
       "domain": "localhost",
       "path": "/",
       "expires": -1,

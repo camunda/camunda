@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {OperateDiagramPage} from './OperateDiagramPage';
+import {OperateMigrationView} from './OperateMigrationView';
 
 class OperateProcessesPage {
   private page: Page;
@@ -30,10 +31,14 @@ class OperateProcessesPage {
   readonly endDateCell: Locator;
   readonly versionCell: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
+  readonly migrationModal: InstanceType<typeof OperateMigrationView>;
+  readonly migrateButton: Locator;
+  readonly moveButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.diagram = new OperateDiagramPage(page);
+    this.migrationModal = new OperateMigrationView(page);
     this.processResultCount = page.getByTestId('result-count');
     this.processActiveCheckbox = page
       .locator('label')
@@ -74,7 +79,7 @@ class OperateProcessesPage {
     this.processNameSortButton = page.getByRole('button', {
       name: 'sort by name',
     });
-    this.processInstancesTable = page.getByTestId('data-list').getByRole('row');
+    this.processInstancesTable = page.getByTestId('data-list');
     this.parentInstanceIdCell = page
       .getByTestId('data-list')
       .getByTestId('cell-parentInstanceId')
@@ -84,6 +89,13 @@ class OperateProcessesPage {
       .getByTestId('cell-endDate')
       .first();
     this.versionCell = page.locator('[data-testid="process-version-select"]');
+    this.migrateButton = this.page.getByRole('button', {
+      name: /^migrate$/i,
+    });
+
+    this.moveButton = this.page.getByRole('button', {
+      name: /^move$/i,
+    });
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {
@@ -153,6 +165,29 @@ class OperateProcessesPage {
 
   async clickProcessNameSortButton(): Promise<void> {
     await this.processNameSortButton.click();
+  }
+
+  getNthProcessInstanceCheckbox = (index: number) => {
+    return this.page
+      .getByTestId('data-list')
+      .getByRole('row')
+      .nth(index + 1)
+      .locator('.cds--table-column-checkbox .cds--checkbox-label');
+  };
+
+  getNthProcessInstanceLink = (index: number) => {
+    return this.page
+      .getByTestId('data-list')
+      .getByRole('row')
+      .nth(index)
+      .getByTestId('cell-processInstanceKey')
+      .getByRole('link');
+  };
+
+  collapseOperationsPanel() {
+    return this.page
+      .getByRole('button', {name: /collapse operations/i})
+      .click();
   }
 }
 

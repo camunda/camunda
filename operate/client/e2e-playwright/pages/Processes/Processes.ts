@@ -84,4 +84,12 @@ export class Processes {
       .getByRole('link', {name: /view instance/i})
       .nth(index);
   };
+
+      this.migrateButton = this.processInstancesTable.getByRole('button', {
+      name: /^migrate$/i,
+    });
+
+    this.moveButton = this.processInstancesTable.getByRole('button', {
+      name: /^move$/i,
+    });
 }
