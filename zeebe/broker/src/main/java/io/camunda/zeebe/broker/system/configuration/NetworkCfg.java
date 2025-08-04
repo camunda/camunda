@@ -19,8 +19,6 @@ public final class NetworkCfg implements ConfigurationEntry {
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
   public static final int DEFAULT_INTERNAL_API_PORT = 26502;
   public static final DataSize DEFAULT_MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4);
-  private static final DataSize DEFAULT_BROKER_SOCKET_SEND_BUFFER = DataSize.ofMegabytes(1);
-  private static final DataSize DEFAULT_BROKER_SOCKET_RECEIVE_BUFFER = DataSize.ofMegabytes(1);
 
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
@@ -28,8 +26,8 @@ public final class NetworkCfg implements ConfigurationEntry {
   private String advertisedHost;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
-  private DataSize socketSendBuffer = DEFAULT_BROKER_SOCKET_SEND_BUFFER;
-  private DataSize socketReceiveBuffer = DEFAULT_BROKER_SOCKET_RECEIVE_BUFFER;
+  private DataSize socketSendBuffer = null;
+  private DataSize socketReceiveBuffer = null;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();

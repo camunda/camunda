@@ -94,10 +94,14 @@ public final class GatewayClusterConfiguration {
         new MessagingConfig()
             .setCompressionAlgorithm(cluster.getMessageCompression())
             .setInterfaces(Collections.singletonList(cluster.getHost()))
-            .setSocketReceiveBuffer((int) cluster.getSocketReceiveBuffer().toBytes())
-            .setSocketSendBuffer((int) cluster.getSocketSendBuffer().toBytes())
             .setPort(cluster.getPort());
 
+    if (cluster.getSocketSendBuffer() != null) {
+      messaging.setSocketSendBuffer((int) cluster.getSocketSendBuffer().toBytes());
+    }
+    if (cluster.getSocketReceiveBuffer() != null) {
+      messaging.setSocketReceiveBuffer((int) cluster.getSocketReceiveBuffer().toBytes());
+    }
     final var security = cluster.getSecurity();
     if (security.isEnabled()) {
       messaging
