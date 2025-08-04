@@ -20,6 +20,7 @@ import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.util.concurrent.CompletableFuture;
 
 public final class UsageMetricsServices
     extends SearchQueryService<
@@ -49,10 +50,17 @@ public final class UsageMetricsServices
         usageMetricsSearchClient.withSecurityContext(
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.usageMetric().read())));
-    return SearchQueryResult.of(
-        Tuple.of(
-            authUsageMetricsSearchClient.usageMetricStatistics(query),
-            authUsageMetricsSearchClient.usageMetricTUStatistics(mapToUsageMetricsTUQuery(query))));
+
+    final CompletableFuture<UsageMetricStatisticsEntity> statsFuture =
+        CompletableFuture.supplyAsync(
+            () -> authUsageMetricsSearchClient.usageMetricStatistics(query));
+    final CompletableFuture<UsageMetricTUStatisticsEntity> tuStatsFuture =
+        CompletableFuture.supplyAsync(
+            () ->
+                authUsageMetricsSearchClient.usageMetricTUStatistics(
+                    mapToUsageMetricsTUQuery(query)));
+
+    return SearchQueryResult.of(Tuple.of(statsFuture.join(), tuStatsFuture.join()));
   }
 
   private void validateStartAndEndTime(final UsageMetricsQuery query) {
