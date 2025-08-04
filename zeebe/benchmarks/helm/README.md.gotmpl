@@ -1,0 +1,34 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.badgesSection" . }}
+
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+## Building the chart
+
+### Building the docs
+
+In order to rebuild the documentation, you need to have
+[helm-docs](https://github.com/norwoodj/helm-docs) installed:
+
+```sh
+go install github.com/norwoodj/helm-docs/cmd/helm-docs@latest
+```
+
+Then generate the docs with the following command:
+
+```sh
+ helm-docs --sort-values-order=file
+```
+
+> [!Note]
+> The `--sort-values-order=file` flag is used to ensure that the values are sorted in the same
+> order as they appear in the `values.yaml` file.
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "helm-docs.versionFooter" . }}

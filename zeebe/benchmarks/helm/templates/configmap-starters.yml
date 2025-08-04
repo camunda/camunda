@@ -1,0 +1,31 @@
+# A configmap for all benchmark starters.
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "bench.name" . }}-starters
+  labels:
+    app.kubernetes.io/component: client
+    {{- include "bench.labels" . | nindent 4 }}
+data:
+  {{- range $starterName, $starter := .Values.starters }}
+  {{ $starterName }}.conf: |
+    include "file(/tmp/clients.conf)"
+
+    app {
+      starter {
+        processId = "{{- $starter.processId -}}"
+        bpmnXmlPath = "{{- $starter.bpmnXmlPath | default "bpmn/one_task.bpmn" -}}"
+        payloadPath = "{{- $starter.payloadPath | default "bpmn/typical_payload.json" -}}"
+        businessKey = "{{- $starter.businessKey | default "benchmark-business-key" -}}"
+        {{- range $index, $value := $starter.extraResources }}
+        extraBpmnModels.{{ $index }} = {{ $value | quote }}
+        {{- end }}
+        rate = {{- $starter.rate | default 150 -}}
+      }
+    }
+    {{ if $starter.extraConfig -}}
+      {{- $starter.extraConfig | nindent 4 }}
+    {{- else }}
+    {{ end -}}
+  {{- end }}
+

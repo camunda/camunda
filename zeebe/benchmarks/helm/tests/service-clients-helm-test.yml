@@ -1,0 +1,41 @@
+suite: Clients Service
+templates:
+  - service-clients.yml
+tests:
+  - it: should create a service for clients
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: metadata.name
+          value: camunda-benchmark-clients
+  - it: should use common labels
+    release:
+      name: test
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/component: client
+            app.kubernetes.io/name: camunda-benchmark
+            app.kubernetes.io/instance: test
+            app.kubernetes.io/managed-by: Helm
+            app.kubernetes.io/part-of: camunda-benchmark
+  - it: should use the correct selector labels
+    release:
+      name: test
+    asserts:
+      - isSubset:
+          path: spec.selector.matchLabels
+          content:
+            app.kubernetes.io/name: camunda-benchmark
+            app.kubernetes.io/instance: test
+            app.kubernetes.io/managed-by: Helm
+            app.kubernetes.io/part-of: camunda-benchmark
+  - it: should have the correct ports
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: http
+            port: 9600

@@ -1,0 +1,37 @@
+# A configmap for extra resources used by the clients. Note that K8S imposes a limit of 1MB
+# to any of the documents, so this cannot be used for larger models, DMNs, etc.
+{{ if .Values.resources }}
+{{ range $path, $_ :=  .Files.Glob  .Values.resources }}
+{{- $fileName := $path | base -}}
+--
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "bench.name" . }}-resource-
+  labels:
+    app.kubernetes.io/component: resources
+    {{- include "bench.labels" . | nindent 4 }}
+data:
+  {{- range $starterName, $starter := .Values.starters }}
+  {{ $starterName }}.conf: |
+    include "file(/tmp/clients.conf)"
+
+    app {
+      starter {
+        processId = "{{- $starter.processId -}}"
+        bpmnXmlPath = "{{- $starter.bpmnXmlPath | default "bpmn/one_task.bpmn" -}}"
+        payloadPath = "{{- $starter.payloadPath | default "bpmn/typical_payload.json" -}}"
+        businessKey = "{{- $starter.businessKey | default "benchmark-business-key" -}}"
+        {{- range $index, $value := $starter.extraResources }}
+        extraBpmnModels.{{ $index }} = {{ $value | quote }}
+        {{- end }}
+        rate = {{- $starter.rate | default 150 -}}
+      }
+    }
+    {{ if $starter.extraConfig -}}
+      {{- $starter.extraConfig | nindent 4 }}
+    {{- else }}
+    {{ end -}}
+  {{- end }}
+{{ end }}
+{{ end }}

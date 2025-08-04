@@ -1,0 +1,28 @@
+# A configmap for all benchmark workers.
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "bench.name" . }}-workers
+  labels:
+    app.kubernetes.io/component: client
+    {{- include "bench.labels" . | nindent 4 }}
+data:
+  {{- range $workerName, $worker := .Values.workers }}
+  {{ $workerName }}.conf: |
+    include "file(/tmp/clients.conf)"
+
+    app {
+      worker {
+        jobType = "{{- $worker.jobType -}}"
+        workerName = "{{- $workerName -}}"
+        completionDelay = "{{- $worker.completionDelay | default 30 }}"
+        payloadPath = "{{- $worker.payloadPath | default "bpmn/big_payload.json" }}"
+        threads = {{ $worker.threads | default 10 }}
+      }
+    }
+    {{ if $worker.extraConfig -}}
+      {{- $worker.extraConfig | nindent 4 }}
+    {{- else }}
+    {{ end -}}
+  {{- end }}
+

@@ -68,6 +68,7 @@ public final class AuthCfg {
     private String clientSecret;
     private String audience;
     private String authzUrl;
+    private String scope;
 
     public String getClientId() {
       return clientId;
@@ -99,6 +100,14 @@ public final class AuthCfg {
 
     public void setAuthzUrl(final String authzUrl) {
       this.authzUrl = authzUrl;
+    }
+
+    public String getScope() {
+      return scope;
+    }
+
+    public void setScope(final String scope) {
+      this.scope = scope;
     }
   }
 }

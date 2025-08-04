@@ -1,0 +1,54 @@
+{{- range $workerName, $worker := .Values.workers }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $workerName }}-{{ include "bench.name" . }}-worker
+  labels:
+    camunda.io/worker: {{ $workerName }}
+    app.kubernetes.io/component: client
+    {{- include "bench.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      camunda.io/worker: {{ $workerName }}
+      app.kubernetes.io/component: client
+      {{- include "bench.matchLabels" . | nindent 6 }}
+  replicas: {{ $worker.replicas | default 3 }}
+  template:
+    metadata:
+      labels:
+        camunda.io/worker: {{ $workerName }}
+        app.kubernetes.io/component: client
+        {{- include "bench.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: worker
+          image: "{{ $.Values.clients.image.repository }}/worker:{{ $.Values.clients.image.tag }}"
+          imagePullPolicy: {{ $.Values.clients.image.pullPolicy }}
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: >-
+                -XX:+ExitOnOutOfMemoryError
+                -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/tmp/heapdump.hprof
+                -Dconfig.file=/tmp/worker.conf
+            {{- if $worker.logLevel }}
+            - name: LOG_LEVEL
+              value: {{ $worker.logLevel | quote }}
+            {{- end }}
+          {{- if $worker.resources }}
+          resources:
+            {{- toYaml $worker.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: shared-config
+              mountPath: /tmp/clients.conf
+              subPath: clients.conf
+            - name: worker-config
+              mountPath: /tmp/worker.conf
+              subPath: ${{ $workerName }}.conf
+          ports:
+            - containerPort: 9600
+              name: "http"
+---
+{{- end }}

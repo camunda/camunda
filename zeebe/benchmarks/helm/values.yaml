@@ -1,0 +1,270 @@
+# Default values for Camunda Benchmark Helm chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# The values file follows helm best practices https://helm.sh/docs/chart_best_practices/values/
+#
+# Documentation for the values file is generated using the helm-docs tool
+# (https://github.com/norwoodj/helm-docs); please keep the formatting consistent with the tool.
+
+
+# Service account used by all deployed applications and containers. Set to nil to disable the
+# creation of a service account.
+# @section -- Global
+serviceAccount: bench
+
+# -- Defines custom, common labels used on all resources deployed here. Setting anything here will
+# not overwrite the labels required by the chart. Expects YAML formatted labels, e.g.
+# labels: { app.kubernetes.io/component: "zeebe-client", app.kubernetes.io/instance: "bench" }
+# @section -- Global
+labels: {}
+
+# Global configuration for all client applications deployed via this chart.
+# @section -- Global client
+clients:
+  # -- Allows to configure benchmark applications to make use of the REST API, instead of
+  # the gRPC API.
+  # @section -- Global client
+  preferRest: false
+  # -- Shared image configuration properties for all client applications deployed via this chart.
+  # @section -- Global client
+  image:
+    # -- Defines the repository from which to fetch the docker images
+    # Defaults to "gcr.io/zeebe-io" which is where we push unofficial images for load testing
+    # @section -- Global client
+    repository: "gcr.io/zeebe-io"
+    # -- Defines the tag / version which should be used in the chart
+    # @section -- Global client
+    tag: SNAPSHOT
+    # -- Defines the image pull policy which should be used
+    #  https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+    # @section -- Global client
+    pullPolicy: Always
+    # -- Can be used to configure image pull secrets
+    # https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    # @section -- Global client
+    pullSecrets: [ ]
+  # @section -- Client auth
+  auth:
+    # -- Defines the type of authentication to be used; should be one of "none",
+    # "basic", or "oauth".
+    # If set to "none", no authentication is used, if set to "basic", basic authentication is used,
+    # and if set to "oauth", OAuth2 authentication is used.
+    # @section -- Client auth
+    type: "none"
+    # -- Can be used to configure basic auth credentials
+    # @section -- Client auth
+    basic:
+      # -- Defines the username to use for basic auth
+      # @section -- Client auth
+      username: "bench"
+      # -- Defines the password to use for basic auth
+      # @section -- Client auth
+      password: "bench"
+    # -- Can be used to configure OAuth2 authentication
+    # @section -- Client auth
+    oauth:
+      # -- Sets the audience passed to the OAuthCredentialsProvider.
+      # @section -- Client auth
+      audience: ""
+      # -- Sets the client ID passed to the OAuthCredentialsProvider.
+      # @section -- Client auth
+      clientId: "bench-client"
+      # -- Sets the client secret passed to the OAuthCredentialsProvider.
+      # @section -- Client auth
+      clientSecret: "bench-secret"
+      # -- Sets the authorization server URL passed to the OAuthCredentialsProvider.
+      # @section -- Client auth
+      authzServer:
+  # @section -- Client service monitor
+  serviceMonitor:
+    # -- Defines the scrape interval for the Prometheus ServiceMonitor
+    # @section -- Client service monitor
+    scrapeInterval: "30s"
+    # -- Defines the release name of the Prometheus ServiceMonitor
+    # @section -- Client service monitor
+    release: "monitoring"
+
+# -- Defines the cluster the clients are supposed to connect to.
+# @section -- Cluster
+cluster:
+  # -- Defines the type of cluster to connect to, i.e. "saas", or "sm" (self-managed).
+  # If set to "saas", the benchmarks will run against a Camunda SaaS cluster, with OAuth
+  # authentication expected.
+  # If set to "sm", the benchmarks will run against a self deployed Camunda cluster, whether local
+  # or deployed using the Camunda Platform Helm chart.
+  # @section -- Cluster
+  type: "sm"
+  # -- Configures the clients to connect to a local Camunda cluster.
+  # @section -- Self-Managed Cluster
+  sm:
+    # -- Sets the name of the release for the associated Camunda Platform Helm deployment IF you
+    # used the chart to deploy the associated cluster. If not, this can be left empty. The value
+    # will be used to compute the right URL to connect to if present, as well as for the
+    # authorization server, if configured.
+    # @section -- Self-Managed Cluster
+    releaseName:
+    # -- Defines the host of the Camunda Gateway to connect to. Assumes you're deploying this Helm
+    # chart using KIND, meaning you're running the container in Docker.
+    # @section -- Self-Managed Cluster
+    host: "host.docker.internal"
+    # -- Defines the scheme/transport security of the Camunda Gateway to connect to. Should be one
+    # of "http" or "https".
+    # @section -- Self-Managed Cluster
+    scheme: "http"
+    # @section -- Self-Managed Cluster
+    grpcPort: 26500
+    # @section -- Self-Managed Cluster
+    restPort: 8080
+    # @section -- Self-Managed Cluster
+    actuatorPort: 9600
+    # @section -- Self-Managed Cluster
+    contextPath: "/"
+  # -- Configures the benchmarks to run against Camunda SaaS environment.
+  # If enabled, this takes precedence over the self-managed section, which is then entirely ignored.
+  # @section -- SaaS Cluster
+  saas:
+    # -- Defines the stage of the Camunda SaaS environment, i.e. "prod", "int", or "dev"
+    # @section -- SaaS Cluster
+    stage: "dev"
+    # -- Sets the Camunda SaaS cluster ID to connect to
+    # @section -- SaaS Cluster
+    clusterId: "bench-cluster"
+    # -- Sets the Camunda SaaS cluster region, primarily used to compute the right URL to connect
+    # to.
+    # @section -- SaaS Cluster
+    region: "chaos-1"
+
+# -- Workers configuration for the to be deployed worker application.
+# To add more workers, simply configure additional entries in the workers section, each with a
+# unique name. If you want to overwrite the default worker, you can do so by configuring the worker
+# entry with the name "worker".
+# @section -- Worker deployments
+workers:
+  # -- Configures a default benchmark worker, which is used to process jobs created by the default
+  # starter application.
+  # @section -- Worker deployments
+  worker:
+    # -- Enables or disabled the worker deployment.
+    # @section -- Worker deployments
+    enabled: true
+    # -- Defines how many replicas of the benchmark worker should be deployed
+    # @section -- Worker deployments
+    replicas: 3
+    # -- Defines how many jobs the worker should activate and work on
+    # @section -- Worker deployments
+    capacity: 60
+    # -- Defines how many threads the worker can use to work on jobs
+    # @section -- Worker deployments
+    threads: 10
+    # -- Defines the job type which should be used by the worker
+    # @section -- Worker deployments
+    jobType: "benchmark-task"
+    # -- Defines the path (inside the worker app) to the payload resource that should be used to
+    # complete the corresponding jobs.
+    # @section -- Worker deployments
+    payloadPath: "bpmn/typical_payload.json"
+    # --Defines the delay of the worker before completing a job
+    # @section -- Worker deployments
+    completionDelay: 50ms
+    # -- Defines the logging level for the benchmark worker
+    # @section -- Worker deployments
+    logLevel: "WARN"
+    # -- Sets extra valid HOCON configuration that should be included in the worker's. Mostly there
+    # to allow testing new workers with an older Helm chart.
+    # @section -- Worker deployments
+    extraConfig: ""
+    # -- Defines the resources for the benchmark worker
+    # @section -- Worker deployments
+    resources:
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      requests:
+        cpu: 500m
+        memory: 256Mi
+
+# -- Configures the load generating applications, aka starters. Each entry in the map becomes a
+# starter deployment.
+# To add more starters, simply configure additional entries in the section below, each with a
+# unique name. If you want to overwrite the default starter, you can do so by configuring the entry
+# with the name "starter".
+# @section -- Starter deployments
+starters:
+  # -- Configures the default starter application, such that it works with the default worker.
+  # @section -- Starter deployments
+  starter:
+    # -- Enables or disabled the starter deployment.
+    # @section -- Starter deployments
+    enabled: true
+    # -- Defines how many replicas of the application should be deployed
+    # @section -- Starter deployments
+    replicas: 1
+    # -- Defines with which rate process instances should be created by the starter
+    # @section -- Starter deployments
+    rate: 150
+    # -- Defines the logging level for the benchmark starter
+    # @section -- Starter deployments
+    logLevel: "WARN"
+    # -- Defines the process ID, that should be used for creating new process instances
+    # @section -- Starter deployments
+    processId: "benchmark"
+    # -- Defines the path (inside the starter app) to the payload resource that should be used to
+    # create the corresponding process instance.
+    # @section -- Starter deployments
+    payloadPath: "bpmn/typical_payload.json"
+    # -- Defines the path (inside the starter app) to the main bpmn XML resource that should be
+    # deployed.
+    # @section -- Starter deployments
+    bpmnXmlPath: "bpmn/one_task.bpmn"
+    # -- Used to specify paths (inside the starter app) to extra resources that should be deployed.
+    # @section -- Starter deployments
+    extraResources: [ ]
+    # -- Used to specify a businessKey variable, inside a unique identifier is stored for each
+    # created process instance.
+    # @section -- Starter deployments
+    businessKey: "businessKey"
+
+# -- Defines a set of extra binary resources that should be made available to the clients.
+# Note that K8S imposes a limit of 1MB to any of the documents, so this cannot be used for larger models,
+# DMNs, etc.
+#
+# Points to a folder, and any file in that folder will be made available to the clients.
+# @section -- Extra resources
+resources:
+
+
+
+# -- Configures the auto rebalancing feature, which allows to rebalance periodically the OC cluster.
+# For more details see https://docs.camunda.io/docs/self-managed/zeebe-deployment/operations/rebalancing/
+# @section -- Leader rebalancing
+leaderBalancing:
+  # -- Enables the auto leader rebalancing
+  # @section -- Leader rebalancing
+  enabled: true
+  # -- Defines the schedule of the auto leader rebalancing feature.
+  # @section -- Leader rebalancing
+  schedule: "*/15 * * * *"
+
+# -- Configures the dependent Helm chart for the Prometheus Elasticsearch exporter. Ignored if
+# prometheus-elasticsearch-exporter.enabled is set to false.
+# @section -- Prometheus Elasticsearch exporter
+prometheus-elasticsearch-exporter:
+  es:
+    # -- Sets the address (host and port) of the Elasticsearch node we should connect to.
+    # This could be a local node (localhost:9200, for instance), or the address
+    # of a remote Elasticsearch server. When basic auth is needed,
+    # specify as: <proto>://<user>:<password>@<host>:<port>. e.g., http://admin:pass@localhost:9200.
+    #
+    # @section -- Prometheus Elasticsearch exporter
+    uri: "http://elasticsearch:9200"
+  serviceMonitor:
+    # -- If true, a ServiceMonitor CRD is created for a prometheus operator
+    # https://github.com/coreos/prometheus-operator
+    #
+    # @section -- Prometheus Elasticsearch exporter
+    enabled: true
+    # -- Sets the labels used by the service monitor, specific to our prometheus installation
+    # @section -- Prometheus Elasticsearch exporter
+    labels:
+      release: monitoring

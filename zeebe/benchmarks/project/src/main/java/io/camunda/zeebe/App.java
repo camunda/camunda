@@ -193,6 +193,7 @@ abstract class App implements Runnable {
                 .clientSecret(auth.getOauth().getClientSecret())
                 .audience(auth.getOauth().getAudience())
                 .authorizationServerUrl(auth.getOauth().getAuthzUrl())
+                .scope(auth.getOauth().getScope().isBlank() ? null : auth.getOauth().getScope())
                 .credentialsCachePath(cachePath)
                 .applyEnvironmentOverrides(true)
                 .build();

@@ -70,3 +70,5 @@ c8run/*.class
 /camunda.trace.db
 
 cmd/renovate/renovate*/
+**/tests/__snapshot__/
+.debug/

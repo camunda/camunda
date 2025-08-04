@@ -1,0 +1,66 @@
+suite: Leader Balancing CronJob
+templates:
+  - cronjob-leader-balancing.yml
+tests:
+  - it: should create a cronjob for leader balancing
+    asserts:
+      - isKind:
+          of: CronJob
+      - matchRegex:
+          path: metadata.name
+          pattern: camunda-benchmark-leader-balancer
+  - it: should use common labels
+    release:
+      name: test
+    set:
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/name: camunda-benchmark
+            app.kubernetes.io/instance: test
+            app.kubernetes.io/managed-by: Helm
+            app.kubernetes.io/part-of: camunda-benchmark
+  - it: should forbid concurrent runs
+    asserts:
+      - equal:
+          path: spec.concurrencyPolicy
+          value: Forbid
+  - it: should run on the configured schedule
+    set:
+        leaderBalancing.schedule: "*/5 * * * *"
+    asserts:
+      - equal:
+          path: spec.schedule
+          value: "*/5 * * * *"
+  - it: should have a starting deadline of 120 seconds
+    asserts:
+      - equal:
+          path: spec.startingDeadlineSeconds
+          value: 120
+  - it: should have a successful jobs history limit of 1
+    asserts:
+      - equal:
+          path: spec.successfulJobsHistoryLimit
+          value: 1
+  - it: should have a failed jobs history limit of 3
+    asserts:
+      - equal:
+          path: spec.failedJobsHistoryLimit
+          value: 3
+  - it: should post a rebalance request to the gateway actuator
+    set:
+      cluster:
+        type: sm
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers
+          content:
+              image: "curlimages/curl:7.87.0"
+              name: curl
+              args:
+                - "-L"
+                - "-v"
+                - "-X"
+                - "POST"
+                - "http://host.docker.internal:9600/actuator/rebalance"

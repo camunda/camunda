@@ -1,0 +1,215 @@
+# We use a small block in NOTES.txt to test our helpers directly.
+suite: Helpers Test Suite
+templates:
+  - NOTES.txt
+tests:
+  - it: should add the release name to the full name
+    set:
+      __test: bench.fullname
+    release:
+      name: test
+    asserts:
+      - equalRaw:
+          value: 'test-camunda-benchmark'
+  - it: should not add the chart name twice to the full name
+    set:
+      __test: bench.fullname
+    release:
+      name: foo-camunda-benchmark
+    asserts:
+      - equalRaw:
+          value: 'foo-camunda-benchmark'
+  - it: should trim the full name to 63 characters if it is too long
+    set:
+      __test: bench.fullname
+    release:
+      name: this-is-a-very-long-release-name-that-something
+    asserts:
+      - equalRaw:
+          value: 'this-is-a-very-long-release-name-that-something-camunda-benchma'
+  - it: should include custom labels in the labels
+    set:
+      __test: bench.labels
+      labels:
+        io.camunda.myCoolLabel: foo
+    asserts:
+      - equalRaw:
+          value: |-
+            app.kubernetes.io/name: camunda-benchmark
+            app.kubernetes.io/instance: RELEASE-NAME
+            app.kubernetes.io/managed-by: Helm
+            app.kubernetes.io/part-of: camunda-benchmark
+            io.camunda.myCoolLabel: foo
+            helm.sh/chart: camunda-benchmark-1.0.0-SNAPSHOT
+  - it: should return the configured service account name
+    set:
+      __test: bench.serviceAccountName
+      serviceAccount: my-service-account
+    release:
+      name: test
+    asserts:
+      - equalRaw:
+          value: my-service-account
+  - it: should use the default service account name if not set
+    set:
+      __test: bench.serviceAccountName
+      serviceAccount: ""
+    asserts:
+      - equalRaw:
+          value: default
+  - it: should fail to get the actuator address for a SaaS cluster
+    set:
+      __test: bench.gatewayActuatorAddress
+      cluster:
+        type: saas
+    asserts:
+      - failedTemplate:
+          errorMessage: "Actuator address is only support for 'sm' cluster types, but got: saas"
+  - it: should return the actuator address for a SM cluster
+    set:
+      __test: bench.gatewayActuatorAddress
+      cluster:
+        type: sm
+        sm:
+          host: "zeebe.example.com"
+          actuatorPort: 9601
+          contextPath: "/core"
+          scheme: "https"
+    asserts:
+      - equalRaw:
+          value: "https://zeebe.example.com:9601/core/actuator"
+  - it: should return the REST API address for a SM cluster
+    set:
+      __test: bench.gatewayRestAddress
+      cluster:
+        type: sm
+        sm:
+          host: "zeebe.example.com"
+          restPort: 80
+          contextPath: "/core"
+          scheme: "https"
+    asserts:
+      - equalRaw:
+          value: "https://zeebe.example.com:80/core"
+  - it: should return the REST API address for a SaaS cluster
+    set:
+      __test: bench.gatewayRestAddress
+      cluster:
+        type: saas
+        saas:
+          clusterId: "foo-cluster-id"
+          region: "us-central1"
+    asserts:
+      - equalRaw:
+          value: "https://us-central1.zeebe.ultrawombat.com/foo-cluster-id"
+  - it: should return the gRPC API address for a SM cluster
+    set:
+      __test: bench.gatewayGrpcAddress
+      cluster:
+        type: sm
+        sm:
+          host: "zeebe.example.com"
+          grpcPort: 1000
+          scheme: "https"
+    asserts:
+      - equalRaw:
+          value: "https://zeebe.example.com:1000"
+  - it: should return the gRPC API address for a SaaS cluster
+    set:
+      __test: bench.gatewayGrpcAddress
+      cluster:
+        type: saas
+        saas:
+          clusterId: "foo-cluster-id"
+          region: "us-central1"
+    asserts:
+      - equalRaw:
+          value: "https://foo-cluster-id.us-central1.zeebe.ultrawombat.com"
+  - it: should return the SaaS authorization address for a dev cluster
+    set:
+      __test: bench.saasAuthzServerUrl
+      cluster:
+        type: saas
+        saas:
+          stage: "dev"
+    asserts:
+      - equalRaw:
+          value: "https://weblogin.cloud.dev.ultrawombat.com/oauth/token"
+  - it: should return the SaaS authorization address for an int cluster
+    set:
+      __test: bench.saasAuthzServerUrl
+      cluster:
+        type: saas
+        saas:
+          stage: "int"
+    asserts:
+      - equalRaw:
+          value: "https://weblogin.cloud.ultrawombat.com/oauth/token"
+  - it: should return the SaaS authorization address for a prod cluster
+    set:
+      __test: bench.saasAuthzServerUrl
+      cluster:
+        type: saas
+        saas:
+          stage: "prod"
+    asserts:
+      - equalRaw:
+          value: "https://weblogin.cloud.camunda.io/oauth/token"
+  - it: should return the SaaS audience for a dev cluster
+    set:
+      __test: bench.saasAudience
+      cluster:
+        type: saas
+        saas:
+          stage: "dev"
+    asserts:
+      - equalRaw:
+          value: "zeebe.dev.ultrawombat.com"
+  - it: should return the SaaS audience for an int cluster
+    set:
+      __test: bench.saasAudience
+      cluster:
+        type: saas
+        saas:
+          stage: "int"
+    asserts:
+      - equalRaw:
+          value: "zeebe.ultrawombat.com"
+  - it: should return the SaaS audience for a prod cluster
+    set:
+      __test: bench.saasAudience
+      cluster:
+        type: saas
+        saas:
+          stage: "prod"
+    asserts:
+      - equalRaw:
+          value: "zeebe.camunda.io"
+  - it: should return that TLS is enabled for a SaaS cluster
+    set:
+      __test: bench.tlsEnabled
+      cluster:
+        type: saas
+    asserts:
+      - equalRaw:
+          value: "true"
+  - it: should return that TLS is enabled for a SM cluster if the scheme is https
+    set:
+      __test: bench.tlsEnabled
+      cluster:
+        type: sm
+        sm:
+          scheme: "https"
+    asserts:
+      - equalRaw:
+          value: "true"
+  - it: should return that TLS is disabled for a SM cluster if the scheme is http
+    set:
+      __test: bench.tlsEnabled
+      cluster:
+        type: sm
+        sm:
+          scheme: "http"
+    asserts:
+      - equalRaw:
+          value: "false"

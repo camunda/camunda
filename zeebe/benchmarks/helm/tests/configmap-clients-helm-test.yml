@@ -1,0 +1,209 @@
+suite: Global Clients ConfigMap Test Suite
+templates:
+  - configmap-clients.yml
+tests:
+  - it: should create a configmap for shared client config
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: metadata.name
+          pattern: camunda-benchmark-clients
+  - it: should use common labels
+    release:
+      name: test
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/name: camunda-benchmark
+            app.kubernetes.io/instance: test
+            app.kubernetes.io/managed-by: Helm
+            app.kubernetes.io/part-of: camunda-benchmark
+  - it: should create a clients.conf entry
+    asserts:
+      - equal:
+          path: data["clients.conf"]
+          value: |
+            include "application"
+
+            app {
+              brokerUrl = "http://host.docker.internal:26500"
+              brokerRestUrl = "http://host.docker.internal:8080/"
+              tls = false
+              preferRest = false
+
+              auth {
+                type = "NONE"
+              }
+            }
+  - it: should create a clients.conf with basic auth
+    set:
+      clients:
+        auth:
+          type: basic
+          basic:
+            username: testuser
+            password: testpass
+    asserts:
+      - equal:
+          path: data["clients.conf"]
+          value: |
+            include "application"
+
+            app {
+              brokerUrl = "http://host.docker.internal:26500"
+              brokerRestUrl = "http://host.docker.internal:8080/"
+              tls = false
+              preferRest = false
+
+              auth {
+                type = "BASIC"
+                basic {
+                  username = "testuser"
+                  password = "testpass"
+                }
+              }
+            }
+  - it: should create a clients.conf with oauth auth with a SM cluster
+    set:
+      cluster:
+        type: sm
+      clients:
+        auth:
+          type: oauth
+          oauth:
+            clientId: test-id
+            clientSecret: test-secret
+            audience: test-audience
+            authzUrl: http://authz.server.url
+    asserts:
+      - equal:
+          path: data["clients.conf"]
+          value: |
+            include "application"
+
+            app {
+              brokerUrl = "http://host.docker.internal:26500"
+              brokerRestUrl = "http://host.docker.internal:8080/"
+              tls = false
+              preferRest = false
+
+              auth {
+                type = "OAUTH"
+                oauth {
+                  audience = "test-audience"
+                  authzUrl = "http://authz.server.url"
+                  clientId = "test-id"
+                  clientSecret = "test-secret"
+                }
+              }
+            }
+  - it: should create a clients.conf with oauth auth with a SaaS dev cluster
+    set:
+      cluster:
+        type: saas
+        saas:
+          stage: dev
+      clients:
+        auth:
+          type: oauth
+          oauth:
+            clientId: test-id
+            clientSecret: test-secret
+            authzUrl: http://authz.server.url
+    asserts:
+      - equal:
+          path: data["clients.conf"]
+          value: |
+            include "application"
+
+            app {
+              brokerUrl = "https://bench-cluster.chaos-1.zeebe.dev.ultrawombat.com"
+              brokerRestUrl = "https://chaos-1.zeebe.dev.ultrawombat.com/bench-cluster"
+              tls = true
+              preferRest = false
+
+              auth {
+                type = "OAUTH"
+                oauth {
+                  audience = "zeebe.dev.ultrawombat.com"
+                  authzUrl = "https://weblogin.cloud.dev.ultrawombat.com/oauth/token"
+                  scope = "Zeebe,Operate,Tasklist"
+                  clientId = "test-id"
+                  clientSecret = "test-secret"
+                }
+              }
+            }
+  - it: should create a clients.conf with oauth auth with a SaaS int cluster
+    set:
+      cluster:
+        type: saas
+        saas:
+          stage: int
+      clients:
+        auth:
+          type: oauth
+          oauth:
+            clientId: test-id
+            clientSecret: test-secret
+            authzUrl: http://authz.server.url
+    asserts:
+      - equal:
+          path: data["clients.conf"]
+          value: |
+            include "application"
+
+            app {
+              brokerUrl = "https://bench-cluster.chaos-1.zeebe.ultrawombat.com"
+              brokerRestUrl = "https://chaos-1.zeebe.ultrawombat.com/bench-cluster"
+              tls = true
+              preferRest = false
+
+              auth {
+                type = "OAUTH"
+                oauth {
+                  audience = "zeebe.ultrawombat.com"
+                  authzUrl = "https://weblogin.cloud.ultrawombat.com/oauth/token"
+                  scope = "Zeebe,Operate,Tasklist"
+                  clientId = "test-id"
+                  clientSecret = "test-secret"
+                }
+              }
+            }
+  - it: should create a clients.conf with oauth auth with a SaaS prod cluster
+    set:
+      cluster:
+        type: saas
+        saas:
+          stage: prod
+      clients:
+        auth:
+          type: oauth
+          oauth:
+            clientId: test-id
+            clientSecret: test-secret
+            authzUrl: http://authz.server.url
+    asserts:
+      - equal:
+          path: data["clients.conf"]
+          value: |
+            include "application"
+
+            app {
+              brokerUrl = "https://bench-cluster.chaos-1.zeebe.camunda.io"
+              brokerRestUrl = "https://chaos-1.zeebe.camunda.io/bench-cluster"
+              tls = true
+              preferRest = false
+
+              auth {
+                type = "OAUTH"
+                oauth {
+                  audience = "zeebe.camunda.io"
+                  authzUrl = "https://weblogin.cloud.camunda.io/oauth/token"
+                  scope = "Zeebe,Operate,Tasklist"
+                  clientId = "test-id"
+                  clientSecret = "test-secret"
+                }
+              }
+            }

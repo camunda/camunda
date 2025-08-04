@@ -1,0 +1,95 @@
+suite: Workers ConfigMap Test Suite
+templates:
+  - configmap-workers.yml
+tests:
+  - it: should create a configmap for shared workers config
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: metadata.name
+          pattern: camunda-benchmark-workers
+  - it: should use common labels
+    release:
+      name: test
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/name: camunda-benchmark
+            app.kubernetes.io/instance: test
+            app.kubernetes.io/managed-by: Helm
+            app.kubernetes.io/part-of: camunda-benchmark
+  - it: should create a worker.conf entry
+    asserts:
+      - equal:
+          path: data["worker.conf"]
+          value: |
+            include "file(/tmp/clients.conf)"
+
+            app {
+              worker {
+                jobType = "benchmark-task"
+                workerName = "worker"
+                completionDelay = "50ms"
+                payloadPath = "bpmn/typical_payload.json"
+                threads = 10
+              }
+            }
+  - it: should create a worker.conf entry with custom values
+    set:
+        workers:
+            worker:
+              jobType: test-type
+              workerName: test-worker
+              completionDelay: 10ms
+              payloadPath: bpmn/test_payload.json
+              threads: 10
+    asserts:
+      - equal:
+          path: data["worker.conf"]
+          value: |
+            include "file(/tmp/clients.conf)"
+
+            app {
+              worker {
+                jobType = "benchmark-task"
+                workerName = "worker"
+                completionDelay = "50ms"
+                payloadPath = "bpmn/typical_payload.json"
+                threads = 10
+              }
+            }
+  - it: should create a worker.conf entry with extra config
+    set:
+      workers:
+        worker:
+          extraConfig: |
+            app {
+              worker {
+                timeout = "10s"
+                maxJobsActive = 100
+              }
+            }
+    asserts:
+      - equal:
+          path: data["worker.conf"]
+          value: |
+            include "file(/tmp/clients.conf)"
+
+            app {
+              worker {
+                jobType = "benchmark-task"
+                workerName = "worker"
+                completionDelay = "50ms"
+                payloadPath = "bpmn/typical_payload.json"
+                threads = 10
+              }
+            }
+
+            app {
+              worker {
+                timeout = "10s"
+                maxJobsActive = 100
+              }
+            }

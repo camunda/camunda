@@ -1,0 +1,3 @@
+{{- if index .Values "__test" -}}
+{{- include .Values.__test (mergeOverwrite (default (dict "foo" "bar") .Values.__test_args) .) -}}
+{{- end -}}

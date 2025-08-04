@@ -1,0 +1,50 @@
+suite: Clients Service Monitor
+templates:
+  - service-monitor-clients.yml
+tests:
+  - it: should create a service monitor for clients
+    set:
+      clients.serviceMonitor.release: test
+    asserts:
+      - isKind:
+          of: ServiceMonitor
+      - isAPIVersion:
+          of: monitoring.coreos.com/v1
+      - equal:
+          path: metadata.name
+          value: camunda-benchmark-clients
+  - it: should use common labels
+    release:
+      name: test
+    set:
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/name: camunda-benchmark
+            app.kubernetes.io/instance: test
+            app.kubernetes.io/managed-by: Helm
+            app.kubernetes.io/part-of: camunda-benchmark
+  - it: should use the correct selector labels
+    release:
+      name: test
+    asserts:
+      - isSubset:
+          path: spec.selector.matchLabels
+          content:
+            app.kubernetes.io/component: client
+            app.kubernetes.io/name: camunda-benchmark
+            app.kubernetes.io/instance: test
+            app.kubernetes.io/managed-by: Helm
+            app.kubernetes.io/part-of: camunda-benchmark
+  - it: should have the correct endpoints
+    set:
+      clients.serviceMonitor.scrapeInterval: 10s
+    asserts:
+      - contains:
+          path: spec.endpoints
+          content:
+            honorLabels: true
+            interval: 10s
+            path: /metrics
+            port: http

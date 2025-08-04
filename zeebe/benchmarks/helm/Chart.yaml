@@ -1,0 +1,18 @@
+apiVersion: v2
+name: camunda-benchmark
+description: A Helm chart to load test Camunda 8
+type: application
+version: 1.0.0-SNAPSHOT
+appVersion: "8.8.0-SNAPSHOT"
+sources:
+  - https://github.com/camunda/camunda
+dependencies:
+  - name: prometheus-elasticsearch-exporter
+    repository: "https://prometheus-community.github.io/helm-charts"
+    version: 6.4.0
+    condition: "prometheus-elasticsearch-exporter.enabled"
+annotations:
+  artifacthub.io/links: |
+    - name: Repository
+      url: https://github.com/camunda/camunda/zeebe/benchmarks/helm
+  artifacthub.io/containsSecurityUpdates: "false"
