@@ -265,15 +265,16 @@ public class MultiDbConfigurator {
     testApplication.withProperty("spring.datasource.password", "");
     testApplication.withProperty("zeebe.broker.exporters.rdbms.args.flushInterval", "PT0S");
     testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.defaultHistoryTTL", retentionEnabled ? "PT1S" : "PT1H");
-    testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.defaultBatchOperationHistoryTTL",
+        "zeebe.broker.exporters.rdbms.args.history.defaultHistoryTTL",
         retentionEnabled ? "PT1S" : "PT1H");
     testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.minHistoryCleanupInterval",
+        "zeebe.broker.exporters.rdbms.args.history.defaultBatchOperationHistoryTTL",
         retentionEnabled ? "PT1S" : "PT1H");
     testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.maxHistoryCleanupInterval",
+        "zeebe.broker.exporters.rdbms.args.history.minHistoryCleanupInterval",
+        retentionEnabled ? "PT1S" : "PT1H");
+    testApplication.withProperty(
+        "zeebe.broker.exporters.rdbms.args.history.maxHistoryCleanupInterval",
         retentionEnabled ? "PT5S" : "PT2H");
     testApplication.withExporter(
         "rdbms",

@@ -58,19 +58,21 @@ public class HistoryCleanupService {
       final BatchOperationWriter batchOperationWriter,
       final RdbmsWriterMetrics metrics) {
     LOG.info(
-        "Creating HistoryCleanupService with default history ttl {}", config.defaultHistoryTTL());
+        "Creating HistoryCleanupService with default history ttl {}",
+        config.historyConfig().defaultHistoryTTL());
 
-    defaultHistoryTTL = config.defaultHistoryTTL();
+    defaultHistoryTTL = config.historyConfig().defaultHistoryTTL();
     batchOperationCancelProcessInstanceHistoryTTL =
-        config.batchOperationCancelProcessInstanceHistoryTTL();
+        config.historyConfig().batchOperationCancelProcessInstanceHistoryTTL();
     batchOperationMigrateProcessInstanceHistoryTTL =
-        config.batchOperationMigrateProcessInstanceHistoryTTL();
+        config.historyConfig().batchOperationMigrateProcessInstanceHistoryTTL();
     batchOperationModifyProcessInstanceHistoryTTL =
-        config.batchOperationModifyProcessInstanceHistoryTTL();
-    batchOperationResolveIncidentHistoryTTL = config.batchOperationResolveIncidentHistoryTTL();
-    minCleanupInterval = config.minHistoryCleanupInterval();
-    maxCleanupInterval = config.maxHistoryCleanupInterval();
-    cleanupBatchSize = config.historyCleanupBatchSize();
+        config.historyConfig().batchOperationModifyProcessInstanceHistoryTTL();
+    batchOperationResolveIncidentHistoryTTL =
+        config.historyConfig().batchOperationResolveIncidentHistoryTTL();
+    minCleanupInterval = config.historyConfig().minHistoryCleanupInterval();
+    maxCleanupInterval = config.historyConfig().maxHistoryCleanupInterval();
+    cleanupBatchSize = config.historyConfig().historyCleanupBatchSize();
     this.processInstanceWriter = processInstanceWriter;
     this.incidentWriter = incidentWriter;
     this.flowNodeInstanceWriter = flowNodeInstanceWriter;

@@ -77,16 +77,16 @@ zeebe:
         args:
           flushInterval: PT0.5S
           queueSize: 1000
-          cleanupBatchSize: 1000
-          defaultHistoryTTL: PT1M
-          defaultBatchOperationHistoryTTL: PT7D
-          batchOperationCancelProcessInstanceHistoryTTL: PT1D
-          batchOperationMigrateProcessInstanceHistoryTTL: PT10D
-          batchOperationModifyProcessInstanceHistoryTTL: PT7D
-          batchOperationResolveIncidentHistoryTTL: PT5D
-          minHistoryCleanupInterval: PT1S
-          maxHistoryCleanupInterval: PT1H
-          historyCleanupBatchSize: 1000
+          history:
+            defaultHistoryTTL: PT1M
+            defaultBatchOperationHistoryTTL: PT7D
+            batchOperationCancelProcessInstanceHistoryTTL: PT1D
+            batchOperationMigrateProcessInstanceHistoryTTL: PT10D
+            batchOperationModifyProcessInstanceHistoryTTL: PT7D
+            batchOperationResolveIncidentHistoryTTL: PT5D
+            minHistoryCleanupInterval: PT1S
+            maxHistoryCleanupInterval: PT1H
+            historyCleanupBatchSize: 1000
       #elasticsearch:
       #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
       #  args:

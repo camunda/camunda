@@ -66,14 +66,19 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(0);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
 
-    when(config.defaultHistoryTTL()).thenReturn(Duration.ofDays(90));
-    when(config.batchOperationCancelProcessInstanceHistoryTTL()).thenReturn(Duration.ofDays(2));
-    when(config.batchOperationMigrateProcessInstanceHistoryTTL()).thenReturn(Duration.ofDays(3));
-    when(config.batchOperationModifyProcessInstanceHistoryTTL()).thenReturn(Duration.ofDays(4));
-    when(config.batchOperationResolveIncidentHistoryTTL()).thenReturn(Duration.ofDays(5));
-    when(config.minHistoryCleanupInterval()).thenReturn(Duration.ofHours(1));
-    when(config.maxHistoryCleanupInterval()).thenReturn(Duration.ofDays(1));
-    when(config.historyCleanupBatchSize()).thenReturn(100);
+    final var historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
+    when(config.historyConfig()).thenReturn(historyConfig);
+    when(historyConfig.defaultHistoryTTL()).thenReturn(Duration.ofDays(90));
+    when(historyConfig.batchOperationCancelProcessInstanceHistoryTTL())
+        .thenReturn(Duration.ofDays(2));
+    when(historyConfig.batchOperationMigrateProcessInstanceHistoryTTL())
+        .thenReturn(Duration.ofDays(3));
+    when(historyConfig.batchOperationModifyProcessInstanceHistoryTTL())
+        .thenReturn(Duration.ofDays(4));
+    when(historyConfig.batchOperationResolveIncidentHistoryTTL()).thenReturn(Duration.ofDays(5));
+    when(historyConfig.minHistoryCleanupInterval()).thenReturn(Duration.ofHours(1));
+    when(historyConfig.maxHistoryCleanupInterval()).thenReturn(Duration.ofDays(1));
+    when(historyConfig.historyCleanupBatchSize()).thenReturn(100);
 
     historyCleanupService =
         new HistoryCleanupService(

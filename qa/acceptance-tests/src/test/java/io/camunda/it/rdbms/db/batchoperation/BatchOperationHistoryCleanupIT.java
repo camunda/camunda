@@ -49,7 +49,8 @@ public class BatchOperationHistoryCleanupIT {
 
     // WHEN we do the history cleanup (partition doesn't matter here)
     final OffsetDateTime cleanupDate =
-        now.plus(RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL).plusSeconds(1);
+        now.plus(RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL)
+            .plusSeconds(1);
     historyCleanupService.cleanupHistory(0, cleanupDate);
 
     // THEN

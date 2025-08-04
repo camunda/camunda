@@ -13,14 +13,6 @@ import java.time.Duration;
 public record RdbmsWriterConfig(
     int partitionId,
     int queueSize,
-    Duration defaultHistoryTTL,
-    Duration batchOperationCancelProcessInstanceHistoryTTL,
-    Duration batchOperationMigrateProcessInstanceHistoryTTL,
-    Duration batchOperationModifyProcessInstanceHistoryTTL,
-    Duration batchOperationResolveIncidentHistoryTTL,
-    Duration minHistoryCleanupInterval,
-    Duration maxHistoryCleanupInterval,
-    int historyCleanupBatchSize,
     /*
      * The number of batch operation items to insert in a single insert statement.
      */
@@ -30,14 +22,10 @@ public record RdbmsWriterConfig(
      * <code>false</code>, the batch operation items will be exported only when they have been
      * processed and are completed or failed.
      */
-    boolean exportBatchOperationItemsOnCreation) {
+    boolean exportBatchOperationItemsOnCreation,
+    HistoryConfig historyConfig) {
 
   public static final int DEFAULT_QUEUE_SIZE = 1000;
-  public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
-  public static final Duration DEFAULT_BATCH_OPERATION_HISTORY_TTL = Duration.ofDays(5);
-  public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(1);
-  public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
-  public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 1000;
   public static final int DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE = 10000;
   public static final boolean DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION = true;
 
@@ -49,20 +37,10 @@ public record RdbmsWriterConfig(
 
     private int partitionId;
     private int queueSize = DEFAULT_QUEUE_SIZE;
-    private Duration defaultHistoryTTL = DEFAULT_HISTORY_TTL;
-    private Duration batchOperationCancelProcessInstanceHistoryTTL =
-        DEFAULT_BATCH_OPERATION_HISTORY_TTL;
-    private Duration batchOperationMigrateProcessInstanceHistoryTTL =
-        DEFAULT_BATCH_OPERATION_HISTORY_TTL;
-    private Duration batchOperationModifyProcessInstanceHistoryTTL =
-        DEFAULT_BATCH_OPERATION_HISTORY_TTL;
-    private Duration batchOperationResolveIncidentHistoryTTL = DEFAULT_BATCH_OPERATION_HISTORY_TTL;
-    private Duration minHistoryCleanupInterval = DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
-    private Duration maxHistoryCleanupInterval = DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
-    private int historyCleanupBatchSize = DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
     private int batchOperationItemInsertBlockSize = DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
     private boolean exportBatchOperationItemsOnCreation =
         DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
+    private HistoryConfig historyConfig = new HistoryConfig.Builder().build();
 
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
@@ -71,53 +49,6 @@ public record RdbmsWriterConfig(
 
     public Builder queueSize(final int queueSize) {
       this.queueSize = queueSize;
-      return this;
-    }
-
-    public Builder defaultHistoryTTL(final Duration defaultHistoryTTL) {
-      this.defaultHistoryTTL = defaultHistoryTTL;
-      return this;
-    }
-
-    public Builder batchOperationCancelProcessInstanceHistoryTTL(
-        final Duration batchOperationCancelProcessInstanceHistoryTTL) {
-      this.batchOperationCancelProcessInstanceHistoryTTL =
-          batchOperationCancelProcessInstanceHistoryTTL;
-      return this;
-    }
-
-    public Builder batchOperationMigrateProcessInstanceHistoryTTL(
-        final Duration batchOperationMigrateProcessInstanceHistoryTTL) {
-      this.batchOperationMigrateProcessInstanceHistoryTTL =
-          batchOperationMigrateProcessInstanceHistoryTTL;
-      return this;
-    }
-
-    public Builder batchOperationModifyProcessInstanceHistoryTTL(
-        final Duration batchOperationModifyProcessInstanceHistoryTTL) {
-      this.batchOperationModifyProcessInstanceHistoryTTL =
-          batchOperationModifyProcessInstanceHistoryTTL;
-      return this;
-    }
-
-    public Builder batchOperationResolveIncidentHistoryTTL(
-        final Duration batchOperationResolveIncidentHistoryTTL) {
-      this.batchOperationResolveIncidentHistoryTTL = batchOperationResolveIncidentHistoryTTL;
-      return this;
-    }
-
-    public Builder minHistoryCleanupInterval(final Duration minHistoryCleanupInterval) {
-      this.minHistoryCleanupInterval = minHistoryCleanupInterval;
-      return this;
-    }
-
-    public Builder maxHistoryCleanupInterval(final Duration maxHistoryCleanupInterval) {
-      this.maxHistoryCleanupInterval = maxHistoryCleanupInterval;
-      return this;
-    }
-
-    public Builder historyCleanupBatchSize(final int historyCleanupBatchSize) {
-      this.historyCleanupBatchSize = historyCleanupBatchSize;
       return this;
     }
 
@@ -132,21 +63,118 @@ public record RdbmsWriterConfig(
       return this;
     }
 
+    public Builder historyConfig(final HistoryConfig historyConfig) {
+      this.historyConfig = historyConfig;
+      return this;
+    }
+
     @Override
     public RdbmsWriterConfig build() {
       return new RdbmsWriterConfig(
           partitionId,
           queueSize,
-          defaultHistoryTTL,
-          batchOperationCancelProcessInstanceHistoryTTL,
-          batchOperationMigrateProcessInstanceHistoryTTL,
-          batchOperationModifyProcessInstanceHistoryTTL,
-          batchOperationResolveIncidentHistoryTTL,
-          minHistoryCleanupInterval,
-          maxHistoryCleanupInterval,
-          historyCleanupBatchSize,
           batchOperationItemInsertBlockSize,
-          exportBatchOperationItemsOnCreation);
+          exportBatchOperationItemsOnCreation,
+          historyConfig);
+    }
+  }
+
+  public record HistoryConfig(
+      Duration defaultHistoryTTL,
+      Duration batchOperationCancelProcessInstanceHistoryTTL,
+      Duration batchOperationMigrateProcessInstanceHistoryTTL,
+      Duration batchOperationModifyProcessInstanceHistoryTTL,
+      Duration batchOperationResolveIncidentHistoryTTL,
+      Duration minHistoryCleanupInterval,
+      Duration maxHistoryCleanupInterval,
+      int historyCleanupBatchSize) {
+
+    public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
+    public static final Duration DEFAULT_BATCH_OPERATION_HISTORY_TTL = Duration.ofDays(5);
+    public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(1);
+    public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
+    public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 1000;
+
+    public static RdbmsWriterConfig.Builder builder() {
+      return new RdbmsWriterConfig.Builder();
+    }
+
+    public static class Builder implements ObjectBuilder<HistoryConfig> {
+
+      private Duration defaultHistoryTTL = DEFAULT_HISTORY_TTL;
+      private Duration batchOperationCancelProcessInstanceHistoryTTL =
+          DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+      private Duration batchOperationMigrateProcessInstanceHistoryTTL =
+          DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+      private Duration batchOperationModifyProcessInstanceHistoryTTL =
+          DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+      private Duration batchOperationResolveIncidentHistoryTTL =
+          DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+      private Duration minHistoryCleanupInterval = DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
+      private Duration maxHistoryCleanupInterval = DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
+      private int historyCleanupBatchSize = DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
+
+      public HistoryConfig.Builder defaultHistoryTTL(final Duration defaultHistoryTTL) {
+        this.defaultHistoryTTL = defaultHistoryTTL;
+        return this;
+      }
+
+      public HistoryConfig.Builder batchOperationCancelProcessInstanceHistoryTTL(
+          final Duration batchOperationCancelProcessInstanceHistoryTTL) {
+        this.batchOperationCancelProcessInstanceHistoryTTL =
+            batchOperationCancelProcessInstanceHistoryTTL;
+        return this;
+      }
+
+      public HistoryConfig.Builder batchOperationMigrateProcessInstanceHistoryTTL(
+          final Duration batchOperationMigrateProcessInstanceHistoryTTL) {
+        this.batchOperationMigrateProcessInstanceHistoryTTL =
+            batchOperationMigrateProcessInstanceHistoryTTL;
+        return this;
+      }
+
+      public HistoryConfig.Builder batchOperationModifyProcessInstanceHistoryTTL(
+          final Duration batchOperationModifyProcessInstanceHistoryTTL) {
+        this.batchOperationModifyProcessInstanceHistoryTTL =
+            batchOperationModifyProcessInstanceHistoryTTL;
+        return this;
+      }
+
+      public HistoryConfig.Builder batchOperationResolveIncidentHistoryTTL(
+          final Duration batchOperationResolveIncidentHistoryTTL) {
+        this.batchOperationResolveIncidentHistoryTTL = batchOperationResolveIncidentHistoryTTL;
+        return this;
+      }
+
+      public HistoryConfig.Builder minHistoryCleanupInterval(
+          final Duration minHistoryCleanupInterval) {
+        this.minHistoryCleanupInterval = minHistoryCleanupInterval;
+        return this;
+      }
+
+      public HistoryConfig.Builder maxHistoryCleanupInterval(
+          final Duration maxHistoryCleanupInterval) {
+        this.maxHistoryCleanupInterval = maxHistoryCleanupInterval;
+        return this;
+      }
+
+      public HistoryConfig.Builder historyCleanupBatchSize(final int historyCleanupBatchSize) {
+        this.historyCleanupBatchSize = historyCleanupBatchSize;
+        return this;
+      }
+
+      @Override
+      public HistoryConfig build() {
+        return new HistoryConfig(
+            defaultHistoryTTL,
+            batchOperationCancelProcessInstanceHistoryTTL,
+            batchOperationMigrateProcessInstanceHistoryTTL,
+            batchOperationModifyProcessInstanceHistoryTTL,
+            batchOperationResolveIncidentHistoryTTL,
+            minHistoryCleanupInterval,
+            maxHistoryCleanupInterval,
+            historyCleanupBatchSize);
+      }
     }
   }
 }
