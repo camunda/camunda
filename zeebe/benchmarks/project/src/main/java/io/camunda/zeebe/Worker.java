@@ -16,7 +16,6 @@
 package io.camunda.zeebe;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerMetrics;
@@ -24,7 +23,6 @@ import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.WorkerCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.Tags;
-import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -37,12 +35,11 @@ public class Worker extends App {
 
   public static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
-  private final AppCfg appCfg;
   private final WorkerCfg workerCfg;
 
-  Worker(final AppCfg appCfg) {
-    this.appCfg = appCfg;
-    workerCfg = appCfg.getWorker();
+  Worker(final AppCfg config) {
+    super(config);
+    workerCfg = config.getWorker();
   }
 
   @Override
@@ -167,29 +164,18 @@ public class Worker extends App {
   }
 
   private CamundaClient createCamundaClient() {
-    final WorkerCfg workerCfg = appCfg.getWorker();
+    final WorkerCfg workerCfg = config.getWorker();
     final var timeout =
-        appCfg.getWorker().getTimeout() != Duration.ZERO
-            ? appCfg.getWorker().getTimeout()
+        config.getWorker().getTimeout() != Duration.ZERO
+            ? config.getWorker().getTimeout()
             : workerCfg.getCompletionDelay().multipliedBy(6);
-    final CamundaClientBuilder builder =
-        CamundaClient.newClientBuilder()
-            .grpcAddress(URI.create(appCfg.getBrokerUrl()))
-            .restAddress(URI.create(appCfg.getBrokerRestUrl()))
-            .preferRestOverGrpc(appCfg.isPreferRest())
-            .numJobWorkerExecutionThreads(workerCfg.getThreads())
-            .defaultJobWorkerName(workerCfg.getWorkerName())
-            .defaultJobTimeout(timeout)
-            .defaultJobWorkerMaxJobsActive(workerCfg.getCapacity())
-            .defaultJobPollInterval(workerCfg.getPollingDelay())
-            .withProperties(System.getProperties())
-            .withInterceptors(monitoringInterceptor);
-
-    if (!appCfg.isTls()) {
-      builder.usePlaintext();
-    }
-
-    return builder.build();
+    return newClientBuilder()
+        .numJobWorkerExecutionThreads(workerCfg.getThreads())
+        .defaultJobWorkerName(workerCfg.getWorkerName())
+        .defaultJobTimeout(timeout)
+        .defaultJobWorkerMaxJobsActive(workerCfg.getCapacity())
+        .defaultJobPollInterval(workerCfg.getPollingDelay())
+        .build();
   }
 
   public static void main(final String[] args) {

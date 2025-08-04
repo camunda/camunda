@@ -24,6 +24,7 @@ public class AppCfg {
   private int monitoringPort;
   private StarterCfg starter;
   private WorkerCfg worker;
+  private AuthCfg auth;
 
   public String getBrokerUrl() {
     return brokerUrl;
@@ -79,5 +80,13 @@ public class AppCfg {
 
   public void setMonitoringPort(final int monitoringPort) {
     this.monitoringPort = monitoringPort;
+  }
+
+  public AuthCfg getAuth() {
+    return auth;
+  }
+
+  public void setAuth(final AuthCfg auth) {
+    this.auth = auth;
   }
 }
