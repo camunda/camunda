@@ -10,13 +10,14 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.MAX_LENGTH;
 
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
 public class IdentifierValidator {
+
+  public static final int MAX_LENGTH = 256;
 
   public static void validateId(
       final String id,
