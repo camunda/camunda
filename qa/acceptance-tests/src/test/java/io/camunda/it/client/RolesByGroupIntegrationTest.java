@@ -215,21 +215,20 @@ public class RolesByGroupIntegrationTest {
   }
 
   @Test
-  void shouldReturnNotFoundOnAssigningRoleToGroupIfGroupDoesNotExist() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newAssignRoleToGroupCommand()
-                    .roleId(EXISTING_ROLE_ID)
-                    .groupId("someGroupId")
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining(
-            "Expected to add an entity with ID 'someGroupId' and type 'GROUP' to role with ID '"
-                + EXISTING_ROLE_ID
-                + "', but the entity doesn't exist.");
+  void shouldAssigningRoleToGroupIfGroupDoesNotExist() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+
+    // when
+    camundaClient
+        .newAssignRoleToGroupCommand()
+        .roleId(EXISTING_ROLE_ID)
+        .groupId(groupId)
+        .send()
+        .join();
+
+    // then
+    assertRoleAssignedToGroup(EXISTING_ROLE_ID, groupId);
   }
 
   @Test
@@ -369,26 +368,47 @@ public class RolesByGroupIntegrationTest {
   }
 
   @Test
-  void shouldRejectUnassigningRoleFromGroupIfGroupDoesNotExist() {
+  void shouldUnassigningRoleFromGroupIfGroupDoesNotExist() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
 
-    // when / then
-    assertThatThrownBy(
+    camundaClient
+        .newAssignRoleToGroupCommand()
+        .roleId(EXISTING_ROLE_ID)
+        .groupId(groupId)
+        .send()
+        .join();
+
+    Awaitility.await("Group is assigned to the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
             () ->
-                camundaClient
-                    .newUnassignRoleFromGroupCommand()
-                    .roleId(EXISTING_ROLE_ID)
-                    .groupId(groupId)
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining(
-            "Expected to remove an entity with ID '"
-                + groupId
-                + "' and type 'GROUP' from role with ID '"
-                + EXISTING_ROLE_ID
-                + "', but the entity doesn't exist.");
+                assertThat(
+                        searchRolesByGroupId(
+                                camundaClient.getConfiguration().getRestAddress().toString(),
+                                groupId)
+                            .items())
+                    .anyMatch(r -> EXISTING_ROLE_ID.equals(r.getRoleId())));
+
+    // when
+    camundaClient
+        .newUnassignRoleFromGroupCommand()
+        .roleId(EXISTING_ROLE_ID)
+        .groupId(groupId)
+        .send()
+        .join();
+
+    // then
+    Awaitility.await("Group is unassigned from the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchRolesByGroupId(
+                                camundaClient.getConfiguration().getRestAddress().toString(),
+                                groupId)
+                            .items())
+                    .isEmpty());
   }
 
   private static void createRole(
