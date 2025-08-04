@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 8,
+  "id": 1,
   "links": [],
   "panels": [
     {
@@ -99,7 +99,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1
+            "y": 9
           },
           "id": 54,
           "options": {
@@ -197,7 +197,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1
+            "y": 9
           },
           "id": 58,
           "options": {
@@ -456,6 +456,104 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
+          "description": "The backlog of documents to import, broken down by partition and type.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 14
+          },
+          "id": 62,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "zeebe_exporter_events_total{namespace=~\"$namespace\", partition=~\"$partition\", action=\"EXPORTED\"} - on(partition, valueType) \nlabel_replace(tasklist_events_processed_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\", status=\"succeeded\"}, \"valueType\", \"$1\", \"type\", \"(.*)\")",
+              "instant": false,
+              "legendFormat": "{{partition}}-{{valueType}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Tasklist Importer (Records to import backlog)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "default": true,
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "description": "The time it takes for the importer to read an record on average from ES",
           "fieldConfig": {
             "defaults": {
@@ -517,7 +615,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 14
+            "y": 20
           },
           "id": 56,
           "options": {
@@ -626,7 +724,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 14
+            "y": 20
           },
           "id": 57,
           "options": {
@@ -731,7 +829,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 22
+            "y": 28
           },
           "id": 61,
           "options": {
@@ -992,6 +1090,104 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
+          "description": "The backlog of documents to import, broken down by partition and type.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 15
+          },
+          "id": 63,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "zeebe_exporter_events_total{namespace=~\"$namespace\", partition=~\"$partition\", action=\"EXPORTED\"} - on(partition, valueType) \nlabel_replace(operate_events_processed_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\", status=\"succeeded\"}, \"valueType\", \"$1\", \"type\", \"(.*)\")",
+              "instant": false,
+              "legendFormat": "{{partition}}-{{valueType}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Operate Importer (Records to import backlog)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "default": true,
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "description": "The time it takes for the importer to read an record on average from ES",
           "fieldConfig": {
             "defaults": {
@@ -1053,7 +1249,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 15
+            "y": 21
           },
           "id": 34,
           "options": {
@@ -1157,7 +1353,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 15
+            "y": 21
           },
           "id": 36,
           "options": {
@@ -1256,7 +1452,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 23
+            "y": 29
           },
           "id": 37,
           "options": {
@@ -1370,7 +1566,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 4
+            "y": 12
           },
           "id": 51,
           "options": {
@@ -1468,7 +1664,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 4
+            "y": 12
           },
           "id": 52,
           "options": {
@@ -1566,7 +1762,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 20
           },
           "id": 53,
           "options": {
@@ -1662,8 +1858,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1678,7 +1873,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 13
           },
           "id": 48,
           "options": {
@@ -1760,8 +1955,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1776,7 +1970,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 13
           },
           "id": 49,
           "options": {
@@ -1858,8 +2052,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1874,7 +2067,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 21
           },
           "id": 50,
           "options": {
@@ -1945,7 +2138,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 6
+            "y": 14
           },
           "id": 2,
           "options": {
@@ -2053,8 +2246,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2070,7 +2262,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 6
+            "y": 14
           },
           "id": 3,
           "options": {
@@ -2127,7 +2319,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 14
+            "y": 22
           },
           "id": 4,
           "options": {
@@ -2235,8 +2427,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2252,7 +2443,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 14
+            "y": 22
           },
           "id": 5,
           "options": {
@@ -2335,8 +2526,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2351,7 +2541,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 22
+            "y": 30
           },
           "id": 47,
           "options": {
@@ -2422,7 +2612,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 7
+            "y": 15
           },
           "id": 22,
           "options": {
@@ -2508,7 +2698,7 @@
             "h": 8,
             "w": 11,
             "x": 10,
-            "y": 7
+            "y": 15
           },
           "id": 23,
           "options": {
@@ -2593,8 +2783,7 @@
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2610,7 +2799,7 @@
             "h": 8,
             "w": 3,
             "x": 21,
-            "y": 7
+            "y": 15
           },
           "id": 24,
           "options": {
@@ -2670,7 +2859,7 @@
             "h": 10,
             "w": 11,
             "x": 0,
-            "y": 15
+            "y": 23
           },
           "id": 25,
           "options": {
@@ -2782,8 +2971,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2798,7 +2986,7 @@
             "h": 10,
             "w": 8,
             "x": 11,
-            "y": 15
+            "y": 23
           },
           "id": 26,
           "options": {
@@ -2875,7 +3063,7 @@
             "h": 10,
             "w": 5,
             "x": 19,
-            "y": 15
+            "y": 23
           },
           "id": 27,
           "options": {
@@ -3066,7 +3254,7 @@
     ]
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},
