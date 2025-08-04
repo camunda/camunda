@@ -35,7 +35,7 @@ class ChannelPool {
   private final Map<Tuple<Address, InetAddress>, Map<String, CompletableFuture<Channel>>> channels =
       Maps.newConcurrentMap();
 
-  ChannelPool(final Function<Address, CompletableFuture<Channel>> factory, final int size) {
+  ChannelPool(final Function<Address, CompletableFuture<Channel>> factory) {
     this.factory = factory;
   }
 
