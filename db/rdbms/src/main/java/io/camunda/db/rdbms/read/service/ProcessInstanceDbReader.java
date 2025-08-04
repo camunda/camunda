@@ -48,6 +48,16 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
   public SearchQueryResult<ProcessInstanceEntity> search(
       final ProcessInstanceQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY);
+
+    // If the authorization check is enabled and no resource IDs are authorized, return an empty result
+    // If the tenant check is enabled and no tenant IDs are authorized, return an empty result
+    if ((resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty())
+        || (resourceAccessChecks.tenantCheck().enabled()
+            && resourceAccessChecks.getAuthorizedTenantIds().isEmpty())) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         ProcessInstanceDbQuery.of(
             b ->

@@ -15,6 +15,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,16 @@ public class DecisionRequirementsDbReader extends AbstractEntityReader<DecisionR
       final DecisionRequirementsQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort =
         convertSort(query.sort(), DecisionRequirementsSearchColumn.DECISION_REQUIREMENTS_KEY);
+
+    // If the authorization check is enabled and no resource IDs are authorized, return an empty result
+    // If the tenant check is enabled and no tenant IDs are authorized, return an empty result
+    if ((resourceAccessChecks.authorizationCheck().enabled()
+        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty())
+        || (resourceAccessChecks.tenantCheck().enabled()
+        && resourceAccessChecks.getAuthorizedTenantIds().isEmpty())) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         DecisionRequirementsDbQuery.of(
             b ->
