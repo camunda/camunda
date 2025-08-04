@@ -179,6 +179,36 @@ public class TestRestOperateClient implements AutoCloseable {
         processInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
   }
 
+  public HttpResponse<String> getRequest(final String endpointUriFormat, final String key)
+      throws URISyntaxException, IOException, InterruptedException {
+    final String url = endpoint + endpointUriFormat.formatted(key);
+    final HttpRequest request = addAuthHeader(createBuilder(url)).GET().build();
+    return httpClient.send(request, BodyHandlers.ofString());
+  }
+
+  public HttpResponse<String> getRequest(final String endpointUriFormat, final long key)
+      throws URISyntaxException, IOException, InterruptedException {
+    return getRequest(endpointUriFormat, String.valueOf(key));
+  }
+
+  public HttpResponse<String> searchRequest(final String endpointUri, final String request)
+      throws URISyntaxException, IOException, InterruptedException {
+    final String url = endpoint + endpointUri + "/search";
+    final HttpRequest httpRequest =
+        addAuthHeader(createBuilder(url))
+            .POST(HttpRequest.BodyPublishers.ofString(request))
+            .header("Content-Type", "application/json")
+            .build();
+    return httpClient.send(httpRequest, BodyHandlers.ofString());
+  }
+
+  public HttpResponse<String> deleteRequest(final String endpointUri, final long key)
+      throws URISyntaxException, IOException, InterruptedException {
+    final String url = endpoint + endpointUri + "/" + key;
+    final HttpRequest request = addAuthHeader(createBuilder(url)).DELETE().build();
+    return httpClient.send(request, BodyHandlers.ofString());
+  }
+
   private Either<Exception, HttpResponse<String>> createProcessInstanceOperationRequest(
       final long processInstanceKey, final CreateOperationRequestDto operationRequestDto) {
     try {

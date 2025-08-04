@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.api.v1.rest;
 
 import io.camunda.operate.webapp.api.v1.entities.Error;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
@@ -29,7 +30,23 @@ public abstract class ErrorController {
 
   @ResponseStatus(HttpStatus.FORBIDDEN)
   @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<Error> handleAccessDeniedException(AccessDeniedException exception) {
+  public ResponseEntity<Error> handleAccessDeniedException(final AccessDeniedException exception) {
+    logger.error(getSummary(exception));
+    logger.debug(exception.getMessage(), exception);
+    final Error error =
+        new Error()
+            .setType(exception.getClass().getSimpleName())
+            .setInstance(UUID.randomUUID().toString())
+            .setStatus(HttpStatus.FORBIDDEN.value())
+            .setMessage(exception.getMessage());
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(error);
+  }
+
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  @ExceptionHandler(ForbiddenException.class)
+  public ResponseEntity<Error> handleForbiddenException(final ForbiddenException exception) {
     logger.error(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
     final Error error =
@@ -45,7 +62,7 @@ public abstract class ErrorController {
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ClientException.class)
-  public ResponseEntity<Error> handleInvalidRequest(ClientException exception) {
+  public ResponseEntity<Error> handleInvalidRequest(final ClientException exception) {
     logger.error(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
     final Error error =
@@ -61,14 +78,14 @@ public abstract class ErrorController {
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<Error> handleException(Exception exception) {
+  public ResponseEntity<Error> handleException(final Exception exception) {
     // Show client only detail message, log all messages
     return handleInvalidRequest(new ClientException(getOnlyDetailMessage(exception), exception));
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ValidationException.class)
-  public ResponseEntity<Error> handleInvalidRequest(ValidationException exception) {
+  public ResponseEntity<Error> handleInvalidRequest(final ValidationException exception) {
     logger.error(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
     final Error error =
@@ -84,7 +101,7 @@ public abstract class ErrorController {
 
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(ResourceNotFoundException.class)
-  public ResponseEntity<Error> handleNotFound(ResourceNotFoundException exception) {
+  public ResponseEntity<Error> handleNotFound(final ResourceNotFoundException exception) {
     logger.error(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
     final Error error =
@@ -100,7 +117,7 @@ public abstract class ErrorController {
 
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   @ExceptionHandler(ServerException.class)
-  public ResponseEntity<Error> handleServerException(ServerException exception) {
+  public ResponseEntity<Error> handleServerException(final ServerException exception) {
     logger.error(exception.getMessage(), exception);
     final Error error =
         new Error()

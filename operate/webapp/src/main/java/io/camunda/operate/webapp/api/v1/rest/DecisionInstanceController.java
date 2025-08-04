@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.webapp.api.v1.rest.DecisionInstanceController.URI;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
 
 import io.camunda.operate.webapp.api.v1.dao.DecisionInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
@@ -18,6 +20,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -41,6 +44,8 @@ public class DecisionInstanceController extends ErrorController {
   public static final String URI = "/v1/decision-instances";
   public static final String BY_ID = "/{id}";
   public static final String SEARCH = "/search";
+
+  @Autowired private PermissionsService permissionsService;
 
   @Autowired private DecisionInstanceDao decisionInstanceDao;
 
@@ -78,6 +83,8 @@ public class DecisionInstanceController extends ErrorController {
   public DecisionInstance byId(
       @Parameter(description = "Id of decision instance", required = true) @PathVariable
           final String id) {
+    permissionsService.verifyWildcardResourcePermission(
+        DECISION_DEFINITION, READ_DECISION_INSTANCE);
     return decisionInstanceDao.byId(id);
   }
 
@@ -161,6 +168,8 @@ public class DecisionInstanceController extends ErrorController {
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public Results<DecisionInstance> search(
       @RequestBody(required = false) Query<DecisionInstance> query) {
+    permissionsService.verifyWildcardResourcePermission(
+        DECISION_DEFINITION, READ_DECISION_INSTANCE);
     query = (query == null) ? new Query<>() : query;
     return decisionInstanceDao.search(query);
   }

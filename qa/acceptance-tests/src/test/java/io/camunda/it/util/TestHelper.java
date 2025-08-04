@@ -617,6 +617,18 @@ public final class TestHelper {
             });
   }
 
+  public static void waitForDecisionToBeEvaluated(
+      final CamundaClient camundaClient, final int expectedDecisionInstances) {
+    Awaitility.await("should deploy decision definitions and wait for import")
+        .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
+              assertThat(result.items()).hasSize(expectedDecisionInstances);
+            });
+  }
+
   public static void waitUntilProcessInstanceHasIncidents(
       final CamundaClient camundaClient, final int expectedIncidents) {
     Awaitility.await("should wait until incidents are exists")

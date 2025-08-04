@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.security.permission;
 
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -109,6 +110,16 @@ public class PermissionsService {
       final String decisionId, final PermissionType permissionType) {
     return hasPermissionForResourceType(
         decisionId, AuthorizationResourceType.DECISION_DEFINITION, permissionType);
+  }
+
+  public void verifyWildcardResourcePermission(
+      final AuthorizationResourceType resourceType, final PermissionType permissionType) {
+    if (!hasPermissionForResourceType(Authorization.WILDCARD, resourceType, permissionType)) {
+      throw new ForbiddenException(
+          "%s:%s:%s permissions required to access this resource."
+              .formatted(
+                  resourceType.toString(), Authorization.WILDCARD, permissionType.toString()));
+    }
   }
 
   /**

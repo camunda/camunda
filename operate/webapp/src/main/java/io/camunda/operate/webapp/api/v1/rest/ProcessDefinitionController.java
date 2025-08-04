@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.webapp.api.v1.rest.ProcessDefinitionController.URI;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_DEFINITION;
 
 import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
 import io.camunda.operate.webapp.api.v1.entities.Error;
@@ -16,9 +18,11 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.QueryValidator;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -50,6 +54,7 @@ public class ProcessDefinitionController extends ErrorController
   public static final String AS_XML = "/xml";
   private final QueryValidator<ProcessDefinition> queryValidator = new QueryValidator<>();
   @Autowired private ProcessDefinitionDao processDefinitionDao;
+  @Autowired private PermissionsService permissionsService;
 
   @Operation(
       summary = "Search process definitions",
@@ -73,6 +78,13 @@ public class ProcessDefinitionController extends ErrorController
         @ApiResponse(
             description = ValidationException.TYPE,
             responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
@@ -130,6 +142,8 @@ public class ProcessDefinitionController extends ErrorController
     logger.debug("search for query {}", query);
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, ProcessDefinition.class);
+    permissionsService.verifyWildcardResourcePermission(
+        PROCESS_DEFINITION, READ_PROCESS_DEFINITION);
     return processDefinitionDao.search(query);
   }
 
@@ -153,6 +167,13 @@ public class ProcessDefinitionController extends ErrorController
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -164,7 +185,8 @@ public class ProcessDefinitionController extends ErrorController
   public ProcessDefinition byKey(
       @Parameter(description = "Key of process definition", required = true) @Valid @PathVariable
           final Long key) {
-
+    permissionsService.verifyWildcardResourcePermission(
+        PROCESS_DEFINITION, READ_PROCESS_DEFINITION);
     return processDefinitionDao.byKey(key);
   }
 
@@ -188,6 +210,13 @@ public class ProcessDefinitionController extends ErrorController
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -202,6 +231,8 @@ public class ProcessDefinitionController extends ErrorController
   public String xmlByKey(
       @Parameter(description = "Key of process definition", required = true) @Valid @PathVariable
           final Long key) {
+    permissionsService.verifyWildcardResourcePermission(
+        PROCESS_DEFINITION, READ_PROCESS_DEFINITION);
     return processDefinitionDao.xmlByKey(key);
   }
 }

@@ -12,6 +12,7 @@ import static io.camunda.operate.webapp.api.v1.rest.ProcessInstanceController.UR
 import static io.camunda.operate.webapp.api.v1.rest.SearchController.SEARCH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -28,6 +29,7 @@ import io.camunda.operate.webapp.api.v1.dao.SequenceFlowDao;
 import io.camunda.operate.webapp.api.v1.entities.*;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
@@ -39,6 +41,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -287,6 +290,63 @@ public class ProcessInstanceQueryControllerIT {
     // then
     assertGetWithSucceed(String.format("%s/%s/statistics", URI, processInstanceKey))
         .andExpect(content().string(expectedJSONContent));
+  }
+
+  @Test
+  public void shouldReturnForbiddenWhenUnauthorizedForByKey() throws Exception {
+    // given
+    doThrow(new ForbiddenException("Unauthorized"))
+        .when(permissionsService)
+        .verifyWildcardResourcePermission(any(), any());
+
+    // when - then
+    assertGetWithFailed(URI + "/235").andExpect(status().is(HttpStatus.FORBIDDEN.value()));
+  }
+
+  @Test
+  public void shouldReturnForbiddenWhenUnauthorizedForByKeySequenceFlows() throws Exception {
+    // given
+    doThrow(new ForbiddenException("Unauthorized"))
+        .when(permissionsService)
+        .verifyWildcardResourcePermission(any(), any());
+
+    // when - then
+    assertGetWithFailed(URI + "/235" + "/sequence-flows")
+        .andExpect(status().is(HttpStatus.FORBIDDEN.value()));
+  }
+
+  @Test
+  public void shouldReturnForbiddenWhenUnauthorizedForByKeyStatistics() throws Exception {
+    // given
+    doThrow(new ForbiddenException("Unauthorized"))
+        .when(permissionsService)
+        .verifyWildcardResourcePermission(any(), any());
+
+    // when - then
+    assertGetWithFailed(URI + "/235" + "/statistics")
+        .andExpect(status().is(HttpStatus.FORBIDDEN.value()));
+  }
+
+  @Test
+  public void shouldReturnForbiddenWhenUnauthorizedForDeleteByKey() throws Exception {
+    // given
+    doThrow(new ForbiddenException("Unauthorized"))
+        .when(permissionsService)
+        .verifyWildcardResourcePermission(any(), any());
+
+    // when - then
+    mockMvc.perform(delete(URI + "/123")).andExpect(status().is(HttpStatus.FORBIDDEN.value()));
+  }
+
+  @Test
+  public void shouldReturnForbiddenWhenUnauthorizedForSearch() throws Exception {
+    // given
+    doThrow(new ForbiddenException("Unauthorized"))
+        .when(permissionsService)
+        .verifyWildcardResourcePermission(any(), any());
+
+    // when - then
+    assertPostToWithFailed(URI + SEARCH, "{}").andExpect(status().is(HttpStatus.FORBIDDEN.value()));
   }
 
   protected ResultActions assertGetWithFailed(final String endpoint) throws Exception {

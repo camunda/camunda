@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.webapp.api.v1.rest.DecisionDefinitionController.URI;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_DEFINITION;
 
 import io.camunda.operate.webapp.api.v1.dao.DecisionDefinitionDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionDefinition;
@@ -16,9 +18,11 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.QueryValidator;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -62,6 +66,8 @@ public class DecisionDefinitionController extends ErrorController
   private final QueryValidator<DecisionDefinition> queryValidator = new QueryValidator<>();
   @Autowired private DecisionDefinitionDao decisionDefinitionDao;
 
+  @Autowired private PermissionsService permissionsService;
+
   @Operation(
       summary = "Search decision definitions",
       security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
@@ -87,7 +93,14 @@ public class DecisionDefinitionController extends ErrorController
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class)))
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
       })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       description = "Search examples",
@@ -139,6 +152,8 @@ public class DecisionDefinitionController extends ErrorController
       @RequestBody(required = false) Query<DecisionDefinition> query) {
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, DecisionDefinition.class, SEARCH_SORT_VALIDATOR);
+    permissionsService.verifyWildcardResourcePermission(
+        DECISION_DEFINITION, READ_DECISION_DEFINITION);
     return decisionDefinitionDao.search(query);
   }
 
@@ -162,6 +177,13 @@ public class DecisionDefinitionController extends ErrorController
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -173,6 +195,8 @@ public class DecisionDefinitionController extends ErrorController
   public DecisionDefinition byKey(
       @Parameter(description = "Key of decision definition", required = true) @PathVariable
           final Long key) {
+    permissionsService.verifyWildcardResourcePermission(
+        DECISION_DEFINITION, READ_DECISION_DEFINITION);
     return decisionDefinitionDao.byKey(key);
   }
 }
