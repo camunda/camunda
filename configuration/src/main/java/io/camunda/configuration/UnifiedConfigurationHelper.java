@@ -211,6 +211,7 @@ public class UnifiedConfigurationHelper {
       case "Integer" -> (T) Integer.valueOf(strValue);
       case "Boolean" -> (T) Boolean.valueOf(strValue);
       case "Duration" -> (T) DurationStyle.detectAndParse(strValue);
+      case "Long" -> (T) Long.valueOf(strValue);
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }

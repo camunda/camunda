@@ -28,7 +28,9 @@ class ProbesTestIT {
   @Nested
   @ExtendWith(SpringExtension.class)
   @SpringBootTest(
-      classes = TestApplication.class,
+      classes = {
+        TestApplication.class,
+      },
       webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
   class SchemaExistsIT {
     @Autowired private IndicesCheck indicesCheck;
@@ -56,7 +58,7 @@ class ProbesTestIT {
   @Nested
   @ExtendWith(SpringExtension.class)
   @SpringBootTest(
-      classes = TestApplication.class,
+      classes = {TestApplication.class},
       webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
   class SchemaNotExistsIT {
     @Autowired private IndicesCheck indicesCheck;

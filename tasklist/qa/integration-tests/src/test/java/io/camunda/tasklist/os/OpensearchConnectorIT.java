@@ -13,12 +13,14 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TestPlugin;
-import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -41,8 +43,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest(
     classes = {
       OpenSearchConnector.class,
-      TestTasklistPropertiesOverride.class,
-      JacksonConfig.class
+      JacksonConfig.class,
+      TasklistPropertiesOverride.class,
+      UnifiedConfiguration.class,
+      UnifiedConfigurationHelper.class
     },
     properties = TasklistProperties.PREFIX + ".database=opensearch")
 public class OpensearchConnectorIT {

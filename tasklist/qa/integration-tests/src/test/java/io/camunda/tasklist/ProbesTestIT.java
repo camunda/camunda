@@ -9,6 +9,8 @@ package io.camunda.tasklist;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
@@ -29,7 +31,7 @@ public class ProbesTestIT extends TasklistIntegrationTest {
   @Nested
   @ExtendWith(SpringExtension.class)
   @SpringBootTest(
-      classes = TestApplication.class,
+      classes = {TestApplication.class},
       webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
   class SchemaExistsTest {
     @Autowired private IndexSchemaValidator indexSchemaValidator;
@@ -56,7 +58,11 @@ public class ProbesTestIT extends TasklistIntegrationTest {
   @Nested
   @ExtendWith(SpringExtension.class)
   @SpringBootTest(
-      classes = TestApplication.class,
+      classes = {
+        TestApplication.class,
+        UnifiedConfigurationHelper.class,
+        UnifiedConfiguration.class
+      },
       webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
   class SchemaNotExistsTest {
     @Autowired private IndexSchemaValidator indexSchemaValidator;

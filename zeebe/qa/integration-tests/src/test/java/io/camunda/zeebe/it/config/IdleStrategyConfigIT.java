@@ -37,4 +37,27 @@ final class IdleStrategyConfigIT {
           .hasFieldOrPropertyWithValue("maxParkPeriodNs", 500L);
     }
   }
+
+  @Test
+  void shouldConfigureIdleStrategyWithUnifiedConfig() {
+    // given
+    try (final var gateway = new TestStandaloneGateway()) {
+      gateway
+          .withProperty("camunda.system.actor.idle.max-spins", 50L)
+          .withProperty("camunda.system.actor.idle.max-yields", 62L)
+          .withProperty("camunda.system.actor.idle.min-park-period", Duration.ofNanos(100))
+          .withProperty("camunda.system.actor.idle.max-park-period", Duration.ofNanos(500));
+
+      // when
+      gateway.start();
+
+      // then
+      final var idleStrategy = gateway.bean(IdleStrategySupplier.class).get();
+      assertThat(idleStrategy)
+          .hasFieldOrPropertyWithValue("maxSpins", 50L)
+          .hasFieldOrPropertyWithValue("maxYields", 62L)
+          .hasFieldOrPropertyWithValue("minParkPeriodNs", 100L)
+          .hasFieldOrPropertyWithValue("maxParkPeriodNs", 500L);
+    }
+  }
 }

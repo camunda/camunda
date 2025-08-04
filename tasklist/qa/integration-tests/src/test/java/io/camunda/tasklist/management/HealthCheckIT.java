@@ -14,9 +14,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.connect.ElasticsearchConnector;
-import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -38,9 +40,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     classes = {
       TestApplicationWithNoBeans.class,
       SearchEngineHealthIndicator.class,
-      TestTasklistPropertiesOverride.class,
       ElasticsearchConnector.class,
-      JacksonConfig.class
+      JacksonConfig.class,
+      TasklistPropertiesOverride.class,
+      UnifiedConfiguration.class,
+      UnifiedConfigurationHelper.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({"tasklist", "test", "standalone"})
