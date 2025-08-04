@@ -23,10 +23,10 @@ public class HistoryCleanupService {
   private static final Logger LOG = LoggerFactory.getLogger(HistoryCleanupService.class);
 
   private final Duration defaultHistoryTTL;
-  private final Duration cancelProcessInstanceHistoryTTL;
-  private final Duration migrateProcessInstanceHistoryTTL;
-  private final Duration modifyProcessInstanceHistoryTTL;
-  private final Duration resolveIncidentHistoryTTL;
+  private final Duration batchOperationCancelProcessInstanceHistoryTTL;
+  private final Duration batchOperationMigrateProcessInstanceHistoryTTL;
+  private final Duration batchOperationModifyProcessInstanceHistoryTTL;
+  private final Duration batchOperationResolveIncidentHistoryTTL;
   private final Duration minCleanupInterval;
   private final Duration maxCleanupInterval;
   private final int cleanupBatchSize;
@@ -61,10 +61,13 @@ public class HistoryCleanupService {
         "Creating HistoryCleanupService with default history ttl {}", config.defaultHistoryTTL());
 
     defaultHistoryTTL = config.defaultHistoryTTL();
-    cancelProcessInstanceHistoryTTL = config.cancelProcessInstanceHistoryTTL();
-    migrateProcessInstanceHistoryTTL = config.migrateProcessInstanceHistoryTTL();
-    modifyProcessInstanceHistoryTTL = config.modifyProcessInstanceHistoryTTL();
-    resolveIncidentHistoryTTL = config.resolveIncidentHistoryTTL();
+    batchOperationCancelProcessInstanceHistoryTTL =
+        config.batchOperationCancelProcessInstanceHistoryTTL();
+    batchOperationMigrateProcessInstanceHistoryTTL =
+        config.batchOperationMigrateProcessInstanceHistoryTTL();
+    batchOperationModifyProcessInstanceHistoryTTL =
+        config.batchOperationModifyProcessInstanceHistoryTTL();
+    batchOperationResolveIncidentHistoryTTL = config.batchOperationResolveIncidentHistoryTTL();
     minCleanupInterval = config.minHistoryCleanupInterval();
     maxCleanupInterval = config.maxHistoryCleanupInterval();
     cleanupBatchSize = config.historyCleanupBatchSize();
@@ -116,10 +119,10 @@ public class HistoryCleanupService {
   @VisibleForTesting
   public Duration resolveBatchOperationTTL(final BatchOperationType type) {
     return switch (type) {
-      case CANCEL_PROCESS_INSTANCE -> cancelProcessInstanceHistoryTTL;
-      case MIGRATE_PROCESS_INSTANCE -> migrateProcessInstanceHistoryTTL;
-      case MODIFY_PROCESS_INSTANCE -> modifyProcessInstanceHistoryTTL;
-      case RESOLVE_INCIDENT -> resolveIncidentHistoryTTL;
+      case CANCEL_PROCESS_INSTANCE -> batchOperationCancelProcessInstanceHistoryTTL;
+      case MIGRATE_PROCESS_INSTANCE -> batchOperationMigrateProcessInstanceHistoryTTL;
+      case MODIFY_PROCESS_INSTANCE -> batchOperationModifyProcessInstanceHistoryTTL;
+      case RESOLVE_INCIDENT -> batchOperationResolveIncidentHistoryTTL;
       default -> defaultHistoryTTL;
     };
   }

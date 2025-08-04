@@ -14,10 +14,10 @@ public record RdbmsWriterConfig(
     int partitionId,
     int queueSize,
     Duration defaultHistoryTTL,
-    Duration cancelProcessInstanceHistoryTTL,
-    Duration migrateProcessInstanceHistoryTTL,
-    Duration modifyProcessInstanceHistoryTTL,
-    Duration resolveIncidentHistoryTTL,
+    Duration batchOperationCancelProcessInstanceHistoryTTL,
+    Duration batchOperationMigrateProcessInstanceHistoryTTL,
+    Duration batchOperationModifyProcessInstanceHistoryTTL,
+    Duration batchOperationResolveIncidentHistoryTTL,
     Duration minHistoryCleanupInterval,
     Duration maxHistoryCleanupInterval,
     int historyCleanupBatchSize,
@@ -50,10 +50,13 @@ public record RdbmsWriterConfig(
     private int partitionId;
     private int queueSize = DEFAULT_QUEUE_SIZE;
     private Duration defaultHistoryTTL = DEFAULT_HISTORY_TTL;
-    private Duration cancelProcessInstanceHistoryTTL = DEFAULT_BATCH_OPERATION_HISTORY_TTL;
-    private Duration migrateProcessInstanceHistoryTTL = DEFAULT_BATCH_OPERATION_HISTORY_TTL;
-    private Duration modifyProcessInstanceHistoryTTL = DEFAULT_BATCH_OPERATION_HISTORY_TTL;
-    private Duration resolveIncidentHistoryTTL = DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+    private Duration batchOperationCancelProcessInstanceHistoryTTL =
+        DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+    private Duration batchOperationMigrateProcessInstanceHistoryTTL =
+        DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+    private Duration batchOperationModifyProcessInstanceHistoryTTL =
+        DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+    private Duration batchOperationResolveIncidentHistoryTTL = DEFAULT_BATCH_OPERATION_HISTORY_TTL;
     private Duration minHistoryCleanupInterval = DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
     private Duration maxHistoryCleanupInterval = DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
     private int historyCleanupBatchSize = DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
@@ -76,24 +79,30 @@ public record RdbmsWriterConfig(
       return this;
     }
 
-    public Builder cancelProcessInstanceHistoryTTL(final Duration cancelProcessInstanceHistoryTTL) {
-      this.cancelProcessInstanceHistoryTTL = cancelProcessInstanceHistoryTTL;
+    public Builder batchOperationCancelProcessInstanceHistoryTTL(
+        final Duration batchOperationCancelProcessInstanceHistoryTTL) {
+      this.batchOperationCancelProcessInstanceHistoryTTL =
+          batchOperationCancelProcessInstanceHistoryTTL;
       return this;
     }
 
-    public Builder migrateProcessInstanceHistoryTTL(
-        final Duration migrateProcessInstanceHistoryTTL) {
-      this.migrateProcessInstanceHistoryTTL = migrateProcessInstanceHistoryTTL;
+    public Builder batchOperationMigrateProcessInstanceHistoryTTL(
+        final Duration batchOperationMigrateProcessInstanceHistoryTTL) {
+      this.batchOperationMigrateProcessInstanceHistoryTTL =
+          batchOperationMigrateProcessInstanceHistoryTTL;
       return this;
     }
 
-    public Builder modifyProcessInstanceHistoryTTL(final Duration modifyProcessInstanceHistoryTTL) {
-      this.modifyProcessInstanceHistoryTTL = modifyProcessInstanceHistoryTTL;
+    public Builder batchOperationModifyProcessInstanceHistoryTTL(
+        final Duration batchOperationModifyProcessInstanceHistoryTTL) {
+      this.batchOperationModifyProcessInstanceHistoryTTL =
+          batchOperationModifyProcessInstanceHistoryTTL;
       return this;
     }
 
-    public Builder resolveIncidentHistoryTTL(final Duration resolveIncidentHistoryTTL) {
-      this.resolveIncidentHistoryTTL = resolveIncidentHistoryTTL;
+    public Builder batchOperationResolveIncidentHistoryTTL(
+        final Duration batchOperationResolveIncidentHistoryTTL) {
+      this.batchOperationResolveIncidentHistoryTTL = batchOperationResolveIncidentHistoryTTL;
       return this;
     }
 
@@ -129,10 +138,10 @@ public record RdbmsWriterConfig(
           partitionId,
           queueSize,
           defaultHistoryTTL,
-          cancelProcessInstanceHistoryTTL,
-          migrateProcessInstanceHistoryTTL,
-          modifyProcessInstanceHistoryTTL,
-          resolveIncidentHistoryTTL,
+          batchOperationCancelProcessInstanceHistoryTTL,
+          batchOperationMigrateProcessInstanceHistoryTTL,
+          batchOperationModifyProcessInstanceHistoryTTL,
+          batchOperationResolveIncidentHistoryTTL,
           minHistoryCleanupInterval,
           maxHistoryCleanupInterval,
           historyCleanupBatchSize,

@@ -26,13 +26,13 @@ public class ExporterConfiguration {
   private Duration defaultBatchOperationHistoryTTL =
       RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
   // specific history TTLs for batch operations
-  private Duration cancelProcessInstanceHistoryTTL =
+  private Duration batchOperationCancelProcessInstanceHistoryTTL =
       RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
-  private Duration migrateProcessInstanceHistoryTTL =
+  private Duration batchOperationMigrateProcessInstanceHistoryTTL =
       RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
-  private Duration modifyProcessInstanceHistoryTTL =
+  private Duration batchOperationModifyProcessInstanceHistoryTTL =
       RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
-  private Duration resolveIncidentHistoryTTL =
+  private Duration batchOperationResolveIncidentHistoryTTL =
       RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
   private Duration minHistoryCleanupInterval =
       RdbmsWriterConfig.DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
@@ -83,35 +83,41 @@ public class ExporterConfiguration {
   }
 
   public Duration getCancelProcessInstanceHistoryTTL() {
-    return cancelProcessInstanceHistoryTTL;
+    return batchOperationCancelProcessInstanceHistoryTTL;
   }
 
-  public void setCancelProcessInstanceHistoryTTL(final Duration cancelProcessInstanceHistoryTTL) {
-    this.cancelProcessInstanceHistoryTTL = cancelProcessInstanceHistoryTTL;
+  public void setCancelProcessInstanceHistoryTTL(
+      final Duration batchOperationCancelProcessInstanceHistoryTTL) {
+    this.batchOperationCancelProcessInstanceHistoryTTL =
+        batchOperationCancelProcessInstanceHistoryTTL;
   }
 
   public Duration getMigrateProcessInstanceHistoryTTL() {
-    return migrateProcessInstanceHistoryTTL;
+    return batchOperationMigrateProcessInstanceHistoryTTL;
   }
 
-  public void setMigrateProcessInstanceHistoryTTL(final Duration migrateProcessInstanceHistoryTTL) {
-    this.migrateProcessInstanceHistoryTTL = migrateProcessInstanceHistoryTTL;
+  public void setMigrateProcessInstanceHistoryTTL(
+      final Duration batchOperationMigrateProcessInstanceHistoryTTL) {
+    this.batchOperationMigrateProcessInstanceHistoryTTL =
+        batchOperationMigrateProcessInstanceHistoryTTL;
   }
 
   public Duration getModifyProcessInstanceHistoryTTL() {
-    return modifyProcessInstanceHistoryTTL;
+    return batchOperationModifyProcessInstanceHistoryTTL;
   }
 
-  public void setModifyProcessInstanceHistoryTTL(final Duration modifyProcessInstanceHistoryTTL) {
-    this.modifyProcessInstanceHistoryTTL = modifyProcessInstanceHistoryTTL;
+  public void setModifyProcessInstanceHistoryTTL(
+      final Duration batchOperationModifyProcessInstanceHistoryTTL) {
+    this.batchOperationModifyProcessInstanceHistoryTTL =
+        batchOperationModifyProcessInstanceHistoryTTL;
   }
 
   public Duration getResolveIncidentHistoryTTL() {
-    return resolveIncidentHistoryTTL;
+    return batchOperationResolveIncidentHistoryTTL;
   }
 
-  public void setResolveIncidentHistoryTTL(final Duration resolveIncidentHistoryTTL) {
-    this.resolveIncidentHistoryTTL = resolveIncidentHistoryTTL;
+  public void setResolveIncidentHistoryTTL(final Duration batchOperationResolveIncidentHistoryTTL) {
+    this.batchOperationResolveIncidentHistoryTTL = batchOperationResolveIncidentHistoryTTL;
   }
 
   public Duration getMinHistoryCleanupInterval() {
@@ -187,12 +193,19 @@ public class ExporterConfiguration {
     checkPositiveDuration(
         defaultBatchOperationHistoryTTL, "defaultBatchOperationHistoryTTL", errors);
     checkPositiveDuration(
-        cancelProcessInstanceHistoryTTL, "cancelProcessInstanceHistoryTTL", errors);
+        batchOperationCancelProcessInstanceHistoryTTL,
+        "batchOperationCancelProcessInstanceHistoryTTL",
+        errors);
     checkPositiveDuration(
-        migrateProcessInstanceHistoryTTL, "migrateProcessInstanceHistoryTTL", errors);
+        batchOperationMigrateProcessInstanceHistoryTTL,
+        "batchOperationMigrateProcessInstanceHistoryTTL",
+        errors);
     checkPositiveDuration(
-        modifyProcessInstanceHistoryTTL, "modifyProcessInstanceHistoryTTL", errors);
-    checkPositiveDuration(resolveIncidentHistoryTTL, "resolveIncidentHistoryTTL", errors);
+        batchOperationModifyProcessInstanceHistoryTTL,
+        "batchOperationModifyProcessInstanceHistoryTTL",
+        errors);
+    checkPositiveDuration(
+        batchOperationResolveIncidentHistoryTTL, "batchOperationResolveIncidentHistoryTTL", errors);
     checkPositiveDuration(minHistoryCleanupInterval, "minHistoryCleanupInterval", errors);
     checkPositiveDuration(maxHistoryCleanupInterval, "maxHistoryCleanupInterval", errors);
 
@@ -241,10 +254,13 @@ public class ExporterConfiguration {
         .partitionId(partitionId)
         .queueSize(queueSize)
         .defaultHistoryTTL(defaultHistoryTTL)
-        .cancelProcessInstanceHistoryTTL(cancelProcessInstanceHistoryTTL)
-        .migrateProcessInstanceHistoryTTL(migrateProcessInstanceHistoryTTL)
-        .modifyProcessInstanceHistoryTTL(modifyProcessInstanceHistoryTTL)
-        .resolveIncidentHistoryTTL(resolveIncidentHistoryTTL)
+        .batchOperationCancelProcessInstanceHistoryTTL(
+            batchOperationCancelProcessInstanceHistoryTTL)
+        .batchOperationMigrateProcessInstanceHistoryTTL(
+            batchOperationMigrateProcessInstanceHistoryTTL)
+        .batchOperationModifyProcessInstanceHistoryTTL(
+            batchOperationModifyProcessInstanceHistoryTTL)
+        .batchOperationResolveIncidentHistoryTTL(batchOperationResolveIncidentHistoryTTL)
         .minHistoryCleanupInterval(minHistoryCleanupInterval)
         .maxHistoryCleanupInterval(maxHistoryCleanupInterval)
         .historyCleanupBatchSize(historyCleanupBatchSize)

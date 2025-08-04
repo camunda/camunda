@@ -67,10 +67,10 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
 
     when(config.defaultHistoryTTL()).thenReturn(Duration.ofDays(90));
-    when(config.cancelProcessInstanceHistoryTTL()).thenReturn(Duration.ofDays(2));
-    when(config.migrateProcessInstanceHistoryTTL()).thenReturn(Duration.ofDays(3));
-    when(config.modifyProcessInstanceHistoryTTL()).thenReturn(Duration.ofDays(4));
-    when(config.resolveIncidentHistoryTTL()).thenReturn(Duration.ofDays(5));
+    when(config.batchOperationCancelProcessInstanceHistoryTTL()).thenReturn(Duration.ofDays(2));
+    when(config.batchOperationMigrateProcessInstanceHistoryTTL()).thenReturn(Duration.ofDays(3));
+    when(config.batchOperationModifyProcessInstanceHistoryTTL()).thenReturn(Duration.ofDays(4));
+    when(config.batchOperationResolveIncidentHistoryTTL()).thenReturn(Duration.ofDays(5));
     when(config.minHistoryCleanupInterval()).thenReturn(Duration.ofHours(1));
     when(config.maxHistoryCleanupInterval()).thenReturn(Duration.ofDays(1));
     when(config.historyCleanupBatchSize()).thenReturn(100);
