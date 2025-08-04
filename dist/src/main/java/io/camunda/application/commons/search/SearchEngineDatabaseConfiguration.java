@@ -20,6 +20,7 @@ import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SchemaManagerConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,9 +44,11 @@ public class SearchEngineDatabaseConfiguration {
       final SearchEngineConfiguration searchEngineConfiguration,
       final MeterRegistry meterRegistry,
       @Autowired(required = false)
-          final Broker broker // if present, then it will ensure that the broker is started first
-      ) {
-    return new SearchEngineSchemaInitializer(searchEngineConfiguration, meterRegistry);
+          final Broker broker, // if present, then it will ensure that the broker is started first
+      @Autowired(required = false) final BrokerCfg brokerCfg) {
+    final boolean isGatewayEnabled = brokerCfg == null || brokerCfg.getGateway().isEnable();
+    return new SearchEngineSchemaInitializer(
+        searchEngineConfiguration, meterRegistry, isGatewayEnabled);
   }
 
   @Bean
