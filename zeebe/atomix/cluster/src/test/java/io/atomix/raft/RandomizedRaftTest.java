@@ -239,7 +239,8 @@ public class RandomizedRaftTest {
     int maxStepsToReplicateEntries = 2000;
     while (!(raftContexts.hasLeaderAtTheLatestTerm()
             && raftContexts.hasReplicatedAllEntries()
-            && raftContexts.hasCommittedAllEntries())
+            && raftContexts.hasCommittedAllEntries()
+            && raftContexts.allMembersAreReady())
         && maxStepsToReplicateEntries-- > 0) {
       raftContexts.runUntilDone();
       raftContexts.processAllMessage();
