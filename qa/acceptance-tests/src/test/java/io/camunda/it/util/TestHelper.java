@@ -337,6 +337,41 @@ public final class TestHelper {
   }
 
   /**
+   * Waits for process instances to start which are having a process variable {@link *
+   * #VAR_TEST_SCOPE_ID}.
+   *
+   * @param camundaClient CamundaClient
+   * @param processInstanceKey the key of the process instance to check
+   * @param variableName the name of the variable to check
+   * @param variableValue the value of the variable to check
+   */
+  public static void waitUntilProcessInstanceHasVariable(
+      final CamundaClient camundaClient,
+      final Long processInstanceKey,
+      final String variableName,
+      final String variableValue) {
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put(variableName, variableValue);
+
+    Awaitility.await("should wait until variables exist")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceSearchRequest()
+                      .filter(
+                          f ->
+                              f.processInstanceKey(processInstanceKey)
+                                  .variables(Map.of(variableName, variableValue)))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(1);
+            });
+  }
+
+  /**
    * Waits for user tasks to be created which are having a process variable {@link
    * #VAR_TEST_SCOPE_ID}.
    *
@@ -381,23 +416,16 @@ public final class TestHelper {
       final CamundaClient camundaClient, final String batchOperationKey, final int expectedItems) {
     Awaitility.await("should start batch operation with correct total count")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptionsMatching(
+            e ->
+                e instanceof ProblemException
+                    && ((ProblemException) e).code() == 404) // Ignore 404 errors
         .untilAsserted(
             () -> {
-              // and
-              try {
-                final var batch =
-                    camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
-                assertThat(batch).isNotNull();
-                assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
-              } catch (final ProblemException e) {
-                if (e.code() == 404) {
-                  // In the case where it could not be found in the db, we can ignore it.
-                  // When we start this await, it will always not be there.
-                  return;
-                }
-
-                throw e;
-              }
+              final var batch =
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+              assertThat(batch).isNotNull();
+              assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
             });
   }
 
