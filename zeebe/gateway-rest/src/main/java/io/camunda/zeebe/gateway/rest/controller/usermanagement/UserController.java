@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -40,17 +41,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserController {
   private final UserServices userServices;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final InitializationConfiguration initializationConfiguration;
 
   public UserController(
-      final UserServices userServices, final CamundaAuthenticationProvider authenticationProvider) {
+      final UserServices userServices,
+      final CamundaAuthenticationProvider authenticationProvider,
+      final InitializationConfiguration initializationConfiguration) {
     this.userServices = userServices;
     this.authenticationProvider = authenticationProvider;
+    this.initializationConfiguration = initializationConfiguration;
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
-    return RequestMapper.toUserDTO(userRequest)
+    return RequestMapper.toUserRequest(
+            userRequest, initializationConfiguration.getIdentifierPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
