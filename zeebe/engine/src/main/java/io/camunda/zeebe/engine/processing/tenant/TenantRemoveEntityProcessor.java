@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
-import io.camunda.zeebe.auth.Authorization;
+import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
+
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -129,13 +130,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final Map<String, Object> authorizations,
       final EntityType entityType,
       final String entityId) {
-    return switch (entityType) {
-      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
-      case GROUP ->
-          authorizations.get(Authorization.USER_GROUPS_CLAIMS) != null
-              || groupState.get(entityId).isPresent();
-      default -> true;
-    };
+    return entityType != MAPPING_RULE || mappingRuleState.get(entityId).isPresent();
   }
 
   private void createEntityNotExistRejectCommand(
