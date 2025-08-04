@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 8,
   "links": [],
   "panels": [
     {
@@ -30,14 +30,15 @@
         "x": 0,
         "y": 0
       },
-      "id": 31,
+      "id": 55,
       "panels": [
         {
           "datasource": {
+            "default": true,
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "description": "The time needed for the importer to read documents from the zeebe records index for a single import batch.",
+          "description": "The time from when a record is written to when it is exported.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -48,139 +49,6 @@
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "links": [],
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 1
-          },
-          "id": 43,
-          "options": {
-            "alertThreshold": true,
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
-              },
-              "editorMode": "code",
-              "exemplar": true,
-              "expr": "avg(rate(tasklist_import_query_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])/rate(tasklist_import_query_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])>0)",
-              "format": "time_series",
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "Importer read latency",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
-              },
-              "exemplar": true,
-              "expr": "avg(rate(tasklist_import_index_query_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])/rate(tasklist_import_index_query_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])>0)",
-              "format": "time_series",
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "Importer index latency",
-              "refId": "B"
-            }
-          ],
-          "title": "Import latencies, 10 min average, sec",
-          "type": "timeseries"
-        }
-      ],
-      "title": "Tasklist Importer",
-      "type": "row"
-    },
-    {
-      "collapsed": true,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 1
-      },
-      "id": 30,
-      "panels": [
-        {
-          "datasource": {
-            "default": true,
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "description": "During archival documents are moved from the main index to dated historical indices, this is how long moving each batch of documents takes.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "Seconds",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "barWidthFactor": 0.6,
@@ -222,7 +90,8 @@
                     "value": 80
                   }
                 ]
-              }
+              },
+              "unit": "s"
             },
             "overrides": []
           },
@@ -230,9 +99,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 2
+            "y": 1
           },
-          "id": 51,
+          "id": 54,
           "options": {
             "legend": {
               "calcs": [],
@@ -252,14 +121,14 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(tasklist_archiver_reindex_query_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])\n/\nrate(tasklist_archiver_reindex_query_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])\n",
+              "expr": "sum(rate(zeebe_exporting_latency_seconds_sum{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_exporting_latency_seconds_count{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
               "instant": false,
-              "legendFormat": "Reindex duration",
+              "legendFormat": "Exporting Latency",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Tasklist Archiver (Average Reindex Duration)",
+          "title": "Exporting latency",
           "type": "timeseries"
         },
         {
@@ -268,7 +137,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "description": "Tracks exceptions during reindex operations.",
+          "description": "The number of events exported by zeebe exporters broken down by type",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -328,9 +197,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 2
+            "y": 1
           },
-          "id": 52,
+          "id": 58,
           "options": {
             "legend": {
               "calcs": [],
@@ -350,14 +219,133 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "increase(tasklist_archival_reindex_failures_total{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",action=~\"EXPORTED\",partition=~\"$partition\",valueType!~\"MESSAGE_SUBSCRIPTION|MESSAGE|JOB_BATCH\"}[$__rate_interval])) by (valueType)\n",
               "instant": false,
-              "legendFormat": "{{exception}}",
+              "legendFormat": "{{valueType}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Tasklis Archiver (Reindex Failures)",
+          "title": "Events Exported",
+          "type": "timeseries"
+        }
+      ],
+      "title": "General Exporting",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 31,
+      "panels": [
+        {
+          "datasource": {
+            "default": true,
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "Throughput of documents processed and imported.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 2
+          },
+          "id": 59,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "sum(rate(tasklist_events_processed_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (status)",
+              "format": "time_series",
+              "instant": false,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "imported",
+              "refId": "A"
+            }
+          ],
+          "title": "Tasklist Importer (Throughput Imported records (avg))",
           "type": "timeseries"
         },
         {
@@ -366,7 +354,324 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "description": "Tracks exceptions during delete operations.",
+          "description": "Shows the time (latency) between writing the command to the dispatcher, processing, exporting, and then importing the record.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "id": 60,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(tasklist_import_time_seconds_sum{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) / sum(rate(tasklist_import_time_seconds_count{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval]))",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "Import latency",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Tasklist Importer (Latency (avg))",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "default": true,
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "The time it takes for the importer to read an record on average from ES",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 14
+          },
+          "id": 56,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean",
+                "min"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Max",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(tasklist_import_query_seconds_sum{namespace=~\"$namespace\"}[$__rate_interval])) / sum(rate(tasklist_import_query_seconds_count{namespace=~\"$namespace\"}[$__rate_interval]))",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{type}}",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Tasklist Importer (read duration)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "default": true,
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "The time it takes to write the bulk requests (during importing) to ES on average.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 14
+          },
+          "id": 57,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean",
+                "min"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(tasklist_import_index_query_seconds_sum{namespace=~\"$namespace\"}[$__rate_interval])) by (type) / sum(rate(tasklist_import_index_query_seconds_count{namespace=~\"$namespace\"}[$__rate_interval])) by (type)",
+              "instant": false,
+              "legendFormat": "{{type}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Tasklist Importer (write duration (avg))",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "default": true,
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "There is a queue of import jobs where each job has to import a batch of records. This details how many such jobs are currently in the queue.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -423,12 +728,12 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 12,
+            "h": 5,
+            "w": 24,
             "x": 0,
-            "y": 10
+            "y": 22
           },
-          "id": 53,
+          "id": 61,
           "options": {
             "legend": {
               "calcs": [],
@@ -437,29 +742,31 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "single",
               "sort": "none"
             }
           },
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "increase(tasklist_archival_delete_failures_total{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "sum(tasklist_import_queue_size{namespace=~\"$namespace\", pod=~\"$pod\"} ) by (type)",
               "instant": false,
-              "legendFormat": "{{exception}}",
+              "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Tasklist Archiver (Delete Failures)",
+          "title": "Tasklist Importer (queue size)",
           "type": "timeseries"
         }
       ],
-      "title": "Tasklist Archiver",
+      "title": "Tasklist Importer",
       "type": "row"
     },
     {
@@ -474,6 +781,7 @@
       "panels": [
         {
           "datasource": {
+            "default": true,
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
@@ -571,28 +879,14 @@
               "intervalFactor": 1,
               "legendFormat": "imported",
               "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "exemplar": true,
-              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\", action=~\"exported\",partition=~\"$partition\", valueType!~\"MESSAGE_SUBSCRIPTION|MESSAGE|JOB_BATCH\"}[$__rate_interval]))",
-              "format": "time_series",
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "exported",
-              "range": true,
-              "refId": "B"
             }
           ],
-          "title": "Throughput Exported and Imported records (avg)",
+          "title": "Operate Importer (Throughput Imported records (avg))",
           "type": "timeseries"
         },
         {
           "datasource": {
+            "default": true,
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
@@ -687,39 +981,14 @@
               "legendFormat": "Import latency",
               "range": true,
               "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(zeebe_stream_processor_latency_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_stream_processor_latency_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]))",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "Processing latency",
-              "range": true,
-              "refId": "B"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(zeebe_exporting_latency_sum{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_exporting_latency_count{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "Exporting latency",
-              "range": true,
-              "refId": "C"
             }
           ],
-          "title": "Latency (avg)",
+          "title": "Operate Importer (Latency (avg))",
           "type": "timeseries"
         },
         {
           "datasource": {
+            "default": true,
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
@@ -782,19 +1051,14 @@
           },
           "gridPos": {
             "h": 8,
-            "w": 8,
+            "w": 12,
             "x": 0,
             "y": 15
           },
           "id": 34,
           "options": {
             "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "mean",
-                "min"
-              ],
+              "calcs": [],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true,
@@ -815,127 +1079,20 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(operate_import_query_seconds_sum{namespace=\"$namespace\"}[$__rate_interval])) by (type) / sum(rate(operate_import_query_seconds_count{namespace=\"$namespace\"}[$__rate_interval])) by (type)",
+              "expr": "sum(rate(operate_import_query_seconds_sum{namespace=~\"$namespace\"}[$__rate_interval])) / sum(rate(operate_import_query_seconds_count{namespace=~\"$namespace\"}[$__rate_interval]))",
               "hide": false,
               "instant": false,
-              "legendFormat": "{{type}}",
+              "legendFormat": "Read Duration",
               "range": true,
               "refId": "B"
             }
           ],
-          "title": "Importing: read duration",
+          "title": "Operate Importer (read duration)",
           "type": "timeseries"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "description": "Time the import writer thread needs on average to process an ImportBatch (containing several Zeebe records).",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 8,
-            "y": 15
-          },
-          "id": 35,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "mean",
-                "min"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true,
-              "sortBy": "Max",
-              "sortDesc": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(operate_import_processing_duration_seconds_sum{namespace=\"$namespace\"}[$__rate_interval])) by (type) / sum(rate(operate_import_processing_duration_seconds_count{namespace=\"$namespace\"}[$__rate_interval])) by (type)",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "{{type}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Import processing duration (AVG)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
+            "default": true,
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
@@ -998,19 +1155,14 @@
           },
           "gridPos": {
             "h": 8,
-            "w": 8,
-            "x": 16,
+            "w": 12,
+            "x": 12,
             "y": 15
           },
           "id": 36,
           "options": {
             "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "mean",
-                "min"
-              ],
+              "calcs": [],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1029,14 +1181,14 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(operate_import_index_query_seconds_sum{namespace=\"$namespace\"}[$__rate_interval])) by (type) / sum(rate(operate_import_index_query_seconds_count{namespace=\"$namespace\"}[$__rate_interval])) by (type)",
+              "expr": "sum(rate(operate_import_index_query_seconds_sum{namespace=~\"$namespace\"}[$__rate_interval])) / sum(rate(operate_import_index_query_seconds_count{namespace=~\"$namespace\"}[$__rate_interval]))",
               "instant": false,
-              "legendFormat": "{{type}}",
+              "legendFormat": "Write Duration",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Importing: write duration (avg)",
+          "title": "Operate Importer (write duration (avg))",
           "type": "timeseries"
         },
         {
@@ -1135,7 +1287,7 @@
               "refId": "A"
             }
           ],
-          "title": "Import queue size",
+          "title": "Operate Importer (queue size)",
           "type": "timeseries"
         }
       ],
@@ -1149,6 +1301,314 @@
         "w": 24,
         "x": 0,
         "y": 3
+      },
+      "id": 30,
+      "panels": [
+        {
+          "datasource": {
+            "default": true,
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "During archival documents are moved from the main index to dated historical indices, this is how long moving each batch of documents takes.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Seconds",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 4
+          },
+          "id": 51,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "rate(tasklist_archiver_reindex_query_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])\n/\nrate(tasklist_archiver_reindex_query_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])\n",
+              "instant": false,
+              "legendFormat": "Reindex duration",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Tasklist Archiver (Average Reindex Duration)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "default": true,
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "Tracks exceptions during reindex operations.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 4
+          },
+          "id": 52,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "increase(tasklist_archival_reindex_failures_total{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "instant": false,
+              "legendFormat": "{{exception}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Tasklis Archiver (Reindex Failures)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "default": true,
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "Tracks exceptions during delete operations.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 12
+          },
+          "id": 53,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "increase(tasklist_archival_delete_failures_total{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "instant": false,
+              "legendFormat": "{{exception}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Tasklist Archiver (Delete Failures)",
+          "type": "timeseries"
+        }
+      ],
+      "title": "Tasklist Archiver",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
       },
       "id": 28,
       "panels": [
@@ -1218,7 +1678,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 4
+            "y": 5
           },
           "id": 48,
           "options": {
@@ -1316,7 +1776,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 4
+            "y": 5
           },
           "id": 49,
           "options": {
@@ -1414,7 +1874,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 13
           },
           "id": 50,
           "options": {
@@ -1456,7 +1916,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 4
+        "y": 5
       },
       "id": 1,
       "panels": [
@@ -1485,7 +1945,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 6
           },
           "id": 2,
           "options": {
@@ -1593,7 +2053,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1609,7 +2070,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 6
           },
           "id": 3,
           "options": {
@@ -1666,7 +2127,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 21
+            "y": 14
           },
           "id": 4,
           "options": {
@@ -1774,7 +2235,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1790,7 +2252,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 21
+            "y": 14
           },
           "id": 5,
           "options": {
@@ -1825,6 +2287,7 @@
         },
         {
           "datasource": {
+            "default": true,
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
@@ -1872,7 +2335,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1887,7 +2351,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 29
+            "y": 22
           },
           "id": 47,
           "options": {
@@ -1906,8 +2370,12 @@
           "pluginVersion": "12.0.2",
           "targets": [
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
               "editorMode": "code",
-              "expr": "max (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - max (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", exporter=~\"elasticsearchexporter\"}) by (partition)",
+              "expr": "max (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - max (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", exporter=~\"$exporterId\"}) by (partition)",
               "legendFormat": "partition {{partition}}",
               "range": true,
               "refId": "A"
@@ -1926,7 +2394,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 6
       },
       "id": 21,
       "panels": [
@@ -1954,7 +2422,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 177
+            "y": 7
           },
           "id": 22,
           "options": {
@@ -1995,7 +2463,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "11.2.10",
           "targets": [
             {
               "datasource": {
@@ -2040,7 +2508,7 @@
             "h": 8,
             "w": 11,
             "x": 10,
-            "y": 177
+            "y": 7
           },
           "id": 23,
           "options": {
@@ -2090,7 +2558,7 @@
               "unit": "s"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "11.2.10",
           "targets": [
             {
               "datasource": {
@@ -2125,7 +2593,8 @@
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2141,7 +2610,7 @@
             "h": 8,
             "w": 3,
             "x": 21,
-            "y": 177
+            "y": 7
           },
           "id": 24,
           "options": {
@@ -2159,7 +2628,7 @@
             "showThresholdMarkers": true,
             "sizing": "auto"
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "11.2.10",
           "targets": [
             {
               "datasource": {
@@ -2201,7 +2670,7 @@
             "h": 10,
             "w": 11,
             "x": 0,
-            "y": 185
+            "y": 15
           },
           "id": 25,
           "options": {
@@ -2242,7 +2711,7 @@
               "unit": "short"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "11.2.10",
           "targets": [
             {
               "datasource": {
@@ -2313,7 +2782,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2328,7 +2798,7 @@
             "h": 10,
             "w": 8,
             "x": 11,
-            "y": 185
+            "y": 15
           },
           "id": 26,
           "options": {
@@ -2405,7 +2875,7 @@
             "h": 10,
             "w": 5,
             "x": 19,
-            "y": 185
+            "y": 15
           },
           "id": 27,
           "options": {
@@ -2453,6 +2923,7 @@
       "type": "row"
     }
   ],
+  "refresh": "",
   "schemaVersion": 39,
   "tags": [],
   "templating": {
@@ -2595,7 +3066,7 @@
     ]
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
