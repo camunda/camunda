@@ -22,7 +22,6 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestD
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
-import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
@@ -36,6 +35,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import org.testcontainers.containers.GenericContainer;
 
 public class TestRestOperateClient implements AutoCloseable {
@@ -173,6 +173,24 @@ public class TestRestOperateClient implements AutoCloseable {
     return createProcessInstanceOperationRequest(processInstanceKey, operationRequestBody);
   }
 
+  /**
+   * @return Either an Exception or the ID of the created batch operation.
+   */
+  public Either<Exception, String> addVariable(
+      final long processInstanceKey,
+      final String scopeId,
+      final String variableName,
+      final Object variableValue) {
+    final var operationRequestBody = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
+    operationRequestBody.setVariableScopeId(scopeId);
+    operationRequestBody.setVariableName(variableName);
+    operationRequestBody.setVariableValue(String.valueOf(variableValue));
+    return mapResult(
+            createProcessInstanceOperationRequest(processInstanceKey, operationRequestBody).get(),
+            Map.class)
+        .flatMap(result -> Either.right((String) result.get("id")));
+  }
+
   public Either<Exception, HttpResponse<String>> resolveIncident(final long processInstanceKey) {
     // Currently, incidents in Operate only require the process instance key to be resolved.
     return createProcessInstanceOperationRequest(
@@ -284,14 +302,21 @@ public class TestRestOperateClient implements AutoCloseable {
     return endpoint;
   }
 
-  public Either<Exception, BatchOperationEntity> migrateProcessInstanceBatchOperationWith(
+  /**
+   * @return Either an Exception or the ID of the created batch operation.
+   */
+  public Either<Exception, String> migrateProcessInstanceBatchOperationWith(
       final MigrationPlan migrationPlan) {
     return migrateProcessInstanceBatchOperationRequest(migrationPlan)
         .flatMap(this::sendRequest)
-        .flatMap(r -> mapResult(r, BatchOperationEntity.class));
+        .flatMap(r -> mapResult(r, Map.class))
+        .flatMap(result -> Either.right((String) result.get("id")));
   }
 
-  public Either<Exception, BatchOperationEntity> cancelProcessInstancesBatchOperationRequest(
+  /**
+   * @return Either an Exception or the ID of the created batch operation.
+   */
+  public Either<Exception, String> cancelProcessInstancesBatchOperationRequest(
       final ListViewQueryDto query) {
     final CreateBatchOperationRequestDto createBatchOperation =
         new CreateBatchOperationRequestDto();
@@ -301,7 +326,8 @@ public class TestRestOperateClient implements AutoCloseable {
 
     return createBatchOperation(createBatchOperation)
         .flatMap(this::sendRequest)
-        .flatMap(r -> mapResult(r, BatchOperationEntity.class));
+        .flatMap(r -> mapResult(r, Map.class))
+        .flatMap(result -> Either.right((String) result.get("id")));
   }
 
   private Either<Exception, HttpRequest> migrateProcessInstanceBatchOperationRequest(

@@ -49,6 +49,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+// Operate API does not support RDBMS
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class OperateProcessInstanceMigrationIT {
   @MultiDbTestApplication
@@ -111,7 +112,7 @@ public class OperateProcessInstanceMigrationIT {
 
     // when
     // execute MIGRATE_PROCESS_INSTANCE
-    final var batchOperationEntity =
+    final var batchOperationId =
         operateClient.migrateProcessInstanceBatchOperationWith(migrationPlan);
 
     // then
@@ -123,12 +124,11 @@ public class OperateProcessInstanceMigrationIT {
     //   * Zeebe should process and export the respective events
     //   * The process should be migrated
     //   * Operation should be marked completed by exporter at the end
-    assertThat(batchOperationEntity.isRight())
+    assertThat(batchOperationId.isRight())
         .withFailMessage("Expected batch operation to be created.")
         .isTrue();
 
-    waitForBatchOperationWithCorrectTotalCount(
-        client, batchOperationEntity.get().batchOperationKey(), 1);
+    waitForBatchOperationWithCorrectTotalCount(client, batchOperationId.get(), 1);
 
     waitForProcessInstance(
         client,

@@ -40,10 +40,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-domain</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
