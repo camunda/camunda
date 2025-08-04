@@ -27,6 +27,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +81,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
       """;
   private static final String GROUP_BASE_URL = "/v2/groups";
   private static final String GROUP_SEARCH_URL = GROUP_BASE_URL + "/search";
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
 
   private static final List<GroupMemberEntity> GROUP_USER_ENTITIES =
       List.of(
@@ -232,6 +236,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @MockitoBean private MappingRuleServices mappingServices;
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private InitializationConfiguration initializationConfiguration;
 
   @BeforeEach
   void setup() {
@@ -243,6 +248,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .thenReturn(roleServices);
     when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(mappingServices);
+    when(initializationConfiguration.getIdentifierPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test

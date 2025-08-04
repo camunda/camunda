@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -56,6 +57,8 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 public class TenantControllerTest {
 
   private static final String TENANT_BASE_URL = "/v2/tenants";
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
 
   @Nested
   @WebMvcTest(TenantController.class)
@@ -66,6 +69,7 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private InitializationConfiguration initializationConfiguration;
 
     @BeforeEach
     void setup() {
@@ -73,6 +77,7 @@ public class TenantControllerTest {
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
       when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(tenantServices);
+      when(initializationConfiguration.getIdentifierPattern()).thenReturn(ID_PATTERN);
     }
 
     @ParameterizedTest
@@ -191,8 +196,8 @@ public class TenantControllerTest {
     @ValueSource(
         strings = {
           "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-          "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
-          "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+          "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<",
+          "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
         })
     void shouldRejectTenantCreationWithIllegalCharactersInId(final String id) {
       // given
@@ -658,6 +663,7 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private InitializationConfiguration initializationConfiguration;
 
     @ParameterizedTest
     @MethodSource("tenantControllerRequests")

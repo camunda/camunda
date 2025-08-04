@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
@@ -16,25 +15,27 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.springframework.http.ProblemDetail;
 
 public final class GroupRequestValidator {
 
   private GroupRequestValidator() {}
 
-  public static Optional<ProblemDetail> validateCreateRequest(final GroupCreateRequest request) {
+  public static Optional<ProblemDetail> validateCreateRequest(
+      final GroupCreateRequest request, final Pattern identifierPattern) {
     return validate(
         violations -> {
-          validateGroupId(request.getGroupId(), violations);
+          validateGroupId(request.getGroupId(), violations, identifierPattern);
           validateGroupName(request.getName(), violations);
         });
   }
 
   public static Optional<ProblemDetail> validateUpdateRequest(
-      final String groupId, final GroupUpdateRequest request) {
+      final String groupId, final GroupUpdateRequest request, final Pattern identifierPattern) {
     return validate(
         violations -> {
-          validateGroupId(groupId, violations);
+          validateGroupId(groupId, violations, identifierPattern);
           validateGroupName(request.getName(), violations);
           if (request.getDescription() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
@@ -43,21 +44,28 @@ public final class GroupRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateMemberRequest(
-      final String roleId, final String memberId, final EntityType memberType) {
+      final String roleId,
+      final String memberId,
+      final EntityType memberType,
+      final Pattern identifierPattern) {
     return validate(
         violations -> {
-          validateGroupId(roleId, violations);
-          validateMemberId(memberId, memberType, violations);
+          validateGroupId(roleId, violations, identifierPattern);
+          validateMemberId(memberId, memberType, violations, identifierPattern);
         });
   }
 
   private static void validateId(
-      final String id, final String propertyName, final List<String> violations) {
-    IdentifierValidator.validateId(id, propertyName, violations, ID_PATTERN);
+      final String id,
+      final String propertyName,
+      final List<String> violations,
+      final Pattern identifierPattern) {
+    IdentifierValidator.validateId(id, propertyName, violations, identifierPattern);
   }
 
-  public static void validateGroupId(final String id, final List<String> violations) {
-    IdentifierValidator.validateId(id, "groupId", violations, ID_PATTERN);
+  public static void validateGroupId(
+      final String id, final List<String> violations, final Pattern identifierPattern) {
+    IdentifierValidator.validateId(id, "groupId", violations, identifierPattern);
   }
 
   private static void validateGroupName(final String name, final List<String> violations) {
@@ -67,19 +75,22 @@ public final class GroupRequestValidator {
   }
 
   private static void validateMemberId(
-      final String entityId, final EntityType entityType, final List<String> violations) {
+      final String entityId,
+      final EntityType entityType,
+      final List<String> violations,
+      final Pattern identifierPattern) {
     switch (entityType) {
       case USER:
-        validateId(entityId, "username", violations);
+        validateId(entityId, "username", violations, identifierPattern);
         break;
       case GROUP:
-        validateId(entityId, "groupId", violations);
+        validateId(entityId, "groupId", violations, identifierPattern);
         break;
       case MAPPING_RULE:
-        validateId(entityId, "mappingRuleId", violations);
+        validateId(entityId, "mappingRuleId", violations, identifierPattern);
         break;
       default:
-        validateId(entityId, "entityId", violations);
+        validateId(entityId, "entityId", violations, identifierPattern);
     }
   }
 }
