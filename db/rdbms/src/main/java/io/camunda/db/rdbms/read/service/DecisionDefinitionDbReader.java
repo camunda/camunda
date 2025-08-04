@@ -44,12 +44,13 @@ public class DecisionDefinitionDbReader extends AbstractEntityReader<DecisionDef
     final var dbSort =
         convertSort(query.sort(), DecisionDefinitionSearchColumn.DECISION_DEFINITION_KEY);
 
-    // If the authorization check is enabled and no resource IDs are authorized, return an empty result
+    // If the authorization check is enabled and no resource IDs are authorized, return an empty
+    // result
     // If the tenant check is enabled and no tenant IDs are authorized, return an empty result
     if ((resourceAccessChecks.authorizationCheck().enabled()
-        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty())
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty())
         || (resourceAccessChecks.tenantCheck().enabled()
-        && resourceAccessChecks.getAuthorizedTenantIds().isEmpty())) {
+            && resourceAccessChecks.getAuthorizedTenantIds().isEmpty())) {
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 

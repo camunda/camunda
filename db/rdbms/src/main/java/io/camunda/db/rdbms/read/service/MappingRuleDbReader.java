@@ -57,7 +57,11 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
 
     final var dbQuery =
         MappingRuleDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .sort(dbSort)
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for mapping rule with filter {}", dbQuery);
     final var totalHits = mappingRuleMapper.count(dbQuery);
