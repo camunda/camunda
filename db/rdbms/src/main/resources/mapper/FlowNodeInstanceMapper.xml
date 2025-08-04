@@ -12,8 +12,10 @@
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM ${prefix}FLOW_NODE_INSTANCE pi
-    <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
+    FROM ${prefix}FLOW_NODE_INSTANCE fni
+    <where>
+        <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
+    </where>
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
@@ -21,25 +23,40 @@
     resultMap="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchResultMap">
     SELECT * FROM (
     SELECT
-    FLOW_NODE_INSTANCE_KEY,
-    FLOW_NODE_ID,
-    FLOW_NODE_NAME,
-    PROCESS_INSTANCE_KEY,
-    PROCESS_DEFINITION_ID,
-    PROCESS_DEFINITION_KEY,
-    TYPE,
-    STATE,
-    START_DATE,
-    END_DATE,
-    TENANT_ID,
-    TREE_PATH,
-    INCIDENT_KEY,
+    fni.FLOW_NODE_INSTANCE_KEY,
+    fni.FLOW_NODE_ID,
+    fni.FLOW_NODE_NAME,
+    fni.PROCESS_INSTANCE_KEY,
+    fni.PROCESS_DEFINITION_ID,
+    fni.PROCESS_DEFINITION_KEY,
+    fni.TYPE,
+    fni.STATE,
+    fni.START_DATE,
+    fni.END_DATE,
+    fni.TENANT_ID,
+    fni.TREE_PATH,
+    fni.INCIDENT_KEY,
     CASE
-    WHEN NUM_SUBPROCESS_INCIDENTS > 0 OR INCIDENT_KEY IS NOT NULL THEN TRUE
+    WHEN fni.NUM_SUBPROCESS_INCIDENTS > 0 OR fni.INCIDENT_KEY IS NOT NULL THEN TRUE
     ELSE FALSE
     END AS HAS_INCIDENT
-    FROM ${prefix}FLOW_NODE_INSTANCE
-    <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
+    FROM ${prefix}FLOW_NODE_INSTANCE fni
+    INNER JOIN PROCESS_INSTANCE pi ON pi.PROCESS_INSTANCE_KEY = fni.PROCESS_INSTANCE_KEY
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND fni.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND pi.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+    </where>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -47,22 +64,22 @@
   </select>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
+    1 = 1
     <!-- basic filters -->
     <if test="filter.flowNodeInstanceKeys != null and !filter.flowNodeInstanceKeys.isEmpty()">
-      AND FLOW_NODE_INSTANCE_KEY IN
+      AND fni.FLOW_NODE_INSTANCE_KEY IN
       <foreach collection="filter.flowNodeInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.processDefinitionIds != null and !filter.processDefinitionIds.isEmpty()">
-      AND PROCESS_DEFINITION_ID IN
+      AND fni.PROCESS_DEFINITION_ID IN
       <foreach collection="filter.processDefinitionIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
-      AND PROCESS_INSTANCE_KEY IN
+      AND fni.PROCESS_INSTANCE_KEY IN
       <foreach collection="filter.processInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
-      AND PROCESS_DEFINITION_KEY IN
+      AND fni.PROCESS_DEFINITION_KEY IN
       <foreach collection="filter.processDefinitionKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
@@ -75,36 +92,36 @@
       <foreach collection="filter.types" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.flowNodeIds != null and !filter.flowNodeIds.isEmpty()">
-      AND FLOW_NODE_ID IN
+      AND fni.FLOW_NODE_ID IN
       <foreach collection="filter.flowNodeIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.flowNodeNames != null and !filter.flowNodeNames.isEmpty()">
-      AND FLOW_NODE_NAME IN
+      AND fni.FLOW_NODE_NAME IN
       <foreach collection="filter.flowNodeNames" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.incidentKeys != null and !filter.incidentKeys.isEmpty()">
-      AND INCIDENT_KEY IN
+      AND fni.INCIDENT_KEY IN
       <foreach collection="filter.incidentKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.hasIncident == true">
-      AND (NUM_SUBPROCESS_INCIDENTS > 0 OR INCIDENT_KEY IS NOT NULL)
+      AND (fni.NUM_SUBPROCESS_INCIDENTS > 0 OR fni.INCIDENT_KEY IS NOT NULL)
     </if>
     <if test="filter.hasIncident == false">
-      AND (NUM_SUBPROCESS_INCIDENTS = 0 AND INCIDENT_KEY IS NULL)
+      AND (fni.NUM_SUBPROCESS_INCIDENTS = 0 AND fni.INCIDENT_KEY IS NULL)
     </if>
     <if test="filter.treePaths != null and !filter.treePaths.isEmpty()">
-      AND TREE_PATH IN
+      AND fni.TREE_PATH IN
       <foreach collection="filter.treePaths" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
-      AND TENANT_ID IN
+      AND fni.TENANT_ID IN
       <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
 
     <!-- Start Date Filters -->
     <if test="filter.startDateOperations != null and !filter.startDateOperations.isEmpty()">
       <foreach collection="filter.startDateOperations" item="operation">
-        AND START_DATE
+        AND fni.START_DATE
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
@@ -112,7 +129,7 @@
     <!-- End Date Filters -->
     <if test="filter.endDateOperations != null and !filter.endDateOperations.isEmpty()">
       <foreach collection="filter.endDateOperations" item="operation">
-        AND END_DATE
+        AND fni.END_DATE
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>

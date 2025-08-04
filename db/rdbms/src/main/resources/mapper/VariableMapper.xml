@@ -12,7 +12,9 @@
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}VARIABLE
-    <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
+    </where>
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
@@ -30,15 +32,29 @@
     IS_PREVIEW,
     PROCESS_DEFINITION_ID
     FROM ${prefix}VARIABLE
-    <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
-    ) t
+      <where>
+      <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      ) t
+    </where>
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
+    1 = 1
     <!-- basic filters -->
     <if
       test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">

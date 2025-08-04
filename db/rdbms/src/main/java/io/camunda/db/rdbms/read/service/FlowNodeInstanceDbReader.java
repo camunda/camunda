@@ -44,7 +44,12 @@ public class FlowNodeInstanceDbReader extends AbstractEntityReader<FlowNodeInsta
         convertSort(query.sort(), FlowNodeInstanceSearchColumn.FLOW_NODE_INSTANCE_KEY);
     final var dbQuery =
         FlowNodeInstanceDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = flowNodeInstanceMapper.count(dbQuery);

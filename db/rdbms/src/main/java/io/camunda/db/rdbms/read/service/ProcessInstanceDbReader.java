@@ -52,7 +52,8 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
         ProcessInstanceDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizationFilter(resourceAccessChecks.getAuthorization().orElse(null))
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
                     .page(convertPaging(dbSort, query.page())));
 

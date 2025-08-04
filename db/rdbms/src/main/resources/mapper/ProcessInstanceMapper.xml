@@ -80,10 +80,16 @@
         </foreach>
           )
       </if>
-      <if test="authorizationFilter != null and authorizationFilter.resourceIds() != null and !authorizationFilter.resourceIds().isEmpty()">
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
         AND pi.PROCESS_DEFINITION_ID IN
-        <foreach collection="authorizationFilter.resourceIds" item="resourceId" open="(" separator="," close=")">
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
           #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND pi.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
         </foreach>
       </if>
     </where>
