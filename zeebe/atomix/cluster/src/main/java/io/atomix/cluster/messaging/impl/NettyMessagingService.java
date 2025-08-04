@@ -165,7 +165,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
     this.config = verifyHeartbeatConfig(config);
-    channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
+    channelPool = new ChannelPool(this::openChannel);
 
     initAddresses(config);
   }
