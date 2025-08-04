@@ -15,14 +15,15 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,9 +37,12 @@ import org.springframework.test.json.JsonCompareMode;
 public class MappingRuleControllerTest extends RestControllerTest {
 
   private static final String MAPPING_RULES_PATH = "/v2/mapping-rules";
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
 
   @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private InitializationConfiguration initializationConfiguration;
 
   @BeforeEach
   void setup() {
@@ -46,6 +50,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(mappingRuleServices);
+    when(initializationConfiguration.getIdentifierPattern()).thenReturn(ID_PATTERN);
   }
 
   @ParameterizedTest
@@ -248,8 +253,8 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @ValueSource(
       strings = {
         "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-        "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
-        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+        "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<",
+        "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
       })
   void shouldRejectMappingRuleCreationWithIllegalCharactersInId(final String id) {
     // given
@@ -271,7 +276,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
               "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-            .formatted(IdentifierPatterns.ID_PATTERN, MAPPING_RULES_PATH));
+            .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, MAPPING_RULES_PATH));
     verifyNoInteractions(mappingRuleServices);
   }
 

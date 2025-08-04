@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
@@ -16,6 +15,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.springframework.http.ProblemDetail;
 
 public final class MappingRuleRequestValidator {
@@ -23,12 +23,12 @@ public final class MappingRuleRequestValidator {
   private MappingRuleRequestValidator() {}
 
   public static Optional<ProblemDetail> validateCreateRequest(
-      final MappingRuleCreateRequest request) {
+      final MappingRuleCreateRequest request, final Pattern identifierPattern) {
     return validate(
         violations -> {
           violations.addAll(validateClaims(request.getClaimName(), request.getClaimValue()));
           violations.addAll(validateName(request.getName()));
-          violations.addAll(validateId(request.getMappingRuleId()));
+          violations.addAll(validateId(request.getMappingRuleId(), identifierPattern));
         });
   }
 
@@ -41,9 +41,10 @@ public final class MappingRuleRequestValidator {
         });
   }
 
-  private static List<String> validateId(final String mappingRuleId) {
+  private static List<String> validateId(
+      final String mappingRuleId, final Pattern identifierPattern) {
     final List<String> violations = new ArrayList<>();
-    IdentifierValidator.validateId(mappingRuleId, "mappingRuleId", violations, ID_PATTERN);
+    IdentifierValidator.validateId(mappingRuleId, "mappingRuleId", violations, identifierPattern);
     return violations;
   }
 
