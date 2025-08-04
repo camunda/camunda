@@ -201,7 +201,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
               userTask.getUserTaskKey(), UserTaskIntent.COMPLETE_TASK_LISTENER, userTask);
         }
       }
-      case AD_HOC_SUB_PROCESS -> handleAdHocSubProcessJob(commandWriter, value, elementInstance);
+      case AD_HOC_SUB_PROCESS -> handleAdHocSubProcessJob(commandWriter, value);
       default -> {
         final long scopeKey = elementInstance.getValue().getFlowScopeKey();
         final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
@@ -218,17 +218,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   }
 
   private void handleAdHocSubProcessJob(
-      final TypedCommandWriter commandWriter,
-      final JobRecord jobRecord,
-      final ElementInstance adHocSubProcessInstance) {
-
-    // TODO: validate job command
-    // If the given ad-hoc sub-process instance is not active
-    //  If one of the given element IDs doesn't belong to an element inside the ad-hoc sub-process
-    // that can be activated
-    if (!adHocSubProcessInstance.isActive()) {
-      return; // reject command
-    }
+      final TypedCommandWriter commandWriter, final JobRecord jobRecord) {
 
     final List<JobResultActivateElementValue> activateElements =
         jobRecord.getResult().getActivateElements();
@@ -243,13 +233,12 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     activateElements.stream()
         .map(JobResultActivateElement.class::cast)
         .forEach(
-            element -> {
-              activationRecord
-                  .activateElements()
-                  .add()
-                  .setElementId(element.getElementId())
-                  .setVariables(element.getVariablesBuffer());
-            });
+            element ->
+                activationRecord
+                    .activateElements()
+                    .add()
+                    .setElementId(element.getElementId())
+                    .setVariables(element.getVariablesBuffer()));
 
     commandWriter.appendFollowUpCommand(
         jobRecord.getElementInstanceKey(),
