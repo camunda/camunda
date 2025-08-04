@@ -482,9 +482,10 @@ public class RequestMapper {
         () -> new DocumentLinkParams(Duration.ofMillis(documentLinkRequest.getTimeToLive())));
   }
 
-  public static Either<ProblemDetail, UserDTO> toUserDTO(final UserRequest request) {
+  public static Either<ProblemDetail, UserDTO> toUserRequest(
+      final UserRequest request, final Pattern identifierPattern) {
     return getResult(
-        UserRequestValidator.validateCreateRequest(request),
+        UserRequestValidator.validateCreateRequest(request, identifierPattern),
         () ->
             new UserDTO(
                 request.getUsername(),

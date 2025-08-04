@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_EMAIL;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -17,6 +16,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.http.ProblemDetail;
 
@@ -24,10 +24,11 @@ public final class UserRequestValidator {
 
   private UserRequestValidator() {}
 
-  public static Optional<ProblemDetail> validateCreateRequest(final UserRequest request) {
+  public static Optional<ProblemDetail> validateCreateRequest(
+      final UserRequest request, final Pattern identifierPattern) {
     return validate(
         violations -> {
-          validateUsername(request, violations);
+          validateUsername(request, violations, identifierPattern);
           if (request.getPassword() == null || request.getPassword().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("password"));
           }
@@ -39,9 +40,10 @@ public final class UserRequestValidator {
     return validate(violations -> violations.addAll(validateUserEmail(request.getEmail())));
   }
 
-  private static void validateUsername(final UserRequest request, final List<String> violations) {
+  private static void validateUsername(
+      final UserRequest request, final List<String> violations, final Pattern identifierPattern) {
     final var username = request.getUsername();
-    IdentifierValidator.validateId(username, "username", violations, ID_PATTERN);
+    IdentifierValidator.validateId(username, "username", violations, identifierPattern);
   }
 
   private static List<String> validateUserEmail(final String email) {

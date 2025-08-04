@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.service.exception.ErrorMapper;
@@ -22,12 +23,12 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,9 +44,12 @@ import org.springframework.test.json.JsonCompareMode;
 public class UserControllerTest extends RestControllerTest {
 
   private static final String USER_BASE_URL = "/v2/users";
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
 
   @MockitoBean private UserServices userServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private InitializationConfiguration initializationConfiguration;
 
   @BeforeEach
   void setup() {
@@ -53,10 +57,20 @@ public class UserControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(userServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userServices);
+    when(initializationConfiguration.getIdentifierPattern()).thenReturn(ID_PATTERN);
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"foo", "Foo", "foo@bar.baz", "f_oo@bar.baz", "foo123", "foo-"})
+  @ValueSource(
+      strings = {
+        "foo",
+        "Foo",
+        "foo@bar.baz",
+        "f_oo@bar.baz",
+        "foo123",
+        "foo-",
+        "foo+camunda-platform@bar.baz"
+      })
   void createUserShouldReturnCreated(final String username) {
     // given
     final var dto = validCreateUserRequest(username);
@@ -286,8 +300,8 @@ public class UserControllerTest extends RestControllerTest {
   @ValueSource(
       strings = {
         "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-        "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
-        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+        "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<",
+        "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
       })
   void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
     // given
@@ -304,7 +318,7 @@ public class UserControllerTest extends RestControllerTest {
               "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-            .formatted(IdentifierPatterns.ID_PATTERN, USER_BASE_URL));
+            .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, USER_BASE_URL));
     verifyNoInteractions(userServices);
   }
 
