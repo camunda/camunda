@@ -98,7 +98,6 @@ const TaskDetails: React.FC = observer(() => {
 
   async function handleSubmissionFailure(error: unknown) {
     const {data: parsedError, success} = requestErrorSchema.safeParse(error);
-
     if (success && parsedError.variant === 'failed-response') {
       notificationsStore.displayNotification({
         kind: 'error',
@@ -109,18 +108,13 @@ const TaskDetails: React.FC = observer(() => {
         ),
         isDismissable: true,
       });
-      if (parsedError?.response?.statusText.toLowerCase().includes('timeout')) {
-        navigate({
-          pathname: pages.initial,
-          search: location.search,
-        });
-      }
       return;
     }
 
     notificationsStore.displayNotification({
       kind: 'error',
       title: t('taskCouldNotBeCompletedNotification'),
+      subtitle: error instanceof Error ? error.message : undefined,
       isDismissable: true,
     });
   }
