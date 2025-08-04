@@ -261,6 +261,13 @@ public class BatchOperationExecutionSchedulerTest {
     assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(3);
 
     verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.FINISH_INITIALIZATION),
+            any(BatchOperationInitializationRecord.class),
+            any());
+
+    verify(taskResultBuilder)
         .appendCommandRecord(anyLong(), eq(BatchOperationExecutionIntent.EXECUTE), any(), any());
 
     verify(metrics).recordItemsPerPartition(3, CANCEL_PROCESS_INSTANCE);
@@ -283,6 +290,13 @@ public class BatchOperationExecutionSchedulerTest {
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
     assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(3);
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.FINISH_INITIALIZATION),
+            any(BatchOperationInitializationRecord.class),
+            any());
 
     verify(taskResultBuilder)
         .appendCommandRecord(anyLong(), eq(BatchOperationExecutionIntent.EXECUTE), any(), any());
@@ -308,6 +322,13 @@ public class BatchOperationExecutionSchedulerTest {
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
     assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(3);
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.FINISH_INITIALIZATION),
+            any(BatchOperationInitializationRecord.class),
+            any());
   }
 
   @Test
@@ -334,6 +355,13 @@ public class BatchOperationExecutionSchedulerTest {
     assertThat(extractRecordItemKeys(batchOperationChunkRecord.getItems()))
         .containsExactlyInAnyOrder(
             extractQueryItemKeys(queryItems, CHUNK_SIZE, CHUNK_SIZE).toArray(Long[]::new));
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.FINISH_INITIALIZATION),
+            any(BatchOperationInitializationRecord.class),
+            any());
 
     verify(taskResultBuilder)
         .appendCommandRecord(anyLong(), eq(BatchOperationExecutionIntent.EXECUTE), any(), any());
