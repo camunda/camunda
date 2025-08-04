@@ -70,7 +70,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
     throw new UnsupportedOperationException();
   }
 
-  private static class TestBrokerClusterState implements BrokerClusterState {
+  private static final class TestBrokerClusterState implements BrokerClusterState {
 
     private final List<Integer> brokers = new ArrayList<>();
     private final Map<Integer, Integer> partitionLeaders = new HashMap<>();
