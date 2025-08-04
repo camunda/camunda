@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
@@ -40,18 +41,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class MappingRuleController {
   private final MappingRuleServices mappingRuleServices;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final InitializationConfiguration initializationConfiguration;
 
   public MappingRuleController(
       final MappingRuleServices mappingRuleServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final InitializationConfiguration initializationConfiguration) {
     this.mappingRuleServices = mappingRuleServices;
     this.authenticationProvider = authenticationProvider;
+    this.initializationConfiguration = initializationConfiguration;
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> create(
       @RequestBody final MappingRuleCreateRequest mappingRuleRequest) {
-    return RequestMapper.toMappingRuleDTO(mappingRuleRequest)
+    return RequestMapper.toMappingRuleCreateRequest(
+            mappingRuleRequest, initializationConfiguration.getIdentifierPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createMappingRule);
   }
 
@@ -59,7 +64,7 @@ public class MappingRuleController {
   public CompletableFuture<ResponseEntity<Object>> update(
       @PathVariable final String mappingRuleId,
       @RequestBody final MappingRuleUpdateRequest mappingRuleRequest) {
-    return RequestMapper.toMappingRuleDTO(mappingRuleId, mappingRuleRequest)
+    return RequestMapper.toMappingRuleUpdateRequest(mappingRuleId, mappingRuleRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateMappingRule);
   }
 

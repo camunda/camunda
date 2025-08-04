@@ -493,10 +493,10 @@ public class RequestMapper {
                 request.getPassword()));
   }
 
-  public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleDTO(
-      final MappingRuleCreateRequest request) {
+  public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleCreateRequest(
+      final MappingRuleCreateRequest request, final Pattern identifierPattern) {
     return getResult(
-        MappingRuleRequestValidator.validateCreateRequest(request),
+        MappingRuleRequestValidator.validateCreateRequest(request, identifierPattern),
         () ->
             new MappingRuleDTO(
                 request.getClaimName(),
@@ -505,7 +505,7 @@ public class RequestMapper {
                 request.getMappingRuleId()));
   }
 
-  public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleDTO(
+  public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleUpdateRequest(
       final String mappingRuleId, final MappingRuleUpdateRequest request) {
     return getResult(
         MappingRuleRequestValidator.validateUpdateRequest(request),
