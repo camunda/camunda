@@ -10,6 +10,7 @@ package io.camunda.configuration.beanoverrides;
 import io.camunda.configuration.Grpc;
 import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.Ssl;
+import io.camunda.configuration.Filter;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.configuration.beans.LegacyGatewayBasedProperties;
@@ -20,6 +21,9 @@ import io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -57,6 +61,7 @@ public class GatewayBasedPropertiesOverride {
     populateFromCluster(override);
     populateFromGrpc(override);
     populateFromLongPolling(override);
+    populateFromRestFilters(override);
 
     return override;
   }
@@ -103,6 +108,57 @@ public class GatewayBasedPropertiesOverride {
           interceptors.stream().map(Interceptor::toInterceptorCfg).toList();
       override.setInterceptors(interceptorCfgList);
     }
+  }
+
+  private void populateFromRestFilters(final GatewayBasedProperties override) {
+    final List<Filter> filters = unifiedConfiguration.getCamunda().getApi().getRest().getFilters();
+
+    final List<FilterCfg> filterCfgList =
+        filters.isEmpty()
+            ? populateFromLegacyFilters(override.getFilters())
+            : populateFromFilters(filters);
+
+    override.setFilters(filterCfgList);
+  }
+
+  private List<FilterCfg> populateFromFilters(final List<Filter> filters) {
+    return IntStream.range(0, filters.size())
+        .mapToObj(
+            i -> {
+              final Filter filter = filters.get(i);
+              return toFilterCfg(filter, i);
+            })
+        .toList();
+  }
+
+  private FilterCfg toFilterCfg(final Filter filter, final int idx) {
+    final var filterCfg = new FilterCfg();
+    filterCfg.setId(filter.getId(idx));
+    filterCfg.setJarPath(filter.getJarPath(idx));
+    filterCfg.setClassName(filter.getClassName(idx));
+    return filterCfg;
+  }
+
+  private List<FilterCfg> populateFromLegacyFilters(final List<FilterCfg> legacyFilters) {
+    return IntStream.range(0, legacyFilters.size())
+        .mapToObj(
+            i -> {
+              final FilterCfg filterCfg = legacyFilters.get(i);
+              patchFilterCfg(filterCfg, i);
+              return filterCfg;
+            })
+        .toList();
+  }
+
+  private void patchFilterCfg(final FilterCfg filterCfg, final int index) {
+    final var filter = new Filter();
+    filter.setId(filterCfg.getId());
+    filter.setJarPath(filterCfg.getJarPath());
+    filter.setClassName(filterCfg.getClassName());
+
+    filterCfg.setId(filter.getId(index));
+    filterCfg.setJarPath(filter.getJarPath(index));
+    filterCfg.setClassName(filter.getClassName(index));
   }
 
   private void populateFromLongPolling(final GatewayBasedProperties override) {
