@@ -21,8 +21,6 @@ public final class NetworkCfg implements ConfigurationEntry {
   private static final String DEFAULT_HOST = "0.0.0.0";
   private static final String DEFAULT_ADVERTISED_HOST =
       Address.defaultAdvertisedHost().getHostAddress();
-  private static final DataSize DEFAULT_BROKER_SOCKET_SEND_BUFFER = DataSize.ofMegabytes(1);
-  private static final DataSize DEFAULT_BROKER_SOCKET_RECEIVE_BUFFER = DataSize.ofMegabytes(1);
 
   // leave host and advertised host to null, so we can distinguish if they are set explicitly or not
   private String host = null;
@@ -31,8 +29,8 @@ public final class NetworkCfg implements ConfigurationEntry {
   private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
-  private DataSize socketSendBuffer = DEFAULT_BROKER_SOCKET_SEND_BUFFER;
-  private DataSize socketReceiveBuffer = DEFAULT_BROKER_SOCKET_RECEIVE_BUFFER;
+  private DataSize socketSendBuffer = null;
+  private DataSize socketReceiveBuffer = null;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();

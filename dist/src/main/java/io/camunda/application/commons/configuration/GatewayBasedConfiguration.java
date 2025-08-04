@@ -162,9 +162,13 @@ public final class GatewayBasedConfiguration {
         new MessagingConfig()
             .setCompressionAlgorithm(cluster.getMessageCompression())
             .setInterfaces(Collections.singletonList(cluster.getHost()))
-            .setPort(cluster.getPort())
-            .setSocketSendBuffer((int) cluster.getSocketSendBuffer().toBytes())
-            .setSocketReceiveBuffer((int) cluster.getSocketReceiveBuffer().toBytes());
+            .setPort(cluster.getPort());
+    if (cluster.getSocketSendBuffer() != null) {
+      messaging.setSocketSendBuffer((int) cluster.getSocketSendBuffer().toBytes());
+    }
+    if (cluster.getSocketReceiveBuffer() != null) {
+      messaging.setSocketReceiveBuffer((int) cluster.getSocketReceiveBuffer().toBytes());
+    }
 
     final var security = cluster.getSecurity();
     if (security.isEnabled()) {
