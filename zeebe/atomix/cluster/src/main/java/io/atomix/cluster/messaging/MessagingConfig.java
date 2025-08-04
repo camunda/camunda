@@ -24,6 +24,7 @@ import java.util.List;
 
 /** Messaging configuration. */
 public class MessagingConfig implements Config {
+  public static final int AUTO_SOCKET_SIZE = -11;
   private final int connectionPoolSize = 8;
   private List<String> interfaces = new ArrayList<>();
   private Integer port;
@@ -37,8 +38,8 @@ public class MessagingConfig implements Config {
   private String keyStorePassword;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
-  private int socketSendBuffer = -1;
-  private int socketReceiveBuffer = -1;
+  private int socketSendBuffer = AUTO_SOCKET_SIZE;
+  private int socketReceiveBuffer = AUTO_SOCKET_SIZE;
 
   /**
    * Returns the local interfaces to which to bind the node.

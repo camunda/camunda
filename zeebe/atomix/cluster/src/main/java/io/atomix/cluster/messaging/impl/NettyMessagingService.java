@@ -737,10 +737,10 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.option(
         ChannelOption.WRITE_BUFFER_WATER_MARK,
         new WriteBufferWaterMark(10 * 32 * 1024, 10 * 64 * 1024));
-    if (config.getSocketReceiveBuffer() > 0) {
+    if (config.getSocketReceiveBuffer() != MessagingConfig.AUTO_SOCKET_SIZE) {
       bootstrap.option(ChannelOption.SO_RCVBUF, config.getSocketReceiveBuffer());
     }
-    if (config.getSocketSendBuffer() > 0) {
+    if (config.getSocketSendBuffer() != MessagingConfig.AUTO_SOCKET_SIZE) {
       bootstrap.option(ChannelOption.SO_SNDBUF, config.getSocketSendBuffer());
     }
     bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
@@ -799,10 +799,10 @@ public final class NettyMessagingService implements ManagedMessagingService {
     b.option(ChannelOption.SO_BACKLOG, 128);
     b.childOption(
         ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024, 32 * 1024));
-    if (config.getSocketReceiveBuffer() > 0) {
+    if (config.getSocketReceiveBuffer() != MessagingConfig.AUTO_SOCKET_SIZE) {
       b.option(ChannelOption.SO_RCVBUF, config.getSocketReceiveBuffer());
     }
-    if (config.getSocketSendBuffer() > 0) {
+    if (config.getSocketSendBuffer() != MessagingConfig.AUTO_SOCKET_SIZE) {
       b.option(ChannelOption.SO_SNDBUF, config.getSocketSendBuffer());
     }
     b.childOption(ChannelOption.SO_KEEPALIVE, true);
