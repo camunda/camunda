@@ -310,17 +310,15 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldCreateIncidentOnJobFail() {
     // given
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
-        process(
-            adHocSubProcess -> {
-              adHocSubProcess.task("A1");
-            });
+        process(jobType, adHocSubProcess -> adHocSubProcess.task("A1"));
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     final var jobKey =
-        ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys().getFirst();
+        ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
     ENGINE
         .job()
         .withKey(jobKey)
@@ -343,7 +341,7 @@ public class JobBasedAdHocSubProcessTest {
                 .withElementId(AHSP_ELEMENT_ID)
                 .getFirst()
                 .getValue())
-        .hasType(JOB_TYPE)
+        .hasType(jobType)
         .hasElementInstanceKey(adHocSubProcess.getKey())
         .hasElementId(adHocSubProcess.getValue().getElementId())
         .hasProcessDefinitionKey(adHocSubProcess.getValue().getProcessDefinitionKey())
@@ -463,11 +461,7 @@ public class JobBasedAdHocSubProcessTest {
     // given
     final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
-        process(
-            jobType,
-            adHocSubProcess -> {
-              adHocSubProcess.task("A");
-            });
+        process(jobType, adHocSubProcess -> adHocSubProcess.task("A"));
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
