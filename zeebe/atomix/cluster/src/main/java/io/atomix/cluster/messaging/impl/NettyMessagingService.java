@@ -177,7 +177,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     this.protocolVersion = protocolVersion;
     this.config = verifyHeartbeatConfig(config);
     // pool of client connections
-    channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
+    channelPool = new ChannelPool(this::openChannel);
     this.actorSchedulerName = actorSchedulerName;
     messagingMetrics = new MessagingMetricsImpl(registry);
     this.registry = registry;
