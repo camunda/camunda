@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
@@ -16,15 +15,17 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.springframework.http.ProblemDetail;
 
 public final class RoleRequestValidator {
   private RoleRequestValidator() {}
 
-  public static Optional<ProblemDetail> validateCreateRequest(final RoleCreateRequest request) {
+  public static Optional<ProblemDetail> validateCreateRequest(
+      final RoleCreateRequest request, final Pattern identifierPattern) {
     return validate(
         violations -> {
-          validateRoleId(request.getRoleId(), violations);
+          validateRoleId(request.getRoleId(), violations, identifierPattern);
           validateRoleName(request.getName(), violations);
         });
   }
@@ -38,11 +39,14 @@ public final class RoleRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateMemberRequest(
-      final String roleId, final String memberId, final EntityType memberType) {
+      final String roleId,
+      final String memberId,
+      final EntityType memberType,
+      final Pattern identifierPattern) {
     return validate(
         violations -> {
-          validateRoleId(roleId, violations);
-          validateMemberId(memberId, memberType, violations);
+          validateRoleId(roleId, violations, identifierPattern);
+          validateMemberId(memberId, memberType, violations, identifierPattern);
         });
   }
 
@@ -53,28 +57,35 @@ public final class RoleRequestValidator {
   }
 
   private static void validateId(
-      final String id, final String propertyName, final List<String> violations) {
-    IdentifierValidator.validateId(id, propertyName, violations, ID_PATTERN);
+      final String id,
+      final String propertyName,
+      final List<String> violations,
+      final Pattern identifierPattern) {
+    IdentifierValidator.validateId(id, propertyName, violations, identifierPattern);
   }
 
-  private static void validateRoleId(final String id, final List<String> violations) {
-    validateId(id, "roleId", violations);
+  private static void validateRoleId(
+      final String id, final List<String> violations, final Pattern identifierPattern) {
+    validateId(id, "roleId", violations, identifierPattern);
   }
 
   private static void validateMemberId(
-      final String entityId, final EntityType entityType, final List<String> violations) {
+      final String entityId,
+      final EntityType entityType,
+      final List<String> violations,
+      final Pattern identifierPattern) {
     switch (entityType) {
       case USER:
-        validateId(entityId, "username", violations);
+        validateId(entityId, "username", violations, identifierPattern);
         break;
       case GROUP:
-        validateId(entityId, "groupId", violations);
+        validateId(entityId, "groupId", violations, identifierPattern);
         break;
       case MAPPING_RULE:
-        validateId(entityId, "mappingRuleId", violations);
+        validateId(entityId, "mappingRuleId", violations, identifierPattern);
         break;
       default:
-        validateId(entityId, "entityId", violations);
+        validateId(entityId, "entityId", violations, identifierPattern);
     }
   }
 

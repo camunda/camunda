@@ -142,6 +142,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
@@ -317,9 +318,9 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
-      final RoleCreateRequest roleCreateRequest) {
+      final RoleCreateRequest roleCreateRequest, final Pattern identifierPattern) {
     return getResult(
-        RoleRequestValidator.validateCreateRequest(roleCreateRequest),
+        RoleRequestValidator.validateCreateRequest(roleCreateRequest, identifierPattern),
         () ->
             new CreateRoleRequest(
                 roleCreateRequest.getRoleId(),
@@ -328,9 +329,12 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(
-      final String roleId, final String memberId, final EntityType entityType) {
+      final String roleId,
+      final String memberId,
+      final EntityType entityType,
+      final Pattern identifierPattern) {
     return getResult(
-        RoleRequestValidator.validateMemberRequest(roleId, memberId, entityType),
+        RoleRequestValidator.validateMemberRequest(roleId, memberId, entityType, identifierPattern),
         () -> new RoleMemberRequest(roleId, memberId, entityType));
   }
 
