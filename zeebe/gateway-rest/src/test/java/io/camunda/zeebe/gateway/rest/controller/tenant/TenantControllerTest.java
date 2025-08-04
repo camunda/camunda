@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -29,7 +30,6 @@ import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
-import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -224,7 +224,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, TENANT_BASE_URL),
+                  .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, TENANT_BASE_URL),
               JsonCompareMode.STRICT);
 
       // then
@@ -478,7 +478,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, uri),
+                  .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -515,7 +515,7 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, IdentifierPatterns.ID_PATTERN, uri),
+                  .formatted(entityIdName, InitializationConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -577,7 +577,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, uri),
+                  .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -615,7 +615,7 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, IdentifierPatterns.ID_PATTERN, uri),
+                  .formatted(entityIdName, InitializationConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
