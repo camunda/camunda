@@ -22,9 +22,10 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
-import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -142,35 +143,91 @@ public class ExportingControlServiceTest {
       final int partitionCount,
       final int replicationFactor,
       final Map<Integer, List<Integer>> topology) {
-    final var state = new BrokerClusterStateImpl();
-    final var brokers =
-        topology.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
-
-    state.setClusterSize(clusterSize);
-    state.setPartitionsCount(partitionCount);
-    state.setReplicationFactor(replicationFactor);
-
-    brokers.forEach(state::addBrokerIfAbsent);
-    topology.keySet().forEach(state::addPartitionIfAbsent);
-
-    for (final var entry : topology.entrySet()) {
-      final var partition = entry.getKey();
-      final var members = entry.getValue();
-
-      if (brokers.size() != 0) {
-        Optional.ofNullable(members.get(0))
-            .ifPresent(leader -> state.setPartitionLeader(partition, leader, 10));
-        members.stream()
-            .skip(1)
-            .forEach(follower -> state.addPartitionFollower(partition, follower));
+    return new BrokerClusterState() {
+      @Override
+      public boolean isInitialized() {
+        return true;
       }
 
-      brokers.stream()
-          .filter(broker -> !members.contains(broker))
-          .forEach(inactive -> state.addPartitionInactive(partition, inactive));
-    }
+      @Override
+      public int getClusterSize() {
+        return clusterSize;
+      }
 
-    return state;
+      @Override
+      public int getPartitionsCount() {
+        return partitionCount;
+      }
+
+      @Override
+      public int getReplicationFactor() {
+        return replicationFactor;
+      }
+
+      @Override
+      public int getLeaderForPartition(final int partition) {
+        return Optional.ofNullable(topology.get(partition))
+            .filter(brokers -> !brokers.isEmpty())
+            .map(List::getFirst)
+            .orElse(NODE_ID_NULL);
+      }
+
+      @Override
+      public Set<Integer> getFollowersForPartition(final int partition) {
+        return topology.getOrDefault(partition, List.of()).stream()
+            .skip(1)
+            .collect(Collectors.toSet());
+      }
+
+      @Override
+      public Set<Integer> getInactiveNodesForPartition(final int partition) {
+        final var members = topology.getOrDefault(partition, List.of());
+
+        return getBrokers().stream()
+            .filter(broker -> !members.contains(broker))
+            .collect(Collectors.toSet());
+      }
+
+      @Override
+      public int getRandomBroker() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public List<Integer> getPartitions() {
+        return new ArrayList<>(topology.keySet());
+      }
+
+      @Override
+      public List<Integer> getBrokers() {
+        return topology.values().stream().flatMap(Collection::stream).toList();
+      }
+
+      @Override
+      public String getBrokerAddress(final int brokerId) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int getPartition(final int index) {
+        return topology.keySet().stream().toList().get(index);
+      }
+
+      @Override
+      public String getBrokerVersion(final int brokerId) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public long getLastCompletedChangeId() {
+        return 0;
+      }
+    };
   }
 
   private static BrokerClusterState ofTopology(final Map<Integer, List<Integer>> topology) {

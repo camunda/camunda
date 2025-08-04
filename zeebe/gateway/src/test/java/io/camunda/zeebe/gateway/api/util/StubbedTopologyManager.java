@@ -12,12 +12,12 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 
 public final class StubbedTopologyManager implements BrokerTopologyManager {
 
-  private final BrokerClusterStateImpl clusterState;
+  private final TestBrokerClusterState clusterState;
   private final ClusterConfiguration clusterConfiguration;
 
   StubbedTopologyManager() {
@@ -26,15 +26,12 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
 
   StubbedTopologyManager(final int partitionsCount) {
     clusterConfiguration = ClusterConfiguration.uninitialized();
-    clusterState = new BrokerClusterStateImpl();
-    clusterState.setClusterSize(1);
-    clusterState.addBrokerIfAbsent(0);
-    clusterState.setBrokerAddressIfPresent(0, "localhost:26501");
+    clusterState = new TestBrokerClusterState(partitionsCount);
+    clusterState.addBroker(0, "localhost:26501");
     for (int partitionOffset = 0; partitionOffset < partitionsCount; partitionOffset++) {
       clusterState.setPartitionLeader(START_PARTITION_ID + partitionOffset, 0, 1);
-      clusterState.addPartitionIfAbsent(START_PARTITION_ID + partitionOffset);
+      clusterState.addPartition(START_PARTITION_ID + partitionOffset);
     }
-    clusterState.setPartitionsCount(partitionsCount);
   }
 
   @Override
@@ -60,5 +57,14 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   @Override
   public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
     throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  public void setPartitionHealthStatus(
+      final int nodeId, final int partitionId, final PartitionHealthStatus partitionHealthStatus) {
+    clusterState.setPartitionHealthStatus(nodeId, partitionId, partitionHealthStatus);
+  }
+
+  public void addPartitionInactive(final int partitionId, final int nodeId) {
+    clusterState.addPartitionInactive(partitionId, nodeId);
   }
 }
