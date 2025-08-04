@@ -85,7 +85,9 @@ const Variables: React.FC<Props> = ({
   const [submissionState, setSubmissionState] =
     useState<NonNullable<InlineLoadingProps['status']>>('inactive');
   const canCompleteTask =
-    user.userId === assignee && taskState === 'CREATED' && status === 'success';
+    user.username === assignee &&
+    taskState === 'CREATED' &&
+    status === 'success';
   const hasEmptyNewVariable = (values: FormValues | undefined) =>
     values?.newVariables?.some((variable) => variable === undefined);
   const variables = data ?? [];

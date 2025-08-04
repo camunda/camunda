@@ -70,15 +70,15 @@ const api = {
     });
   },
   searchProcessInstances: (payload: {
-    userId: string;
+    username: string;
     pageSize: number;
     searchAfter?: [string, string];
     searchBefore?: [string, string];
   }) => {
-    const {userId, ...body} = payload;
+    const {username, ...body} = payload;
 
     return new Request(
-      getFullURL(`/internal/users/${userId}/process-instances`),
+      getFullURL(`/internal/users/${username}/process-instances`),
       {
         ...BASE_REQUEST_OPTIONS,
         method: 'POST',

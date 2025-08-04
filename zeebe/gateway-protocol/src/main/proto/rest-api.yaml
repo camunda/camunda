@@ -7652,11 +7652,14 @@ components:
     CamundaUserResult:
       type: object
       properties:
-        userId:
-          description: The ID of the user.
-          type: string
+        username:
+          description: The username of the user.
+          type: "string"
         displayName:
           description: The display name of the user.
+          type: string
+        email:
+          description: The email of the user.
           type: string
         authorizedApplications:
           description: The applications the user is authorized to use.
@@ -7667,14 +7670,7 @@ components:
           description: The tenants the user is a member of.
           type: array
           items:
-            type: object
-            properties:
-              tenantId:
-                type: string
-                description: The ID of the tenant.
-              name:
-                type: string
-                description: The name of the tenant.
+            $ref: "#/components/schemas/TenantResult"
         groups:
           description: The groups assigned to the user.
           type: array
@@ -7690,16 +7686,9 @@ components:
           type: string
         c8Links:
           description: The links to the components in the C8 stack.
-          type: array
-          items:
-            type: object
-            properties:
-              name:
-                type: string
-                description: The name of the component.
-              link:
-                type: string
-                description: A link to the component.
+          type: object
+          additionalProperties:
+            type: string
         canLogout:
           description: Flag for understanding if the user is able to perform logout.
           type: boolean

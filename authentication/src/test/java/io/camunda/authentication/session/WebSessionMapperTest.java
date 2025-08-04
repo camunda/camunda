@@ -44,7 +44,6 @@ public class WebSessionMapperTest {
             CamundaUserBuilder.aCamundaUser()
                 .withUsername("test")
                 .withPassword("admin")
-                .withUserKey(1L)
                 .withRoles(List.of("testRole"))
                 .build(),
             null);
@@ -136,7 +135,6 @@ public class WebSessionMapperTest {
             CamundaUserBuilder.aCamundaUser()
                 .withUsername("test")
                 .withPassword("admin")
-                .withUserKey(1L)
                 .withRoles(List.of("testRole"))
                 .build(),
             null);

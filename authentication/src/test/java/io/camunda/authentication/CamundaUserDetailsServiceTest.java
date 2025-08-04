@@ -89,7 +89,6 @@ public class CamundaUserDetailsServiceTest {
 
     // then
     assertThat(user).isInstanceOf(CamundaUser.class);
-    assertThat(user.getUserKey()).isEqualTo(100L);
     assertThat(user.getName()).isEqualTo("Foo Bar");
     assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
     assertThat(user.getPassword()).isEqualTo("password1");

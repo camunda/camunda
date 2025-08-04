@@ -19,7 +19,6 @@ import org.springframework.security.core.userdetails.User;
 
 public final class CamundaUser extends User implements CamundaPrincipal {
 
-  private final Long userKey;
   private final String displayName;
   private final String salesPlanType;
   private final Map<ClusterMetadata.AppName, String> c8Links;
@@ -28,7 +27,6 @@ public final class CamundaUser extends User implements CamundaPrincipal {
   private final AuthenticationContext authentication;
 
   private CamundaUser(
-      final Long userKey,
       final String displayName,
       final String username,
       final String password,
@@ -39,7 +37,6 @@ public final class CamundaUser extends User implements CamundaPrincipal {
       final Map<ClusterMetadata.AppName, String> c8Links,
       final boolean canLogout) {
     super(username, password, authorities);
-    this.userKey = userKey;
     this.displayName = displayName;
     this.salesPlanType = salesPlanType;
     this.authentication = authentication;
@@ -48,16 +45,8 @@ public final class CamundaUser extends User implements CamundaPrincipal {
     this.email = email;
   }
 
-  public Long getUserKey() {
-    return userKey;
-  }
-
   public String getName() {
     return displayName;
-  }
-
-  public String getUserId() {
-    return getUsername();
   }
 
   public String getSalesPlanType() {
@@ -93,7 +82,6 @@ public final class CamundaUser extends User implements CamundaPrincipal {
   }
 
   public static final class CamundaUserBuilder {
-    private Long userKey;
     private String name;
     private String username;
     private String password;
@@ -110,11 +98,6 @@ public final class CamundaUser extends User implements CamundaPrincipal {
 
     public static CamundaUserBuilder aCamundaUser() {
       return new CamundaUserBuilder();
-    }
-
-    public CamundaUserBuilder withUserKey(final Long userKey) {
-      this.userKey = userKey;
-      return this;
     }
 
     public CamundaUserBuilder withName(final String name) {
@@ -174,7 +157,6 @@ public final class CamundaUser extends User implements CamundaPrincipal {
 
     public CamundaUser build() {
       return new CamundaUser(
-          userKey,
           name,
           username,
           password,
