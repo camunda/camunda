@@ -46,6 +46,8 @@ public class DecisionRequirementsDbReader extends AbstractEntityReader<DecisionR
         DecisionRequirementsDbQuery.of(
             b ->
                 b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
                     .page(convertPaging(dbSort, query.page()))
                     .resultConfig(query.resultConfig()));

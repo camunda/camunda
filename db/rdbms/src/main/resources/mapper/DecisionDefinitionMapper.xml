@@ -13,7 +13,9 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}DECISION_DEFINITION
-    <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
+    </where>
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery"
@@ -27,7 +29,21 @@
     DECISION_REQUIREMENTS_KEY,
     DECISION_REQUIREMENTS_ID
     FROM ${prefix}DECISION_DEFINITION
-    <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND DECISION_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+    </where>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -35,7 +51,7 @@
   </select>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
+    1 = 1
     <!-- basic filters -->
     <if test="filter.decisionDefinitionKeys != null and !filter.decisionDefinitionKeys.isEmpty()">
       AND DECISION_DEFINITION_KEY IN

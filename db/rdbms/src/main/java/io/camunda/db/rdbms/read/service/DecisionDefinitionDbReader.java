@@ -44,7 +44,12 @@ public class DecisionDefinitionDbReader extends AbstractEntityReader<DecisionDef
         convertSort(query.sort(), DecisionDefinitionSearchColumn.DECISION_DEFINITION_KEY);
     final var dbQuery =
         DecisionDefinitionDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for decision definition with filter {}", dbQuery);
     final var totalHits = decisionDefinitionMapper.count(dbQuery);
