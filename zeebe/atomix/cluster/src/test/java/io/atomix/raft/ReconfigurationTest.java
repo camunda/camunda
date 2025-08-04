@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,6 +47,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -79,13 +81,27 @@ final class ReconfigurationTest {
     Awaitility.await("There is no leader").until(() -> getLeader(servers), Optional::isEmpty);
   }
 
+  private static void awaitLeaderIsIn(
+      final Collection<RaftServer> allServers, final RaftServer... servers) {
+    final var serversSet = Arrays.stream(servers).map(RaftServer::name).collect(Collectors.toSet());
+
+    final var deadline = System.currentTimeMillis() + Duration.ofSeconds(30).toMillis();
+    while (getLeaderServer(allServers).map(l -> !serversSet.contains(l.name())).orElse(true)
+        && System.currentTimeMillis() < deadline) {
+      getLeaderServer(allServers).ifPresent(s -> s.stepDown().join());
+      awaitLeader(allServers.toArray(RaftServer[]::new));
+    }
+  }
+
+  private static Optional<RaftServer> getLeaderServer(final Collection<RaftServer> servers) {
+    return servers.stream().filter(RaftServer::isLeader).findAny();
+  }
+
   private static Optional<LeaderRole> getLeader(final RaftServer... servers) {
-    return Arrays.stream(servers)
-        .filter(RaftServer::isLeader)
+    return getLeaderServer(Arrays.stream(servers).toList())
         .map(RaftServer::getContext)
         .map(RaftContext::getRaftRole)
-        .map(LeaderRole.class::cast)
-        .findAny();
+        .map(LeaderRole.class::cast);
   }
 
   private static Optional<RaftServer> getFollower(final RaftServer... servers) {
@@ -342,6 +358,7 @@ final class ReconfigurationTest {
       final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
       final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
       final var m5 = createServer(tmp, createMembershipService(id5, id1, id2, id3));
+      final var allServers = List.of(m1, m2, m3, m4, m5);
 
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
@@ -350,7 +367,10 @@ final class ReconfigurationTest {
       m4.join(id1, id2, id3).join();
       m5.join(id1, id2, id3).join();
 
+      // in case the leader was server 2 or 3, then there is no election.
+      // in that case we force the current leader to step down so a new election must take place.
       // when - no quorum possible because three out of five members are down
+      awaitLeaderIsIn(allServers, m1, m4, m5);
       m1.shutdown().join();
       m4.shutdown().join();
       m5.shutdown().join();
