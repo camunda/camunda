@@ -16,6 +16,7 @@ import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,9 +52,25 @@ public class BatchOperationDbReader extends AbstractEntityReader<BatchOperationE
   public SearchQueryResult<BatchOperationEntity> search(
       final BatchOperationQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), BatchOperationSearchColumn.BATCH_OPERATION_KEY);
+
+    if (resourceAccessChecks.authorizationCheck().enabled()
+        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty()) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
+    if (resourceAccessChecks.tenantCheck().enabled()
+        && resourceAccessChecks.getAuthorizedTenantIds().isEmpty()) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         BatchOperationDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for batch operations with filter {}", dbQuery);
     final var totalHits = batchOperationMapper.count(dbQuery);

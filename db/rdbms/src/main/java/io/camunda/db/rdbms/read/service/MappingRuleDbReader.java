@@ -47,6 +47,14 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
     }
 
     final var dbSort = convertSort(query.sort(), MappingRuleSearchColumn.MAPPING_RULE_ID);
+
+    // If the authorization check is enabled and no resource IDs are authorized, return an empty
+    // result
+    if ((resourceAccessChecks.authorizationCheck().enabled()
+        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty())) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         MappingRuleDbQuery.of(
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
