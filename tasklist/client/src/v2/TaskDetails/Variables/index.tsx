@@ -36,7 +36,6 @@ import styles from 'common/tasks/variables-editor/styles.module.scss';
 import cn from 'classnames';
 import {useFetchFullVariable} from 'v2/api/useFetchFullVariable.mutation';
 import {tryParseJSON} from 'v2/features/tasks/details/tryParseJSON';
-import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';
 
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([

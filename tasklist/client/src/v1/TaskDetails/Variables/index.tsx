@@ -36,7 +36,6 @@ import type {FormValues} from 'common/tasks/variables-editor/types';
 import styles from 'common/tasks/variables-editor/styles.module.scss';
 import cn from 'classnames';
 import {completionErrorMap} from 'v1/api/useCompleteTask.mutation';
-import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';
 
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([

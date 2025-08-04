@@ -21,7 +21,6 @@ import {
   TaskDetailsContainer,
   TaskDetailsRow,
 } from 'common/tasks/details/TaskDetailsLayout';
-import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';
 import {useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {match, Pattern} from 'ts-pattern';
