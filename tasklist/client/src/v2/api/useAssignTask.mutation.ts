@@ -56,6 +56,7 @@ function useAssignTask() {
             const currentTask = client.getQueryData(
               getUseTaskQueryKey(params.userTaskKey),
             ) as UserTask;
+
             if (currentTask) {
               client.setQueryData(getUseTaskQueryKey(params.userTaskKey), {
                 ...currentTask,
@@ -72,6 +73,7 @@ function useAssignTask() {
             });
 
             const task = await refetchTask(params.userTaskKey);
+
             return task;
           }
         }

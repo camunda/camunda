@@ -7,14 +7,17 @@
  */
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {useTranslation} from 'react-i18next';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {request, requestErrorSchema} from 'common/api/request';
+import {notificationsStore} from 'common/notifications/notifications.store';
 import {api} from 'v2/api';
-import {request} from 'common/api/request';
 import {getUseTaskQueryKey} from './useTask.query';
 import {USE_TASKS_QUERY_KEY} from './useTasks.query';
-import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 function useCompleteTask() {
   const client = useQueryClient();
+  const {t} = useTranslation();
 
   function refetchTask(userTaskKey: string) {
     return client.fetchQuery({
@@ -40,18 +43,47 @@ function useCompleteTask() {
   }
 
   return useMutation({
-    mutationFn: async (payload: Parameters<typeof api.completeTask>[0]) => {
-      const {error} = await request(api.completeTask(payload));
+    mutationFn: async (params: Parameters<typeof api.completeTask>[0]) => {
+      const {error} = await request(api.completeTask(params));
 
       if (error !== null) {
-        const task = await refetchTask(payload.userTaskKey);
+        const {data: parsedError, success} =
+          requestErrorSchema.safeParse(error);
 
-        return task;
+        if (success && parsedError.variant === 'failed-response') {
+          const errorData = await parsedError.response.json();
+
+          if (errorData.title === 'DEADLINE_EXCEEDED') {
+            const currentTask = client.getQueryData(
+              getUseTaskQueryKey(params.userTaskKey),
+            ) as UserTask;
+
+            if (currentTask) {
+              client.setQueryData(getUseTaskQueryKey(params.userTaskKey), {
+                ...currentTask,
+                state: 'COMPLETING' as const,
+              });
+            }
+
+            notificationsStore.displayNotification({
+              kind: 'info',
+              title: t('taskDetailsAssignmentDelayInfoTitle'),
+              subtitle: t('taskDetailsAssignmentDelayInfoSubtitle'),
+              isDismissable: true,
+            });
+
+            const task = await refetchTask(params.userTaskKey);
+
+            return task;
+          }
+        }
+
+        throw error;
       }
 
       client.invalidateQueries({queryKey: [USE_TASKS_QUERY_KEY]});
 
-      const task = await refetchTask(payload.userTaskKey);
+      const task = await refetchTask(params.userTaskKey);
 
       return task;
     },
