@@ -339,9 +339,9 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, GroupDTO> toGroupCreateRequest(
-      final GroupCreateRequest groupCreateRequest) {
+      final GroupCreateRequest groupCreateRequest, final Pattern identifierPattern) {
     return getResult(
-        GroupRequestValidator.validateCreateRequest(groupCreateRequest),
+        GroupRequestValidator.validateCreateRequest(groupCreateRequest, identifierPattern),
         () ->
             new GroupDTO(
                 groupCreateRequest.getGroupId(),
@@ -350,18 +350,24 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
-      final GroupUpdateRequest groupUpdateRequest, final String groupId) {
+      final GroupUpdateRequest groupUpdateRequest,
+      final String groupId,
+      final Pattern identifierPattern) {
     return getResult(
-        GroupRequestValidator.validateUpdateRequest(groupId, groupUpdateRequest),
+        GroupRequestValidator.validateUpdateRequest(groupId, groupUpdateRequest, identifierPattern),
         () ->
             new GroupDTO(
                 groupId, groupUpdateRequest.getName(), groupUpdateRequest.getDescription()));
   }
 
   public static Either<ProblemDetail, GroupMemberDTO> toGroupMemberRequest(
-      final String groupId, final String memberId, final EntityType entityType) {
+      final String groupId,
+      final String memberId,
+      final EntityType entityType,
+      final Pattern identifierPattern) {
     return getResult(
-        GroupRequestValidator.validateMemberRequest(groupId, memberId, entityType),
+        GroupRequestValidator.validateMemberRequest(
+            groupId, memberId, entityType, identifierPattern),
         () -> new GroupMemberDTO(groupId, memberId, entityType));
   }
 
