@@ -138,6 +138,13 @@ camunda:
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record
   security:
+    # Configures authenticated access in the cluster. We support 3 different authentication modes:
+    # - No authentication:
+    #     No authentication is required for API access. Form-based authentication in the UI. Users and groups are managed in Identity.
+    # - Basic Authentication:
+    #     Basic authentication for API access. Form-based authentication in the UI. Users and groups are managed in Identity.
+    # - OIDC:
+    #     OpenID Connect with any compatible Identity Provider (for example, Keycloak, Microsoft EntraID, Okta).
     authentication:
       # Controls which authentication mode is active, supported modes are 'basic' and 'oidc'.
       # If 'basic' is set, authentication will be done using basic authentication. Users need to be created.
