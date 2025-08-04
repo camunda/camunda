@@ -99,15 +99,6 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_LONGPOLLING_ENABLED.
         # enabled: true
 
-      # multiTenancy:
-        # Enables multi tenancy for the gateway.
-        # When enabled, the gateway enhances requests with the authorized tenant ids of the requester.
-        # It also rejects requests that specify a tenant id that the requester is not authorized to access.
-        # When disabled, the gateway enhances requests with the default tenant id '<default>'.
-        #
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED.
-        enabled: false
-
       # interceptors:
         # Configure interceptors below.
         # Please consider reading our documentation on interceptors first.
