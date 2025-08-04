@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -55,22 +56,26 @@ public class RoleController {
   private final RoleServices roleServices;
   private final MappingRuleServices mappingServices;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final InitializationConfiguration initializationConfiguration;
 
   public RoleController(
       final RoleServices roleServices,
       final UserServices userServices,
       final MappingRuleServices mappingServices,
       final GroupServices groupServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final InitializationConfiguration initializationConfiguration) {
     this.roleServices = roleServices;
     this.mappingServices = mappingServices;
     this.authenticationProvider = authenticationProvider;
+    this.initializationConfiguration = initializationConfiguration;
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createRole(
       @RequestBody final RoleCreateRequest createRoleRequest) {
-    return RequestMapper.toRoleCreateRequest(createRoleRequest)
+    return RequestMapper.toRoleCreateRequest(
+            createRoleRequest, initializationConfiguration.getIdentifierPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createRole);
   }
 
@@ -235,21 +240,24 @@ public class RoleController {
   @CamundaPutMapping(path = "/{roleId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToUser(
       @PathVariable final String roleId, @PathVariable final String username) {
-    return RequestMapper.toRoleMemberRequest(roleId, username, EntityType.USER)
+    return RequestMapper.toRoleMemberRequest(
+            roleId, username, EntityType.USER, initializationConfiguration.getIdentifierPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
   @CamundaPutMapping(path = "/{roleId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToClient(
       @PathVariable final String roleId, @PathVariable final String clientId) {
-    return RequestMapper.toRoleMemberRequest(roleId, clientId, EntityType.CLIENT)
+    return RequestMapper.toRoleMemberRequest(
+            roleId, clientId, EntityType.CLIENT, initializationConfiguration.getIdentifierPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
   @CamundaPutMapping(path = "/{roleId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToGroup(
       @PathVariable final String roleId, @PathVariable final String groupId) {
-    return RequestMapper.toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
+    return RequestMapper.toRoleMemberRequest(
+            roleId, groupId, EntityType.GROUP, initializationConfiguration.getIdentifierPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
@@ -265,35 +273,46 @@ public class RoleController {
   @CamundaPutMapping(path = "/{roleId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToMappingRule(
       @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
-    return RequestMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE)
+    return RequestMapper.toRoleMemberRequest(
+            roleId,
+            mappingRuleId,
+            EntityType.MAPPING_RULE,
+            initializationConfiguration.getIdentifierPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromMappingRule(
       @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
-    return RequestMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE)
+    return RequestMapper.toRoleMemberRequest(
+            roleId,
+            mappingRuleId,
+            EntityType.MAPPING_RULE,
+            initializationConfiguration.getIdentifierPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromUser(
       @PathVariable final String roleId, @PathVariable final String username) {
-    return RequestMapper.toRoleMemberRequest(roleId, username, EntityType.USER)
+    return RequestMapper.toRoleMemberRequest(
+            roleId, username, EntityType.USER, initializationConfiguration.getIdentifierPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromClient(
       @PathVariable final String roleId, @PathVariable final String clientId) {
-    return RequestMapper.toRoleMemberRequest(roleId, clientId, EntityType.CLIENT)
+    return RequestMapper.toRoleMemberRequest(
+            roleId, clientId, EntityType.CLIENT, initializationConfiguration.getIdentifierPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromGroup(
       @PathVariable final String roleId, @PathVariable final String groupId) {
-    return RequestMapper.toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
+    return RequestMapper.toRoleMemberRequest(
+            roleId, groupId, EntityType.GROUP, initializationConfiguration.getIdentifierPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
