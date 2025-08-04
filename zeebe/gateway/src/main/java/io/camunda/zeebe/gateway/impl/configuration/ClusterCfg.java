@@ -14,8 +14,6 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_PORT;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
-import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_GATEWAY_SOCKET_RECEIVE_BUFFER;
-import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_GATEWAY_SOCKET_SEND_BUFFER;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
@@ -46,8 +44,8 @@ public final class ClusterCfg {
   private SecurityCfg security = new SecurityCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
   private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
-  private DataSize socketSendBuffer = DEFAULT_GATEWAY_SOCKET_SEND_BUFFER;
-  private DataSize socketReceiveBuffer = DEFAULT_GATEWAY_SOCKET_RECEIVE_BUFFER;
+  private DataSize socketSendBuffer = null;
+  private DataSize socketReceiveBuffer = null;
 
   public String getMemberId() {
     return memberId;

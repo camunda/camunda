@@ -555,7 +555,7 @@ public final class BrokerCfgTest {
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
 
     // then
-    assertThat(cfg.getNetwork().getSocketSendBuffer().toKilobytes()).isEqualTo(1024);
+    assertThat(cfg.getNetwork().getSocketSendBuffer()).isNull();
   }
 
   @Test
@@ -578,7 +578,7 @@ public final class BrokerCfgTest {
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
 
     // then
-    assertThat(cfg.getNetwork().getSocketReceiveBuffer().toKilobytes()).isEqualTo(1024);
+    assertThat(cfg.getNetwork().getSocketReceiveBuffer()).isNull();
   }
 
   @Test

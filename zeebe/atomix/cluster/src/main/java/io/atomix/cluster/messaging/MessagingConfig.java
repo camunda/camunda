@@ -24,7 +24,7 @@ import java.util.List;
 
 /** Messaging configuration. */
 public class MessagingConfig implements Config {
-  private final int connectionPoolSize = 8;
+  public static final int AUTO_SOCKET_SIZE = -11;
   private List<String> interfaces = new ArrayList<>();
   private Integer port;
   private Duration shutdownQuietPeriod = Duration.ofMillis(20);
@@ -35,8 +35,8 @@ public class MessagingConfig implements Config {
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
   private File keyStore;
   private String keyStorePassword;
-  private int socketSendBuffer = 1024 * 1024;
-  private int socketReceiveBuffer = 1024 * 1024;
+  private int socketSendBuffer = AUTO_SOCKET_SIZE;
+  private int socketReceiveBuffer = AUTO_SOCKET_SIZE;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
 
@@ -78,15 +78,6 @@ public class MessagingConfig implements Config {
   public MessagingConfig setPort(final Integer port) {
     this.port = port;
     return this;
-  }
-
-  /**
-   * Returns the connection pool size.
-   *
-   * @return the connection pool size
-   */
-  public int getConnectionPoolSize() {
-    return connectionPoolSize;
   }
 
   /**
@@ -255,7 +246,7 @@ public class MessagingConfig implements Config {
   }
 
   /**
-   * @return the configured size in bytes for SO_SNDBUF
+   * @return the configured size in bytes for SO_SNDBUF or `-1` if not configured.
    */
   public int getSocketSendBuffer() {
     return socketSendBuffer;
@@ -273,7 +264,7 @@ public class MessagingConfig implements Config {
   }
 
   /**
-   * @return the configured size in bytes for SO_RCVBUF
+   * @return the configured size in bytes for SO_RCVBUF or `-1` if not configured.
    */
   public int getSocketReceiveBuffer() {
     return socketReceiveBuffer;
