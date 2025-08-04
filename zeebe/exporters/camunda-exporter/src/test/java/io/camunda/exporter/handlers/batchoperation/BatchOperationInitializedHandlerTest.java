@@ -44,7 +44,7 @@ class BatchOperationInitializedHandlerTest {
   }
 
   @Test
-  void shouldHandleStartedRecord() {
+  void shouldHandleInitializedRecord() {
     // given
     final Record<BatchOperationInitializationRecordValue> record =
         factory.generateRecordWithIntent(

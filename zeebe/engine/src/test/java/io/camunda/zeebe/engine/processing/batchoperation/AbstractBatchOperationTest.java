@@ -168,7 +168,7 @@ abstract class AbstractBatchOperationTest {
         .batchOperation()
         .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
         .withFilter(filterBuffer)
-        .waitForStarted()
+        .waitForInitialized()
         .create(DEFAULT_USER.getUsername())
         .getValue()
         .getBatchOperationKey();

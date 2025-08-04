@@ -24,6 +24,6 @@ public class BatchOperationInitializedApplier
   @Override
   public void applyState(
       final long batchOperationKey, final BatchOperationInitializationRecord value) {
-    batchOperationState.start(batchOperationKey);
+    batchOperationState.transitionToInitialized(batchOperationKey);
   }
 }

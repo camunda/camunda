@@ -175,7 +175,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
 
   public boolean canCancel() {
     return getStatus() == BatchOperationStatus.CREATED
-        || getStatus() == BatchOperationStatus.STARTED
+        || getStatus() == BatchOperationStatus.INITIALIZED
         || getStatus() == BatchOperationStatus.SUSPENDED;
   }
 
@@ -187,7 +187,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
    */
   public boolean canSuspend() {
     return getStatus() == BatchOperationStatus.CREATED
-        || getStatus() == BatchOperationStatus.STARTED;
+        || getStatus() == BatchOperationStatus.INITIALIZED;
   }
 
   /**
@@ -431,7 +431,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
 
   public enum BatchOperationStatus {
     CREATED,
-    STARTED,
+    INITIALIZED,
     SUSPENDED,
     CANCELED,
     FAILED
