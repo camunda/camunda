@@ -13,6 +13,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -24,6 +25,7 @@ import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
@@ -379,14 +381,23 @@ public final class TestHelper {
       final CamundaClient camundaClient, final String batchOperationKey, final int expectedItems) {
     Awaitility.await("should start batch operation with correct total count")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               // and
-              final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
-              assertThat(batch).isNotNull();
-              assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
+              try {
+                final var batch =
+                    camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                assertThat(batch).isNotNull();
+                assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
+              } catch (final ProblemException e) {
+                if (e.code() == 404) {
+                  // In the case where it could not be found in the db, we can ignore it.
+                  // When we start this await, it will always not be there.
+                  return;
+                }
+
+                throw e;
+              }
             });
   }
 
@@ -458,6 +469,21 @@ public final class TestHelper {
               final var result =
                   camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
               assertThat(result.getState()).isEqualTo(ProcessInstanceState.TERMINATED);
+            });
+  }
+
+  public static void waitForProcessInstance(
+      final CamundaClient client,
+      final Consumer<ProcessInstanceFilter> filter,
+      final Consumer<List<ProcessInstance>> asserter) {
+    await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client.newProcessInstanceSearchRequest().filter(filter).send().join().items();
+              asserter.accept(result);
             });
   }
 
