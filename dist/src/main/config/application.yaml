@@ -144,9 +144,11 @@ camunda:
       # See https://docs.camunda.io/docs/next/components/identity/user/ for instructions on how to do this.
       # If 'oidc' is set, authentication will be done using an external IdP.
       # See https://docs.camunda.io/docs/next/self-managed/components/management-identity/what-is-identity/ for instructions on hwo to set this up.
+      # Note! This setting should be combined with the 'camunda.security.unprotectedApi' setting to fully manage authentications.
       # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_AUTHENTICATION_MODE.
       mode: basic
       # Sets the API to protected or unprotected. If the API is unprotected, no authentication is required to access it.
+      # Note! This setting should be combined with the 'camunda.security.mode' setting to fully manage authentications.
       # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI.
       unprotectedApi: false
     authorization:
