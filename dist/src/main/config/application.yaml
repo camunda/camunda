@@ -41,12 +41,6 @@ zeebe:
         # Enables TLS authentication between clients and the gateway
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED.
         enabled: false
-        authentication:
-          # Controls which authentication mode is active, supported modes are 'none' and 'identity'.
-          # If 'identity' is set, authentication will be done using camunda-identity, which needs to
-          # be configured in the corresponding subsection. See also https://docs.camunda.io/docs/self-managed/identity/what-is-identity/ .
-          # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE.
-          mode: none
 
     data:
       # Specify a directory in which data is stored.
@@ -143,3 +137,38 @@ camunda:
       url: http://localhost:9200
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record
+  security:
+    # Configures authenticated access in the cluster. We support 3 different authentication modes:
+    # - No authentication:
+    #     No authentication is required for API access. Form-based authentication in the UI. Users and groups are managed in Identity.
+    # - Basic Authentication:
+    #     Basic authentication for API access. Form-based authentication in the UI. Users and groups are managed in Identity.
+    # - OIDC:
+    #     OpenID Connect with any compatible Identity Provider (for example, Keycloak, Microsoft EntraID, Okta).
+    authentication:
+      # Controls which authentication mode is active, supported modes are 'basic' and 'oidc'.
+      # If 'basic' is set, authentication will be done using basic authentication. Users need to be created.
+      # See https://docs.camunda.io/docs/next/components/identity/user/ for instructions on how to do this.
+      # If 'oidc' is set, authentication will be done using an external IdP.
+      # See https://docs.camunda.io/docs/next/self-managed/components/management-identity/what-is-identity/ for instructions on hwo to set this up.
+      # Note! This setting should be combined with the 'camunda.security.unprotectedApi' setting to fully manage authentications.
+      # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_AUTHENTICATION_MODE.
+      mode: basic
+      # Sets the API to protected or unprotected. If the API is unprotected, no authentication is required to access it.
+      # Note! This setting should be combined with the 'camunda.security.mode' setting to fully manage authentications.
+      # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI.
+      unprotectedApi: false
+    authorization:
+      # Controls whether authorization checks are enabled or not.
+      # See https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/ for more information on how to set up authorizations.
+      # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_AUTHORIZATION_ENABLED.
+      enabled: true
+    multiTenancy:
+        # Controls whether multi-tenancy checks are enforced or not.
+        # See https://docs.camunda.io/docs/next/self-managed/concepts/multi-tenancy/ for more information regarding multi-tenancy.
+        # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED.
+      checksEnabled: false
+      # Controls whether the tenants management API is enabled or not.
+      # See https://docs.camunda.io/docs/next/self-managed/concepts/multi-tenancy/ for more information regarding multi-tenancy.
+      # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_MULTITENANCY_APIENABLED.
+      apiEnabled: true
