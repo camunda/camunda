@@ -75,9 +75,9 @@ public class ErrorMapper {
       }
       case SECONDARY_STORAGE_NOT_SET -> {
         final String detail =
-            "The search client requires a secondary storage, but none is set. Secondary storage can be configured using the"
+            "The search client requires a secondary storage, but none is set. Secondary storage can be configured using the '"
                 + PROPERTY_CAMUNDA_DATABASE_TYPE
-                + "property";
+                + "' property";
         LOGGER.debug(detail, cse);
         yield new ServiceException(detail, FORBIDDEN);
       }

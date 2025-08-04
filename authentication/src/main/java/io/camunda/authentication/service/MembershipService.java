@@ -12,7 +12,23 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 
+/**
+ * Service interface for resolving user, client, and group memberships based on authentication
+ * claims.
+ */
 public interface MembershipService {
+
+  /**
+   * Resolves the memberships (groups, roles, tenants, and mapping rules) for a user or client based
+   * on the provided authentication claims.
+   *
+   * @param claims the authentication claims (e.g., from an OIDC token)
+   * @param username the username to resolve memberships for
+   * @param clientId the client ID to resolve memberships for
+   * @return a {@link MembershipResult} containing the resolved groups, roles, tenants, and mappings
+   * @throws org.springframework.security.oauth2.core.OAuth2AuthenticationException if membership
+   *     resolution fails
+   */
   MembershipResult resolveMemberships(Map<String, Object> claims, String username, String clientId)
       throws OAuth2AuthenticationException;
 

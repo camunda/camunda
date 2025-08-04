@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.authentication.CamundaOAuthPrincipalServiceImpl;
 import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
@@ -49,19 +50,13 @@ public class NoSecondaryStorageAuthenticationIT {
         .put("camunda.security.authentication.method", "basic");
 
     // when - trying to start application with basic auth in no-db mode
-    context.register(TestBasicAuthConfiguration.class);
+    context.register(WebSecurityConfig.BasicAuthenticationNoDbConfiguration.class);
 
     // then - should fail fast with clear error message
     assertThatThrownBy(context::refresh)
         .isInstanceOf(BeanCreationException.class)
         .hasCauseInstanceOf(BeanInstantiationException.class)
-        .hasRootCauseInstanceOf(IllegalStateException.class)
-        .rootCause()
-        .hasMessageContaining("Basic Authentication is not supported")
-        .hasMessageContaining("secondary storage is disabled")
-        .hasMessageContaining(PROPERTY_CAMUNDA_DATABASE_TYPE + "=" + CAMUNDA_DATABASE_TYPE_NONE)
-        .hasMessageContaining("enable secondary storage")
-        .hasMessageContaining("disable authentication");
+        .hasRootCauseInstanceOf(BasicAuthenticationNotSupportedException.class);
   }
 
   @Test
@@ -96,23 +91,6 @@ public class NoSecondaryStorageAuthenticationIT {
     assertThat(oauthContext.mappingRuleIds()).isEmpty();
 
     context.close();
-  }
-
-  @Configuration
-  static class TestBasicAuthConfiguration {
-    @Bean
-    public WebSecurityConfig.BasicAuthenticationNoDbFailFastBean basicAuthFailFast() {
-      throw new IllegalStateException(
-          "Basic Authentication is not supported when secondary storage is disabled ("
-              + PROPERTY_CAMUNDA_DATABASE_TYPE
-              + "="
-              + CAMUNDA_DATABASE_TYPE_NONE
-              + "). Basic Authentication requires access to user data "
-              + "stored in secondary storage. Please either enable secondary storage by configuring "
-              + PROPERTY_CAMUNDA_DATABASE_TYPE
-              + "to a supported database type, or disable authentication by "
-              + "removing camunda.security.authentication.method configuration.");
-    }
   }
 
   @Configuration

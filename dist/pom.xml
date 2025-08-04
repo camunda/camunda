@@ -40,6 +40,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-schema-manager</artifactId>
     </dependency>
 
@@ -751,12 +756,6 @@
       <groupId>com.github.docker-java</groupId>
       <artifactId>docker-java-api</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-util</artifactId>
-      <version>8.8.0-SNAPSHOT</version>
-      <scope>compile</scope>
     </dependency>
 
   </dependencies>

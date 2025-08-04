@@ -8,8 +8,6 @@
 package io.camunda.authentication.config;
 
 import static com.nimbusds.jose.JOSEObjectType.JWT;
-import static io.camunda.search.util.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
-import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES256;
@@ -30,6 +28,7 @@ import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.converter.UsernamePasswordAuthenticationTokenConverter;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
+import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
@@ -805,16 +804,7 @@ public class WebSecurityConfig {
 
     @Bean
     public BasicAuthenticationNoDbFailFastBean basicAuthenticationNoDbFailFastBean() {
-      throw new IllegalStateException(
-          "Basic Authentication is not supported when secondary storage is disabled ("
-              + PROPERTY_CAMUNDA_DATABASE_TYPE
-              + "="
-              + CAMUNDA_DATABASE_TYPE_NONE
-              + "). Basic Authentication requires access to user data "
-              + "stored in secondary storage. Please either enable secondary storage by configuring "
-              + PROPERTY_CAMUNDA_DATABASE_TYPE
-              + "to a supported database type, or use another authentication method by "
-              + "updating the camunda.security.authentication.method configuration.");
+      throw new BasicAuthenticationNotSupportedException();
     }
   }
 
