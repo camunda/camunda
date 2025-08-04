@@ -226,27 +226,27 @@ export class OperateFiltersPanelPage {
     }
   }
 
-  async clickApply(): Promise<void> {
+  async clickApply() {
     await this.applyButton.click();
   }
 
-  async clickResetFilters(): Promise<void> {
+  async clickResetFilters() {
     await this.resetFiltersButton.click();
   }
 
-  async fillErrorMessageFilter(errorMessage: string): Promise<void> {
+  async fillErrorMessageFilter(errorMessage: string) {
     await this.errorMessageFilter.fill(errorMessage);
   }
 
-  async clickJsonEditorModal(): Promise<void> {
+  async clickJsonEditorModal() {
     await this.jsonEditorModalButton.click();
   }
 
-  async closeModalWithCancel(): Promise<void> {
+  async closeModalWithCancel() {
     await this.dialogCancelButton.click();
   }
 
-  async clickMultipleVariablesSwitch(): Promise<void> {
+  async clickMultipleVariablesSwitch() {
     await this.multipleVariablesSwitch.click({force: true});
   }
 }

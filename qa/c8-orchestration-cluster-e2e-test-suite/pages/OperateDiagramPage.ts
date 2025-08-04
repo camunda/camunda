@@ -65,16 +65,8 @@ export class OperateDiagramPage {
       .filter({hasText: new RegExp(`^${flowNodeName}$`, 'i')});
   }
 
-  clickGateway(gatewayName: string) {
-    return this.clickLabeledElement(gatewayName);
-  }
-
-  clickEvent(eventName: string) {
-    return this.clickLabeledElement(eventName);
-  }
-
-  async clickLabeledElement(label: string) {
-    const element = await this.getLabeledElement(label);
+  async clickDiagramElement(elementName: string) {
+    const element = await this.getLabeledElement(elementName);
     return element.click();
   }
 

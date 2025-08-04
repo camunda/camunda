@@ -93,19 +93,17 @@ test.describe('Process Instances Filters', () => {
           await page.reload();
         },
       });
-      await expect(
-        await operateProcessesPage.parentInstanceIdCell.innerText(),
-      ).toBe(callActivityProcessInstanceKey);
-      await expect(
-        await operateProcessesPage.processInstancesTable.count(),
-      ).toBe(1);
+      await expect(operateProcessesPage.parentInstanceIdCell).toHaveText(
+        callActivityProcessInstanceKey,
+      );
+      expect(await operateProcessesPage.processInstancesTable.count()).toBe(1);
     });
 
     await test.step('Reset filter', async () => {
       await operateFiltersPanelPage.clickResetFilters();
       await expect(
         operateFiltersPanelPage.parentProcessInstanceKey,
-      ).not.toBeVisible();
+      ).toBeHidden();
       await expect
         .poll(() => operateProcessesPage.processInstancesTable.count())
         .toBeGreaterThan(1);
@@ -166,17 +164,14 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.clickResetFilters();
       await expect(
         operateProcessesPage.noMatchingInstancesMessage,
-      ).not.toBeVisible();
+      ).toBeHidden();
 
-      await expect(
-        operateFiltersPanelPage.errorMessageFilter,
-      ).not.toBeVisible();
-      await expect(operateFiltersPanelPage.startDateFilter).not.toBeVisible();
+      await expect(operateFiltersPanelPage.errorMessageFilter).toBeHidden();
+      await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
     });
   });
 
   test('Interaction between diagram and filters', async ({
-    page,
     operateProcessesPage,
     operateFiltersPanelPage,
   }) => {
@@ -184,7 +179,6 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.selectProcess(
         'Process With Multiple Versions',
       );
-
       await expect
         .poll(() => operateFiltersPanelPage.processVersionFilter.innerText())
         .toBe('2');
@@ -212,7 +206,7 @@ test.describe('Process Instances Filters', () => {
 
       await expect(
         operateProcessesPage.noMatchingInstancesMessage,
-      ).not.toBeVisible();
+      ).toBeHidden();
 
       await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue('');
     });
@@ -256,9 +250,7 @@ test.describe('Process Instances Filters', () => {
 
     await test.step('Close modal', async () => {
       await operateFiltersPanelPage.closeModalWithCancel();
-      await expect(
-        operateFiltersPanelPage.variableEditorDialog,
-      ).not.toBeVisible();
+      await expect(operateFiltersPanelPage.variableEditorDialog).toBeHidden();
     });
 
     await test.step('Check that process instances table is filtered correctly', async () => {
@@ -286,7 +278,7 @@ test.describe('Process Instances Filters', () => {
           callActivityProcessInstanceKey.toString(),
           {exact: true},
         ),
-      ).not.toBeVisible();
+      ).toBeHidden();
     });
 
     await test.step('Switch to multiple mode and add multiple variables', async () => {
@@ -307,15 +299,11 @@ test.describe('Process Instances Filters', () => {
 
     await test.step('Close modal', async () => {
       await operateFiltersPanelPage.closeModalWithCancel();
-      await expect(
-        operateFiltersPanelPage.variableEditorDialog,
-      ).not.toBeVisible();
+      await expect(operateFiltersPanelPage.variableEditorDialog).toBeHidden();
     });
 
     await test.step('Check that process instances table is filtered correctly', async () => {
-      await expect
-        .poll(() => page.getByText('2 results').isVisible({timeout: 60000}))
-        .toBe(true);
+      await expect(page.getByText('2 results')).toBeVisible({timeout: 60000});
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
           orderProcessInstanceKey.toString(),
