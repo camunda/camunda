@@ -9,18 +9,22 @@ package io.camunda.zeebe.gateway.rest.controller.tenant;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class TenantRequestValidatorTest {
+
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
 
   @ParameterizedTest
   @MethodSource("validTenantIds")
@@ -33,7 +37,7 @@ public class TenantRequestValidatorTest {
             .description("A new tenant for testing");
 
     // when
-    final var validationResult = TenantRequestValidator.validateCreateRequest(request);
+    final var validationResult = TenantRequestValidator.validateCreateRequest(request, ID_PATTERN);
 
     // then
     assertThat(validationResult).isEmpty();
@@ -47,7 +51,8 @@ public class TenantRequestValidatorTest {
 
     // when
     final var validationResult =
-        TenantRequestValidator.validateMemberRequest(tenantId, memberId, EntityType.USER);
+        TenantRequestValidator.validateMemberRequest(
+            tenantId, memberId, EntityType.USER, ID_PATTERN);
 
     // then
     assertThat(validationResult).isEmpty();
@@ -64,7 +69,7 @@ public class TenantRequestValidatorTest {
             .description("A new tenant for testing");
 
     // when
-    final var validationResult = TenantRequestValidator.validateCreateRequest(request);
+    final var validationResult = TenantRequestValidator.validateCreateRequest(request, ID_PATTERN);
 
     // then
     assertThat(validationResult)
@@ -80,7 +85,8 @@ public class TenantRequestValidatorTest {
 
     // when
     final var validationResult =
-        TenantRequestValidator.validateMemberRequest(tenantId, memberId, EntityType.USER);
+        TenantRequestValidator.validateMemberRequest(
+            tenantId, memberId, EntityType.USER, ID_PATTERN);
 
     // then
     assertThat(validationResult)

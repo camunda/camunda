@@ -26,6 +26,7 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -35,6 +36,7 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +52,8 @@ import org.springframework.test.json.JsonCompareMode;
 public class TenantQueryControllerTest extends RestControllerTest {
   private static final String TENANT_BASE_URL = "/v2/tenants";
   private static final String SEARCH_TENANT_URL = "%s/search".formatted(TENANT_BASE_URL);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
 
   private static final List<TenantEntity> TENANT_ENTITIES =
       List.of(
@@ -221,6 +225,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private InitializationConfiguration initializationConfiguration;
 
   @BeforeEach
   void setup() {
@@ -236,6 +241,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .thenReturn(groupServices);
     when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(roleServices);
+    when(initializationConfiguration.getIdentifierPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test

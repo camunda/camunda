@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
@@ -17,16 +16,18 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.springframework.http.ProblemDetail;
 
 public final class TenantRequestValidator {
 
   private TenantRequestValidator() {}
 
-  public static Optional<ProblemDetail> validateCreateRequest(final TenantCreateRequest request) {
+  public static Optional<ProblemDetail> validateCreateRequest(
+      final TenantCreateRequest request, final Pattern identifierPattern) {
     return validate(
         violations -> {
-          validateTenantId(request.getTenantId(), violations);
+          validateTenantId(request.getTenantId(), violations, identifierPattern);
           validateTenantName(request.getName(), violations);
         });
   }
@@ -40,26 +41,33 @@ public final class TenantRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateMemberRequest(
-      final String tenantId, final String memberId, final EntityType memberType) {
+      final String tenantId,
+      final String memberId,
+      final EntityType memberType,
+      final Pattern identifierPattern) {
     return validate(
         violations -> {
-          validateTenantId(tenantId, violations);
-          validateMemberId(memberId, memberType, violations);
+          validateTenantId(tenantId, violations, identifierPattern);
+          validateMemberId(memberId, memberType, violations, identifierPattern);
         });
   }
 
-  private static void validateTenantId(final String id, final List<String> violations) {
+  private static void validateTenantId(
+      final String id, final List<String> violations, final Pattern identifierPattern) {
     IdentifierValidator.validateId(
         id,
         "tenantId",
         violations,
-        ID_PATTERN,
+        identifierPattern,
         tenantId -> !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(id));
   }
 
   private static void validateId(
-      final String id, final String propertyName, final List<String> violations) {
-    IdentifierValidator.validateId(id, propertyName, violations, ID_PATTERN);
+      final String id,
+      final String propertyName,
+      final List<String> violations,
+      final Pattern identifierPattern) {
+    IdentifierValidator.validateId(id, propertyName, violations, identifierPattern);
   }
 
   private static void validateTenantName(final String name, final List<String> violations) {
@@ -76,25 +84,28 @@ public final class TenantRequestValidator {
   }
 
   private static void validateMemberId(
-      final String entityId, final EntityType entityType, final List<String> violations) {
+      final String entityId,
+      final EntityType entityType,
+      final List<String> violations,
+      final Pattern identifierPattern) {
     switch (entityType) {
       case USER:
-        validateId(entityId, "username", violations);
+        validateId(entityId, "username", violations, identifierPattern);
         break;
       case GROUP:
-        validateId(entityId, "groupId", violations);
+        validateId(entityId, "groupId", violations, identifierPattern);
         break;
       case MAPPING_RULE:
-        validateId(entityId, "mappingRuleId", violations);
+        validateId(entityId, "mappingRuleId", violations, identifierPattern);
         break;
       case ROLE:
-        validateId(entityId, "roleId", violations);
+        validateId(entityId, "roleId", violations, identifierPattern);
         break;
       case CLIENT:
-        validateId(entityId, "clientId", violations);
+        validateId(entityId, "clientId", violations, identifierPattern);
         break;
       default:
-        validateId(entityId, "entityId", violations);
+        validateId(entityId, "entityId", violations, identifierPattern);
     }
   }
 }

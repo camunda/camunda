@@ -838,9 +838,9 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, TenantRequest> toTenantCreateDto(
-      final TenantCreateRequest tenantCreateRequest) {
+      final TenantCreateRequest tenantCreateRequest, final Pattern identifierPattern) {
     return getResult(
-        TenantRequestValidator.validateCreateRequest(tenantCreateRequest),
+        TenantRequestValidator.validateCreateRequest(tenantCreateRequest, identifierPattern),
         () ->
             new TenantRequest(
                 null,
@@ -862,9 +862,13 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, TenantMemberRequest> toTenantMemberRequest(
-      final String tenantId, final String memberId, final EntityType entityType) {
+      final String tenantId,
+      final String memberId,
+      final EntityType entityType,
+      final Pattern identifierPattern) {
     return getResult(
-        TenantRequestValidator.validateMemberRequest(tenantId, memberId, entityType),
+        TenantRequestValidator.validateMemberRequest(
+            tenantId, memberId, entityType, identifierPattern),
         () -> new TenantMemberRequest(tenantId, memberId, entityType));
   }
 
