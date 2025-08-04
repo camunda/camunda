@@ -14,6 +14,7 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.webapps.schema.entities.operation.BatchOperationErrorEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -84,23 +85,63 @@ class BatchOperationEntityTransformerTest {
   }
 
   @Test
-  void shouldTransformLegacyEntityToSearchEntity() {
+  void shouldTransformCreatedLegacyEntityToSearchEntity() {
     // given
     final BatchOperationEntity entity = new BatchOperationEntity();
     final String uuid = UUID.randomUUID().toString();
     entity.setId(uuid);
     entity.setType(OperationType.CANCEL_PROCESS_INSTANCE);
     entity.setOperationsTotalCount(42);
-    entity.setOperationsFinishedCount(41);
+    entity.setOperationsFinishedCount(0);
 
     // when
     final var searchEntity = transformer.apply(entity);
-    assertThat(searchEntity).isNotNull();
     assertThat(searchEntity.batchOperationKey()).isEqualTo(uuid);
-    assertThat(searchEntity.state().name()).isEqualTo(BatchOperationState.INCOMPLETED.name());
+    assertThat(searchEntity.state())
+        .isEqualTo(io.camunda.search.entities.BatchOperationEntity.BatchOperationState.CREATED);
     assertThat(searchEntity.operationType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     assertThat(searchEntity.operationsTotalCount()).isEqualTo(42);
-    assertThat(searchEntity.operationsFailedCount()).isEqualTo(0);
-    assertThat(searchEntity.operationsCompletedCount()).isEqualTo(41);
+    assertThat(searchEntity.operationsCompletedCount()).isEqualTo(0);
+  }
+
+  @Test
+  void shouldTransformActiveLegacyEntityToSearchEntity() {
+    // given
+    final BatchOperationEntity entity = new BatchOperationEntity();
+    final String uuid = UUID.randomUUID().toString();
+    entity.setId(uuid);
+    entity.setType(OperationType.CANCEL_PROCESS_INSTANCE);
+    entity.setOperationsTotalCount(42);
+    entity.setOperationsFinishedCount(10);
+
+    // when
+    final var searchEntity = transformer.apply(entity);
+    assertThat(searchEntity.batchOperationKey()).isEqualTo(uuid);
+    assertThat(searchEntity.state())
+        .isEqualTo(io.camunda.search.entities.BatchOperationEntity.BatchOperationState.ACTIVE);
+    assertThat(searchEntity.operationType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    assertThat(searchEntity.operationsTotalCount()).isEqualTo(42);
+    assertThat(searchEntity.operationsCompletedCount()).isEqualTo(10);
+  }
+
+  @Test
+  void shouldTransformCompletedLegacyEntityToSearchEntity() {
+    // given
+    final BatchOperationEntity entity = new BatchOperationEntity();
+    final String uuid = UUID.randomUUID().toString();
+    entity.setId(uuid);
+    entity.setType(OperationType.CANCEL_PROCESS_INSTANCE);
+    entity.setOperationsTotalCount(42);
+    entity.setOperationsFinishedCount(42);
+    entity.setEndDate(OffsetDateTime.now());
+
+    // when
+    final var searchEntity = transformer.apply(entity);
+    assertThat(searchEntity.batchOperationKey()).isEqualTo(uuid);
+    assertThat(searchEntity.state())
+        .isEqualTo(io.camunda.search.entities.BatchOperationEntity.BatchOperationState.COMPLETED);
+    assertThat(searchEntity.operationType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    assertThat(searchEntity.operationsTotalCount()).isEqualTo(42);
+    assertThat(searchEntity.operationsCompletedCount()).isEqualTo(42);
   }
 }
