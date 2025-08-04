@@ -25,7 +25,6 @@ import java.util.List;
 /** Messaging configuration. */
 public class MessagingConfig implements Config {
   public static final int AUTO_SOCKET_SIZE = -11;
-  private final int connectionPoolSize = 8;
   private List<String> interfaces = new ArrayList<>();
   private Integer port;
   private Duration shutdownQuietPeriod = Duration.ofMillis(20);
@@ -79,15 +78,6 @@ public class MessagingConfig implements Config {
   public MessagingConfig setPort(final Integer port) {
     this.port = port;
     return this;
-  }
-
-  /**
-   * Returns the connection pool size.
-   *
-   * @return the connection pool size
-   */
-  public int getConnectionPoolSize() {
-    return connectionPoolSize;
   }
 
   /**
