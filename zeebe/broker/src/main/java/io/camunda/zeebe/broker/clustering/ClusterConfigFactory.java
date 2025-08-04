@@ -80,10 +80,15 @@ public final class ClusterConfigFactory {
             .setCompressionAlgorithm(cluster.getMessageCompression())
             .setInterfaces(Collections.singletonList(network.getInternalApi().getHost()))
             .setPort(network.getInternalApi().getPort())
-            .setSocketReceiveBuffer((int) network.getSocketReceiveBuffer().toBytes())
-            .setSocketSendBuffer((int) network.getSocketSendBuffer().toBytes())
             .setHeartbeatTimeout(network.getHeartbeatTimeout())
             .setHeartbeatInterval(network.getHeartbeatInterval());
+
+    if (network.getSocketSendBuffer() != null) {
+      messaging.setSocketSendBuffer((int) network.getSocketSendBuffer().toBytes());
+    }
+    if (network.getSocketReceiveBuffer() != null) {
+      messaging.setSocketReceiveBuffer((int) network.getSocketReceiveBuffer().toBytes());
+    }
 
     if (network.getSecurity().isEnabled()) {
       final var security = network.getSecurity();

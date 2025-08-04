@@ -35,8 +35,8 @@ public class MessagingConfig implements Config {
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
   private File keyStore;
   private String keyStorePassword;
-  private int socketSendBuffer = 1024 * 1024;
-  private int socketReceiveBuffer = 1024 * 1024;
+  private int socketSendBuffer = -1;
+  private int socketReceiveBuffer = -1;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
 
@@ -255,7 +255,7 @@ public class MessagingConfig implements Config {
   }
 
   /**
-   * @return the configured size in bytes for SO_SNDBUF
+   * @return the configured size in bytes for SO_SNDBUF or `-1` if not configured.
    */
   public int getSocketSendBuffer() {
     return socketSendBuffer;
@@ -273,7 +273,7 @@ public class MessagingConfig implements Config {
   }
 
   /**
-   * @return the configured size in bytes for SO_RCVBUF
+   * @return the configured size in bytes for SO_RCVBUF or `-1` if not configured.
    */
   public int getSocketReceiveBuffer() {
     return socketReceiveBuffer;
