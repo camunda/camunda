@@ -28,7 +28,6 @@ import {CompleteTaskButton} from 'common/tasks/details/CompleteTaskButton';
 import {useTranslation} from 'react-i18next';
 import {extractVariablesFromFormSchema} from 'common/tasks/details/extractVariablesFromFormSchema';
 import {formatVariablesToFormData} from 'common/tasks/details/formatVariablesToFormData';
-import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';
 
 type Props = {
   id: Form['id'];
