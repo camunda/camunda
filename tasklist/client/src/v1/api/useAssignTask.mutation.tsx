@@ -7,12 +7,14 @@
  */
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {z} from 'zod';
+import {useTranslation} from 'react-i18next';
+import {request} from 'common/api/request';
+import {notificationsStore} from 'common/notifications/notifications.store';
 import {api} from 'v1/api';
 import {getUseTaskQueryKey} from 'v1/api/useTask.query';
-import {request} from 'common/api/request';
 import type {Task} from 'v1/api/types';
 import {buildServerErrorSchema} from 'v1/api/buildServerErrorSchema';
-import {z} from 'zod';
 
 const messageResponseSchema = z.object({
   title: z.enum([
@@ -44,6 +46,31 @@ interface AssignmentError extends Error {
 
 function useAssignTask() {
   const client = useQueryClient();
+  const {t} = useTranslation();
+
+  function refetchTask(taskId: string) {
+    return client.fetchQuery({
+      queryKey: getUseTaskQueryKey(taskId),
+      queryFn: async () => {
+        const {response, error} = await request(api.getTask(taskId));
+
+        if (response === null) {
+          throw error;
+        }
+
+        const task = (await response.json()) as Task;
+
+        if (task.taskState === 'ASSIGNING') {
+          throw new Error('Task is still assigning');
+        }
+
+        return task;
+      },
+      retry: true,
+      retryDelay: 1000,
+    });
+  }
+
   return useMutation<Task, AssignmentError, Task['id']>({
     mutationFn: async (taskId) => {
       const {response, error: errorResponse} = await request(
@@ -70,6 +97,29 @@ function useAssignTask() {
       }
 
       error.name = errorResult.data.message.title;
+
+      if (error.name === assignmentErrorMap.taskProcessingTimeout) {
+        const currentTask = client.getQueryData(
+          getUseTaskQueryKey(taskId),
+        ) as Task;
+        if (currentTask) {
+          client.setQueryData(getUseTaskQueryKey(taskId), {
+            ...currentTask,
+            taskState: 'ASSIGNING' as const,
+            assignee: null,
+          });
+        }
+
+        notificationsStore.displayNotification({
+          kind: 'info',
+          title: t('taskDetailsAssignmentDelayInfoTitle'),
+          subtitle: t('taskDetailsAssignmentDelayInfoSubtitle'),
+          isDismissable: true,
+        });
+
+        const task = await refetchTask(taskId);
+        return task;
+      }
 
       throw error;
     },

@@ -7,14 +7,16 @@
  */
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {api} from 'v2/api';
-import {request, requestErrorSchema} from 'common/api/request';
+import {useTranslation} from 'react-i18next';
 import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {getUseTaskQueryKey} from './useTask.query';
+import {request, requestErrorSchema} from 'common/api/request';
 import {notificationsStore} from 'common/notifications/notifications.store';
+import {api} from 'v2/api';
+import {getUseTaskQueryKey} from './useTask.query';
 
 function useAssignTask() {
   const client = useQueryClient();
+  const {t} = useTranslation();
 
   function refetchTask(userTaskKey: string) {
     return client.fetchQuery({
@@ -64,9 +66,8 @@ function useAssignTask() {
 
             notificationsStore.displayNotification({
               kind: 'info',
-              title: 'Task assignment delayed',
-              subtitle:
-                'Assignment is taking longer than expected to process. It will complete shortly.',
+              title: t('taskDetailsAssignmentDelayInfoTitle'),
+              subtitle: t('taskDetailsAssignmentDelayInfoSubtitle'),
               isDismissable: true,
             });
 
