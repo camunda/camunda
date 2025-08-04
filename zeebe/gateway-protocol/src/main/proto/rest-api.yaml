@@ -10617,7 +10617,6 @@ components:
         - COMPLETED
         - PARTIALLY_COMPLETED
         - CANCELED
-        - INCOMPLETED
     BatchOperationItemSearchQuerySortRequest:
       type: object
       properties:
@@ -10735,7 +10734,6 @@ components:
             - COMPLETED
             - PARTIALLY_COMPLETED
             - CANCELED
-            - INCOMPLETED
         batchOperationType:
           $ref: "#/components/schemas/BatchOperationTypeEnum"
         startDate:
