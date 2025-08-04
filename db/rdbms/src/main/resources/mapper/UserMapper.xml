@@ -25,7 +25,9 @@
       JOIN ${prefix}ROLE_MEMBER rm ON t.USERNAME = rm.ENTITY_ID
       AND rm.ENTITY_TYPE = 'USER'
     </if>
-    <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+    </where>
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.UserDbQuery"
@@ -50,7 +52,15 @@
       JOIN ${prefix}ROLE_MEMBER rm ON t.USERNAME = rm.ENTITY_ID
       AND rm.ENTITY_TYPE = 'USER'
     </if>
-    <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND USERNAME IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+    </where>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -58,7 +68,7 @@
   </select>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
+    1 = 1
     <!-- basic filters -->
     <if test="filter.key != null">AND t.USER_KEY = #{filter.key}</if>
     <if test="filter.usernameOperations != null and !filter.usernameOperations.isEmpty()">
