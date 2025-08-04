@@ -212,16 +212,19 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       final PersistedBatchOperation batchOperation, final TaskResultBuilder resultBuilder) {
     final long batchOperationKey = batchOperation.getKey();
     final var command =
-        new BatchOperationInitializationRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setBatchOperationType(batchOperation.getBatchOperationType());
+        new BatchOperationInitializationRecord().setBatchOperationKey(batchOperationKey);
     LOG.trace("Appending batch operation {} initializing finished command", batchOperationKey);
 
-    return resultBuilder.appendCommandRecord(
-        batchOperationKey,
-        BatchOperationIntent.FINISH_INITIALIZATION,
-        command,
-        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
+    final boolean appended =
+        resultBuilder.appendCommandRecord(
+            batchOperationKey,
+            BatchOperationIntent.FINISH_INITIALIZATION,
+            command,
+            FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
+    if (appended) {
+      metrics.recordInitialized(batchOperation.getBatchOperationType());
+    }
+    return appended;
   }
 
   private void handleFailedChunkAppend(
@@ -315,7 +318,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     final var command =
         new BatchOperationInitializationRecord()
             .setBatchOperationKey(batchOperation.getKey())
-            .setBatchOperationType(batchOperation.getBatchOperationType())
             .setSearchResultCursor( // no null values allowed in the protocol
                 state.lastSearchResultCursor == null
                     ? StringValue.EMPTY_STRING

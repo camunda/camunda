@@ -41,6 +41,5 @@ public final class BatchOperationFinishInitializationProcessor
         "Marking batch operation {} as initialized", command.getValue().getBatchOperationKey());
     stateWriter.appendFollowUpEvent(
         command.getKey(), BatchOperationIntent.INITIALIZED, initializationRecord);
-    metrics.recordInitialized(initializationRecord.getBatchOperationType());
   }
 }
