@@ -88,6 +88,12 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           (elementInstanceKey: '%d', processInstanceKey: '%d').
           """;
 
+  private static final String AHSP_JOB_NOT_ACTIVE =
+      """
+        Expected to complete ad-hoc sub-process job, but the ad-hoc sub-process instance is not active \
+        (job key '%d', type '%s', processInstanceKey '%d')
+      """;
+
   private static final Set<String> CORRECTABLE_PROPERTIES =
       Set.of(
           UserTaskRecord.ASSIGNEE,
@@ -290,9 +296,8 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
         return Either.left(
             new Rejection(
                 RejectionType.INVALID_STATE,
-                "Expected to complete ad-hoc sub-process job, but the ad-hoc sub-process instance is not active "
-                    + "(job key '%d', type '%s', processInstanceKey '%d')"
-                        .formatted(command.getKey(), job.getType(), job.getProcessInstanceKey())));
+                AHSP_JOB_NOT_ACTIVE.formatted(
+                    command.getKey(), job.getType(), job.getProcessInstanceKey())));
       }
     }
 

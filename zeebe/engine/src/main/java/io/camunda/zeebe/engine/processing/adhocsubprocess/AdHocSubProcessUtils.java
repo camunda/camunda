@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 
 public class AdHocSubProcessUtils {
 
+  private static final String AHSP_ELEMENT_ACTIVATION_FAILED_NOT_FOUND =
+      "Failed to activate ad-hoc elements. No BPMN elements found with ids: %s.";
+
   public static Either<Failure, List<String>> validateActiveElementAreInProcess(
       final ExecutableAdHocSubProcess adHocSubProcess,
       final List<String> activateElementsCollection) {
@@ -33,8 +36,7 @@ public class AdHocSubProcessUtils {
           elementsNotFound.stream().map("'%s'"::formatted).collect(Collectors.joining(", "));
       return Either.left(
           new Failure(
-              "Failed to activate ad-hoc elements. No BPMN elements found with ids: %s."
-                  .formatted(elementIds),
+              AHSP_ELEMENT_ACTIVATION_FAILED_NOT_FOUND.formatted(elementIds),
               ErrorType.EXTRACT_VALUE_ERROR));
     }
   }
