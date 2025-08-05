@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -100,6 +101,7 @@ public class JobWorkerElementMultiTenantTest {
         .authorization()
         .newAuthorization()
         .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
         .withResourceId(PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withOwnerId(username)

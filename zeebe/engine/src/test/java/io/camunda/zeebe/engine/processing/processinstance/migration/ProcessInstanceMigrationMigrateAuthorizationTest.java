@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -118,6 +119,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
         user,
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_PROCESS_INSTANCE,
+        AuthorizationResourceMatcher.ID,
         PROCESS_ID);
 
     // when
@@ -178,6 +180,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
       final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
+      final AuthorizationResourceMatcher matcher,
       final String resourceId) {
     engine
         .authorization()
@@ -186,6 +189,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
+        .withResourceMatcher(matcher)
         .withResourceId(resourceId)
         .create(DEFAULT_USER.getUsername());
   }
