@@ -46,6 +46,19 @@ const List: FC = () => {
     filter: { resourceType: activeTab },
   });
 
+  const sortPermissionTypesAlphabetically = (authorizationData: typeof data) =>
+    authorizationData
+      ? {
+          ...authorizationData,
+          items: authorizationData.items?.map((item) => ({
+            ...item,
+            permissionTypes: [...item.permissionTypes].sort(),
+          })),
+        }
+      : authorizationData;
+
+  const transformedData = sortPermissionTypesAlphabetically(data);
+
   return (
     <Page>
       <PageHeader title="Authorizations" linkText="authorizations" linkUrl="" />
@@ -67,7 +80,7 @@ const List: FC = () => {
               <CustomTabPanel key={tab}>
                 <AuthorizationList
                   tab={tab}
-                  data={data}
+                  data={transformedData}
                   loading={loading}
                   reload={reload}
                   paginationProps={paginationProps}
