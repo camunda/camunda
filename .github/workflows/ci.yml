@@ -460,7 +460,7 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
           -D test.integration.camunda.database.type=es
-          -pl 'qa/acceptance-tests'
+          -pl ':camunda-qa-acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -559,7 +559,7 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
           -D test.integration.camunda.database.type=os
-          -pl 'qa/acceptance-tests'
+          -pl ':camunda-qa-acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
