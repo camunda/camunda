@@ -56,18 +56,28 @@ import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.Task;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 public final class FlowElementInstantiationTransformer
     implements ModelElementTransformer<FlowElement> {
 
   private static final Map<Class<?>, Function<String, AbstractFlowElement>> ELEMENT_FACTORIES;
   private static final Set<Class<?>> NON_EXECUTABLE_ELEMENT_TYPES = new HashSet<>();
+  private static final UnsafeBuffer EMPTY_BUFFER = new UnsafeBuffer();
 
   static {
     ELEMENT_FACTORIES = new HashMap<>();
@@ -119,11 +129,48 @@ public final class FlowElementInstantiationTransformer
       }
 
       final AbstractFlowElement executableElement = elementFactory.apply(element.getId());
+      setElementName(element, executableElement);
+      setElementDocumentation(element, executableElement);
+      setElementProperties(element, executableElement);
 
       executableElement.setElementType(
           BpmnElementType.bpmnElementTypeFor(element.getElementType().getTypeName()));
 
       process.addFlowElement(executableElement);
     }
+  }
+
+  private void setElementName(
+      final FlowElement element, final AbstractFlowElement executableElement) {
+    final DirectBuffer elementName =
+        Optional.ofNullable(element.getName()).map(BufferUtil::wrapString).orElse(EMPTY_BUFFER);
+    executableElement.setName(elementName);
+  }
+
+  private void setElementDocumentation(
+      final FlowElement element, final AbstractFlowElement executableElement) {
+    final var elementDocumentation =
+        Optional.ofNullable(element.getDocumentations()).orElseGet(Collections::emptyList).stream()
+            .filter(d -> "text/plain".equals(d.getTextFormat()))
+            .findFirst()
+            .map(ModelElementInstance::getTextContent)
+            .filter(t -> !t.isBlank())
+            .map(BufferUtil::wrapString)
+            .orElse(EMPTY_BUFFER);
+
+    executableElement.setDocumentation(elementDocumentation);
+  }
+
+  private void setElementProperties(
+      final FlowElement element, final AbstractFlowElement executableElement) {
+    Optional.ofNullable(element.getSingleExtensionElement(ZeebeProperties.class))
+        .map(ZeebeProperties::getProperties)
+        .filter(zeebeProperties -> !zeebeProperties.isEmpty())
+        .map(
+            properties ->
+                properties.stream()
+                    .filter(zeebeProperty -> !zeebeProperty.getName().isEmpty())
+                    .collect(Collectors.toMap(ZeebeProperty::getName, ZeebeProperty::getValue)))
+        .ifPresent(executableElement::setProperties);
   }
 }
