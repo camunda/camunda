@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import static java.util.Optional.ofNullable;
 
+import io.camunda.db.rdbms.read.domain.UsageMetricsDbQuery;
 import io.camunda.db.rdbms.read.mapper.UsageMetricEntityMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.search.clients.reader.UsageMetricsReader;
@@ -31,13 +32,24 @@ public class UsageMetricsDbReader implements UsageMetricsReader {
   public UsageMetricStatisticsEntity usageMetricStatistics(
       final UsageMetricsQuery query, final ResourceAccessChecks resourceAccessChecks) {
     LOG.trace("[RDBMS DB] Aggregate usage metrics statistics with {}", query);
-    final var filter = query.filter();
 
-    if (filter.withTenants()) {
-      final var result = usageMetricMapper.usageMetricTenantsStatistics(filter);
+    // If the tenant check is enabled and no tenant IDs are authorized, return an empty result
+    if (resourceAccessChecks.tenantCheck().enabled()
+        && resourceAccessChecks.getAuthorizedTenantIds().isEmpty()) {
+      return new UsageMetricStatisticsEntity(0L, 0L, 0L, null);
+    }
+
+    final var dbQuery =
+        UsageMetricsDbQuery.of(
+            b ->
+                b.filter(query.filter())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds()));
+
+    if (query.filter().withTenants()) {
+      final var result = usageMetricMapper.usageMetricTenantsStatistics(dbQuery);
       return UsageMetricEntityMapper.toEntity(result);
     } else {
-      final var result = usageMetricMapper.usageMetricStatistics(filter);
+      final var result = usageMetricMapper.usageMetricStatistics(dbQuery);
       return new UsageMetricStatisticsEntity(
           ofNullable(result.rpi()).orElse(0L),
           ofNullable(result.edi()).orElse(0L),
