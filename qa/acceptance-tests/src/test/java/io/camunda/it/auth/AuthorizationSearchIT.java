@@ -170,7 +170,7 @@ class AuthorizationSearchIT {
                             .send()
                             .join()
                             .items())
-                    .isEmpty());
+                    .hasSize(1));
   }
 
   @Test
