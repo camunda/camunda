@@ -5,14 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.reader;
+package io.camunda.search.aggregation.result;
 
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
-import io.camunda.search.query.UsageMetricsTUQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
 
-public interface UsageMetricsTUReader extends SearchClientReader {
-
-  UsageMetricTUStatisticsEntity usageMetricTUStatistics(
-      UsageMetricsTUQuery query, ResourceAccessChecks resourceAccessChecks);
-}
+public record UsageMetricsTUAggregationResult(UsageMetricTUStatisticsEntity result)
+    implements AggregationResultBase {}

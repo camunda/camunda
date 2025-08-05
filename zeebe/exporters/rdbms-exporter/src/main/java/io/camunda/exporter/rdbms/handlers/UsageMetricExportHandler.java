@@ -78,18 +78,15 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
                 usageMetricList.add(
                     new UsageMetricDbModel(
                         recordKey, startTime, key, eventType, val, partitionId)));
-    value
-        .getSetValues()
-        .forEach(
-            (key, valSet) -> {
-              usageMetricList.add(
-                  new UsageMetricDbModel(recordKey, startTime, key, eventType, null, partitionId));
-
-              valSet.forEach(
-                  val ->
-                      usageMetricTUList.add(
-                          new UsageMetricTUDbModel(recordKey, startTime, key, val, partitionId)));
-            });
+    value.getSetValues().entrySet().stream()
+        .flatMap(
+            entry ->
+                entry.getValue().stream()
+                    .map(
+                        val ->
+                            new UsageMetricTUDbModel(
+                                recordKey, startTime, entry.getKey(), val, partitionId)))
+        .forEach(usageMetricTUList::add);
 
     return new Tuple<>(usageMetricList, usageMetricTUList);
   }

@@ -14,11 +14,13 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
+import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,8 @@ public final class UsageMetricsServiceTest {
     // given
     when(client.usageMetricStatistics(any()))
         .thenReturn(new UsageMetricStatisticsEntity(16, 14, 2, null));
+    when(client.usageMetricTUStatistics(any()))
+        .thenReturn(new UsageMetricTUStatisticsEntity(16, null));
 
     final var startTime =
         OffsetDateTime.of(2021, 1, 1, 0, 0, 0, 0, OffsetDateTime.now().getOffset());
@@ -56,6 +60,9 @@ public final class UsageMetricsServiceTest {
 
     // then
     assertThat(searchQueryResult.items().getFirst())
-        .isEqualTo(new UsageMetricStatisticsEntity(16, 14, 2, null));
+        .isEqualTo(
+            Tuple.of(
+                new UsageMetricStatisticsEntity(16, 14, 2, null),
+                new UsageMetricTUStatisticsEntity(16, null)));
   }
 }

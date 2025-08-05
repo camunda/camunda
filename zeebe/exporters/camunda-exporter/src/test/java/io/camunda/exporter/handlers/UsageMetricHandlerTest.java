@@ -130,10 +130,7 @@ class UsageMetricHandlerTest {
                     .withKey(Long.parseLong(EVENT_KEY))
                     .withPartitionId(PARTITION_ID));
     final var usageMetricsBatch =
-        new UsageMetricsBatch(
-            EVENT_KEY,
-            composeUsageMetrics(now, UsageMetricsEventType.RPI, 11L, 22L),
-            new ArrayList<>());
+        new UsageMetricsBatch(EVENT_KEY, composeUsageMetrics(now, 11L, 22L), new ArrayList<>());
 
     // when
     underTest.updateEntity(record, usageMetricsBatch);
@@ -179,10 +176,7 @@ class UsageMetricHandlerTest {
                     .withKey(Long.parseLong(EVENT_KEY))
                     .withPartitionId(PARTITION_ID));
     final var usageMetricsBatch =
-        new UsageMetricsBatch(
-            EVENT_KEY,
-            composeUsageMetrics(now, UsageMetricsEventType.TU, 1L, 1L),
-            composeUsageMetricsTU(now));
+        new UsageMetricsBatch(EVENT_KEY, null, composeUsageMetricsTU(now));
 
     // when
     underTest.updateEntity(record, usageMetricsBatch);
@@ -191,19 +185,7 @@ class UsageMetricHandlerTest {
     final List<UsageMetricsEntity> variables = usageMetricsBatch.variables();
     final List<UsageMetricsTUEntity> tuVariables = usageMetricsBatch.tuVariables();
 
-    assertThat(variables)
-        .extracting(UsageMetricsEntity::getId)
-        .containsExactlyInAnyOrder(
-            String.format(ID_PATTERN, EVENT_KEY, TENANT_1),
-            String.format(ID_PATTERN, EVENT_KEY, TENANT_2),
-            String.format(ID_PATTERN, EVENT_KEY, TENANT_3));
-    assertThat(variables)
-        .extracting(UsageMetricsEntity::getEventTime)
-        .contains(DateUtil.toOffsetDateTime(now));
-    assertThat(variables).extracting(UsageMetricsEntity::getPartitionId).containsOnly(PARTITION_ID);
-    assertThat(variables)
-        .extracting(UsageMetricsEntity::getEventValue)
-        .containsExactlyInAnyOrder(1L, 1L, null);
+    assertThat(variables).isNull();
 
     assertThat(tuVariables)
         .extracting(UsageMetricsTUEntity::getId)
@@ -242,9 +224,7 @@ class UsageMetricHandlerTest {
                     .withPartitionId(PARTITION_ID));
     final var usageMetricsBatch =
         new UsageMetricsBatch(
-            EVENT_KEY,
-            composeUsageMetrics(now, UsageMetricsEventType.RPI, 11L, 22L),
-            composeUsageMetricsTU(now));
+            EVENT_KEY, composeUsageMetrics(now, 11L, 22L), composeUsageMetricsTU(now));
 
     // when
     underTest.updateEntity(record, usageMetricsBatch);
@@ -255,20 +235,19 @@ class UsageMetricHandlerTest {
 
     assertThat(variables)
         .extracting(UsageMetricsEntity::getEventType)
-        .contains(UsageMetricsEventType.RPI, UsageMetricsEventType.TU);
+        .containsOnly(UsageMetricsEventType.RPI);
     assertThat(variables)
         .extracting(UsageMetricsEntity::getId)
         .containsExactlyInAnyOrder(
             String.format(ID_PATTERN, EVENT_KEY, TENANT_1),
-            String.format(ID_PATTERN, EVENT_KEY, TENANT_2),
-            String.format(ID_PATTERN, EVENT_KEY, TENANT_3));
+            String.format(ID_PATTERN, EVENT_KEY, TENANT_2));
     assertThat(variables)
         .extracting(UsageMetricsEntity::getEventTime)
         .contains(DateUtil.toOffsetDateTime(now));
     assertThat(variables).extracting(UsageMetricsEntity::getPartitionId).containsOnly(PARTITION_ID);
     assertThat(variables)
         .extracting(UsageMetricsEntity::getEventValue)
-        .containsExactlyInAnyOrder(11L, 22L, null);
+        .containsExactlyInAnyOrder(11L, 22L);
 
     assertThat(tuVariables)
         .extracting(UsageMetricsTUEntity::getId)
@@ -304,9 +283,7 @@ class UsageMetricHandlerTest {
     final var now = OffsetDateTime.now().toEpochSecond();
     final var usageMetricsBatch =
         new UsageMetricsBatch(
-            EVENT_KEY,
-            composeUsageMetrics(now, UsageMetricsEventType.RPI, 11L, 22L),
-            composeUsageMetricsTU(now));
+            EVENT_KEY, composeUsageMetrics(now, 11L, 22L), composeUsageMetricsTU(now));
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -320,19 +297,18 @@ class UsageMetricHandlerTest {
     verifyNoMoreInteractions(mockRequest);
   }
 
-  private ArrayList<UsageMetricsEntity> composeUsageMetrics(
-      final long now, final UsageMetricsEventType eventType, Long... eventValues) {
+  private ArrayList<UsageMetricsEntity> composeUsageMetrics(final long now, Long... eventValues) {
     return new ArrayList<>(
         List.of(
             new UsageMetricsEntity()
                 .setId(String.format(ID_PATTERN, EVENT_KEY, TENANT_1))
                 .setPartitionId(PARTITION_ID)
                 .setEventTime(DateUtil.toOffsetDateTime(now))
-                .setEventType(eventType)
+                .setEventType(UsageMetricsEventType.RPI)
                 .setEventValue(eventValues[0]),
             new UsageMetricsEntity()
                 .setId(String.format(ID_PATTERN, EVENT_KEY, TENANT_2))
-                .setEventType(eventType)
+                .setEventType(UsageMetricsEventType.RPI)
                 .setPartitionId(PARTITION_ID)
                 .setEventTime(DateUtil.toOffsetDateTime(now))
                 .setEventValue(eventValues[1])));

@@ -13,12 +13,15 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricStatisticsEntity.UsageMetricStatisticsEntityTenant;
+import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
+import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Map;
@@ -35,34 +38,34 @@ public class UsageMetricsControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
       """
-      {
-         "processInstances": 5,
-         "decisionInstances": 23,
-         "activeTenants": 2,
-         "assignees": 0,
-         "tenants": {}
-      }""";
+          {
+             "processInstances": 5,
+             "decisionInstances": 23,
+             "activeTenants": 2,
+             "assignees": 4,
+             "tenants": {}
+          }""";
 
   static final String EXPECTED_TENANTS_SEARCH_RESPONSE =
       """
-      {
-         "processInstances": 5,
-         "decisionInstances": 23,
-         "activeTenants": 2,
-         "assignees": 0,
-         "tenants": {
-           "tenant1": {
-             "processInstances": 1,
-             "decisionInstances": 2,
-             "assignees": 0
-           },
-           "tenant2": {
-             "processInstances": 4,
-             "decisionInstances": 21,
-             "assignees": 0
-           }
-         }
-      }""";
+          {
+             "processInstances": 5,
+             "decisionInstances": 23,
+             "activeTenants": 2,
+             "assignees": 0,
+             "tenants": {
+               "tenant1": {
+                 "processInstances": 1,
+                 "decisionInstances": 2,
+                 "assignees": 1
+               },
+               "tenant2": {
+                 "processInstances": 4,
+                 "decisionInstances": 21,
+                 "assignees": 3
+               }
+             }
+          }""";
 
   @MockitoBean UsageMetricsServices usageMetricsServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -79,7 +82,11 @@ public class UsageMetricsControllerTest extends RestControllerTest {
   void shouldSearchWithStartTimeAndEndTime() {
     // given
     when(usageMetricsServices.search(any()))
-        .thenReturn(SearchQueryResult.of(new UsageMetricStatisticsEntity(5L, 23L, 2L, null)));
+        .thenReturn(
+            SearchQueryResult.of(
+                Tuple.of(
+                    new UsageMetricStatisticsEntity(5L, 23L, 2L, null),
+                    new UsageMetricTUStatisticsEntity(4, null))));
     // when/then
     webClient
         .get()
@@ -111,8 +118,18 @@ public class UsageMetricsControllerTest extends RestControllerTest {
             new UsageMetricStatisticsEntityTenant(1L, 2L),
             "tenant2",
             new UsageMetricStatisticsEntityTenant(4L, 21L));
+    final var tuTenants =
+        Map.of(
+            "tenant1",
+            new UsageMetricTUStatisticsEntityTenant(1L),
+            "tenant2",
+            new UsageMetricTUStatisticsEntityTenant(3L));
     when(usageMetricsServices.search(any()))
-        .thenReturn(SearchQueryResult.of(new UsageMetricStatisticsEntity(5L, 23L, 2L, tenants)));
+        .thenReturn(
+            SearchQueryResult.of(
+                Tuple.of(
+                    new UsageMetricStatisticsEntity(5L, 23L, 2L, tenants),
+                    new UsageMetricTUStatisticsEntity(0, tuTenants))));
     // when/then
     webClient
         .get()

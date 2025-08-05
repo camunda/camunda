@@ -40,6 +40,9 @@ import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
+import io.camunda.search.entities.UsageMetricStatisticsEntity.UsageMetricStatisticsEntityTenant;
+import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
+import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -133,10 +136,11 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableSearchResult;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
@@ -145,28 +149,42 @@ public final class SearchQueryResponseMapper {
   private SearchQueryResponseMapper() {}
 
   public static UsageMetricsResponse toUsageMetricsResponse(
-      final SearchQueryResult<UsageMetricStatisticsEntity> result, final boolean withTenants) {
-
-    final var statistics = result.items().getFirst();
+      final SearchQueryResult<Tuple<UsageMetricStatisticsEntity, UsageMetricTUStatisticsEntity>>
+          result,
+      final boolean withTenants) {
+    final var tuple = result.items().getFirst();
+    final var statistics = tuple.getLeft();
+    final var tuStatistics = tuple.getRight();
 
     final var response =
         new UsageMetricsResponse()
-            .assignees(0L)
+            .assignees(tuStatistics.totalTu())
             .processInstances(statistics.totalRpi())
             .decisionInstances(statistics.totalEdi())
             .activeTenants(statistics.at());
 
-    if (withTenants && statistics.tenants() != null) {
-      response.tenants(
-          statistics.tenants().entrySet().stream()
+    if (withTenants) {
+      final Map<String, UsageMetricStatisticsEntityTenant> tenants1 = statistics.tenants();
+      final Map<String, UsageMetricTUStatisticsEntityTenant> tenants2 = tuStatistics.tenants();
+      final var allTenantKeys = new HashSet<>(tenants1.keySet());
+      allTenantKeys.addAll(tenants2.keySet());
+
+      final Map<String, UsageMetricsResponseItem> mergedTenants =
+          allTenantKeys.stream()
               .collect(
-                  toMap(
-                      Entry::getKey,
-                      e ->
-                          new UsageMetricsResponseItem()
-                              .processInstances(e.getValue().rpi())
-                              .decisionInstances(e.getValue().edi())
-                              .assignees(0L))));
+                  Collectors.toMap(
+                      key -> key,
+                      key -> {
+                        final UsageMetricStatisticsEntityTenant stats = tenants1.get(key);
+                        final UsageMetricTUStatisticsEntityTenant tuStats = tenants2.get(key);
+                        return new UsageMetricsResponseItem()
+                            .processInstances(stats != null ? stats.rpi() : 0L)
+                            .decisionInstances(stats != null ? stats.edi() : 0L)
+                            .assignees(tuStats != null ? tuStats.tu() : 0L);
+                      }));
+      if (!mergedTenants.isEmpty()) {
+        response.tenants(mergedTenants);
+      }
     }
 
     return response;

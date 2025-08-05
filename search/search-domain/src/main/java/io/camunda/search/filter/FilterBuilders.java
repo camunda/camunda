@@ -23,6 +23,15 @@ public final class FilterBuilders {
     return fn.apply(usageMetrics()).build();
   }
 
+  public static UsageMetricsTUFilter.Builder usageMetricsTU() {
+    return new UsageMetricsTUFilter.Builder();
+  }
+
+  public static UsageMetricsTUFilter usageMetricsTU(
+      final Function<UsageMetricsTUFilter.Builder, ObjectBuilder<UsageMetricsTUFilter>> fn) {
+    return fn.apply(usageMetricsTU()).build();
+  }
+
   public static ProcessDefinitionFilter.Builder processDefinition() {
     return new ProcessDefinitionFilter.Builder();
   }

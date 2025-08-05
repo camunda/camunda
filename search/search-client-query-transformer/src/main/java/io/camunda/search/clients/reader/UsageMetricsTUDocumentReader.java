@@ -7,10 +7,10 @@
  */
 package io.camunda.search.clients.reader;
 
+import io.camunda.search.aggregation.result.UsageMetricsTUAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
-import io.camunda.search.entities.UsageMetricsTUEntity;
-import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.UsageMetricsQuery;
+import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
+import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
@@ -23,12 +23,10 @@ public class UsageMetricsTUDocumentReader extends DocumentBasedReader
   }
 
   @Override
-  public SearchQueryResult<UsageMetricsTUEntity> search(
-      final UsageMetricsQuery query, final ResourceAccessChecks resourceAccessChecks) {
+  public UsageMetricTUStatisticsEntity usageMetricTUStatistics(
+      final UsageMetricsTUQuery query, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
-        .search(
-            query,
-            io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity.class,
-            resourceAccessChecks);
+        .aggregate(query, UsageMetricsTUAggregationResult.class, resourceAccessChecks)
+        .result();
   }
 }

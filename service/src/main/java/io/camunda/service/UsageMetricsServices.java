@@ -7,8 +7,11 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.UsageMetricsQueryMapper.mapToUsageMetricsTUQuery;
+
 import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
+import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.Authorization;
@@ -16,10 +19,14 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.util.collection.Tuple;
+import java.util.concurrent.CompletableFuture;
 
 public final class UsageMetricsServices
     extends SearchQueryService<
-        UsageMetricsServices, UsageMetricsQuery, UsageMetricStatisticsEntity> {
+        UsageMetricsServices,
+        UsageMetricsQuery,
+        Tuple<UsageMetricStatisticsEntity, UsageMetricTUStatisticsEntity>> {
 
   private final UsageMetricsSearchClient usageMetricsSearchClient;
 
@@ -33,17 +40,27 @@ public final class UsageMetricsServices
   }
 
   @Override
-  public SearchQueryResult<UsageMetricStatisticsEntity> search(final UsageMetricsQuery query) {
+  public SearchQueryResult<Tuple<UsageMetricStatisticsEntity, UsageMetricTUStatisticsEntity>>
+      search(final UsageMetricsQuery query) {
     if (query == null) {
       throw new IllegalArgumentException("Query must not be null");
     }
     validateStartAndEndTime(query);
-    return SearchQueryResult.of(
-        usageMetricsSearchClient
-            .withSecurityContext(
-                securityContextProvider.provideSecurityContext(
-                    authentication, Authorization.of(a -> a.usageMetric().read())))
-            .usageMetricStatistics(query));
+    final UsageMetricsSearchClient authUsageMetricsSearchClient =
+        usageMetricsSearchClient.withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.usageMetric().read())));
+
+    final CompletableFuture<UsageMetricStatisticsEntity> statsFuture =
+        CompletableFuture.supplyAsync(
+            () -> authUsageMetricsSearchClient.usageMetricStatistics(query));
+    final CompletableFuture<UsageMetricTUStatisticsEntity> tuStatsFuture =
+        CompletableFuture.supplyAsync(
+            () ->
+                authUsageMetricsSearchClient.usageMetricTUStatistics(
+                    mapToUsageMetricsTUQuery(query)));
+
+    return SearchQueryResult.of(Tuple.of(statsFuture.join(), tuStatsFuture.join()));
   }
 
   private void validateStartAndEndTime(final UsageMetricsQuery query) {
