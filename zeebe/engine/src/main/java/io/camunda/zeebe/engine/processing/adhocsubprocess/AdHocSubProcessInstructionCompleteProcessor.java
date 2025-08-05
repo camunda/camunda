@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.adhocsubprocess;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
@@ -19,9 +21,13 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.Either;
 
+@ExcludeAuthorizationCheck
 public class AdHocSubProcessInstructionCompleteProcessor
     implements TypedRecordProcessor<AdHocSubProcessInstructionRecord> {
 
@@ -43,21 +49,70 @@ public class AdHocSubProcessInstructionCompleteProcessor
   @Override
   public void processRecord(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
     final var recordValue = record.getValue();
-    final var ahspElementInstance =
-        elementInstanceState.getInstance(recordValue.getAdHocSubProcessInstanceKey());
 
-    adHocSubProcessBehavior.completionConditionFulfilled(
-        createBpmnElementContext(ahspElementInstance), recordValue.isCancelRemainingInstances());
+    validateAdHocSubProcessElementInstanceExists(recordValue)
+        .flatMap(this::validateElementInstanceIsAdHocSubProcess)
+        .flatMap(this::validateAdHocSubProcessIsActive)
+        .ifRightOrLeft(
+            elementInstance -> {
+              adHocSubProcessBehavior.completionConditionFulfilled(
+                  createBpmnElementContext(elementInstance),
+                  recordValue.isCancelRemainingInstances());
 
-    stateWriter.appendFollowUpEvent(
-        recordValue.getAdHocSubProcessInstanceKey(),
-        AdHocSubProcessInstructionIntent.COMPLETED,
-        record.getValue());
+              stateWriter.appendFollowUpEvent(
+                  recordValue.getAdHocSubProcessInstanceKey(),
+                  AdHocSubProcessInstructionIntent.COMPLETED,
+                  record.getValue());
+            },
+            rejection ->
+                rejectionWriter.appendRejection(record, rejection.type(), rejection.reason()));
   }
 
   private BpmnElementContext createBpmnElementContext(final ElementInstance elementInstance) {
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
     return context;
+  }
+
+  private Either<Rejection, ElementInstance> validateAdHocSubProcessElementInstanceExists(
+      final AdHocSubProcessInstructionRecord record) {
+    final var ahspElementInstance =
+        elementInstanceState.getInstance(record.getAdHocSubProcessInstanceKey());
+
+    if (ahspElementInstance == null) {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              "Expected to complete ad-hoc sub-process, but no element instance found with key '%d'."
+                  .formatted(record.getAdHocSubProcessInstanceKey())));
+    }
+
+    return Either.right(ahspElementInstance);
+  }
+
+  private Either<Rejection, ElementInstance> validateElementInstanceIsAdHocSubProcess(
+      final ElementInstance elementInstance) {
+    if (elementInstance.getValue().getBpmnElementType() != BpmnElementType.AD_HOC_SUB_PROCESS) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Expected to complete ad-hoc sub-process, but element instance with key '%d' is not an ad-hoc sub-process."
+                  .formatted(elementInstance.getKey())));
+    }
+
+    return Either.right(elementInstance);
+  }
+
+  private Either<Rejection, ElementInstance> validateAdHocSubProcessIsActive(
+      final ElementInstance elementInstance) {
+    if (!elementInstance.isActive()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_STATE,
+              "Expected to complete ad-hoc sub-process, but ad-hoc sub-process is in state '%s'."
+                  .formatted(elementInstance.getState())));
+    }
+
+    return Either.right(elementInstance);
   }
 }
