@@ -8,8 +8,22 @@
 package io.camunda.zeebe.engine.processing.adhocsubprocess;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.List;
 import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public record AdHocActivityMetadata(
-    String elementId, String elementName, String documentation, Map<String, String> properties) {}
+    String elementId,
+    String elementName,
+    String documentation,
+    Map<String, String> properties,
+    List<AdHocActivityParameter> parameters) {
+
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
+  public record AdHocActivityParameter(
+      String name,
+      String description,
+      String type,
+      Map<String, Object> schema,
+      Map<String, Object> options) {}
+}
