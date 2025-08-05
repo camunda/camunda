@@ -5,15 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.nodb;
+package io.camunda.zeebe.it.authorization;
 
 import static io.camunda.search.util.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
 import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.authentication.CamundaOAuthPrincipalServiceImpl;
 import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.security.configuration.AuthenticationConfiguration;
@@ -74,21 +74,21 @@ public class NoSecondaryStorageAuthenticationIT {
     context.refresh();
 
     // then - should have the no-db OIDC service implementation
-    final var oidcService = context.getBean(CamundaOAuthPrincipalServiceImpl.class);
+    final var oidcService = context.getBean(TokenClaimsConverter.class);
     assertThat(oidcService).isNotNull();
 
     // and - the service should work with limited functionality
     final Map<String, Object> claims =
         Map.of("preferred_username", "testuser", "groups", List.of("group1", "group2"));
-    final var oauthContext = oidcService.loadOAuthContext(claims);
+    final var camundaAuthentication = oidcService.convert(claims);
 
-    assertThat(oauthContext.authenticationContext().username()).isEqualTo("testuser");
-    assertThat(oauthContext.authenticationContext().groups())
+    assertThat(camundaAuthentication.authenticatedUsername()).isEqualTo("testuser");
+    assertThat(camundaAuthentication.authenticatedGroupIds())
         .containsExactlyInAnyOrder("group1", "group2");
     // No secondary storage access, so these should be empty
-    assertThat(oauthContext.authenticationContext().roles()).isEmpty();
-    assertThat(oauthContext.authenticationContext().tenants()).isEmpty();
-    assertThat(oauthContext.mappingRuleIds()).isEmpty();
+    assertThat(camundaAuthentication.authenticatedRoleIds()).isEmpty();
+    assertThat(camundaAuthentication.authenticatedTenantIds()).isEmpty();
+    assertThat(camundaAuthentication.authenticatedMappingRuleIds()).isEmpty();
 
     context.close();
   }
@@ -116,10 +116,10 @@ public class NoSecondaryStorageAuthenticationIT {
     }
 
     @Bean
-    public CamundaOAuthPrincipalServiceImpl camundaOAuthPrincipalServiceNoDb(
+    public TokenClaimsConverter camundaOAuthPrincipalServiceNoDb(
         final SecurityConfiguration securityConfiguration,
         final NoDBMembershipService noDBMembershipService) {
-      return new CamundaOAuthPrincipalServiceImpl(securityConfiguration, noDBMembershipService);
+      return new TokenClaimsConverter(securityConfiguration, noDBMembershipService);
     }
   }
 }

@@ -14,6 +14,7 @@ import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.search.util.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+@ConditionalOnSecondaryStorageEnabled
 @Profile("consolidated-auth")
 public class BasicCamundaUserService implements CamundaUserService {
 

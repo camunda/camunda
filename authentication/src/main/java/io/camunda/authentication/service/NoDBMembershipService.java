@@ -8,6 +8,7 @@
 package io.camunda.authentication.service;
 
 import io.camunda.search.util.ConditionalOnSecondaryStorageDisabled;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.Collections;
@@ -31,13 +32,26 @@ public class NoDBMembershipService implements MembershipService {
   }
 
   @Override
-  public MembershipResult resolveMemberships(
-      final Map<String, Object> claims, final String username, final String clientId)
+  public CamundaAuthentication resolveMemberships(
+      final Map<String, Object> tokenClaims,
+      final Map<String, Object> authenticatedClaims,
+      final String username,
+      final String clientId)
       throws OAuth2AuthenticationException {
     final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
     final Set<String> groups =
-        groupsClaimPresent ? new HashSet<>(oidcGroupsLoader.load(claims)) : Collections.emptySet();
-    return new MembershipResult(
-        groups, Collections.emptySet(), Collections.emptyList(), Collections.emptySet());
+        groupsClaimPresent
+            ? new HashSet<>(oidcGroupsLoader.load(tokenClaims))
+            : Collections.emptySet();
+
+    return CamundaAuthentication.of(
+        a ->
+            a.user(username)
+                .clientId(clientId)
+                .roleIds(Collections.emptyList())
+                .groupIds(groups.stream().toList())
+                .mappingRule(Collections.emptyList())
+                .tenants(Collections.emptyList())
+                .claims(authenticatedClaims));
   }
 }

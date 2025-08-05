@@ -33,6 +33,7 @@ import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.authentication.service.MembershipService;
 import io.camunda.search.util.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.search.util.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
@@ -44,7 +45,6 @@ import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.GroupServices;
-import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
@@ -533,13 +533,9 @@ public class WebSecurityConfig {
 
     @Bean
     public TokenClaimsConverter tokenClaimsConverter(
-        final MappingRuleServices mappingRuleServices,
-        final TenantServices tenantServices,
-        final RoleServices roleServices,
-        final GroupServices groupServices,
-        final SecurityConfiguration securityConfiguration) {
-      return new TokenClaimsConverter(
-          mappingRuleServices, tenantServices, roleServices, groupServices, securityConfiguration);
+        final SecurityConfiguration securityConfiguration,
+        final MembershipService membershipService) {
+      return new TokenClaimsConverter(securityConfiguration, membershipService);
     }
 
     @Bean

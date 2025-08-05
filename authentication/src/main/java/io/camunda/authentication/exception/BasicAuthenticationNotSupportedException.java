@@ -14,14 +14,15 @@ import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE
 public class BasicAuthenticationNotSupportedException extends RuntimeException {
   public BasicAuthenticationNotSupportedException() {
     super(
-        "Basic Authentication is not supported when secondary storage is disabled ("
-            + PROPERTY_CAMUNDA_DATABASE_TYPE
-            + "="
-            + CAMUNDA_DATABASE_TYPE_NONE
-            + "). Basic Authentication requires access to user data "
-            + "stored in secondary storage. Please either enable secondary storage by configuring "
-            + PROPERTY_CAMUNDA_DATABASE_TYPE
-            + "to a supported database type, or use another authentication method by "
-            + "updating the camunda.security.authentication.method configuration.");
+        """
+          Basic Authentication is not supported when secondary storage is disabled (
+          %s=%s). Basic Authentication requires access to user data stored in secondary storage.
+          Please either enable secondary storage by configuring %s to a supported database type,
+          or use another authentication method by updating the camunda.security.authentication.method configuration.
+        """
+            .formatted(
+                PROPERTY_CAMUNDA_DATABASE_TYPE,
+                CAMUNDA_DATABASE_TYPE_NONE,
+                PROPERTY_CAMUNDA_DATABASE_TYPE));
   }
 }

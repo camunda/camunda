@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.service;
 
+import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 
@@ -63,8 +64,11 @@ public class DefaultMembershipService implements MembershipService {
   }
 
   @Override
-  public MembershipResult resolveMemberships(
-      final Map<String, Object> claims, final String username, final String clientId)
+  public CamundaAuthentication resolveMemberships(
+      final Map<String, Object> tokenClaims,
+      final Map<String, Object> authenticatedClaims,
+      final String username,
+      final String clientId)
       throws OAuth2AuthenticationException {
     final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
     if (username != null) {
@@ -77,19 +81,21 @@ public class DefaultMembershipService implements MembershipService {
     final var mappingRules =
         mappingRuleServices
             .withAuthentication(CamundaAuthentication.anonymous())
-            .getMatchingMappingRules(claims);
-    final Set<String> mappingRuleIds =
-        mappingRules.map(MappingRuleEntity::mappingRuleId).collect(Collectors.toSet());
-    if (mappingRuleIds.isEmpty()) {
-      LOG.debug("No mappingRules found for these claims: {}", claims);
+            .getMatchingMappingRules(tokenClaims)
+            .map(MappingRuleEntity::mappingRuleId)
+            .collect(Collectors.toSet());
+
+    if (!mappingRules.isEmpty()) {
+      ownerTypeToIds.put(MAPPING_RULE, mappingRules);
     } else {
-      ownerTypeToIds.put(MAPPING_RULE, mappingRuleIds);
+      LOG.debug("No mappingRules found for these claims: {}", tokenClaims);
     }
 
     final Set<String> groups;
     final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
     if (groupsClaimPresent) {
-      groups = new HashSet<>(oidcGroupsLoader.load(claims));
+      groups = new HashSet<>(oidcGroupsLoader.load(tokenClaims));
+      authenticatedClaims.put(USER_GROUPS_CLAIMS, groups.stream().toList());
     } else {
       groups =
           groupServices
@@ -124,6 +130,14 @@ public class DefaultMembershipService implements MembershipService {
             .map(TenantEntity::tenantId)
             .toList();
 
-    return new MembershipResult(groups, roles, tenants, mappingRuleIds);
+    return CamundaAuthentication.of(
+        a ->
+            a.user(username)
+                .clientId(clientId)
+                .roleIds(roles.stream().toList())
+                .groupIds(groups.stream().toList())
+                .mappingRule(mappingRules.stream().toList())
+                .tenants(tenants)
+                .claims(authenticatedClaims));
   }
 }

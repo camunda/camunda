@@ -17,6 +17,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.service.DefaultMembershipService;
+import io.camunda.authentication.service.MembershipService;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -50,6 +52,7 @@ public class TokenClaimsConverterTest {
   public static final String GROUP1_NAME = "idp-g1";
   public static final String GROUP2_NAME = "idp-g2";
   private TokenClaimsConverter converter;
+  private MembershipService membershipService;
 
   @Nested
   class ClientIdClaimConfiguration {
@@ -82,13 +85,15 @@ public class TokenClaimsConverterTest {
       when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(groupServices);
 
-      converter =
-          new TokenClaimsConverter(
+      membershipService =
+          new DefaultMembershipService(
               mappingRuleServices,
               tenantServices,
               roleServices,
               groupServices,
               securityConfiguration);
+
+      converter = new TokenClaimsConverter(securityConfiguration, membershipService);
     }
 
     @Test
@@ -173,13 +178,15 @@ public class TokenClaimsConverterTest {
       when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(groupServices);
 
-      converter =
-          new TokenClaimsConverter(
+      membershipService =
+          new DefaultMembershipService(
               mappingRuleServices,
               tenantServices,
               roleServices,
               groupServices,
               securityConfiguration);
+
+      converter = new TokenClaimsConverter(securityConfiguration, membershipService);
     }
 
     @Test
@@ -373,13 +380,15 @@ public class TokenClaimsConverterTest {
       when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(groupServices);
 
-      converter =
-          new TokenClaimsConverter(
+      membershipService =
+          new DefaultMembershipService(
               mappingRuleServices,
               tenantServices,
               roleServices,
               groupServices,
               securityConfiguration);
+
+      converter = new TokenClaimsConverter(securityConfiguration, membershipService);
     }
 
     @Test
@@ -409,13 +418,14 @@ public class TokenClaimsConverterTest {
       // given
       when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn("$.groups['name']");
 
-      converter =
-          new TokenClaimsConverter(
+      membershipService =
+          new DefaultMembershipService(
               mappingRuleServices,
               tenantServices,
               roleServices,
               groupServices,
               securityConfiguration);
+      converter = new TokenClaimsConverter(securityConfiguration, membershipService);
       final Map<String, Object> claims =
           Map.of("groups", Map.of("name", GROUP1_NAME, "id", "idp-g1-id"), "sub", "user1");
 
