@@ -109,7 +109,8 @@ public final class EngineRule extends ExternalResource {
   private final StreamProcessorRule environmentRule;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-  private ResetRecordingExporterTestWatcherMode resetRecordingExporterTestWatcherMode;
+  private ResetRecordingExporterTestWatcherMode resetRecordingExporterTestWatcherMode =
+      ResetRecordingExporterTestWatcherMode.BEFORE_EACH_TEST;
   private final int partitionCount;
   private boolean awaitIdentitySetup = false;
   private ResetRecordingExporterMode awaitIdentitySetupResetMode =
@@ -202,6 +203,24 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withIdentitySetup(
       final ResetRecordingExporterMode awaitIdentitySetupResetMode) {
+    if (awaitIdentitySetupResetMode == ResetRecordingExporterMode.NO_RESET_AFTER_IDENTITY_SETUP
+        && resetRecordingExporterTestWatcherMode
+            == ResetRecordingExporterTestWatcherMode.BEFORE_EACH_TEST) {
+      throw new IllegalStateException(
+          """
+          Expected to not reset RecordingExporter after identity setup, \
+          but the RecordingExporterTestWatcher is configured to reset before each test. \
+          This would mean that the identity setup is still not included in the recording exporter. \
+          If you want to include the identity setup in the recording exporter, please call \
+          .withResetRecordingExporterTestWatcherMode on the EngineRule to change the reset mode, \
+          and choose one of the following modes:
+          - ResetRecordingExporterTestWatcherMode.ONLY_BEFORE_AND_AFTER_ALL_TESTS
+          - ResetRecordingExporterTestWatcherMode.BEFORE_ALL_TESTS_AND_AFTER_EACH_TEST
+
+          Additionally, ensure that the RecordingExporterTestWatcher is not explicitly set up in the
+          test class.
+          """);
+    }
     this.awaitIdentitySetupResetMode = awaitIdentitySetupResetMode;
     return withIdentitySetup();
   }
