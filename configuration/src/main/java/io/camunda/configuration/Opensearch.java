@@ -7,6 +7,25 @@
  */
 package io.camunda.configuration;
 
-public class Opensearch extends Elasticsearch {
+import java.util.Set;
 
+public class Opensearch extends Elasticsearch {
+  private static final String PREFIX = "camunda.data.secondary-storage.opensearch";
+  private static final Set<String> LEGACY_URL_PROPERTIES =
+      Set.of(
+          "camunda.database.url",
+          "camunda.operate.opensearch.url",
+          "camunda.operate.zeebeOpensearch.url",
+          "camunda.tasklist.opensearch.url",
+          "camunda.tasklist.zeebeOpensearch.url");
+
+  @Override
+  protected String prefix() {
+    return PREFIX;
+  }
+
+  @Override
+  protected Set<String> legacyUrlProperties() {
+    return LEGACY_URL_PROPERTIES;
+  }
 }

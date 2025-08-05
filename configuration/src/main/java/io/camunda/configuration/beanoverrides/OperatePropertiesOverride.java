@@ -55,6 +55,7 @@ public class OperatePropertiesOverride {
       override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
     } else if (SecondaryStorageType.opensearch == database.getType()) {
       override.setDatabase(DatabaseType.Opensearch);
+      override.getOpensearch().setUrl(database.getOpensearch().getUrl());
     }
 
     // TODO: Populate the rest of the bean using unifiedConfiguration

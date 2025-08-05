@@ -24,7 +24,7 @@ public class Elasticsearch {
 
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".url",
+        prefix() + ".url",
         url,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
@@ -33,5 +33,13 @@ public class Elasticsearch {
 
   public void setUrl(String url) {
     this.url = url;
+  }
+
+  protected String prefix() {
+    return PREFIX;
+  }
+
+  protected Set<String> legacyUrlProperties() {
+    return LEGACY_URL_PROPERTIES;
   }
 }

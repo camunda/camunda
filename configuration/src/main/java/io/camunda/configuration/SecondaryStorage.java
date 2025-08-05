@@ -23,6 +23,9 @@ public class SecondaryStorage {
   /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
   private Elasticsearch elasticsearch = new Elasticsearch();
 
+  /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
+  private Opensearch opensearch = new Opensearch();
+
   public SecondaryStorageType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".type", type, SecondaryStorageType.class, SUPPORTED, LEGACY_TYPE_PROPERTIES);
@@ -38,6 +41,14 @@ public class SecondaryStorage {
 
   public void setElasticsearch(Elasticsearch elasticsearch) {
     this.elasticsearch = elasticsearch;
+  }
+
+  public Opensearch getOpensearch() {
+    return opensearch;
+  }
+
+  public void setOpensearch(Opensearch opensearch) {
+    this.opensearch = opensearch;
   }
 
   public enum SecondaryStorageType {
