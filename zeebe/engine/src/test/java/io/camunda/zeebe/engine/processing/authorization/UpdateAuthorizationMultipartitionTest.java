@@ -55,7 +55,11 @@ public class UpdateAuthorizationMultipartitionTest {
             .getValue()
             .getAuthorizationKey();
 
-    engine.authorization().updateAuthorization(key).update();
+    engine
+        .authorization()
+        .updateAuthorization(key)
+        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+        .update();
 
     RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
         .withDistributionIntent(AuthorizationIntent.CREATE)
@@ -125,7 +129,11 @@ public class UpdateAuthorizationMultipartitionTest {
             .getValue()
             .getAuthorizationKey();
 
-    engine.authorization().updateAuthorization(key).update();
+    engine
+        .authorization()
+        .updateAuthorization(key)
+        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+        .update();
 
     // then
     assertThat(
@@ -156,7 +164,11 @@ public class UpdateAuthorizationMultipartitionTest {
             .getValue()
             .getAuthorizationKey();
 
-    engine.authorization().updateAuthorization(key).update();
+    engine
+        .authorization()
+        .updateAuthorization(key)
+        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+        .update();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

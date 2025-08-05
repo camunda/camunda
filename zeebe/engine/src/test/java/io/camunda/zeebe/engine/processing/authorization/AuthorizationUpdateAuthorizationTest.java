@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -73,6 +74,7 @@ public class AuthorizationUpdateAuthorizationTest {
     engine
         .authorization()
         .updateAuthorization(authorizationKey)
+        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
         .withPermissions(PermissionType.DELETE_FORM)
         .update(DEFAULT_USER.getUsername());
 
@@ -108,6 +110,7 @@ public class AuthorizationUpdateAuthorizationTest {
         .authorization()
         .updateAuthorization(authorizationKey)
         .withPermissions(PermissionType.DELETE_FORM)
+        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
         .update(user.getUsername());
 
     // then
@@ -142,6 +145,7 @@ public class AuthorizationUpdateAuthorizationTest {
             .authorization()
             .updateAuthorization(authorizationKey)
             .withPermissions(PermissionType.DELETE_FORM)
+            .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
             .expectRejection()
             .update(user.getUsername());
 

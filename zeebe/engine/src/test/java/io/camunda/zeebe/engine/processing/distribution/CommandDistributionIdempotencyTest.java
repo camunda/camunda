@@ -76,6 +76,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
@@ -232,7 +233,11 @@ public class CommandDistributionIdempotencyTest {
                           .getValue()
                           .getAuthorizationKey();
 
-                  return ENGINE.authorization().updateAuthorization(key).update();
+                  return ENGINE
+                      .authorization()
+                      .updateAuthorization(key)
+                      .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+                      .update();
                 }),
             AuthorizationUpdateProcessor.class
           },
