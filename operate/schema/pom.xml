@@ -308,7 +308,7 @@
                   <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
-					<argument>compose</argument>
+                    <argument>compose</argument>
                     <argument>up</argument>
                     <argument>-d</argument>
                     <argument>opensearch</argument>
@@ -327,7 +327,7 @@
                   <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
-					          <argument>compose</argument>
+                    <argument>compose</argument>
                     <argument>down</argument>
                   </arguments>
                 </configuration>
