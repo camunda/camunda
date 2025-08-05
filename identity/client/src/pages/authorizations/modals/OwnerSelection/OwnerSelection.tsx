@@ -14,17 +14,21 @@ import useTranslate from "src/utility/localization";
 type OwnerSelectionProps<T> = {
   id: string;
   onChange: (OwnerId: string) => void;
+  onBlur: () => void;
   searchFn: ApiDefinition<SearchResponse<T>>;
   getId: (item: T) => string;
   itemToString: (item: T) => string;
+  isEmpty?: boolean;
 };
 
 const OwnerSelection = <T,>({
   id,
   onChange,
+  onBlur,
   searchFn,
   getId,
   itemToString,
+  isEmpty = false,
 }: OwnerSelectionProps<T>) => {
   const { t } = useTranslate("authorizations");
   const { data, loading } = useApi(searchFn);
@@ -46,6 +50,7 @@ const OwnerSelection = <T,>({
             onChange(getId(selectedItem));
           }
         }}
+        onBlur={onBlur}
         itemToString={(item) => (item ? itemToString(item) : "")}
         shouldFilterItem={({ inputValue, item }) => {
           if (item && inputValue) {
@@ -54,6 +59,8 @@ const OwnerSelection = <T,>({
           }
           return true;
         }}
+        invalid={isEmpty}
+        invalidText={t("ownerRequired")}
       />
     )
   );

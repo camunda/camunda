@@ -43,5 +43,10 @@
   "permission": "Permission",
   "irreversibleAction": "This action cannot be undone.",
   "selectPermission": "Select at least one permission. Visit <2>authorizations</2> for a full overview.",
-  "enterUsername": "Enter username"
+  "enterUsername": "Enter username",
+  "ownerRequired": "Owner is required",
+  "usernameRequired": "Username is required",
+  "groupIdRequired": "Group ID is required",
+  "resourceIdRequired": "Resource ID is required",
+  "permissionRequired": "Please select at least one permission"
 }
