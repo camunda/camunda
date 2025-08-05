@@ -49,18 +49,18 @@ jobs:
         run: |
           gcloud info
 
+      - name: Setup Medic Lookup
+        run: |
+          bash .ci/scripts/ci/setup-medic-lookup.sh
+
       - name: Create message with BigQuery data
         id: message
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          # keep in sync with the array in statistics-weekly.yml
-          declare -A lookupTeamMedic
-          lookupTeamMedic["Core Features"]="@core-features-medic"
-          lookupTeamMedic["Data Layer"]="@data-layer-medic"
-          lookupTeamMedic["Identity"]="@identity-medic"
-          lookupTeamMedic["General"]="General Test flakiness, requires investigation"
+          chmod +x .ci/scripts/ci/setup-medic-lookup.sh
+          source .ci/scripts/ci/setup-medic-lookup.sh
 
           # number of tests that need to fail before notifying team medic
           FLAKY_TEST_THRESHOLD=5

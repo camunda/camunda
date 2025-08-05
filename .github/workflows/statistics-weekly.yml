@@ -57,12 +57,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          # keep in sync with the array in statistics-daily.yml
-          declare -A lookupTeamMedic
-          lookupTeamMedic["Core Features"]="@core-features-medic"
-          lookupTeamMedic["Data Layer"]="@data-layer-medic"
-          lookupTeamMedic["Identity"]="@identity-medic"
-          lookupTeamMedic["General"]="General Test failure, requires investigation"
+          # use setup-medic-lookup.sh to set up lookupTeamMedic lookup array
+          chmod +x .ci/scripts/ci/setup-medic-lookup.sh
+          source .ci/scripts/ci/setup-medic-lookup.sh
 
           # number of tests that need to fail before notifying team medic
           FAILED_TEST_THRESHOLD=5
