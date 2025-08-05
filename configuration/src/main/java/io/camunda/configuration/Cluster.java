@@ -44,6 +44,9 @@ public class Cluster {
   /** The number of nodes in the cluster. */
   private int size = 1;
 
+  /** Configuration for the Raft protocol in the cluster. */
+  private Raft raft = new Raft();
+
   public Metadata getMetadata() {
     return metadata;
   }
@@ -110,5 +113,13 @@ public class Cluster {
 
   public void setSize(final int size) {
     this.size = size;
+  }
+
+  public Raft getRaft() {
+    return raft;
+  }
+
+  public void setRaft(final Raft raft) {
+    this.raft = raft;
   }
 }
