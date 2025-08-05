@@ -16,6 +16,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestD
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.webapps.schema.entities.listener.ListenerType;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -93,6 +94,13 @@ public class ProcessInstanceRequestValidator {
 
   public void validateCreateOperationRequest(
       final CreateOperationRequestDto operationRequest, final String processInstanceId) {
+    final OperationType operationType = operationRequest.getOperationType();
+    if (operationType == OperationType.DELETE_DECISION_DEFINITION
+        || operationType == OperationType.DELETE_PROCESS_DEFINITION) {
+      throw new InvalidRequestException(
+          "Operation type '%s' not supported by this endpoint."
+              .formatted(operationType.toString()));
+    }
     createRequestOperationValidator.validate(operationRequest, processInstanceId);
   }
 }
