@@ -279,6 +279,8 @@
     "taskDetailsAssignmentDelayInfoSubtitle": "La asignación de la tarea está tardando más de lo esperado en procesarse. Se completará en breve",
     "taskDetailsUnassignmentDelayInfoSubtitle": "La desasignación de la tarea está tardando más de lo esperado en procesarse. Se completará en breve",
     "taskDetailsCompletionDelayInfoSubtitle": "La finalización de la tarea está tardando más de lo esperado en procesarse. Se completará en breve",
+    "taskErrorTaskNotCompleted": "La tarea no está completada",
+    "taskErrorTaskStillAssigning": "La tarea aún se está asignando",
     "taskDetailsUnassign": "Desasignar",
     "taskDetailsAssignToMe": "Asignarme ésta tarea",
     "processInstanceCancelledNotification": "Instancia del proceso cancelada",

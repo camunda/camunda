@@ -283,6 +283,8 @@
     "taskDetailsAssignmentDelayInfoSubtitle": "The task assignment is taking longer than expected to process. It will complete shortly",
     "taskDetailsUnassignmentDelayInfoSubtitle": "The task unassignment is taking longer than expected to process. It will complete shortly",
     "taskDetailsCompletionDelayInfoSubtitle": "The task completion is taking longer than expected to process. It will complete shortly",
+    "taskErrorTaskNotCompleted": "Task is not completed",
+    "taskErrorTaskStillAssigning": "Task is still assigning",
     "taskDetailsUnassign": "Unassign",
     "taskDetailsAssignToMe": "Assign to me",
     "processInstanceCancelledNotification": "Process instance cancelled",
