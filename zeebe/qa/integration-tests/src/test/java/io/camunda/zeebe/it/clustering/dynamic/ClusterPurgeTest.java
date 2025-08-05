@@ -90,7 +90,7 @@ public class ClusterPurgeTest {
   }
 
   private static void getSet(final boolean newValue) {
-    PurgingExporter.blockPurge.set(newValue);
+    PurgingExporter.BLOCK_PURGE.set(newValue);
   }
 
   private void configureExporter(final ExporterCfg exporterCfg) {
@@ -98,14 +98,14 @@ public class ClusterPurgeTest {
   }
 
   public static class PurgingExporter implements Exporter {
-    static final AtomicBoolean blockPurge = new AtomicBoolean(true);
+    static final AtomicBoolean BLOCK_PURGE = new AtomicBoolean(true);
 
     static void blockPurge() {
-      blockPurge.set(true);
+      BLOCK_PURGE.set(true);
     }
 
     static void unblockPurge() {
-      blockPurge.set(false);
+      BLOCK_PURGE.set(false);
     }
 
     @Override
@@ -113,7 +113,7 @@ public class ClusterPurgeTest {
 
     @Override
     public void purge() throws Exception {
-      if (blockPurge.get()) {
+      if (BLOCK_PURGE.get()) {
         throw new RuntimeException("Purging is temporarily blocked");
       }
     }
