@@ -1175,7 +1175,7 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(builder::endDateOperations);
               Optional.ofNullable(filter.getScopeKey())
                   .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::scopeKeys);
+                  .ifPresent(builder::flowNodeScopeKeys);
             });
     return builder.build();
   }

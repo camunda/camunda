@@ -35,7 +35,7 @@ public record FlowNodeInstanceFilter(
     List<String> tenantIds,
     List<Operation<OffsetDateTime>> startDateOperations,
     List<Operation<OffsetDateTime>> endDateOperations,
-    List<Long> scopeKeys,
+    List<Long> flowNodeScopeKeys,
     List<Integer> levels,
     // Flag used to control whether treePath filtering should use a prefix query.
     // This is necessary while the scopeKey field is not universally populated (pre-8.8 data).
@@ -64,7 +64,7 @@ public record FlowNodeInstanceFilter(
     private List<String> tenantIds;
     private List<Operation<OffsetDateTime>> startDateOperations;
     private List<Operation<OffsetDateTime>> endDateOperations;
-    private List<Long> scopeKeys;
+    private List<Long> flowNodeScopeKeys;
     private List<Integer> levels;
     private Boolean useTreePathPrefix;
 
@@ -83,7 +83,7 @@ public record FlowNodeInstanceFilter(
       tenantIds(filter.tenantIds());
       startDateOperations(filter.startDateOperations());
       endDateOperations(filter.endDateOperations());
-      scopeKeys(filter.scopeKeys());
+      flowNodeScopeKeys(filter.flowNodeScopeKeys());
       levels(filter.levels());
       return this;
     }
@@ -223,13 +223,13 @@ public record FlowNodeInstanceFilter(
       return endDateOperations(collectValues(operation, operations));
     }
 
-    public FlowNodeInstanceFilter.Builder scopeKeys(final List<Long> values) {
-      scopeKeys = addValuesToList(scopeKeys, values);
+    public FlowNodeInstanceFilter.Builder flowNodeScopeKeys(final List<Long> values) {
+      flowNodeScopeKeys = addValuesToList(flowNodeScopeKeys, values);
       return this;
     }
 
-    public FlowNodeInstanceFilter.Builder scopeKeys(final Long... values) {
-      return scopeKeys(collectValuesAsList(values));
+    public FlowNodeInstanceFilter.Builder flowNodeScopeKeys(final Long... values) {
+      return flowNodeScopeKeys(collectValuesAsList(values));
     }
 
     public FlowNodeInstanceFilter.Builder levels(final List<Integer> values) {
@@ -263,7 +263,7 @@ public record FlowNodeInstanceFilter(
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
           Objects.requireNonNullElse(startDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(endDateOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(scopeKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(flowNodeScopeKeys, Collections.emptyList()),
           Objects.requireNonNullElse(levels, Collections.emptyList()),
           useTreePathPrefix);
     }
