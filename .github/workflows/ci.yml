@@ -269,6 +269,7 @@ jobs:
         run: |
           bash .ci/scripts/ci/setup-general-ut.sh "${{ needs.setup-unit-tests.outputs.GENERAL_UT_DO_NOT_SKIP_MODULES}}" "${{ needs.setup-unit-tests.outputs.GENERAL_UT_EXTRA_SKIP_MODULES}}"
       - name: Maven Test Build
+        shell: bash
         # Modules in zeebe, operate, tasklist, and optimize are skipped as they have dedicated unit test jobs
         #
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
@@ -356,6 +357,7 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Run Test (Zeebe)
+        shell: bash
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
@@ -449,6 +451,7 @@ jobs:
       # -D test.integration.camunda.database.type=es
       #
       - name: Run integration test with externalized ES
+        shell: bash
         run: >
           ./mvnw -B -T 1 --no-snapshot-updates
           -D forkCount=4
@@ -547,6 +550,7 @@ jobs:
       # -D test.integration.camunda.database.type=os
       #
       - name: Run integration test with externalized OS
+        shell: bash
         run: >
           ./mvnw -B -T 1 --no-snapshot-updates
           -D forkCount=4
@@ -612,6 +616,7 @@ jobs:
       # -Dcamunda.it.database.type=rdbms
       #
       - name: Run integration test with InMemory H2
+        shell: bash
         timeout-minutes: 10
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
@@ -671,6 +676,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run integration tests with RDBMS database
       - name: Maven Test Build
+        shell: bash
         run: >
           ./mvnw -B -T1C --no-snapshot-updates
           -D forkCount=1
@@ -837,6 +843,7 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
+        shell: bash
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
@@ -947,6 +954,7 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Run Docker tests
+        shell: bash
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >

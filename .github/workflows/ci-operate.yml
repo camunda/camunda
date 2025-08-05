@@ -149,6 +149,7 @@ jobs:
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Run Operate backup restore Tests
+        shell: bash
         run: ./mvnw -B -pl operate/qa/backup-restore-tests -DskipChecks -P -docker,-skipTests verify | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Upload Test Report
         if: failure()
