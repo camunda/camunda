@@ -124,12 +124,8 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   public BatchOperationEntity operation(
       @PathVariable @ValidLongId final String id,
       @RequestBody final CreateOperationRequestDto operationRequest) {
+    validateOperationPermissions(Long.parseLong(id), operationRequest.getOperationType());
     processInstanceRequestValidator.validateCreateOperationRequest(operationRequest, id);
-    if (operationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE) {
-      checkIdentityPermission(Long.valueOf(id), PermissionType.DELETE_PROCESS_INSTANCE);
-    } else {
-      checkIdentityPermission(Long.valueOf(id), PermissionType.UPDATE_PROCESS_INSTANCE);
-    }
     return batchOperationWriter.scheduleSingleOperation(Long.parseLong(id), operationRequest);
   }
 
@@ -140,7 +136,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @RequestBody final ModifyProcessInstanceRequestDto modifyRequest) {
     modifyRequest.setProcessInstanceKey(id);
     modifyProcessInstanceRequestValidator.validate(modifyRequest);
-    checkIdentityPermission(Long.valueOf(id), PermissionType.UPDATE_PROCESS_INSTANCE);
+    checkIdentityPermission(Long.valueOf(id), PermissionType.MODIFY_PROCESS_INSTANCE);
     return batchOperationWriter.scheduleModifyProcessInstance(modifyRequest);
   }
 
@@ -184,8 +180,8 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   public List<VariableDto> getVariables(
       @PathVariable @ValidLongId final String processInstanceId,
       @RequestBody final VariableRequestDto variableRequest) {
-    checkIdentityReadPermission(Long.parseLong(processInstanceId));
     processInstanceRequestValidator.validateVariableRequest(variableRequest);
+    checkIdentityReadPermission(Long.parseLong(processInstanceId));
     return variableReader.getVariables(processInstanceId, variableRequest);
   }
 
@@ -203,8 +199,8 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   public ListenerResponseDto getListeners(
       @PathVariable @ValidLongId final String processInstanceId,
       @RequestBody final ListenerRequestDto request) {
-    checkIdentityReadPermission(Long.parseLong(processInstanceId));
     processInstanceRequestValidator.validateListenerRequest(request);
+    checkIdentityReadPermission(Long.parseLong(processInstanceId));
     return listenerReader.getListenerExecutions(processInstanceId, request);
   }
 
@@ -230,8 +226,8 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   public FlowNodeMetadataDto getFlowNodeMetadata(
       @PathVariable @ValidLongId final String processInstanceId,
       @RequestBody final FlowNodeMetadataRequestDto request) {
-    checkIdentityReadPermission(Long.parseLong(processInstanceId));
     processInstanceRequestValidator.validateFlowNodeMetadataRequest(request);
+    checkIdentityReadPermission(Long.parseLong(processInstanceId));
     return flowNodeInstanceReader.getFlowNodeMetadata(processInstanceId, request);
   }
 
@@ -271,6 +267,23 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       throw new NotAuthorizedException(
           String.format(
               "No %s permission for process instance %s", permission, processInstanceKey));
+    }
+  }
+
+  private void validateOperationPermissions(final long id, final OperationType operationType) {
+    switch (operationType) {
+      case DELETE_PROCESS_INSTANCE ->
+          checkIdentityPermission(id, PermissionType.DELETE_PROCESS_INSTANCE);
+      case CANCEL_PROCESS_INSTANCE ->
+          checkIdentityPermission(id, PermissionType.CANCEL_PROCESS_INSTANCE);
+      case MODIFY_PROCESS_INSTANCE ->
+          checkIdentityPermission(id, PermissionType.MODIFY_PROCESS_INSTANCE);
+      case RESOLVE_INCIDENT, ADD_VARIABLE, UPDATE_VARIABLE, MIGRATE_PROCESS_INSTANCE ->
+          checkIdentityPermission(id, PermissionType.UPDATE_PROCESS_INSTANCE);
+      default ->
+          throw new InvalidRequestException(
+              "Operation type '%s' is not supported by this endpoint."
+                  .formatted(operationType.toString()));
     }
   }
 }

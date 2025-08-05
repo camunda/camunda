@@ -275,7 +275,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.UPDATE_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.CANCEL_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -289,7 +289,7 @@ public class ProcessInstanceRestServiceTest {
             .actual();
 
     assertThat(exception.getMessage())
-        .contains("No UPDATE_PROCESS_INSTANCE permission for process instance");
+        .contains("No CANCEL_PROCESS_INSTANCE permission for process instance");
   }
 
   @Test
