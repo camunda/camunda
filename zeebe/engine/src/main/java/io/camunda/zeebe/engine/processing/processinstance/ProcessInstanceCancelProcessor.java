@@ -104,7 +104,7 @@ public final class ProcessInstanceCancelProcessor
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE,
+                PermissionType.CANCEL_PROCESS_INSTANCE,
                 elementInstance.getValue().getTenantId())
             .addResourceId(elementInstance.getValue().getBpmnProcessId());
     final var isAuthorized = authCheckBehavior.isAuthorized(request);
