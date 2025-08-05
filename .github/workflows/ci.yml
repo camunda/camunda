@@ -452,7 +452,7 @@ jobs:
       #
       - name: Run integration test with externalized ES
         shell: bash
-        run: |
+        run: >
           ./mvnw -B -T 1 --no-snapshot-updates
           -D forkCount=4
           -D maven.javadoc.skip=true
@@ -551,7 +551,7 @@ jobs:
       #
       - name: Run integration test with externalized OS
         shell: bash
-        run: |
+        run: >
           ./mvnw -B -T 1 --no-snapshot-updates
           -D forkCount=4
           -D maven.javadoc.skip=true
