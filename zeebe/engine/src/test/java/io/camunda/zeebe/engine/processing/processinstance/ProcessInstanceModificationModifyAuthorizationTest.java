@@ -103,7 +103,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
     addPermissionsToUser(
         user,
         AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.UPDATE_PROCESS_INSTANCE,
+        PermissionType.MODIFY_PROCESS_INSTANCE,
         PROCESS_ID);
 
     // when
@@ -146,7 +146,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
                 .getFirst())
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+            "Insufficient permissions to perform operation 'MODIFY_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
   }
 
