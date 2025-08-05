@@ -119,6 +119,7 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.UPDATE_PROCESS_INSTANCE,
                         PermissionType.UPDATE_USER_TASK,
                         PermissionType.CREATE_PROCESS_INSTANCE,
+                        PermissionType.CANCEL_PROCESS_INSTANCE,
                         PermissionType.DELETE_PROCESS_INSTANCE),
             auth ->
                 Assertions.assertThat(auth)
