@@ -46,10 +46,7 @@ public class DecisionGroupDto {
               groupDto.setTenantId(decision0.getTenantId());
               groupDto.setName(decision0.getName());
               groupDto.setPermissions(
-                  (!permissionsService.permissionsEnabled())
-                      ? new HashSet<>()
-                      : permissionsService.getDecisionDefinitionPermissions(
-                          decision0.getDecisionId()));
+                  permissionsService.getDecisionDefinitionPermissions(decision0.getDecisionId()));
               groupDto.setDecisions(DtoCreator.create(group, DecisionDto.class));
               groups.add(groupDto);
             });

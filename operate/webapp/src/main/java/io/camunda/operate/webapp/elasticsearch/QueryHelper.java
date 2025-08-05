@@ -104,7 +104,6 @@ public class QueryHelper {
         createVariablesInQuery(query),
         createBatchOperationIdQuery(query),
         createParentInstanceIdQuery(query),
-        // TODO Elasticsearch changes
         createTenantIdQuery(query),
         createReadPermissionQuery());
   }

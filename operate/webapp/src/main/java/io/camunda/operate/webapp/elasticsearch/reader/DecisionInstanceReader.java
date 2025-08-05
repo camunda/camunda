@@ -320,7 +320,6 @@ public class DecisionInstanceReader extends AbstractReader
             createProcessInstanceIdQuery(query),
             createEvaluationDateQuery(query),
             createReadPermissionQuery(),
-            // TODO Elasticsearch changes
             createTenantIdQuery(query));
     if (queryBuilder == null) {
       queryBuilder = matchAllQuery();
