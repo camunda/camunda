@@ -38,8 +38,10 @@ public @interface ConditionalOnSecondaryStorageDisabled {
       final var disabled = !new OnSecondaryStorageEnabledCondition().matches(context, metadata);
       if (disabled) {
         LOG.warn(
-            "Secondary storage is disabled ({}={}). Some features such as webapps will not start unless a secondary storage is configured. See camunda.database.type config.",
-            DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE,
+            "Secondary storage is disabled ({}={}). Some features such as webapps will not start "
+                + "unless a secondary storage is configured. See {} config.",
+            DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE,
+            DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE,
             DatabaseType.NONE);
       }
       return disabled;
