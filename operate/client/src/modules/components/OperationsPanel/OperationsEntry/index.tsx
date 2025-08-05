@@ -9,7 +9,7 @@
 import {formatDate} from 'modules/utils/date';
 import {useLoadingProgress} from './useLoadingProgress';
 import {Container, Details, Title, Header, ProgressBar} from './styled';
-import OperationEntryStatus from './OperationEntryStatus';
+import {OperationEntryStatus} from './OperationEntryStatus';
 import {
   TrashCan,
   Error,
@@ -141,5 +141,5 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   );
 };
 
-export default OperationsEntry;
+export {OperationsEntry};
 export type {OperationLabelType};

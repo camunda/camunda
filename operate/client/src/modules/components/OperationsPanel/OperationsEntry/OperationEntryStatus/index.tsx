@@ -68,4 +68,4 @@ const OperationEntryStatus: React.FC<Props> = ({
   );
 };
 
-export default OperationEntryStatus;
+export {OperationEntryStatus};
