@@ -28,7 +28,6 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableBatchOperationInitializationRecordValue.Builder.class)
 public interface BatchOperationInitializationRecordValue
     extends BatchOperationRelated, RecordValue {
-
   /**
    * The last search result cursor that was used to find items for the batch operation.
    *

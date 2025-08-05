@@ -70,8 +70,8 @@ import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationInitializedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationLifecycleManagementHandler;
-import io.camunda.exporter.handlers.batchoperation.BatchOperationStartedHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceModificationOperationHandler;
@@ -294,7 +294,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new BatchOperationCreatedHandler(
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
-            new BatchOperationStartedHandler(
+            new BatchOperationInitializedHandler(
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
             new BatchOperationLifecycleManagementHandler(
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),

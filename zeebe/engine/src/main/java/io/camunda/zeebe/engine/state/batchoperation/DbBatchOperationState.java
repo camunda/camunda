@@ -92,12 +92,12 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void start(final long batchOperationKey) {
+  public void transitionToInitialized(final long batchOperationKey) {
     LOGGER.trace("Starting batch operation with key {}", batchOperationKey);
     batchKey.wrapLong(batchOperationKey);
     final var batchOperation = get(batchOperationKey);
     if (batchOperation.isPresent()) {
-      batchOperation.get().setStatus(BatchOperationStatus.STARTED);
+      batchOperation.get().setStatus(BatchOperationStatus.INITIALIZED);
       batchOperation.get().markAsInitialized();
       batchOperationColumnFamily.update(batchKey, batchOperation.get());
 
@@ -237,7 +237,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     // Set status to STARTED
     final var batch = batchOperationColumnFamily.get(batchKey);
     batch.setStatus(
-        batch.isInitialized() ? BatchOperationStatus.STARTED : BatchOperationStatus.CREATED);
+        batch.isInitialized() ? BatchOperationStatus.INITIALIZED : BatchOperationStatus.CREATED);
     batchOperationColumnFamily.update(batchKey, batch);
   }
 

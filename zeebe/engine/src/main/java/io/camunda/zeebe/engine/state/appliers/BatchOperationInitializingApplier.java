@@ -9,20 +9,22 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
-public class BatchOperationStartedApplier
-    implements TypedEventApplier<BatchOperationIntent, BatchOperationCreationRecord> {
+public class BatchOperationInitializingApplier
+    implements TypedEventApplier<BatchOperationIntent, BatchOperationInitializationRecord> {
 
   private final MutableBatchOperationState batchOperationState;
 
-  public BatchOperationStartedApplier(final MutableBatchOperationState batchOperationState) {
+  public BatchOperationInitializingApplier(final MutableBatchOperationState batchOperationState) {
     this.batchOperationState = batchOperationState;
   }
 
   @Override
-  public void applyState(final long batchOperationKey, final BatchOperationCreationRecord value) {
-    batchOperationState.start(batchOperationKey);
+  public void applyState(
+      final long batchOperationKey, final BatchOperationInitializationRecord value) {
+    batchOperationState.continueInitialization(
+        batchOperationKey, value.getSearchResultCursor(), value.getSearchQueryPageSize());
   }
 }

@@ -27,7 +27,7 @@ public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Total number of executed batch operation lifecycle events (created, started, executed, completed, failed, cancelled, suspended, resumed) per partition and batch operation type";
+      return "Total number of executed batch operation lifecycle events (created, initialized, executed, completed, failed, cancelled, suspended, resumed) per partition and batch operation type";
     }
 
     @Override
@@ -265,7 +265,7 @@ public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
   public enum BatchOperationAction {
     CREATED("created"),
     QUERY("query"),
-    STARTED("started"),
+    INITIALIZED("initialized"),
     CHUNK_CREATED("chunkCreated"),
     EXECUTED("execute"),
     COMPLETED("completed"),

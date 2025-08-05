@@ -25,7 +25,6 @@ import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -143,7 +142,6 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -173,11 +171,10 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
-            eq(BatchOperationIntent.CONTINUE_INITIALIZATION),
+            eq(BatchOperationIntent.INITIALIZE),
             initializeRecordArgumentCaptor.capture(),
             any());
 
@@ -203,7 +200,6 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -235,7 +231,7 @@ public class BatchOperationExecutionSchedulerTest {
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
-            eq(BatchOperationIntent.CONTINUE_INITIALIZATION),
+            eq(BatchOperationIntent.INITIALIZE),
             initializeRecordArgumentCaptor.capture(),
             any());
 
@@ -258,12 +254,18 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
     assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(3);
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.FINISH_INITIALIZATION),
+            any(BatchOperationInitializationRecord.class),
+            any());
 
     verify(taskResultBuilder)
         .appendCommandRecord(anyLong(), eq(BatchOperationExecutionIntent.EXECUTE), any(), any());
@@ -283,12 +285,18 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
     assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(3);
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.FINISH_INITIALIZATION),
+            any(BatchOperationInitializationRecord.class),
+            any());
 
     verify(taskResultBuilder)
         .appendCommandRecord(anyLong(), eq(BatchOperationExecutionIntent.EXECUTE), any(), any());
@@ -309,12 +317,18 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
     assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(3);
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.FINISH_INITIALIZATION),
+            any(BatchOperationInitializationRecord.class),
+            any());
   }
 
   @Test
@@ -328,7 +342,6 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyStartedCommandAppended();
     verify(taskResultBuilder, times(2))
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
@@ -342,6 +355,13 @@ public class BatchOperationExecutionSchedulerTest {
     assertThat(extractRecordItemKeys(batchOperationChunkRecord.getItems()))
         .containsExactlyInAnyOrder(
             extractQueryItemKeys(queryItems, CHUNK_SIZE, CHUNK_SIZE).toArray(Long[]::new));
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.FINISH_INITIALIZATION),
+            any(BatchOperationInitializationRecord.class),
+            any());
 
     verify(taskResultBuilder)
         .appendCommandRecord(anyLong(), eq(BatchOperationExecutionIntent.EXECUTE), any(), any());
@@ -410,15 +430,6 @@ public class BatchOperationExecutionSchedulerTest {
         .skip(offset)
         .limit(limit)
         .collect(Collectors.toSet());
-  }
-
-  private void verifyStartedCommandAppended() {
-    verify(taskResultBuilder)
-        .appendCommandRecord(
-            anyLong(),
-            eq(BatchOperationIntent.START),
-            any(BatchOperationCreationRecord.class),
-            any());
   }
 
   private void verifyNoExecuteCommandAppended() {

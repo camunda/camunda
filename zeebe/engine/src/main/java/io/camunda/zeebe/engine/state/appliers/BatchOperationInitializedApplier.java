@@ -12,20 +12,18 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
-public class BatchOperationInitializationContinuedApplier
+public class BatchOperationInitializedApplier
     implements TypedEventApplier<BatchOperationIntent, BatchOperationInitializationRecord> {
 
   private final MutableBatchOperationState batchOperationState;
 
-  public BatchOperationInitializationContinuedApplier(
-      final MutableBatchOperationState batchOperationState) {
+  public BatchOperationInitializedApplier(final MutableBatchOperationState batchOperationState) {
     this.batchOperationState = batchOperationState;
   }
 
   @Override
   public void applyState(
       final long batchOperationKey, final BatchOperationInitializationRecord value) {
-    batchOperationState.continueInitialization(
-        batchOperationKey, value.getSearchResultCursor(), value.getSearchQueryPageSize());
+    batchOperationState.transitionToInitialized(batchOperationKey);
   }
 }

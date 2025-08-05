@@ -82,7 +82,7 @@ public final class BatchOperationClient {
     private Function<Long, Record<BatchOperationCreationRecordValue>> expectation =
         SUCCESS_EXPECTATION;
 
-    private boolean waitForStarted = false;
+    private boolean waitForInitialized = false;
 
     public BatchOperationCreationClient(final CommandWriter writer, final BatchOperationType type) {
       this.writer = writer;
@@ -129,8 +129,8 @@ public final class BatchOperationClient {
      *
      * @return
      */
-    public BatchOperationCreationClient waitForStarted() {
-      waitForStarted = true;
+    public BatchOperationCreationClient waitForInitialized() {
+      waitForInitialized = true;
       return this;
     }
 
@@ -160,9 +160,9 @@ public final class BatchOperationClient {
 
       final var resultingRecord = expectation.apply(position);
 
-      if (waitForStarted) {
+      if (waitForInitialized) {
         RecordingExporter.batchOperationCreationRecords()
-            .withIntent(BatchOperationIntent.STARTED)
+            .withIntent(BatchOperationIntent.INITIALIZED)
             .withBatchOperationKey(resultingRecord.getKey())
             .await();
       }

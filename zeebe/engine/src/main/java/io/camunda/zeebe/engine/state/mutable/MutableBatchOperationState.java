@@ -26,7 +26,7 @@ public interface MutableBatchOperationState extends BatchOperationState {
    *
    * @param batchOperationKey the key of the batch operation to mark as started
    */
-  void start(final long batchOperationKey);
+  void transitionToInitialized(final long batchOperationKey);
 
   /**
    * Sets the next step for the batch operation init phase.

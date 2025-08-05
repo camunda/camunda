@@ -48,8 +48,8 @@ public class BatchOperationMetrics {
     batchOperationEvent(BatchOperationAction.CREATED, batchOperationType);
   }
 
-  public void recordStarted(final BatchOperationType batchOperationType) {
-    batchOperationEvent(BatchOperationAction.STARTED, batchOperationType);
+  public void recordInitialized(final BatchOperationType batchOperationType) {
+    batchOperationEvent(BatchOperationAction.INITIALIZED, batchOperationType);
   }
 
   public void recordFailed(final BatchOperationType batchOperationType) {
