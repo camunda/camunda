@@ -21,8 +21,12 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher.ResetMode;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
 public class IdentitySetupInitializeDefaultsTest {
 
@@ -32,6 +36,10 @@ public class IdentitySetupInitializeDefaultsTest {
           .withResetRecordingExporterTestWatcherMode(
               ResetRecordingExporterTestWatcherMode.ONLY_BEFORE_AND_AFTER_ALL_TESTS)
           .withIdentitySetup(ResetRecordingExporterMode.NO_RESET_AFTER_IDENTITY_SETUP);
+
+  @Rule
+  public final TestWatcher testWatcher =
+      new RecordingExporterTestWatcher().withResetMode(ResetMode.NEVER);
 
   @Test
   public void shouldCreateAdminRoleByDefault() {
