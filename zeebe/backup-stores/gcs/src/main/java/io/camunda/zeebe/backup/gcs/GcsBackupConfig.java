@@ -11,9 +11,11 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
+import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 
 public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig connection) {
-  public GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig connection) {
+  public GcsBackupConfig(
+      final String bucketName, final String basePath, final GcsConnectionConfig connection) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
     this.connection = requireNonNull(connection);
@@ -68,18 +70,19 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
       return this;
     }
 
-    public Builder withHost(String host) {
+    public Builder withHost(final String host) {
       this.host = host;
       return this;
     }
 
     public Builder withoutAuthentication() {
-      this.auth = new GcsConnectionConfig.Authentication.None();
+      // This is only used for testing, so we can make up a project id for it.
+      auth = new None("tmp");
       return this;
     }
 
     public Builder withAutoAuthentication() {
-      this.auth = new Auto();
+      auth = new Auto();
       return this;
     }
 
