@@ -34,11 +34,13 @@
     TENANT_ID,
     TREE_PATH,
     INCIDENT_KEY,
-    NULL AS INSTANCE_LEVEL,
+    NUM_SUBPROCESS_INCIDENTS,
     CASE
     WHEN NUM_SUBPROCESS_INCIDENTS > 0 OR INCIDENT_KEY IS NOT NULL THEN TRUE
     ELSE FALSE
-    END AS HAS_INCIDENT
+    END AS HAS_INCIDENT,
+    PARTITION_ID,
+    HISTORY_CLEANUP_DATE
     FROM ${prefix}FLOW_NODE_INSTANCE
     <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
     ) t
@@ -120,11 +122,12 @@
 
   </sql>
 
-  <resultMap id="searchResultMap" type="io.camunda.search.entities.FlowNodeInstanceEntity">
+  <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
     <constructor>
       <idArg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
@@ -132,11 +135,12 @@
       <arg column="TREE_PATH" javaType="java.lang.String"/>
       <arg column="TYPE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeType"/>
       <arg column="STATE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeState"/>
-      <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
       <arg column="INCIDENT_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="NUM_SUBPROCESS_INCIDENTS" javaType="java.lang.Long"/>
+      <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
-      <arg column="INSTANCE_LEVEL" javaType="java.lang.Integer"/>
+      <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
+      <arg column="HISTORY_CLEANUP_DATE" javaType="java.time.OffsetDateTime"/>
     </constructor>
   </resultMap>
 
