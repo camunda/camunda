@@ -217,9 +217,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private void resetRuntimeClock() {
     try {
-      LOG.info("Resetting the time");
+      LOG.debug("Resetting the time");
       camundaManagementClient.resetTime();
-      LOG.info("Time reset");
+      LOG.debug("Time reset");
     } catch (final Throwable t) {
       LOG.warn(
           "Failed to reset the time, skipping. Check the runtime for details. "
