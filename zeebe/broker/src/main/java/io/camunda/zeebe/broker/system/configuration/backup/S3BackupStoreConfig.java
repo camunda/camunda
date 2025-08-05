@@ -23,6 +23,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   private Duration apiCallTimeout = Duration.ofSeconds(180);
   private boolean forcePathStyleAccess = false;
   private String compression;
+  private boolean supportLegacyMd5;
 
   /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
   private int maxConcurrentConnections = 50;
@@ -124,6 +125,14 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
   }
 
+  public boolean isSupportLegacyMd5() {
+    return supportLegacyMd5;
+  }
+
+  public void setSupportLegacyMd5(final boolean supportLegacyMd5) {
+    this.supportLegacyMd5 = supportLegacyMd5;
+  }
+
   public static S3BackupConfig toStoreConfig(final S3BackupStoreConfig config) {
     final var builder =
         new Builder()
@@ -135,7 +144,8 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
             .withCompressionAlgorithm(config.getCompression())
             .withBasePath(config.getBasePath())
             .withMaxConcurrentConnections(config.getMaxConcurrentConnections())
-            .withConnectionAcquisitionTimeout(config.getConnectionAcquisitionTimeout());
+            .withConnectionAcquisitionTimeout(config.getConnectionAcquisitionTimeout())
+            .withSupportLegacyMd5(config.isSupportLegacyMd5());
     if (config.getAccessKey() != null && config.getSecretKey() != null) {
       builder.withCredentials(config.getAccessKey(), config.getSecretKey());
     }
@@ -171,37 +181,18 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
 
     final S3BackupStoreConfig that = (S3BackupStoreConfig) o;
 
-    if (forcePathStyleAccess != that.forcePathStyleAccess) {
-      return false;
-    }
-    if (!Objects.equals(compression, that.compression)) {
-      return false;
-    }
-    if (!Objects.equals(bucketName, that.bucketName)) {
-      return false;
-    }
-    if (!Objects.equals(endpoint, that.endpoint)) {
-      return false;
-    }
-    if (!Objects.equals(region, that.region)) {
-      return false;
-    }
-    if (!Objects.equals(accessKey, that.accessKey)) {
-      return false;
-    }
-    if (!Objects.equals(secretKey, that.secretKey)) {
-      return false;
-    }
-    if (!Objects.equals(basePath, that.basePath)) {
-      return false;
-    }
-    if (maxConcurrentConnections != that.maxConcurrentConnections) {
-      return false;
-    }
-    if (!Objects.equals(connectionAcquisitionTimeout, that.connectionAcquisitionTimeout)) {
-      return false;
-    }
-    return Objects.equals(apiCallTimeout, that.apiCallTimeout);
+    return forcePathStyleAccess == that.forcePathStyleAccess
+        && maxConcurrentConnections == that.maxConcurrentConnections
+        && Objects.equals(bucketName, that.bucketName)
+        && Objects.equals(endpoint, that.endpoint)
+        && Objects.equals(region, that.region)
+        && Objects.equals(accessKey, that.accessKey)
+        && Objects.equals(secretKey, that.secretKey)
+        && Objects.equals(apiCallTimeout, that.apiCallTimeout)
+        && Objects.equals(compression, that.compression)
+        && Objects.equals(basePath, that.basePath)
+        && Objects.equals(connectionAcquisitionTimeout, that.connectionAcquisitionTimeout)
+        && supportLegacyMd5 == that.supportLegacyMd5;
   }
 
   @Override
@@ -234,6 +225,8 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         + maxConcurrentConnections
         + ", connectionAcquisitionTimeout="
         + connectionAcquisitionTimeout
+        + ", supportLegacyMd5="
+        + supportLegacyMd5
         + '}';
   }
 }
