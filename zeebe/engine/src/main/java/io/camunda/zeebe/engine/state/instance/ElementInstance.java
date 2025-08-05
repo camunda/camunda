@@ -50,8 +50,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       new StringValue("executionListenerIndex");
   private static final StringValue TASK_LISTENER_INDICES_RECORD =
       new StringValue("taskListenerIndicesRecord");
-  private static final StringValue COMPLETION_CONDITION_FUL_FILLED =
-      new StringValue("completionConditionFulFilled");
+  private static final StringValue COMPLETION_CONDITION_FULFILLED =
+      new StringValue("completionConditionFulfilled");
   private static final StringValue PROCESS_DEPTH = new StringValue("processDepth");
   private final LongProperty parentKeyProp = new LongProperty(PARENT_KEY, -1L);
   private final IntegerProperty childCountProp = new IntegerProperty(CHILD_COUNT, 0);
@@ -82,8 +82,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final ObjectProperty<TaskListenerIndicesRecord> taskListenerIndicesRecordProp =
       new ObjectProperty<>(TASK_LISTENER_INDICES_RECORD, new TaskListenerIndicesRecord());
   private final IntegerProperty processDepth = new IntegerProperty(PROCESS_DEPTH, 1);
-  private final BooleanProperty completionConditionFulFilledProp =
-      new BooleanProperty(COMPLETION_CONDITION_FUL_FILLED, false);
+  private final BooleanProperty completionConditionFulfilledProp =
+      new BooleanProperty(COMPLETION_CONDITION_FULFILLED, false);
 
   /**
    * Expresses the current depth of the process instance in the called process tree.
@@ -118,7 +118,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(taskListenerIndicesRecordProp)
         .declareProperty(processDepth)
         .declareProperty(interruptedByRuntimeInstructionProp)
-        .declareProperty(completionConditionFulFilledProp);
+        .declareProperty(completionConditionFulfilledProp);
   }
 
   public ElementInstance(
@@ -368,11 +368,11 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     processDepth.setValue(depth);
   }
 
-  public boolean isCompletionConditionFulFilled() {
-    return completionConditionFulFilledProp.getValue();
+  public boolean isCompletionConditionFulfilled() {
+    return completionConditionFulfilledProp.getValue();
   }
 
-  public void setCompletionConditionFulFilled(final boolean fulfilled) {
-    completionConditionFulFilledProp.setValue(fulfilled);
+  public void setCompletionConditionFulfilled(final boolean fulfilled) {
+    completionConditionFulfilledProp.setValue(fulfilled);
   }
 }

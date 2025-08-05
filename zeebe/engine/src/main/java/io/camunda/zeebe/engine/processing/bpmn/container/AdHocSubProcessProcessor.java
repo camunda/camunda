@@ -358,7 +358,7 @@ public class AdHocSubProcessProcessor
 
       final var adHocSubProcessInstance =
           stateBehavior.getElementInstance(adHocSubProcessContext.getElementInstanceKey());
-      if (adHocSubProcessInstance.isCompletionConditionFulFilled()) {
+      if (adHocSubProcessInstance.isCompletionConditionFulfilled()) {
         adHocSubProcessBehavior.completionConditionFulfilled(
             adHocSubProcessContext,
             adHocSubProcess.isCancelRemainingInstances(),

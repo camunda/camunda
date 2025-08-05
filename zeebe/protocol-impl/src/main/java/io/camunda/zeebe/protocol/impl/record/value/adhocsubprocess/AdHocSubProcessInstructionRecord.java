@@ -28,8 +28,8 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
   private static final StringValue IS_CANCEL_REMAINING_INSTANCES =
       new StringValue("isCancelRemainingInstances");
   private static final StringValue TENANT_ID = new StringValue("tenantId");
-  private static final StringValue COMPLETION_CONDITION_FUL_FILLED =
-      new StringValue("completionConditionFulFilled");
+  private static final StringValue COMPLETION_CONDITION_FULFILLED =
+      new StringValue("completionConditionFulfilled");
 
   private final LongProperty adHocSubProcessInstanceKey =
       new LongProperty(AD_HOC_SUB_PROCESS_INSTANCE_KEY, -1L);
@@ -39,8 +39,8 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
       new BooleanProperty(IS_CANCEL_REMAINING_INSTANCES, false);
   private final StringProperty tenantId =
       new StringProperty(TENANT_ID, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final BooleanProperty completionConditionFulFilledProp =
-      new BooleanProperty(COMPLETION_CONDITION_FUL_FILLED, false);
+  private final BooleanProperty completionConditionFulfilledProp =
+      new BooleanProperty(COMPLETION_CONDITION_FULFILLED, false);
 
   public AdHocSubProcessInstructionRecord() {
     super(5);
@@ -48,7 +48,7 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
         .declareProperty(activateElements)
         .declareProperty(cancelRemainingInstances)
         .declareProperty(tenantId)
-        .declareProperty(completionConditionFulFilledProp);
+        .declareProperty(completionConditionFulfilledProp);
   }
 
   @Override
@@ -75,12 +75,12 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public boolean isCompletionConditionFulFilled() {
-    return completionConditionFulFilledProp.getValue();
+  public boolean isCompletionConditionFulfilled() {
+    return completionConditionFulfilledProp.getValue();
   }
 
-  public AdHocSubProcessInstructionRecord setCompletionConditionFulFilled(final boolean fulfilled) {
-    completionConditionFulFilledProp.setValue(fulfilled);
+  public AdHocSubProcessInstructionRecord setCompletionConditionFulfilled(final boolean fulfilled) {
+    completionConditionFulfilledProp.setValue(fulfilled);
     return this;
   }
 
