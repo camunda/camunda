@@ -22,12 +22,12 @@ import java.util.List;
 
 public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
     implements AdHocSubProcessInstructionRecordValue {
-  public static final StringValue AD_HOC_SUB_PROCESS_INSTANCE_KEY =
+  private static final StringValue AD_HOC_SUB_PROCESS_INSTANCE_KEY =
       new StringValue("adHocSubProcessInstanceKey");
-  public static final StringValue ACTIVATE_ELEMENTS = new StringValue("activateElements");
-  public static final StringValue IS_CANCEL_REMAINING_INSTANCES =
+  private static final StringValue ACTIVATE_ELEMENTS = new StringValue("activateElements");
+  private static final StringValue IS_CANCEL_REMAINING_INSTANCES =
       new StringValue("isCancelRemainingInstances");
-  public static final StringValue TENANT_ID = new StringValue("tenantId");
+  private static final StringValue TENANT_ID = new StringValue("tenantId");
   private static final StringValue COMPLETION_CONDITION_FUL_FILLED =
       new StringValue("completionConditionFulFilled");
 
