@@ -131,7 +131,7 @@ public final class EventAppliers implements EventApplier {
     registerEscalationAppliers();
     registerResourceDeletionAppliers();
 
-    registerAdHocSubProcessInstructionAppliers();
+    registerAdHocSubProcessInstructionAppliers(state);
 
     registerUserAppliers(state);
     registerAuthorizationAppliers(state);
@@ -579,9 +579,11 @@ public final class EventAppliers implements EventApplier {
     register(ResourceDeletionIntent.DELETED, NOOP_EVENT_APPLIER);
   }
 
-  private void registerAdHocSubProcessInstructionAppliers() {
+  private void registerAdHocSubProcessInstructionAppliers(final MutableProcessingState state) {
     register(AdHocSubProcessInstructionIntent.ACTIVATED, NOOP_EVENT_APPLIER);
-    register(AdHocSubProcessInstructionIntent.COMPLETED, NOOP_EVENT_APPLIER);
+    register(
+        AdHocSubProcessInstructionIntent.COMPLETED,
+        new AdHocSubProcessInstructionCompletedApplier(state.getElementInstanceState()));
   }
 
   private void registerClockAppliers(final MutableProcessingState state) {

@@ -28,6 +28,8 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
   public static final StringValue IS_CANCEL_REMAINING_INSTANCES =
       new StringValue("isCancelRemainingInstances");
   public static final StringValue TENANT_ID = new StringValue("tenantId");
+  private static final StringValue COMPLETION_CONDITION_FUL_FILLED =
+      new StringValue("completionConditionFulFilled");
 
   private final LongProperty adHocSubProcessInstanceKey =
       new LongProperty(AD_HOC_SUB_PROCESS_INSTANCE_KEY, -1L);
@@ -37,13 +39,16 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
       new BooleanProperty(IS_CANCEL_REMAINING_INSTANCES, false);
   private final StringProperty tenantId =
       new StringProperty(TENANT_ID, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final BooleanProperty completionConditionFulFilledProp =
+      new BooleanProperty(COMPLETION_CONDITION_FUL_FILLED, false);
 
   public AdHocSubProcessInstructionRecord() {
-    super(4);
+    super(5);
     declareProperty(adHocSubProcessInstanceKey)
         .declareProperty(activateElements)
         .declareProperty(cancelRemainingInstances)
-        .declareProperty(tenantId);
+        .declareProperty(tenantId)
+        .declareProperty(completionConditionFulFilledProp);
   }
 
   @Override
@@ -67,6 +72,16 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
   @Override
   public boolean isCancelRemainingInstances() {
     return cancelRemainingInstances.getValue();
+  }
+
+  @Override
+  public boolean isCompletionConditionFulFilled() {
+    return completionConditionFulFilledProp.getValue();
+  }
+
+  public AdHocSubProcessInstructionRecord setCompletionConditionFulFilled(final boolean fulfilled) {
+    completionConditionFulFilledProp.setValue(fulfilled);
+    return this;
   }
 
   public AdHocSubProcessInstructionRecord cancelRemainingInstances(

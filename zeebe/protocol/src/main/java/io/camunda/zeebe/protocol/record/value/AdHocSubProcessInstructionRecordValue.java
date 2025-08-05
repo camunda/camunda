@@ -43,6 +43,8 @@ public interface AdHocSubProcessInstructionRecordValue extends RecordValue, Tena
 
   boolean isCancelRemainingInstances();
 
+  boolean isCompletionConditionFulFilled();
+
   @Value.Immutable
   @ImmutableProtocol(
       builder = ImmutableAdHocSubProcessActivateElementInstructionValue.Builder.class)
