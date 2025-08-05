@@ -44,8 +44,6 @@ public class AdHocSubProcessInstructionActivateProcessor
       "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE =
       "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
-  private static final String ERROR_MSG_ELEMENTS_NOT_FOUND =
-      "Expected to activate activities for ad-hoc sub-process with key '%s', but the given elements %s do not exist.";
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -136,28 +134,22 @@ public class AdHocSubProcessInstructionActivateProcessor
                 adHocSubProcessElementInstance.getValue().getProcessDefinitionKey(),
                 adHocSubProcessElementInstance.getValue().getTenantId())
             .getProcess();
-
     final var adHocSubProcessElement =
         (ExecutableAdHocSubProcess)
             adHocSubProcessDefinition.getElementById(
                 adHocSubProcessElementInstance.getValue().getElementId());
-    final var adHocActivitiesById = adHocSubProcessElement.getAdHocActivitiesById();
 
     // check that the given elements exist within the ad-hoc sub-process
-    final var elementsNotInAdHocSubProcess =
+    final var activateElements =
         command.getValue().activateElements().stream()
             .map(AdHocSubProcessActivateElementInstruction::getElementId)
-            .filter(elementId -> !adHocActivitiesById.containsKey(elementId))
             .toList();
-    if (!elementsNotInAdHocSubProcess.isEmpty()) {
-      writeRejectionError(
-          command,
-          RejectionType.NOT_FOUND,
-          String.format(
-              ERROR_MSG_ELEMENTS_NOT_FOUND,
-              command.getValue().getAdHocSubProcessInstanceKey(),
-              elementsNotInAdHocSubProcess));
-
+    final var activateElementsAreInProcess =
+        AdHocSubProcessUtils.validateActiveElementAreInProcess(
+            adHocSubProcessElementInstance.getKey(), adHocSubProcessElement, activateElements);
+    if (activateElementsAreInProcess.isLeft()) {
+      final var rejection = activateElementsAreInProcess.getLeft();
+      writeRejectionError(command, rejection.type(), rejection.reason());
       return;
     }
 

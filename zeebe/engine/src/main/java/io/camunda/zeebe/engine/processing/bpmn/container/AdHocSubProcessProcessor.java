@@ -184,7 +184,13 @@ public class AdHocSubProcessProcessor
           .flatMap(
               elements ->
                   AdHocSubProcessUtils.validateActiveElementAreInProcess(
-                      adHocSubProcess, elements));
+                          context.getElementInstanceKey(), adHocSubProcess, elements)
+                      .mapLeft(
+                          rejection ->
+                              new Failure(
+                                  rejection.reason(),
+                                  ErrorType.EXTRACT_VALUE_ERROR,
+                                  context.getElementInstanceKey())));
     }
   }
 

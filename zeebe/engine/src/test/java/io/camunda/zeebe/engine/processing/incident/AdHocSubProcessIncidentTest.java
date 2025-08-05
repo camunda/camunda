@@ -152,7 +152,7 @@ public class AdHocSubProcessIncidentTest {
         .hasElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Failed to activate ad-hoc elements. No BPMN elements found with ids: 'D', 'E'.");
+            "Expected to activate activities for ad-hoc sub-process with key '2251799813685257', but the given elements [D, E] do not exist.");
   }
 
   @Test
@@ -185,7 +185,7 @@ public class AdHocSubProcessIncidentTest {
         .hasElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Failed to activate ad-hoc elements. No BPMN elements found with ids: 'A2', 'A3'.");
+            "Expected to activate activities for ad-hoc sub-process with key '2251799813685266', but the given elements [A2, A3] do not exist.");
   }
 
   @Test
@@ -221,7 +221,7 @@ public class AdHocSubProcessIncidentTest {
         .hasElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Failed to activate ad-hoc elements. No BPMN elements found with ids: 'boundaryEvent'.");
+            "Expected to activate activities for ad-hoc sub-process with key '2251799813685275', but the given elements [boundaryEvent] do not exist.");
   }
 
   @Test

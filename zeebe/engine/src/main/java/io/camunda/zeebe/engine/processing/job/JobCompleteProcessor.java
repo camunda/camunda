@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessUtils;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
@@ -262,16 +261,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
               .map(JobResultActivateElementValue::getElementId)
               .toList();
 
-      final Either<Failure, List<String>> validation =
-          AdHocSubProcessUtils.validateActiveElementAreInProcess(
-              executableAdHocSubProcess, elementsToBeActivated);
-
-      if (validation.isRight()) {
-        return Either.right(job);
-      } else {
-        return Either.left(
-            new Rejection(RejectionType.INVALID_ARGUMENT, validation.getLeft().getMessage()));
-      }
+      return AdHocSubProcessUtils.validateActiveElementAreInProcess(
+              job.getElementInstanceKey(), executableAdHocSubProcess, elementsToBeActivated)
+          .map(right -> job);
     }
     return Either.right(job);
   }

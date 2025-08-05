@@ -473,8 +473,8 @@ public class JobBasedAdHocSubProcessTest {
             RecordingExporter.jobRecords(JobIntent.COMPLETE).onlyCommandRejections().getFirst())
         .extracting(Record::getRejectionType, Record::getRejectionReason)
         .containsOnly(
-            RejectionType.INVALID_ARGUMENT,
-            "Failed to activate ad-hoc elements. No BPMN elements found with ids: 'DoesntExist', 'NotThere'.");
+            RejectionType.NOT_FOUND,
+            "Expected to activate activities for ad-hoc sub-process with key '2251799813685256', but the given elements [DoesntExist, NotThere] do not exist.");
 
     Assertions.assertThat(
             RecordingExporter.records()
