@@ -50,6 +50,7 @@ public class TasklistPropertiesOverride {
       override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
     } else if (SecondaryStorageType.opensearch == database.getType()) {
       override.setDatabase("opensearch");
+      override.getOpenSearch().setUrl(database.getOpensearch().getUrl());
     }
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
