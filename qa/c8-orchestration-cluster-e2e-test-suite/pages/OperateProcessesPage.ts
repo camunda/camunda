@@ -7,6 +7,7 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
+import {OperateDiagramPage} from './OperateDiagramPage';
 
 class OperateProcessesPage {
   private page: Page;
@@ -25,9 +26,14 @@ class OperateProcessesPage {
   readonly versionSortButton: Locator;
   readonly processNameSortButton: Locator;
   readonly processInstancesTable: Locator;
+  readonly parentInstanceIdCell: Locator;
+  readonly endDateCell: Locator;
+  readonly versionCell: Locator;
+  readonly diagram: InstanceType<typeof OperateDiagramPage>;
 
   constructor(page: Page) {
     this.page = page;
+    this.diagram = new OperateDiagramPage(page);
     this.processResultCount = page.getByTestId('result-count');
     this.processActiveCheckbox = page
       .locator('label')
@@ -69,6 +75,15 @@ class OperateProcessesPage {
       name: 'sort by name',
     });
     this.processInstancesTable = page.getByTestId('data-list').getByRole('row');
+    this.parentInstanceIdCell = page
+      .getByTestId('data-list')
+      .getByTestId('cell-parentInstanceId')
+      .first();
+    this.endDateCell = page
+      .getByTestId('data-list')
+      .getByTestId('cell-endDate')
+      .first();
+    this.versionCell = page.getByTestId('process-version-select');
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {

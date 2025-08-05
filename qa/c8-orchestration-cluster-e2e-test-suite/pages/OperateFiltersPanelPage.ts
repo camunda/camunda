@@ -44,6 +44,12 @@ export class OperateFiltersPanelPage {
   readonly fromTimeInput: Locator;
   readonly toTimeInput: Locator;
   readonly fromDateInput: Locator;
+  readonly applyButton: Locator;
+  readonly jsonEditorModalButton: Locator;
+  readonly variableEditorDialog: Locator;
+  readonly dialogEditVariableValueText: Locator;
+  readonly dialogEditMultipleVariableValueText: Locator;
+  readonly dialogCancelButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -107,6 +113,19 @@ export class OperateFiltersPanelPage {
     this.fromTimeInput = page.getByTestId('fromTime');
     this.toTimeInput = page.getByTestId('toTime');
     this.fromDateInput = this.page.getByText('From date');
+    this.applyButton = this.page.getByText('Apply');
+    this.jsonEditorModalButton = this.page.getByRole('button', {
+      name: /open (json )?editor modal/i,
+    });
+    this.variableEditorDialog = this.page.getByRole('dialog');
+    this.dialogEditVariableValueText = this.variableEditorDialog.getByText(
+      'edit variable value',
+    );
+    this.dialogEditMultipleVariableValueText =
+      this.variableEditorDialog.getByText('edit multiple variable values');
+    this.dialogCancelButton = this.variableEditorDialog.getByRole('button', {
+      name: 'cancel',
+    });
   }
 
   async validateCheckedState(
@@ -163,6 +182,10 @@ export class OperateFiltersPanelPage {
     await this.processInstanceKeysFilter.fill(processInstanceKey);
   }
 
+  async fillParentProcessInstanceKeyFilter(parentProcessInstanceKey: string) {
+    await this.parentProcessInstanceKey.fill(parentProcessInstanceKey);
+  }
+
   async fillFromTimeInput(fromTime: string) {
     await this.fromTimeInput.clear();
     await this.fromTimeInput.fill(fromTime);
@@ -173,12 +196,17 @@ export class OperateFiltersPanelPage {
     await this.toTimeInput.fill(toTime);
   }
 
-  async pickDateTimeRange(
-    fromDay: string,
-    toDay: string,
-    fromTime?: string,
-    toTime?: string,
-  ) {
+  async pickDateTimeRange({
+    fromDay,
+    toDay,
+    fromTime,
+    toTime,
+  }: {
+    fromDay: string;
+    toDay: string;
+    fromTime?: string;
+    toTime?: string;
+  }) {
     await expect(this.dateFilterDialog).toBeVisible();
 
     const date = new Date();
@@ -196,5 +224,29 @@ export class OperateFiltersPanelPage {
     if (toTime !== undefined) {
       await this.fillToTimeInput(toTime);
     }
+  }
+
+  async clickApply() {
+    await this.applyButton.click();
+  }
+
+  async clickResetFilters() {
+    await this.resetFiltersButton.click();
+  }
+
+  async fillErrorMessageFilter(errorMessage: string) {
+    await this.errorMessageFilter.fill(errorMessage);
+  }
+
+  async clickJsonEditorModal() {
+    await this.jsonEditorModalButton.click();
+  }
+
+  async closeModalWithCancel() {
+    await this.dialogCancelButton.click();
+  }
+
+  async clickMultipleVariablesSwitch() {
+    await this.multipleVariablesSwitch.click({force: true});
   }
 }
