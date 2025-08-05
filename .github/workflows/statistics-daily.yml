@@ -99,7 +99,7 @@ jobs:
 
               printf "• %sx \`%s.%s\`%s\n\n" "$NUMBER_OF_FLAKES" "$TEST_CLASS_NAME" "$TEST_NAME" "$SUFFIX"
               # only notify if the owner is a team name and the number of flakes is above the threshold
-              if [ "${#TEST_OWNER}" -lt 20 ] && [ "${NUMBER_OF_FLAKES}" -ge "${FLAKY_TEST_THRESHOLD}" ]; then
+              if [ "${NUMBER_OF_FLAKES}" -ge "${FLAKY_TEST_THRESHOLD}" ]; then
                 if [[ -n "${lookupTeamMedic[$TEST_OWNER]}" ]]; then
                   printf "\t• %s\n" "${lookupTeamMedic[$TEST_OWNER]}"
                 fi
