@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -71,17 +72,17 @@ public class PermissionsBehavior {
   public Either<Rejection, AuthorizationRecord> permissionsAlreadyExist(
       final AuthorizationRecord record) {
     for (final PermissionType permission : record.getPermissionTypes()) {
-      final var addedResourceId = record.getResourceId();
-      final var currentResourceIds =
-          authCheckBehavior.getDirectAuthorizedResourceIdentifiers(
+      final var addedAuthorizationScope = AuthorizationScope.of(record.getResourceId());
+      final var currentAuthorizationScopes =
+          authCheckBehavior.getDirectAuthorizedAuthorizationScopes(
               record.getOwnerType(), record.getOwnerId(), record.getResourceType(), permission);
 
-      if (currentResourceIds.contains(addedResourceId)) {
+      if (currentAuthorizationScopes.contains(addedAuthorizationScope)) {
         return Either.left(
             new Rejection(
                 RejectionType.ALREADY_EXISTS,
                 PERMISSIONS_ALREADY_EXISTS_MESSAGE.formatted(
-                    record.getOwnerId(), addedResourceId)));
+                    record.getOwnerId(), addedAuthorizationScope)));
       }
     }
     return Either.right(record);

@@ -99,7 +99,8 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -126,8 +127,7 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
-    final var resourceIdentifiers =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+    final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
@@ -149,9 +149,9 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
-    final var authorizations =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
+    final var authorizations = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
@@ -173,7 +173,8 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -196,7 +197,7 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
     // when
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType, tenantId)
-            .addResourceId(resourceId);
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
