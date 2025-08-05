@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { FC } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { Stack } from "@carbon/react";
 import { spacing06 } from "@carbon/elements";
 import TextField from "src/components/form/TextField";
@@ -17,6 +18,12 @@ import { createTenant } from "src/utility/api/tenants";
 import { useNotifications } from "src/components/notifications";
 import { isValidTenantId } from "src/pages/tenants/modals/isValidTenantId";
 
+type FormData = {
+  name: string;
+  tenantId: string;
+  description: string;
+};
+
 const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
@@ -24,22 +31,20 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     suppressErrorNotification: true,
   });
 
-  const [name, setName] = useState("");
-  const [tenantId, setTenantId] = useState("");
-  const [description, setDescription] = useState("");
-  const [isTenantIdValid, setIsTenantIdValid] = useState(true);
+  const { control, handleSubmit } = useForm<FormData>({
+    defaultValues: {
+      name: "",
+      tenantId: "",
+      description: "",
+    },
+    mode: "all",
+  });
 
-  const isSubmitDisabled = loading || !name || !tenantId || !isTenantIdValid;
-
-  const validateTenantId = () => {
-    setIsTenantIdValid(isValidTenantId(tenantId));
-  };
-
-  const handleSubmit = async () => {
+  const onSubmit = async (data: FormData) => {
     const { success } = await callAddTenant({
-      name,
-      tenantId,
-      description,
+      name: data.name,
+      tenantId: data.tenantId,
+      description: data.description,
     });
 
     if (success) {
@@ -47,7 +52,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         kind: "success",
         title: t("tenantCreated"),
         subtitle: t("createTenantSuccess", {
-          name,
+          name: data.name,
         }),
       });
       onSuccess();
@@ -62,36 +67,55 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       error={error}
       loadingDescription={t("creatingTenant")}
       confirmLabel={t("createTenant")}
-      submitDisabled={isSubmitDisabled}
       onClose={onClose}
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
     >
       <Stack orientation="vertical" gap={spacing06}>
-        <TextField
-          label={t("tenantId")}
-          placeholder={t("tenantIdPlaceholder")}
-          value={tenantId}
-          errors={!isTenantIdValid ? [t("pleaseEnterValidTenantId")] : []}
-          helperText={t("tenantIdHelperText")}
-          autoFocus
-          onChange={(value) => {
-            setTenantId(value);
+        <Controller
+          name="tenantId"
+          control={control}
+          rules={{
+            validate: (value) =>
+              isValidTenantId(value) || t("pleaseEnterValidTenantId"),
           }}
-          onBlur={validateTenantId}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              label={t("tenantId")}
+              placeholder={t("tenantIdPlaceholder")}
+              errors={fieldState.error?.message}
+              helperText={t("tenantIdHelperText")}
+              autoFocus
+            />
+          )}
         />
-        <TextField
-          label={t("tenantName")}
-          placeholder={t("tenantNamePlaceholder")}
-          value={name}
-          onChange={setName}
+        <Controller
+          name="name"
+          control={control}
+          rules={{
+            required: t("tenantNameRequired"),
+          }}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              label={t("tenantName")}
+              placeholder={t("tenantNamePlaceholder")}
+              errors={fieldState.error?.message}
+            />
+          )}
         />
-        <TextField
-          label={t("description")}
-          value={description}
-          placeholder={t("tenantDescriptionPlaceholder")}
-          cols={2}
-          enableCounter
-          onChange={setDescription}
+        <Controller
+          name="description"
+          control={control}
+          render={({ field }) => (
+            <TextField
+              {...field}
+              label={t("description")}
+              placeholder={t("tenantDescriptionPlaceholder")}
+              cols={2}
+              enableCounter
+            />
+          )}
         />
       </Stack>
     </FormModal>

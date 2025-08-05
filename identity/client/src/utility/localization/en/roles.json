@@ -67,5 +67,6 @@
   "roleMemberAccessDisclaimer": "Members of this Group will be given access to the data within the Role.",
   "searchAndAssignGroupToRole": "Search and assign group to role",
   "roleCreated": "Role created",
-  "createRoleSuccess": "You have successfully created role {{ roleName }}"
+  "createRoleSuccess": "You have successfully created role {{ roleName }}",
+  "roleNameRequired": "Role name is required"
 }
