@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.impl.FeelExpression;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata;
+import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityParameterExtractor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,6 +39,8 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
   private final TaskDefinitionTransformer taskDefinitionTransformer =
       new TaskDefinitionTransformer();
   private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
+  private final AdHocActivityParameterExtractor parameterExtractor =
+      new AdHocActivityParameterExtractor();
 
   @Override
   public Class<AdHocSubProcess> getType() {
@@ -140,7 +145,7 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
     taskHeadersTransformer.transform(executableAdHocSubProcess, taskHeaders, element);
   }
 
-  private static void setAdHocActivitiesMetadata(
+  private void setAdHocActivitiesMetadata(
       final ExecutableAdHocSubProcess executableAdHocSubProcess) {
     final List<AdHocActivityMetadata> activitiesMetadata =
         executableAdHocSubProcess.getAdHocActivitiesById().values().stream()
@@ -151,8 +156,22 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
                   final String documentation =
                       BufferUtil.bufferAsString(flowNode.getDocumentation());
 
+                  final var parameters =
+                      flowNode
+                          .getInputMappings()
+                          .map(
+                              inputMappings -> {
+                                if (inputMappings instanceof final FeelExpression feelExpression) {
+                                  return parameterExtractor.extractParameters(
+                                      feelExpression.getParsedExpression());
+                                }
+
+                                return null;
+                              })
+                          .orElseGet(Collections::emptyList);
+
                   return new AdHocActivityMetadata(
-                      elementId, elementName, documentation, flowNode.getProperties(), List.of());
+                      elementId, elementName, documentation, flowNode.getProperties(), parameters);
                 })
             .toList();
 
