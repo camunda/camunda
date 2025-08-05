@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -128,6 +129,14 @@ public final class BpmnAdHocSubProcessBehavior {
   public void completionConditionFulfilled(
       final BpmnElementContext adHocSubProcessContext, final boolean cancelRemainingInstances) {
     final var adHocSubProcessInstance = stateBehavior.getElementInstance(adHocSubProcessContext);
+    completionConditionFulfilled(
+        adHocSubProcessContext, cancelRemainingInstances, adHocSubProcessInstance);
+  }
+
+  public void completionConditionFulfilled(
+      final BpmnElementContext adHocSubProcessContext,
+      final boolean cancelRemainingInstances,
+      final ElementInstance adHocSubProcessInstance) {
     final var hasActiveChildInstances =
         adHocSubProcessInstance.getNumberOfActiveElementInstances() > 0;
     final var hasActiveSequenceFlows = adHocSubProcessInstance.getActiveSequenceFlows() > 0;

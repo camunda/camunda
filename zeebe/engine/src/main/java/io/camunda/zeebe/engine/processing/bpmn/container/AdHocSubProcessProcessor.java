@@ -356,12 +356,24 @@ public class AdHocSubProcessProcessor
       // job before creating the new one.
       jobBehavior.cancelJob(adHocSubProcessContext);
 
-      jobBehavior
-          .evaluateJobExpressions(adHocSubProcess.getJobWorkerProperties(), adHocSubProcessContext)
-          .thenDo(
-              jobProperties ->
-                  jobBehavior.createNewAdHocSubProcessJob(
-                      adHocSubProcessContext, adHocSubProcess, jobProperties));
+      final var adHocSubProcessInstance =
+          stateBehavior.getElementInstance(adHocSubProcessContext.getElementInstanceKey());
+      if (adHocSubProcessInstance.isCompletionConditionFulFilled()) {
+        adHocSubProcessBehavior.completionConditionFulfilled(
+            adHocSubProcessContext,
+            adHocSubProcess.isCancelRemainingInstances(),
+            adHocSubProcessInstance);
+      } else {
+        // If the completion is fulfilled we should not create a new job. The ad-hoc sub-process
+        // will be completed soon.
+        jobBehavior
+            .evaluateJobExpressions(
+                adHocSubProcess.getJobWorkerProperties(), adHocSubProcessContext)
+            .thenDo(
+                jobProperties ->
+                    jobBehavior.createNewAdHocSubProcessJob(
+                        adHocSubProcessContext, adHocSubProcess, jobProperties));
+      }
     }
   }
 }
