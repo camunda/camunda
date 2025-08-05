@@ -65,6 +65,17 @@ warn[msg] {
         [concat(", ", get_jobs_with_usesbutnosecrets(input.jobs))])
 }
 
+warn[msg] {
+    # TODO
+
+    count(get_jobsteps_with_runsbutnoshell(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions job steps running scripts but not specifying which shell to use - please put 'shell: bash' explicitly to avoid surprises! Affected job IDs: %s",
+        [concat(", ", get_jobsteps_with_runsbutnoshell(input.jobs))])
+}
+
+
+
 ###########################   RULE HELPERS   ##################################
 
 get_jobs_with_setupnodecaching(jobInput) = jobs_with_setupnodecaching {
@@ -112,5 +123,19 @@ get_jobs_with_usesbutnosecrets(jobInput) = jobs_with_usesbutnosecrets {
         # check jobs that invoke other reusable workflows but don't specify "secrets: inherit"
         job.uses
         not job.secrets
+    }
+}
+
+get_jobsteps_with_runsbutnoshell(jobInput) = get_jobsteps_with_runsbutnoshell {
+    get_jobsteps_with_runsbutnoshell := { job_id |
+        job := jobInput[job_id]
+
+        steps_with_runsbutnoshell := { step |
+            step := job.steps[_]
+
+            step.run
+            not step.shell
+        }
+        count(steps_with_runsbutnoshell) > 0
     }
 }
