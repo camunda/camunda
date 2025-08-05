@@ -63,29 +63,29 @@ public class MultiDbConfigurator {
     final Map<String, Object> elasticsearchProperties = new HashMap<>();
 
     /* Tasklist */
-    elasticsearchProperties.put("camunda.tasklist.elasticsearch.url", elasticsearchUrl);
-    elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.tasklist.elasticsearch.indexPrefix", indexPrefix);
     elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
     /* Operate */
-    elasticsearchProperties.put("camunda.operate.elasticsearch.url", elasticsearchUrl);
-    elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.operate.elasticsearch.indexPrefix", indexPrefix);
     elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
-    /* Camunda */
-    // type
+    // db type
     elasticsearchProperties.put(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_ELASTICSEARCH);
     elasticsearchProperties.put(
         UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_ELASTICSEARCH);
     elasticsearchProperties.put("camunda.operate.database", DB_TYPE_ELASTICSEARCH);
     elasticsearchProperties.put("camunda.tasklist.database", DB_TYPE_ELASTICSEARCH);
     // url
-    elasticsearchProperties.put("camunda.database.url", elasticsearchUrl);
     elasticsearchProperties.put(
         "camunda.data.secondary-storage.elasticsearch.url", elasticsearchUrl);
-    // ---
+    elasticsearchProperties.put("camunda.database.url", elasticsearchUrl);
+    elasticsearchProperties.put("camunda.tasklist.elasticsearch.url", elasticsearchUrl);
+    elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.url", elasticsearchUrl);
+    elasticsearchProperties.put("camunda.operate.elasticsearch.url", elasticsearchUrl);
+    elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.url", elasticsearchUrl);
+
+    /* Camunda */
     elasticsearchProperties.put("camunda.database.indexPrefix", indexPrefix);
     elasticsearchProperties.put(
         "camunda.database.retention.enabled", Boolean.toString(retentionEnabled));
@@ -175,28 +175,30 @@ public class MultiDbConfigurator {
     final Map<String, Object> opensearchProperties = new HashMap<>();
 
     /* Tasklist */
-    opensearchProperties.put("camunda.tasklist.opensearch.url", opensearchUrl);
-    opensearchProperties.put("camunda.tasklist.zeebeOpensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.tasklist.opensearch.indexPrefix", indexPrefix);
     opensearchProperties.put("camunda.tasklist.zeebeOpensearch.prefix", zeebeIndexPrefix());
     opensearchProperties.put("camunda.tasklist.opensearch.username", userName);
     opensearchProperties.put("camunda.tasklist.opensearch.password", userPassword);
 
     /* Operate */
-    opensearchProperties.put("camunda.operate.opensearch.url", opensearchUrl);
-    opensearchProperties.put("camunda.operate.zeebeOpensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.operate.opensearch.indexPrefix", indexPrefix);
     opensearchProperties.put("camunda.operate.zeebeOpensearch.prefix", zeebeIndexPrefix());
     opensearchProperties.put("camunda.operate.opensearch.username", userName);
     opensearchProperties.put("camunda.operate.opensearch.password", userPassword);
 
-    /* Camunda */
+    // db url
+    opensearchProperties.put("camunda.data.secondary-storage.opensearch.url", opensearchUrl);
+    opensearchProperties.put("camunda.tasklist.opensearch.url", opensearchUrl);
+    opensearchProperties.put("camunda.tasklist.zeebeOpensearch.url", opensearchUrl);
+    opensearchProperties.put("camunda.operate.opensearch.url", opensearchUrl);
+    opensearchProperties.put("camunda.operate.zeebeOpensearch.url", opensearchUrl);
     // db type
     opensearchProperties.put(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_OPENSEARCH);
     opensearchProperties.put(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_OPENSEARCH);
     opensearchProperties.put("camunda.operate.database", DB_TYPE_OPENSEARCH);
     opensearchProperties.put("camunda.tasklist.database", DB_TYPE_OPENSEARCH);
-    // ---
+
+    /* Camunda */
     opensearchProperties.put("camunda.database.indexPrefix", indexPrefix);
     opensearchProperties.put("camunda.database.username", userName);
     opensearchProperties.put("camunda.database.password", userPassword);
