@@ -469,12 +469,19 @@ public class JobBasedAdHocSubProcessTest {
     completeJobWithActivateElements(
         jobType, activateElement("DoesntExist"), activateElement("NotThere"));
 
+    final var ahspKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AHSP_ELEMENT_ID)
+            .getFirst()
+            .getKey();
     Assertions.assertThat(
             RecordingExporter.jobRecords(JobIntent.COMPLETE).onlyCommandRejections().getFirst())
         .extracting(Record::getRejectionType, Record::getRejectionReason)
         .containsOnly(
             RejectionType.NOT_FOUND,
-            "Expected to activate activities for ad-hoc sub-process with key '2251799813685256', but the given elements [DoesntExist, NotThere] do not exist.");
+            "Expected to activate activities for ad-hoc sub-process with key '%d', but the given elements [DoesntExist, NotThere] do not exist."
+                .formatted(ahspKey));
 
     Assertions.assertThat(
             RecordingExporter.records()
