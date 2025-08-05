@@ -15,18 +15,25 @@ import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import java.io.IOException;
 import java.util.Objects;
 
-record GcsConnectionConfig(String host, Authentication auth) {
+public record GcsConnectionConfig(String host, Authentication auth) {
 
-  GcsConnectionConfig(String host, Authentication auth) {
+  public GcsConnectionConfig(final String host, final Authentication auth) {
     this.host = host;
     this.auth = Objects.requireNonNullElseGet(auth, Auto::new);
   }
 
-  sealed interface Authentication {
+  public sealed interface Authentication {
     Credentials credentials();
 
     /** Use no authentication, only useful for testing. */
-    record None() implements Authentication {
+    record None(String projectId) implements Authentication {
+      public None {
+        if (projectId == null || projectId.isBlank()) {
+          throw new IllegalArgumentException(
+              "Project ID must be provided when using no authentication");
+        }
+      }
+
       @Override
       public Credentials credentials() {
         return NoCredentials.getInstance();
@@ -44,7 +51,7 @@ record GcsConnectionConfig(String host, Authentication auth) {
         try {
           return GoogleCredentials.getApplicationDefault()
               .createScoped(StorageScopes.DEVSTORAGE_READ_WRITE);
-        } catch (IOException e) {
+        } catch (final IOException e) {
           throw new IllegalStateException("Failed to retrieve application default credentials", e);
         }
       }
