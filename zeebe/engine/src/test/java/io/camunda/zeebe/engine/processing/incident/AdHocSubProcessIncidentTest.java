@@ -144,6 +144,12 @@ public class AdHocSubProcessIncidentTest {
             .create();
 
     // then
+    final var ahspKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
+            .getFirst()
+            .getKey();
     Assertions.assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -152,7 +158,8 @@ public class AdHocSubProcessIncidentTest {
         .hasElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected to activate activities for ad-hoc sub-process with key '2251799813685257', but the given elements [D, E] do not exist.");
+            "Expected to activate activities for ad-hoc sub-process with key '%s', but the given elements [D, E] do not exist."
+                .formatted(ahspKey));
   }
 
   @Test
@@ -177,6 +184,12 @@ public class AdHocSubProcessIncidentTest {
             .create();
 
     // then
+    final var ahspKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
+            .getFirst()
+            .getKey();
     Assertions.assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -185,7 +198,8 @@ public class AdHocSubProcessIncidentTest {
         .hasElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected to activate activities for ad-hoc sub-process with key '2251799813685266', but the given elements [A2, A3] do not exist.");
+            "Expected to activate activities for ad-hoc sub-process with key '%d', but the given elements [A2, A3] do not exist."
+                .formatted(ahspKey));
   }
 
   @Test
@@ -213,6 +227,12 @@ public class AdHocSubProcessIncidentTest {
             .create();
 
     // then
+    final var ahspKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
+            .getFirst()
+            .getKey();
     Assertions.assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -221,7 +241,8 @@ public class AdHocSubProcessIncidentTest {
         .hasElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected to activate activities for ad-hoc sub-process with key '2251799813685275', but the given elements [boundaryEvent] do not exist.");
+            "Expected to activate activities for ad-hoc sub-process with key '%d', but the given elements [boundaryEvent] do not exist."
+                .formatted(ahspKey));
   }
 
   @Test
