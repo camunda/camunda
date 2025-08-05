@@ -11,7 +11,6 @@ import io.camunda.application.commons.rest.RestApiConfiguration.GatewayRestPrope
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
 import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
-import io.camunda.authentication.converter.DefaultCamundaAuthenticationConverter;
 import io.camunda.authentication.converter.UnprotectedCamundaAuthenticationConverter;
 import io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder;
 import io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder;
@@ -52,11 +51,6 @@ public class RestApiConfiguration {
   public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder(
       final HttpServletRequest request) {
     return new HttpSessionBasedAuthenticationHolder(request);
-  }
-
-  @Bean
-  public CamundaAuthenticationConverter<Authentication> camundaAuthenticationConverter() {
-    return new DefaultCamundaAuthenticationConverter();
   }
 
   @Bean

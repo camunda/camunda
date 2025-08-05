@@ -19,7 +19,7 @@ import java.util.Optional;
  */
 public class HttpSessionBasedAuthenticationHolder implements CamundaAuthenticationHolder {
 
-  static final String CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY =
+  public static final String CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY =
       "io.camunda.security.session:CamundaAuthentication";
 
   private final HttpServletRequest request;
