@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata;
+import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -40,6 +41,8 @@ public final class AdHocSubProcessElementsVariableTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   private static final String PROCESS_ID = "process";
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
   private static final String AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE = "adHocSubProcessElements";
@@ -56,7 +59,8 @@ public final class AdHocSubProcessElementsVariableTest {
               "Simple_Task",
               "Simple Task",
               "The Simple Task documentation",
-              Map.of("someProperty", "someValue")));
+              Map.of("someProperty", "someValue"),
+              null));
 
   private static final AdHocSubProcessElementTestFixture TASK_WITH_PROPERTIES =
       testFixture(
@@ -83,7 +87,8 @@ public final class AdHocSubProcessElementsVariableTest {
                   put("io.camunda.test.property4", "   ");
                   put("io.camunda.test.property5", null);
                 }
-              }));
+              },
+              null));
 
   private static final AdHocSubProcessElementTestFixture SERVICE_TASK =
       testFixture(
@@ -96,9 +101,19 @@ public final class AdHocSubProcessElementsVariableTest {
                         .zeebeJobType("serviceTaskJobType")
                         .zeebeInput("=fromAi(toolCall.a, \"Input A\", \"number\")", "inputA")
                         .zeebeInput("=fromAi(toolCall.b, \"Input B\", \"number\")", "inputB")
-                        .zeebeInput("=123456", "inputC"); // not a parameter, just a static value
+                        .zeebeInput(
+                            "=string(fromAi(toolCall.c, \"Input C\", \"number\"))", "inputC")
+                        .zeebeInput("=123456", "inputD"); // not a parameter, just a static value
                   }),
-          new AdHocActivityMetadata("Service_Task", "Service Task", null, null));
+          new AdHocActivityMetadata(
+              "Service_Task",
+              "Service Task",
+              null,
+              null,
+              List.of(
+                  new AdHocActivityParameter("a", "Input A", "number", null, null),
+                  new AdHocActivityParameter("b", "Input B", "number", null, null),
+                  new AdHocActivityParameter("c", "Input C", "number", null, null))));
 
   private static final AdHocSubProcessElementTestFixture USER_TASK =
       testFixture(
@@ -115,7 +130,13 @@ public final class AdHocSubProcessElementsVariableTest {
                             "userTaskInput");
                   }),
           new AdHocActivityMetadata(
-              "User_Task", "User Task", "A user task with documentation", null));
+              "User_Task",
+              "User Task",
+              "A user task with documentation",
+              null,
+              List.of(
+                  new AdHocActivityParameter(
+                      "userTaskInput", "Input for the user task", null, null, null))));
 
   private static final AdHocSubProcessElementTestFixture SCRIPT_TASK =
       testFixture(
@@ -143,7 +164,10 @@ public final class AdHocSubProcessElementsVariableTest {
               "Script_Task",
               "Script Task",
               "A script task with documentation",
-              Map.of("io.camunda.test.property1", "value1")));
+              Map.of("io.camunda.test.property1", "value1"),
+              List.of(
+                  new AdHocActivityParameter(
+                      "inputVariable", "Input variable description", null, null, null))));
 
   private static final AdHocSubProcessElementTestFixture TASK_WITH_FOLLOW_UP =
       testFixture(
@@ -154,7 +178,8 @@ public final class AdHocSubProcessElementsVariableTest {
             final var followUpTaskBuilder = taskBuilder.task("Follow_Up_Task");
             followUpTaskBuilder.name("Follow-Up Task");
           },
-          new AdHocActivityMetadata("A_Task_With_Follow_Up", "A Task With Follow-Up", null, null));
+          new AdHocActivityMetadata(
+              "A_Task_With_Follow_Up", "A Task With Follow-Up", null, null, null));
 
   private static final AdHocSubProcessElementTestFixture INTERMEDIATE_THROW_EVENT_WITH_FOLLOW_UP =
       testFixture(
@@ -175,7 +200,8 @@ public final class AdHocSubProcessElementsVariableTest {
               "An_Event",
               "An event!",
               "The event documentation",
-              Map.of("eventProperty", "eventPropertyName")));
+              Map.of("eventProperty", "eventPropertyName"),
+              null));
 
   private static final AdHocSubProcessElementTestFixture COMPLEX_TOOL =
       testFixture(
@@ -239,7 +265,36 @@ public final class AdHocSubProcessElementsVariableTest {
               "A_Complex_Tool",
               "A complex tool",
               "A complex tool with nested parameters",
-              Map.of("complexToolProperty", "complexValue")));
+              Map.of("complexToolProperty", "complexValue"),
+              List.of(
+                  new AdHocActivityParameter("aSimpleValue", "A simple value", null, null, null),
+                  new AdHocActivityParameter(
+                      "anEnumValue",
+                      "An enum value",
+                      "string",
+                      Map.of("enum", List.of("A", "B", "C")),
+                      null),
+                  new AdHocActivityParameter(
+                      "anArrayValue",
+                      "An array value",
+                      "array",
+                      Map.of(
+                          "items", Map.of("type", "string", "enum", List.of("foo", "bar", "baz"))),
+                      null),
+                  new AdHocActivityParameter(
+                      "urlPath", "The URL path to use", "string", null, null),
+                  new AdHocActivityParameter("firstValue", null, null, null, null),
+                  new AdHocActivityParameter(
+                      "secondValue", "The second value", "integer", null, null),
+                  new AdHocActivityParameter(
+                      "thirdValue", "The third value to add", null, null, null),
+                  new AdHocActivityParameter(
+                      "fourthValue",
+                      "The fourth value to add",
+                      "array",
+                      Map.of(
+                          "items", Map.of("type", "string", "enum", List.of("foo", "bar", "baz"))),
+                      null))));
 
   private static final String EVENT_SUBPROCESS_ID = "Event_Subprocess";
   private static final String EVENT_SUBPROCESS_START_EVENT_ID = EVENT_SUBPROCESS_ID + "_Start";
@@ -260,8 +315,6 @@ public final class AdHocSubProcessElementsVariableTest {
                             .endEvent();
                       }),
           null);
-
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
