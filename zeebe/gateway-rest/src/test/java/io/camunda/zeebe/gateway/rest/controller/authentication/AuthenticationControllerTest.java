@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +43,8 @@ public class AuthenticationControllerTest extends RestControllerTest {
                 new TenantEntity(100L, "testTenantId", "testTenantNem", "testTenantDescription")),
             List.of("test group"),
             List.of("test role"),
-            "test plan",
-            Map.of(AppName.OPERATE, "testLink"),
+            null,
+            Map.of(),
             true);
 
     when(camundaUserService.getCurrentUser()).thenReturn(camundaUserDTO);
@@ -69,8 +68,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "tenants": [{"tenantId":"testTenantId","name":"testTenantNem","description":"testTenantDescription"}],
                   "groups": ["test group"],
                   "roles": ["test role"],
-                  "salesPlanType": "test plan",
-                  "c8Links": {"operate": "testLink"},
+                  "c8Links": {},
                   "canLogout": true
                 }""",
             JsonCompareMode.STRICT);

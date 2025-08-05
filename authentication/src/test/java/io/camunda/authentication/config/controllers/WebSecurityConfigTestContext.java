@@ -14,7 +14,9 @@ import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.TenantServices;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,6 +49,16 @@ public class WebSecurityConfigTestContext {
   @Bean
   public RoleServices createRoleServices() {
     return new RoleServices(null, null, null, null);
+  }
+
+  @Bean
+  public GroupServices createGroupServices() {
+    return new GroupServices(null, null, null, null);
+  }
+
+  @Bean
+  public TenantServices createTenantServices() {
+    return new TenantServices(null, null, null, null);
   }
 
   @Bean

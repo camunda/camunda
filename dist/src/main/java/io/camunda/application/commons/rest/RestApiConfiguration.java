@@ -8,11 +8,11 @@
 package io.camunda.application.commons.rest;
 
 import io.camunda.application.commons.rest.RestApiConfiguration.GatewayRestProperties;
-import io.camunda.authentication.CamundaAuthenticationDelegatingConverter;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
-import io.camunda.authentication.DefaultCamundaAuthenticationConverter;
 import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
-import io.camunda.authentication.UnprotectedCamundaAuthenticationConverter;
+import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
+import io.camunda.authentication.converter.DefaultCamundaAuthenticationConverter;
+import io.camunda.authentication.converter.UnprotectedCamundaAuthenticationConverter;
 import io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder;
 import io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.authentication.holder.RequestContextBasedAuthenticationHolder;
