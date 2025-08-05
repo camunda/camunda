@@ -152,7 +152,7 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
                       BufferUtil.bufferAsString(flowNode.getDocumentation());
 
                   return new AdHocActivityMetadata(
-                      elementId, elementName, documentation, flowNode.getProperties());
+                      elementId, elementName, documentation, flowNode.getProperties(), List.of());
                 })
             .toList();
 
