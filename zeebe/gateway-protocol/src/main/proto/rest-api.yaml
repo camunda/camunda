@@ -3037,10 +3037,11 @@ paths:
     put:
       tags:
         - Role
-      operationId: addRoleToUser
+      operationId: assignRoleToUser
       summary: Assign a role to a user
       description: |
-        Assigns a role to a user.
+        Assigns the specified role to the user.
+        The user will inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3080,10 +3081,11 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeUserFromRole
+      operationId: unassignRoleFromUser
       summary: Unassign a user from a role
       description: |
         Unassigns a user from a role.
+        The user will no longer inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3118,10 +3120,11 @@ paths:
     put:
       tags:
         - Role
-      operationId: addRoleToClient
+      operationId: assignRoleToClient
       summary: Assign a role to a client
       description: |
-        Assigns a role to a client.
+        Assigns the specified role to the client.
+        The client will inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3161,10 +3164,11 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeRoleFromClient
+      operationId: unassignRoleFromClient
       summary: Unassign a role from a client
       description: |
-        Unassigns a role from a client.
+        Unassigns the specified role from the client.
+        The client will no longer inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3232,10 +3236,11 @@ paths:
     put:
       tags:
         - Role
-      operationId: addRoleToGroup
+      operationId: assignRoleToGroup
       summary: Assign a role to a group
       description: |
-        Assigns a role to a group.
+        Assigns the specified role to the group.
+        Every member of the group (user or client) will inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3275,10 +3280,11 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeRoleFromGroup
+      operationId: unassignRoleFromGroup
       summary: Unassign a role from a group
       description: |
-        Unassigns a role from a group.
+        Unassigns the specified role from the group.
+        All group members (user or client) no longer inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3355,7 +3361,7 @@ paths:
     put:
       tags:
         - Role
-      operationId: addRoleToMappingRule
+      operationId: assignRoleToMappingRule
       summary: Assign a role to a mapping rule
       description: |
         Assigns a role to a mapping rule.
@@ -3398,7 +3404,7 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeRoleFromMappingRule
+      operationId: unassignRoleFromMappingRule
       summary: Unassign a role from a mapping rule
       description: |
         Unassigns a role from a mapping rule.
