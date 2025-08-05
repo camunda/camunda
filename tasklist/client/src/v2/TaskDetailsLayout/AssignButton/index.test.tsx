@@ -126,8 +126,7 @@ describe('AssignButton', () => {
     nodeMockServer.use(
       http.post(
         '/v2/user-tasks/:userTaskKey/assignment',
-        () =>
-          HttpResponse.json({error: 'Failed to assign task'}, {status: 400}),
+        () => HttpResponse.error(),
         {once: true},
       ),
     );
@@ -159,8 +158,7 @@ describe('AssignButton', () => {
     nodeMockServer.use(
       http.delete(
         '/v2/user-tasks/:userTaskKey/assignee',
-        () =>
-          HttpResponse.json({error: 'Failed to unassign task'}, {status: 400}),
+        () => HttpResponse.error(),
         {once: true},
       ),
     );

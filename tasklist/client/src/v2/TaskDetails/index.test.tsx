@@ -241,12 +241,15 @@ describe('<Task />', () => {
   });
 
   it('should complete task without variables', async () => {
+    let taskState: 'CREATED' | 'COMPLETED' = 'CREATED';
+
     nodeMockServer.use(
       http.get('/v2/user-tasks/:userTaskKey', () => {
         return HttpResponse.json(
           taskMocks.assignedTask({
             userTaskKey: MOCK_USER_TASK_KEY,
             formKey: undefined,
+            state: taskState,
           }),
         );
       }),
@@ -260,6 +263,7 @@ describe('<Task />', () => {
       http.post(
         '/v2/user-tasks/:userTaskKey/completion',
         () => {
+          taskState = 'COMPLETED';
           return HttpResponse.json();
         },
         {once: true},
