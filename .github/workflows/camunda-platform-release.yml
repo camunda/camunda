@@ -28,6 +28,10 @@ on:
         description: 'Whether to perform a dry release where no changes or artifacts are pushed, defaults to true.'
         type: boolean
         default: true
+      releaseProcessDryRun:
+        description: 'Activates E2E testing mode for the release process. This mode creates real, temporary changes and artifacts in GitHub and Maven, which are left for manual inspection. A separate process (dryrun_cleanup.bpmn) is responsible for their final reversion, ensuring no lasting impact on production.'
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       releaseBranch:
@@ -52,7 +56,10 @@ on:
         description: 'Whether to perform a dry release where no changes or artifacts are pushed, defaults to true.'
         type: boolean
         default: true
-
+      releaseProcessDryRun:
+        description: 'Activates E2E testing mode for the release process. This mode creates real, temporary changes and artifacts in GitHub and Maven, which are left for manual inspection. A separate process (dryrun_cleanup.bpmn) is responsible for their final reversion, ensuring no lasting impact on production.'
+        type: boolean
+        default: false
 defaults:
   run:
     shell: bash
@@ -70,7 +77,7 @@ jobs:
       releaseBranch: ${{ env.RELEASE_BRANCH }}
     env:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
-      PUSH_CHANGES: ${{ inputs.dryRun == false }}
+      PUSH_CHANGES: ${{ !inputs.dryRun }}
     steps:
       - name: Output Inputs
         run: echo "${{ toJSON(github.event.inputs) }}"
@@ -174,7 +181,8 @@ jobs:
       - name: Maven Perform Release
         id: maven-perform-release
         env:
-          SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
+          SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
+          SKIP_CAMUNDA_RELEASE: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
@@ -192,7 +200,7 @@ jobs:
             -DskipQaBuild=true \
             -P-autoFormat \
             -P\!include-optimize \
-            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
@@ -236,7 +244,7 @@ jobs:
             fi
           done
       - name: Push Changes to Release branch
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun }}
         run: git push origin "${RELEASE_BRANCH}"
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
@@ -350,12 +358,12 @@ jobs:
           echo "result=${PRE_RELEASE}" >> "$GITHUB_OUTPUT"
       - name: Create Github release
         uses: ncipollo/release-action@v1
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun }}
         with:
           name: ${{ inputs.releaseVersion }}
           artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
-          draft: false
+          draft: ${{ inputs.releaseProcessDryRun }}
           makeLatest: ${{ inputs.isLatest }}
           body: ${{ steps.gen-changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -433,7 +441,7 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
       - name: Sync Docker Image to DockerHub
         id: push-docker
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
@@ -515,7 +523,7 @@ jobs:
           goldenfile: operate-docker-labels.golden.json
       - name: Sync Operate Docker Image to DockerHub
         id: push-docker
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
@@ -597,7 +605,7 @@ jobs:
           goldenfile: tasklist-docker-labels.golden.json
       - name: Sync Tasklist Docker Image to DockerHub
         id: push-docker
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
@@ -679,7 +687,7 @@ jobs:
           goldenfile: camunda-docker-labels.golden.json
       - name: Sync Camunda Docker Image to DockerHub
         id: push-docker
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
@@ -711,10 +719,10 @@ jobs:
       version: ${{ inputs.releaseVersion }}
       useMinorVersion: true
       # test instead of monitor during dry-runs
-      monitor: ${{ !inputs.dryRun }}
+      monitor: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
       # the docker image will not be pushed during a dry-run, so we need to build it locally
-      build: ${{ inputs.dryRun }}
-      dockerImage: ${{ inputs.dryRun && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
+      build: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+      dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
     secrets: inherit
 
   notify-on-success:
@@ -731,7 +739,7 @@ jobs:
       needs.tasklist-docker.result == 'success' &&
       needs.camunda-docker.result == 'success' &&
       (needs.snyk.result == 'success' || needs.snyk.result == 'skipped')
-      ) && inputs.dryRun == false }}
+      ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
@@ -780,7 +788,7 @@ jobs:
         needs.tasklist-docker.result == 'failure' ||
         needs.camunda-docker.result == 'failure' ||
         needs.snyk.result == 'failure'
-        ) && inputs.dryRun == false }}
+        ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
