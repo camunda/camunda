@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessUtils;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
@@ -30,7 +31,6 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class AdHocSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableAdHocSubProcess> {
@@ -181,30 +181,16 @@ public class AdHocSubProcessProcessor
                   new Failure(
                       "Failed to activate ad-hoc elements. " + failure.getMessage(),
                       ErrorType.EXTRACT_VALUE_ERROR))
-          .flatMap(elements -> validateActiveElements(adHocSubProcess, elements));
-    }
-  }
-
-  private static Either<Failure, List<String>> validateActiveElements(
-      final ExecutableAdHocSubProcess adHocSubProcess,
-      final List<String> activateElementsCollection) {
-
-    final List<String> elementsNotFound =
-        activateElementsCollection.stream()
-            .filter(elementId -> !adHocSubProcess.getAdHocActivitiesById().containsKey(elementId))
-            .toList();
-
-    if (elementsNotFound.isEmpty()) {
-      return Either.right(activateElementsCollection);
-
-    } else {
-      final String elementIds =
-          elementsNotFound.stream().map("'%s'"::formatted).collect(Collectors.joining(", "));
-      return Either.left(
-          new Failure(
-              "Failed to activate ad-hoc elements. No BPMN elements found with ids: %s."
-                  .formatted(elementIds),
-              ErrorType.EXTRACT_VALUE_ERROR));
+          .flatMap(
+              elements ->
+                  AdHocSubProcessUtils.validateActivateElementsExistInAdHocSubProcess(
+                          context.getElementInstanceKey(), adHocSubProcess, elements)
+                      .mapLeft(
+                          rejection ->
+                              new Failure(
+                                  rejection.reason(),
+                                  ErrorType.EXTRACT_VALUE_ERROR,
+                                  context.getElementInstanceKey())));
     }
   }
 
@@ -213,11 +199,9 @@ public class AdHocSubProcessProcessor
       final BpmnElementContext context,
       final List<String> elementsToActivate) {
 
-    elementsToActivate.stream()
-        .map(element.getAdHocActivitiesById()::get)
-        .forEach(
-            elementToActivate ->
-                adHocSubProcessBehavior.activateElement(context, element, elementToActivate));
+    elementsToActivate.forEach(
+        elementToActivate ->
+            adHocSubProcessBehavior.activateElement(context, element, elementToActivate));
   }
 
   @Override

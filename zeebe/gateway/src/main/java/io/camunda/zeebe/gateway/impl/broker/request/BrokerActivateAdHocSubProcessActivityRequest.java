@@ -24,7 +24,7 @@ public class BrokerActivateAdHocSubProcessActivityRequest
   }
 
   public BrokerActivateAdHocSubProcessActivityRequest setAdHocSubProcessInstanceKey(
-      final String adHocSubProcessInstanceKey) {
+      final long adHocSubProcessInstanceKey) {
     requestDto.setAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey);
     return this;
   }

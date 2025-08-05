@@ -28,15 +28,15 @@ public class AdHocSubProcessInstructionRecordStream
   }
 
   public AdHocSubProcessInstructionRecordStream withAdHocSubProcessInstanceKey(
-      final String adHocSubProcessInstanceKey) {
+      final long adHocSubProcessInstanceKey) {
     return valueFilter(
-        record -> record.getAdHocSubProcessInstanceKey().equals(adHocSubProcessInstanceKey));
+        record -> record.getAdHocSubProcessInstanceKey() == adHocSubProcessInstanceKey);
   }
 
   public AdHocSubProcessInstructionRecordStream limitToAdHocSubProcessInstanceCompleted() {
     return limit(
         r ->
             r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
-                && r.getKey() == Long.parseLong(r.getValue().getAdHocSubProcessInstanceKey()));
+                && r.getKey() == r.getValue().getAdHocSubProcessInstanceKey());
   }
 }

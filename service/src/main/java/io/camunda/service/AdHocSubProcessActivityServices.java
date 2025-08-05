@@ -52,7 +52,7 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
   }
 
   public record AdHocSubProcessActivateActivitiesRequest(
-      String adHocSubProcessInstanceKey,
+      long adHocSubProcessInstanceKey,
       List<AdHocSubProcessActivateActivityReference> elements,
       boolean cancelRemainingInstances) {
     public record AdHocSubProcessActivateActivityReference(

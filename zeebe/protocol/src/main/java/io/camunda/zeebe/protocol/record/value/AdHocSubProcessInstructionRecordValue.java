@@ -34,7 +34,7 @@ public interface AdHocSubProcessInstructionRecordValue extends RecordValue, Tena
   /**
    * @return the instance key of the ad-hoc sub-process to modify.
    */
-  String getAdHocSubProcessInstanceKey();
+  long getAdHocSubProcessInstanceKey();
 
   /**
    * @return the list of elements that should be activated.
