@@ -51,6 +51,7 @@ import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
+import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.JobStreamComponent;
@@ -498,6 +499,8 @@ public class ClusteringRule extends ExternalResource {
     final var dynamicClusterServices =
         new DynamicClusterServices(actorScheduler, atomixCluster, meterRegistry);
     final var topologyManager = dynamicClusterServices.brokerTopologyManager();
+    final var clusterTopologyService =
+        dynamicClusterServices.gatewayClusterTopologyService(topologyManager, gatewayCfg);
 
     final var brokerClientConfig = config.brokerClientConfig();
     final var brokerClientConfiguration =
@@ -532,7 +535,8 @@ public class ClusteringRule extends ExternalResource {
         brokerClient,
         jobStreamClient,
         gateway,
-        meterRegistry);
+        meterRegistry,
+        clusterTopologyService);
   }
 
   private CamundaClient createClient() {
@@ -989,7 +993,8 @@ public class ClusteringRule extends ExternalResource {
       BrokerClient brokerClient,
       JobStreamClient jobStreamClient,
       Gateway gateway,
-      MeterRegistry meterRegistry)
+      MeterRegistry meterRegistry,
+      GatewayClusterConfigurationService clusterTopologyService)
       implements AutoCloseable {
 
     @Override
@@ -1001,7 +1006,8 @@ public class ClusteringRule extends ExternalResource {
           scheduler,
           () -> cluster.stop().join(),
           meterRegistry::clear,
-          meterRegistry::close);
+          meterRegistry::close,
+          clusterTopologyService);
     }
   }
 
