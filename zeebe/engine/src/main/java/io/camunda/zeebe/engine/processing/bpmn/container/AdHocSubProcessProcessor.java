@@ -27,13 +27,18 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import org.agrona.DirectBuffer;
 
 public class AdHocSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableAdHocSubProcess> {
+
+  private static final DirectBuffer AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_NAME =
+      BufferUtil.wrapString("adHocSubProcessElements");
 
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
@@ -74,6 +79,9 @@ public class AdHocSubProcessProcessor
   @Override
   public Either<Failure, ?> onActivate(
       final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+    stateBehavior.setLocalVariable(
+        context, AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_NAME, element.getAdHocActivitiesMetadata());
+
     return variableMappingBehavior.applyInputMappings(context, element);
   }
 
