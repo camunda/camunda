@@ -10,6 +10,7 @@ import {Link} from '@carbon/react';
 import {ActionableNotification, Text} from './styled';
 import {type CallHierarchy} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
+import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 
 function getParentAndRootProcessInformation(callHierarchy?: CallHierarchy[]) {
   const parentProcess =
@@ -25,7 +26,12 @@ function getParentAndRootProcessInformation(callHierarchy?: CallHierarchy[]) {
 }
 
 const Error: React.FC = () => {
-  const {data: callHierarchy} = useCallHierarchy();
+  const {processInstanceId: processInstanceKey} =
+    useProcessInstancePageParams();
+  const {data: callHierarchy} = useCallHierarchy(
+    {processInstanceKey: processInstanceKey!},
+    {enabled: processInstanceKey !== undefined},
+  );
   const {parentProcessId, parentProcessName, rootProcessId, rootProcessName} =
     getParentAndRootProcessInformation(callHierarchy);
 
