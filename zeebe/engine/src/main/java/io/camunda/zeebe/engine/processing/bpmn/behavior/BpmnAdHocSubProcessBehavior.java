@@ -14,6 +14,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -30,17 +32,20 @@ public final class BpmnAdHocSubProcessBehavior {
   private final TypedCommandWriter commandWriter;
   private final BpmnStateBehavior stateBehavior;
   private final VariableBehavior variableBehavior;
+  private final ElementInstanceState elementInstanceState;
 
   public BpmnAdHocSubProcessBehavior(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final BpmnStateBehavior stateBehavior,
-      final VariableBehavior variableBehavior) {
+      final VariableBehavior variableBehavior,
+      final ProcessingState processingState) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     commandWriter = writers.command();
     this.stateBehavior = stateBehavior;
     this.variableBehavior = variableBehavior;
+    elementInstanceState = processingState.getElementInstanceState();
   }
 
   public void activateElement(
@@ -118,5 +123,46 @@ public final class BpmnAdHocSubProcessBehavior {
     final var elementInstanceKey = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(
         elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, innerElementRecord);
+  }
+
+  public void completionConditionFulfilled(
+      final BpmnElementContext adHocSubProcessContext, final boolean cancelRemainingInstances) {
+    final var adHocSubProcessInstance = stateBehavior.getElementInstance(adHocSubProcessContext);
+    final var hasActiveChildInstances =
+        adHocSubProcessInstance.getNumberOfActiveElementInstances() > 0;
+    final var hasActiveSequenceFlows = adHocSubProcessInstance.getActiveSequenceFlows() > 0;
+
+    if (cancelRemainingInstances) {
+      // terminate all remaining child instances & directly complete ad-hoc sub-process if there
+      // is no child activity left
+      if (hasActiveChildInstances) {
+        terminateChildInstances(adHocSubProcessContext);
+      } else {
+        completeAdHocSubProcess(adHocSubProcessContext);
+      }
+
+    } else if (!hasActiveChildInstances && !hasActiveSequenceFlows) {
+      // complete ad-hoc sub-process if possible, otherwise skip completion as the same block
+      // will be evaluated when the next activity is completed
+      completeAdHocSubProcess(adHocSubProcessContext);
+    }
+  }
+
+  private void terminateChildInstances(final BpmnElementContext adHocSubProcessContext) {
+    elementInstanceState
+        .getChildren(adHocSubProcessContext.getElementInstanceKey())
+        .forEach(
+            childInstance ->
+                commandWriter.appendFollowUpCommand(
+                    childInstance.getKey(),
+                    ProcessInstanceIntent.TERMINATE_ELEMENT,
+                    childInstance.getValue()));
+  }
+
+  private void completeAdHocSubProcess(final BpmnElementContext adHocSubProcessContext) {
+    commandWriter.appendFollowUpCommand(
+        adHocSubProcessContext.getElementInstanceKey(),
+        ProcessInstanceIntent.COMPLETE_ELEMENT,
+        adHocSubProcessContext.getRecordValue());
   }
 }

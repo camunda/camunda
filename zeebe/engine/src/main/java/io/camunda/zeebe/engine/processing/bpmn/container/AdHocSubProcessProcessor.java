@@ -317,21 +317,8 @@ public class AdHocSubProcessProcessor
       }
 
       if (satisfiesCompletionCondition) {
-        if (adHocSubProcess.isCancelRemainingInstances()) {
-          // terminate all remaining child instances & directly complete ad-hoc sub-process if there
-          // is no child activity left - otherwise see onChildTerminated
-          final boolean hasNoActiveChildren =
-              stateTransitionBehavior.terminateChildInstances(adHocSubProcessContext);
-          if (hasNoActiveChildren) {
-            stateTransitionBehavior.completeElement(adHocSubProcessContext);
-          }
-        } else {
-          // complete ad-hoc sub-process if possible, otherwise skip completion as the same block
-          // will be evaluated when the next activity is completed
-          if (stateBehavior.canBeCompleted(childContext)) {
-            stateTransitionBehavior.completeElement(adHocSubProcessContext);
-          }
-        }
+        adHocSubProcessBehavior.completionConditionFulfilled(
+            adHocSubProcessContext, adHocSubProcess.isCancelRemainingInstances());
       }
     }
   }

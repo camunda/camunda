@@ -207,7 +207,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     adHocSubProcessBehavior =
         new BpmnAdHocSubProcessBehavior(
-            processingState.getKeyGenerator(), writers, stateBehavior, variableBehavior);
+            processingState.getKeyGenerator(),
+            writers,
+            stateBehavior,
+            variableBehavior,
+            processingState);
   }
 
   @Override
