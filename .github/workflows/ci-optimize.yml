@@ -104,7 +104,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "Core Features"
+          user_description: "team-core-features"
 
   hadolint:
     if: inputs.runBeTests
@@ -134,4 +134,4 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "Core Features"
+          user_description: "team-core-features"

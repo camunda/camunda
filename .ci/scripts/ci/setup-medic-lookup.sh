@@ -6,7 +6,8 @@
 # except in compliance with the Camunda License 1.0.
 #
 declare -A lookupTeamMedic
-lookupTeamMedic["Core Features"]="@core-features-medic"
-lookupTeamMedic["Data Layer"]="@data-layer-medic"
-lookupTeamMedic["Identity"]="@identity-medic"
-lookupTeamMedic["General"]="General Test flakiness, requires investigation"
+lookupTeamMedic["team-core-features"]="@core-features-medic"
+lookupTeamMedic["team-data-layer"]="@data-layer-medic"
+lookupTeamMedic["team-identity"]="@identity-medic"
+lookupTeamMedic["team-distributed-systems"]="Distributed Systems Medic" # no current medic slack handle
+lookupTeamMedic["General"]="General Test, requires investigation"
