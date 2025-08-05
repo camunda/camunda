@@ -56,7 +56,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
   @Nested
   class ActivateActivities {
 
-    private static final String AD_HOC_SUBPROCESS_INSTANCE_KEY = "123456789";
+    private static final long AD_HOC_SUBPROCESS_INSTANCE_KEY = 123456789L;
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})

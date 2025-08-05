@@ -36,7 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class AdHocSubProcessActivityServicesTest {
 
-  private static final String AD_HOC_SUB_PROCESS_INSTANCE_KEY = "123456";
+  private static final long AD_HOC_SUB_PROCESS_INSTANCE_KEY = 123456L;
   private static final String ELEMENT_ID = "activity1";
 
   private static final AdHocSubProcessActivateActivitiesRequest DEFAULT_ACTIVATION_REQUEST =

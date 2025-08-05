@@ -60,7 +60,7 @@ public class AdHocSubProcessActivityClient {
   }
 
   public AdHocSubProcessActivityClient withAdHocSubProcessInstanceKey(
-      final String adHocSubProcessInstanceKey) {
+      final long adHocSubProcessInstanceKey) {
     adHocSubProcessInstructionRecord.setAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey);
     return this;
   }

@@ -224,10 +224,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
     final AdHocSubProcessInstructionRecord activationRecord =
         new AdHocSubProcessInstructionRecord()
-            .setAdHocSubProcessInstanceKey(
-                String.valueOf(
-                    jobRecord
-                        .getElementInstanceKey())); // TODO let's make the property a LongProperty
+            .setAdHocSubProcessInstanceKey(jobRecord.getElementInstanceKey());
 
     activateElements.stream()
         .map(JobResultActivateElement.class::cast)

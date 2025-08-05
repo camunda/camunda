@@ -2307,7 +2307,7 @@ final class JsonSerializableToJsonTest {
             () -> {
               final var adHocSubProcessInstructionRecord =
                   new AdHocSubProcessInstructionRecord()
-                      .setAdHocSubProcessInstanceKey("1234")
+                      .setAdHocSubProcessInstanceKey(1234L)
                       .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
               adHocSubProcessInstructionRecord.activateElements().add().setElementId("123");
@@ -2323,7 +2323,7 @@ final class JsonSerializableToJsonTest {
             },
         """
         {
-          "adHocSubProcessInstanceKey": "1234",
+          "adHocSubProcessInstanceKey": 1234,
           "tenantId": "<default>",
           "activateElements": [
             {
@@ -2350,7 +2350,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>) AdHocSubProcessInstructionRecord::new,
         """
         {
-          "adHocSubProcessInstanceKey": "",
+          "adHocSubProcessInstanceKey": -1,
           "tenantId": "<default>",
           "activateElements": [],
           "cancelRemainingInstances": false

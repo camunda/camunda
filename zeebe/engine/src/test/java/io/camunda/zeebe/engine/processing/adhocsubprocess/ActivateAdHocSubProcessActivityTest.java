@@ -67,7 +67,7 @@ public class ActivateAdHocSubProcessActivityTest {
   public void shouldActivateElement() {
     ENGINE
         .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
         .withElementIds("A")
         .activate();
 
@@ -88,7 +88,7 @@ public class ActivateAdHocSubProcessActivityTest {
   public void shouldSetElementTreePath() {
     ENGINE
         .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
         .withElementIds("A")
         .activate();
 
@@ -128,7 +128,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
     ENGINE
         .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
         .withElementIds("A")
         .activate();
 
@@ -149,7 +149,7 @@ public class ActivateAdHocSubProcessActivityTest {
         .update();
     ENGINE
         .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
         .withElementIds("B")
         .activate();
 
@@ -168,13 +168,13 @@ public class ActivateAdHocSubProcessActivityTest {
   public void shouldConfirmActivationCommand() {
     ENGINE
         .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
         .withElementIds("A")
         .activate();
 
     assertThat(
             RecordingExporter.adHocSubProcessInstructionRecords()
-                .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+                .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
                 .limit(record -> record.getIntent() == AdHocSubProcessInstructionIntent.ACTIVATED))
         .extracting(
             r -> r.getValue().getActivateElements().getFirst().getElementId(), Record::getIntent)
@@ -185,7 +185,7 @@ public class ActivateAdHocSubProcessActivityTest {
   public void shouldActivateMultipleElements() {
     ENGINE
         .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
         .withElementIds("A")
         .withElementIds("B")
         .activate();
@@ -209,7 +209,7 @@ public class ActivateAdHocSubProcessActivityTest {
     final var rejection =
         ENGINE
             .adHocSubProcessActivity()
-            .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+            .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
             .withElementIds(nonExistingActivities.toArray(new String[0]))
             .expectRejection()
             .activate();
@@ -223,7 +223,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
     assertThat(
             RecordingExporter.adHocSubProcessInstructionRecords()
-                .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+                .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
                 .limit(2))
         .extracting(Record::getRecordType, Record::getIntent)
         .contains(
@@ -234,7 +234,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void shouldRejectCommandIfAdHocSubProcessInstanceDoesntExist() {
-    final var nonExistingAdHocSubProcessInstanceKey = "1";
+    final var nonExistingAdHocSubProcessInstanceKey = 1L;
 
     final var rejection =
         ENGINE
@@ -281,14 +281,14 @@ public class ActivateAdHocSubProcessActivityTest {
 
     ENGINE
         .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(faultyAdHocSubProcessInstanceKey))
+        .withAdHocSubProcessInstanceKey(faultyAdHocSubProcessInstanceKey)
         .withElementIds("A")
         .activate();
 
     final var rejection =
         ENGINE
             .adHocSubProcessActivity()
-            .withAdHocSubProcessInstanceKey(String.valueOf(faultyAdHocSubProcessInstanceKey))
+            .withAdHocSubProcessInstanceKey(faultyAdHocSubProcessInstanceKey)
             .withElementIds("A")
             .expectRejection()
             .activate();
@@ -306,7 +306,7 @@ public class ActivateAdHocSubProcessActivityTest {
     final var rejection =
         ENGINE
             .adHocSubProcessActivity()
-            .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+            .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
             .withElementIds("A")
             .withElementIds("A")
             .expectRejection()
@@ -322,7 +322,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
     assertThat(
             RecordingExporter.adHocSubProcessInstructionRecords()
-                .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+                .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
                 .limit(2))
         .extracting(Record::getRecordType, Record::getIntent)
         .contains(

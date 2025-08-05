@@ -868,7 +868,7 @@ public class RequestMapper {
         validateAdHocSubProcessActivationRequest(request),
         () ->
             new AdHocSubProcessActivateActivitiesRequest(
-                adHocSubProcessInstanceKey,
+                Long.parseLong(adHocSubProcessInstanceKey),
                 request.getElements().stream()
                     .map(
                         element ->

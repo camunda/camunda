@@ -70,8 +70,7 @@ public class AdHocSubProcessInstructionActivateProcessor
   @Override
   public void processRecord(final TypedRecord<AdHocSubProcessInstructionRecord> command) {
     final var adHocSubProcessElementInstance =
-        elementInstanceState.getInstance(
-            Long.parseLong(command.getValue().getAdHocSubProcessInstanceKey()));
+        elementInstanceState.getInstance(command.getValue().getAdHocSubProcessInstanceKey());
     if (adHocSubProcessElementInstance == null) {
       writeRejectionError(
           command,
