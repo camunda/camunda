@@ -121,6 +121,9 @@ final class JsonSerializableToJsonTest {
   private static final String USAGE_METRICS_JSON = "{'tenant1': 5}";
   private static final DirectBuffer USAGE_METRICS_MSGPACK =
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(USAGE_METRICS_JSON));
+  private static final String USAGE_METRICS_TU_JSON = "{'tenant1': [123456789123456789]}";
+  private static final DirectBuffer USAGE_METRICS_TU_MSGPACK =
+      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(USAGE_METRICS_TU_JSON));
 
   private static final RuntimeException RUNTIME_EXCEPTION = new RuntimeException("test");
 
@@ -3516,7 +3519,7 @@ final class JsonSerializableToJsonTest {
       //////////////////////////////////// UsageMetricRecord rPI //////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "UsageMetricRecord",
+        "UsageMetricRecord rPI",
         (Supplier<UsageMetricRecord>)
             () ->
                 new UsageMetricRecord()
@@ -3532,33 +3535,31 @@ final class JsonSerializableToJsonTest {
         "resetTime": -1,
         "startTime": 123,
         "endTime": 124,
-        "counterValues": {"tenant1":5},
-        "setValues": {}
+        "variables": {"tenant1":5}
       }
       """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////////// UsageMetricRecord eDI //////////////////////////////////
+      //////////////////////////////////// UsageMetricRecord TU //////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "UsageMetricRecord eDI",
+        "UsageMetricRecord TU",
         (Supplier<UsageMetricRecord>)
             () ->
                 new UsageMetricRecord()
                     .setIntervalType(IntervalType.ACTIVE)
-                    .setEventType(EventType.EDI)
+                    .setEventType(EventType.TU)
                     .setStartTime(123L)
                     .setEndTime(124L)
-                    .setCounterValues(USAGE_METRICS_MSGPACK),
+                    .setSetValues(USAGE_METRICS_TU_MSGPACK),
         """
       {
         "intervalType": "ACTIVE",
-        "eventType": "EDI",
+        "eventType": "TU",
         "resetTime": -1,
         "startTime": 123,
         "endTime": 124,
-        "counterValues": {"tenant1":5},
-        "setValues": {}
+        "variables": {"tenant1":[123456789123456789]}
       }
       """
       },
@@ -3575,8 +3576,7 @@ final class JsonSerializableToJsonTest {
         "resetTime": -1,
         "startTime": -1,
         "endTime": -1,
-        "counterValues": {},
-        "setValues": {}
+        "variables": {}
       }
       """
       },

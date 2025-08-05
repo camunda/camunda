@@ -84,6 +84,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -1387,7 +1388,7 @@ public class CompactRecordLogger {
   }
 
   private String formatTime(final String name, final long time) {
-    final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
+    final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneOffset.UTC);
     return "%s[%s]".formatted(name, shortenDateTime(dateTime));
   }
 

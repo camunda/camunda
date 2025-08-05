@@ -89,7 +89,7 @@ class CompactRecordLoggerTest {
 
       // then
       final String expected =
-          "RPI:ACTIVE start[2024-06-10T09:13:20] end[2024-06-10T10:13:20] reset[2024-06-10T09:43:20] vars: {tenant1=42, tenant2=84}";
+          "RPI:ACTIVE start[2024-06-10T06:13:20] end[2024-06-10T07:13:20] reset[2024-06-10T06:43:20] vars: {tenant1=42, tenant2=84}";
       assertThat(result).isEqualTo(expected);
     }
 
@@ -117,7 +117,7 @@ class CompactRecordLoggerTest {
       // then
       assertThat(result)
           .startsWith(
-              "TU:ACTIVE start[2024-06-10T09:13:20] end[2024-06-10T10:13:20] reset[2024-06-10T09:43:20] vars: {")
+              "TU:ACTIVE start[2024-06-10T06:13:20] end[2024-06-10T07:13:20] reset[2024-06-10T06:43:20] vars: {")
           .satisfies(
               r ->
                   assertThat(r)

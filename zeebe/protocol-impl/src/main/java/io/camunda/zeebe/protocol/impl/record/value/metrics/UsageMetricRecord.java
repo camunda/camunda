@@ -122,6 +122,7 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
     return this;
   }
 
+  @JsonIgnore
   @Override
   public Map<String, Long> getCounterValues() {
     return MsgPackConverter.convertToLongMap(counterValuesProp.getValue());
@@ -132,6 +133,7 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
     return this;
   }
 
+  @JsonIgnore
   @Override
   public Map<String, Set<Long>> getSetValues() {
     return MsgPackConverter.convertToSetLongMap(setValuesProp.getValue());
