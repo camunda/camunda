@@ -100,7 +100,8 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -144,8 +145,7 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
-    final var resourceIdentifiers =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+    final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
@@ -161,8 +161,7 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
-    final var resourceIdentifiers =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+    final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(resourceIdentifiers).isEmpty();
@@ -182,7 +181,8 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -209,8 +209,7 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
-    final var resourceIdentifiers =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+    final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
@@ -230,7 +229,8 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -258,8 +258,7 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
-    final var resourceIdentifiers =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+    final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
@@ -278,7 +277,8 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -304,7 +304,8 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -327,7 +328,8 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -352,7 +354,8 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -417,12 +420,12 @@ final class AuthorizationCheckBehaviorTest {
     EitherAssert.assertThat(
             authorizationCheckBehavior.isAuthorized(
                 new AuthorizationRequest(command, resourceType, permissionType)
-                    .addResourceId(firstResourceId)))
+                    .addAuthorizationScope(firstResourceId)))
         .isRight();
     EitherAssert.assertThat(
             authorizationCheckBehavior.isAuthorized(
                 new AuthorizationRequest(command, resourceType, permissionType)
-                    .addResourceId(secondResourceId)))
+                    .addAuthorizationScope(secondResourceId)))
         .isRight();
   }
 
@@ -464,12 +467,12 @@ final class AuthorizationCheckBehaviorTest {
     EitherAssert.assertThat(
             authorizationCheckBehavior.isAuthorized(
                 new AuthorizationRequest(command, resourceType, permissionType)
-                    .addResourceId(firstResourceId)))
+                    .addAuthorizationScope(firstResourceId)))
         .isRight();
     EitherAssert.assertThat(
             authorizationCheckBehavior.isAuthorized(
                 new AuthorizationRequest(command, resourceType, permissionType)
-                    .addResourceId(secondResourceId)))
+                    .addAuthorizationScope(secondResourceId)))
         .isRight();
   }
 
@@ -492,9 +495,9 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
-    final var authorizations =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
+    final var authorizations = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
@@ -522,9 +525,9 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
-    final var authorizations =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
+    final var authorizations = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
@@ -547,9 +550,9 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
-    final var authorizations =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
+    final var authorizations = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
@@ -572,9 +575,9 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
-    final var authorizations =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
+    final var authorizations = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
@@ -596,7 +599,8 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -619,11 +623,12 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var allAuthorizedResourceIdentifiers =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+        authorizationCheckBehavior.getAllAuthorizedScopes(request);
     final var directAuthorizedResourceIdentifiers =
-        authorizationCheckBehavior.getDirectAuthorizedResourceIdentifiers(
+        authorizationCheckBehavior.getDirectAuthorizedAuthorizationScopes(
             AuthorizationOwnerType.USER, user.getUsername(), resourceType, permissionType);
 
     // then
@@ -650,7 +655,8 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -676,11 +682,12 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var allAuthorizedResourceIdentifiers =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+        authorizationCheckBehavior.getAllAuthorizedScopes(request);
     final var directAuthorizedResourceIdentifiers =
-        authorizationCheckBehavior.getDirectAuthorizedResourceIdentifiers(
+        authorizationCheckBehavior.getDirectAuthorizedAuthorizationScopes(
             AuthorizationOwnerType.MAPPING_RULE,
             mappingRule.getMappingRuleId(),
             resourceType,
@@ -704,7 +711,8 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -722,7 +730,8 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType)
+            .addAuthorizationScope(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -748,8 +757,7 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
-    final var resourceIdentifiers =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+    final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
@@ -765,8 +773,7 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
-    final var resourceIdentifiers =
-        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+    final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
     assertThat(resourceIdentifiers).isEmpty();

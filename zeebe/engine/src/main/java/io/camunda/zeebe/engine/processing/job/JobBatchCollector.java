@@ -95,7 +95,7 @@ final class JobBatchCollector {
     // the tenant check is performed earlier in the JobBatchActivateProcessor, so we can skip it
     // here and only check if the requester has the correct permissions to access the jobs
     final var authorizedProcessIds =
-        authCheckBehavior.getAllAuthorizedResourceIdentifiers(
+        authCheckBehavior.getAllAuthorizedScopes(
             new AuthorizationRequest(
                 record,
                 AuthorizationResourceType.PROCESS_DEFINITION,
@@ -156,7 +156,7 @@ final class JobBatchCollector {
   private boolean isAuthorizedForJob(
       final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
     return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
-        || authorizedProcessIds.contains(jobRecord.getBpmnProcessId());
+        || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
   }
 
   private void appendJobToBatch(

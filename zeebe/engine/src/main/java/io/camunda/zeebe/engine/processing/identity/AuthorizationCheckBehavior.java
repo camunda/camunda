@@ -171,7 +171,7 @@ public final class AuthorizationCheckBehavior {
         entityIds.stream()
             .flatMap(
                 entityId ->
-                    getAuthorizedResourceIdentifiers(
+                    getAuthorizedScopes(
                         request.command,
                         entityType,
                         entityId,
@@ -303,59 +303,58 @@ public final class AuthorizationCheckBehavior {
                             .stream())));
   }
 
-  public Set<AuthorizationScope> getAllAuthorizedResourceIdentifiers(
-      final AuthorizationRequest request) {
+  public Set<AuthorizationScope> getAllAuthorizedScopes(final AuthorizationRequest request) {
     if (!authorizationsEnabled || isAuthorizedAnonymousUser(request.getCommand())) {
       return Set.of(AuthorizationScope.WILDCARD);
     }
 
-    final var authorizedResourceIds = new HashSet<AuthorizationScope>();
+    final var authorizedScopes = new HashSet<AuthorizationScope>();
 
     final var optionalUsername = getUsername(request);
     if (optionalUsername.isPresent()) {
-      getAuthorizedResourceIdentifiers(
+      getAuthorizedScopes(
               request.command,
               EntityType.USER,
               optionalUsername.get(),
               request.getResourceType(),
               request.getPermissionType())
-          .forEach(authorizedResourceIds::add);
+          .forEach(authorizedScopes::add);
     }
     // If a username was present, don't use the client id
     else {
       getClientId(request)
           .map(
               clientId ->
-                  getAuthorizedResourceIdentifiers(
+                  getAuthorizedScopes(
                       request.command,
                       EntityType.CLIENT,
                       clientId,
                       request.getResourceType(),
                       request.getPermissionType()))
-          .ifPresent(idsForClientId -> idsForClientId.forEach(authorizedResourceIds::add));
+          .ifPresent(idsForClientId -> idsForClientId.forEach(authorizedScopes::add));
     }
 
     // mapping rules can layer on top of username/client id
     getPersistedMappingRules(request)
         .flatMap(
             mappingRule ->
-                getAuthorizedResourceIdentifiers(
+                getAuthorizedScopes(
                     request.command,
                     EntityType.MAPPING_RULE,
                     mappingRule.getMappingRuleId(),
                     request.getResourceType(),
                     request.getPermissionType()))
-        .forEach(authorizedResourceIds::add);
+        .forEach(authorizedScopes::add);
 
-    return authorizedResourceIds;
+    return authorizedScopes;
   }
 
   /**
-   * Get direct authorized resource identifiers for a given owner, resource type and permission
+   * Get direct authorized authorization scopes for a given owner, resource type and permission
    * type. This does not include inherited authorizations, for example authorizations for users from
    * assigned roles or groups.
    */
-  public Set<AuthorizationScope> getDirectAuthorizedResourceIdentifiers(
+  public Set<AuthorizationScope> getDirectAuthorizedAuthorizationScopes(
       final AuthorizationOwnerType ownerType,
       final String ownerId,
       final AuthorizationResourceType resourceType,
@@ -364,7 +363,7 @@ public final class AuthorizationCheckBehavior {
         ownerType, ownerId, resourceType, permissionType);
   }
 
-  private Stream<AuthorizationScope> getAuthorizedResourceIdentifiers(
+  private Stream<AuthorizationScope> getAuthorizedScopes(
       final TypedRecord<?> command,
       final EntityType ownerType,
       final String ownerId,
@@ -381,21 +380,21 @@ public final class AuthorizationCheckBehavior {
         };
 
     final var direct =
-        getDirectAuthorizedResourceIdentifiers(
+        getDirectAuthorizedAuthorizationScopes(
             authorizationOwnerType, ownerId, resourceType, permissionType)
             .stream();
     final var viaRole =
         membershipState.getMemberships(ownerType, ownerId, RelationType.ROLE).stream()
             .flatMap(
                 roleId ->
-                    getDirectAuthorizedResourceIdentifiers(
+                    getDirectAuthorizedAuthorizationScopes(
                         AuthorizationOwnerType.ROLE, roleId, resourceType, permissionType)
                         .stream());
     final var viaGroups =
         fetchGroups(command, ownerType, ownerId).stream()
             .<AuthorizationScope>mapMulti(
                 (groupId, stream) -> {
-                  getDirectAuthorizedResourceIdentifiers(
+                  getDirectAuthorizedAuthorizationScopes(
                           AuthorizationOwnerType.GROUP, groupId, resourceType, permissionType)
                       .forEach(stream);
                   membershipState
@@ -403,7 +402,7 @@ public final class AuthorizationCheckBehavior {
                       .stream()
                       .flatMap(
                           roleId ->
-                              getDirectAuthorizedResourceIdentifiers(
+                              getDirectAuthorizedAuthorizationScopes(
                                   AuthorizationOwnerType.ROLE, roleId, resourceType, permissionType)
                                   .stream())
                       .forEach(stream);
@@ -559,7 +558,7 @@ public final class AuthorizationCheckBehavior {
       return isTenantOwnedResource;
     }
 
-    public AuthorizationRequest addResourceId(final AuthorizationScope authorizationScope) {
+    public AuthorizationRequest addAuthorizationScope(final AuthorizationScope authorizationScope) {
       authorizationScopes.add(authorizationScope);
       return this;
     }
@@ -578,10 +577,10 @@ public final class AuthorizationCheckBehavior {
     }
 
     public String getForbiddenErrorMessage() {
-      final var resourceIdsContainsOnlyWildcard =
+      final var authorizationScopesContainsOnlyWildcard =
           authorizationScopes.size() == 1
               && authorizationScopes.contains(AuthorizationScope.WILDCARD);
-      return resourceIdsContainsOnlyWildcard
+      return authorizationScopesContainsOnlyWildcard
           ? FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType)
           : FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
               permissionType,
