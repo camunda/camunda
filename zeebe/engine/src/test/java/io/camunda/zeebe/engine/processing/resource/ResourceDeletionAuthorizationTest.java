@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -77,7 +78,11 @@ public class ResourceDeletionAuthorizationTest {
     final var processDefinitionKey = deployProcessDefinition(processId);
     final var user = createUser();
     addPermissionsToUser(
-        user, AuthorizationResourceType.RESOURCE, PermissionType.DELETE_PROCESS, processId);
+        user,
+        AuthorizationResourceType.RESOURCE,
+        PermissionType.DELETE_PROCESS,
+        AuthorizationResourceMatcher.ID,
+        processId);
 
     // when
     engine.resourceDeletion().withResourceKey(processDefinitionKey).delete(user.getUsername());
@@ -138,7 +143,11 @@ public class ResourceDeletionAuthorizationTest {
     final var drdKey = deployDrd();
     final var user = createUser();
     addPermissionsToUser(
-        user, AuthorizationResourceType.RESOURCE, PermissionType.DELETE_DRD, drdId);
+        user,
+        AuthorizationResourceType.RESOURCE,
+        PermissionType.DELETE_DRD,
+        AuthorizationResourceMatcher.ID,
+        drdId);
 
     // when
     engine.resourceDeletion().withResourceKey(drdKey).delete(user.getUsername());
@@ -195,7 +204,11 @@ public class ResourceDeletionAuthorizationTest {
     final var formKey = deployForm();
     final var user = createUser();
     addPermissionsToUser(
-        user, AuthorizationResourceType.RESOURCE, PermissionType.DELETE_FORM, formId);
+        user,
+        AuthorizationResourceType.RESOURCE,
+        PermissionType.DELETE_FORM,
+        AuthorizationResourceMatcher.ID,
+        formId);
 
     // when
     engine.resourceDeletion().withResourceKey(formKey).delete(user.getUsername());
@@ -252,7 +265,11 @@ public class ResourceDeletionAuthorizationTest {
     final var resourceKey = deployResource();
     final var user = createUser();
     addPermissionsToUser(
-        user, AuthorizationResourceType.RESOURCE, PermissionType.DELETE_RESOURCE, resourceId);
+        user,
+        AuthorizationResourceType.RESOURCE,
+        PermissionType.DELETE_RESOURCE,
+        AuthorizationResourceMatcher.ID,
+        resourceId);
 
     // when
     engine.resourceDeletion().withResourceKey(resourceKey).delete(user.getUsername());
@@ -305,6 +322,7 @@ public class ResourceDeletionAuthorizationTest {
       final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
+      final AuthorizationResourceMatcher matcher,
       final String resourceId) {
     engine
         .authorization()
@@ -313,6 +331,7 @@ public class ResourceDeletionAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
+        .withResourceMatcher(matcher)
         .withResourceId(resourceId)
         .create(DEFAULT_USER.getUsername());
   }

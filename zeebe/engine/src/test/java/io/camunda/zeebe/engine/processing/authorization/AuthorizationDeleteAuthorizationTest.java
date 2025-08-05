@@ -15,7 +15,9 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -129,12 +131,17 @@ public class AuthorizationDeleteAuthorizationTest {
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
       final String resourceId) {
+    final var resourceMatcher =
+        AuthorizationScope.WILDCARD_CHAR.equals(resourceId)
+            ? AuthorizationResourceMatcher.ANY
+            : AuthorizationResourceMatcher.ID;
     return engine
         .authorization()
         .newAuthorization()
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
+        .withResourceMatcher(resourceMatcher)
         .withResourceId(resourceId)
         .withPermissions(permissionType)
         .create(DEFAULT_USER.getUsername())

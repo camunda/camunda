@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -74,7 +75,12 @@ public class DeleteTenantAuthorizationTest {
     final var user = createUser();
     final var tenantId = UUID.randomUUID().toString();
     createTenant(tenantId);
-    addPermissionsToUser(user, AuthorizationResourceType.TENANT, PermissionType.DELETE, tenantId);
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.TENANT,
+        PermissionType.DELETE,
+        AuthorizationResourceMatcher.ID,
+        tenantId);
     assignUserToTenant(user.getUsername(), tenantId);
 
     // when
@@ -123,6 +129,7 @@ public class DeleteTenantAuthorizationTest {
       final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
+      final AuthorizationResourceMatcher resourceMatcher,
       final String resourceId) {
     engine
         .authorization()
@@ -131,6 +138,7 @@ public class DeleteTenantAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
+        .withResourceMatcher(resourceMatcher)
         .withResourceId(resourceId)
         .create(DEFAULT_USER.getUsername());
   }
