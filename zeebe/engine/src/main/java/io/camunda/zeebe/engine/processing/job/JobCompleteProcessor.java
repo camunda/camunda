@@ -261,7 +261,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
               .map(JobResultActivateElementValue::getElementId)
               .toList();
 
-      return AdHocSubProcessUtils.validateActiveElementAreInProcess(
+      return AdHocSubProcessUtils.validateActivateElementsExistInAdHocSubProcess(
               job.getElementInstanceKey(), executableAdHocSubProcess, elementsToBeActivated)
           .map(right -> job);
     }

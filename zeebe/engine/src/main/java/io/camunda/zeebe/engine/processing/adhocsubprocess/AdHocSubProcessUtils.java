@@ -18,7 +18,7 @@ public class AdHocSubProcessUtils {
   private static final String ERROR_MSG_ELEMENTS_NOT_FOUND =
       "Expected to activate activities for ad-hoc sub-process with key '%s', but the given elements %s do not exist.";
 
-  public static Either<Rejection, List<String>> validateActiveElementAreInProcess(
+  public static Either<Rejection, List<String>> validateActivateElementsExistInAdHocSubProcess(
       final long adHocSubProcessKey,
       final ExecutableAdHocSubProcess adHocSubProcess,
       final List<String> activateElementsCollection) {

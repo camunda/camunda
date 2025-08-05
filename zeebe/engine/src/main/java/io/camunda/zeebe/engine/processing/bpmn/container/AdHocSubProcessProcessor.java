@@ -183,7 +183,7 @@ public class AdHocSubProcessProcessor
                       ErrorType.EXTRACT_VALUE_ERROR))
           .flatMap(
               elements ->
-                  AdHocSubProcessUtils.validateActiveElementAreInProcess(
+                  AdHocSubProcessUtils.validateActivateElementsExistInAdHocSubProcess(
                           context.getElementInstanceKey(), adHocSubProcess, elements)
                       .mapLeft(
                           rejection ->

@@ -145,7 +145,7 @@ public class AdHocSubProcessInstructionActivateProcessor
             .map(AdHocSubProcessActivateElementInstruction::getElementId)
             .toList();
     final var activateElementsAreInProcess =
-        AdHocSubProcessUtils.validateActiveElementAreInProcess(
+        AdHocSubProcessUtils.validateActivateElementsExistInAdHocSubProcess(
             adHocSubProcessElementInstance.getKey(), adHocSubProcessElement, activateElements);
     if (activateElementsAreInProcess.isLeft()) {
       final var rejection = activateElementsAreInProcess.getLeft();
