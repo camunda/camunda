@@ -84,9 +84,8 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
   }
 
   private void checkIdentityReadPermission(final DecisionInstanceDto decisionInstance) {
-    if (permissionsService.permissionsEnabled()
-        && !permissionsService.hasPermissionForDecision(
-            decisionInstance.getDecisionId(), PermissionType.READ_DECISION_INSTANCE)) {
+    if (!permissionsService.hasPermissionForDecision(
+        decisionInstance.getDecisionId(), PermissionType.READ_DECISION_INSTANCE)) {
       throw new NotAuthorizedException(
           String.format(
               "No read permission for decision instance %s", decisionInstance.getDecisionId()));

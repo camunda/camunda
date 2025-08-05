@@ -84,17 +84,15 @@ public class ProcessRestService extends InternalAPIErrorController {
 
   private void checkReadPermission(
       final String bpmnProcessId, final PermissionType permissionType) {
-    if (permissionsService.permissionsEnabled()
-        && !permissionsService.hasPermissionForProcess(bpmnProcessId, permissionType)) {
+    if (!permissionsService.hasPermissionForProcess(bpmnProcessId, permissionType)) {
       throw new NotAuthorizedException(
           String.format("No read permission for process %s", bpmnProcessId));
     }
   }
 
   private void checkDeletePermission(final Long processDefinitionKey) {
-    if (permissionsService.permissionsEnabled()
-        && !permissionsService.hasPermissionForResource(
-            processDefinitionKey, PermissionType.DELETE_PROCESS)) {
+    if (!permissionsService.hasPermissionForResource(
+        processDefinitionKey, PermissionType.DELETE_PROCESS)) {
       throw new NotAuthorizedException(
           String.format("No delete permission for process definition %s", processDefinitionKey));
     }

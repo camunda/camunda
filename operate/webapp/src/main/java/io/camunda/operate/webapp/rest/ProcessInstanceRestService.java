@@ -265,10 +265,9 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
 
   private void checkIdentityPermission(
       final Long processInstanceKey, final PermissionType permission) {
-    if (permissionsService.permissionsEnabled()
-        && !permissionsService.hasPermissionForProcess(
-            processInstanceReader.getProcessInstanceByKey(processInstanceKey).getBpmnProcessId(),
-            permission)) {
+    if (!permissionsService.hasPermissionForProcess(
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey).getBpmnProcessId(),
+        permission)) {
       throw new NotAuthorizedException(
           String.format(
               "No %s permission for process instance %s", permission, processInstanceKey));

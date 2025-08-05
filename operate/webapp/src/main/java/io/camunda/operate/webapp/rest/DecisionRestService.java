@@ -73,23 +73,19 @@ public class DecisionRestService extends InternalAPIErrorController {
   }
 
   private void checkIdentityReadPermission(final Long decisionDefinitionKey) {
-    if (permissionsService.permissionsEnabled()) {
-      final String decisionId = decisionReader.getDecision(decisionDefinitionKey).getDecisionId();
-      if (!permissionsService.hasPermissionForDecision(
-          decisionId, PermissionType.READ_DECISION_INSTANCE)) {
-        throw new NotAuthorizedException(
-            String.format("No read permission for decision %s", decisionId));
-      }
+    final String decisionId = decisionReader.getDecision(decisionDefinitionKey).getDecisionId();
+    if (!permissionsService.hasPermissionForDecision(
+        decisionId, PermissionType.READ_DECISION_INSTANCE)) {
+      throw new NotAuthorizedException(
+          String.format("No read permission for decision %s", decisionId));
     }
   }
 
   private void checkIdentityDeletePermission(final String decisionId) {
-    if (permissionsService.permissionsEnabled()) {
-      if (!permissionsService.hasPermissionForDecision(
-          decisionId, PermissionType.DELETE_DECISION_INSTANCE)) {
-        throw new NotAuthorizedException(
-            String.format("No delete permission for decision %s", decisionId));
-      }
+    if (!permissionsService.hasPermissionForDecision(
+        decisionId, PermissionType.DELETE_DECISION_INSTANCE)) {
+      throw new NotAuthorizedException(
+          String.format("No delete permission for decision %s", decisionId));
     }
   }
 }

@@ -90,9 +90,7 @@ public class OpenSearchQueryHelper {
         batchOperationIdQuery(query),
         parentInstanceIdQuery(query),
         tenantIdQuery(query),
-        readPermissionQuery()
-        // TODO filter by tenants assigned to current user #4858
-        );
+        readPermissionQuery());
   }
 
   private Query runningFinishedQuery(
