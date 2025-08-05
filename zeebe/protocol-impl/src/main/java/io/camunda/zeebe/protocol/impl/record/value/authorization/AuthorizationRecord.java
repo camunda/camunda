@@ -42,10 +42,7 @@ public final class AuthorizationRecord extends UnifiedRecordValue
       new EnumProperty<>(
           OWNER_TYPE_KEY, AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
   private final EnumProperty<AuthorizationResourceMatcher> resourceMatcherProp =
-      new EnumProperty<>(
-          RESOURCE_MATCHER,
-          AuthorizationResourceMatcher.class,
-          AuthorizationResourceMatcher.UNSPECIFIED);
+      new EnumProperty<>(RESOURCE_MATCHER, AuthorizationResourceMatcher.class);
   private final StringProperty resourceIdProp = new StringProperty(RESOURCE_ID_KEY, "");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>(
