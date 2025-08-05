@@ -223,7 +223,8 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
     final AdHocSubProcessInstructionRecord instructionRecord =
         new AdHocSubProcessInstructionRecord()
-            .setAdHocSubProcessInstanceKey(jobRecord.getElementInstanceKey());
+            .setAdHocSubProcessInstanceKey(jobRecord.getElementInstanceKey())
+            .setCompletionConditionFulFilled(jobResult.isCompletionConditionFulfilled());
 
     if (!jobResult.getActivateElements().isEmpty()) {
       jobResult.getActivateElements().stream()
