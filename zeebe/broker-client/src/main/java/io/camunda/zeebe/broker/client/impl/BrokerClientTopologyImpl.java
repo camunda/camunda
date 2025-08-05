@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
@@ -15,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.IntStream;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.IntArrayList;
@@ -126,7 +129,33 @@ public record BrokerClientTopologyImpl(
 
   public static BrokerClientTopologyImpl fromMemberProperties(
       final Collection<BrokerInfo> values, final ConfiguredClusterState clusterConfiguration) {
-    return new BrokerClientTopologyImpl(new LiveClusterState(values), clusterConfiguration);
+
+    final var clusterInfo =
+        clusterConfiguration.clusterSize() == UNINITIALIZED_CLUSTER_SIZE
+            ? generateClusterConfigurationFromBrokers(values)
+            : clusterConfiguration;
+    return new BrokerClientTopologyImpl(new LiveClusterState(values), clusterInfo);
+  }
+
+  private static ConfiguredClusterState generateClusterConfigurationFromBrokers(
+      final Collection<BrokerInfo> values) {
+    return values.stream()
+        .findAny()
+        .map(
+            b ->
+                new ConfiguredClusterState(
+                    b.getClusterSize(),
+                    b.getPartitionsCount(),
+                    b.getReplicationFactor(),
+                    getPartitionIds(b.getPartitionsCount()),
+                    NO_COMPLETED_LAST_CHANGE_ID))
+        .orElse(
+            new ConfiguredClusterState(
+                UNINITIALIZED_CLUSTER_SIZE, 0, 0, List.of(), NO_COMPLETED_LAST_CHANGE_ID));
+  }
+
+  private static List<Integer> getPartitionIds(final int partitionsCount) {
+    return IntStream.rangeClosed(START_PARTITION_ID, partitionsCount).boxed().toList();
   }
 
   public record ConfiguredClusterState(
