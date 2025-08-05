@@ -9,7 +9,7 @@
 import type {
   BatchOperation,
   BatchOperationType,
-} from '@vzeta/camunda-api-zod-schemas';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const OPERATIONS: Record<BatchOperationType, BatchOperation> = {
   RESOLVE_INCIDENT: {

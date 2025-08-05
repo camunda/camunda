@@ -23,7 +23,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import type {
   BatchOperation,
   BatchOperationType,
-} from '@vzeta/camunda-api-zod-schemas';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 type OperationLabelType = 'Retry' | 'Cancel' | 'Modify' | 'Migrate';
 

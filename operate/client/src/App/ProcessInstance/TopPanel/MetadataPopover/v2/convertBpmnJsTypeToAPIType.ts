@@ -7,7 +7,7 @@
  */
 
 import type {ElementType} from 'bpmn-js/lib/NavigatedViewer';
-import type {ElementInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {ElementInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const convertBpmnJsTypeToAPIType = (
   elementTypeName: ElementType | null | undefined,
