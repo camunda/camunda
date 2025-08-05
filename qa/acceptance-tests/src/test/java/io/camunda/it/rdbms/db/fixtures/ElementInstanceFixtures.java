@@ -30,6 +30,7 @@ public final class ElementInstanceFixtures extends CommonFixtures {
             .processDefinitionKey(nextKey())
             .processDefinitionId("process-" + generateRandomString(20))
             .flowNodeId("element-" + generateRandomString(20))
+            .flowNodeScopeKey(nextKey())
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .treePath(nextStringId())

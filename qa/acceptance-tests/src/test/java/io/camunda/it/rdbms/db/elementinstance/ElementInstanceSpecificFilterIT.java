@@ -70,6 +70,7 @@ public class ElementInstanceSpecificFilterIT {
                     .processInstanceKey(123L)
                     .processDefinitionId("unique-process-124")
                     .processDefinitionKey(124L)
+                    .flowNodeScopeKey(124L)
                     .state(FlowNodeState.ACTIVE)
                     .type(FlowNodeType.SERVICE_TASK)
                     .tenantId("unique-tenant-1")
@@ -95,6 +96,7 @@ public class ElementInstanceSpecificFilterIT {
         FlowNodeInstanceFilter.of(b -> b.processInstanceKeys(123L)),
         FlowNodeInstanceFilter.of(b -> b.processDefinitionKeys(124L)),
         FlowNodeInstanceFilter.of(b -> b.processDefinitionIds("unique-process-124")),
+        FlowNodeInstanceFilter.of(b -> b.flowNodeScopeKeys(124L)),
         FlowNodeInstanceFilter.of(b -> b.states(FlowNodeState.ACTIVE.name())),
         FlowNodeInstanceFilter.of(b -> b.types(FlowNodeType.SERVICE_TASK)),
         FlowNodeInstanceFilter.of(b -> b.tenantIds("unique-tenant-1")),

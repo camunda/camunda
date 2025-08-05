@@ -169,6 +169,7 @@ public class ElementInstanceIT {
                     .processInstanceKeys(instance.processInstanceKey())
                     .processDefinitionIds(instance.processDefinitionId())
                     .processDefinitionKeys(instance.processDefinitionKey())
+                    .flowNodeScopeKeys(instance.flowNodeScopeKey())
                     .flowNodeIds(instance.flowNodeId())
                     .types(instance.type())
                     .states(instance.state().name())
