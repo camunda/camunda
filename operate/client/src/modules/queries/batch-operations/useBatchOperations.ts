@@ -8,24 +8,14 @@
 
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOperations';
-import type {
-  QueryBatchOperationsRequestBody,
-  QueryBatchOperationsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas';
-import type {RequestError} from 'modules/request';
+import type {QueryBatchOperationsRequestBody} from '@vzeta/camunda-api-zod-schemas';
 
 const BATCH_OPERATIONS_QUERY_KEY = 'batchOperations';
 
 const MAX_OPERATIONS_PER_REQUEST = 50;
 
 const useBatchOperations = (payload: QueryBatchOperationsRequestBody) => {
-  return useInfiniteQuery<
-    QueryBatchOperationsResponseBody,
-    RequestError,
-    QueryBatchOperationsResponseBody['items'],
-    (string | unknown)[],
-    number
-  >({
+  return useInfiniteQuery({
     queryKey: [BATCH_OPERATIONS_QUERY_KEY, payload],
     queryFn: async ({pageParam}) => {
       const requestPayload = {
