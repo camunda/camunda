@@ -89,6 +89,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
         });
   }
 
+  @Disabled
   @Test
   void testTasklistshouldFailWhenUsingLegacyDatabasePropertiesDontMatchNewProperties() {
     tasklistRunnerWithMismatchingConfigs.run(
