@@ -24,7 +24,7 @@ import type {FlowNodeState} from 'modules/types/operate';
 const SourceDiagram: React.FC = observer(() => {
   const {processName, version} = processesStore.getSelectedProcessDetails();
   const {
-    selectedSourceFlowNodeIds,
+    selectedSourceItemIds,
     state: {sourceProcessDefinitionKey},
   } = processInstanceMigrationStore;
 
@@ -75,10 +75,11 @@ const SourceDiagram: React.FC = observer(() => {
         {migrationSourceData?.xml !== undefined && (
           <Diagram
             xml={migrationSourceData.xml}
-            selectableFlowNodes={migrationSourceData.selectableFlowNodes.map(
-              (flowNode) => flowNode.id,
-            )}
-            selectedFlowNodeIds={selectedSourceFlowNodeIds}
+            selectableFlowNodes={[
+              ...migrationSourceData.selectableFlowNodes,
+              ...migrationSourceData.selectableSequenceFlows,
+            ].map((flowNode) => flowNode.id)}
+            selectedFlowNodeIds={selectedSourceItemIds}
             onFlowNodeSelection={(flowNodeId) => {
               processInstanceMigrationStore.selectSourceFlowNode(flowNodeId);
             }}

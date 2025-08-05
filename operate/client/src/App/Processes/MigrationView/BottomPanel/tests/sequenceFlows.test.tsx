@@ -1,0 +1,236 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {render, screen} from 'modules/testing-library';
+import {BottomPanel} from '../';
+import {open} from 'modules/mocks/diagrams';
+import {SOURCE_PROCESS_DEFINITION_KEY, Wrapper} from './mocks';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+
+const TARGET_PROCESS_DEFINITION_KEY = '2';
+
+vi.mock('modules/stores/processes/processes.migration', () => {
+  return {
+    processesStore: {
+      migrationState: {
+        selectedTargetProcess: {bpmnProcessId: 'SequenceFlowMigration'},
+      },
+      getSelectedProcessDetails: () => ({
+        bpmnProcessId: 'SequenceFlowMigration',
+      }),
+      selectedTargetProcessId: '2',
+    },
+  };
+});
+
+const HEADER_ROW_COUNT = 1;
+const MAPPABLE_ITEMS_ROW_COUNT = 13;
+const AUTO_MAPPABLE_ITEMS_ROW_COUNT = 3;
+
+describe('BottomPanel - sequence flow mappings', () => {
+  beforeEach(() => {
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('SequenceFlowMigration_v1.bpmn'));
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('SequenceFlowMigration_v2.bpmn'));
+  });
+
+  it('should show mappable sequence flows', async () => {
+    render(<BottomPanel />, {wrapper: Wrapper});
+
+    // Expect all sequence flows leading to merging parallel or inclusive gateways to be visible
+    expect(
+      await screen.findByRole('combobox', {
+        name: /target item for Gateway_0bcfno8/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: /target item for Gateway_0etv923/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: /target item for Gateway_1sxij6y/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: /target item for Activity_1mkmfoa/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: /target item for Gateway_0h6a6k2/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: /target item for Gateway_07izaz5/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: /target item for Flow R/i,
+      }),
+    ).toBeVisible();
+
+    expect(
+      screen.getByRole('combobox', {
+        name: /target item for Flow H/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: /target item for Flow D/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: /target item for Flow K/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: /target item for Flow L/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: /target item for Flow N/i,
+      }),
+    ).toBeVisible();
+
+    // Expect no sequence flows leading to exclusive gateway
+    expect(
+      screen.queryByRole('combobox', {
+        name: new RegExp(`target item for Flow Q`, 'i'),
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', {
+        name: new RegExp(`target item for Flow T`, 'i'),
+      }),
+    ).not.toBeInTheDocument();
+
+    // Expect no sequence flows leading to splitting gateways
+    expect(
+      screen.queryByRole('combobox', {
+        name: new RegExp(`target item for Flow A`, 'i'),
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', {
+        name: new RegExp(`target item for Flow B`, 'i'),
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', {
+        name: new RegExp(`target item for Flow G`, 'i'),
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', {
+        name: new RegExp(`target item for Flow I`, 'i'),
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', {
+        name: new RegExp(`target item for Flow O`, 'i'),
+      }),
+    ).not.toBeInTheDocument();
+
+    // Expect all mappable sequence flows to be visible
+    expect(await screen.findAllByRole('row')).toHaveLength(
+      HEADER_ROW_COUNT + MAPPABLE_ITEMS_ROW_COUNT,
+    );
+  });
+
+  it('should show auto-mappable sequence flows', async () => {
+    const {user} = render(<BottomPanel />, {wrapper: Wrapper});
+
+    // Wait until rows are rendered
+    expect(
+      await screen.findByRole('combobox', {
+        name: new RegExp(`target item for Flow D`, 'i'),
+      }),
+    ).toBeVisible();
+
+    // Toggle on unmapped flow nodes
+    await user.click(screen.getByLabelText(/show only not mapped/i));
+
+    // Expect not mapped items to be visible
+    expect(
+      screen.getByRole('combobox', {
+        name: new RegExp(`target item for Flow H`, 'i'),
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: new RegExp(`target item for Flow D`, 'i'),
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', {
+        name: new RegExp(`target item for Flow K`, 'i'),
+      }),
+    ).toBeVisible();
+
+    // Expect auto-mappable items to be hidden
+    expect(
+      screen.queryByRole('combobox', {
+        name: new RegExp(`target item for Flow L`, 'i'),
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', {
+        name: new RegExp(`target item for Flow N`, 'i'),
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', {
+        name: new RegExp(`target item for Flow R`, 'i'),
+      }),
+    ).not.toBeInTheDocument();
+
+    expect(await screen.findAllByRole('row')).toHaveLength(
+      HEADER_ROW_COUNT + AUTO_MAPPABLE_ITEMS_ROW_COUNT,
+    );
+  });
+
+  it('should show correct target items', async () => {
+    const {user} = render(<BottomPanel />, {wrapper: Wrapper});
+
+    // Wait until rows are rendered
+    expect(
+      await screen.findByRole('combobox', {
+        name: /target item for Flow D/i,
+      }),
+    ).toBeVisible();
+
+    await user.click(
+      screen.getByRole('combobox', {
+        name: /target item for Flow H/i,
+      }),
+    );
+
+    const options = screen.getByRole('combobox', {
+      name: /target item for Flow H/i,
+    }).children;
+
+    expect(options).toHaveLength(6);
+    expect(options[0].textContent).toMatch('');
+    expect(options[1].textContent).toMatch(/Flow R/i);
+    expect(options[2].textContent).toMatch(/Flow C/i);
+    expect(options[3].textContent).toMatch(/Flow L/i);
+    expect(options[4].textContent).toMatch(/Flow N/i);
+    expect(options[5].textContent).toMatch(/Flow U/i);
+  });
+});

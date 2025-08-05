@@ -41,7 +41,7 @@ const LeftColumn = styled.div`
   color: var(--cds-text-primary);
 `;
 
-const SourceFlowNodeName = styled.div`
+const SourceItemName = styled.div`
   flex-grow: 1;
 `;
 
@@ -80,7 +80,7 @@ const IconContainer = styled.div`
 export {
   BottomSection,
   LeftColumn,
-  SourceFlowNodeName,
+  SourceItemName,
   ArrowRight,
   DataTable,
   ErrorMessageContainer,

@@ -12,6 +12,7 @@ import type {DiagramModel} from 'bpmn-moddle';
 import {isMigratableFlowNode} from 'modules/bpmn-js/utils/isMigratableFlowNode';
 import {hasParentProcess} from 'modules/bpmn-js/utils/hasParentProcess';
 import {processesStore} from 'modules/stores/processes/processes.migration';
+import {getMappableSequenceFlows} from 'modules/utils/sequenceFlows';
 
 function migrationTargetXmlParser({
   xml,
@@ -42,6 +43,9 @@ function migrationTargetXmlParser({
       .map((flowNode) => {
         return {...flowNode, name: flowNode.name ?? flowNode.id};
       }),
+    selectableSequenceFlows: getMappableSequenceFlows(
+      diagramModel?.elementsById,
+    ),
   };
 }
 
