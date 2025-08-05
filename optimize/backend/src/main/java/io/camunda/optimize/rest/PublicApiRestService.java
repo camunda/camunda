@@ -31,7 +31,6 @@ import io.camunda.optimize.service.entities.EntityExportService;
 import io.camunda.optimize.service.entities.EntityImportService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.export.JsonReportResultExportService;
-import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.variable.ProcessVariableLabelService;
 import jakarta.validation.Valid;
@@ -90,7 +89,6 @@ public class PublicApiRestService {
   private final SettingsService settingsService;
   private final CollectionService collectionService;
   private final CollectionScopeService collectionScopeService;
-  private final AbstractIdentityService identityService;
 
   public PublicApiRestService(
       final JsonReportResultExportService jsonReportResultExportService,
@@ -101,8 +99,7 @@ public class PublicApiRestService {
       final ProcessVariableLabelService processVariableLabelService,
       final SettingsService settingsService,
       final CollectionService collectionService,
-      final CollectionScopeService collectionScopeService,
-      final AbstractIdentityService identityService) {
+      final CollectionScopeService collectionScopeService) {
     this.jsonReportResultExportService = jsonReportResultExportService;
     this.entityExportService = entityExportService;
     this.entityImportService = entityImportService;
@@ -112,7 +109,6 @@ public class PublicApiRestService {
     this.settingsService = settingsService;
     this.collectionService = collectionService;
     this.collectionScopeService = collectionScopeService;
-    this.identityService = identityService;
   }
 
   @GetMapping(REPORT_SUB_PATH)
@@ -159,7 +155,7 @@ public class PublicApiRestService {
   @PostMapping(IMPORT_SUB_PATH)
   public List<EntityIdResponseDto> importEntities(
       @RequestParam(name = "collectionId", required = false) final String collectionId,
-      final String exportedDtoJson) {
+      final @RequestBody String exportedDtoJson) {
     validateCollectionIdNotNull(collectionId);
     final Set<OptimizeEntityExportDto> exportDtos =
         entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);
