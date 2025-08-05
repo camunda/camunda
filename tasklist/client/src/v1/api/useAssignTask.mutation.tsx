@@ -11,6 +11,7 @@ import {z} from 'zod';
 import {useTranslation} from 'react-i18next';
 import {request} from 'common/api/request';
 import {notificationsStore} from 'common/notifications/notifications.store';
+import {isTaskTimeoutError} from 'common/utils/taskErrorHandling';
 import {api} from 'v1/api';
 import {getUseTaskQueryKey} from 'v1/api/useTask.query';
 import type {Task} from 'v1/api/types';
@@ -98,7 +99,7 @@ function useAssignTask() {
 
       error.name = errorResult.data.message.title;
 
-      if (error.name === assignmentErrorMap.taskProcessingTimeout) {
+      if (isTaskTimeoutError(errorResult.data.message)) {
         const currentTask = client.getQueryData(
           getUseTaskQueryKey(taskId),
         ) as Task;

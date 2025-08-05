@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {request, requestErrorSchema} from 'common/api/request';
 import {notificationsStore} from 'common/notifications/notifications.store';
+import {isTaskTimeoutError} from 'common/utils/taskErrorHandling';
 import {api} from 'v2/api';
 import {getUseTaskQueryKey} from './useTask.query';
 
@@ -52,7 +53,7 @@ function useAssignTask() {
         if (success && parsedError.variant === 'failed-response') {
           const errorData = await parsedError.response.json();
 
-          if (errorData.title === 'DEADLINE_EXCEEDED') {
+          if (isTaskTimeoutError(errorData)) {
             const currentTask = client.getQueryData(
               getUseTaskQueryKey(params.userTaskKey),
             ) as UserTask;

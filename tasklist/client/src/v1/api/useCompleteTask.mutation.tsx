@@ -10,6 +10,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {request, requestErrorSchema} from 'common/api/request';
 import {notificationsStore} from 'common/notifications/notifications.store';
+import {isTaskTimeoutError} from 'common/utils/taskErrorHandling';
 import {api} from 'v1/api';
 import type {Task, Variable} from 'v1/api/types';
 import {getUseTaskQueryKey} from 'v1/api/useTask.query';
@@ -77,9 +78,7 @@ function useCompleteTask() {
         if (success && parsedError.variant === 'failed-response') {
           const errorData = await parsedError.response.json();
 
-          if (
-            errorData.message.includes(completionErrorMap.taskProcessingTimeout)
-          ) {
+          if (isTaskTimeoutError(errorData)) {
             const currentTask = client.getQueryData(
               getUseTaskQueryKey(params.taskId),
             ) as Task;
@@ -87,7 +86,7 @@ function useCompleteTask() {
             if (currentTask) {
               client.setQueryData(getUseTaskQueryKey(params.taskId), {
                 ...currentTask,
-                state: 'COMPLETING' as const,
+                state: 'COMPLETING',
               });
             }
 
