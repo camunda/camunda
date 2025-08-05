@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.runtime;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.containers.ContainerFactory;
@@ -49,30 +50,53 @@ public class CamundaProcessTestRuntimeBuilder {
   private String connectorsDockerImageVersion =
       CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION;
 
-  private final Map<String, String> camundaEnvVars = new HashMap<>();
+  private final Map<String, String> camundaEnvVars =
+      new HashMap<>(CamundaProcessTestRuntimeDefaults.CAMUNDA_ENV_VARS);
+  private final Map<String, String> connectorsEnvVars =
+      new HashMap<>(CamundaProcessTestRuntimeDefaults.CONNECTORS_ENV_VARS);
   private final Map<String, String> elasticsearchEnvVars = new HashMap<>();
-  private final Map<String, String> connectorsEnvVars = new HashMap<>();
 
-  private final List<Integer> camundaExposedPorts = new ArrayList<>();
+  private final List<Integer> camundaExposedPorts =
+      new ArrayList<>(CamundaProcessTestRuntimeDefaults.CAMUNDA_EXPOSED_PORTS);
   private final List<Integer> elasticsearchExposedPorts = new ArrayList<>();
-  private final List<Integer> connectorsExposedPorts = new ArrayList<>();
+  private final List<Integer> connectorsExposedPorts =
+      new ArrayList<>(CamundaProcessTestRuntimeDefaults.CAMUNDA_EXPOSED_PORTS);
 
   private String camundaLoggerName = CamundaProcessTestRuntimeDefaults.CAMUNDA_LOGGER_NAME;
   private String elasticsearchLoggerName =
       CamundaProcessTestRuntimeDefaults.ELASTICSEARCH_LOGGER_NAME;
   private String connectorsLoggerName = CamundaProcessTestRuntimeDefaults.CONNECTORS_LOGGER_NAME;
 
-  private boolean connectorsEnabled = false;
-  private final Map<String, String> connectorsSecrets = new HashMap<>();
+  private boolean connectorsEnabled = CamundaProcessTestRuntimeDefaults.CONNECTORS_ENABLED;
+  private final Map<String, String> connectorsSecrets =
+      new HashMap<>(CamundaProcessTestRuntimeDefaults.CONNECTORS_SECRETS);
 
-  private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
+  private CamundaProcessTestRuntimeMode runtimeMode =
+      CamundaProcessTestRuntimeDefaults.RUNTIME_MODE;
 
   private CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
-      () -> CamundaClient.newClientBuilder().usePlaintext();
+      () -> {
+        final CamundaClientBuilder camundaClientBuilder =
+            CamundaClient.newClientBuilder().usePlaintext();
+
+        // Make sure not to override the CamundaClient's default configuration
+        if (CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_GRPC_ADDRESS != null) {
+          camundaClientBuilder.grpcAddress(
+              CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_GRPC_ADDRESS);
+        }
+
+        if (CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_REST_ADDRESS != null) {
+          camundaClientBuilder.restAddress(
+              CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_REST_ADDRESS);
+        }
+
+        return camundaClientBuilder;
+      };
+
   private URI remoteCamundaMonitoringApiAddress =
-      CamundaProcessTestRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS;
+      CamundaProcessTestRuntimeDefaults.REMOTE_CAMUNDA_MONITORING_API_ADDRESS;
   private URI remoteConnectorsRestApiAddress =
-      CamundaProcessTestRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS;
+      CamundaProcessTestRuntimeDefaults.REMOTE_CONNECTORS_REST_API_ADDRESS;
 
   // ============ For testing =================
 
