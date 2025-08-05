@@ -51,11 +51,11 @@ public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEnt
     return this;
   }
 
-  public short getResourceMatcher() {
+  public Short getResourceMatcher() {
     return resourceMatcher;
   }
 
-  public AuthorizationEntity setResourceMatcher(final short resourceMatcher) {
+  public AuthorizationEntity setResourceMatcher(final Short resourceMatcher) {
     this.resourceMatcher = resourceMatcher;
     return this;
   }
