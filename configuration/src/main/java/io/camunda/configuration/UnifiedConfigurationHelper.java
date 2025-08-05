@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.convert.DurationStyle;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import org.springframework.util.unit.DataSize;
 
 @Component("unifiedConfigurationHelper")
 public class UnifiedConfigurationHelper {
@@ -212,6 +213,7 @@ public class UnifiedConfigurationHelper {
       case "Boolean" -> (T) Boolean.valueOf(strValue);
       case "Duration" -> (T) DurationStyle.detectAndParse(strValue);
       case "Long" -> (T) Long.valueOf(strValue);
+      case "DataSize" -> (T) DataSize.parse(strValue);
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }

@@ -20,6 +20,7 @@ public class Camunda {
 
   private Cluster cluster = new Cluster();
   private System system = new System();
+  private Data data = new Data();
   private Api api = new Api();
 
   public Cluster getCluster() {
@@ -44,5 +45,13 @@ public class Camunda {
 
   public void setApi(final Api api) {
     this.api = api;
+  }
+
+  public Data getData() {
+    return data;
+  }
+
+  public void setData(final Data data) {
+    this.data = data;
   }
 }
