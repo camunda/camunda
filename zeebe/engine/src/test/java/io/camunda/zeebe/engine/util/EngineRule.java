@@ -109,6 +109,7 @@ public final class EngineRule extends ExternalResource {
   private final StreamProcessorRule environmentRule;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+  private ResetRecordingExporterTestWatcherMode resetRecordingExporterTestWatcherMode;
   private final int partitionCount;
   private boolean awaitIdentitySetup = false;
   private ResetRecordingExporterMode awaitIdentitySetupResetMode =
@@ -128,7 +129,6 @@ public final class EngineRule extends ExternalResource {
   private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
   private SearchClientsProxy searchClientsProxy;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
-  private ResetRecordingExporterTestWatcherMode resetRecordingExporterTestWatcherMode;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
