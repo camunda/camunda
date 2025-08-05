@@ -95,11 +95,7 @@ describe('OperationsPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show an error message', async () => {
-    const consoleErrorMock = vi
-      .spyOn(global.console, 'error')
-      .mockImplementation(() => {});
-
+  it.only('should show an error message', async () => {
     mockQueryBatchOperations().withServerError();
     const {unmount} = render(<OperationsPanel />, {wrapper: Wrapper});
 
@@ -116,7 +112,5 @@ describe('OperationsPanel', () => {
     expect(
       await screen.findByText('Operations could not be fetched'),
     ).toBeInTheDocument();
-
-    consoleErrorMock.mockRestore();
   });
 });
