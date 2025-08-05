@@ -85,6 +85,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -161,8 +162,10 @@ public final class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
-    if (resetRecordingExporterTestWatcherMode
-        == ResetRecordingExporterTestWatcherMode.ONLY_BEFORE_AND_AFTER_ALL_TESTS) {
+    if (EnumSet.of(
+            ResetRecordingExporterTestWatcherMode.ONLY_BEFORE_AND_AFTER_ALL_TESTS,
+            ResetRecordingExporterTestWatcherMode.BEFORE_ALL_TESTS_AND_AFTER_EACH_TEST)
+        .contains(resetRecordingExporterTestWatcherMode)) {
       RecordingExporter.reset();
     }
     start();
@@ -265,6 +268,10 @@ public final class EngineRule extends ExternalResource {
       }
       case BEFORE_EACH_TEST -> {
         recordingExporterTestWatcher.withResetMode(ResetMode.ON_STARTING);
+        yield this;
+      }
+      case BEFORE_ALL_TESTS_AND_AFTER_EACH_TEST -> {
+        recordingExporterTestWatcher.withResetMode(ResetMode.ON_FINISHED);
         yield this;
       }
     };
@@ -706,6 +713,7 @@ public final class EngineRule extends ExternalResource {
 
   public enum ResetRecordingExporterTestWatcherMode {
     ONLY_BEFORE_AND_AFTER_ALL_TESTS,
+    BEFORE_ALL_TESTS_AND_AFTER_EACH_TEST,
     BEFORE_EACH_TEST
   }
 
