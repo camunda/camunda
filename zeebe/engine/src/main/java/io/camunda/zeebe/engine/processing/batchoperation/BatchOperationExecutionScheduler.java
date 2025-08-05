@@ -34,10 +34,13 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -80,6 +83,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
   /** Marks if this scheduler is currently executing or not. */
   private final AtomicBoolean executing = new AtomicBoolean(false);
+
+  private final AtomicReference<Tuple<Long, String>> initializing = new AtomicReference<>();
 
   public BatchOperationExecutionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
@@ -146,6 +151,10 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       return;
     }
 
+    if (!validateNoReInitialization(batchOperation)) {
+      return;
+    }
+
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
 
     // use overall state variable for all parameters that are used in the loop
@@ -194,6 +203,24 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     }
   }
 
+  private boolean validateNoReInitialization(final PersistedBatchOperation batchOperation) {
+    final var initializingBO = initializing.get();
+    if (initializingBO != null
+        && initializingBO.getLeft() == batchOperation.getKey()
+        && !Objects.equals(
+            initializingBO.getRight(), batchOperation.getInitializationSearchCursor())) {
+      // If the batch operation is already being initialized, we do not re-initialize it.
+      LOG.trace(
+          "Batch operation {} is already being executed, skipping re-initialization.",
+          batchOperation.getKey());
+      return false;
+    }
+    initializing.set(
+        new Tuple<>(batchOperation.getKey(), batchOperation.getInitializationSearchCursor()));
+
+    return true;
+  }
+
   private void startExecutionPhase(
       final TaskResultBuilder resultBuilder, final InitLoopState state) {
     appendExecution(state.batchOperation.getKey(), resultBuilder);
@@ -222,6 +249,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
             command,
             FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
     if (appended) {
+      initializing.set(new Tuple<>(batchOperation.getKey(), "finished"));
       metrics.recordInitialized(batchOperation.getBatchOperationType());
     }
     return appended;
@@ -244,7 +272,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
             String.format(ERROR_MSG_FAILED_FIRST_CHUNK_APPEND, state.page.items().size()),
             BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED);
       }
-      return;
     } else {
       // The RecordBatch is full, so we need another init run to continue
       continueInitialization(taskResultBuilder, state);
@@ -324,7 +351,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
                     : state.lastSearchResultCursor)
             .setSearchQueryPageSize(state.searchResultPageSize);
     LOG.trace("Appending batch operation {} initializing command", batchOperation.getKey());
-
+    initializing.set(new Tuple<>(batchOperation.getKey(), command.getSearchResultCursor()));
     taskResultBuilder.appendCommandRecord(
         batchOperation.getKey(),
         BatchOperationIntent.INITIALIZE,
