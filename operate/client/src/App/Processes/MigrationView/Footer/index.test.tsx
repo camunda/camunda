@@ -27,7 +27,7 @@ const Wrapper = ({children}: Props) => {
       {children}
       <button
         onClick={() => {
-          processInstanceMigrationStore.updateFlowNodeMapping({
+          processInstanceMigrationStore.updateItemMapping({
             sourceId: 'task1',
             targetId: 'task2',
           });

@@ -79,7 +79,7 @@ const DiagramPanel: React.FC = observer(() => {
 
   const processId = processesStore.getProcessIdByLocation(location);
 
-  const {selectedTargetFlowNodeId} = batchModificationStore.state;
+  const {selectedTargetItemId} = batchModificationStore.state;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const processDefinition = useListViewXml({
@@ -108,7 +108,7 @@ const DiagramPanel: React.FC = observer(() => {
     {},
     {
       sourceFlowNodeId: flowNodeId,
-      targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,
+      targetFlowNodeId: selectedTargetItemId ?? undefined,
     },
     processId,
     batchModificationStore.state.isEnabled,
@@ -179,12 +179,10 @@ const DiagramPanel: React.FC = observer(() => {
                   // Source and target flow node
                   selectedFlowNodeIds: [
                     ...(flowNodeId ? [flowNodeId] : []),
-                    ...(selectedTargetFlowNodeId
-                      ? [selectedTargetFlowNodeId]
-                      : []),
+                    ...(selectedTargetItemId ? [selectedTargetItemId] : []),
                   ],
                   onFlowNodeSelection: (flowNodeId) => {
-                    return batchModificationStore.selectTargetFlowNode(
+                    return batchModificationStore.selectTargetItem(
                       flowNodeId ?? null,
                     );
                   },
@@ -259,8 +257,8 @@ const DiagramPanel: React.FC = observer(() => {
       {batchModificationStore.state.isEnabled && (
         <BatchModificationNotification
           sourceFlowNodeId={flowNodeId}
-          targetFlowNodeId={selectedTargetFlowNodeId || undefined}
-          onUndoClick={() => batchModificationStore.selectTargetFlowNode(null)}
+          targetFlowNodeId={selectedTargetItemId || undefined}
+          onUndoClick={() => batchModificationStore.selectTargetItem(null)}
         />
       )}
     </Section>

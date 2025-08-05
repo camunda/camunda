@@ -44,7 +44,7 @@ const onTransition = ({
 
 const BatchModificationFooter: React.FC = observer(() => {
   const isTargetFlowNodeSelected =
-    batchModificationStore.state.selectedTargetFlowNodeId !== null;
+    batchModificationStore.state.selectedTargetItemId !== null;
 
   const isButtonDisabled =
     processInstancesSelectionStore.selectedProcessInstanceCount < 1 ||
