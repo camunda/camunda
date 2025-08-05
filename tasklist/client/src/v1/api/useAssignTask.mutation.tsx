@@ -87,7 +87,7 @@ function useAssignTask() {
         });
       }
 
-      const error = new Error('Failed to complete task');
+      const error = new Error('Failed to assign task');
       const errorResult = assignmentErrorSchema.safeParse(
         await errorResponse.response.json(),
       );

@@ -7,24 +7,13 @@
  */
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {useTranslation} from 'react-i18next';
+import {request, requestErrorSchema} from 'common/api/request';
+import {notificationsStore} from 'common/notifications/notifications.store';
 import {api} from 'v1/api';
-import {request} from 'common/api/request';
 import type {Task, Variable} from 'v1/api/types';
-import {buildServerErrorSchema} from 'v1/api/buildServerErrorSchema';
-import {z} from 'zod';
 import {getUseTaskQueryKey} from 'v1/api/useTask.query';
 
-const messageResponseSchema = z.object({
-  title: z.enum([
-    'TASK_NOT_ASSIGNED',
-    'TASK_NOT_ASSIGNED_TO_CURRENT_USER',
-    'TASK_IS_NOT_ACTIVE',
-    'INVALID_STATE',
-    'TASK_PROCESSING_TIMEOUT',
-  ]),
-  detail: z.string(),
-});
-const completionErrorSchema = buildServerErrorSchema(messageResponseSchema);
 const completionErrorMap = {
   invalidState: 'INVALID_STATE',
   taskProcessingTimeout: 'TASK_PROCESSING_TIMEOUT',
@@ -52,6 +41,7 @@ type Payload = {
 
 function useCompleteTask() {
   const client = useQueryClient();
+  const {t} = useTranslation();
 
   function refetchTask(taskId: string) {
     return client.fetchQuery({
@@ -77,33 +67,50 @@ function useCompleteTask() {
   }
 
   return useMutation<Task, CompletionError, Payload>({
-    mutationFn: async (payload) => {
-      const {response, error: errorResponse} = await request(
-        api.completeTask(payload),
-      );
+    mutationFn: async (params) => {
+      const {error} = await request(api.completeTask(params));
 
-      if (response !== null) {
-        client.invalidateQueries({queryKey: ['tasks']});
-        const task = await refetchTask(payload.taskId);
-        return task;
-      }
+      if (error !== null) {
+        const {data: parsedError, success} =
+          requestErrorSchema.safeParse(error);
 
-      let originalError: Error | null = null;
-      if (errorResponse.variant !== 'network-error') {
-        const errorResult = completionErrorSchema.safeParse(
-          await errorResponse.response.json(),
-        );
-        if (errorResult.success) {
-          originalError = new Error('Failed to complete task');
-          originalError.name = errorResult.data.message.title;
+        if (success && parsedError.variant === 'failed-response') {
+          const errorData = await parsedError.response.json();
+
+          if (
+            errorData.message.includes(completionErrorMap.taskProcessingTimeout)
+          ) {
+            const currentTask = client.getQueryData(
+              getUseTaskQueryKey(params.taskId),
+            ) as Task;
+
+            if (currentTask) {
+              client.setQueryData(getUseTaskQueryKey(params.taskId), {
+                ...currentTask,
+                state: 'COMPLETING' as const,
+              });
+            }
+
+            notificationsStore.displayNotification({
+              kind: 'info',
+              title: t('taskDetailsCompletionDelayInfoTitle'),
+              subtitle: t('taskDetailsCompletionDelayInfoSubtitle'),
+              isDismissable: true,
+            });
+
+            const task = await refetchTask(params.taskId);
+
+            return task;
+          }
         }
+
+        throw error;
       }
 
-      if (originalError) {
-        throw originalError;
-      }
+      client.invalidateQueries({queryKey: ['task']});
 
-      const task = await refetchTask(payload.taskId);
+      const task = await refetchTask(params.taskId);
+
       return task;
     },
   });

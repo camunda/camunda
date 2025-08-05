@@ -63,10 +63,14 @@ const TaskDetails: React.FC = observer(() => {
   async function handleSubmission(
     variables: Pick<Variable, 'name' | 'value'>[],
   ) {
-    await completeTask({
+    const completedTask = await completeTask({
       taskId,
       variables,
     });
+
+    if (completedTask.taskState !== 'COMPLETED') {
+      return;
+    }
 
     const filter = new URLSearchParams(window.location.search).get('filter');
     const customFilters =
@@ -126,8 +130,6 @@ const TaskDetails: React.FC = observer(() => {
   }
 
   function handleSubmissionFailure(error: Error) {
-    refetchTask();
-
     if (error.name === completionErrorMap.taskProcessingTimeout) {
       tracking.track({eventName: 'task-completion-delayed-notification'});
       notificationsStore.displayNotification({

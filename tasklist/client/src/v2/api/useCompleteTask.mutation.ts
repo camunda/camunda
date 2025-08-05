@@ -12,8 +12,8 @@ import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {request, requestErrorSchema} from 'common/api/request';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {api} from 'v2/api';
-import {getUseTaskQueryKey} from './useTask.query';
-import {USE_TASKS_QUERY_KEY} from './useTasks.query';
+import {getUseTaskQueryKey} from 'v2/api/useTask.query';
+import {USE_TASKS_QUERY_KEY} from 'v2/api/useTasks.query';
 
 function useCompleteTask() {
   const client = useQueryClient();
@@ -67,8 +67,8 @@ function useCompleteTask() {
 
             notificationsStore.displayNotification({
               kind: 'info',
-              title: t('taskDetailsAssignmentDelayInfoTitle'),
-              subtitle: t('taskDetailsAssignmentDelayInfoSubtitle'),
+              title: t('taskDetailsCompletionDelayInfoTitle'),
+              subtitle: t('taskDetailsCompletionDelayInfoSubtitle'),
               isDismissable: true,
             });
 
