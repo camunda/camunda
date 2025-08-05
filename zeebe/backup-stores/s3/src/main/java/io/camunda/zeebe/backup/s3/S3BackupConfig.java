@@ -50,7 +50,8 @@ public record S3BackupConfig(
     Optional<String> compressionAlgorithm,
     Optional<String> basePath,
     Integer maxConcurrentConnections,
-    Duration connectionAcquisitionTimeout) {
+    Duration connectionAcquisitionTimeout,
+    boolean supportLegacyMd5) {
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -93,6 +94,7 @@ public record S3BackupConfig(
     private String compressionAlgorithm;
     private Credentials credentials;
     private String basePath;
+    private boolean supportLegacyMd5 = false;
 
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
@@ -150,6 +152,11 @@ public record S3BackupConfig(
       return this;
     }
 
+    public Builder withSupportLegacyMd5(final boolean useMd5LegacyPlugin) {
+      supportLegacyMd5 = useMd5LegacyPlugin;
+      return this;
+    }
+
     public S3BackupConfig build() {
       return new S3BackupConfig(
           bucketName,
@@ -161,7 +168,8 @@ public record S3BackupConfig(
           Optional.ofNullable(compressionAlgorithm),
           Optional.ofNullable(basePath),
           maxConcurrentConnections,
-          connectionAcquisitionTimeout);
+          connectionAcquisitionTimeout,
+          supportLegacyMd5);
     }
   }
 
