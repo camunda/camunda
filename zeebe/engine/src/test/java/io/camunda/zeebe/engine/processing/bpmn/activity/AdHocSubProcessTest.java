@@ -720,14 +720,11 @@ public final class AdHocSubProcessTest {
                     {
                       "elementName": "An event!",
                       "elementId": "An_Event",
-                      "properties": {},
                       "documentation": "The event documentation"
                     },
                     {
                       "elementName": "A Connector",
-                      "elementId": "A_Connector",
-                      "properties": {},
-                      "documentation": ""
+                      "elementId": "A_Connector"
                     },
                     {
                       "elementName": "Task A",
@@ -739,9 +736,7 @@ public final class AdHocSubProcessTest {
                     },
                     {
                       "elementName": "A Task With Follow-Up",
-                      "elementId": "A_Task_With_Follow_Up",
-                      "properties": {},
-                      "documentation": ""
+                      "elementId": "A_Task_With_Follow_Up"
                     },
                     {
                       "elementName": "Script Task",
@@ -754,14 +749,11 @@ public final class AdHocSubProcessTest {
                     {
                       "elementName": "A complex tool",
                       "elementId": "A_Complex_Tool",
-                      "properties": {},
                       "documentation": "A very complex tool"
                     },
                     {
                       "elementName": "Service Task",
-                      "elementId": "Service_Task",
-                      "properties": {},
-                      "documentation": ""
+                      "elementId": "Service_Task"
                     }
                   ]
                   """,

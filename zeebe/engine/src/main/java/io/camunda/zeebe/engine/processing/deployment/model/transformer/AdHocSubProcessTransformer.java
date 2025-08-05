@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
@@ -28,7 +29,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public final class AdHocSubProcessTransformer implements ModelElementTransformer<AdHocSubProcess> {
@@ -136,7 +136,7 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
 
   private static void setAdHocActivitiesMetadata(
       final ExecutableAdHocSubProcess executableAdHocSubProcess) {
-    final List<Map<String, Object>> activitiesMetadata =
+    final List<AdHocActivityMetadata> activitiesMetadata =
         executableAdHocSubProcess.getAdHocActivitiesById().values().stream()
             .map(
                 flowNode -> {
@@ -145,11 +145,8 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
                   final String documentation =
                       BufferUtil.bufferAsString(flowNode.getDocumentation());
 
-                  return Map.ofEntries(
-                      Map.entry("elementId", elementId),
-                      Map.entry("elementName", elementName),
-                      Map.entry("documentation", documentation),
-                      Map.entry("properties", flowNode.getProperties()));
+                  return new AdHocActivityMetadata(
+                      elementId, elementName, documentation, flowNode.getProperties());
                 })
             .toList();
 
