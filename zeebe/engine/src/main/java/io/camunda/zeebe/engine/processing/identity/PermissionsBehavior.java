@@ -82,7 +82,7 @@ public class PermissionsBehavior {
             new Rejection(
                 RejectionType.ALREADY_EXISTS,
                 PERMISSIONS_ALREADY_EXISTS_MESSAGE.formatted(
-                    record.getOwnerId(), addedAuthorizationScope)));
+                    record.getOwnerId(), addedAuthorizationScope.getResourceId())));
       }
     }
     return Either.right(record);
