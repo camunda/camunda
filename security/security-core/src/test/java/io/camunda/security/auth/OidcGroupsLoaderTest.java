@@ -34,6 +34,12 @@ final class OidcGroupsLoaderTest {
   }
 
   @Test
+  void shouldHandleEmptyRegexAsNull() {
+    final var loader = new OidcGroupsLoader("");
+    assertThat(loader.getGroupsClaim()).isNull();
+  }
+
+  @Test
   void shouldSanitizeInvalidRegex() {
     final var loader = new OidcGroupsLoader(".gg.ee...");
     assertThat(loader.getGroupsClaim()).isEqualTo("$['.gg.ee...']");

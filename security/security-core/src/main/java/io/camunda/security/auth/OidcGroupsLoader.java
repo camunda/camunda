@@ -34,7 +34,7 @@ public class OidcGroupsLoader {
 
   public OidcGroupsLoader(final String groupsClaim) {
 
-    if (groupsClaim != null) {
+    if (groupsClaim != null && !groupsClaim.isEmpty()) {
       this.groupsClaim = sanitizeClaimPath(groupsClaim);
       try {
         JsonPath.compile(this.groupsClaim);

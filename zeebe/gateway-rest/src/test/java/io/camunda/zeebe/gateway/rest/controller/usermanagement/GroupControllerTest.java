@@ -55,7 +55,7 @@ public class GroupControllerTest {
   @WebMvcTest(GroupController.class)
   @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=g1")
-  public class InternalGroupsDisabledTest extends RestControllerTest {
+  public class CamundaGroupsDisabledTest extends RestControllerTest {
 
     public static final String FORBIDDEN_MESSAGE =
         """
@@ -208,7 +208,7 @@ public class GroupControllerTest {
   @Nested
   @WebMvcTest(GroupController.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=")
-  public class InternalGroupsEnabledTest extends RestControllerTest {
+  public class CamundaGroupsEnabledTest extends RestControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private UserServices userServices;
     @MockitoBean private RoleServices roleServices;

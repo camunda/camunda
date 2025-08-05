@@ -25,7 +25,7 @@ public class IdentityClientConfigController {
   private static final Logger LOG = LoggerFactory.getLogger(IdentityClientConfigController.class);
 
   private static final String VITE_IS_OIDC = "VITE_IS_OIDC";
-  private static final String VITE_INTERNAL_GROUPS_ENABLED = "VITE_INTERNAL_GROUPS_ENABLED";
+  private static final String VITE_CAMUNDA_GROUPS_ENABLED = "VITE_CAMUNDA_GROUPS_ENABLED";
   private static final String VITE_TENANTS_API_ENABLED = "VITE_TENANTS_API_ENABLED";
   private static final String FALLBACK_CONFIG_JS = "window.clientConfig = {};";
   private static final String CONFIG_JS_TEMPLATE = "window.clientConfig = %s;";
@@ -52,8 +52,7 @@ public class IdentityClientConfigController {
   private Map<String, String> createConfigMap(final SecurityConfiguration securityConfiguration) {
     return Map.of(
         VITE_IS_OIDC, String.valueOf(isOidcAuthentication(securityConfiguration)),
-        VITE_INTERNAL_GROUPS_ENABLED,
-            String.valueOf(isInternalGroupsEnabled(securityConfiguration)),
+        VITE_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(securityConfiguration)),
         VITE_TENANTS_API_ENABLED,
             String.valueOf(securityConfiguration.getMultiTenancy().isApiEnabled()));
   }
@@ -62,10 +61,12 @@ public class IdentityClientConfigController {
     return AuthenticationMethod.OIDC.equals(securityConfiguration.getAuthentication().getMethod());
   }
 
-  private boolean isInternalGroupsEnabled(final SecurityConfiguration securityConfiguration) {
+  private boolean isCamundaGroupsEnabled(final SecurityConfiguration securityConfiguration) {
     final var authentication = securityConfiguration.getAuthentication();
     final var oidcConfig = authentication.getOidc();
-    return oidcConfig == null || oidcConfig.getGroupsClaim() == null;
+    return oidcConfig == null
+        || oidcConfig.getGroupsClaim() == null
+        || oidcConfig.getGroupsClaim().isEmpty();
   }
 
   @GetMapping(path = "/identity/config.js", produces = "text/javascript;charset=UTF-8")
