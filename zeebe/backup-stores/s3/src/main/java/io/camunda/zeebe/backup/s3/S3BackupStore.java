@@ -51,6 +51,7 @@ import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.LegacyMd5Plugin;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
@@ -396,6 +397,12 @@ public final class S3BackupStore implements BackupStore {
 
     // Enable auto-tuning of various parameters based on the environment
     builder.defaultsMode(DefaultsMode.AUTO);
+
+    // Enable legacy MD5 plugin if configured, as it is required for compatibility with S3
+    // compatible storage systems that expect MD5 checksums in the request.
+    if (config.supportLegacyMd5()) {
+      builder.addPlugin(LegacyMd5Plugin.create());
+    }
 
     builder.httpClient(
         NettyNioAsyncHttpClient.builder()
