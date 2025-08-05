@@ -9,6 +9,7 @@ package io.camunda.operate.util;
 
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
@@ -35,7 +36,8 @@ import org.springframework.context.annotation.Import;
   WebappsModuleConfiguration.class,
   OperatePropertiesOverride.class,
   UnifiedConfiguration.class,
-  UnifiedConfigurationHelper.class
+  UnifiedConfigurationHelper.class,
+  GatewayBasedPropertiesOverride.class
 })
 public class TestApplication {
 

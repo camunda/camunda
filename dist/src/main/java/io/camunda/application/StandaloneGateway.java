@@ -11,6 +11,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 
@@ -28,7 +29,8 @@ public class StandaloneGateway {
                 CommonsModuleConfiguration.class,
                 GatewayModuleConfiguration.class,
                 UnifiedConfiguration.class,
-                UnifiedConfigurationHelper.class)
+                UnifiedConfigurationHelper.class,
+                GatewayBasedPropertiesOverride.class)
             .profiles(Profile.GATEWAY.getId(), Profile.STANDALONE.getId())
             .initializers(new HealthConfigurationInitializer())
             .build(args);
