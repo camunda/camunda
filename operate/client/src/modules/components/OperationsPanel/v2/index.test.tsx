@@ -95,7 +95,7 @@ describe('OperationsPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it.only('should show an error message', async () => {
+  it('should show an error message', async () => {
     mockQueryBatchOperations().withServerError();
     const {unmount} = render(<OperationsPanel />, {wrapper: Wrapper});
 
