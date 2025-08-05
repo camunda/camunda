@@ -279,6 +279,8 @@
     "taskDetailsAssignmentDelayInfoSubtitle": "Die Verarbeitung der Aufgabenzuweisung dauert länger als erwartet. Sie wird in Kürze abgeschlossen",
     "taskDetailsUnassignmentDelayInfoSubtitle": "Die Verarbeitung der Aufgabenaufhebung dauert länger als erwartet. Sie wird in Kürze abgeschlossen",
     "taskDetailsCompletionDelayInfoSubtitle": "Die Verarbeitung der Aufgabenfertigstellung dauert länger als erwartet. Sie wird in Kürze abgeschlossen",
+    "taskErrorTaskNotCompleted": "Aufgabe ist nicht abgeschlossen",
+    "taskErrorTaskStillAssigning": "Aufgabe wird noch zugewiesen",
     "taskDetailsUnassign": "Zuweisung aufheben",
     "taskDetailsAssignToMe": "Mir zuweisen",
     "processInstanceCancelledNotification": "Prozessinstanz abgebrochen",

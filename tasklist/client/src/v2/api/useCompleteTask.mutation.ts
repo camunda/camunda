@@ -36,7 +36,7 @@ function useCompleteTask() {
           return task;
         }
 
-        throw new Error('Task is not completed');
+        throw new Error(t('taskErrorTaskNotCompleted'));
       },
       retry: true,
       retryDelay: 1000,

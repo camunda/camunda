@@ -62,7 +62,7 @@ function useAssignTask() {
         const task = (await response.json()) as Task;
 
         if (task.taskState === 'ASSIGNING') {
-          throw new Error('Task is still assigning');
+          throw new Error(t('taskErrorTaskStillAssigning'));
         }
 
         return task;
