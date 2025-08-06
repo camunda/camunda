@@ -118,7 +118,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
               batchModificationStore.state.isEnabled
                 ? 'Not available in batch modification mode'
                 : !processInstancesSelectionStore.hasSelectedRunningInstances
-                  ? 'No active or incident process instances selected to cancel'
+                  ? 'No running process instances selected. Please select at least one active or incident process instance to cancel.'
                   : undefined
             }
           >
@@ -135,7 +135,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
               batchModificationStore.state.isEnabled
                 ? 'Not available in batch modification mode'
                 : !processInstancesSelectionStore.hasSelectedRunningInstances
-                  ? 'No active or incident process instances selected to retry'
+                  ? 'No running process instances selected. Please select at least one active or incident process instance to retry.'
                   : undefined
             }
           >
