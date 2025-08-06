@@ -168,7 +168,7 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    completeJobWithActivateElements(jobType, false, false, activateElement("A1"));
+    completeJob(jobType, false, false, activateElement("A1"));
 
     // then
     final var adHocSubProcess =
@@ -205,8 +205,7 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    completeJobWithActivateElements(
-        jobType, false, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     // then
     final var adHocSubProcess =
@@ -244,11 +243,10 @@ public class JobBasedAdHocSubProcessTest {
             });
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    completeJobWithActivateElements(
-        jobType, false, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     // when
-    completeJobWithActivateElements(jobType, false, false, activateElement("C"));
+    completeJob(jobType, false, false, activateElement("C"));
 
     // then
     Assertions.assertThat(
@@ -385,8 +383,7 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    completeJobWithActivateElements(
-        jobType, false, false, activateElement("A1"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A1"), activateElement("B"));
 
     // then
     Assertions.assertThat(
@@ -428,7 +425,7 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    completeJobWithActivateElements(
+    completeJob(
         jobType,
         false,
         false,
@@ -478,8 +475,7 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    completeJobWithActivateElements(
-        jobType, false, false, activateElement("DoesntExist"), activateElement("NotThere"));
+    completeJob(jobType, false, false, activateElement("DoesntExist"), activateElement("NotThere"));
 
     final var ahspKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
@@ -517,7 +513,7 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    completeJobWithActivateElements(jobType, true, false);
+    completeJob(jobType, true, false);
 
     // then
     Assertions.assertThat(
@@ -542,8 +538,7 @@ public class JobBasedAdHocSubProcessTest {
             });
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    completeJobWithActivateElements(
-        jobType, false, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -551,8 +546,7 @@ public class JobBasedAdHocSubProcessTest {
                 .exists())
         .describedAs("Element A is completed")
         .isTrue();
-    completeJobWithActivateElements(
-        jobType, true, false); // AHSP doesn't complete yet as B is still active
+    completeJob(jobType, true, false); // AHSP doesn't complete yet as B is still active
 
     // when
     final var userTaskKey =
@@ -787,11 +781,11 @@ public class JobBasedAdHocSubProcessTest {
             });
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    completeJobWithActivateElements(
+    completeJob(
         jobType, false, false, activateElement("A"), activateElement("B"), activateElement("C"));
 
     // when
-    completeJobWithActivateElements(jobType, true, true);
+    completeJob(jobType, true, true);
 
     // then
     Assertions.assertThat(
@@ -823,11 +817,10 @@ public class JobBasedAdHocSubProcessTest {
             });
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    completeJobWithActivateElements(
-        jobType, false, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     // when
-    completeJobWithActivateElements(jobType, false, true, activateElement("C"));
+    completeJob(jobType, false, true, activateElement("C"));
 
     // then
     Assertions.assertThat(
@@ -885,7 +878,7 @@ public class JobBasedAdHocSubProcessTest {
         .hasErrorMessage("The output collection has the wrong type. Expected ARRAY but was NIL.");
   }
 
-  private void completeJobWithActivateElements(
+  private void completeJob(
       final String jobType,
       final boolean completionConditionFulfilled,
       final boolean cancelRemainingInstances,
