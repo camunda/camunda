@@ -18,6 +18,7 @@ import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasVariable;
@@ -113,6 +114,7 @@ public class OperateProcessInstanceAddVariableIT {
 
     waitForBatchOperationWithCorrectTotalCount(client, batchOperationId, 1);
     waitUntilProcessInstanceHasVariable(client, processInstanceKey, "foo", "\"bar\"");
+    waitForBatchOperationCompleted(client, batchOperationId, 1, 0);
   }
 
   private List<Long> createProcessInstances(

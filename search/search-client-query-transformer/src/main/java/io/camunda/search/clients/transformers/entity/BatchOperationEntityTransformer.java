@@ -65,7 +65,9 @@ public class BatchOperationEntityTransformer
       final io.camunda.webapps.schema.entities.operation.BatchOperationEntity source) {
     return new BatchOperationEntity(
         source.getId(),
-        BatchOperationState.INCOMPLETED,
+        source.getState() != null
+            ? BatchOperationState.valueOf(source.getState().name())
+            : interpolateLegacyState(source),
         source.getType() != null ? BatchOperationType.valueOf(source.getType().name()) : null,
         source.getStartDate(),
         source.getEndDate(),
@@ -73,5 +75,16 @@ public class BatchOperationEntityTransformer
         0,
         source.getOperationsFinishedCount(),
         Collections.emptyList());
+  }
+
+  private BatchOperationState interpolateLegacyState(
+      final io.camunda.webapps.schema.entities.operation.BatchOperationEntity entity) {
+    if (entity.getEndDate() != null) {
+      return BatchOperationState.COMPLETED;
+    } else if (entity.getOperationsFinishedCount() == 0) {
+      return BatchOperationState.CREATED;
+    } else {
+      return BatchOperationState.ACTIVE;
+    }
   }
 }

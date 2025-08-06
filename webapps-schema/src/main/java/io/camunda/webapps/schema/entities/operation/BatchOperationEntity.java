@@ -274,7 +274,6 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     SUSPENDED,
     COMPLETED,
     PARTIALLY_COMPLETED,
-    CANCELED,
-    INCOMPLETED
+    CANCELED
   }
 }

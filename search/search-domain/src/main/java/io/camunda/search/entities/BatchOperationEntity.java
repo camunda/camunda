@@ -65,8 +65,7 @@ public record BatchOperationEntity(
     SUSPENDED,
     COMPLETED,
     PARTIALLY_COMPLETED,
-    CANCELED,
-    INCOMPLETED // This is just used for running legacy batch operations
+    CANCELED
   }
 
   public enum BatchOperationItemState {

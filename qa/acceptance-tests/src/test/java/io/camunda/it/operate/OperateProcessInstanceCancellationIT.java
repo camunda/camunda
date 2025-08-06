@@ -18,6 +18,7 @@ import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
@@ -119,6 +120,7 @@ public class OperateProcessInstanceCancellationIT {
 
     waitForBatchOperationWithCorrectTotalCount(
         client, batchOperationId.get(), processInstanceCount);
+    waitForBatchOperationCompleted(client, batchOperationId.get(), processInstanceCount, 0);
 
     for (final Long key : processInstanceKeys) {
       waitForProcessInstanceToBeTerminated(client, key);
