@@ -12,7 +12,7 @@ import io.camunda.application.commons.actor.ActorSchedulerConfiguration.Schedule
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
-import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
@@ -40,7 +40,7 @@ public class BrokerBasedConfiguration {
   @Autowired
   public BrokerBasedConfiguration(
       final WorkingDirectory workingDirectory,
-      final BrokerBasedProperties properties,
+      final LegacyBrokerBasedProperties properties,
       final LifecycleProperties lifecycle) {
     this.workingDirectory = workingDirectory;
     this.properties = properties;

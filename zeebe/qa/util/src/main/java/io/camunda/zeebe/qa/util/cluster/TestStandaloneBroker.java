@@ -17,7 +17,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -48,7 +48,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public static final String DEFAULT_MAPPING_RULE_CLAIM_NAME = "client_id";
   public static final String DEFAULT_MAPPING_RULE_CLAIM_VALUE = "default";
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
-  private final BrokerBasedProperties config;
+  private final LegacyBrokerBasedProperties config;
   private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneBroker() {
@@ -58,7 +58,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         UnifiedConfigurationHelper.class,
         UnifiedConfiguration.class);
 
-    config = new BrokerBasedProperties();
+    config = new LegacyBrokerBasedProperties();
 
     config.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
     config.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
@@ -74,7 +74,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
 
     //noinspection resource
-    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
+    withBean("config", config, LegacyBrokerBasedProperties.class)
+        .withAdditionalProfile(Profile.BROKER);
 
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthorizations().setEnabled(false);
@@ -262,7 +263,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * started, but likely has no effect until it's restarted.
    */
   @Override
-  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
+  public TestStandaloneBroker withBrokerConfig(
+      final Consumer<LegacyBrokerBasedProperties> modifier) {
     modifier.accept(config);
     return this;
   }
@@ -280,7 +282,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   /** Returns the broker configuration */
   @Override
-  public BrokerBasedProperties brokerConfig() {
+  public LegacyBrokerBasedProperties brokerConfig() {
     return config;
   }
 
