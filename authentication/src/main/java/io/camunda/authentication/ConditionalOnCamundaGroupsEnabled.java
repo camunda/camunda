@@ -20,4 +20,4 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 @Retention(RUNTIME)
 @Documented
 @ConditionalOnExpression("'${camunda.security.authentication.oidc.groupsClaim:}' == ''")
-public @interface ConditionalOnInternalGroupsEnabled {}
+public @interface ConditionalOnCamundaGroupsEnabled {}

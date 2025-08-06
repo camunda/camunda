@@ -36,15 +36,16 @@ class IdentityClientConfigControllerParameterizedTest {
 
   @BeforeEach
   void setUp() {
-    // MockMvc will be setup for each test with specific controller configuration
+    // MockMvc will be setup for each test with a specific controller configuration
   }
 
   static Stream<Arguments> configurationProvider() {
     return Stream.of(
-        // AuthMethod, GroupsClaim, MultiTenancyEnabled, ExpectedIsOidc, ExpectedInternalGroups,
+        // AuthMethod, GroupsClaim, MultiTenancyEnabled, ExpectedIsOidc, ExpectedCamundaGroups,
         // ExpectedTenantsApi
         Arguments.of(AuthenticationMethod.OIDC, null, true, "true", "true", "true"),
         Arguments.of(AuthenticationMethod.OIDC, null, false, "true", "true", "false"),
+        Arguments.of(AuthenticationMethod.OIDC, "", false, "true", "true", "false"),
         Arguments.of(AuthenticationMethod.OIDC, "groups", true, "true", "false", "true"),
         Arguments.of(AuthenticationMethod.OIDC, "groups", false, "true", "false", "false"),
         Arguments.of(AuthenticationMethod.BASIC, null, true, "false", "true", "true"),
@@ -55,14 +56,14 @@ class IdentityClientConfigControllerParameterizedTest {
 
   @ParameterizedTest(
       name =
-          "AuthMethod={0}, GroupsClaim={1}, MultiTenancy={2} -> OIDC={3}, InternalGroups={4}, TenantsApi={5}")
+          "AuthMethod={0}, GroupsClaim={1}, MultiTenancy={2} -> OIDC={3}, CamundaGroups={4}, TenantsApi={5}")
   @MethodSource("configurationProvider")
   void shouldReturnCorrectClientConfigForAllPermutations(
       final AuthenticationMethod authMethod,
       final String groupsClaim,
       final boolean multiTenancyEnabled,
       final String expectedIsOidc,
-      final String expectedInternalGroups,
+      final String expectedCamundaGroups,
       final String expectedTenantsApi)
       throws Exception {
 
@@ -90,7 +91,7 @@ class IdentityClientConfigControllerParameterizedTest {
     // Assert all configuration values
     assertThat(configResponse)
         .containsEntry("VITE_IS_OIDC", expectedIsOidc)
-        .containsEntry("VITE_INTERNAL_GROUPS_ENABLED", expectedInternalGroups)
+        .containsEntry("VITE_CAMUNDA_GROUPS_ENABLED", expectedCamundaGroups)
         .containsEntry("VITE_TENANTS_API_ENABLED", expectedTenantsApi);
   }
 
