@@ -63,7 +63,7 @@ jobs:
           source .ci/scripts/ci/setup-medic-lookup.sh
 
           # number of tests that need to fail before notifying team medic
-          FLAKY_TEST_THRESHOLD=20
+          FLAKY_TEST_THRESHOLD=10
           # shellcheck disable=SC2016
           NUMBER_OF_ALL_JOBS=$(bq query --format=json --use_legacy_sql=false --quiet=true 'SELECT COUNT(*) as number_of_all_jobs FROM `ci-30-162810.prod_ci_analytics.build_status_v2` WHERE TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY), INTERVAL 1 DAY)<=report_time AND report_time<=TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY) AND ci_url="https://github.com/camunda/camunda"' | jq -r '.[0].number_of_all_jobs')
           # shellcheck disable=SC2016
