@@ -11,6 +11,7 @@ import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.security.ConditionalOnSaaSConfigured;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ public class SaaSTokenController {
     this.camundaUserService = camundaUserService;
   }
 
+  @Hidden
   @CamundaGetMapping(path = "/me/token")
   public ResponseEntity<String> getCurrentToken() {
     final var token = camundaUserService.getUserToken();
