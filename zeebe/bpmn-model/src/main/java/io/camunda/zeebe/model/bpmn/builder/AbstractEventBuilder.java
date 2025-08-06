@@ -24,14 +24,17 @@ import java.util.function.Consumer;
  * @author Sebastian Menski
  */
 public abstract class AbstractEventBuilder<B extends AbstractEventBuilder<B, E>, E extends Event>
-    extends AbstractFlowNodeBuilder<B, E> implements ZeebeExecutionListenersBuilder<B> {
+    extends AbstractFlowNodeBuilder<B, E>
+    implements ZeebeExecutionListenersBuilder<B>, ZeebePropertiesBuilder<B> {
 
   private final ZeebeExecutionListenersBuilder<B> zeebeExecutionListenersBuilder;
+  private final ZeebePropertiesBuilder<B> zeebePropertiesBuilder;
 
   protected AbstractEventBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
     zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
+    zeebePropertiesBuilder = new ZeebePropertiesBuilderImpl<>(myself);
   }
 
   @Override
@@ -58,5 +61,10 @@ public abstract class AbstractEventBuilder<B extends AbstractEventBuilder<B, E>,
   public B zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
     return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
+  }
+
+  @Override
+  public B zeebeProperty(final String name, final String value) {
+    return zeebePropertiesBuilder.zeebeProperty(name, value);
   }
 }

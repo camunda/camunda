@@ -31,13 +31,16 @@ import java.util.function.Consumer;
  * @author Sebastian Menski
  */
 public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder>
-    implements ZeebeExecutionListenersBuilder<ProcessBuilder> {
+    implements ZeebeExecutionListenersBuilder<ProcessBuilder>,
+        ZeebePropertiesBuilder<ProcessBuilder> {
 
   private final ZeebeExecutionListenersBuilder<ProcessBuilder> zeebeExecutionListenersBuilder;
+  private final ZeebePropertiesBuilder<ProcessBuilder> zeebePropertiesBuilder;
 
   public ProcessBuilder(final BpmnModelInstance modelInstance, final Process process) {
     super(modelInstance, process, ProcessBuilder.class);
     zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
+    zeebePropertiesBuilder = new ZeebePropertiesBuilderImpl<>(myself);
   }
 
   public StartEventBuilder startEvent() {
@@ -148,6 +151,11 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder>
   public ProcessBuilder zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
     return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
+  }
+
+  @Override
+  public ProcessBuilder zeebeProperty(final String name, final String value) {
+    return zeebePropertiesBuilder.zeebeProperty(name, value);
   }
 
   public ProcessBuilder versionTag(final String value) {
