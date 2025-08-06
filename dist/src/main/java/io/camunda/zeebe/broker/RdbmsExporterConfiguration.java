@@ -40,7 +40,7 @@ public class RdbmsExporterConfiguration {
   @Bean
   public ExporterDescriptor rdbmsExporterDescriptor(
       final RdbmsExporterFactory rdbmsExporterFactory, final ExporterCfg rdbmsExporterCfg) {
-    LOGGER.info("Provide ExporterDescriptor for RDBMS Exporter");
+    LOGGER.debug("Provide ExporterDescriptor for RDBMS Exporter");
     return new ExporterDescriptor(
         rdbmsExporterFactory.exporterId(),
         rdbmsExporterFactory,
