@@ -32,9 +32,10 @@ Configuration of Log4j2 is done via a `log4j2.xml` file, located in a module's r
 i.e. `src/main/resources`.
 
 For the single C8 application, the configuration file is located in the `dist` folder (aka
-`camunda-zeebe` module), at [dist/src/config/log4j2.xml](../../dist/src/main/config/log4j2.xml). When
-looking at the assembled distribution artifact, you will find it at `config/log4j2.xml`. The
-application resolves it because we add the `config/` folder to the classpath at launch in all the
+`camunda-zeebe` module), at [dist/src/main/resources/log4j2.xml](../../dist/src/main/resources/log4j2.xml).
+When looking at the assembled distribution artifact, you will find it at `config/log4j2.xml`
+because we copy it when building the artifact.
+The application resolves it because we add the `config/` folder to the classpath at launch in all the
 shell scripts found in the distribution's `bin` folder.
 
 > [!Note]

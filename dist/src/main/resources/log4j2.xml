@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
 <Configuration xmlns="https://logging.apache.org/xml/ns"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="
@@ -6,7 +13,7 @@
                    https://logging.apache.org/xml/ns/log4j-config-2.xsd" status="WARN" shutdownHook="disable">
   <Properties>
     <Property name="log.path" value="${sys:app.home}/logs" />
-    <Property name="log.pattern" value="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] %notEmpty{[%X] }%-5level%n\t%logger{36} - %msg%n" />
+    <Property name="log.pattern" value="%d{HH:mm:ss.SSS} [%t] %notEmpty{[%X] }%-5level\t%logger{1.1.1.*} - %msg%n" />
     <Property name="log.stackdriver.serviceName" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-${env:OPERATE_LOG_STACKDRIVER_SERVICENAME:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICENAME:-${env:TASKLIST_LOG_STACKDRIVER_SERVICENAME:-}}}}"/>
     <Property name="log.stackdriver.serviceVersion" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPERATE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-${env:TASKLIST_LOG_STACKDRIVER_SERVICEVERSION:-}}}}"/>
   </Properties>
@@ -57,7 +64,8 @@
     <Logger name="org.springframework" level="INFO" />
 
     <Root level="WARN">
-      <AppenderRef ref="RollingFile" />
+      <!-- add to enable file logging -->
+      <!-- <AppenderRef ref="RollingFile" /> -->
 
       <!-- remove to disable console logging -->
       <AppenderRef ref="${env:ZEEBE_LOG_APPENDER:-${env:OPERATE_LOG_APPENDER:-${env:OPTIMIZE_LOG_APPENDER:-${env:TASKLIST_LOG_APPENDER:-Console}}}}"/>
