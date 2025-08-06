@@ -29,7 +29,7 @@ public class Elasticsearch {
         PREFIX + ".url",
         url,
         String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
         LEGACY_URL_PROPERTIES);
   }
 
