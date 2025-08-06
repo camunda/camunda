@@ -58,14 +58,16 @@ One notable exception is Spring, for which we set the log level to `INFO`. This 
 Spring as our application server, and information about its operation (e.g. the embedded Tomcat
 server starting, the security chain configuration, etc.) is relevant to the user.
 
-As for outputs, C8 will log both to standard out (aka console) and to file by default. Logging to
+As for outputs, C8 will log to standard out (aka console) by default. Logging to
 STDOUT is how most Kubernetes implementations - or in general, most cloud providers - capture and
-aggregate logs. The file output is then mostly for bare metal systems, where logs are expected to be
+aggregate logs.
+
+The file output is then mostly for bare metal systems, where logs are expected to be
 found on the server itself, and are periodically logged over, allowing the user to specify a
 retention window.
 
 > [!Note]
-> You can disable the file logging via `CAMUNDA_LOG_FILE_APPENDER_ENABLED=false` environment
+> You can enable the file logging via `CAMUNDA_LOG_FILE_APPENDER_ENABLED=true` environment
 > variable. This is done in the configuration file by using so-called
 > [Arbiters](https://logging.apache.org/log4j/2.x/manual/configuration.html#arbiters).
 

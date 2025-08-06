@@ -40,10 +40,7 @@
       then avoid this altogether.
       -->
     <Select>
-      <EnvironmentArbiter propertyName="CAMUNDA_LOG_FILE_APPENDER_ENABLED" propertyValue="false">
-        <Null name="RollingFile" />
-      </EnvironmentArbiter>
-      <DefaultArbiter>
+      <EnvironmentArbiter propertyName="CAMUNDA_LOG_FILE_APPENDER_ENABLED" propertyValue="true" >
         <RollingFile name="RollingFile" fileName="${log.path}/zeebe.log"
           filePattern="${log.path}/zeebe-%d{yyyy-MM-dd}-%i.log.gz">
           <PatternLayout pattern="${log.pattern}" />
@@ -52,6 +49,9 @@
             <SizeBasedTriggeringPolicy size="250 MB"/>
           </Policies>
         </RollingFile>
+      </EnvironmentArbiter>
+      <DefaultArbiter>
+        <Null name="RollingFile" />
       </DefaultArbiter>
     </Select>
   </Appenders>
@@ -64,8 +64,8 @@
     <Logger name="org.springframework" level="INFO" />
 
     <Root level="WARN">
-      <!-- add to enable file logging -->
-      <!-- <AppenderRef ref="RollingFile" /> -->
+      <!-- This is just enabled if CAMUNDA_LOG_FILE_APPENDER_ENABLED is set to true! -->
+      <AppenderRef ref="RollingFile" />
 
       <!-- remove to disable console logging -->
       <AppenderRef ref="${env:ZEEBE_LOG_APPENDER:-${env:OPERATE_LOG_APPENDER:-${env:OPTIMIZE_LOG_APPENDER:-${env:TASKLIST_LOG_APPENDER:-Console}}}}"/>
