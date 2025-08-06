@@ -62,14 +62,14 @@ public interface CamundaClientBuilder {
   /**
    * @param restAddress the REST API address of a gateway that the client can connect to. The
    *     address must be an absolute URL, including the scheme.
-   *     <p>The default value is {@code https://0.0.0.0:8080}.
+   *     <p>The default value is {@code http://0.0.0.0:8088}.
    */
   CamundaClientBuilder restAddress(URI restAddress);
 
   /**
    * @param grpcAddress the gRPC address of a gateway that the client can connect to. The address
    *     must be an absolute URL, including the scheme.
-   *     <p>The default value is {@code https://0.0.0.0:26500}.
+   *     <p>The default value is {@code http://0.0.0.0:26500}.
    */
   CamundaClientBuilder grpcAddress(URI grpcAddress);
 

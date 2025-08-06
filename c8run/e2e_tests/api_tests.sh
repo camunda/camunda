@@ -2,7 +2,7 @@
 
 printf "\nTest: Operate process instance api\n"
 
-curl -f -L -X POST 'http://localhost:8080/v2/process-instances/search' \
+curl -f -L -X POST 'http://localhost:8088/v2/process-instances/search' \
 -H 'Content-Type: application/json' \
 -H 'Accept: application/json' \
 --data-raw '{
@@ -20,7 +20,7 @@ if [[ "$returnCode" != 0 ]]; then
 fi
 
 printf "\nTest: Tasklist user task\n"
-curl -f -L -X POST 'http://localhost:8080/v2/user-tasks/search' \
+curl -f -L -X POST 'http://localhost:8088/v2/user-tasks/search' \
 -H 'Content-Type: application/json' \
 -H 'Accept: application/json' \
 --data-raw '{}'
@@ -34,7 +34,7 @@ fi
 
 
 printf "\nTest: Zeebe topology endpoint\n"
-curl localhost:8080/v2/topology
+curl localhost:8088/v2/topology
 
 returnCode=$?
 if [[ "$returnCode" != 0 ]]; then
