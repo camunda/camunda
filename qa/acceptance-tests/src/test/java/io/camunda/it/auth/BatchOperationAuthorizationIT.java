@@ -7,13 +7,13 @@
  */
 package io.camunda.it.auth;
 
+import static io.camunda.client.api.search.enums.PermissionType.CANCEL_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
-import static io.camunda.client.api.search.enums.PermissionType.UPDATE_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.ResourceType.BATCH;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
@@ -90,7 +90,7 @@ class BatchOperationAuthorizationIT {
               new Permissions(
                   PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(SERVICE_TASKS_V_1)),
               new Permissions(
-                  PROCESS_DEFINITION, UPDATE_PROCESS_INSTANCE, List.of(SERVICE_TASKS_V_1))));
+                  PROCESS_DEFINITION, CANCEL_PROCESS_INSTANCE, List.of(SERVICE_TASKS_V_1))));
 
   @UserDefinition
   private static final TestUser RESTRICTED_CANCEL_USER =
@@ -243,7 +243,7 @@ class BatchOperationAuthorizationIT {
           assertThat(item.getStatus()).isEqualTo(BatchOperationItemState.FAILED);
           assertThat(item.getErrorMessage())
               .isEqualTo(
-                  "FORBIDDEN: Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, service_tasks_v1]'");
+                  "FORBIDDEN: Insufficient permissions to perform operation 'CANCEL_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, service_tasks_v1]'");
         });
   }
 
