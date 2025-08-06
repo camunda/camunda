@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -110,7 +110,7 @@ public class ScaleUpPartitionsTest {
     backupActuator = BackupActuator.of(cluster.availableGateway());
   }
 
-  private void configureBackupStore(final BrokerBasedProperties bb) {
+  private void configureBackupStore(final LegacyBrokerBasedProperties bb) {
     final var backup = bb.getData().getBackup();
     backup.setStore(BackupStoreType.AZURE);
     final var azure = backup.getAzure();
