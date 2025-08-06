@@ -274,6 +274,12 @@ public class AdHocSubProcessProcessor
     final Expression outputElementExpression = adHocSubProcess.getOutputElement().orElseThrow();
     return expressionProcessor
         .evaluateAnyExpression(outputElementExpression, childContext.getElementInstanceKey())
+        .mapLeft(
+            failure -> {
+              // TODO - is this the proper way to create an incident on evaluation failure?
+              incidentBehavior.createIncident(failure, childContext);
+              return new Failure(failure.getMessage(), ErrorType.EXTRACT_VALUE_ERROR);
+            })
         .flatMap(
             outputElementValue -> {
               final DirectBuffer outputCollectionValue =
