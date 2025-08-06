@@ -25,10 +25,8 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import java.io.IOException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.Testcontainers;
@@ -43,13 +41,6 @@ import org.testcontainers.Testcontainers;
 @CamundaSpringProcessTest
 public class CamundaProcessTestOutboundConnectorsMockIT {
 
-  @RegisterExtension
-  private static final CamundaProcessTestExtension EXTENSION =
-      new CamundaProcessTestExtension()
-          .withConnectorsEnabled(true)
-          .withConnectorsSecret(
-              "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness");
-
   // to be injected
   @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
@@ -60,7 +51,7 @@ public class CamundaProcessTestOutboundConnectorsMockIT {
   }
 
   @Test
-  void shouldInvokeOutboundConnectors() throws IOException {
+  void shouldInvokeOutboundConnectors() {
     // given
     stubFor(
         get(urlPathMatching("/test"))
