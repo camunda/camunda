@@ -61,7 +61,8 @@ public class DocumentServicesTest {
             mock(CamundaAuthentication.class),
             registry,
             authorizationChecker,
-            securityConfiguration);
+            securityConfiguration,
+            mock(ApiServicesExecutorProvider.class));
 
     final var authorizationConfiguration = new AuthorizationsConfiguration();
     authorizationConfiguration.setEnabled(false);

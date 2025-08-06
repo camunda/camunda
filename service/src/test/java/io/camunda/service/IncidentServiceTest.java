@@ -38,7 +38,11 @@ public final class IncidentServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new IncidentServices(
-            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
+            mock(BrokerClient.class),
+            mock(SecurityContextProvider.class),
+            client,
+            null,
+            mock(ApiServicesExecutorProvider.class));
   }
 
   @Test

@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +45,7 @@ public class RoleServicesTest {
   private RoleSearchClient client;
   private CamundaAuthentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
+  private ApiServicesExecutorProvider executorProvider;
 
   @BeforeEach
   public void before() {
@@ -51,9 +53,15 @@ public class RoleServicesTest {
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(RoleSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
         new RoleServices(
-            stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
+            stubbedBrokerClient,
+            mock(SecurityContextProvider.class),
+            client,
+            authentication,
+            executorProvider);
   }
 
   @Test

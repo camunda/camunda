@@ -26,15 +26,16 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FormSearchClient formSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.formSearchClient = formSearchClient;
   }
 
   @Override
   public FormServices withAuthentication(final CamundaAuthentication authentication) {
     return new FormServices(
-        brokerClient, securityContextProvider, formSearchClient, authentication);
+        brokerClient, securityContextProvider, formSearchClient, authentication, executorProvider);
   }
 
   @Override

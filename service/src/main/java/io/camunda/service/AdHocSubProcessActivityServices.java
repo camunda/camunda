@@ -22,15 +22,16 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
   public AdHocSubProcessActivityServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
   }
 
   @Override
   public AdHocSubProcessActivityServices withAuthentication(
       final CamundaAuthentication authentication) {
     return new AdHocSubProcessActivityServices(
-        brokerClient, securityContextProvider, authentication);
+        brokerClient, securityContextProvider, authentication, executorProvider);
   }
 
   public CompletableFuture<AdHocSubProcessInstructionRecord> activateActivities(

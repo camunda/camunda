@@ -49,6 +49,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,6 +64,7 @@ public final class ProcessInstanceServiceTest {
   private SecurityContextProvider securityContextProvider;
   private CamundaAuthentication authentication;
   private BrokerClient brokerClient;
+  private ApiServicesExecutorProvider executorProvider;
 
   @BeforeEach
   public void before() {
@@ -77,6 +79,8 @@ public final class ProcessInstanceServiceTest {
         .thenReturn(incidentServices);
     securityContextProvider = mock(SecurityContextProvider.class);
     brokerClient = mock(BrokerClient.class);
+    executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
         new ProcessInstanceServices(
             brokerClient,
@@ -84,7 +88,8 @@ public final class ProcessInstanceServiceTest {
             processInstanceSearchClient,
             sequenceFlowSearchClient,
             incidentServices,
-            authentication);
+            authentication,
+            executorProvider);
   }
 
   @Test

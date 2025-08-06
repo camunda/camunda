@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -48,6 +49,7 @@ public class TenantServiceTest {
   private StubbedBrokerClient stubbedBrokerClient;
   private final TenantEntity tenantEntity =
       new TenantEntity(100L, "tenant-id", "Tenant name", "Tenant description");
+  private ApiServicesExecutorProvider executorProvider;
 
   @BeforeEach
   public void before() {
@@ -56,9 +58,15 @@ public class TenantServiceTest {
         CamundaAuthentication.of(builder -> builder.user("foo"));
     client = mock(TenantSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
         new TenantServices(
-            stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
+            stubbedBrokerClient,
+            mock(SecurityContextProvider.class),
+            client,
+            authentication,
+            executorProvider);
   }
 
   @Test
