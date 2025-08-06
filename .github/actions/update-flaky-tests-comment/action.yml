@@ -21,160 +21,127 @@ runs:
         script: |
           // Parse the flaky tests data
           const flakyTestsData = JSON.parse(`${{ inputs.flaky-tests-data }}`);
-
           console.log('Received flaky tests data:', flakyTestsData);
 
           // Early exit if no flaky tests found
-          if (flakyTestsData.length === 0) {
-            console.log('No flaky tests found in any job - no comment needed');
+          if (!Array.isArray(flakyTestsData) || flakyTestsData.length === 0) {
+            console.log('[flaky-tests] No flaky tests found - skipping comment update');
             return;
           }
 
-          // Step 2: Process and structure the flaky test data
+          // Step 1: Process and structure the flaky test data
           const processedData = processFlakyTestsData(flakyTestsData);
+          console.log('[flaky-tests] Processed data:', JSON.stringify(processedData, null, 2));
 
-          console.log('Processed flaky tests data:', JSON.stringify(processedData, null, 2));
-
-          // Step 3.1: Generate comment content and create/update PR comment
+          // Step 2: Generate and post the PR comment
           const { main } = require('./.github/actions/update-flaky-tests-comment/src/comment-generator');
-          console.log('🚀 Starting flaky test comment generation...');
+          console.log('[flaky-tests] 🚀 Generating comment...');
           await main(context, github, processedData, ${{ inputs.pr-number }});
 
-          // Helper function to process flaky tests data
+          /**
+          * Processes the raw flaky test data and organizes it by package.
+          */
           function processFlakyTestsData(rawData) {
             const packageMap = new Map();
 
-            // Process each job's flaky tests
-            rawData.forEach(jobData => {
-              const jobName = jobData.job;
-              const flakyTestsString = jobData.flaky_tests;
-
-              if (!flakyTestsString || flakyTestsString.trim() === '') {
-                console.log(`Skipping job ${jobName} - no flaky tests`);
+            rawData.forEach(({ job, flaky_tests }) => {
+              if (!flaky_tests || flaky_tests.trim() === '') {
+                console.log(`[flaky-tests] Skipping job "${job}" - no flaky tests`);
                 return;
               }
 
-              // Split by newlines and spaces to process each test
-              const testNames = flakyTestsString.split(/\s+/)
-                .map(test => test.trim())
-                .filter(test => test !== '');
+              const testNames = flaky_tests
+              .split(/\s+/)
+              .map(t => t.trim())
+              .filter(Boolean);
 
-              console.log(`Processing ${testNames.length} flaky tests from job: ${jobName}`);
+              console.log(`[flaky-tests] Job "${job}": found ${testNames.length} test(s)`);
 
               testNames.forEach(testName => {
                 const parsedTest = parseTestName(testName);
                 if (parsedTest) {
-                  addTestToPackageMap(packageMap, parsedTest, jobName);
+                  addTestToMap(packageMap, parsedTest, job);
                 }
               });
             });
 
-            // Convert Map to the desired structure
             return {
-              tests: Array.from(packageMap.entries()).map(([packageName, flakys]) => ({
-                packageName: packageName,
-                flakys: Array.from(flakys.values())
+              tests: Array.from(packageMap.entries()).map(([packageName, tests]) => ({
+                packageName,
+                flakys: Array.from(tests.values())
               }))
             };
           }
 
-          // Helper functions to parse individual test names
-          // Removes trailing [n] from method names
-            function normalizeMethodName(methodName) {
-              const paramPattern = /^(.*)\[\d+\]$/;
-              const match = methodName.match(paramPattern);
-              if (match) {
-              return match[1]; // Strips [n]
-            }
-              return methodName;
-            }
-
+          /**
+          * Parses a test name string into structured components.
+          */
           function parseTestName(testName) {
-            console.log(`Parsing test name: "${testName}"`);
+            const trimmed = testName?.trim();
+            if (!trimmed) return null;
 
-            // Handle empty or whitespace-only test names
-            if (!testName || testName.trim() === '') {
-              console.log('Skipping empty test name');
-              return null;
-            }
-
-            const trimmedName = testName.trim();
-
-            // Basic validation - should contain at least one dot
-            if (!trimmedName.includes('.')) {
-              console.log(`Malformed test name (no package): ${trimmedName}`);
-              return {
-                packageName: 'unknown',
-                className: '',
-                methodName: trimmedName
-              };
-            }
-
-            // Find the last occurrence of a class name (ends with Test or IT)
-            const testClassPattern = /^(.+)\.([A-Z][a-zA-Z0-9]*(?:Test|IT))\.(.+)$/;
-            const match = trimmedName.match(testClassPattern);
+            // Pattern: full.package.ClassNameTest.methodName
+            const testClassRegex = /^(.+)\.([A-Z][\w]*(?:Test|IT))\.(.+)$/;
+            const match = trimmed.match(testClassRegex);
 
             if (match) {
               const [, packageName, className, methodName] = match;
-              console.log(`Parsed: package="${packageName}", class="${className}", method="${methodName}"`);
               return {
-                packageName: packageName,
-                className: className,
+                packageName,
+                className,
                 methodName: normalizeMethodName(methodName)
               };
             }
 
-            // Fallback for malformed test names - try to extract package from last dot
-            const lastDotIndex = trimmedName.lastIndexOf('.');
-            if (lastDotIndex > 0) {
-              const packageName = trimmedName.substring(0, lastDotIndex);
-              const remainder = trimmedName.substring(lastDotIndex + 1);
-
-              console.log(`Malformed test name, fallback parsing: package="${packageName}", method="${remainder}"`);
+            // Fallback: try to extract package from last dot
+            const lastDot = trimmed.lastIndexOf('.');
+            if (lastDot !== -1) {
               return {
-                packageName: packageName,
+                packageName: trimmed.slice(0, lastDot),
                 className: '',
-                methodName: normalizeMethodName(remainder)
+                methodName: normalizeMethodName(trimmed.slice(lastDot + 1))
               };
             }
 
-            // Ultimate fallback
-            console.log(`Could not parse test name, using as method: ${trimmedName}`);
+            // Final fallback
             return {
               packageName: 'unknown',
               className: '',
-              methodName: normalizeMethodName(trimmedName)
+              methodName: normalizeMethodName(trimmed)
             };
           }
 
-          // Helper function to add test to package map
-          function addTestToPackageMap(packageMap, parsedTest, jobName) {
-            const { packageName, className, methodName } = parsedTest;
+          /**
+          * Normalizes method names by removing parameterization suffixes (e.g. `[1]`).
+          */
+          function normalizeMethodName(methodName) {
+            const match = methodName.match(/^(.*)\[\d+\]$/);
+            return match ? match[1] : methodName;
+          }
 
-            // Initialize package entry if not exists
+          /**
+          * Adds a parsed test to the package map.
+          */
+          function addTestToMap(packageMap, { packageName, className, methodName }, jobName) {
             if (!packageMap.has(packageName)) {
               packageMap.set(packageName, new Map());
             }
 
-            const packageFlakys = packageMap.get(packageName);
-
-            // Create a unique key for this test (class.method)
+            const testsMap = packageMap.get(packageName);
             const testKey = className ? `${className}.${methodName}` : methodName;
 
-            if (packageFlakys.has(testKey)) {
-              // Test already exists, update jobs and occurrences
-              const existing = packageFlakys.get(testKey);
-              if (!existing.jobs.includes(jobName)) {
-                existing.jobs.push(jobName);
+            if (testsMap.has(testKey)) {
+              const testEntry = testsMap.get(testKey);
+              if (!testEntry.jobs.includes(jobName)) {
+                testEntry.jobs.push(jobName);
               }
-              existing.occurrences += 1;
-            } else {
-              // New test, create entry
-              packageFlakys.set(testKey, {
-                className: className,
-                methodName: methodName,
-                jobs: [jobName],
-                occurrences: 1
-              });
-            }
+                testEntry.occurrences++;
+              } else {
+                testsMap.set(testKey, {
+                  className,
+                  methodName,
+                  jobs: [jobName],
+                  occurrences: 1
+                });
+              }
           }
