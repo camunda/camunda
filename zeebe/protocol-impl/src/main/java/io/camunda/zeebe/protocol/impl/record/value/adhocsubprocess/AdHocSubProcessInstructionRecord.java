@@ -84,7 +84,7 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public AdHocSubProcessInstructionRecord cancelRemainingInstances(
+  public AdHocSubProcessInstructionRecord setCancelRemainingInstances(
       final boolean cancelRemainingInstances) {
     this.cancelRemainingInstances.setValue(cancelRemainingInstances);
     return this;

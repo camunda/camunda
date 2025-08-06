@@ -42,7 +42,7 @@ public class BrokerActivateAdHocSubProcessActivityRequest
 
   public BrokerActivateAdHocSubProcessActivityRequest cancelRemainingInstances(
       final boolean cancelRemainingInstances) {
-    requestDto.cancelRemainingInstances(cancelRemainingInstances);
+    requestDto.setCancelRemainingInstances(cancelRemainingInstances);
     return this;
   }
 
