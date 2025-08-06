@@ -216,6 +216,26 @@ public final class AdHocSubProcessElementsVariableTest {
               "A complex tool with nested parameters",
               Map.of("complexToolProperty", "complexValue")));
 
+  private static final String EVENT_SUBPROCESS_ID = "Event_Subprocess";
+  private static final String EVENT_SUBPROCESS_START_EVENT_ID = EVENT_SUBPROCESS_ID + "_Start";
+  private static final AdHocSubProcessElementTestFixture EVENT_SUB_PROCESS =
+      testFixture(
+          ahsp ->
+              ahsp.embeddedSubProcess()
+                  .eventSubProcess(
+                      EVENT_SUBPROCESS_ID,
+                      eventSubProcess -> {
+                        eventSubProcess.name("Event Subprocess");
+                        eventSubProcess.documentation("A non-interrupting event subprocess");
+                        eventSubProcess
+                            .startEvent(EVENT_SUBPROCESS_START_EVENT_ID)
+                            .message(m -> m.zeebeCorrelationKey("=testCorrelationKey"))
+                            .interrupting(false)
+                            .manualTask()
+                            .endEvent();
+                      }),
+          null);
+
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
@@ -237,7 +257,15 @@ public final class AdHocSubProcessElementsVariableTest {
         scenario(
             "Intermediate Throw Event with Follow-Up", INTERMEDIATE_THROW_EVENT_WITH_FOLLOW_UP),
         scenario("Complex Tool", COMPLEX_TOOL),
-        scenario("Multiple elements", SIMPLE_TASK, SERVICE_TASK, USER_TASK, COMPLEX_TOOL),
+        scenario("Event Subprocess", EVENT_SUB_PROCESS),
+        scenario("Simple Task + Event Subprocess", SIMPLE_TASK, EVENT_SUB_PROCESS),
+        scenario(
+            "Multiple elements",
+            SIMPLE_TASK,
+            SERVICE_TASK,
+            USER_TASK,
+            COMPLEX_TOOL,
+            EVENT_SUB_PROCESS),
         scenario(
             "All supported elements",
             SIMPLE_TASK,
@@ -246,7 +274,8 @@ public final class AdHocSubProcessElementsVariableTest {
             SCRIPT_TASK,
             TASK_WITH_FOLLOW_UP,
             INTERMEDIATE_THROW_EVENT_WITH_FOLLOW_UP,
-            COMPLEX_TOOL));
+            COMPLEX_TOOL,
+            EVENT_SUB_PROCESS));
   }
 
   @Test
@@ -293,6 +322,11 @@ public final class AdHocSubProcessElementsVariableTest {
 
               assertThat(adHocActivities)
                   .containsExactlyInAnyOrderElementsOf(scenario.expectedElements());
+
+              // event subprocess elements should never be included
+              assertThat(adHocActivities)
+                  .extracting(AdHocActivityMetadata::elementId)
+                  .doesNotContain(EVENT_SUBPROCESS_ID, EVENT_SUBPROCESS_START_EVENT_ID);
             });
   }
 
