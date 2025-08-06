@@ -75,7 +75,11 @@ final class HttpExporterBatchIT {
     exporter.configure(testContext);
     exporter.open(controller);
 
-    final var records = factory.generateRecords().limit(100).toList();
+    final var records =
+        factory
+            .generateRecords((builder -> builder.withPosition(++logPosition)))
+            .limit(100)
+            .toList();
     for (final Record<?> record : records) {
       exporter.export(record);
     }

@@ -14,8 +14,9 @@ public class Batch {
 
   private final int size;
   private final List<BatchEntry> entries;
-  private long lastTimeFlushed = -1;
   private final long flushInterval;
+  private long lastTimeFlushed = System.currentTimeMillis();
+  private long lastLogPosition = -1;
 
   public Batch(final int size, final long flushInterval) {
     this.size = size;
@@ -36,29 +37,33 @@ public class Batch {
   }
 
   boolean isTimeThresholdReached() {
-    return lastTimeFlushed != -1 && System.currentTimeMillis() - lastTimeFlushed >= flushInterval;
+    return System.currentTimeMillis() - lastTimeFlushed >= flushInterval;
   }
 
-  public void addRecord(final BatchEntry batchEntry) {
+  public boolean addRecord(final BatchEntry batchEntry) {
     if (isFull()) {
       throw new IllegalStateException("Batch has too many entries. Drain first.");
     } else {
-      if (entries.isEmpty() || batchEntry.logPosition() > entries.getLast().logPosition()) {
-        entries.add(batchEntry);
+      if (lastLogPosition == -1 || batchEntry.logPosition() > lastLogPosition) {
+        lastLogPosition = batchEntry.logPosition();
+        return entries.add(batchEntry);
       }
     }
+    return false;
   }
 
   public List<BatchEntry> getEntries() {
     return new ArrayList<>(entries);
   }
 
-  public void flush() {
+  public long flush() {
     if (entries.isEmpty()) {
       throw new IllegalStateException("Flushing empty batch not allowed.");
     }
     entries.clear();
+    final var lastLogPosition = lastTimeFlushed;
     lastTimeFlushed = System.currentTimeMillis();
+    return lastLogPosition;
   }
 
   public int getSize() {

@@ -52,14 +52,20 @@ public class Subscription {
       switch (spaceLeft) {
         case 0:
           {
+            // We flush the batch as it is full
             final var logPositionPushed = flush();
             batch.addRecord(batchEntry);
             return logPositionPushed;
           }
         case 1:
           {
-            batch.addRecord(batchEntry);
-            return flush();
+            // We add to the batch if it has only one space left
+            if (batch.addRecord(batchEntry)) {
+              // Flush if the record was added successfully as its full now
+              return flush();
+            } else {
+              return null;
+            }
           }
         default:
           {
@@ -80,10 +86,8 @@ public class Subscription {
   }
 
   private Long flush() {
-    final var batchEntries = batch.getEntries();
-    postRecords(batchEntries);
-    batch.flush();
-    return batchEntries.getLast().logPosition();
+    postRecords(batch.getEntries());
+    return batch.flush();
   }
 
   private void postRecords(final List<BatchEntry> batchEntries) {
