@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.domain.SequenceFlowDbQuery;
 import io.camunda.db.rdbms.read.mapper.SequenceFlowEntityMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.search.clients.reader.SequenceFlowReader;
@@ -14,6 +15,7 @@ import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,8 +39,32 @@ public class SequenceFlowDbReader extends AbstractEntityReader<SequenceFlowEntit
   public SearchQueryResult<SequenceFlowEntity> search(
       final SequenceFlowQuery query, final ResourceAccessChecks resourceAccessChecks) {
     LOG.trace("[RDBMS DB] Search for sequence flows with {}", query);
+
+    final var dbSort = convertSort(query.sort());
+
+    // If the authorization check is enabled and no resource IDs are authorized, return an empty
+    // result
+    // If the tenant check is enabled and no tenant IDs are authorized, return an empty result
+    if ((resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty())
+        || (resourceAccessChecks.tenantCheck().enabled()
+            && resourceAccessChecks.getAuthorizedTenantIds().isEmpty())) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
+    final var dbQuery =
+        SequenceFlowDbQuery.of(
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
+
     final var hits =
-        sequenceFlowMapper.search(query).stream().map(SequenceFlowEntityMapper::toEntity).toList();
+        sequenceFlowMapper.search(dbQuery).stream()
+            .map(SequenceFlowEntityMapper::toEntity)
+            .toList();
     return buildSearchQueryResult(hits.size(), hits, null);
   }
 }
