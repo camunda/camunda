@@ -51,6 +51,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue PROCESS_DEFINITION_PATH_KEY =
       new StringValue("processDefinitionPath");
   public static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
+  public static final StringValue TAGS_KEY = new StringValue("tags");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -83,8 +84,11 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   private final ArrayProperty<IntegerValue> callingElementPathProp =
       new ArrayProperty<>(CALLING_ELEMENT_PATH_KEY, IntegerValue::new);
 
+  private final ArrayProperty<StringValue> tagsProp =
+      new ArrayProperty<>(TAGS_KEY, StringValue::new);
+
   public ProcessInstanceRecord() {
-    super(14);
+    super(15);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -98,7 +102,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProp)
         .declareProperty(elementInstancePathProp)
         .declareProperty(processDefinitionPathProp)
-        .declareProperty(callingElementPathProp);
+        .declareProperty(callingElementPathProp)
+        .declareProperty(tagsProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -113,6 +118,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     parentProcessInstanceKeyProp.setValue(record.getParentProcessInstanceKey());
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
+
+    setTags(record.getTags());
   }
 
   @JsonIgnore
@@ -320,6 +327,18 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  public List<String> getTags() {
+    final var tags = new ArrayList<String>();
+    tagsProp.forEach(e -> tags.add(e.toString()));
+    return tags;
+  }
+
+  public ProcessInstanceRecord setTags(final List<String> tags) {
+    tagsProp.reset();
+    tags.forEach(e -> tagsProp.add().wrap(e));
     return this;
   }
 }

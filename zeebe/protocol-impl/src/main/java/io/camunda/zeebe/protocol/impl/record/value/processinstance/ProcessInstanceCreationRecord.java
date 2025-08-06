@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -60,9 +61,11 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       runtimeInstructionsProperty =
           new ArrayProperty<>(
               RUNTIME_INSTRUCTIONS_KEY, ProcessInstanceCreationRuntimeInstruction::new);
+  private final ArrayProperty<StringValue> tagsProperty =
+      new ArrayProperty<>("tags", StringValue::new);
 
   public ProcessInstanceCreationRecord() {
-    super(9);
+    super(10);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -71,7 +74,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(fetchVariablesProperty)
         .declareProperty(startInstructionsProperty)
         .declareProperty(runtimeInstructionsProperty)
-        .declareProperty(tenantIdProperty);
+        .declareProperty(tenantIdProperty)
+        .declareProperty(tagsProperty);
   }
 
   @Override
@@ -221,6 +225,18 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   public ProcessInstanceCreationRecord setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
+    return this;
+  }
+
+  public List<String> getTags() {
+    final var tags = new ArrayList<String>();
+    tagsProperty.forEach(e -> tags.add(e.toString()));
+    return tags;
+  }
+
+  public ProcessInstanceCreationRecord setTags(final List<String> tags) {
+    tagsProperty.reset();
+    tags.forEach(e -> tagsProperty.add().wrap(e));
     return this;
   }
 }

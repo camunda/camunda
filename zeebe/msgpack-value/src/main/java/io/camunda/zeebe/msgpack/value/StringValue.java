@@ -66,6 +66,10 @@ public final class StringValue extends BaseValue {
     wrap(anotherString.getValue());
   }
 
+  public void wrap(final String anotherString) {
+    wrap(anotherString);
+  }
+
   public int getLength() {
     return length;
   }
