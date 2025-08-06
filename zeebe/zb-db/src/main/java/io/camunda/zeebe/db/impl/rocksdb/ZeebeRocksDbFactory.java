@@ -28,9 +28,6 @@ import org.agrona.CloseHelper;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.BloomFilter;
 import org.rocksdb.ColumnFamilyOptions;
-import org.rocksdb.CompactionPriority;
-import org.rocksdb.CompactionStyle;
-import org.rocksdb.CompressionType;
 import org.rocksdb.DBOptions;
 import org.rocksdb.DataBlockIndexType;
 import org.rocksdb.IndexType;
@@ -166,23 +163,21 @@ public final class ZeebeRocksDbFactory<
   }
 
   /**
-   * @return Options which are used on all column families
+   * Creates column family options by merging user-provided options with our optimized defaults.
+   * User-provided options take precedence over defaults, ensuring users can customize behavior
+   * while still benefiting from our performance optimizations for unspecified settings.
+   *
+   * @param closeables list to track resources that need to be closed
+   * @return configured ColumnFamilyOptions with merged user and default settings
    */
-  ColumnFamilyOptions createColumnFamilyOptions(final List<AutoCloseable> closeables) {
-    final var userProvidedColumnFamilyOptions = rocksDbConfiguration.getColumnFamilyOptions();
-    final var hasUserOptions = !userProvidedColumnFamilyOptions.isEmpty();
+  public ColumnFamilyOptions createColumnFamilyOptions(final List<AutoCloseable> closeables) {
 
-    if (hasUserOptions) {
-      return createFromUserOptions(userProvidedColumnFamilyOptions);
-    }
+    final var memoryConfig = calculateMemoryConfiguration();
+    final var options = createDefaultColumnFamilyOptionsAsProperties(memoryConfig);
+    // Overwrite with user-provided options
+    options.putAll(rocksDbConfiguration.getColumnFamilyOptions());
 
-    return createDefaultColumnFamilyOptions(closeables);
-  }
-
-  private ColumnFamilyOptions createFromUserOptions(
-      final Properties userProvidedColumnFamilyOptions) {
-    final var columnFamilyOptions =
-        ColumnFamilyOptions.getColumnFamilyOptionsFromProps(userProvidedColumnFamilyOptions);
+    final var columnFamilyOptions = ColumnFamilyOptions.getColumnFamilyOptionsFromProps(options);
     if (columnFamilyOptions == null) {
       throw new IllegalStateException(
           String.format(
@@ -190,15 +185,26 @@ public final class ZeebeRocksDbFactory<
                   + "but one or many values are undefined in the context of RocksDB "
                   + "[User-provided ColumnFamilyOptions: %s]. "
                   + "See RocksDB's cf_options.h and options_helper.cc for available keys and values.",
-              userProvidedColumnFamilyOptions));
+              rocksDbConfiguration.getColumnFamilyOptions()));
+    }
+
+    // Apply configuration that cannot be set via Properties
+    final var tableConfig = createTableFormatConfig(closeables, memoryConfig.blockCacheMemory);
+    columnFamilyOptions.setTableFormatConfig(tableConfig);
+
+    // Apply SST partitioner factory if enabled (also cannot be set via properties)
+    if (rocksDbConfiguration.isSstPartitioningEnabled()) {
+      columnFamilyOptions.setSstPartitionerFactory(
+          new SstPartitionerFixedPrefixFactory(Long.BYTES));
     }
     return columnFamilyOptions;
   }
 
-  private ColumnFamilyOptions createDefaultColumnFamilyOptions(
-      final List<AutoCloseable> closeables) {
-    final var columnFamilyOptions = new ColumnFamilyOptions();
-
+  /**
+   * Calculates memory configuration values based on the RocksDB configuration. This method
+   * centralizes memory calculations to avoid duplication.
+   */
+  MemoryConfiguration calculateMemoryConfiguration() {
     final var totalMemoryBudget = rocksDbConfiguration.getMemoryLimit();
     // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
     // and filters into the block cache, so we don't need to account for more memory there
@@ -220,59 +226,88 @@ public final class ZeebeRocksDbFactory<
             ((totalMemoryBudget - blockCacheMemory) / (double) maxConcurrentMemtableCount)
                 * (1 - memtablePrefixFilterMemory));
 
-    final var tableConfig = createTableFormatConfig(closeables, blockCacheMemory);
+    return new MemoryConfiguration(
+        totalMemoryBudget,
+        blockCacheMemory,
+        memtableMemory,
+        memtablePrefixFilterMemory,
+        maxConcurrentMemtableCount);
+  }
+
+  /**
+   * Creates default column family options as Properties. This method translates all the method
+   * calls from createDefaultColumnFamilyOptions to their corresponding Properties keys based on
+   * RocksDB's options format.
+   */
+  Properties createDefaultColumnFamilyOptionsAsProperties(final MemoryConfiguration memoryConfig) {
+    final var props = new Properties();
 
     if (rocksDbConfiguration.isSstPartitioningEnabled()) {
-      columnFamilyOptions.setSstPartitionerFactory(
-          new SstPartitionerFixedPrefixFactory(Long.BYTES));
+      props.setProperty(
+          "sst_partitioner_factory",
+          "{id=SstPartitionerFixedPrefixFactory;length=" + Long.BYTES + ";}");
     }
 
-    return columnFamilyOptions
-        // to extract our column family type (used as prefix) and seek faster
-        .useFixedLengthPrefixExtractor(Long.BYTES)
-        .setMemtablePrefixBloomSizeRatio(memtablePrefixFilterMemory)
-        // memtables
-        // merge at least 3 memtables per L0 file, otherwise all memtables are flushed as individual
-        // files
-        // this is also a candidate for tuning, it was a rough guess
-        .setMinWriteBufferNumberToMerge(rocksDbConfiguration.getMinWriteBufferNumberToMerge())
-        .setMaxWriteBufferNumber(maxConcurrentMemtableCount)
-        .setWriteBufferSize(memtableMemory)
-        // compaction
-        .setLevelCompactionDynamicLevelBytes(true)
-        .setCompactionPriority(CompactionPriority.OldestSmallestSeqFirst)
-        .setCompactionStyle(CompactionStyle.LEVEL)
-        // L-0 means immediately flushed memtables
-        .setLevel0FileNumCompactionTrigger(maxConcurrentMemtableCount)
-        .setLevel0SlowdownWritesTrigger(
-            maxConcurrentMemtableCount + (maxConcurrentMemtableCount / 2))
-        .setLevel0StopWritesTrigger(maxConcurrentMemtableCount * 2)
-        // configure 4 levels: L1 = 32mb, L2 = 320mb, L3 = 3.2Gb, L4 >= 3.2Gb
-        // level 1 and 2 are uncompressed, level 3 and above are compressed using a CPU-cheap
-        // compression algo. compressed blocks are stored in the OS page cache, and uncompressed in
-        // the LRUCache created above. note L0 is always uncompressed
-        .setNumLevels(4)
-        .setMaxBytesForLevelBase(32 * 1024 * 1024L)
-        .setMaxBytesForLevelMultiplier(10)
-        .setCompressionPerLevel(
-            List.of(
-                CompressionType.NO_COMPRESSION,
-                CompressionType.NO_COMPRESSION,
-                CompressionType.LZ4_COMPRESSION,
-                CompressionType.LZ4_COMPRESSION))
-        // Target file size for compaction.
-        // Defines the desired SST file size for different levels (but not guaranteed, it is usually
-        // lower)
-        // L0 is what gets merged and flushed, e.g. 3 memtables to X, and target file size and
-        // multiplier is for L1 and other levels.
-        // L1 => 8Mb, L2 => 16Mb, L3 => 32Mb
-        // As levels get bigger, we want to have a good balance between the number of files and the
-        // individual file sizes
-        // https://github.com/facebook/rocksdb/blob/fd0d35d390e212b617e90d7567102d3e5fd1c706/include/rocksdb/advanced_options.h#L417-L429
-        .setTargetFileSizeBase(8 * 1024 * 1024L)
-        .setTargetFileSizeMultiplier(2)
-        // misc
-        .setTableFormatConfig(tableConfig);
+    // to extract our column family type (used as prefix) and seek faster
+    props.setProperty("prefix_extractor", "rocksdb.FixedPrefix." + Long.BYTES);
+    props.setProperty(
+        "memtable_prefix_bloom_size_ratio",
+        RocksDbOptionsFormatter.format(memoryConfig.memtablePrefixFilterMemory()));
+
+    // memtables
+    // merge at least 3 memtables per L0 file, otherwise all memtables are flushed as individual
+    // files
+    // this is also a candidate for tuning, it was a rough guess
+    props.setProperty(
+        "min_write_buffer_number_to_merge",
+        RocksDbOptionsFormatter.format(rocksDbConfiguration.getMinWriteBufferNumberToMerge()));
+    props.setProperty(
+        "max_write_buffer_number",
+        RocksDbOptionsFormatter.format(memoryConfig.maxConcurrentMemtableCount));
+    props.setProperty(
+        "write_buffer_size", RocksDbOptionsFormatter.format(memoryConfig.memtableMemory));
+
+    // compaction
+    props.setProperty("level_compaction_dynamic_level_bytes", RocksDbOptionsFormatter.format(true));
+    props.setProperty("compaction_pri", "kOldestSmallestSeqFirst");
+    props.setProperty("compaction_style", "kCompactionStyleLevel");
+
+    // L-0 means immediately flushed memtables
+    props.setProperty(
+        "level0_file_num_compaction_trigger",
+        RocksDbOptionsFormatter.format(memoryConfig.maxConcurrentMemtableCount));
+    props.setProperty(
+        "level0_slowdown_writes_trigger",
+        RocksDbOptionsFormatter.format(
+            memoryConfig.maxConcurrentMemtableCount
+                + (memoryConfig.maxConcurrentMemtableCount / 2)));
+    props.setProperty(
+        "level0_stop_writes_trigger", String.valueOf(memoryConfig.maxConcurrentMemtableCount * 2));
+
+    // configure 4 levels: L1 = 32mb, L2 = 320mb, L3 = 3.2Gb, L4 >= 3.2Gb
+    // level 1 and 2 are uncompressed, level 3 and above are compressed using a CPU-cheap
+    // compression algo. compressed blocks are stored in the OS page cache, and uncompressed in
+    // the LRUCache created above. note L0 is always uncompressed
+    props.setProperty("num_levels", RocksDbOptionsFormatter.format(4));
+    props.setProperty(
+        "max_bytes_for_level_base", RocksDbOptionsFormatter.format(32 * 1024 * 1024L));
+    props.setProperty("max_bytes_for_level_multiplier", RocksDbOptionsFormatter.format(10.0));
+    props.setProperty(
+        "compression_per_level", "kNoCompression:kNoCompression:kLZ4Compression:kLZ4Compression");
+
+    // Target file size for compaction.
+    // Defines the desired SST file size for different levels (but not guaranteed, it is usually
+    // lower)
+    // L0 is what gets merged and flushed, e.g. 3 memtables to X, and target file size and
+    // multiplier is for L1 and other levels.
+    // L1 => 8Mb, L2 => 16Mb, L3 => 32Mb
+    // As levels get bigger, we want to have a good balance between the number of files and the
+    // individual file sizes
+    // https://github.com/facebook/rocksdb/blob/fd0d35d390e212b617e90d7567102d3e5fd1c706/include/rocksdb/advanced_options.h#L417-L429
+    props.setProperty("target_file_size_base", RocksDbOptionsFormatter.format(8 * 1024 * 1024L));
+    props.setProperty("target_file_size_multiplier", RocksDbOptionsFormatter.format(2));
+
+    return props;
   }
 
   private TableFormatConfig createTableFormatConfig(
@@ -312,4 +347,12 @@ public final class ZeebeRocksDbFactory<
         // it as a two-tiered index
         .setWholeKeyFiltering(true);
   }
+
+  /** Holds calculated memory configuration values to avoid duplication. */
+  private record MemoryConfiguration(
+      long totalMemoryBudget,
+      long blockCacheMemory,
+      long memtableMemory,
+      double memtablePrefixFilterMemory,
+      int maxConcurrentMemtableCount) {}
 }
