@@ -41,14 +41,16 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final CamundaAuthentication authentication,
-      final SimpleDocumentStoreRegistry registry) {
-    super(brokerClient, securityContextProvider, authentication);
+      final SimpleDocumentStoreRegistry registry,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.registry = registry;
   }
 
   @Override
   public DocumentServices withAuthentication(final CamundaAuthentication authentication) {
-    return new DocumentServices(brokerClient, securityContextProvider, authentication, registry);
+    return new DocumentServices(
+        brokerClient, securityContextProvider, authentication, registry, executorProvider);
   }
 
   /** Will return a failed future for any error returned by the store */

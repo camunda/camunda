@@ -32,7 +32,12 @@ public class JobServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new JobServices<>(
-            mock(BrokerClient.class), mock(SecurityContextProvider.class), null, client, null);
+            mock(BrokerClient.class),
+            mock(SecurityContextProvider.class),
+            null,
+            client,
+            null,
+            mock(ApiServicesExecutorProvider.class));
   }
 
   @Test

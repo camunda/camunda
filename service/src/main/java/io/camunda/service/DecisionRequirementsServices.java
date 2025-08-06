@@ -32,8 +32,9 @@ public final class DecisionRequirementsServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
   }
 
@@ -41,7 +42,11 @@ public final class DecisionRequirementsServices
   public DecisionRequirementsServices withAuthentication(
       final CamundaAuthentication authentication) {
     return new DecisionRequirementsServices(
-        brokerClient, securityContextProvider, decisionRequirementSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        decisionRequirementSearchClient,
+        authentication,
+        executorProvider);
   }
 
   @Override

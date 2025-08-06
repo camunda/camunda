@@ -40,15 +40,20 @@ public final class BatchOperationServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final BatchOperationSearchClient batchOperationSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.batchOperationSearchClient = batchOperationSearchClient;
   }
 
   @Override
   public BatchOperationServices withAuthentication(final CamundaAuthentication authentication) {
     return new BatchOperationServices(
-        brokerClient, securityContextProvider, batchOperationSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        batchOperationSearchClient,
+        authentication,
+        executorProvider);
   }
 
   @Override

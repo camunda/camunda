@@ -21,13 +21,15 @@ public class SignalServices extends ApiServices<SignalServices> {
   public SignalServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
   }
 
   @Override
   public SignalServices withAuthentication(final CamundaAuthentication authentication) {
-    return new SignalServices(brokerClient, securityContextProvider, authentication);
+    return new SignalServices(
+        brokerClient, securityContextProvider, authentication, executorProvider);
   }
 
   public CompletableFuture<BrokerResponse<SignalRecord>> broadcastSignal(

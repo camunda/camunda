@@ -38,8 +38,9 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final TenantSearchClient tenantSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.tenantSearchClient = tenantSearchClient;
   }
 
@@ -67,7 +68,11 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   @Override
   public TenantServices withAuthentication(final CamundaAuthentication authentication) {
     return new TenantServices(
-        brokerClient, securityContextProvider, tenantSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        tenantSearchClient,
+        authentication,
+        executorProvider);
   }
 
   public CompletableFuture<TenantRecord> createTenant(final TenantRequest request) {

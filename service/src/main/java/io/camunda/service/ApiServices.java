@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -26,14 +27,19 @@ public abstract class ApiServices<T extends ApiServices<T>> {
   protected final BrokerClient brokerClient;
   protected final SecurityContextProvider securityContextProvider;
   protected final CamundaAuthentication authentication;
+  protected final ApiServicesExecutorProvider executorProvider;
+  private final ExecutorService executor;
 
   protected ApiServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
     this.brokerClient = brokerClient;
     this.securityContextProvider = securityContextProvider;
     this.authentication = authentication;
+    this.executorProvider = executorProvider;
+    executor = executorProvider.getExecutor();
   }
 
   public abstract T withAuthentication(final CamundaAuthentication authentication);
@@ -44,7 +50,8 @@ public abstract class ApiServices<T extends ApiServices<T>> {
   }
 
   protected <R> CompletableFuture<R> sendBrokerRequest(final BrokerRequest<R> brokerRequest) {
-    return sendBrokerRequestWithFullResponse(brokerRequest).thenApply(BrokerResponse::getResponse);
+    return sendBrokerRequestWithFullResponse(brokerRequest)
+        .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
   protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
@@ -64,7 +71,8 @@ public abstract class ApiServices<T extends ApiServices<T>> {
                 throw ErrorMapper.mapBrokerRejection(response.getRejection());
               }
               return response;
-            });
+            },
+            executor);
   }
 
   protected DirectBuffer getDocumentOrEmpty(final Map<String, Object> value) {
