@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class CombinedEvaluationContext implements ScopedEvaluationContext {
+public final class CombinedEvaluationContext implements ScopedEvaluationContext {
 
   private final List<ScopedEvaluationContext> contexts = new ArrayList<>();
 
