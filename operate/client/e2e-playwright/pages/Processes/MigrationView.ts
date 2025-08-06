@@ -62,7 +62,7 @@ export class MigrationView {
     targetFlowNodeName: string;
   }) {
     return this.page
-      .getByLabel(`Target flow node for ${sourceFlowNodeName}`, {exact: true})
+      .getByLabel(`Target item for ${sourceFlowNodeName}`, {exact: true})
       .selectOption(targetFlowNodeName);
   }
 

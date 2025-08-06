@@ -164,13 +164,13 @@ test.describe('process instance migration', () => {
     });
 
     await commonPage.addRightArrow(
-      page.getByLabel(`Target flow node for Check payment`),
+      page.getByLabel(`Target item for Check payment`),
     );
     await commonPage.addRightArrow(
-      page.getByLabel(`Target flow node for Ship Articles`),
+      page.getByLabel(`Target item for Ship Articles`),
     );
     await commonPage.addRightArrow(
-      page.getByLabel(`Target flow node for Request for payment`),
+      page.getByLabel(`Target item for Request for payment`),
     );
 
     await page.screenshot({
