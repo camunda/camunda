@@ -297,6 +297,7 @@ public class AdHocSubProcessProcessor
             })
         .thenDo(
             updatedCollection ->
+                // TODO - is this propagating outputCollection variable to parent scope?
                 stateBehavior.setLocalVariable(
                     adHocSubProcessContext, outputCollectionVariableName, updatedCollection));
   }
