@@ -7,15 +7,71 @@
  */
 package io.camunda.zeebe.broker.clustering.mapper;
 
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NodeIdMapper {
 
-  // Start before all services in broker
+  private static final Logger log = LoggerFactory.getLogger(NodeIdMapper.class);
+  private final S3Lease lease;
+  private final ScheduledExecutorService executor;
+  private int brokerId;
 
-  // it should get a nodeId and pass it to all components that need it
+  public NodeIdMapper(final S3LeaseConfig config, final int clusterSize) {
+    executor = newSingleThreadScheduledExecutor();
+    lease = new S3Lease(config, UUID.randomUUID().toString().substring(0, 6), clusterSize);
+  }
 
-  // Regular heartbeats to S3 to update the lease
+  public int start() {
+    final var brokerId = busyAcquireLease();
+    scheduleRenewal(brokerId);
+    this.brokerId = brokerId;
+    return brokerId;
+  }
 
-  // When it cannot talk to S3 or the lease expires, it should stop all services
+  public void shutdown() {
+    executor.shutdown();
+    lease.releaseLease(brokerId);
+  }
 
-  // On shutdown it should the lease in S3
+  private int busyAcquireLease() {
+    final var future = new CompletableFuture<Integer>();
+    scheduleBusyLease(future);
+    return future.join();
+  }
+
+  private void scheduleBusyLease(final CompletableFuture future) {
+    executor.schedule(
+        () -> {
+          final int brokerId = lease.acquireLease();
+          if (brokerId < 0) {
+            scheduleBusyLease(future);
+          } else {
+            log.info("Lease acquired for brokerId: {}", brokerId);
+            future.complete(brokerId);
+          }
+        },
+        10,
+        TimeUnit.SECONDS);
+  }
+
+  private void scheduleRenewal(final int brokerId) {
+    executor.schedule(
+        () -> {
+          if (lease.renewLease(brokerId)) {
+            scheduleRenewal(brokerId);
+          } else {
+            log.info("Renewal lease not acquired");
+            System.exit(1);
+          }
+        },
+        10,
+        TimeUnit.SECONDS);
+  }
 }
