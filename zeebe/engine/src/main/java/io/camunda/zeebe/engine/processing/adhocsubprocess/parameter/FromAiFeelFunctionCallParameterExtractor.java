@@ -5,17 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.adhocsubprocess;
+package io.camunda.zeebe.engine.processing.adhocsubprocess.parameter;
 
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.camunda.feel.api.EvaluationResult;
 import org.camunda.feel.api.FeelEngineApi;
@@ -27,32 +24,19 @@ import org.camunda.feel.syntaxtree.NamedFunctionParameters;
 import org.camunda.feel.syntaxtree.ParsedExpression;
 import org.camunda.feel.syntaxtree.PositionalFunctionParameters;
 import org.camunda.feel.syntaxtree.Ref;
-import scala.Product;
 import scala.jdk.javaapi.CollectionConverters;
 
-public class AdHocActivityParameterExtractor {
+class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParameterExtractor {
 
-  private static final FeelFunctionInvocationExtractor FROM_AI_FUNCTION_EXTRACTOR =
-      new FeelFunctionInvocationExtractor("fromAi");
+  private final FeelEngineApi feelEngineApi = FeelEngineBuilder.forJava().build();
 
-  private final FeelEngineApi feelEngineApi;
-
-  public AdHocActivityParameterExtractor() {
-    this(FeelEngineBuilder.forJava().build());
+  @Override
+  public String functionName() {
+    return "fromAi";
   }
 
-  public AdHocActivityParameterExtractor(final FeelEngineApi feelEngineApi) {
-    this.feelEngineApi = feelEngineApi;
-  }
-
-  public List<AdHocActivityParameter> extractParameters(final ParsedExpression expression) {
-    final Set<FunctionInvocation> functionInvocations =
-        FROM_AI_FUNCTION_EXTRACTOR.findMatchingFunctionInvocations(expression);
-
-    return functionInvocations.stream().map(this::mapToParameter).toList();
-  }
-
-  private AdHocActivityParameter mapToParameter(final FunctionInvocation functionInvocation) {
+  @Override
+  public AdHocActivityParameter mapToParameter(final FunctionInvocation functionInvocation) {
     return switch (functionInvocation.params()) {
       case final PositionalFunctionParameters positionalFunctionParameters ->
           fromPositionalFunctionInvocationParams(
@@ -63,8 +47,8 @@ public class AdHocActivityParameterExtractor {
               CollectionConverters.asJava(namedFunctionParameters.params()));
 
       default ->
-          throw new RuntimeException(
-              "Unsupported function invocation: " + functionInvocation.params());
+          throw new IllegalArgumentException(
+              "Unsupported fromAi() function invocation: " + functionInvocation.params());
     };
   }
 
@@ -112,13 +96,6 @@ public class AdHocActivityParameterExtractor {
                         "string '%s'".formatted(stringResult.value());
                     default -> value;
                   }));
-    }
-
-    if (valueRef.names() == null || valueRef.names().isEmpty()) {
-      // e.g. toolCall.parameter
-      throw new RuntimeException(
-          "Expected parameter 'value' to be a reference with at least one segment, but received '%s'."
-              .formatted(valueRef));
     }
 
     return valueRef.names().last();
@@ -170,50 +147,5 @@ public class AdHocActivityParameterExtractor {
     }
 
     return result.result();
-  }
-
-  private static class FeelFunctionInvocationExtractor {
-    private final Predicate<FunctionInvocation> functionPredicate;
-
-    FeelFunctionInvocationExtractor(final String functionName) {
-      this(functionInvocation -> functionInvocation.function().equals(functionName));
-    }
-
-    FeelFunctionInvocationExtractor(final Predicate<FunctionInvocation> functionPredicate) {
-      this.functionPredicate = functionPredicate;
-    }
-
-    public Set<FunctionInvocation> findMatchingFunctionInvocations(
-        final ParsedExpression parsedExpression) {
-      final var results =
-          findMatchingFunctionInvocations(parsedExpression.expression(), new LinkedHashSet<>());
-      return Collections.unmodifiableSet(results);
-    }
-
-    private Set<FunctionInvocation> findMatchingFunctionInvocations(
-        final Object object, final Set<FunctionInvocation> functions) {
-      if (object instanceof final FunctionInvocation functionInvocation
-          && functionPredicate.test(functionInvocation)) {
-        functions.add(functionInvocation);
-        return functions;
-      }
-
-      if (!(object instanceof final Product product)) {
-        return functions;
-      }
-
-      CollectionConverters.asJava(product.productIterator())
-          .forEachRemaining(
-              obj -> {
-                if (obj instanceof final FunctionInvocation functionInvocation
-                    && functionPredicate.test(functionInvocation)) {
-                  functions.add(functionInvocation);
-                } else {
-                  findMatchingFunctionInvocations(obj, functions);
-                }
-              });
-
-      return functions;
-    }
   }
 }
