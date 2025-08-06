@@ -48,7 +48,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       UnifiedConfiguration.class,
       UnifiedConfigurationHelper.class
     },
-    properties = TasklistProperties.PREFIX + ".database=opensearch")
+    properties = "camunda.data.secondary-storage.type=opensearch")
 public class OpensearchConnectorIT {
 
   private static final OpensearchContainer<?> OPENSEARCH_CONTAINER =

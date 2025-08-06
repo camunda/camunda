@@ -28,6 +28,9 @@ public class Data {
   /** This section allows configuring export. */
   private final Export export = new Export();
 
+  /** This section allows to configure Zeebe's secondary storage. */
+  private SecondaryStorage secondaryStorage = new SecondaryStorage();
+
   public Duration getSnapshotPeriod() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".snapshot-period",
@@ -59,5 +62,13 @@ public class Data {
 
   public Export getExport() {
     return export;
+  }
+
+  public SecondaryStorage getSecondaryStorage() {
+    return secondaryStorage;
+  }
+
+  public void setSecondaryStorage(final SecondaryStorage secondaryStorage) {
+    this.secondaryStorage = secondaryStorage;
   }
 }

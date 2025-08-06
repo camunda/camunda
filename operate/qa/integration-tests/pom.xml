@@ -506,8 +506,10 @@
             <spring.profiles.active>test</spring.profiles.active>
           </systemPropertyVariables>
           <environmentVariables>
+            <CAMUNDA_TASKLIST_DATABASE>${itDatabase}</CAMUNDA_TASKLIST_DATABASE>
             <CAMUNDA_OPERATE_DATABASE>${itDatabase}</CAMUNDA_OPERATE_DATABASE>
             <CAMUNDA_DATABASE_TYPE>${itDatabase}</CAMUNDA_DATABASE_TYPE>
+            <CAMUNDA_DATA_SECONDARY_STORAGE_TYPE>${itDatabase}</CAMUNDA_DATA_SECONDARY_STORAGE_TYPE>
           </environmentVariables>
         </configuration>
         <executions>
