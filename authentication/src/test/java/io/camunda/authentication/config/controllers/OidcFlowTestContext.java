@@ -8,62 +8,35 @@
 package io.camunda.authentication.config.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.GroupServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import java.util.List;
+import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
-import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
-/**
- * Provides beans that the WebSecurityConfig depends on. Implements the beans in a way that they do
- * not introduce dependencies to other modules, e.g. to the search layer.
- */
 @Configuration
-public class WebSecurityConfigTestContext {
+public class OidcFlowTestContext {
 
-  /**
-   * @return REST controller with dummy endpoints for testing
-   */
   @Bean
   public TestApiController createTestController() {
     return new TestApiController();
   }
 
   @Bean
-  public UserDetailsService createUserDetailsService() {
-    return new TestUserDetailsService();
-  }
-
-  @Bean
-  public RoleServices createRoleServices() {
-    return new RoleServices(null, null, null, null);
-  }
-
-  @Bean
-  public GroupServices createGroupServices() {
-    return new GroupServices(null, null, null, null);
-  }
-
-  @Bean
-  public TenantServices createTenantServices() {
-    return new TenantServices(null, null, null, null);
-  }
-
-  @Bean
   public CamundaAuthenticationProvider createCamundaAuthenticationProvider() {
-    return new DefaultCamundaAuthenticationProvider(null, null);
+    return () ->
+        new CamundaAuthentication(
+            "dummyUsername", "dummyClientId", List.of(), List.of(), List.of(), List.of(), Map.of());
   }
 
   @Bean
@@ -71,27 +44,9 @@ public class WebSecurityConfigTestContext {
     return new DisabledResourceAccessProvider();
   }
 
-  /**
-   * @return plain-text password encoder so that conversely we can use plain-text passwords in
-   *     TestUserDetailsService
-   */
-  @Bean
-  public PasswordEncoder createPasswordEncoder() {
-    return NoOpPasswordEncoder.getInstance();
-  }
-
   @Bean
   public AuthFailureHandler createFailureHandler() {
     return new AuthFailureHandler(new ObjectMapper());
-  }
-
-  /**
-   * Replacing CustomMethodSecurityExpressionHandler which requires the search layer and is only
-   * there to support hasPermission annotations on the old V1 APIs
-   */
-  @Bean
-  public MethodSecurityExpressionHandler createMethodSecurityExpressionHandler() {
-    return new DefaultMethodSecurityExpressionHandler();
   }
 
   /**
@@ -103,5 +58,25 @@ public class WebSecurityConfigTestContext {
   @ConfigurationProperties("camunda.security")
   public SecurityConfiguration createSecurityConfiguration() {
     return new SecurityConfiguration();
+  }
+
+  @Bean
+  public MappingRuleServices createMappingRuleServices() {
+    return new MappingRuleServices(null, null, null, null);
+  }
+
+  @Bean
+  public TenantServices createTenantServices() {
+    return new TenantServices(null, null, null, null);
+  }
+
+  @Bean
+  public RoleServices createRoleServices() {
+    return new RoleServices(null, null, null, null);
+  }
+
+  @Bean
+  public GroupServices createGroupServices() {
+    return new GroupServices(null, null, null, null);
   }
 }
