@@ -41,6 +41,7 @@ public class System {
 
   private Actor actor = new Actor();
   private Upgrade upgrade = new Upgrade();
+  private Restore restore = new Restore();
 
   public int getCpuThreadCount() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -68,7 +69,7 @@ public class System {
     this.ioThreadCount = ioThreadCount;
   }
 
-  public boolean getClockControlled() {
+  public boolean isClockControlled() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + "clock-controlled",
         clockControlled,
@@ -95,5 +96,13 @@ public class System {
 
   public void setUpgrade(final Upgrade upgrade) {
     this.upgrade = upgrade;
+  }
+
+  public Restore getRestore() {
+    return restore;
+  }
+
+  public void setRestore(final Restore restore) {
+    this.restore = restore;
   }
 }
