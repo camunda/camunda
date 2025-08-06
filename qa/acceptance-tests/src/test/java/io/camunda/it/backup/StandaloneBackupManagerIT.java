@@ -7,6 +7,7 @@
  */
 package io.camunda.it.backup;
 
+import static io.camunda.zeebe.qa.util.cluster.TestSpringApplication.setupElasticsearchUrl;
 import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
@@ -162,21 +163,21 @@ final class StandaloneBackupManagerIT {
                     .putUser(r -> r.username(APP_USER).password(APP_PASSWORD).roles(APP_ROLE))
                     .created());
 
+    final String esUrl = "http://" + es.getHttpHostAddress();
+
     // Connect to ES in Standalone Schema Manager
-    schemaManager.withProperty("camunda.database.url", "http://" + es.getHttpHostAddress());
+    setupElasticsearchUrl(schemaManager, esUrl);
+
     // Connect to ES in Camunda
+    setupElasticsearchUrl(camunda, esUrl);
     camunda
-        .withProperty("camunda.database.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.tasklist.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty(
-            "camunda.tasklist.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
+        .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
         .updateExporterArgs(
             CamundaExporter.class.getSimpleName(),
-            args -> ((Map) args.get("connect")).put("url", "http://" + es.getHttpHostAddress()));
+            args -> ((Map) args.get("connect")).put("url", esUrl));
+
     // Connect to ES in Backup Manager
-    backupManager.withProperty("camunda.database.url", "http://" + es.getHttpHostAddress());
+    setupElasticsearchUrl(backupManager, esUrl);
   }
 
   @Test
