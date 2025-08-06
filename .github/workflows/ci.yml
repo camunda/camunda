@@ -1052,88 +1052,64 @@ jobs:
       - name: Collect flaky test results
         id: collect-results
         run: |
-          # Initialize JSON array
+          set -euo pipefail
           flaky_data='[]'
 
           # Helper function to add job data to JSON array
           add_job_data() {
             local job_name="$1"
             local flaky_tests="$2"
-
             flaky_tests=$(echo "$flaky_tests" | xargs)
-
               if [[ -n "$flaky_tests" ]]; then
                 escaped_flaky_tests=$(echo "$flaky_tests" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-
                 echo "Adding job: $job_name with flaky test: $flaky_tests"
-
                 flaky_data=$(echo "$flaky_data" | jq --arg job "$job_name" --arg tests "$escaped_flaky_tests" '. += [{"job": $job, "flaky_tests": $tests}]')
               fi
           }
 
-          # Collect from general-unit-tests
-          if [[ "${{ needs.general-unit-tests.result }}" != "skipped" ]]; then
-            flaky_tests='${{ needs.general-unit-tests.outputs.flakyTests || '' }}'
-            add_job_data "general-unit-tests" "$flaky_tests"
-          fi
+          # Helper function to add job data from single jobs
+          collect_from_single_job() {
+            local job_id="$1"
+            local result="$2"
+            local flaky_tests="$3"
 
-          # Collect from zeebe-unit-tests matrix jobs
-          if [[ "${{ needs.zeebe-unit-tests.result }}" != "skipped" ]]; then
-            zeebe_json='${{ steps.zeebe-matrix-read.outputs.result }}'
-            echo "Raw zeebe-unit-tests matrix JSON:"
-            echo "$zeebe_json" | jq '.'
+            if [[ "$result" != "skipped" ]]; then
+            add_job_data "$job_id" "$flaky_tests"
+            fi
+          }
 
-            # Parse flakyTests entries and add non-empty ones to flaky_data
-            while IFS= read -r entry; do
-              job_name=$(echo "$entry" | jq -r '.key')
-              flaky_tests=$(echo "$entry" | jq -r '.value // ""')
-              add_job_data "zeebe-unit-tests/$job_name" "$flaky_tests"
-            done < <(echo "$zeebe_json" | jq -c '.flakyTests | to_entries[]')
-          fi
+          collect_from_single_job "general-unit-tests" "${{ needs.general-unit-tests.result }}" "${{ needs.general-unit-tests.outputs.flakyTests }}"
+          collect_from_single_job "elasticsearch-integration-tests" "${{ needs.elasticsearch-integration-tests.result }}" "${{ needs.elasticsearch-integration-tests.outputs.flakyTests }}"
+          collect_from_single_job "general-unit-tests" "${{ needs.opensearch-integration-tests.result }}" "${{ needs.opensearch-integration-tests.outputs.flakyTests }}"
+          collect_from_single_job "general-unit-tests" "${{ needs.rdbms-h2-integration-tests.result }}" "${{ needs.rdbms-h2-integration-tests.outputs.flakyTests }}"
+          collect_from_single_job "general-unit-tests" "${{ needs.rdbms-integration-tests.result }}" "${{ needs.rdbms-integration-tests.outputs.flakyTests }}"
+          collect_from_single_job "general-unit-tests" "${{ needs.docker-checks.result }}" "${{ needs.docker-checks.outputs.flakyTests }}"
 
-          # Collect from elasticsearch-integration-tests
-          if [[ "${{ needs.elasticsearch-integration-tests.result }}" != "skipped" ]]; then
-            flaky_tests='${{ needs.elasticsearch-integration-tests.outputs.flakyTests || '' }}'
-            add_job_data "elasticsearch-integration-tests" "$flaky_tests"
-          fi
+          # Helper function to add job data from matrix jobs
+          collect_from_matrix_job() {
+            local job_id="$1"
+            local result="$2"
+            local output_json="$3"
 
-          # Collect from opensearch-integration-tests
-          if [[ "${{ needs.opensearch-integration-tests.result }}" != "skipped" ]]; then
-            flaky_tests='${{ needs.opensearch-integration-tests.outputs.flakyTests || '' }}'
-            add_job_data "opensearch-integration-tests" "$flaky_tests"
-          fi
+            if [[ "$result" != "skipped" ]]; then
+              echo "Raw ${job_id} matrix JSON:" && echo "$output_json" | jq '.'
 
-          # Collect from rdbms-h2-integration-tests
-          if [[ "${{ needs.rdbms-h2-integration-tests.result }}" != "skipped" ]]; then
-            flaky_tests='${{ needs.rdbms-h2-integration-tests.outputs.flakyTests || '' }}'
-            add_job_data "rdbms-h2-integration-tests" "$flaky_tests"
-          fi
+              if echo "$output_json" | jq -e '.flakyTests and (.flakyTests | type == "object")' > /dev/null 2>&1; then
+                while IFS= read -r entry; do
+                  local job_name
+                  local flaky_tests
+                  job_name=$(echo "$entry" | jq -r '.key')
+                  flaky_tests=$(echo "$entry" | jq -r '.value // ""')
+                  add_job_data "${job_id}/${job_name}" "$flaky_tests"
+                done < <(echo "$output_json" | jq -c '.flakyTests | to_entries[]')
+              else
+                echo "flakyTests is missing or not an object for $job_id"
+              fi
+            fi
+          }
 
-          # Collect from rdbms-integration-tests
-          if [[ "${{ needs.rdbms-integration-tests.result }}" != "skipped" ]]; then
-            flaky_tests='${{ needs.rdbms-integration-tests.outputs.flakyTests || '' }}'
-            add_job_data "rdbms-integration-tests" "$flaky_tests"
-          fi
-
-          # Collect from integration-tests matrix jobs
-          if [[ "${{ needs.integration-tests.result }}" != "skipped" ]]; then
-            integration_json='${{ steps.integration-matrix-read.outputs.result }}'
-            echo "Raw integration-tests matrix JSON:"
-            echo "$integration_json" | jq '.'
-
-            # Parse flakyTests entries and add non-empty ones to flaky_data
-            while IFS= read -r entry; do
-              job_name=$(echo "$entry" | jq -r '.key')
-              flaky_tests=$(echo "$entry" | jq -r '.value // ""')
-              add_job_data "integration-tests/$job_name" "$flaky_tests"
-            done < <(echo "$integration_json" | jq -c '.flakyTests | to_entries[]')
-          fi
-
-          # Collect from docker-checks
-          if [[ "${{ needs.docker-checks.result }}" != "skipped" ]]; then
-            flaky_tests='${{ needs.docker-checks.outputs.flakyTests || '' }}'
-            add_job_data "docker-checks" "$flaky_tests"
-          fi
+          collect_from_matrix_job "zeebe-unit-tests" "${{ needs.zeebe-unit-tests.result }}" '${{ steps.zeebe-matrix-read.outputs.result }}'
+          collect_from_matrix_job "integration-tests" "${{ needs.integration-tests.result }}" '${{ steps.integration-matrix-read.outputs.result }}'
 
           # Output the collected data
           {
