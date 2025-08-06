@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.expression;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 public class CombinedEvaluationContext implements ScopedEvaluationContext {
 
@@ -38,7 +37,7 @@ public class CombinedEvaluationContext implements ScopedEvaluationContext {
   public Object getVariable(final String variableName) {
     return contexts.stream()
         .map(context -> context.getVariable(variableName))
-        .filter(Objects::nonNull)
+        .filter(v -> v != null && !v.equals(ScopedEvaluationContext.NONE_INSTANCE))
         .findFirst()
         .orElse(null);
   }

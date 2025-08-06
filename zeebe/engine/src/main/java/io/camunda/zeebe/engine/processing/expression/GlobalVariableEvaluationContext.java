@@ -22,6 +22,6 @@ public class GlobalVariableEvaluationContext implements ScopedEvaluationContext 
   public Object getVariable(final String variableName) {
     final var value = variableState.getVariable(-1, BufferUtil.wrapString(variableName));
 
-    return value.capacity() > 0 ? value : null;
+    return value != null && value.capacity() > 0 ? value : null;
   }
 }

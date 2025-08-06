@@ -51,7 +51,7 @@ public final class ExpressionProcessor {
 
   public ExpressionProcessor(final ExpressionLanguage expressionLanguage) {
     this.expressionLanguage = expressionLanguage;
-    expressionContext = ScopedEvaluationContext.none();
+    expressionContext = ScopedEvaluationContext.NONE_INSTANCE;
   }
 
   /**

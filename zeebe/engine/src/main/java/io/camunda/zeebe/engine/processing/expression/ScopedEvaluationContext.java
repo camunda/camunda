@@ -12,11 +12,9 @@ import io.camunda.zeebe.el.EvaluationContext;
 @FunctionalInterface
 public interface ScopedEvaluationContext extends EvaluationContext {
 
+  ScopedEvaluationContext NONE_INSTANCE = unused -> null;
+
   default ScopedEvaluationContext scoped(final long scopeKey) {
     return this;
-  }
-
-  static ScopedEvaluationContext none() {
-    return unused -> null;
   }
 }
