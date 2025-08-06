@@ -51,6 +51,19 @@
       FROM ${prefix}JOB
 
     <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND PROCESS_DEFINITION_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        close=")">
+        #{resourceId}
+      </foreach>
+    </if>
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+    </if>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter" />
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy" />
