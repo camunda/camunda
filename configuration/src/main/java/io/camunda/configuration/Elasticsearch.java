@@ -17,9 +17,7 @@ public class Elasticsearch {
       Set.of(
           "camunda.database.url",
           "camunda.operate.elasticsearch.url",
-          "camunda.operate.zeebeElasticsearch.url",
-          "camunda.tasklist.elasticsearch.url",
-          "camunda.tasklist.zeebeElasticsearch.url");
+          "camunda.tasklist.elasticsearch.url");
 
   /** Endpoint for the Elasticsearch engine configured as secondary storage. */
   private String url = "http://localhost:9200";
