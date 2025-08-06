@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -209,6 +210,8 @@ public final class EventAppliers implements EventApplier {
     register(
         VariableDocumentIntent.UPDATE_DENIED,
         new VariableDocumentUpdateDeniedApplier(variableState));
+
+    register(GlobalVariableIntent.CREATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessInstanceEventAppliers(final MutableProcessingState state) {

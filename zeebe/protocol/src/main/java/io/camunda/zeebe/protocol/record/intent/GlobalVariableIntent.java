@@ -17,13 +17,7 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum GlobalVariableIntent implements Intent {
   CREATE(0),
-  CREATED(1),
-  UPDATE(2),
-  UPDATED(3),
-  UPDATING(4),
-  UPDATE_DENIED(5),
-  DELETE(6),
-  DELETED(7);
+  CREATED(1);
 
   private final short value;
 
@@ -43,11 +37,7 @@ public enum GlobalVariableIntent implements Intent {
   @Override
   public boolean isEvent() {
     switch (this) {
-      case UPDATED:
-      case UPDATING:
-      case UPDATE_DENIED:
       case CREATED:
-      case DELETED:
         return true;
       default:
         return false;
@@ -60,18 +50,6 @@ public enum GlobalVariableIntent implements Intent {
         return CREATE;
       case 1:
         return CREATED;
-      case 2:
-        return UPDATE;
-      case 3:
-        return UPDATED;
-      case 4:
-        return UPDATING;
-      case 5:
-        return UPDATE_DENIED;
-      case 6:
-        return DELETE;
-      case 7:
-        return DELETED;
       default:
         return UNKNOWN;
     }
