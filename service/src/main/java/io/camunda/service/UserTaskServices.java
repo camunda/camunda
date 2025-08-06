@@ -63,8 +63,9 @@ public final class UserTaskServices
       final ElementInstanceServices elementInstanceServices,
       final VariableServices variableServices,
       final ProcessCache processCache,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.userTaskSearchClient = userTaskSearchClient;
     this.formServices = formServices;
     this.elementInstanceServices = elementInstanceServices;
@@ -82,7 +83,8 @@ public final class UserTaskServices
         elementInstanceServices,
         variableServices,
         processCache,
-        authentication);
+        authentication,
+        executorProvider);
   }
 
   @Override
