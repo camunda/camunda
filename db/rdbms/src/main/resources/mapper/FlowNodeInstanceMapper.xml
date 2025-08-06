@@ -22,6 +22,7 @@
     SELECT * FROM (
     SELECT
     FLOW_NODE_INSTANCE_KEY,
+    FLOW_NODE_SCOPE_KEY,
     FLOW_NODE_ID,
     FLOW_NODE_NAME,
     PROCESS_INSTANCE_KEY,
@@ -85,6 +86,10 @@
       AND FLOW_NODE_NAME IN
       <foreach collection="filter.flowNodeNames" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
+    <if test="filter.flowNodeScopeKeys != null and !filter.flowNodeScopeKeys.isEmpty()">
+      AND FLOW_NODE_SCOPE_KEY IN
+      <foreach collection="filter.flowNodeScopeKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
     <if test="filter.incidentKeys != null and !filter.incidentKeys.isEmpty()">
       AND INCIDENT_KEY IN
       <foreach collection="filter.incidentKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
@@ -128,6 +133,7 @@
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="FLOW_NODE_SCOPE_KEY" javaType="java.lang.Long"/>
       <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
@@ -145,11 +151,11 @@
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
-    INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, FLOW_NODE_NAME, PROCESS_INSTANCE_KEY,
+    INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, FLOW_NODE_NAME, FLOW_NODE_SCOPE_KEY, PROCESS_INSTANCE_KEY,
                                     PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
                                              START_DATE, END_DATE, TENANT_ID, TREE_PATH,
                                              INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS, PARTITION_ID, HISTORY_CLEANUP_DATE)
-    VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{flowNodeName}, #{processInstanceKey}, #{processDefinitionId},
+    VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{flowNodeName}, #{flowNodeScopeKey}, #{processInstanceKey}, #{processDefinitionId},
             #{processDefinitionKey}, #{type}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
             #{treePath}, #{incidentKey}, #{numSubprocessIncidents}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
@@ -159,6 +165,7 @@
     UPDATE FLOW_NODE_INSTANCE
     SET FLOW_NODE_ID             = #{flowNodeId},
         FLOW_NODE_NAME           = #{flowNodeName},
+        FLOW_NODE_SCOPE_KEY      = #{flowNodeScopeKey},
         PROCESS_INSTANCE_KEY     = #{processInstanceKey},
         PROCESS_DEFINITION_ID    = #{processDefinitionId},
         PROCESS_DEFINITION_KEY   = #{processDefinitionKey},
