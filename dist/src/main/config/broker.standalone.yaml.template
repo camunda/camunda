@@ -1003,7 +1003,7 @@
       #
       # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_..."
       #
-      # camundaExporter:
+      # camundaexporter:
         # className: io.camunda.exporter.CamundaExporter
         #
         # args:
