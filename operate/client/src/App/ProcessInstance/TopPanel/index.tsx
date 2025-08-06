@@ -90,7 +90,10 @@ const TopPanel: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
   const currentSelection = flowNodeSelectionStore.state.selection;
-  const {sourceFlowNodeIdForMoveOperation} = modificationsStore.state;
+  const {
+    sourceFlowNodeIdForMoveOperation,
+    sourceFlowNodeInstanceKeyForMoveOperation,
+  } = modificationsStore.state;
   const [isInTransition, setIsInTransition] = useState(false);
   const {data: flowNodeInstancesStatistics} = useFlownodeInstancesStatistics();
   const {data: statistics} = useFlownodeStatistics();
@@ -110,9 +113,13 @@ const TopPanel: React.FC = observer(() => {
     );
   const {data: processInstance} = useProcessInstance();
   const modificationsByFlowNode = useModificationsByFlowNode();
-  const affectedTokenCount = totalMoveOperationRunningInstances || 1;
-  const visibleAffectedTokenCount =
-    totalMoveOperationRunningInstancesVisible || 1;
+  const affectedTokenCount = sourceFlowNodeInstanceKeyForMoveOperation
+    ? 1
+    : totalMoveOperationRunningInstances || 1;
+  const visibleAffectedTokenCount = sourceFlowNodeInstanceKeyForMoveOperation
+    ? 1
+    : totalMoveOperationRunningInstancesVisible || 1;
+
   const {data: processedSequenceFlowsFromHook} =
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
