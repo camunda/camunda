@@ -286,8 +286,14 @@ public class AdHocSubProcessProcessor
                   stateBehavior.getLocalVariable(
                       adHocSubProcessContext, outputCollectionVariableName);
 
-              return outputCollectionUpdater.appendCollection(
-                  outputCollectionValue, outputElementValue);
+              return outputCollectionUpdater
+                  .appendToOutputCollection(outputCollectionValue, outputElementValue)
+                  .mapLeft(
+                      failure -> {
+                        // TODO - is this the proper way to create an incident on eappend failure?
+                        incidentBehavior.createIncident(failure, childContext);
+                        return new Failure(failure.getMessage(), ErrorType.EXTRACT_VALUE_ERROR);
+                      });
             })
         .thenDo(
             updatedCollection ->
@@ -302,7 +308,7 @@ public class AdHocSubProcessProcessor
     private final ExpandableArrayBuffer outputCollectionBuffer = new ExpandableArrayBuffer();
     private final DirectBuffer updatedOutputCollectionBuffer = new UnsafeBuffer(0, 0);
 
-    public Either<Failure, DirectBuffer> appendCollection(
+    public Either<Failure, DirectBuffer> appendToOutputCollection(
         final DirectBuffer outputCollection, final DirectBuffer newValue) {
 
       // read output collection
