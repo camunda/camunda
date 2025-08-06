@@ -23,7 +23,7 @@ public record RdbmsWriterConfig(
      * processed and are completed or failed.
      */
     boolean exportBatchOperationItemsOnCreation,
-    HistoryConfig historyConfig) {
+    HistoryConfig history) {
 
   public static final int DEFAULT_QUEUE_SIZE = 1000;
   public static final int DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE = 10000;
@@ -40,7 +40,7 @@ public record RdbmsWriterConfig(
     private int batchOperationItemInsertBlockSize = DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
     private boolean exportBatchOperationItemsOnCreation =
         DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
-    private HistoryConfig historyConfig = new HistoryConfig.Builder().build();
+    private HistoryConfig history = new HistoryConfig.Builder().build();
 
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
@@ -63,8 +63,8 @@ public record RdbmsWriterConfig(
       return this;
     }
 
-    public Builder historyConfig(final HistoryConfig historyConfig) {
-      this.historyConfig = historyConfig;
+    public Builder history(final HistoryConfig history) {
+      this.history = history;
       return this;
     }
 
@@ -75,7 +75,7 @@ public record RdbmsWriterConfig(
           queueSize,
           batchOperationItemInsertBlockSize,
           exportBatchOperationItemsOnCreation,
-          historyConfig);
+          history);
     }
   }
 

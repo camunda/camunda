@@ -152,7 +152,7 @@ public class ExporterConfiguration {
         .queueSize(queueSize)
         .batchOperationItemInsertBlockSize(batchOperationItemInsertBlockSize)
         .exportBatchOperationItemsOnCreation(exportBatchOperationItemsOnCreation)
-        .historyConfig(historyConfig)
+        .history(historyConfig)
         .build();
   }
 

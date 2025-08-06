@@ -67,7 +67,7 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
 
     final var historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
-    when(config.historyConfig()).thenReturn(historyConfig);
+    when(config.history()).thenReturn(historyConfig);
     when(historyConfig.defaultHistoryTTL()).thenReturn(Duration.ofDays(90));
     when(historyConfig.batchOperationCancelProcessInstanceHistoryTTL())
         .thenReturn(Duration.ofDays(2));
