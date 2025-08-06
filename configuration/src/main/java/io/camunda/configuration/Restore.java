@@ -13,7 +13,7 @@ import java.util.Set;
 
 public class Restore {
 
-  private static final String PREFIX = "camunda.system.restore.";
+  private static final String PREFIX = "camunda.system.restore";
 
   private static final Set<String> LEGACY_RESTORE_VALIDATE_CFG_PROPERTIES =
       Set.of("zeebe.restore.validateConfig");
@@ -25,7 +25,7 @@ public class Restore {
 
   public boolean isValidateConfig() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "validate-config",
+        PREFIX + ".validate-config",
         validateConfig,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -38,7 +38,7 @@ public class Restore {
 
   public List<String> getIgnoreFilesInTarget() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "ignore-files-in-target",
+        PREFIX + ".ignore-files-in-target",
         ignoreFilesInTarget,
         List.class, // FIXME: assumes always list of strings
         BackwardsCompatibilityMode.SUPPORTED,
