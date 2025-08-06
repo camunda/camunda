@@ -26,6 +26,7 @@ import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.util.ByteValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.stream.Stream;
@@ -74,13 +75,12 @@ final class ZeebeRocksDbFactoryTest {
   }
 
   @Test
-  void shouldOverwriteDefaultColumnFamilyOptions() {
+  void shouldMergeUserOptionsWithDefaultsInsteadOfOverwriting() {
     // given
     final var customProperties = new Properties();
     customProperties.put("write_buffer_size", String.valueOf(ByteValue.ofMegabytes(16)));
     customProperties.put("compaction_pri", "kByCompensatedSize");
 
-    //noinspection unchecked
     final var factoryWithDefaults =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
             DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
@@ -95,7 +95,7 @@ final class ZeebeRocksDbFactoryTest {
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
     final var customOptions = factoryWithCustomOptions.createColumnFamilyOptions(new ArrayList<>());
 
-    // then
+    // then - defaults should be preserved
     assertThat(defaults)
         .extracting(
             ColumnFamilyOptions::writeBufferSize,
@@ -103,13 +103,54 @@ final class ZeebeRocksDbFactoryTest {
             ColumnFamilyOptions::numLevels)
         .containsExactly(50704475L, CompactionPriority.OldestSmallestSeqFirst, 4);
 
-    // user cfg will only be set and all other is rocksdb default
+    // then - user options should override defaults
     assertThat(customOptions)
         .extracting(
             ColumnFamilyOptions::writeBufferSize,
             ColumnFamilyOptions::compactionPriority,
             ColumnFamilyOptions::numLevels)
-        .containsExactly(ByteValue.ofMegabytes(16), CompactionPriority.ByCompensatedSize, 7);
+        // numLevels is not overridden, so the default of 4 should remain
+        .containsExactly(ByteValue.ofMegabytes(16), CompactionPriority.ByCompensatedSize, 4);
+  }
+
+  @Test
+  void shouldCreateDbWithExpectedOptions(final @TempDir File pathName) throws Exception {
+    // given
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
+    final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
+    final String golden;
+    try (final var in =
+        ZeebeRocksDbFactoryTest.class.getResourceAsStream("/rocksdb-options.golden")) {
+      golden = new String(in.readAllBytes());
+    }
+
+    // when
+    final var options =
+        Files.readString(pathName.toPath().resolve("OPTIONS-000007"))
+            // compensate for locale-dependent formatting of doubles
+            .replace(
+                "blob_garbage_collection_force_threshold=1,000000",
+                "blob_garbage_collection_force_threshold=1.000000")
+            .replace(
+                "memtable_prefix_bloom_size_ratio=0,150000",
+                "memtable_prefix_bloom_size_ratio=0.150000")
+            .replace(
+                "max_bytes_for_level_multiplier=10,000000",
+                "max_bytes_for_level_multiplier=10.000000")
+            .replace(
+                "experimental_mempurge_threshold=0,000000",
+                "experimental_mempurge_threshold=0.000000")
+            .replace(
+                "blob_garbage_collection_age_cutoff=0,250000",
+                "blob_garbage_collection_age_cutoff=0.250000")
+            .replace(
+                "data_block_hash_table_util_ratio=0,750000",
+                "data_block_hash_table_util_ratio=0.750000");
+
+    // then
+    assertThat(options).isEqualTo(golden);
+
+    db.close();
   }
 
   @Test
