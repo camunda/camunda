@@ -8,7 +8,6 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
-import static io.camunda.application.commons.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
@@ -320,17 +319,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   public TestStandaloneBroker withRdbmsExporter() {
-    final String dbType = "rdbms";
-    final String dbUrl =
-        "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
-
-    // type
-    withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, dbType);
-    withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, dbType);
-
-    // url
-    withProperty("camunda.database.url", dbUrl);
-
+    withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms");
+    withProperty(
+        "camunda.database.url",
+        "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
     withProperty("camunda.database.username", "sa");
     withProperty("camunda.database.password", "");
     withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");

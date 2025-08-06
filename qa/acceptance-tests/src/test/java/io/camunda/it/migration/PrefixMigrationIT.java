@@ -106,24 +106,20 @@ public class PrefixMigrationIT {
       final String operatePrefix,
       final String tasklistPrefix) {
     container
-        // Unified Config for db type + compatibility vars
         .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
         .withEnv("CAMUNDA_OPERATE_DATABASE", "opensearch")
         .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
-        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "opensearch")
-        // Unified Config for db url + compatibility vars
         .withEnv("CAMUNDA_DATABASE_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        // ---
         .withEnv("CAMUNDA_OPERATE_OPENSEARCH_INDEX_PREFIX", operatePrefix)
         .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEX_PREFIX", tasklistPrefix)
         .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX", tasklistPrefix)
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
             "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
         .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB);
   }
 

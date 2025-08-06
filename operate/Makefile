@@ -26,10 +26,7 @@ env-os-up:
 	docker compose -f docker-compose.yml up -d opensearch zeebe-opensearch \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false -DskipChecks -DskipQaBuild \
 	&& 	CAMUNDA_OPERATE_TASKLIST_URL="http://localhost:8081" \
-	  CAMUNDA_DATA_SECONDARY_STORAGE_TYPE=opensearch \
       CAMUNDA_OPERATE_DATABASE=opensearch \
-	  CAMUNDA_TASKLIST_DATABASE=opensearch \
-	  CAMUNDA_DATABASE_TYPE=opensearch \
       CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test \
       CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo \
       CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo \

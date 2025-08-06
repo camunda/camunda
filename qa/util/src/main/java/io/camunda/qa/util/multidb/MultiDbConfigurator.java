@@ -9,9 +9,9 @@ package io.camunda.qa.util.multidb;
 
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
-import static io.camunda.application.commons.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.camunda.exporter.CamundaExporter;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
@@ -24,10 +24,6 @@ import java.util.UUID;
  */
 public class MultiDbConfigurator {
   public static String zeebePrefix = "zeebe-records";
-
-  private static final String DB_TYPE_ELASTICSEARCH = "elasticsearch";
-  private static final String DB_TYPE_OPENSEARCH = "opensearch";
-  private static final String DB_TYPE_RDBMS = "rdbms";
 
   private final TestStandaloneApplication<?> testApplication;
   private String indexPrefix;
@@ -75,18 +71,11 @@ public class MultiDbConfigurator {
     elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
     /* Camunda */
-    // type
-    elasticsearchProperties.put(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_ELASTICSEARCH);
     elasticsearchProperties.put(
-        UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_ELASTICSEARCH);
-    elasticsearchProperties.put("camunda.operate.database", DB_TYPE_ELASTICSEARCH);
-    elasticsearchProperties.put("camunda.tasklist.database", DB_TYPE_ELASTICSEARCH);
-    // url
-    elasticsearchProperties.put("camunda.database.url", elasticsearchUrl);
-    elasticsearchProperties.put(
-        "camunda.data.secondary-storage.elasticsearch.url", elasticsearchUrl);
-    // ---
+        PROPERTY_CAMUNDA_DATABASE_TYPE,
+        io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH);
     elasticsearchProperties.put("camunda.database.indexPrefix", indexPrefix);
+    elasticsearchProperties.put("camunda.database.url", elasticsearchUrl);
     elasticsearchProperties.put(
         "camunda.database.retention.enabled", Boolean.toString(retentionEnabled));
     elasticsearchProperties.put("camunda.database.retention.policyName", indexPrefix + "-ilm");
@@ -191,12 +180,11 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.operate.opensearch.password", userPassword);
 
     /* Camunda */
-    // db type
-    opensearchProperties.put(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_OPENSEARCH);
-    opensearchProperties.put(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_OPENSEARCH);
-    opensearchProperties.put("camunda.operate.database", DB_TYPE_OPENSEARCH);
-    opensearchProperties.put("camunda.tasklist.database", DB_TYPE_OPENSEARCH);
-    // ---
+    opensearchProperties.put(
+        PROPERTY_CAMUNDA_DATABASE_TYPE,
+        io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH);
+    opensearchProperties.put("camunda.operate.database", "opensearch");
+    opensearchProperties.put("camunda.tasklist.database", "opensearch");
     opensearchProperties.put("camunda.database.indexPrefix", indexPrefix);
     opensearchProperties.put("camunda.database.username", userName);
     opensearchProperties.put("camunda.database.password", userPassword);
@@ -249,17 +237,10 @@ public class MultiDbConfigurator {
   }
 
   public void configureRDBMSSupport(final boolean retentionEnabled) {
-    // db type
-    testApplication.withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_RDBMS);
-    testApplication.withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_RDBMS);
-    testApplication.withProperty("camunda.operate.database", DB_TYPE_RDBMS); // compatibility
-    testApplication.withProperty("camunda.tasklist.database", DB_TYPE_RDBMS); // compatibility
-    // --
-
+    testApplication.withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, DatabaseType.RDBMS);
     testApplication.withProperty(
         "spring.datasource.url",
         "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
-
     testApplication.withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
     testApplication.withProperty("spring.datasource.username", "sa");
     testApplication.withProperty("spring.datasource.password", "");

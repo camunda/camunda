@@ -12,7 +12,6 @@ import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.S
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineIndexProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.configuration.DatabaseType;
@@ -31,10 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnSecondaryStorageType({
-  SecondaryStorageType.elasticsearch,
-  SecondaryStorageType.opensearch
-})
+@ConditionalOnSecondaryStorageType({DatabaseConfig.ELASTICSEARCH, DatabaseConfig.OPENSEARCH})
 @EnableConfigurationProperties({
   SearchEngineConnectProperties.class,
   SearchEngineIndexProperties.class,

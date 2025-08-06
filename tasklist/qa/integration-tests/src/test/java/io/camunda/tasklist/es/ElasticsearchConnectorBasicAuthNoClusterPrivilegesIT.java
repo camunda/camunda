@@ -117,19 +117,8 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
               "camunda.tasklist.elasticsearch.username=" + TASKLIST_ES_USER,
               "camunda.tasklist.elasticsearch.password=" + TASKLIST_ES_PASSWORD,
               "camunda.tasklist.elasticsearch.clusterName=docker-cluster",
-              // DB url
-              "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
-              "camunda.database.url=" + elsUrl,
-              "camunda.operate.elasticsearch.url=" + elsUrl,
-              "camunda.operate.zeebeElasticsearch.url=" + elsUrl,
               "camunda.tasklist.elasticsearch.url=" + elsUrl,
               "camunda.tasklist.zeebeElasticsearch.url=" + elsUrl,
-              // DB type
-              "camunda.data.secondary-storage.type=elasticsearch",
-              "camunda.database.type=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
-              "camunda.operate.database=elasticsearch",
-              //
               "camunda.tasklist.zeebeElasticsearch.username=" + TASKLIST_ES_USER,
               "camunda.tasklist.zeebeElasticsearch.password=" + TASKLIST_ES_PASSWORD,
               "camunda.tasklist.zeebeElasticsearch.clusterName=docker-cluster",

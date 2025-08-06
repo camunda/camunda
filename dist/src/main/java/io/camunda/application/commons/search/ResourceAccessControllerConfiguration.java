@@ -9,7 +9,6 @@ package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.read.security.RdbmsResourceAccessController;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
 import io.camunda.search.clients.auth.DefaultResourceAccessProvider;
@@ -17,6 +16,7 @@ import io.camunda.search.clients.auth.DefaultTenantAccessProvider;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
 import io.camunda.search.clients.auth.DocumentBasedResourceAccessController;
+import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.security.reader.ResourceAccessProvider;
@@ -75,10 +75,7 @@ public class ResourceAccessControllerConfiguration {
   }
 
   @Bean
-  @ConditionalOnSecondaryStorageType({
-    SecondaryStorageType.elasticsearch,
-    SecondaryStorageType.opensearch
-  })
+  @ConditionalOnSecondaryStorageType({DatabaseConfig.ELASTICSEARCH, DatabaseConfig.OPENSEARCH})
   public ResourceAccessController documentBasedResourceAccessController(
       final ResourceAccessProvider resourceAccessProvider,
       final TenantAccessProvider tenantAccessProvider) {
@@ -86,7 +83,7 @@ public class ResourceAccessControllerConfiguration {
   }
 
   @Bean
-  @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
+  @ConditionalOnSecondaryStorageType(DatabaseConfig.RDBMS)
   public ResourceAccessController rdbmsResourceAccessController() {
     return new RdbmsResourceAccessController();
   }

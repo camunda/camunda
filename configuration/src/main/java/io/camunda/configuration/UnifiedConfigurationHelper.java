@@ -7,7 +7,6 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -67,13 +66,7 @@ public class UnifiedConfigurationHelper {
     for (final String legacyProperty : legacyProperties) {
       final String strValue = environment.getProperty(legacyProperty);
       final T legacyValue = parseLegacyValue(strValue, expectedType);
-      if (legacyValue != null) {
-        legacyValues.add(legacyValue);
-      }
-    }
-
-    if (legacyValues.isEmpty()) {
-      return null;
+      legacyValues.add(legacyValue);
     }
 
     if (legacyValues.size() > 1) {
@@ -154,7 +147,7 @@ public class UnifiedConfigurationHelper {
 
       final String errorMessage =
           String.format(
-              "Ambiguous configuration. The value %s=%s conflicts with the values '%s' from the legacy properties %s",
+              "Ambiguous configuration. The value %s=%s does not match the value(s) conflicts with the values '%s' from the legacy properties %s",
               newProperty, newValue, legacyValue, String.join(", ", legacyProperties));
       throw new UnifiedConfigurationException(errorMessage);
     }
@@ -219,7 +212,6 @@ public class UnifiedConfigurationHelper {
       case "Boolean" -> (T) Boolean.valueOf(strValue);
       case "Duration" -> (T) DurationStyle.detectAndParse(strValue);
       case "Long" -> (T) Long.valueOf(strValue);
-      case "SecondaryStorageType" -> (T) SecondaryStorageType.valueOf(strValue.toLowerCase());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }

@@ -120,13 +120,6 @@ zeebe:
             maxCacheSize: 10000
 
 camunda:
-
-  # Unified Configuration (TODO: cleanup later)
-  data:
-    secondary-storage:
-      type: 'opensearch'
-  # -----
-
   database:
     # Controls which database must be used, possible values: elasticsearch, opensearch
     # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE

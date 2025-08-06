@@ -8,7 +8,6 @@
 package io.camunda.it.rdbms.db.util;
 
 import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
-import static io.camunda.application.commons.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.db.rdbms.RdbmsService;
@@ -40,7 +39,6 @@ public final class CamundaRdbmsTestApplication
 
   public CamundaRdbmsTestApplication withRdbms() {
     super.withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms")
-        .withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms")
         .withProperty("logging.level.io.camunda.db.rdbms", "DEBUG")
         .withProperty("logging.level.org.mybatis", "DEBUG");
     return this;

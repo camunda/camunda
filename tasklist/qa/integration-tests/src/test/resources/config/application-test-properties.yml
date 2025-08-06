@@ -1,34 +1,28 @@
-camunda:
-  data:
-    secondary-storage:
-      type: 'elasticsearch'
-      elasticsearch:
-        url: 'http://localhost:9200'
-  tasklist:
-    csrfPreventionEnabled: false
-    batchOperationMaxSize: 500
-    elasticsearch:
-      clusterName: clusterName
-      url: http://localhost:9200
-      dateFormat: yyyy-MM-dd
-      batchSize: 111
-    zeebeElasticsearch:
-      clusterName: zeebeElasticClusterName
-      url: http://localhost:9200
-      dateFormat: dd-MM-yyyy
-      batchSize: 222
-      prefix: somePrefix
-    importer:
-      startLoadingDataOnStartup: false
-      completedReaderMinEmptyBatches: 10
-    zeebe:
-      gatewayAddress: someZeebeHost:999
-    operationExecutor:
-      batchSize: 555
-      workerId: someWorker
-      lockTimeout: 15000
-      executorEnabled: false
-    multi-tenancy:
-      enabled: true
+camunda.tasklist:
+  csrfPreventionEnabled: false
+  batchOperationMaxSize: 500
+  elasticsearch:
+    clusterName: clusterName
+    url: http://someHost:12345
+    dateFormat: yyyy-MM-dd
+    batchSize: 111
+  zeebeElasticsearch:
+    clusterName: zeebeElasticClusterName
+    url: http://someOtherHost:54321
+    dateFormat: dd-MM-yyyy
+    batchSize: 222
+    prefix: somePrefix
+  importer:
+    startLoadingDataOnStartup: false
+    completedReaderMinEmptyBatches: 10
+  zeebe:
+    gatewayAddress: someZeebeHost:999
+  operationExecutor:
+    batchSize: 555
+    workerId: someWorker
+    lockTimeout: 15000
+    executorEnabled: false
+  multi-tenancy:
+    enabled: true
 #Spring Boot Actuator endpoints to be exposed
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,usage-metrics

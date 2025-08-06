@@ -37,33 +37,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class SchemaManagerStartupIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManagerStartupIT.class);
-  private static final String ELASTICSEARCH_URL = "http://test-elasticsearch:9200";
-  private static final String DB_TYPE_ELASTICSEARCH = "elasticsearch";
-
   private static final String CAMUNDA_TEST_IMAGE_NAME =
       Optional.ofNullable(System.getenv("CAMUNDA_TEST_DOCKER_IMAGE"))
           .orElse("camunda/camunda:SNAPSHOT");
-
   private static final int MONITORING_PORT = 9600;
 
   @AutoClose
   private final GenericContainer<?> camunda =
       new GenericContainer<>(CAMUNDA_TEST_IMAGE_NAME)
+          .withEnv("CAMUNDA_DATABASE_URL", "http://test-elasticsearch:9200")
           .withEnv("SPRING_PROFILES_ACTIVE", "broker,dev")
-          // Unified Configuration: DB type
-          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH)
-          // Unified Configuration: DB URL
-          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", ELASTICSEARCH_URL)
-          .withEnv("CAMUNDA_DATABASE_URL", ELASTICSEARCH_URL)
-          .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", ELASTICSEARCH_URL)
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", ELASTICSEARCH_URL)
-          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", ELASTICSEARCH_URL)
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", ELASTICSEARCH_URL)
-          // ---
-          .withEnv("SPRING_PROFILES_ACTIVE", "broker")
           .withEnv("LOGGING_LEVEL_IO_CAMUNDA", "DEBUG")
           .withNetwork(Network.SHARED);
 

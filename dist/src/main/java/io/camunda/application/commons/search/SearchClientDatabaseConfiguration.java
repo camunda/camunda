@@ -10,7 +10,6 @@ package io.camunda.application.commons.search;
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
@@ -45,6 +44,7 @@ import io.camunda.search.clients.reader.UserTaskReader;
 import io.camunda.search.clients.reader.VariableReader;
 import io.camunda.search.clients.reader.impl.NoopAuthorizationReader;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
@@ -60,7 +60,7 @@ import org.springframework.context.annotation.Configuration;
 public class SearchClientDatabaseConfiguration {
 
   @Bean
-  @ConditionalOnSecondaryStorageType(SecondaryStorageType.elasticsearch)
+  @ConditionalOnSecondaryStorageType(DatabaseConfig.ELASTICSEARCH)
   public ElasticsearchSearchClient elasticsearchSearchClient(
       final ConnectConfiguration configuration) {
     final var connector = new ElasticsearchConnector(configuration);
@@ -69,7 +69,7 @@ public class SearchClientDatabaseConfiguration {
   }
 
   @Bean
-  @ConditionalOnSecondaryStorageType(SecondaryStorageType.opensearch)
+  @ConditionalOnSecondaryStorageType(DatabaseConfig.OPENSEARCH)
   public OpensearchSearchClient opensearchSearchClient(final ConnectConfiguration configuration) {
     final var connector = new OpensearchConnector(configuration);
     final var opensearch = connector.createClient();
