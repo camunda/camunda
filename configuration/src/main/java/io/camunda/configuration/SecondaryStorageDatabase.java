@@ -29,5 +29,6 @@ public abstract class SecondaryStorageDatabase {
   }
 
   protected abstract String prefix();
+
   protected abstract Set<String> legacyUrlProperties();
 }
