@@ -85,6 +85,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +109,8 @@ public final class EngineRule extends ExternalResource {
   private final StreamProcessorRule environmentRule;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+  private ResetRecordingExporterTestWatcherMode resetRecordingExporterTestWatcherMode =
+      ResetRecordingExporterTestWatcherMode.BEFORE_EACH_TEST;
   private final int partitionCount;
   private boolean awaitIdentitySetup = false;
   private ResetRecordingExporterMode awaitIdentitySetupResetMode =
@@ -127,7 +130,6 @@ public final class EngineRule extends ExternalResource {
   private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
   private SearchClientsProxy searchClientsProxy;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
-  private ResetRecordingExporterTestWatcherMode resetRecordingExporterTestWatcherMode;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -161,8 +163,10 @@ public final class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
-    if (resetRecordingExporterTestWatcherMode
-        == ResetRecordingExporterTestWatcherMode.ONLY_BEFORE_AND_AFTER_ALL_TESTS) {
+    if (EnumSet.of(
+            ResetRecordingExporterTestWatcherMode.ONLY_BEFORE_AND_AFTER_ALL_TESTS,
+            ResetRecordingExporterTestWatcherMode.BEFORE_ALL_TESTS_AND_AFTER_EACH_TEST)
+        .contains(resetRecordingExporterTestWatcherMode)) {
       RecordingExporter.reset();
     }
     start();
@@ -199,6 +203,24 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withIdentitySetup(
       final ResetRecordingExporterMode awaitIdentitySetupResetMode) {
+    if (awaitIdentitySetupResetMode == ResetRecordingExporterMode.NO_RESET_AFTER_IDENTITY_SETUP
+        && resetRecordingExporterTestWatcherMode
+            == ResetRecordingExporterTestWatcherMode.BEFORE_EACH_TEST) {
+      throw new IllegalStateException(
+          """
+          Expected to not reset RecordingExporter after identity setup, \
+          but the RecordingExporterTestWatcher is configured to reset before each test. \
+          This would mean that the identity setup is still not included in the recording exporter. \
+          If you want to include the identity setup in the recording exporter, please call \
+          .withResetRecordingExporterTestWatcherMode on the EngineRule to change the reset mode, \
+          and choose one of the following modes:
+          - ResetRecordingExporterTestWatcherMode.ONLY_BEFORE_AND_AFTER_ALL_TESTS
+          - ResetRecordingExporterTestWatcherMode.BEFORE_ALL_TESTS_AND_AFTER_EACH_TEST
+
+          Additionally, ensure that the RecordingExporterTestWatcher is not explicitly set up in the
+          test class.
+          """);
+    }
     this.awaitIdentitySetupResetMode = awaitIdentitySetupResetMode;
     return withIdentitySetup();
   }
@@ -265,6 +287,10 @@ public final class EngineRule extends ExternalResource {
       }
       case BEFORE_EACH_TEST -> {
         recordingExporterTestWatcher.withResetMode(ResetMode.ON_STARTING);
+        yield this;
+      }
+      case BEFORE_ALL_TESTS_AND_AFTER_EACH_TEST -> {
+        recordingExporterTestWatcher.withResetMode(ResetMode.ON_FINISHED);
         yield this;
       }
     };
@@ -706,6 +732,7 @@ public final class EngineRule extends ExternalResource {
 
   public enum ResetRecordingExporterTestWatcherMode {
     ONLY_BEFORE_AND_AFTER_ALL_TESTS,
+    BEFORE_ALL_TESTS_AND_AFTER_EACH_TEST,
     BEFORE_EACH_TEST
   }
 
