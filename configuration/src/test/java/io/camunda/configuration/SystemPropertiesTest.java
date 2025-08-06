@@ -12,10 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
+import io.camunda.configuration.beanoverrides.RestorePropertiesOverride;
 import io.camunda.configuration.beans.ActorClockControlledProperties;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.IdleStrategyBasedProperties;
+import io.camunda.configuration.beans.RestoreProperties;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +31,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   BrokerBasedPropertiesOverride.class,
   ActorClockControlledPropertiesOverride.class,
   IdleStrategyPropertiesOverride.class,
+  RestorePropertiesOverride.class,
   UnifiedConfigurationHelper.class
 })
 @ActiveProfiles("broker")
@@ -43,20 +47,25 @@ public class SystemPropertiesTest {
         "camunda.system.actor.idle.max-spins=1000",
         "camunda.system.actor.idle.max-yields=500",
         "camunda.system.actor.idle.min-park-period=10ms",
-        "camunda.system.actor.idle.max-park-period=100ms"
+        "camunda.system.actor.idle.max-park-period=100ms",
+        "camunda.system.restore.validate-config=false",
+        "camunda.system.restore.ignore-files-in-target=lost+found,temp,cache"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
     final ActorClockControlledProperties clockCfg;
     final IdleStrategyBasedProperties idleCfg;
+    final RestoreProperties restoreCfg;
 
     WithOnlyUnifiedConfigSet(
         @Autowired final BrokerBasedProperties brokerCfg,
         @Autowired final ActorClockControlledProperties clockCfg,
-        @Autowired final IdleStrategyBasedProperties idleCfg) {
+        @Autowired final IdleStrategyBasedProperties idleCfg,
+        @Autowired final RestoreProperties restoreCfg) {
       this.brokerCfg = brokerCfg;
       this.clockCfg = clockCfg;
       this.idleCfg = idleCfg;
+      this.restoreCfg = restoreCfg;
     }
 
     @Test
@@ -98,6 +107,17 @@ public class SystemPropertiesTest {
     void shouldSetActorIdleMaxParkPeriod() {
       assertThat(idleCfg.maxParkPeriod()).isEqualTo(Duration.ofMillis(100));
     }
+
+    @Test
+    void shouldSetRestoreValidateConfig() {
+      assertThat(restoreCfg.validateConfig()).isFalse();
+    }
+
+    @Test
+    void shouldSetRestoreIgnoreFilesInTarget() {
+      assertThat(restoreCfg.ignoreFilesInTarget())
+          .isEqualTo(List.of("lost+found", "temp", "cache"));
+    }
   }
 
   @Nested
@@ -110,20 +130,25 @@ public class SystemPropertiesTest {
         "zeebe.actor.idle.maxSpins=2000",
         "zeebe.actor.idle.maxYields=1000",
         "zeebe.actor.idle.minParkPeriod=20ms",
-        "zeebe.actor.idle.maxParkPeriod=200ms"
+        "zeebe.actor.idle.maxParkPeriod=200ms",
+        "zeebe.restore.validateConfig=false",
+        "zeebe.restore.ignoreFilesInTarget=backup,old-data"
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
     final ActorClockControlledProperties clockCfg;
     final IdleStrategyBasedProperties idleCfg;
+    final RestoreProperties restoreCfg;
 
     WithOnlyLegacySet(
         @Autowired final BrokerBasedProperties brokerCfg,
         @Autowired final ActorClockControlledProperties clockCfg,
-        @Autowired final IdleStrategyBasedProperties idleCfg) {
+        @Autowired final IdleStrategyBasedProperties idleCfg,
+        @Autowired final RestoreProperties restoreCfg) {
       this.brokerCfg = brokerCfg;
       this.clockCfg = clockCfg;
       this.idleCfg = idleCfg;
+      this.restoreCfg = restoreCfg;
     }
 
     @Test
@@ -165,6 +190,16 @@ public class SystemPropertiesTest {
     void shouldSetActorIdleMaxParkPeriod() {
       assertThat(idleCfg.maxParkPeriod()).isEqualTo(Duration.ofMillis(200));
     }
+
+    @Test
+    void shouldSetRestoreValidateConfig() {
+      assertThat(restoreCfg.validateConfig()).isFalse();
+    }
+
+    @Test
+    void shouldSetRestoreIgnoreFilesInTarget() {
+      assertThat(restoreCfg.ignoreFilesInTarget()).isEqualTo(List.of("backup", "old-data"));
+    }
   }
 
   @Nested
@@ -179,6 +214,8 @@ public class SystemPropertiesTest {
         "camunda.system.actor.idle.max-yields=500",
         "camunda.system.actor.idle.min-park-period=10ms",
         "camunda.system.actor.idle.max-park-period=100ms",
+        "camunda.system.restore.validate-config=false",
+        "camunda.system.restore.ignore-files-in-target=new-ignore",
         // legacy properties (should be ignored when new ones are present)
         "zeebe.broker.threads.cpuThreadCount=10",
         "zeebe.broker.threads.ioThreadCount=20",
@@ -187,20 +224,25 @@ public class SystemPropertiesTest {
         "zeebe.actor.idle.maxSpins=5000",
         "zeebe.actor.idle.maxYields=2500",
         "zeebe.actor.idle.minParkPeriod=50ms",
-        "zeebe.actor.idle.maxParkPeriod=500ms"
+        "zeebe.actor.idle.maxParkPeriod=500ms",
+        "zeebe.restore.validateConfig=true",
+        "zeebe.restore.ignoreFilesInTarget=legacy-ignore"
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
     final ActorClockControlledProperties clockCfg;
     final IdleStrategyBasedProperties idleCfg;
+    final RestoreProperties restoreCfg;
 
     WithNewAndLegacySet(
         @Autowired final BrokerBasedProperties brokerCfg,
         @Autowired final ActorClockControlledProperties clockCfg,
-        @Autowired final IdleStrategyBasedProperties idleCfg) {
+        @Autowired final IdleStrategyBasedProperties idleCfg,
+        @Autowired final RestoreProperties restoreCfg) {
       this.brokerCfg = brokerCfg;
       this.clockCfg = clockCfg;
       this.idleCfg = idleCfg;
+      this.restoreCfg = restoreCfg;
     }
 
     @Test
@@ -241,6 +283,16 @@ public class SystemPropertiesTest {
     @Test
     void shouldSetActorIdleMaxParkPeriodFromNew() {
       assertThat(idleCfg.maxParkPeriod()).isEqualTo(Duration.ofMillis(100));
+    }
+
+    @Test
+    void shouldSetRestoreValidateConfigFromNew() {
+      assertThat(restoreCfg.validateConfig()).isFalse();
+    }
+
+    @Test
+    void shouldSetRestoreIgnoreFilesInTargetFromNew() {
+      assertThat(restoreCfg.ignoreFilesInTarget()).isEqualTo(List.of("new-ignore"));
     }
   }
 }
