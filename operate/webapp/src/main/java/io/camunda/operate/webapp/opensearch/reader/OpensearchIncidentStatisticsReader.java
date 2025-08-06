@@ -165,7 +165,8 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
         withTenantCheck(
             and(
                 term(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
-                term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION)));
+                term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+                createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE)));
 
     searchAggBuckets(query)
         .forEach(

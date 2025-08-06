@@ -181,7 +181,8 @@ public class IncidentStatisticsReader extends AbstractReader
     final QueryBuilder runningInstanceQuery =
         joinWithAnd(
             termQuery(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
-            termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
+            termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+            createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
     final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
     try {
       final SearchRequest searchRequest =
