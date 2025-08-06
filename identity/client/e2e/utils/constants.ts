@@ -6,6 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export const URL_API_PATTERN = /^.*\/(v2).*$/i;
-
 export const LOGIN_CREDENTIALS = { username: "demo", password: "demo" };

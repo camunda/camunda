@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-// Any changes made here should be reflected in the corresponding file for the E2E tests in e2e>utils>paths.ts
 export const Paths = {
   login() {
     return "/login";
