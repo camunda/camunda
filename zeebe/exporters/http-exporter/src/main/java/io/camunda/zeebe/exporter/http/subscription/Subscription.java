@@ -39,9 +39,8 @@ public class Subscription {
   public Long exportRecord(final Record<?> record) {
     final var recordJson = toJson(record);
     final var recordPosition = record.getPosition();
-    final var batchEntry = new BatchEntry(recordJson, recordPosition);
     if (matcher.matches(record, recordJson)) {
-      return batchRecord(batchEntry);
+      return batchRecord(new BatchEntry(recordJson, recordPosition));
     }
     return null;
   }

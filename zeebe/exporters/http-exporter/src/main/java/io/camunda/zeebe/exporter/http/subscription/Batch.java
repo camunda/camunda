@@ -60,10 +60,11 @@ public class Batch {
     if (entries.isEmpty()) {
       throw new IllegalStateException("Flushing empty batch not allowed.");
     }
+    final var logPosition = lastLogPosition;
     entries.clear();
-    final var lastLogPosition = lastTimeFlushed;
     lastTimeFlushed = System.currentTimeMillis();
-    return lastLogPosition;
+    lastLogPosition = -1;
+    return logPosition;
   }
 
   public int getSize() {

@@ -88,7 +88,12 @@ public class HttpExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    updateExportPosition(subscription.exportRecord(record));
+    try {
+      updateExportPosition(subscription.exportRecord(record));
+    } catch (final Exception e) {
+      log.warn("Failed to export record: {}", record.getPosition(), e);
+      throw new RuntimeException("Failed to export record: " + record, e);
+    }
   }
 
   @Override
