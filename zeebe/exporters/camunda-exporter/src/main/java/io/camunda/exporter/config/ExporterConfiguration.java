@@ -176,6 +176,15 @@ public class ExporterConfiguration {
     private int maxDelayBetweenRuns = 60000;
     private RetentionConfiguration retention = new RetentionConfiguration();
     private boolean trackArchivalMetricsForProcessInstance = true;
+    private boolean archiverEnabled = true;
+
+    public boolean isArchiverEnabled() {
+      return archiverEnabled;
+    }
+
+    public void setArchiverEnabled(final boolean archiverEnabled) {
+      this.archiverEnabled = archiverEnabled;
+    }
 
     public String getElsRolloverDateFormat() {
       return elsRolloverDateFormat;
