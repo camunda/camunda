@@ -427,7 +427,11 @@ public class MultiDbConfiguratorTest {
     /* Camunda Config Assertions */
 
     assertProperty(testSimpleCamundaApplication, "camunda.database.indexPrefix", EXPECTED_PREFIX);
+
     assertProperty(testSimpleCamundaApplication, "camunda.database.url", EXPECTED_URL);
+    assertProperty(
+        testSimpleCamundaApplication, "camunda.data.secondary-storage.url", EXPECTED_URL);
+
     assertProperty(testSimpleCamundaApplication, "camunda.database.username", EXPECTED_USER);
     assertProperty(testSimpleCamundaApplication, "camunda.database.password", EXPECTED_PW);
 
