@@ -86,8 +86,7 @@ jobs:
             property "vault_.+" is not defined in object type
             object type "{}" cannot be filtered by object filtering `.*` since it has no object element
           use_shellcheck: true
-      - shell: bash
-        run: |
+      - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
           ./conftest test --rego-version v0 -o github --policy .github .github/workflows/*.y*ml
       - name: Observe build status

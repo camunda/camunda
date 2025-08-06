@@ -65,15 +65,14 @@ warn[msg] {
         [concat(", ", get_jobs_with_usesbutnosecrets(input.jobs))])
 }
 
-warn[msg] {
-    # TODO
+deny[msg] {
+    # This rule prevents not having a default shell specified for GHA workflows
+    # which can lead to surprising behavior when implicitly using 'sh' instead of 'bash'
 
-    count(get_jobsteps_with_runsbutnoshell(input.jobs)) > 0
+    not input.defaults.run.shell
 
-    msg := sprintf("There are GitHub Actions job steps running scripts but not specifying which shell to use - please put 'shell: bash' explicitly to avoid surprises! Affected job IDs: %s",
-        [concat(", ", get_jobsteps_with_runsbutnoshell(input.jobs))])
+    msg := "This GitHub Actions workflow does not specify a default shell (recommended: 'bash') for run steps which can lead to surprising behaviors and errors."
 }
-
 
 
 ###########################   RULE HELPERS   ##################################
@@ -123,19 +122,5 @@ get_jobs_with_usesbutnosecrets(jobInput) = jobs_with_usesbutnosecrets {
         # check jobs that invoke other reusable workflows but don't specify "secrets: inherit"
         job.uses
         not job.secrets
-    }
-}
-
-get_jobsteps_with_runsbutnoshell(jobInput) = get_jobsteps_with_runsbutnoshell {
-    get_jobsteps_with_runsbutnoshell := { job_id |
-        job := jobInput[job_id]
-
-        steps_with_runsbutnoshell := { step |
-            step := job.steps[_]
-
-            step.run
-            not step.shell
-        }
-        count(steps_with_runsbutnoshell) > 0
     }
 }
