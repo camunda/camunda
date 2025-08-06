@@ -108,6 +108,7 @@ jobs:
     steps:
       - name: Determine fetch depth for checkout
         id: depth
+        shell: bash
         run: |
           echo "depth=$((${{ github.event.pull_request.commits }} + 1))" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
@@ -120,7 +121,9 @@ jobs:
           helpURL: https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#commit-message-guidelines
       - name: Post failure hint
         if: failure()
-        run: echo "::error::Found commit message guideline violations! Check https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#commit-message-guidelines and in exceptional cases, document the reasoning and add the ci:ignore-commitlint PR label."
+        shell: bash
+        run: |
+          echo "::error::Found commit message guideline violations! Check https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#commit-message-guidelines and in exceptional cases, document the reasoning and add the ci:ignore-commitlint PR label."
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -145,7 +148,8 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - run: ./mvnw spotless:check
+      - shell: bash
+        run: ./mvnw spotless:check
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -172,7 +176,8 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # Not running Maven Spotless here since it is checked in a dedicated job
-      - run: ./mvnw -T1C -B -D skipTests -Dspotless.check.skip=true -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
+      - shell: bash
+        run: ./mvnw -T1C -B -D skipTests -Dspotless.check.skip=true -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -240,7 +245,8 @@ jobs:
     timeout-minutes: 2
     permissions: { }
     steps:
-      - run: echo "This job is only needed for output declarations"
+      - shell: bash
+        run: echo "This job is only needed for output declarations"
 
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-unit-tests
   general-unit-tests:
@@ -263,9 +269,11 @@ jobs:
         with:
           maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
+        shell: bash
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # shellcheck disabled because the list of modules needs to contain single quotes
       - name: Setup General UT Modules
+        shell: bash
         run: |
           bash .ci/scripts/ci/setup-general-ut.sh "${{ needs.setup-unit-tests.outputs.GENERAL_UT_DO_NOT_SKIP_MODULES}}" "${{ needs.setup-unit-tests.outputs.GENERAL_UT_EXTRA_SKIP_MODULES}}"
       - name: Maven Test Build
@@ -355,6 +363,7 @@ jobs:
         with:
           maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
+        shell: bash
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Run Test (Zeebe)
         shell: bash
@@ -444,6 +453,7 @@ jobs:
         with:
           maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
+        shell: bash
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run specific integration tests with ES service container
       #
@@ -543,6 +553,7 @@ jobs:
         with:
           maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
+        shell: bash
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run specific integration tests with OS service container
       #
@@ -609,6 +620,7 @@ jobs:
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
+        shell: bash
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run specific integration tests with H2 inmemory database
       #
@@ -618,6 +630,7 @@ jobs:
       - name: Run integration test with InMemory H2
         shell: bash
         timeout-minutes: 10
+        shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=3
@@ -673,6 +686,7 @@ jobs:
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
+        shell: bash
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run integration tests with RDBMS database
       - name: Maven Test Build
@@ -841,6 +855,7 @@ jobs:
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Create build output log file
+        shell: bash
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
         shell: bash
@@ -939,6 +954,7 @@ jobs:
       # With this cleanup, at the time of measuring, we go from a 100% disk usage (73/74 GB) to a
       # 94% (68/73 GB), on the runner ubuntu-latest. This allows the workflow to go through.
       - name: Cleanup docker images
+        shell: bash
         run: docker system prune -af
 
       - name: Verify Docker image
@@ -952,6 +968,7 @@ jobs:
           goldenfile: camunda-docker-labels.golden.json
           dockerfile: camunda.Dockerfile
       - name: Create build output log file
+        shell: bash
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Run Docker tests
         shell: bash
@@ -1003,16 +1020,22 @@ jobs:
         with:
           directory: identity/client
       - name: Install dependencies
+        shell: bash
         run: yarn install --frozen-lockfile
       - name: Check formatting
+        shell: bash
         run: yarn test:format
       - name: Lint code
+        shell: bash
         run: yarn test:lint
       - name: Unit & Integration tests
+        shell: bash
         run: yarn test:unit
       - name: Check licenses
+        shell: bash
         run: yarn test:licenses
       - name: Build frontend
+        shell: bash
         run: yarn build
       - name: Observe build status
         if: always()
@@ -1087,6 +1110,7 @@ jobs:
       - id: pr-body
         name: Fetch latest PR body
         if: github.event_name == 'pull_request'
+        shell: bash
         run: |
           {
             echo 'result<<EOF'
@@ -1195,7 +1219,8 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - run: |
+      - shell: bash
+        run: |
           # shellcheck disable=SC2242
           exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
@@ -1247,7 +1272,8 @@ jobs:
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
-      - run: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild compile generate-sources source:jar javadoc:jar deploy
+      - shell: bash
+        run: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild compile generate-sources source:jar javadoc:jar deploy
       - name: Observe build status
         if: always()
         continue-on-error: true
