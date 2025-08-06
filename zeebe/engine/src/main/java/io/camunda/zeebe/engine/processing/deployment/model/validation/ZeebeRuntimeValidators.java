@@ -207,14 +207,8 @@ public final class ZeebeRuntimeValidators {
             .hasValidExpression(
                 ZeebeAdHoc::getActiveElementsCollection,
                 expression -> expression.isOptional().isNonStatic())
+            .hasValidExpression(
+                ZeebeAdHoc::getOutputElement, expression -> expression.isNonStatic().isOptional())
             .build(expressionLanguage));
-    // TODO - what is a valid outputElement expression?
-    //   isNonStatic() is a placeholder
-    //  when is this class called?
-    ZeebeExpressionValidator.verifyThat(ZeebeAdHoc.class)
-        .hasValidExpression(
-            ZeebeAdHoc::getOutputElement,
-            expression -> expression.isOptional().isNonStatic())
-        .build(expressionLanguage));
   }
 }
