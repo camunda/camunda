@@ -25,8 +25,8 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
   private static final StringValue AD_HOC_SUB_PROCESS_INSTANCE_KEY =
       new StringValue("adHocSubProcessInstanceKey");
   private static final StringValue ACTIVATE_ELEMENTS = new StringValue("activateElements");
-  private static final StringValue IS_CANCEL_REMAINING_INSTANCES =
-      new StringValue("isCancelRemainingInstances");
+  private static final StringValue CANCEL_REMAINING_INSTANCES =
+      new StringValue("cancelRemainingInstances");
   private static final StringValue TENANT_ID = new StringValue("tenantId");
   private static final StringValue COMPLETION_CONDITION_FULFILLED =
       new StringValue("completionConditionFulfilled");
@@ -36,7 +36,7 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
   private final ArrayProperty<AdHocSubProcessActivateElementInstruction> activateElements =
       new ArrayProperty<>(ACTIVATE_ELEMENTS, AdHocSubProcessActivateElementInstruction::new);
   private final BooleanProperty cancelRemainingInstances =
-      new BooleanProperty(IS_CANCEL_REMAINING_INSTANCES, false);
+      new BooleanProperty(CANCEL_REMAINING_INSTANCES, false);
   private final StringProperty tenantId =
       new StringProperty(TENANT_ID, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final BooleanProperty completionConditionFulfilledProp =
