@@ -338,6 +338,7 @@ public class SchemaManager {
     final var settings = new IndexConfiguration();
     settings.setNumberOfShards(templateShards);
     settings.setNumberOfReplicas(templateReplicas);
+    settings.setTemplatePriority(config.index().getTemplatePriority());
 
     return settings;
   }

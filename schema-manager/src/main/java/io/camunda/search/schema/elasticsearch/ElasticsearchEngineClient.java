@@ -7,6 +7,8 @@
  */
 package io.camunda.search.schema.elasticsearch;
 
+import static java.util.Optional.ofNullable;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.AcknowledgedResponse;
 import co.elastic.clients.elasticsearch._types.Conflicts;
@@ -468,6 +470,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                   t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
                       .mappings(templateFields.mappings())
                       .settings(templateFields.settings()))
+          .priority(ofNullable(settings.getTemplatePriority()).map(Long::valueOf).orElse(null))
           .composedOf(indexTemplateDescriptor.getComposedOf())
           .create(create)
           .build();
@@ -504,6 +507,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                   t.settings(updatedTemplateSettings)
                       .mappings(currentIndexTemplateState.mappings())
                       .aliases(currentIndexTemplateState.aliases()))
+          .priority(
+              ofNullable(currentSettings.getTemplatePriority()).map(Long::valueOf).orElse(null))
           .build();
 
     } catch (final IOException e) {

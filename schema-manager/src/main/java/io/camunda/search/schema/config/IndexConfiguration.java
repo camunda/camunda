@@ -16,6 +16,7 @@ public class IndexConfiguration {
 
   private Integer numberOfShards = 1;
   private Integer numberOfReplicas = 0;
+  private Integer templatePriority;
 
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
@@ -64,6 +65,14 @@ public class IndexConfiguration {
     this.shouldWaitForImporters = shouldWaitForImporters;
   }
 
+  public Integer getTemplatePriority() {
+    return templatePriority;
+  }
+
+  public void setTemplatePriority(final Integer templatePriority) {
+    this.templatePriority = templatePriority;
+  }
+
   @Override
   public String toString() {
     return "IndexConfiguration{"
@@ -71,6 +80,8 @@ public class IndexConfiguration {
         + numberOfShards
         + ", numberOfReplicas="
         + numberOfReplicas
+        + ", templatePriority="
+        + templatePriority
         + ", replicasByIndexName="
         + replicasByIndexName
         + ", shardsByIndexName="
