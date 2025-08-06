@@ -15,6 +15,9 @@ public class Data {
   /** This section allows configuring a backup store. */
   private Backup backup = new Backup();
 
+  /** This section allows to configure Zeebe's secondary storage. */
+  private SecondaryStorage secondaryStorage = new SecondaryStorage();
+
   public PrimaryStorage getPrimaryStorage() {
     return primaryStorage;
   }
@@ -29,5 +32,13 @@ public class Data {
 
   public void setBackup(final Backup backup) {
     this.backup = backup;
+  }
+
+  public SecondaryStorage getSecondaryStorage() {
+    return secondaryStorage;
+  }
+
+  public void setSecondaryStorage(final SecondaryStorage secondaryStorage) {
+    this.secondaryStorage = secondaryStorage;
   }
 }
