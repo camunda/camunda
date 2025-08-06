@@ -264,5 +264,11 @@
       <groupId>io.camunda.migration</groupId>
       <artifactId>identity-migration</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+
   </dependencies>
 </project>
