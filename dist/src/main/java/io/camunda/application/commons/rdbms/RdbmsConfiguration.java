@@ -8,6 +8,7 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
@@ -63,7 +64,6 @@ import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
-import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.context.annotation.Bean;
@@ -71,7 +71,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnSecondaryStorageType(DatabaseConfig.RDBMS)
+@ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
 @Import(MyBatisConfiguration.class)
 public class RdbmsConfiguration {
 

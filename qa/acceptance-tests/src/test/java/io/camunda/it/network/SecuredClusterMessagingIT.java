@@ -43,7 +43,7 @@ import org.testcontainers.utility.MountableFile;
 @Testcontainers
 final class SecuredClusteredMessagingIT {
   private static final SelfSignedCertificate CERTIFICATE = newCertificate();
-
+  private static final String DB_TYPE_ELASTICSEARCH = "elasticsearch";
   private static final String OPERATE_IMAGE_NAME =
       Optional.ofNullable(System.getenv("OPERATE_TEST_DOCKER_IMAGE"))
           .orElse("camunda/operate:current-test");
@@ -65,6 +65,7 @@ final class SecuredClusteredMessagingIT {
           .withStartupTimeout(Duration.ofMinutes(5));
 
   private final String testPrefix = UUID.randomUUID().toString();
+  private final String esUrl = "http://elastic:9200";
 
   @Container
   private final ZeebeContainer zeebe =
@@ -79,13 +80,24 @@ final class SecuredClusteredMessagingIT {
               "/tmp/certificate.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.privateKey().toPath(), 0777), "/tmp/key.pem")
-          .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
-          .withEnv("CAMUNDA_DATABASE_URL", "http://elastic:9200")
+          // unified configuration: type
+          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
+          .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
+          .withEnv("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH)
+          .withEnv("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH)
+          // unified configuration: url
+          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_DATABASE_URL", esUrl)
+          .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
+          // ---
           .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testPrefix)
           .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", "zeebe")
           .withEnv(
               "ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME", "io.camunda.exporter.CamundaExporter")
-          .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_CONNECT_URL", "http://elastic:9200")
+          .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_CONNECT_URL", esUrl)
           .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_CONNECT_INDEXPREFIX", testPrefix)
           .withEnv(UNPROTECTED_API_ENV_VAR, "true")
           .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
@@ -110,12 +122,21 @@ final class SecuredClusteredMessagingIT {
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.privateKey().toPath(), 0777), "/tmp/key.pem")
           .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX", testPrefix)
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", "http://elastic:9200")
-          .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
-          .withEnv("CAMUNDA_DATABASE_URL", "http://elastic:9200")
+          // Unified Configuration: db type
+          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
+          .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
+          .withEnv("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH)
+          .withEnv("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH)
+          // Unified Configuration: db url
+          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_DATABASE_URL", esUrl)
+          .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
+          // ---
           .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testPrefix)
           .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_INDEXPREFIX", testPrefix)
-          .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", "http://elastic:9200")
           .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
           .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
           .withExposedPorts(8080, 9600, 26502)
@@ -144,12 +165,21 @@ final class SecuredClusteredMessagingIT {
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.privateKey().toPath(), 0777), "/tmp/key.pem")
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX", testPrefix)
-          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", "http://elastic:9200")
-          .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
-          .withEnv("CAMUNDA_DATABASE_URL", "http://elastic:9200")
+          // Unified Configuration: db type
+          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
+          .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
+          .withEnv("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH)
+          .withEnv("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH)
+          // Unified Configuration: db url
+          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_DATABASE_URL", esUrl)
+          .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
+          // ---
           .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testPrefix)
           .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_INDEXPREFIX", testPrefix)
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", "http://elastic:9200")
           .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
           .withEnv(
               "CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", "http://" + zeebe.getInternalHost() + ":8080")
