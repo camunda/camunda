@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -67,7 +68,7 @@ public final class StringValue extends BaseValue {
   }
 
   public void wrap(final String anotherString) {
-    wrap(anotherString);
+    wrap(anotherString.getBytes(StandardCharsets.UTF_8));
   }
 
   public int getLength() {
