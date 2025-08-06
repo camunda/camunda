@@ -8,9 +8,12 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -214,10 +217,24 @@ public class UnifiedConfigurationHelper {
       case "Boolean" -> (T) Boolean.valueOf(strValue);
       case "Duration" -> (T) DurationStyle.detectAndParse(strValue);
       case "Long" -> (T) Long.valueOf(strValue);
+      case "List" -> (T) parseList(strValue);
       case "DataSize" -> (T) DataSize.parse(strValue);
       case "GcsBackupStoreAuth" -> (T) GcsBackupStoreAuth.valueOf(strValue.toUpperCase());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
+  }
+
+  // FIXME: move to type ref
+  private static <T> Object parseList(final String strValue) {
+    if (strValue == null || strValue.trim().isEmpty()) {
+      return new ArrayList<>();
+    }
+
+    // Simple comma-split (you might want more sophisticated parsing for quoted strings)
+    return Arrays.stream(strValue.split(","))
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .collect(Collectors.toList());
   }
 
   /* Setters used by tests to inject the mock objects */
