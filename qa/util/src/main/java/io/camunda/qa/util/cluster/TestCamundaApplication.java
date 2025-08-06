@@ -70,6 +70,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     super(
         // Unified Configuration classes
         UnifiedConfiguration.class,
+        UnifiedConfigurationHelper.class,
         TasklistPropertiesOverride.class,
         OperatePropertiesOverride.class,
         UnifiedConfigurationHelper.class,

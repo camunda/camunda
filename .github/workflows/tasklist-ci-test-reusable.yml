@@ -109,8 +109,15 @@ jobs:
             -P ${{ matrix.testProfile }},skipFrontendBuild \
             -B --fail-at-end \
             -Dfailsafe.rerunFailingTestsCount=2 \
+            -Dcamunda.data.secondary-storage.type=${{ matrix.database }} \
             -Dcamunda.tasklist.database=${{ matrix.database }} \
+            -Dcamunda.operate.database=${{ matrix.database }} \
+            -Dcamunda.data.secondary-storage.elasticsearch.url=${{ matrix.url }} \
             -Dcamunda.database.url=${{ matrix.url }} \
+            -Dcamunda.operate.elasticsearch.url=${{ matrix.url }} \
+            -Dcamunda.tasklist.zeebeElasticsearch.url=${{ matrix.url }} \
+            -Dcamunda.tasklist.elasticsearch.url=${{ matrix.url }} \
+            -Dcamunda.operate.zeebeElasticsearch.url=${{ matrix.url }} \
             -Dzeebe.currentVersion.docker.tag=${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }} \
             -Dzeebe.currentVersion.docker.repo=${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
 

@@ -8,6 +8,10 @@
 package io.camunda.configuration;
 
 import java.util.Collection;
+import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
+import io.camunda.configuration.RocksDb.AccessMetricsKind;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import java.io.File;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -174,7 +178,7 @@ public class UnifiedConfigurationHelper {
 
       final String errorMessage =
           String.format(
-              "Ambiguous configuration. The value %s=%s does not match the value(s) conflicts with the values '%s' from the legacy properties %s",
+              "Ambiguous configuration. The value %s=%s conflicts with the values '%s' from the legacy properties %s",
               newProperty, newValue, legacyValue, String.join(", ", legacyProperties));
       throw new UnifiedConfigurationException(errorMessage);
     }
