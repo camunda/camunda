@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { FC, useState, useMemo, useCallback } from "react";
 import { TabsVertical, Tab, TabPanels } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
@@ -46,18 +46,25 @@ const List: FC = () => {
     filter: { resourceType: activeTab },
   });
 
-  const sortPermissionTypesAlphabetically = (authorizationData: typeof data) =>
-    authorizationData
-      ? {
-          ...authorizationData,
-          items: authorizationData.items?.map((item) => ({
-            ...item,
-            permissionTypes: [...item.permissionTypes].sort(),
-          })),
-        }
-      : authorizationData;
+  const sortPermissionTypesAlphabetically = useCallback(
+    (authorizationData: typeof data) => {
+      return authorizationData
+        ? {
+            ...authorizationData,
+            items: authorizationData.items?.map((item) => ({
+              ...item,
+              permissionTypes: [...item.permissionTypes].sort(),
+            })),
+          }
+        : authorizationData;
+    },
+    [],
+  );
 
-  const transformedData = sortPermissionTypesAlphabetically(data);
+  const transformedData = useMemo(
+    () => sortPermissionTypesAlphabetically(data),
+    [data, sortPermissionTypesAlphabetically],
+  );
 
   return (
     <Page>
