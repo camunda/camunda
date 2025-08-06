@@ -139,7 +139,3 @@ camunda:
       url: http://localhost:9200
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record
-logging:
-  level:
-    io:
-      camunda: DEBUG
