@@ -54,8 +54,8 @@ runs:
                 return;
               }
 
-              // Split by newlines and process each test
-              const testNames = flakyTestsString.split('\n')
+              // Split by newlines and spaces to process each test
+              const testNames = flakyTestsString.split(/\s+/)
                 .map(test => test.trim())
                 .filter(test => test !== '');
 
@@ -78,7 +78,17 @@ runs:
             };
           }
 
-          // Helper function to parse individual test names
+          // Helper functions to parse individual test names
+          // Removes trailing [n] from method names
+            function normalizeMethodName(methodName) {
+              const paramPattern = /^(.*)\[\d+\]$/;
+              const match = methodName.match(paramPattern);
+              if (match) {
+              return match[1]; // Strips [n]
+            }
+              return methodName;
+            }
+
           function parseTestName(testName) {
             console.log(`Parsing test name: "${testName}"`);
 
@@ -110,7 +120,7 @@ runs:
               return {
                 packageName: packageName,
                 className: className,
-                methodName: methodName
+                methodName: normalizeMethodName(methodName)
               };
             }
 
@@ -124,7 +134,7 @@ runs:
               return {
                 packageName: packageName,
                 className: '',
-                methodName: remainder
+                methodName: normalizeMethodName(remainder)
               };
             }
 
@@ -133,7 +143,7 @@ runs:
             return {
               packageName: 'unknown',
               className: '',
-              methodName: trimmedName
+              methodName: normalizeMethodName(trimmedName)
             };
           }
 
