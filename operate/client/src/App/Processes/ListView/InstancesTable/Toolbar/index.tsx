@@ -63,10 +63,10 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
     const runningInstancesCount =
       processInstancesSelectionStore.checkedRunningProcessInstanceIds.length;
 
-    const operationMessage = `About to ${ACTION_NAMES[modalMode]} ${pluralSuffix(
-      runningInstancesCount,
+    const operationMessage = `${pluralSuffix(
+      selectedInstancesCount,
       'Instance',
-    )}.`;
+    )} selected for ${ACTION_NAMES[modalMode]} operation.`;
 
     const messages = [operationMessage];
 
