@@ -89,7 +89,7 @@ public class UsageMetricsTest {
     assignUserToTenant(adminClient, ADMIN, TENANT_B);
     assignUserToTenant(adminClient, ADMIN, TENANT_C);
 
-    // Create PI & wait for metrics to be exported
+    // Create first batch of metrics
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
     deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_A);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
@@ -108,11 +108,12 @@ public class UsageMetricsTest {
     exportedTime = OffsetDateTime.now();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
-    // Create PI for TENANT_B
+    // Create second batch of metrics
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
     deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_B);
     deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_C);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_B);
+    startProcessInstance(adminClient, PROCESS_ID_2, TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID_2, TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID_2, TENANT_C);
     reassignTask(adminClient, TENANT_A); // to have different assignees
@@ -133,7 +134,7 @@ public class UsageMetricsTest {
         NOW.minusDays(1),
         NOW.plusDays(1),
         res -> {
-          assertThat(res.getProcessInstances()).isEqualTo(5);
+          assertThat(res.getProcessInstances()).isEqualTo(6);
           assertThat(res.getDecisionInstances()).isEqualTo(3);
           assertThat(res.getAssignees()).isEqualTo(2); // bar + bar2
           assertThat(res.getActiveTenants()).isEqualTo(3);
@@ -150,7 +151,7 @@ public class UsageMetricsTest {
         adminClient.newUsageMetricsRequest(now.minusDays(1), now.plusDays(1)).send().join();
 
     // then
-    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(5, 3, 2, 3, Map.of()));
+    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(6, 3, 2, 3, Map.of()));
   }
 
   @Test
@@ -170,7 +171,7 @@ public class UsageMetricsTest {
     assertThat(actual)
         .isEqualTo(
             new UsageMetricsStatisticsImpl(
-                5,
+                6,
                 3,
                 2,
                 3,
@@ -178,7 +179,7 @@ public class UsageMetricsTest {
                     TENANT_A,
                     new UsageMetricsStatisticsItemImpl(2, 2, 2), // bar + bar2
                     TENANT_B,
-                    new UsageMetricsStatisticsItemImpl(2, 1, 1),
+                    new UsageMetricsStatisticsItemImpl(3, 1, 1),
                     TENANT_C,
                     new UsageMetricsStatisticsItemImpl(1, 0, 1))));
   }
@@ -221,7 +222,7 @@ public class UsageMetricsTest {
     assertThat(actual)
         .isEqualTo(
             new UsageMetricsStatisticsImpl(
-                2, 1, 1, 1, Map.of(TENANT_B, new UsageMetricsStatisticsItemImpl(2, 1, 1))));
+                3, 1, 1, 1, Map.of(TENANT_B, new UsageMetricsStatisticsItemImpl(3, 1, 1))));
   }
 
   private static DeploymentEvent deployResource(
@@ -275,7 +276,7 @@ public class UsageMetricsTest {
         .untilAsserted(
             () -> {
               final var result = camundaClient.newUserTaskSearchRequest().send().join();
-              assertThat(result.items()).hasSize(3);
+              assertThat(result.items()).hasSize(4);
               userTaskKey =
                   result.items().stream()
                       .filter(ut -> ut.getTenantId().equals(tenantId))
