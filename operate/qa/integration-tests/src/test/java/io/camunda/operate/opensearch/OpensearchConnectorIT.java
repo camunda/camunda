@@ -50,7 +50,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       DatabaseInfo.class,
       OperatePropertiesOverride.class
     },
-    properties = "camunda.data.secondary-storage.type=opensearch")
+    properties = OperateProperties.PREFIX + ".database=opensearch")
 public class OpensearchConnectorIT extends OperateAbstractIT {
 
   private static final OpensearchContainer<?> OPENSEARCH_CONTAINER =

@@ -40,7 +40,6 @@ public class CamundaDockerIT {
 
   private static final String CAMUNDA_NETWORK_ALIAS = "camunda";
   private static final String ELASTICSEARCH_NETWORK_ALIAS = "elasticsearch";
-  private static final String DATABASE_TYPE = "elasticsearch";
 
   private static final String CAMUNDA_TEST_DOCKER_IMAGE =
       System.getProperty("camunda.docker.test.image", "camunda/camunda:SNAPSHOT");
@@ -122,17 +121,10 @@ public class CamundaDockerIT {
                 new OneShotStartupCheckStrategy().withTimeout(Duration.ofSeconds(180)))
             .withNetwork(Network.SHARED)
             .withNetworkAliases(CAMUNDA_NETWORK_ALIAS)
-            // type
-            .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DATABASE_TYPE)
-            // url
-            .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
             .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticsearchUrl())
             .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", elasticsearchUrl())
-            .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl())
-            .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
-            .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
-            // ---
-            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", "some-prefix");
+            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", "some-prefix")
+            .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl());
 
     // when - then the container should start without errors
     startContainer(createContainer(() -> prefixMigrationContainer));
@@ -179,22 +171,14 @@ public class CamundaDockerIT {
             "io.camunda.zeebe.exporter.ElasticsearchExporter")
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", elasticsearchUrl())
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
-        .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", gatewayAddress())
-        .withEnv("CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", httpUrl())
-        // Unified Configuration: db url
-        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
-        .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl())
-        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", elasticsearchUrl())
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticsearchUrl())
         .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", gatewayAddress())
+        .withEnv("CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", httpUrl())
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", elasticsearchUrl())
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
-        // Unified Configuration: db type
-        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DATABASE_TYPE)
-        .withEnv("CAMUNDA_DATABASE_TYPE", DATABASE_TYPE)
-        .withEnv("CAMUNDA_OPERATE_DATABASE", DATABASE_TYPE)
-        .withEnv("CAMUNDA_TASKLIST_DATABASE", DATABASE_TYPE)
-        // ---
         .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", gatewayAddress())
+        .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl())
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
   }
 

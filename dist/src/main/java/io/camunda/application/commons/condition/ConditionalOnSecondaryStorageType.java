@@ -7,21 +7,22 @@
  */
 package io.camunda.application.commons.condition;
 
-import static io.camunda.application.commons.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
-
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType.OnSecondaryStorageTypeCondition;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.application.commons.utils.DatabaseTypeUtils;
+import io.camunda.search.connect.configuration.DatabaseConfig;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.type.AnnotatedTypeMetadata;
+import org.springframework.util.StringUtils;
 
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
@@ -29,34 +30,32 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 @Conditional(OnSecondaryStorageTypeCondition.class)
 public @interface ConditionalOnSecondaryStorageType {
 
-  SecondaryStorageType[] value();
+  String[] value();
 
   class OnSecondaryStorageTypeCondition implements Condition {
 
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final var env = context.getEnvironment();
-      var strType = env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE);
-      if (strType == null) {
-        // TODO: Once we clear the legacy properties from the test envs we have, remove the case
-        //  that uses  camunda.database.type
-        strType =
-            Optional.ofNullable(env.getProperty("camunda.database.type")).orElse("elasticsearch");
+      final var configuredType = env.getProperty(DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE);
+
+      final var type =
+          Optional.ofNullable(configuredType)
+              .filter(StringUtils::hasText)
+              .orElse(DatabaseConfig.ELASTICSEARCH);
+
+      if (metadata.isAnnotated(ConditionalOnSecondaryStorageType.class.getName())) {
+        final var value =
+            Objects.requireNonNull(
+                    metadata.getAnnotationAttributes(
+                        ConditionalOnSecondaryStorageType.class.getName()))
+                .get("value");
+        if (value instanceof final String[] acceptedTypes) {
+          return Arrays.stream(acceptedTypes)
+              .map(String::toLowerCase)
+              .anyMatch(type.toLowerCase()::equals);
+        }
       }
-
-      final var type = SecondaryStorageType.valueOf(strType.toLowerCase());
-
-      final var attributes =
-          metadata.getAnnotationAttributes(ConditionalOnSecondaryStorageType.class.getName());
-      if (attributes == null) {
-        return false;
-      }
-
-      final var value = attributes.get("value");
-      if (value instanceof SecondaryStorageType[] acceptedTypes) {
-        return Arrays.asList(acceptedTypes).contains(type);
-      }
-
       return false;
     }
   }

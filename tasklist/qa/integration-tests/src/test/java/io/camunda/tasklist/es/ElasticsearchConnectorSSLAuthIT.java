@@ -97,25 +97,14 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
           String.format(
               "https://%s:%d/", elasticsearch.getHost(), elasticsearch.getFirstMappedPort());
       TestPropertyValues.of(
-              // DB url
-              "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
-              "camunda.database.url=" + elsUrl,
-              "camunda.operate.elasticsearch.url=" + elsUrl,
-              "camunda.operate.zeebeElasticsearch.url=" + elsUrl,
               "camunda.tasklist.elasticsearch.url=" + elsUrl,
-              "camunda.tasklist.zeebeElasticsearch.url=" + elsUrl,
-              // DB type
-              "camunda.data.secondary-storage.type=elasticsearch",
-              "camunda.database.type=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
-              "camunda.operate.database=elasticsearch",
-              //
               "camunda.tasklist.elasticsearch.username=elastic",
               "camunda.tasklist.elasticsearch.password=elastic",
               "camunda.tasklist.elasticsearch.clusterName=docker-cluster",
               // "camunda.tasklist.elasticsearch.ssl.certificatePath="+certDir+"/elastic-stack-ca.p12",
               // "camunda.tasklist.elasticsearch.ssl.selfSigned=true",
               // "camunda.tasklist.elasticsearch.ssl.verifyHostname=true",
+              "camunda.tasklist.zeebeElasticsearch.url=" + elsUrl,
               "camunda.tasklist.zeebeElasticsearch.username=elastic",
               "camunda.tasklist.zeebeElasticsearch.password=elastic",
               // "camunda.tasklist.zeebeElasticsearch.ssl.certificatePath="+certDir+"/elastic-stack-ca.p12",

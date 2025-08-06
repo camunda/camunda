@@ -27,7 +27,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       "spring.liquibase.enabled=false",
-      "camunda.data.secondary-storage.type=rdbms",
+      "camunda.database.type=rdbms",
       "camunda.database.index-prefix=C8_"
     })
 public class TablePrefixIT {

@@ -108,12 +108,7 @@ services:
     environment:
       - SERVER_PORT=8080
       - LOGGING_LEVEL_IO_CAMUNDA_OPERATE=INFO
-      # Unified configuration and compatibility properties for DB type
-      - CAMUNDA_DATA_SECONDARY_STORAGE_TYPE=opensearch
       - CAMUNDA_OPERATE_DATABASE=opensearch
-      - CAMUNDA_TASKLIST_DATABASE=opensearch
-      - CAMUNDA_DATABASE_TYPE=opensearch
-      # ---
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe-opensearch:26500
       - CAMUNDA_OPERATE_OPENSEARCH_URL=http://opensearch:9200
       - CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL=http://opensearch:9200

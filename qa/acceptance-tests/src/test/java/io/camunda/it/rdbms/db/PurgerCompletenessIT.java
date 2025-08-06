@@ -32,8 +32,7 @@ import org.springframework.test.context.TestPropertySource;
 @DataJdbcTest
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
-@TestPropertySource(
-    properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
+@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
 public class PurgerCompletenessIT {
 
   @Autowired JdbcTemplate jdbcTemplate;

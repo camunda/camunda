@@ -65,26 +65,23 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
 
   @Override
   protected Map<String, String> getDatabaseEnvironmentVariables(final String indexPrefix) {
-    return Map.ofEntries(
-        Map.entry(
-            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL",
-            "http://host.testcontainers.internal:9200"),
-        Map.entry(
-            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE",
-            ConnectionTypes.OPENSEARCH.name()),
-        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE", "1"),
-        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX", indexPrefix),
-        Map.entry(
-            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
-            "io.camunda.exporter.CamundaExporter"),
-        // Unified Config: db type + compatibility vars
-        Map.entry("CAMUNDA_DATABASE_TYPE", "opensearch"),
-        Map.entry("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "opensearch"),
-        Map.entry("CAMUNDA_OPERATE_DATABASE", "opensearch"),
-        Map.entry("CAMUNDA_TASKLIST_DATABASE", "opensearch"),
-        // ---
-        Map.entry("CAMUNDA_DATABASE_URL", "http://host.testcontainers.internal:9200"),
-        Map.entry("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix));
+    return Map.of(
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL",
+        "http://host.testcontainers.internal:9200",
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE",
+        ConnectionTypes.OPENSEARCH.name(),
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE",
+        "1",
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX",
+        indexPrefix,
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
+        "io.camunda.exporter.CamundaExporter",
+        "CAMUNDA_DATABASE_TYPE",
+        "opensearch",
+        "CAMUNDA_DATABASE_URL",
+        "http://host.testcontainers.internal:9200",
+        "CAMUNDA_DATABASE_INDEXPREFIX",
+        indexPrefix);
   }
 
   @Override

@@ -134,12 +134,12 @@ To run against local opensearch, first make sure the correct docker images are r
 
 In order to [switch](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/common/src/main/java/io/camunda/operate/conditions/DatabaseCondition.java#L14-L14) Operate to use [Opensearch implementation](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/common/src/main/java/io/camunda/operate/conditions/OpensearchCondition.java#L9-L9) the configuration for database needs to be set:
 
-`CAMUNDA_DATA_SECONDARY_STORAGE_TYPE=opensearch`. If you don't set this `elasticsearch` will be used as database.
+`CAMUNDA_OPERATE_DATABASE=opensearch`. If you don't set this `elasticsearch` will be used as database.
 
 For IDE (IntelliJ) you can use this as run configuration:
 
 ```
-camunda.data.secondary-storage.type=opensearch
+camunda.operate.database=opensearch
 camunda.operate.operationExecutor.executorEnabled=false;
 logging.io.camunda.operate=INFO
 spring.profiles.active=auth,dev,dev-data
