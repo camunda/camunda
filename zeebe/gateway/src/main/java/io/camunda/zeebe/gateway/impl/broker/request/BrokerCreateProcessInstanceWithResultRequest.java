@@ -46,6 +46,11 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceWithResultRequest setTags(final List<String> tags) {
+    requestDto.setTags(tags);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceWithResultRequest setVariables(final DirectBuffer variables) {
     requestDto.setVariables(variables);
     return this;

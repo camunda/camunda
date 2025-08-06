@@ -192,7 +192,8 @@ public final class ProcessInstanceServices
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setStartInstructionsFromRecord(request.startInstructions())
-            .setRuntimeInstructionsFromRecord(request.runtimeInstructions());
+            .setRuntimeInstructionsFromRecord(request.runtimeInstructions())
+            .setTags(request.tags());
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
@@ -210,7 +211,8 @@ public final class ProcessInstanceServices
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setInstructions(request.startInstructions())
-            .setFetchVariables(request.fetchVariables());
+            .setFetchVariables(request.fetchVariables())
+            .setTags(request.tags());
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
@@ -341,7 +343,8 @@ public final class ProcessInstanceServices
       Long operationReference,
       List<ProcessInstanceCreationStartInstruction> startInstructions,
       List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions,
-      List<String> fetchVariables) {}
+      List<String> fetchVariables,
+      List<String> tags) {}
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
 

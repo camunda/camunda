@@ -719,7 +719,8 @@ public class RequestMapper {
                               .setAfterElementId(instructionCasted.getAfterElementId());
                         })
                     .toList(),
-                request.getFetchVariables()));
+                request.getFetchVariables(),
+                request.getTags()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(

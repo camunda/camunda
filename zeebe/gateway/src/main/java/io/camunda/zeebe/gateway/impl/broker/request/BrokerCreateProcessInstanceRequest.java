@@ -52,6 +52,11 @@ public class BrokerCreateProcessInstanceRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceRequest setTags(final List<String> tags) {
+    requestDto.setTags(tags);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceRequest setStartInstructions(
       final List<GatewayOuterClass.ProcessInstanceCreationStartInstruction> startInstructionsList) {
     startInstructionsList.stream()
