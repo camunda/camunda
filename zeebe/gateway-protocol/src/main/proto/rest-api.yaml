@@ -3098,9 +3098,9 @@ paths:
       tags:
         - Role
       operationId: unassignRoleFromUser
-      summary: Unassign a user from a role
+      summary: Unassign a role from a user
       description: |
-        Unassigns a user from a role.
+        Unassigns a role from a user.
         The user will no longer inherit the authorizations associated with this role.
       parameters:
         - name: roleId
@@ -3117,7 +3117,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The user was unassigned successfully from the role.
+          description: The role was unassigned successfully from the user.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
