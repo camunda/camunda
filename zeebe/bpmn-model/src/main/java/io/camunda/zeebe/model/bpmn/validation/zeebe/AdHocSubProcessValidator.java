@@ -25,7 +25,6 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
-import jdk.internal.joptsimple.internal.Strings;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -108,9 +107,8 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
         .getChildElementsByType(ZeebeAdHoc.class)
         .forEach(
             adhoc -> {
-              final boolean outputElementEmpty = Strings.isNullOrEmpty(adhoc.getOutputElement());
-              final boolean outputCollectionEmpty =
-                  Strings.isNullOrEmpty(adhoc.getOutputCollection());
+              final boolean outputElementEmpty = nullOrEmpty(adhoc.getOutputElement());
+              final boolean outputCollectionEmpty = nullOrEmpty(adhoc.getOutputCollection());
 
               if (outputElementEmpty != outputCollectionEmpty) {
                 validationResultCollector.addError(
@@ -121,6 +119,10 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
                         ZeebeConstants.ATTRIBUTE_OUTPUT_COLLECTION));
               }
             });
+  }
+
+  private static boolean nullOrEmpty(final String str) {
+    return str == null || str.isEmpty();
   }
 
   private static boolean hasStartEvent(final Collection<FlowElement> flowElements) {
