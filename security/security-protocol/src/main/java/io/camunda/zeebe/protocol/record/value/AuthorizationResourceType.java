@@ -59,6 +59,7 @@ public enum AuthorizationResourceType {
       PermissionType.UPDATE,
       PermissionType.READ),
   USAGE_METRIC(PermissionType.READ),
+  DOCUMENT(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE),
   UNSPECIFIED();
 
   private final Set<PermissionType> supportedPermissionTypes;
