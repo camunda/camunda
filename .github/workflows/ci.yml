@@ -389,7 +389,7 @@ jobs:
         id: matrix-write
         with:
           matrix-step-name: ${{ github.job }}
-          matrix-key: ${{ matrix.component }}-${{ matrix.suiteName }}-${{ github.run_attempt }}
+          matrix-key: ${{ matrix.component }}-${{ matrix.suiteName }}
           outputs: |-
             flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
             hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
@@ -896,7 +896,7 @@ jobs:
         id: matrix-write
         with:
           matrix-step-name: ${{ github.job }}
-          matrix-key: ${{ matrix.module }} - [IT] ${{ matrix.name }} - ${{ matrix.owner }} - ${{ github.run_attempt }}
+          matrix-key: ${{ matrix.module }} - [IT] ${{ matrix.name }} - ${{ matrix.owner }}
           outputs: |-
             flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
             hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
@@ -1127,6 +1127,12 @@ jobs:
         with:
           flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data }}'
           pr-number: ${{ github.event.pull_request.number }}
+      - name: Delete matrix job generated artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            zeebe-unit-tests-*
+            integration-tests-*
 
   identity-frontend-tests:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
