@@ -13,10 +13,8 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.TenantDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}TENANT t
-    <if test="filter.memberIds != null">
-      JOIN ${prefix}TENANT_MEMBER tm ON t.TENANT_ID = tm.TENANT_ID
-      AND tm.ENTITY_TYPE = #{filter.childMemberType}
-    </if>
+    LEFT JOIN ${prefix}TENANT_MEMBER tm ON t.TENANT_ID = tm.TENANT_ID
+    AND tm.ENTITY_TYPE = #{filter.childMemberType}
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
   </select>
 
@@ -51,6 +49,16 @@
         #{memberId}
       </foreach>
       AND tm.ENTITY_TYPE = #{filter.childMemberType}
+    </if>
+    <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" open="AND (" separator=" OR " close=")">
+        <if test="values != null and !values.isEmpty()">
+          tm.ENTITY_TYPE = #{memberType} AND tm.ENTITY_ID IN
+          <foreach collection="values" item="value" open="(" separator=" , " close=")">
+            #{value}
+          </foreach>
+        </if>
+      </foreach>
     </if>
   </sql>
 

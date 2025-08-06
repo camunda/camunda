@@ -13,10 +13,8 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}ROLES r
-    <if test="filter.memberIds != null">
-      JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
-      AND rm.ENTITY_TYPE = #{filter.childMemberType}
-    </if>
+    LEFT JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
+    AND rm.ENTITY_TYPE = #{filter.childMemberType}
     <if test="filter.tenantId != null">
       JOIN ${prefix}TENANT_MEMBER tm ON r.ROLE_ID = tm.ENTITY_ID
       AND tm.ENTITY_TYPE = 'ROLE'
@@ -58,6 +56,16 @@
         #{memberId}
       </foreach>
       AND rm.ENTITY_TYPE = #{filter.childMemberType}
+    </if>
+    <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" open="AND (" separator=" OR " close=")">
+        <if test="values != null and !values.isEmpty()">
+          rm.ENTITY_TYPE = #{memberType} AND rm.ENTITY_ID IN
+          <foreach collection="values" item="value" open="(" separator=" , " close=")">
+            #{value}
+          </foreach>
+        </if>
+      </foreach>
     </if>
     <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
   </sql>
