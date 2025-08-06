@@ -168,6 +168,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>usage-metric-migration</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-db-rdbms</artifactId>
     </dependency>
@@ -843,6 +848,10 @@
               <id>process-migration</id>
               <mainClass>io.camunda.application.StandaloneProcessMigration</mainClass>
             </program>
+            <program>
+              <id>usage-metric-migration</id>
+              <mainClass>io.camunda.application.StandaloneUsageMetricMigration</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -926,6 +935,7 @@
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
             <dep>io.camunda.migration:identity-migration</dep>
             <dep>io.camunda.migration:process-migration</dep>
+            <dep>io.camunda.migration:usage-metric-migration</dep>
             <dep>io.camunda.optimize:optimize-backend</dep>
             <dep>io.camunda.optimize:optimize-webjar</dep>
           </ignoredUnusedDeclaredDependencies>

@@ -25,7 +25,7 @@ import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("process-migration")
+@Profile({"process-migration", "usage-metric-migration"})
 @ComponentScan(basePackages = "io.camunda.application.commons.migration")
 public class AsyncMigrationsRunner implements ApplicationRunner {
 
@@ -76,7 +76,7 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
       }
     }
 
-    eventPublisher.publishEvent(new ProcessMigrationFinishedEvent(migrationSucceeded));
+    eventPublisher.publishEvent(new AsyncMigrationsFinishedEvent(migrationSucceeded));
 
     if (migrationsExceptions.getSuppressed().length > 0) {
       throw migrationsExceptions;
@@ -91,11 +91,11 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
     return true;
   }
 
-  public static class ProcessMigrationFinishedEvent extends MigrationFinishedEvent {
+  public static class AsyncMigrationsFinishedEvent extends MigrationFinishedEvent {
 
     private final boolean success;
 
-    public ProcessMigrationFinishedEvent(final boolean success) {
+    public AsyncMigrationsFinishedEvent(final boolean success) {
       super(success);
       this.success = success;
     }
