@@ -10,13 +10,14 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>camunda-search</artifactId>
+    <artifactId>zeebe-parent</artifactId>
     <version>8.8.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
+    <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>camunda-search-client-util</artifactId>
-  <name>Camunda Search Client - Util</name>
+  <artifactId>camunda-spring-utils</artifactId>
+  <name>Camunda Spring Utils</name>
+  <description>Spring-specific utilities and conditional annotations for Camunda</description>
 
   <dependencies>
     <dependency>

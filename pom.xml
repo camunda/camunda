@@ -32,6 +32,7 @@
     <module>schema-manager</module>
     <module>search</module>
     <module>service</module>
+    <module>spring-utils</module>
     <module>clients/java</module>
     <module>clients/java-deprecated</module>
     <module>clients/spring-boot-starter-camunda-sdk</module>

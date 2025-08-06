@@ -7,7 +7,7 @@
  */
 package io.camunda.search.exception;
 
-import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 public class NoSecondaryStorageException extends CamundaSearchException {
 

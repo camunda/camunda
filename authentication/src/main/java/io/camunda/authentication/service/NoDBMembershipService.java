@@ -7,10 +7,10 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.search.util.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;

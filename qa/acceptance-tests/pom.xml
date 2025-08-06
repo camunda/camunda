@@ -213,7 +213,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-util</artifactId>
+      <artifactId>camunda-spring-utils</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

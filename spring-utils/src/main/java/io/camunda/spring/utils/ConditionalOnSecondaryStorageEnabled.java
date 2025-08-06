@@ -5,10 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.util;
-
-import static io.camunda.search.util.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
-import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+package io.camunda.spring.utils;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -18,24 +15,21 @@ import java.lang.annotation.Target;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
-/**
- * Conditional annotation that activates beans only when secondary storage is disabled
- * (camunda.database.type=none).
- */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
-@Conditional(ConditionalOnSecondaryStorageDisabled.NoSecondaryStorageCondition.class)
-public @interface ConditionalOnSecondaryStorageDisabled {
+@Conditional(ConditionalOnSecondaryStorageEnabled.OnSecondaryStorageEnabledCondition.class)
+public @interface ConditionalOnSecondaryStorageEnabled {
 
-  class NoSecondaryStorageCondition implements Condition {
+  class OnSecondaryStorageEnabledCondition implements Condition {
 
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-      final String dbType = context.getEnvironment().getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
-      return CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(dbType);
+      final Environment env = context.getEnvironment();
+      return DatabaseTypeUtils.isSecondaryStorageEnabled(env);
     }
   }
 }

@@ -8,7 +8,7 @@
 package io.camunda.application.initializers;
 
 import io.camunda.application.Profile;
-import io.camunda.search.util.DatabaseTypeUtils;
+import io.camunda.spring.utils.DatabaseTypeUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

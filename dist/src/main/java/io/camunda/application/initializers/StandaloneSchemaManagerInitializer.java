@@ -7,9 +7,9 @@
  */
 package io.camunda.application.initializers;
 
-import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.search.connect.configuration.ConnectConfiguration.DATABASE_TYPE_DEFAULT;
 import static io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH;
+import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.connect.configuration.DatabaseType;

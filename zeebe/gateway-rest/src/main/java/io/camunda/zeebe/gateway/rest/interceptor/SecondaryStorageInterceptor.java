@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.interceptor;
 
-import static io.camunda.search.util.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
 
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
