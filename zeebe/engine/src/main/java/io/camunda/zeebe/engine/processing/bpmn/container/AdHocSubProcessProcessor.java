@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -82,6 +83,14 @@ public class AdHocSubProcessProcessor
     stateBehavior.setLocalVariable(
         context, AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_NAME, element.getAdHocActivitiesMetadata());
 
+    element
+        .getOutputCollection()
+        .ifPresent(
+            outputCollectionVariableName ->
+                stateBehavior.setLocalVariable(
+                    context,
+                    outputCollectionVariableName,
+                    BufferUtil.wrapArray(MsgPackHelper.EMPTY_ARRAY)));
     return variableMappingBehavior.applyInputMappings(context, element);
   }
 
