@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.FeelExpression;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata;
-import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityParameterExtractor;
+import io.camunda.zeebe.engine.processing.adhocsubprocess.parameter.AdHocActivityParameterExtractor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
