@@ -25,6 +25,9 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.msgpack.spec.MsgPackType;
+import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -34,6 +37,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class AdHocSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableAdHocSubProcess> {
@@ -57,6 +62,7 @@ public class AdHocSubProcessProcessor
               Map.ofEntries(
                   Map.entry(ZeebeAdHocImplementationType.BPMN, new BpmnBehavior()),
                   Map.entry(ZeebeAdHocImplementationType.JOB_WORKER, new JobWorkerBehavior())));
+  private final OutputCollectionUpdater outputCollectionUpdater = new OutputCollectionUpdater();
 
   public AdHocSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -259,6 +265,68 @@ public class AdHocSubProcessProcessor
     }
   }
 
+  private Either<Failure, ?> updateOutputCollection(
+      final ExecutableAdHocSubProcess adHocSubProcess,
+      final DirectBuffer outputCollectionVariableName,
+      final BpmnElementContext adHocSubProcessContext,
+      final BpmnElementContext childContext) {
+
+    final Expression outputElementExpression = adHocSubProcess.getOutputElement().orElseThrow();
+    return expressionProcessor
+        .evaluateAnyExpression(outputElementExpression, childContext.getElementInstanceKey())
+        .flatMap(
+            outputElementValue -> {
+              final DirectBuffer outputCollectionValue =
+                  stateBehavior.getLocalVariable(
+                      adHocSubProcessContext, outputCollectionVariableName);
+
+              return outputCollectionUpdater.appendCollection(
+                  outputCollectionValue, outputElementValue);
+            })
+        .thenDo(
+            updatedCollection ->
+                stateBehavior.setLocalVariable(
+                    adHocSubProcessContext, outputCollectionVariableName, updatedCollection));
+  }
+
+  private static final class OutputCollectionUpdater {
+
+    private final MsgPackReader outputCollectionReader = new MsgPackReader();
+    private final MsgPackWriter outputCollectionWriter = new MsgPackWriter();
+    private final ExpandableArrayBuffer outputCollectionBuffer = new ExpandableArrayBuffer();
+    private final DirectBuffer updatedOutputCollectionBuffer = new UnsafeBuffer(0, 0);
+
+    public Either<Failure, DirectBuffer> appendCollection(
+        final DirectBuffer outputCollection, final DirectBuffer newValue) {
+
+      // read output collection
+      outputCollectionReader.wrap(outputCollection, 0, outputCollection.capacity());
+      final var token = outputCollectionReader.readToken();
+      if (token.getType() != MsgPackType.ARRAY) {
+        return Either.left(
+            new Failure(
+                "The output collection has the wrong type. Expect %s but was %s."
+                    .formatted(MsgPackType.ARRAY, token.getType())));
+      }
+      final int currentSize = token.getSize();
+      final int valuesOffset = outputCollectionReader.getOffset();
+
+      // write updated output collection
+      outputCollectionWriter.wrap(outputCollectionBuffer, 0);
+      outputCollectionWriter.writeArrayHeader(currentSize + 1);
+      // add current values
+      outputCollectionWriter.writeRaw(
+          outputCollection, valuesOffset, outputCollection.capacity() - valuesOffset);
+      // add new value
+      outputCollectionWriter.writeRaw(newValue);
+
+      final var length = outputCollectionWriter.getOffset();
+      updatedOutputCollectionBuffer.wrap(outputCollectionBuffer, 0, length);
+
+      return Either.right(updatedOutputCollectionBuffer);
+    }
+  }
+
   private interface AdHocSubProcessBehavior {
 
     Either<Failure, ?> finalizeActivation(
@@ -301,19 +369,21 @@ public class AdHocSubProcessProcessor
         final ExecutableAdHocSubProcess adHocSubProcess,
         final BpmnElementContext adHocSubProcessContext,
         final BpmnElementContext childContext) {
-      final Expression completionConditionExpression = adHocSubProcess.getCompletionCondition();
-      if (completionConditionExpression == null) {
-        return Either.right(null);
-      }
-
-      return expressionProcessor
-          .evaluateBooleanExpression(
-              completionConditionExpression, adHocSubProcessContext.getElementInstanceKey())
-          .mapLeft(
-              failure ->
-                  new Failure(
-                      "Failed to evaluate completion condition. " + failure.getMessage(),
-                      ErrorType.EXTRACT_VALUE_ERROR));
+      return adHocSubProcess
+          .getOutputCollection()
+          .map(
+              outputCollectionVariableName ->
+                  updateOutputCollection(
+                      adHocSubProcess,
+                      outputCollectionVariableName,
+                      adHocSubProcessContext,
+                      childContext))
+          .orElse(Either.right(null))
+          .flatMap(
+              ok ->
+                  behaviorFor(adHocSubProcess)
+                      .beforeExecutionPathCompleted(
+                          adHocSubProcess, adHocSubProcessContext, childContext));
     }
 
     @Override
