@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider;
@@ -21,8 +20,10 @@ import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvid
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
@@ -44,6 +45,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,13 +60,13 @@ public class BatchOperationExecutionSchedulerTest {
   public static final Duration SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   public static final int CHUNK_SIZE = 5;
   public static final int QUERY_PAGE_SIZE = 10;
+  public static final long BATCH_OPERATION_KEY = 123456789L;
   private static final int PARTITION_ID = 1;
   @Mock private Supplier<ScheduledTaskState> scheduledTaskStateFactory;
   @Mock private TaskResultBuilder taskResultBuilder;
   @Mock private ReadonlyStreamProcessorContext streamProcessorContext;
   @Mock private ProcessingScheduleService scheduleService;
   @Mock private BatchOperationState batchOperationState;
-  @Mock private PersistedBatchOperation batchOperation;
   @Mock private ItemProviderFactory itemProviderFactory;
   @Mock private ItemProvider itemProvider;
   @Mock private BatchOperationMetrics metrics;
@@ -82,18 +84,6 @@ public class BatchOperationExecutionSchedulerTest {
   @BeforeEach
   public void setUp() {
     setUpBasicSchedulerBehaviour();
-
-    final var filter = FilterBuilders.processInstance().build();
-
-    lenient().when(batchOperation.getBatchOperationType()).thenReturn(CANCEL_PROCESS_INSTANCE);
-    lenient()
-        .when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
-        .thenReturn(filter);
-    lenient()
-        .when(batchOperation.getInitializationSearchQueryPageSize(anyInt()))
-        .thenReturn(QUERY_PAGE_SIZE);
-    when(batchOperationState.getNextPendingBatchOperation())
-        .thenReturn(Optional.of(batchOperation));
     lenient().when(batchOperationState.exists(anyLong())).thenReturn(true);
 
     final var engineConfiguration = mock(EngineConfiguration.class);
@@ -120,7 +110,10 @@ public class BatchOperationExecutionSchedulerTest {
   @Test
   public void shouldDoNothingOnSuspendedBatchOperation() {
     // given
-    when(batchOperation.isSuspended()).thenReturn(true);
+    final var batchOperation = createBatchOperation();
+    batchOperation.setStatus(BatchOperationStatus.SUSPENDED);
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
 
     // when our scheduler fires
     execute();
@@ -134,6 +127,9 @@ public class BatchOperationExecutionSchedulerTest {
   @Test
   public void shouldAppendFailedEvent() {
     // given
+    final var batchOperation = createBatchOperation();
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
     when(itemProvider.fetchItemPage(any(), anyInt()))
         .thenThrow(new RuntimeException("errors", new RuntimeException()));
 
@@ -163,6 +159,9 @@ public class BatchOperationExecutionSchedulerTest {
   @Test
   public void shouldReducePageSizeEventWhenFirstAppendFails() {
     // given
+    final var batchOperation = createBatchOperation();
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
     when(itemProvider.fetchItemPage(any(), anyInt())).thenReturn(createItemPage(1L, 2L, 3L));
     when(taskResultBuilder.canAppendRecords(any(), any())).thenReturn(false);
 
@@ -191,9 +190,12 @@ public class BatchOperationExecutionSchedulerTest {
   @Test
   public void shouldFailWhenPageSizeCannotBeReduced() {
     // given
+    final var batchOperation = createBatchOperation();
+    batchOperation.setInitializationSearchQueryPageSize(1);
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
     when(itemProvider.fetchItemPage(any(), anyInt())).thenReturn(createItemPage(1L, 2L, 3L));
     when(taskResultBuilder.canAppendRecords(any(), any())).thenReturn(false);
-    when(batchOperation.getInitializationSearchQueryPageSize(anyInt())).thenReturn(1);
 
     // when our scheduler fires
     execute();
@@ -220,6 +222,9 @@ public class BatchOperationExecutionSchedulerTest {
   @Test
   public void shouldContinueInitializationForBigBatchOperations() {
     // given
+    final var batchOperation = createBatchOperation();
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
     when(itemProvider.fetchItemPage(any(), anyInt()))
         .thenReturn(createItemPage(new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "0", false))
         .thenReturn(createItemPage(new long[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, "1", true));
@@ -247,6 +252,9 @@ public class BatchOperationExecutionSchedulerTest {
   @Test
   public void shouldAppendChunkForBatchOperations() {
     // given
+    final var batchOperation = createBatchOperation();
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
     when(itemProvider.fetchItemPage(any(), anyInt())).thenReturn(createItemPage(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -276,8 +284,11 @@ public class BatchOperationExecutionSchedulerTest {
   @Test
   public void shouldAppendNextChunkForBatchOperations() {
     // given
-    when(batchOperation.getInitializationSearchCursor()).thenReturn("1");
-    when(batchOperation.getNumTotalItems()).thenReturn(10);
+    final var batchOperation = createBatchOperation();
+    batchOperation.setInitializationSearchCursor("1");
+    batchOperation.setNumTotalItems(10);
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
     when(itemProvider.fetchItemPage(eq("1"), anyInt())).thenReturn(createItemPage(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -306,8 +317,10 @@ public class BatchOperationExecutionSchedulerTest {
 
   @Test
   public void shouldAppendChunkOfProcessMigrationItemKeys() {
-    final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
-    when(batchOperation.getBatchOperationType()).thenReturn(MIGRATE_PROCESS_INSTANCE);
+    final var batchOperation = createBatchOperation();
+    batchOperation.setBatchOperationType(MIGRATE_PROCESS_INSTANCE);
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
 
     // given
     when(itemProvider.fetchItemPage(any(), anyInt())).thenReturn(createItemPage(1L, 2L, 3L));
@@ -334,6 +347,9 @@ public class BatchOperationExecutionSchedulerTest {
   @Test
   public void shouldCreateMultipleChunks() {
     // given
+    final var batchOperation = createBatchOperation();
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
     final var queryItems = LongStream.range(0, CHUNK_SIZE * 2).toArray();
     when(itemProvider.fetchItemPage(any(), anyInt())).thenReturn(createItemPage(queryItems));
 
@@ -371,9 +387,10 @@ public class BatchOperationExecutionSchedulerTest {
 
   @Test
   public void shouldRescheduleAtTheEndOfExecution() {
-    final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
-
     // given
+    final var batchOperation = createBatchOperation();
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
     when(itemProvider.fetchItemPage(any(), anyInt())).thenReturn(createItemPage(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -394,6 +411,17 @@ public class BatchOperationExecutionSchedulerTest {
     when(scheduledTaskStateFactory.get().getBatchOperationState()).thenReturn(batchOperationState);
     when(streamProcessorContext.getScheduleService()).thenReturn(scheduleService);
     when(scheduleService.runDelayedAsync(any(), taskCaptor.capture(), any())).thenReturn(null);
+  }
+
+  private static PersistedBatchOperation createBatchOperation() {
+    final var filter = FilterBuilders.processInstance().build();
+
+    return new PersistedBatchOperation()
+        .setKey(BATCH_OPERATION_KEY)
+        .setStatus(BatchOperationStatus.CREATED)
+        .setBatchOperationType(CANCEL_PROCESS_INSTANCE)
+        .setInitializationSearchQueryPageSize(QUERY_PAGE_SIZE)
+        .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)));
   }
 
   private ItemPage createItemPage(final long... itemKeys) {
