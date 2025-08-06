@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import io.camunda.zeebe.broker.clustering.mapper.S3LeaseConfig;
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
@@ -30,6 +31,7 @@ public class BrokerCfg {
   private ProcessingCfg processingCfg = new ProcessingCfg();
 
   private ExperimentalCfg experimental = new ExperimentalCfg();
+  private S3LeaseConfig leaseConfig = new S3LeaseConfig();
 
   private boolean executionMetricsExporterEnabled;
 
@@ -188,5 +190,13 @@ public class BrokerCfg {
         + ", executionMetricsExporterEnabled="
         + executionMetricsExporterEnabled
         + '}';
+  }
+
+  public S3LeaseConfig getLeaseConfig() {
+    return leaseConfig;
+  }
+
+  public void setLeaseConfig(final S3LeaseConfig leaseConfig) {
+    this.leaseConfig = leaseConfig;
   }
 }
