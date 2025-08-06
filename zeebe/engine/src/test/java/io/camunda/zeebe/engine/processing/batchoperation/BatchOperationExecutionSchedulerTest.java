@@ -125,6 +125,147 @@ public class BatchOperationExecutionSchedulerTest {
   }
 
   @Test
+  void shouldSkipReInitializationIfAlreadyOngoingWithDifferentCursor() {
+    // given
+    final String page1EndCursor = "10";
+    final String page2EndCursor = "20";
+    when(itemProvider.fetchItemPage(any(), anyInt()))
+        .thenReturn(
+            createItemPage(new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, page1EndCursor, false))
+        .thenReturn(
+            createItemPage(
+                new long[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, page2EndCursor, false))
+        .thenReturn(
+            createItemPage(new long[] {21, 22, 23, 24, 25, 26, 27, 28, 29, 30}, "30", true));
+
+    // each execution can only append records once
+    when(taskResultBuilder.canAppendRecords(any(), any()))
+        .thenReturn(true) // true to append 1 page of chunks
+        .thenReturn(false) // false to stop and continue in another execution
+        .thenReturn(true)
+        .thenReturn(false)
+        .thenReturn(true)
+        .thenReturn(false);
+
+    // keeps returning the same cursor however the second page returned a different cursor
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(createBatchOperation()))
+        .thenReturn(
+            Optional.of(createBatchOperation().setInitializationSearchCursor(page1EndCursor)))
+        .thenReturn(
+            Optional.of(createBatchOperation().setInitializationSearchCursor(page1EndCursor)));
+
+    // when our scheduler fires
+    execute();
+    execute();
+    execute(); // 3rd execution should be skipped since the state returns an old cursor
+
+    // then
+    // it will only fetch items first 2 times and ignore the third execution
+    verify(itemProviderFactory, times(2)).fromBatchOperation(any());
+    verifyNoMoreInteractions(itemProviderFactory);
+  }
+
+  @Test
+  void shouldSkipReInitializationIfAlreadyFinished() {
+    // given
+    final String page1EndCursor = "10";
+    final String page2EndCursor = "20";
+    when(itemProvider.fetchItemPage(any(), anyInt()))
+        .thenReturn(
+            createItemPage(new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, page1EndCursor, false))
+        .thenReturn(
+            createItemPage(
+                new long[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, page2EndCursor, true));
+
+    // each execution can only append records once
+    when(taskResultBuilder.canAppendRecords(any(), any()))
+        .thenReturn(true) // true to append 1 page of chunks
+        .thenReturn(false) // false to stop and continue in another execution
+        .thenReturn(true)
+        .thenReturn(false)
+        .thenReturn(true)
+        .thenReturn(false);
+
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(createBatchOperation()))
+        .thenReturn(
+            Optional.of(createBatchOperation().setInitializationSearchCursor(page1EndCursor)))
+        .thenReturn(
+            Optional.of(createBatchOperation().setInitializationSearchCursor(page2EndCursor)));
+
+    // when our scheduler fires
+    execute();
+    execute();
+    execute(); // will be skipped, since initialization was done in a previous execution
+
+    // then
+    // it will only fetch items first 2 times and ignore the third execution
+    verify(itemProviderFactory, times(2)).fromBatchOperation(any());
+    verifyNoMoreInteractions(itemProviderFactory);
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.FINISH_INITIALIZATION),
+            any(BatchOperationInitializationRecord.class),
+            any());
+  }
+
+  @Test
+  void shouldExecuteANewSubsequentBatchOperation() {
+    // given
+    final String page1EndCursor = "10";
+    final String page2EndCursor = "20";
+    when(itemProvider.fetchItemPage(any(), anyInt()))
+        .thenReturn(
+            createItemPage(new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, page1EndCursor, false))
+        .thenReturn(
+            createItemPage(
+                new long[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, page2EndCursor, true))
+        .thenReturn(
+            createItemPage(new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, page1EndCursor, true));
+
+    when(taskResultBuilder.canAppendRecords(any(), any()))
+        .thenReturn(true) // true to append 1 page of chunks
+        .thenReturn(false) // false to stop and continue in another execution
+        .thenReturn(true) // can append second page of first operation
+        .thenReturn(true); // can append second operation
+
+    final var batchOperation = createBatchOperation();
+    final long bo1Key = batchOperation.getKey();
+    final long bo2Key = bo1Key + 1;
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation))
+        .thenReturn(
+            Optional.of(createBatchOperation().setInitializationSearchCursor(page1EndCursor)))
+        .thenReturn(Optional.of(createBatchOperation().setKey(bo2Key)));
+
+    // when our scheduler fires
+    execute();
+    execute();
+    execute(); // will be executed, since the next batch operation is different
+
+    // then
+    // it will only fetch items first 2 times and ignore the third execution
+    verify(itemProviderFactory, times(3)).fromBatchOperation(any());
+    verifyNoMoreInteractions(itemProviderFactory);
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            eq(bo1Key),
+            eq(BatchOperationIntent.FINISH_INITIALIZATION),
+            any(BatchOperationInitializationRecord.class),
+            any());
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            eq(bo2Key),
+            eq(BatchOperationIntent.FINISH_INITIALIZATION),
+            any(BatchOperationInitializationRecord.class),
+            any());
+  }
+
+  @Test
   public void shouldAppendFailedEvent() {
     // given
     final var batchOperation = createBatchOperation();
