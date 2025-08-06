@@ -19,6 +19,7 @@ import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.ListenerEventType;
+import java.util.List;
 import java.util.Map;
 
 public interface ActivatedJob {
@@ -102,7 +103,8 @@ public interface ActivatedJob {
 
   /**
    * @return de-serialized variable value or null if the provided variable name is present among the
-   *     available variables, otherwise throw a {@link ClientException}
+   *     available variables
+   * @throws ClientException if the variable is missing
    */
   Object getVariable(String name);
 
@@ -133,4 +135,12 @@ public interface ActivatedJob {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/13560")
   String getTenantId();
+
+  /**
+   * @return de-serialized document references if the provided variable name is present among the
+   *     available variables and can be parsed as document reference
+   * @throws ClientException if the variable is missing or if the variable cannot be parsed * as
+   *     document reference list
+   */
+  List<DocumentReferenceResponse> getDocumentReferences(String name);
 }

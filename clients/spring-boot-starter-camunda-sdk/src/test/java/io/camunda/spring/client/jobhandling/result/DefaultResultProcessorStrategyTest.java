@@ -18,13 +18,15 @@ package io.camunda.spring.client.jobhandling.result;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.spring.client.bean.MethodInfo;
 import org.junit.jupiter.api.Test;
 
 class DefaultResultProcessorStrategyTest {
 
   private final DefaultResultProcessorStrategy resultProcessorStrategy =
-      new DefaultResultProcessorStrategy();
+      new DefaultResultProcessorStrategy(
+          mock(CamundaClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class));
 
   @Test
   void createProcessorShouldReturnDefaultProcessor() throws NoSuchMethodException {
