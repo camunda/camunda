@@ -31,7 +31,7 @@
   <Logger name="io.atomix.raft" level="debug"/>
 
   <Logger name="org.apache.ibatis" level="debug"/>
-  <Logger name="io.camunda.db.rdbms" level="debug"/>
+  <Logger name="io.camunda.db.rdbms" level="info"/>
   <Logger name="io.camunda.exporter.rdbms" level="info"/>
   <Logger name="io.camunda.zeebe.engine.processing.batchoperation" level="debug"/>
   <Logger name="io.camunda.exporter.tasks.batchoperations" level="trace"/>

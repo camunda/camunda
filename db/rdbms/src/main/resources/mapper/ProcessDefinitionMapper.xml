@@ -13,9 +13,7 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}PROCESS_DEFINITION pi
-    <where>
-      <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
-    </where>
+    <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery"
@@ -31,9 +29,7 @@
     VERSION,
     FORM_ID
     FROM ${prefix}PROCESS_DEFINITION
-    <where>
-      <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
-    </where>
+    <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
     <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
       AND PROCESS_DEFINITION_ID IN
       <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
@@ -68,7 +64,7 @@
   </sql>
 
   <sql id="searchFilter">
-    1 = 1
+    WHERE 1 = 1
     <!-- basic filters -->
     <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
       AND PROCESS_DEFINITION_KEY IN

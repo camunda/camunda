@@ -196,9 +196,7 @@
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}BATCH_OPERATION
-    <where>
-      <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
-    </where>
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
   </select>
 
   <select id="search"
@@ -230,10 +228,7 @@
     bo.OPERATIONS_FAILED_COUNT,
     bo.OPERATIONS_COMPLETED_COUNT
     FROM ${prefix}BATCH_OPERATION bo
-    <where>
-      <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
-    <!-- TODO How to apply auth checks? -->
-    </where>
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
     ) filtered
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -247,7 +242,7 @@
   </select>
 
   <sql id="searchFilter">
-    1 = 1
+    WHERE 1 = 1
     <!-- basic filters -->
     <if
       test="filter.batchOperationKeyOperations != null and !filter.batchOperationKeyOperations.isEmpty()">
@@ -275,9 +270,7 @@
   <select id="countItems" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}BATCH_OPERATION_ITEM
-    <where>
-      <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
-    </where>
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
   </select>
 
   <select id="searchItems"
@@ -287,9 +280,7 @@
     SELECT * FROM (
     SELECT BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, STATE, PROCESSED_DATE, ERROR_MESSAGE
     FROM ${prefix}BATCH_OPERATION_ITEM
-    <where>
-      <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
-    </where>
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
     ) filtered
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -297,7 +288,7 @@
   </select>
 
   <sql id="itemSearchFilter">
-    1 = 1
+    WHERE 1 = 1
     <!-- basic filters -->
     <if
       test="filter.batchOperationKeyOperations != null and !filter.batchOperationKeyOperations.isEmpty()">

@@ -13,9 +13,7 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DecisionRequirementsDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}DECISION_REQUIREMENTS
-    <where>
-      <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
-    </where>
+    <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.DecisionRequirementsDbQuery"
@@ -30,21 +28,19 @@
     <if test="!resultConfig.includeXml">NULL AS XML,</if>
     RESOURCE_NAME
     FROM ${prefix}DECISION_REQUIREMENTS
-    <where>
-      <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
-      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
-        AND DECISION_REQUIREMENTS_ID IN
-        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
-          #{resourceId}
-        </foreach>
-      </if>
-      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
-        AND TENANT_ID IN
-        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
-          #{tenantId}
-        </foreach>
-      </if>
-    </where>
+    <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND DECISION_REQUIREMENTS_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+        #{resourceId}
+      </foreach>
+    </if>
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+    </if>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -52,7 +48,7 @@
   </select>
 
   <sql id="searchFilter">
-    1 = 1
+    WHERE 1 = 1
     <!-- basic filters -->
     <if test="filter.decisionRequirementsKeys != null and !filter.decisionRequirementsKeys.isEmpty()">
       AND DECISION_REQUIREMENTS_KEY IN

@@ -241,7 +241,6 @@ public class MultiDbConfigurator {
     testApplication.withProperty(
         "spring.datasource.url",
         "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
-    //        "jdbc:h2:file:/Users/stefanzilske/.h2/testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
     testApplication.withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
     testApplication.withProperty("spring.datasource.username", "sa");
     testApplication.withProperty("spring.datasource.password", "");
