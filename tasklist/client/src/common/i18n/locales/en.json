@@ -301,6 +301,7 @@
     "taskCompletionDelayedInfoTitle": "Task completion delayed",
     "taskCompletionDelayedInfoSubtitle": "The task completion is taking longer than expected to process. It will complete shortly",
     "processViewProcessVersion": "Version: {{version}}",
+    "processVersionTooltip": "Process deployment version",
     "variablesTitle": "Variables",
     "variablesAddVariableTooltip": "You must assign the task to add variables",
     "variablesNoVariablesHeading": "Task has no variables",

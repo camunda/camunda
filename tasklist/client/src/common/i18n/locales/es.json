@@ -295,6 +295,7 @@
     "taskCompletedNotification": "Tarea completada",
     "taskCouldNotBeCompletedNotification": "La tarea no pudo ser completada",
     "processViewProcessVersion": "Versión: {{version}}",
+    "processVersionTooltip": "Versión de despliegue del proceso",
     "variablesTitle": "Variables",
     "variablesAddVariableTooltip": "Debe asignar la tarea para agregar variables",
     "variablesNoVariablesHeading": "La tarea no tiene variables",
