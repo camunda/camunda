@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.clustering.mapper;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -21,6 +22,7 @@ import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 public class S3Lease {
@@ -131,11 +133,15 @@ public class S3Lease {
   public boolean renewLease(final int nodeId) {
 
     final String objectKey = String.valueOf(nodeId);
-
-    final var headResponse =
-        client
-            .headObject(HeadObjectRequest.builder().bucket(bucketName).key(objectKey).build())
-            .join();
+    final HeadObjectResponse headResponse;
+    try {
+      headResponse =
+          client
+              .headObject(HeadObjectRequest.builder().bucket(bucketName).key(objectKey).build())
+              .join();
+    } catch (final CompletionException e) {
+      return false;
+    }
 
     final var currentLeaseHolder = headResponse.metadata().get(TASK_ID_METADATA_KEY);
     if (taskId.equals(currentLeaseHolder)) {

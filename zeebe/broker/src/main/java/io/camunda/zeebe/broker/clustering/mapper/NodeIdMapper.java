@@ -68,7 +68,7 @@ public class NodeIdMapper {
             scheduleRenewal(brokerId);
           } else {
             log.info("Renewal lease not acquired");
-            System.exit(1);
+            Runtime.getRuntime().halt(1);
           }
         },
         10,
