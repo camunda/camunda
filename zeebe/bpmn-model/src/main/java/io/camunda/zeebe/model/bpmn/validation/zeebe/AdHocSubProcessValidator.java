@@ -25,6 +25,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
+import jdk.internal.joptsimple.internal.Strings;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -41,6 +42,7 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
       final ValidationResultCollector validationResultCollector) {
     IdentifiableBpmnElementValidator.validate(adHocSubProcess, validationResultCollector);
     validateTaskDefinition(adHocSubProcess, validationResultCollector);
+    validationOutputCollectionAndOutputElement(adHocSubProcess, validationResultCollector);
 
     final Collection<FlowElement> flowElements = adHocSubProcess.getFlowElements();
 
@@ -91,6 +93,34 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
               "Must have exactly one zeebe:%s extension element with implementation type %s.",
               ZeebeConstants.ELEMENT_TASK_DEFINITION, ZeebeAdHocImplementationType.JOB_WORKER));
     }
+  }
+
+  private static void validationOutputCollectionAndOutputElement(
+      final AdHocSubProcess adHocSubProcess,
+      final ValidationResultCollector validationResultCollector) {
+
+    final ExtensionElements extensionElements = adHocSubProcess.getExtensionElements();
+    if (extensionElements == null) {
+      return;
+    }
+
+    extensionElements
+        .getChildElementsByType(ZeebeAdHoc.class)
+        .forEach(
+            adhoc -> {
+              final boolean outputElementEmpty = Strings.isNullOrEmpty(adhoc.getOutputElement());
+              final boolean outputCollectionEmpty =
+                  Strings.isNullOrEmpty(adhoc.getOutputCollection());
+
+              if (outputElementEmpty != outputCollectionEmpty) {
+                validationResultCollector.addError(
+                    0,
+                    String.format(
+                        "OutputElement and OutputCollection must both be set, or neither of them set. outputElement:%s and outputCollection:%s.",
+                        ZeebeConstants.ATTRIBUTE_OUTPUT_ELEMENT,
+                        ZeebeConstants.ATTRIBUTE_OUTPUT_COLLECTION));
+              }
+            });
   }
 
   private static boolean hasStartEvent(final Collection<FlowElement> flowElements) {
