@@ -443,7 +443,8 @@ public class JobBasedAdHocSubProcessTest {
             RecordingExporter.records()
                 .limit(r -> r.getIntent() == SignalIntent.BROADCASTED)
                 .variableRecords()
-                .withProcessInstanceKey(processInstanceKey))
+                .withProcessInstanceKey(processInstanceKey)
+                .filter(v -> !v.getValue().getName().equals("adHocSubProcessElements")))
         .extracting(
             r -> r.getValue().getName(),
             r -> r.getValue().getValue(),
