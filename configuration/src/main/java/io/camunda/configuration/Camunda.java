@@ -39,6 +39,14 @@ public class Camunda {
     this.system = system;
   }
 
+  public Data getData() {
+    return data;
+  }
+
+  public void setData(Data data) {
+    this.data = data;
+  }
+
   public Api getApi() {
     return api;
   }

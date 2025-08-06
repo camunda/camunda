@@ -84,10 +84,11 @@ public class BrokerBasedPropertiesOverride {
 
     populateFromGrpc(override);
 
-    // TODO: Populate the bean from rest of camunda.* sections
-    // populateFromData(override);
     // from camunda.data.* sections
     populateFromData(override);
+
+    // TODO: Populate the rest of the bean using unifiedConfiguration
+    //  override.setSampleField(unifiedConfiguration.getSampleField());
 
     return override;
   }

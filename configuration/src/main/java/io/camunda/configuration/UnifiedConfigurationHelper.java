@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
 import io.camunda.configuration.RocksDb.AccessMetricsKind;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Objects;
@@ -71,7 +72,13 @@ public class UnifiedConfigurationHelper {
       final String strValue = environment.getProperty(legacyProperty);
       final T legacyValue = parseLegacyValue(strValue, expectedType);
 
-      legacyValues.add(legacyValue);
+      if (legacyValue != null) {
+        legacyValues.add(legacyValue);
+      }
+    }
+
+    if (legacyValues.isEmpty()) {
+      return null;
     }
 
     if (legacyValues.size() > 1) {
@@ -152,7 +159,7 @@ public class UnifiedConfigurationHelper {
 
       final String errorMessage =
           String.format(
-              "Ambiguous configuration. The value %s=%s does not match the value(s) conflicts with the values '%s' from the legacy properties %s",
+              "Ambiguous configuration. The value %s=%s conflicts with the values '%s' from the legacy properties %s",
               newProperty, newValue, legacyValue, String.join(", ", legacyProperties));
       throw new UnifiedConfigurationException(errorMessage);
     }
@@ -222,6 +229,7 @@ public class UnifiedConfigurationHelper {
       case "File" -> (T) new File(strValue);
       case "SasTokenType" -> (T) SasToken.SasTokenType.valueOf(strValue.toUpperCase());
       case "AccessMetricsKind" -> (T) AccessMetricsKind.valueOf(strValue.toUpperCase());
+      case "SecondaryStorageType" -> (T) SecondaryStorageType.valueOf(strValue.toLowerCase());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }
