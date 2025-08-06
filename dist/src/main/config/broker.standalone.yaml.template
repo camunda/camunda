@@ -1425,6 +1425,18 @@
           # The default value is 1000, which is also the maximum supported by OracleDb.
           # queryInClauseSize: 1000
 
+          # Allows to configure the number of retries in case a query to the secondary database fails.
+          # The default value is 5, which means that in worst case the engine will query up to 6 times.
+          # queryRetryMax: 0
+
+          # Allows to configure the initial delay between retries in case a query to the secondary database fails.
+          # The default value is 1 second
+          # queryRetryInitialDelay: PT1S
+
+          # Allows to configure the factor by which the delay between retries is increased.
+          # The default value is 2, which means that the delay will be doubled after each retry.
+          # queryRetryBackoffFactor: 2.0
+
       # Allows to configure feature flags. These are used to test new features in dev and int environments prior
       # to rolling them out to production
       # features:

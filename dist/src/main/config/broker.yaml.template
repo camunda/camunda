@@ -1339,6 +1339,18 @@
           # The default value is 1000, which is also the maximum supported by OracleDb.
           # queryInClauseSize: 1000
 
+          # Allows to configure the number of retries in case a query to the secondary database fails.
+          # The default value is 5, which means that in worst case the engine will query up to 6 times.
+          # queryRetryMax: 0
+
+          # Allows to configure the initial delay between retries in case a query to the secondary database fails.
+          # The default value is 1 second
+          # queryRetryInitialDelay: PT1S
+
+          # Allows to configure the factor by which the delay between retries is increased.
+          # The default value is 2, which means that the delay will be doubled after each retry.
+          # queryRetryBackoffFactor: 2.0
+
         # Allows to configure the maximum depth of child process instances that can be created.
         # The root process instance is considered depth `1`, and each called instance is considered
         # to be one level deeper. If a call activity attempts to create a child process instance
