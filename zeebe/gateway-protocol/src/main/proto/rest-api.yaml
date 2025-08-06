@@ -526,7 +526,9 @@ paths:
         - Tenant
       operationId: assignUserToTenant
       summary: Assign a user to a tenant
-      description: Assign a single user to a specified tenant.
+      description: |
+        Assign a user to the specified tenant.
+        The user can then access tenant data and perform authorized actions.
       parameters:
         - name: tenantId
           in: path
@@ -560,9 +562,11 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeUserFromTenant
-      summary: Remove a user from a tenant
-      description: Removes a single user from a specified tenant without deleting the user.
+      operationId: unassignUserFromTenant
+      summary: Unassign a user from a tenant
+      description: |
+        Unassigns the user from the specified tenant.
+        The user can no longer access tenant data.
       parameters:
         - name: tenantId
           in: path
@@ -578,7 +582,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The user was successfully removed from the tenant.
+          description: The user was successfully unassigned from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -708,7 +712,9 @@ paths:
         - Tenant
       operationId: assignClientToTenant
       summary: Assign a client to a tenant
-      description: Assign a client to a specified tenant.
+      description: |
+        Assign the client to the specified tenant.
+        The client can then access tenant data and perform authorized actions.
       parameters:
         - name: tenantId
           in: path
@@ -742,9 +748,11 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeClientFromTenant
-      summary: Remove a client from a tenant
-      description: Removes a single client from a specified tenant.
+      operationId: unassignClientFromTenant
+      summary: Unassign a client from a tenant
+      description: |
+        Unassigns the client from the specified tenant.
+        The client can no longer access tenant data.
       parameters:
         - name: tenantId
           in: path
@@ -760,7 +768,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The client was successfully removed from the tenant.
+          description: The client was successfully unassigned from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -816,9 +824,9 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeMappingRuleFromTenant
-      summary: Remove a mapping rule from a tenant
-      description: Removes a single mapping rule from a specified tenant without deleting the rule.
+      operationId: unassignMappingRuleFromTenant
+      summary: Unassign a mapping rule from a tenant
+      description: Unassigns a single mapping rule from a specified tenant without deleting the rule.
       parameters:
         - name: tenantId
           in: path
@@ -834,7 +842,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The mapping rule was successfully removed from the tenant.
+          description: The mapping rule was successfully unassigned from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -883,7 +891,9 @@ paths:
         - Tenant
       operationId: assignGroupToTenant
       summary: Assign a group to a tenant
-      description: Assign a single group to a specified tenant.
+      description: |
+        Assigns a group to a specified tenant.
+        Group members (users, clients) can then access tenant data and perform authorized actions.
       parameters:
         - name: tenantId
           in: path
@@ -918,9 +928,11 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeGroupFromTenant
-      summary: Remove a group from a tenant
-      description: Removes a single group from a specified tenant without deleting the group.
+      operationId: unassignGroupFromTenant
+      summary: Unassign a group from a tenant
+      description: |
+        Unassigns a group from a specified tenant.
+        Members of the group (users, clients) will no longer have access to the tenant's data - except they are assigned directly to the tenant.
       parameters:
         - name: tenantId
           in: path
@@ -936,7 +948,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The group was successfully removed from the tenant.
+          description: The group was successfully unassigned from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -958,7 +970,9 @@ paths:
         - Tenant
       operationId: assignRoleToTenant
       summary: Assign a role to a tenant
-      description: Assign a single role to a specified tenant.
+      description: |
+        Assigns a role to a specified tenant.
+        Users, Clients or Groups, that have the role assigned, will get access to the tenant's data and can perform actions according to their authorizations.
       parameters:
         - name: tenantId
           in: path
@@ -992,9 +1006,11 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeRoleFromTenant
-      summary: Remove a role from a tenant
-      description: Removes a single role from a specified tenant without deleting the role.
+      operationId: unassignRoleFromTenant
+      summary: Unassign a role from a tenant
+      description: |
+        Unassigns a role from a specified tenant.
+        Users, Clients or Groups, that have the role assigned, will no longer have access to the tenant's data - except they are assigned directly to the tenant.
       parameters:
         - name: tenantId
           in: path
@@ -1010,7 +1026,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The role was successfully removed from the tenant.
+          description: The role was successfully unassigned from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
