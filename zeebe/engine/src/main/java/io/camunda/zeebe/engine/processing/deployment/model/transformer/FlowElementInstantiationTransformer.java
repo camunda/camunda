@@ -60,7 +60,6 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -70,7 +69,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 public final class FlowElementInstantiationTransformer
     implements ModelElementTransformer<FlowElement> {
@@ -149,15 +147,12 @@ public final class FlowElementInstantiationTransformer
 
   private void setElementDocumentation(
       final FlowElement element, final AbstractFlowElement executableElement) {
-    final var elementDocumentation =
-        Optional.ofNullable(element.getDocumentations()).orElseGet(Collections::emptyList).stream()
-            .filter(d -> "text/plain".equals(d.getTextFormat()))
-            .findFirst()
-            .map(ModelElementInstance::getTextContent)
-            .filter(t -> !t.isBlank())
+    final DirectBuffer elementDocumentation =
+        Optional.ofNullable(element.getDocumentations())
+            .flatMap(documentations -> documentations.stream().findFirst())
+            .flatMap(documentation -> Optional.ofNullable(documentation.getTextContent()))
             .map(BufferUtil::wrapString)
             .orElse(EMPTY_BUFFER);
-
     executableElement.setDocumentation(elementDocumentation);
   }
 
