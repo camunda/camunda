@@ -13,7 +13,7 @@
                    https://logging.apache.org/xml/ns/log4j-config-2.xsd" status="WARN" shutdownHook="disable">
   <Properties>
     <Property name="log.path" value="${sys:app.home}/logs" />
-    <Property name="log.pattern" value="%d{HH:mm:ss.SSS} [%t] %notEmpty{[%X] }%-5level\t%logger{1.1.1.*} - %msg%n" />
+    <Property name="log.pattern" value="%d{HH:mm:ss.SSS} [%t] %notEmpty{[%X] }%-5level%logger{1.1.1.*} - %msg%n" />
     <Property name="log.stackdriver.serviceName" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-${env:OPERATE_LOG_STACKDRIVER_SERVICENAME:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICENAME:-${env:TASKLIST_LOG_STACKDRIVER_SERVICENAME:-}}}}"/>
     <Property name="log.stackdriver.serviceVersion" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPERATE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-${env:TASKLIST_LOG_STACKDRIVER_SERVICEVERSION:-}}}}"/>
   </Properties>
