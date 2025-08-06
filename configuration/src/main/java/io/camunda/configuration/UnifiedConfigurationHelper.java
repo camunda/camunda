@@ -105,6 +105,10 @@ public class UnifiedConfigurationHelper {
       return null;
     }
 
+    if (legacyValues.isEmpty()) {
+      return null;
+    }
+
     if (legacyValues.size() > 1) {
       throw new UnifiedConfigurationException(
           String.format(

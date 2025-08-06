@@ -103,6 +103,8 @@ public class SecondaryStorageTest {
         // url
         "camunda.data.secondary-storage.elasticsearch.url=http://matching-url:4321",
         "camunda.database.url=http://matching-url:4321",
+        "camunda.operate.zeebeElasticsearch.url=http://matching-url:4321",
+        "camunda.tasklist.zeebeElasticsearch.url=http://matching-url:4321",
         "camunda.tasklist.elasticsearch.url=http://matching-url:4321",
         "camunda.operate.elasticsearch.url=http://matching-url:4321"
       })

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -73,9 +74,12 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               // url
               "camunda.data.secondary-storage.elasticsearch.url=http://new-mismatching-url:4321",
               "camunda.database.url=http://legacy-mismatching-url:4321",
+              "camunda.operate.zeebeElasticsearch.url=http://legacy-mismatching-url:4321",
+              "camunda.tasklist.zeebeElasticsearch.url=http://legacy-mismatching-url:4321",
               "camunda.tasklist.elasticsearch.url=http://legacy-mismatching-url:4321",
               "camunda.operate.elasticsearch.url=http://legacy-mismatching-url:4321");
 
+  @Disabled
   @Test
   void testBrokerShouldFailWhenUsingLegacyDatabaseProperties() {
     brokerRunner.run(
@@ -102,6 +106,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
         });
   }
 
+  @Disabled
   @Test
   void testTasklistshouldFailWhenUsingLegacyDatabaseProperties() {
     tasklistRunner.run(

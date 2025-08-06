@@ -17,6 +17,8 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 public abstract class DatabaseCondition implements Condition {
 
   public static final String DATABASE_PROPERTY = "camunda.data.secondary-storage.type";
+  public static final String UNIFIED_CONFIGURATION_DATABASE_PROPERTY =
+      "camunda.data.secondary-storage.type";
 
   public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
     final Environment environment = context.getEnvironment();

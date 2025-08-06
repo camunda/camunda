@@ -7,9 +7,35 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
 
 public class Elasticsearch extends SecondaryStorageDatabase {
+
+  private static final String PREFIX = "camunda.data.secondary-storage.elasticsearch";
+  private static final Set<String> LEGACY_URL_PROPERTIES =
+      Set.of(
+          "camunda.database.url",
+          "camunda.operate.elasticsearch.url",
+          "camunda.operate.zeebeElasticsearch.url",
+          "camunda.tasklist.elasticsearch.url",
+          "camunda.tasklist.zeebeElasticsearch.url");
+
+  /** Endpoint for the Elasticsearch engine configured as secondary storage. */
+  private String url = "http://localhost:9200";
+
+  public String getUrl() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".url",
+        url,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        LEGACY_URL_PROPERTIES);
+  }
+
+  public void setUrl(String url) {
+    this.url = url;
+  }
 
   @Override
   protected String prefix() {
