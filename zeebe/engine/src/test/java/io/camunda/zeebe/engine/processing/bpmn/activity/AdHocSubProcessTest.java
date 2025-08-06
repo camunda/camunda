@@ -41,7 +41,6 @@ import java.util.function.Predicate;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.skyscreamer.jsonassert.JSONAssert;
 
 public final class AdHocSubProcessTest {
 
@@ -677,19 +676,20 @@ public final class AdHocSubProcessTest {
   }
 
   @Test
-  public void shouldSetAdHocSubProcessElementsVariable() {
+  public void shouldCreateLocalAdHocSubProcessElementsVariable() {
     // given
-    ENGINE
-        .deployment()
-        .withXmlClasspathResource("/processes/ad-hoc-sub-process-elements.bpmn")
-        .deploy();
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+            });
 
     // when
     final long processInstanceKey =
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("activateElements", List.of("Task_A"))
+            .withVariable("activateElements", List.of("A"))
             .create();
 
     final var adHocSubProcessKey =
@@ -700,6 +700,7 @@ public final class AdHocSubProcessTest {
             .getKey();
 
     // then
+    // actual variable assertions are done in detail in AdHocSubProcessElementsVariableTest
     assertThat(
             RecordingExporter.variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
@@ -712,54 +713,8 @@ public final class AdHocSubProcessTest {
         .describedAs(
             "Variable adHocSubProcessElements should be created as local variable in sub-process scope")
         .satisfies(
-            variableRecord -> {
-              assertThat(variableRecord.getValue()).hasScopeKey(adHocSubProcessKey);
-              JSONAssert.assertEquals(
-                  """
-                  [
-                    {
-                      "elementName": "An event!",
-                      "elementId": "An_Event",
-                      "documentation": "The event documentation"
-                    },
-                    {
-                      "elementName": "A Connector",
-                      "elementId": "A_Connector"
-                    },
-                    {
-                      "elementName": "Task A",
-                      "elementId": "Task_A",
-                      "properties": {
-                        "someProperty": "someValue"
-                      },
-                      "documentation": "The Task A documentation"
-                    },
-                    {
-                      "elementName": "A Task With Follow-Up",
-                      "elementId": "A_Task_With_Follow_Up"
-                    },
-                    {
-                      "elementName": "Script Task",
-                      "elementId": "Script_Task",
-                      "properties": {
-                        "io.camunda.test.property": "value"
-                      },
-                      "documentation": "A script task with documentation"
-                    },
-                    {
-                      "elementName": "A complex tool",
-                      "elementId": "A_Complex_Tool",
-                      "documentation": "A very complex tool"
-                    },
-                    {
-                      "elementName": "Service Task",
-                      "elementId": "Service_Task"
-                    }
-                  ]
-                  """,
-                  variableRecord.getValue().getValue(),
-                  true);
-            });
+            variableRecord ->
+                assertThat(variableRecord.getValue()).hasScopeKey(adHocSubProcessKey));
   }
 
   @Test
