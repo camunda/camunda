@@ -15,6 +15,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +41,25 @@ public class IncidentDbReader extends AbstractEntityReader<IncidentEntity>
   public SearchQueryResult<IncidentEntity> search(
       final IncidentQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), IncidentSearchColumn.INCIDENT_KEY);
+
+    // If the authorization check is enabled and no resource IDs are authorized, return an empty
+    // result
+    // If the tenant check is enabled and no tenant IDs are authorized, return an empty result
+    if ((resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty())
+        || (resourceAccessChecks.tenantCheck().enabled()
+            && resourceAccessChecks.getAuthorizedTenantIds().isEmpty())) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         IncidentDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for incident with filter {}", dbQuery);
     final var totalHits = incidentMapper.count(dbQuery);
