@@ -8,6 +8,7 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Azure;
+import io.camunda.configuration.Backup;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
@@ -247,9 +248,15 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromBackup(final BrokerBasedProperties override) {
+    final Backup backup = unifiedConfiguration.getCamunda().getData().getBackup();
+    final BackupStoreCfg backupStoreCfg = override.getData().getBackup();
+    backupStoreCfg.setStore(BackupStoreType.valueOf(backup.getStore().name()));
+
     populateFromS3(override);
     populateFromGcs(override);
     populateFromAzure(override);
+
+    override.getData().setBackup(backupStoreCfg);
   }
 
   private void populateFromS3(final BrokerBasedProperties override) {
