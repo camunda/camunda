@@ -838,6 +838,10 @@
               <id>process-migration</id>
               <mainClass>io.camunda.application.StandaloneProcessMigration</mainClass>
             </program>
+            <program>
+              <id>usage-metric-migration</id>
+              <mainClass>io.camunda.application.StandaloneUsageMetricMigration</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
