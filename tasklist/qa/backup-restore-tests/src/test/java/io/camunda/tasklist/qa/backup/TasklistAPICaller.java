@@ -70,7 +70,8 @@ public class TasklistAPICaller {
     final URI url = statefulRestTemplate.getURL("/v1/tasks/search");
     return Arrays.asList(
         statefulRestTemplate
-            .postForEntity(url, new TaskSearchRequest(), TaskSearchResponse[].class)
+            .postForEntity(
+                url, new TaskSearchRequest().setPageSize(10_000), TaskSearchResponse[].class)
             .getBody());
   }
 

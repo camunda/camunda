@@ -18,7 +18,6 @@ import io.camunda.tasklist.util.ThreadUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
-import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -187,16 +186,15 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
 
   private void waitUntilAllDataAreImported() throws IOException {
     LOGGER.info("Wait till data is imported.");
-    long loadedProcessInstances = 0;
+    int loadedUserTasks = 0;
     int count = 0;
     final int maxWait = 101;
-    while (PROCESS_INSTANCE_COUNT > loadedProcessInstances && count < maxWait) {
+    while (PROCESS_INSTANCE_COUNT > loadedUserTasks && count < maxWait) {
       count++;
-      loadedProcessInstances = countEntitiesFor(TaskTemplate.INDEX_NAME);
+      loadedUserTasks = tasklistAPICaller.getAllTasks().size();
       LOGGER.info(
-          "Imported '{}' process instances of '{}'",
-          loadedProcessInstances,
-          PROCESS_INSTANCE_COUNT);
+          "Imported '{}' process instances of '{}'", loadedUserTasks, PROCESS_INSTANCE_COUNT);
+      assertThat(loadedUserTasks).isLessThanOrEqualTo(PROCESS_INSTANCE_COUNT);
       ThreadUtil.sleepFor(1000L);
     }
     if (count == maxWait) {
