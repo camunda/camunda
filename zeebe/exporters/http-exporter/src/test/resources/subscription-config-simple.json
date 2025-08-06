@@ -1,0 +1,7 @@
+{
+  "url": "http://localhost:8080",
+  "batchSize": 10,
+  "batchInterval": 500,
+  "filters": [],
+  "rules": []
+}

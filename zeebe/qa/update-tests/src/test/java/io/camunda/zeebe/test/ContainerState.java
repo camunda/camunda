@@ -228,21 +228,21 @@ final class ContainerState implements AutoCloseable {
   }
 
   /**
-   * @return true if a record was found the element with the specified intent. Otherwise, returns
+   * @return true if a record was found the element with the specified intents. Otherwise, returns
    *     false
    */
   public boolean hasElementInState(final String elementId, final String intent) {
     return hasLogContaining(
         String.format("\"elementId\":\"%s\"", elementId),
-        String.format("\"intent\":\"%s\"", intent));
+        String.format("\"intents\":\"%s\"", intent));
   }
 
   /**
-   * @return true if the message was found in the specified intent. Otherwise, returns false
+   * @return true if the message was found in the specified intents. Otherwise, returns false
    */
   public boolean hasMessageInState(final String name, final String intent) {
     return hasLogContaining(
-        String.format("\"name\":\"%s\"", name), String.format("\"intent\":\"%s\"", intent));
+        String.format("\"name\":\"%s\"", name), String.format("\"intents\":\"%s\"", intent));
   }
 
   // returns true if it finds a line that contains every piece.
@@ -261,7 +261,7 @@ final class ContainerState implements AutoCloseable {
 
   public long getIncidentKey() {
     final String incidentCreated =
-        getLogContaining("\"valueType\":\"INCIDENT\"", "\"intent\":\"CREATED\"");
+        getLogContaining("\"valueType\":\"INCIDENT\"", "\"intents\":\"CREATED\"");
 
     final Pattern pattern = Pattern.compile("(\"key\":)(\\d+)", Pattern.CASE_INSENSITIVE);
     final Matcher matcher = pattern.matcher(incidentCreated);

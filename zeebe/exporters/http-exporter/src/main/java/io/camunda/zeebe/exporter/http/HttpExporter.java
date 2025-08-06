@@ -102,6 +102,7 @@ public class HttpExporter implements Exporter {
 
   private void attemptFlushAndReschedule() {
     try {
+      log.debug("Attempting to flush HTTP Exporter from background task");
       updateExportPosition(subscription.attemptFlush());
     } catch (final Throwable e) {
       log.warn("Error during flush. Will retry with next attempt.", e);

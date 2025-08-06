@@ -27,13 +27,13 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.List;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 @TestInstance(Lifecycle.PER_CLASS)
 final class HttpExporterBatchIT {
@@ -71,7 +71,7 @@ final class HttpExporterBatchIT {
 
   @Test
   void testSingleRecordBatching() {
-    exporter = new HttpExporter(new SubscriptionConfig(url, 1, 100, List.of(rule)));
+    exporter = new HttpExporter(new SubscriptionConfig(url, 1, 100, List.of(rule), List.of()));
     exporter.configure(testContext);
     exporter.open(controller);
 
@@ -87,7 +87,7 @@ final class HttpExporterBatchIT {
 
   @Test
   void testBatching() {
-    exporter = new HttpExporter(new SubscriptionConfig(url, 10, 1000, List.of(rule)));
+    exporter = new HttpExporter(new SubscriptionConfig(url, 10, 1000, List.of(rule), List.of()));
     exporter.configure(testContext);
     exporter.open(controller);
 

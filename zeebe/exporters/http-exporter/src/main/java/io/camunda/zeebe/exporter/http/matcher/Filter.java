@@ -5,10 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.http.subscription;
+package io.camunda.zeebe.exporter.http.matcher;
 
-import io.camunda.zeebe.exporter.http.matcher.Filter;
-import java.util.List;
+import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.Set;
 
-public record SubscriptionConfig(
-    String url, int batchSize, long batchInterval, List<String> rules, List<Filter> filters) {}
+/**
+ * Filter class that represents a filter for a specific ValueType and a set of intents.
+ *
+ * @param valueType
+ * @param intents
+ */
+public record Filter(ValueType valueType, Set<String> intents) {}

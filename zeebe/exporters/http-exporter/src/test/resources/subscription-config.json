@@ -1,0 +1,4 @@
+{
+  "batchSize": 10,
+  "batchInterval": 500,
+  "rules": [{"valueType": [{ "wildcard": "*" }]}]}

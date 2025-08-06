@@ -40,7 +40,7 @@ public class Subscription {
     final var recordJson = toJson(record);
     final var recordPosition = record.getPosition();
     final var batchEntry = new BatchEntry(recordJson, recordPosition);
-    if (matcher.matches(recordJson)) {
+    if (matcher.matches(record, recordJson)) {
       return batchRecord(batchEntry);
     }
     return null;

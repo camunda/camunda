@@ -17,6 +17,10 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Implementation of {@link ExporterHttpClient} that uses Apache HttpClient to send HTTP POST
+ * requests to a specified URL with JSON payloads.
+ */
 public class ExporterHttpClientImpl implements ExporterHttpClient {
 
   private static final String CONTENT_TYPE_JSON = "application/json";

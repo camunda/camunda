@@ -14,7 +14,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.event.ruler.Machine;
 
-public class RuleRecordMatcher implements RecordMatcher {
+/**
+ * RuleRecordMatcher is responsible for matching records against a set of rules defined in JSON
+ * format. It uses the <a href="https://github.com/aws/event-ruler">Amazon Event Ruler</a> library
+ * to evaluate the rules against incoming records.
+ */
+public class RuleRecordMatcher {
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private final Machine machine;
@@ -37,7 +42,6 @@ public class RuleRecordMatcher implements RecordMatcher {
     return machine;
   }
 
-  @Override
   public boolean matches(final String recordJson) {
     try {
       final var rules = machine.rulesForJSONEvent(recordJson);

@@ -60,7 +60,8 @@ final class HttpExporterIT {
 
     final var config = new HttpExporterConfiguration();
     config.setUrl(url); // Set the URL to the WireMock server
-    config.setConfigPath("classpath:export-subscription-config.json");
+    config.setBatchSize(1);
+    config.setConfigPath("classpath:subscription-config.json");
     testContext.setConfiguration(new ExporterTestConfiguration<>("test", config));
 
     exporter = new HttpExporter();

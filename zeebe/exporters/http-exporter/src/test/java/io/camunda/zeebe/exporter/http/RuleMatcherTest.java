@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.exporter.http;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.exporter.http.matcher.CombinedMatcher;
+import io.camunda.zeebe.exporter.http.matcher.Filter;
+import io.camunda.zeebe.exporter.http.matcher.FilterRecordMatcher;
 import io.camunda.zeebe.exporter.http.matcher.RuleRecordMatcher;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -18,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 final class RuleMatcherTest {
@@ -39,13 +42,24 @@ final class RuleMatcherTest {
       }
 
 """;
-
+  final RuleRecordMatcher incidentMatcher = new RuleRecordMatcher(List.of(incidentMatchingRule));
+  final RuleRecordMatcher jobMatcher = new RuleRecordMatcher(List.of(jobMatchingRule));
+  final FilterRecordMatcher incidentValueTypeMatcher =
+      new FilterRecordMatcher(List.of(new Filter(ValueType.INCIDENT, Set.of())));
+  private final ObjectMapper objectMapper =
+      new ObjectMapper().registerModule(new ZeebeProtocolModule());
+  private final FilterRecordMatcher incidentIntentCreatedMatcher =
+      new FilterRecordMatcher(
+          List.of(new Filter(ValueType.INCIDENT, Set.of(IncidentIntent.CREATED.name()))));
   private final ProtocolFactory factory = new ProtocolFactory(b -> b.withAuthorizations(Map.of()));
+  private final RuleRecordMatcher incidentCreatedMatcher =
+      new RuleRecordMatcher(List.of(incidentCreatedMatchingRule));
+
+  final CombinedMatcher combinedMatcher =
+      new CombinedMatcher(incidentIntentCreatedMatcher, incidentCreatedMatcher);
 
   @Test
   void testRuleMatcher() throws Throwable {
-    final var objectMapper = new ObjectMapper().registerModule(new ZeebeProtocolModule());
-
     final var incidentResolvedRecord =
         objectMapper.writeValueAsString(
             factory.generateRecordWithIntent(ValueType.INCIDENT, IncidentIntent.RESOLVED));
@@ -56,19 +70,46 @@ final class RuleMatcherTest {
 
     final var jobRecord = objectMapper.writeValueAsString(factory.generateRecord(ValueType.JOB));
 
-    final var incidentMatcher = new RuleRecordMatcher(List.of(incidentMatchingRule));
-    assertTrue(incidentMatcher.matches(incidentResolvedRecord));
-    assertTrue(incidentMatcher.matches(incidentCreatedRecord));
-    assertFalse(incidentMatcher.matches(jobRecord));
+    assertThat(incidentMatcher.matches(incidentResolvedRecord)).isTrue();
+    assertThat(incidentMatcher.matches(incidentCreatedRecord)).isTrue();
+    assertThat(incidentMatcher.matches(jobRecord)).isFalse();
 
-    final var incidentCreatedMatcher = new RuleRecordMatcher(List.of(incidentCreatedMatchingRule));
-    assertTrue(incidentCreatedMatcher.matches(incidentCreatedRecord));
-    assertFalse(incidentCreatedMatcher.matches(incidentResolvedRecord));
-    assertFalse(incidentCreatedMatcher.matches(jobRecord));
+    assertThat(incidentCreatedMatcher.matches(incidentCreatedRecord)).isTrue();
+    assertThat(incidentCreatedMatcher.matches(incidentResolvedRecord)).isFalse();
+    assertThat(incidentCreatedMatcher.matches(jobRecord)).isFalse();
 
-    final var jobMatcher = new RuleRecordMatcher(List.of(jobMatchingRule));
-    assertFalse(jobMatcher.matches(incidentCreatedRecord));
-    assertFalse(jobMatcher.matches(incidentResolvedRecord));
-    assertTrue(jobMatcher.matches(jobRecord));
+    assertThat(jobMatcher.matches(incidentCreatedRecord)).isFalse();
+    assertThat(jobMatcher.matches(incidentResolvedRecord)).isFalse();
+    assertThat(jobMatcher.matches(jobRecord)).isTrue();
+  }
+
+  @Test
+  void testValueTypeMatcher() throws Throwable {
+    final var jobRecord = factory.generateRecord(ValueType.JOB);
+
+    final var incidentResolvedRecord =
+        factory.generateRecordWithIntent(ValueType.INCIDENT, IncidentIntent.RESOLVED);
+
+    final var incidentCreatedRecord =
+        factory.generateRecordWithIntent(ValueType.INCIDENT, IncidentIntent.CREATED);
+
+    assertThat(incidentValueTypeMatcher.matches(incidentResolvedRecord)).isTrue();
+    assertThat(incidentValueTypeMatcher.matches(incidentCreatedRecord)).isTrue();
+    assertThat(incidentValueTypeMatcher.matches(jobRecord)).isFalse();
+
+    assertThat(incidentIntentCreatedMatcher.matches(incidentCreatedRecord)).isTrue();
+    assertThat(incidentIntentCreatedMatcher.matches(incidentResolvedRecord)).isFalse();
+    assertThat(incidentIntentCreatedMatcher.matches(jobRecord)).isFalse();
+
+    assertThat(
+            combinedMatcher.matches(
+                incidentCreatedRecord, objectMapper.writeValueAsString(incidentCreatedRecord)))
+        .isTrue();
+    assertThat(
+            combinedMatcher.matches(
+                incidentResolvedRecord, objectMapper.writeValueAsString(incidentResolvedRecord)))
+        .isFalse();
+    assertThat(combinedMatcher.matches(jobRecord, objectMapper.writeValueAsString(jobRecord)))
+        .isFalse();
   }
 }
