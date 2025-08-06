@@ -3803,10 +3803,11 @@ paths:
     put:
       tags:
         - Group
-      operationId: addUserToGroup
+      operationId: assignUserToGroup
       summary: Assign a user to a group
       description: |
-        Assigns a user to a group.
+        Assigns a user to a group, making the user a member of the group.
+        Group members inherit the group authorizations, roles, and tenant assignments.
       parameters:
         - name: groupId
           in: path
@@ -3850,6 +3851,7 @@ paths:
       summary: Unassign a user from a group
       description: |
         Unassigns a user from a group.
+        The user is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
       parameters:
         - name: groupId
           in: path
@@ -3884,10 +3886,11 @@ paths:
     put:
       tags:
         - Group
-      operationId: addClientToGroup
+      operationId: assignClientToGroup
       summary: Assign a client to a group
       description: |
-        Assigns a client to a group.
+        Assigns a client to a group, making it a member of the group.
+        Members of the group inherit the group authorizations, roles, and tenant assignments.
       parameters:
         - name: groupId
           in: path
@@ -3931,6 +3934,7 @@ paths:
       summary: Unassign a client from a group
       description: |
         Unassigns a client from a group.
+        The client is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
       parameters:
         - name: groupId
           in: path
