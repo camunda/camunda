@@ -50,8 +50,9 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       final CamundaAuthentication authentication,
       final SimpleDocumentStoreRegistry registry,
       final AuthorizationChecker authorizationChecker,
-      final SecurityConfiguration securityConfig) {
-    super(brokerClient, securityContextProvider, authentication);
+      final SecurityConfiguration securityConfig,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.registry = registry;
     this.authorizationChecker = authorizationChecker;
     this.securityConfig = securityConfig;

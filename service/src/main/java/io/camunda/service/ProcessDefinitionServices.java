@@ -36,8 +36,9 @@ public class ProcessDefinitionServices
       final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
       final FormServices formServices,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
     this.formServices = formServices;
   }
@@ -71,7 +72,8 @@ public class ProcessDefinitionServices
         securityContextProvider,
         processDefinitionSearchClient,
         formServices,
-        authentication);
+        authentication,
+        executorProvider);
   }
 
   public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {

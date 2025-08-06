@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +50,7 @@ public class AdHocSubProcessActivityServicesTest {
 
   @Mock private BrokerClient brokerClient;
   @Mock private SecurityContextProvider securityContextProvider;
+  @Mock private ApiServicesExecutorProvider executorProvider;
   @Captor private ArgumentCaptor<BrokerActivateAdHocSubProcessActivityRequest> requestCaptor;
 
   private AdHocSubProcessActivityServices services;
@@ -57,8 +59,10 @@ public class AdHocSubProcessActivityServicesTest {
   public void before() {
     final CamundaAuthentication authentication =
         CamundaAuthentication.of(b -> b.claims(Map.of("claim", "value")));
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
-        new AdHocSubProcessActivityServices(brokerClient, securityContextProvider, authentication);
+        new AdHocSubProcessActivityServices(
+            brokerClient, securityContextProvider, authentication, executorProvider);
   }
 
   @Test

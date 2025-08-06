@@ -48,17 +48,17 @@ public class WebSecurityConfigTestContext {
 
   @Bean
   public RoleServices createRoleServices() {
-    return new RoleServices(null, null, null, null);
+    return new RoleServices(null, null, null, null, null);
   }
 
   @Bean
   public GroupServices createGroupServices() {
-    return new GroupServices(null, null, null, null);
+    return new GroupServices(null, null, null, null, null);
   }
 
   @Bean
   public TenantServices createTenantServices() {
-    return new TenantServices(null, null, null, null);
+    return new TenantServices(null, null, null, null, null);
   }
 
   @Bean
