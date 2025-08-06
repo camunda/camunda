@@ -19,6 +19,7 @@ import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForDecisionToBeEvaluated;
+import static io.camunda.it.util.TestHelper.waitForDecisionsToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
@@ -220,7 +221,7 @@ public class OperateV1ApiPermissionsIT {
             .join()
             .getDecisions()
             .getFirst();
-    final long decisionKey = decisionDeployment.getDecisionKey();
+    waitForDecisionsToBeDeployed(adminClient, 1, 1);
     final String dmnDecisionId = decisionDeployment.getDmnDecisionId();
     deployResource(
             adminClient,
@@ -234,8 +235,7 @@ public class OperateV1ApiPermissionsIT {
             "dmn_process.bpmn")
         .getProcesses()
         .getFirst();
-    final long dmnInstanceKey =
-        startProcessInstance(adminClient, "dmn_process").getProcessInstanceKey();
+    startProcessInstance(adminClient, "dmn_process").getProcessInstanceKey();
     waitForDecisionToBeEvaluated(adminClient, 1);
     decisionDefinitionKey =
         adminClient
