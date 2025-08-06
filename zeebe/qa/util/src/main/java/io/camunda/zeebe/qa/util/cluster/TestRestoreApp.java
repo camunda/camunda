@@ -9,7 +9,7 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
-import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
@@ -21,19 +21,28 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Represents an instance of the {@link RestoreApp} Spring application. */
 public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> {
-  private final BrokerBasedProperties config;
+  private final LegacyBrokerBasedProperties config;
   private long[] backupId;
 
   public TestRestoreApp() {
-    this(new BrokerBasedProperties());
+    this(new LegacyBrokerBasedProperties());
   }
 
-  public TestRestoreApp(final BrokerBasedProperties config) {
+  public TestRestoreApp(final LegacyBrokerBasedProperties config) {
     super(RestoreApp.class);
     this.config = config;
 
     //noinspection resource
-    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.RESTORE);
+    withBean("config", config, LegacyBrokerBasedProperties.class)
+        .withAdditionalProfile(Profile.RESTORE);
+    withProperty("camunda.cluster.partition-count", config.getCluster().getPartitionsCount());
+    withProperty("camunda.cluster.node-id", config.getCluster().getNodeId());
+    withProperty("camunda.cluster.replication-factor", config.getCluster().getReplicationFactor());
+    withProperty("camunda.cluster.size", config.getCluster().getClusterSize());
+    withProperty("camunda.data.primary-storage.directory", config.getData().getDirectory());
+    withProperty("zeebe.broker.data.directory", config.getData().getDirectory());
+    withProperty(
+        "camunda.data.primary-storage.runtime-directory", config.getData().getRuntimeDirectory());
   }
 
   @Override
@@ -73,6 +82,16 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   public TestRestoreApp withBrokerConfig(final Consumer<BrokerCfg> modifier) {
     modifier.accept(config);
+
+    withProperty("camunda.cluster.partition-count", config.getCluster().getPartitionsCount());
+    withProperty("camunda.cluster.node-id", config.getCluster().getNodeId());
+    withProperty("camunda.cluster.replication-factor", config.getCluster().getReplicationFactor());
+    withProperty("camunda.cluster.size", config.getCluster().getClusterSize());
+    withProperty("camunda.data.primary-storage.directory", config.getData().getDirectory());
+    withProperty("zeebe.broker.data.directory", config.getData().getDirectory());
+    withProperty(
+        "camunda.data.primary-storage.runtime-directory", config.getData().getRuntimeDirectory());
+
     return this;
   }
 
