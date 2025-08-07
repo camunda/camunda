@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED;
+import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH;
 
 import java.util.Set;
 
@@ -28,7 +29,11 @@ public class SecondaryStorage {
 
   public SecondaryStorageType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".type", type, SecondaryStorageType.class, SUPPORTED, LEGACY_TYPE_PROPERTIES);
+        PREFIX + ".type",
+        type,
+        SecondaryStorageType.class,
+        SUPPORTED_ONLY_IF_VALUES_MATCH,
+        LEGACY_TYPE_PROPERTIES);
   }
 
   public void setType(SecondaryStorageType type) {
