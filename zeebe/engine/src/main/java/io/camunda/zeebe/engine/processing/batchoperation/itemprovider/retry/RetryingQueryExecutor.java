@@ -42,4 +42,16 @@ public interface RetryingQueryExecutor {
     return exception instanceof CamundaSearchException
         && FAIL_IMMEDIATELY_REASONS.contains(((CamundaSearchException) exception).getReason());
   }
+
+  class RetryAttemptsExceededException extends RuntimeException {
+    public RetryAttemptsExceededException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
+
+  class ExecutorInterruptedException extends RuntimeException {
+    public ExecutorInterruptedException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
 }

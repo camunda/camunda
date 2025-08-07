@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.retry.RetryingQueryExecutor.RetryAttemptsExceededException;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import org.junit.jupiter.api.Test;
@@ -79,7 +80,10 @@ class ExponentialBackoffRetryingQueryExecutorTest {
         .thenThrow(new Exception("error 3"));
 
     final long startTime = System.currentTimeMillis();
-    assertThatThrownBy(() -> retryStrategy.runRetryable(callable)).cause().hasMessage("error 3");
+    assertThatThrownBy(() -> retryStrategy.runRetryable(callable))
+        .isInstanceOf(RetryAttemptsExceededException.class)
+        .cause()
+        .hasMessage("error 3");
     final long endTime = System.currentTimeMillis();
 
     verify(callable, times(3)).call();
@@ -98,7 +102,10 @@ class ExponentialBackoffRetryingQueryExecutorTest {
     when(callable.call())
         .thenThrow(new CamundaSearchException("error", CamundaSearchException.Reason.NOT_FOUND));
 
-    assertThatThrownBy(() -> retryStrategy.runRetryable(callable)).cause().hasMessage("error");
+    assertThatThrownBy(() -> retryStrategy.runRetryable(callable))
+        .isInstanceOf(RetryAttemptsExceededException.class)
+        .cause()
+        .hasMessage("error");
 
     verify(callable, times(1)).call();
   }

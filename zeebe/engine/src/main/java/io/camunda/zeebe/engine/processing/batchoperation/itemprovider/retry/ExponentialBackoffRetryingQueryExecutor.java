@@ -17,9 +17,13 @@ import org.slf4j.LoggerFactory;
  * backoff strategy.
  */
 public class ExponentialBackoffRetryingQueryExecutor implements RetryingQueryExecutor {
+
+  public static final String MSG_MAX_RETRIES_REACHED =
+      "Tried to run query %d times, but it failed every time. Giving up.";
+  public static final String MSG_INTERRUPTED = "Interrupted while waiting for next query attempt";
+
   private static final Logger LOG =
       LoggerFactory.getLogger(ExponentialBackoffRetryingQueryExecutor.class);
-
   private final int maxRetries;
   private final Duration initialRetryDelay;
   private final double backoffFactor;
@@ -43,29 +47,36 @@ public class ExponentialBackoffRetryingQueryExecutor implements RetryingQueryExe
     int numAttempts = maxRetries + 1; // + 1 for the initial attempt
     Duration retryDelay = initialRetryDelay;
 
-    try {
-      while (numAttempts > 0) {
-        try {
-          return retryableOperation.call();
-        } catch (final Exception e) {
-          if (shouldFailImmediately(e) || --numAttempts == 0) {
-            throw new RuntimeException("Max retries reached", e);
-          }
-          LOG.warn(
-              "Retryable operation failed, retries left: {}, retrying in {} ms. Error: {}",
-              numAttempts,
-              retryDelay.toMillis(),
-              e.getLocalizedMessage());
-
-          Thread.sleep(retryDelay.toMillis());
-          retryDelay = retryDelay.multipliedBy((long) backoffFactor);
+    while (numAttempts > 0) {
+      try {
+        return retryableOperation.call();
+      } catch (final Exception e) {
+        if (shouldFailImmediately(e) || --numAttempts == 0) {
+          throw new RetryAttemptsExceededException(
+              String.format(MSG_MAX_RETRIES_REACHED, maxRetries + 1), e);
         }
+        // the backoff is potentially a double value so we need to convert to millis in between
+        retryDelay = Duration.ofMillis(Math.round(retryDelay.toMillis() * backoffFactor));
+        LOG.warn(
+            "Retryable operation failed, retries left: {}, retrying in {} ms. Error: {}",
+            numAttempts,
+            retryDelay.toMillis(),
+            e.getLocalizedMessage());
+
+        sleep(retryDelay);
       }
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt(); // Restore interrupted status
-      throw new RuntimeException("Retryable operation was interrupted", e);
     }
 
-    throw new RuntimeException("Unexpected state: should not reach here");
+    throw new IllegalStateException(
+        "Unexpected state: Used all query retry attempts without returning a value");
+  }
+
+  private static void sleep(final Duration delay) {
+    try {
+      Thread.sleep(delay.toMillis());
+    } catch (final InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      throw new ExecutorInterruptedException(MSG_INTERRUPTED, ie);
+    }
   }
 }
