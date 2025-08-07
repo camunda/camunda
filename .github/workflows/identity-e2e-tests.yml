@@ -1,5 +1,5 @@
-# description: Workflow for Front-End end to end tests for Identity only. Tests will use a running instance of Identity for the API
-# test location: /identity/client/e2e/tests
+# description: Workflow for end to end tests for Identity only. Tests will use a running instance of Identity for the API
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite/tests/identity
 # type: CI
 # owner: @camunda/identity
 ---
@@ -72,13 +72,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Build frontend
-        uses: ./.github/actions/build-frontend
-        with:
-          directory: ./identity/client
-      - name: Install Playwright
-        run: yarn exec playwright install --with-deps chromium
-        working-directory: ./identity/client
       - name: Install QA Test Suite Dependencies
         run: npm install
         working-directory: ./qa/c8-orchestration-cluster-e2e-test-suite
