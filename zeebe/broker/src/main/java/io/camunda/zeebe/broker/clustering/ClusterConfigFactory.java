@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberConfig;
 import io.atomix.cluster.NodeConfig;
 import io.atomix.cluster.discovery.BootstrapDiscoveryConfig;
 import io.atomix.cluster.discovery.KubernetesDiscoveryConfig;
+import io.atomix.cluster.discovery.NodeDiscoveryConfig;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.net.Address;
@@ -31,7 +32,12 @@ public final class ClusterConfigFactory {
   public ClusterConfig mapConfiguration(final BrokerCfg config) {
     final var cluster = config.getCluster();
     final var name = cluster.getClusterName();
-    final var discovery = k8sDiscoveryConfig(cluster.getInitialContactPoints().getFirst());
+    final NodeDiscoveryConfig discovery;
+    if (cluster.getInitialContactPoints().isEmpty()) {
+      discovery = discoveryConfig(cluster.getInitialContactPoints());
+    } else {
+      discovery = k8sDiscoveryConfig(cluster.getInitialContactPoints().getFirst());
+    }
     final var membership = membershipConfig(cluster.getMembership());
     final var network = config.getNetwork();
 
