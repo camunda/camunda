@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.http.subscription;
+package io.camunda.exporter.http.subscription;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +30,10 @@ public class Batch {
 
   boolean isFull() {
     return size == entries.size();
+  }
+
+  boolean isEmpty() {
+    return entries.isEmpty();
   }
 
   int spaceLeft() {
@@ -61,9 +65,9 @@ public class Batch {
       throw new IllegalStateException("Flushing empty batch not allowed.");
     }
     final var logPosition = lastLogPosition;
-    entries.clear();
     lastTimeFlushed = System.currentTimeMillis();
     lastLogPosition = -1;
+    entries.clear();
     return logPosition;
   }
 

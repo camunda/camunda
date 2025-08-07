@@ -5,10 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.http.client;
+package io.camunda.exporter.http.matcher;
 
-import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.protocol.record.Record;
+import java.util.function.Supplier;
 
-public interface ExporterHttpClient extends CloseableSilently {
-  void postRecords(String url, String json);
+public interface RecordMatcher {
+  boolean matches(final Record<?> record, Supplier<String> jsonSupplier);
 }

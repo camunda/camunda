@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.http;
+package io.camunda.exporter.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.http.config.HttpExporterConfiguration;
-import io.camunda.zeebe.exporter.http.config.SubscriptionConfigFactory;
+import io.camunda.exporter.http.config.HttpExporterConfiguration;
+import io.camunda.exporter.http.config.SubscriptionConfigFactory;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import org.junit.jupiter.api.Test;
 

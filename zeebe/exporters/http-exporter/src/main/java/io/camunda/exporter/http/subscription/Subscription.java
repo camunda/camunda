@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.http.subscription;
+package io.camunda.exporter.http.subscription;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.RawValue;
-import io.camunda.zeebe.exporter.http.client.ExporterHttpClient;
-import io.camunda.zeebe.exporter.http.matcher.RecordMatcher;
+import io.camunda.exporter.http.client.ExporterHttpClient;
+import io.camunda.exporter.http.matcher.RecordMatcher;
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.List;
 
@@ -40,11 +40,16 @@ public class Subscription {
   }
 
   public Long exportRecord(final Record<?> record) {
-    final var recordPosition = record.getPosition();
     if (matcher.matches(record, () -> toJson(record))) {
-      return batchRecord(new BatchEntry(toFilteredJson(record), recordPosition));
+      // Record matches the filter criteria, we can add it to the batch
+      return batchRecord(new BatchEntry(toFilteredJson(record), record.getPosition()));
+    } else if (batch.isEmpty()) {
+      // An empty batch allows us to save the exported record position
+      return record.getPosition();
+    } else {
+      // We dont export the record and cant save the position
+      return null;
     }
-    return null;
   }
 
   private Long batchRecord(final BatchEntry batchEntry) {

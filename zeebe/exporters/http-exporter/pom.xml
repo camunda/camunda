@@ -10,10 +10,10 @@
     <relativePath>../../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-http-exporter</artifactId>
+  <artifactId>http-exporter</artifactId>
   <packaging>jar</packaging>
 
-  <name>Zeebe Exporter HTTP</name>
+  <name>Camunda HTTP Exporter</name>
 
   <dependencies>
     <dependency>

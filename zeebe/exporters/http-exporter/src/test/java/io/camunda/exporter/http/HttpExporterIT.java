@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.http;
+package io.camunda.exporter.http;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
@@ -20,7 +20,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import io.camunda.zeebe.exporter.http.config.HttpExporterConfiguration;
+import io.camunda.exporter.http.config.HttpExporterConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -87,7 +87,7 @@ final class HttpExporterIT {
   }
 
   @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.http.TestSupport#provideValueTypes")
+  @MethodSource("io.camunda.exporter.http.TestSupport#provideValueTypes")
   void shouldExportRecord(final ValueType valueType) {
     // given
     final var record = generateRecord(valueType);

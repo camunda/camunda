@@ -5,8 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.http.matcher;
+package io.camunda.exporter.http.subscription;
 
-import com.fasterxml.jackson.annotation.JsonRawValue;
-
-public record Rule(@JsonRawValue String json) {}
+public record BatchEntry(String record, long logPosition) {}

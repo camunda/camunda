@@ -5,16 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.http;
+package io.camunda.exporter.http;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.http.matcher.CombinedMatcher;
-import io.camunda.zeebe.exporter.http.matcher.Filter;
-import io.camunda.zeebe.exporter.http.matcher.FilterRecordMatcher;
-import io.camunda.zeebe.exporter.http.matcher.RuleRecordMatcher;
+import io.camunda.exporter.http.matcher.CombinedMatcher;
+import io.camunda.exporter.http.matcher.Filter;
+import io.camunda.exporter.http.matcher.FilterRecordMatcher;
+import io.camunda.exporter.http.matcher.RuleRecordMatcher;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
