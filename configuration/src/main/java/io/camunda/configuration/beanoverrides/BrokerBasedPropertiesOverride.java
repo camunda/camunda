@@ -9,9 +9,11 @@ package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Azure;
 import io.camunda.configuration.S3;
+import io.camunda.configuration.SasToken;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
+import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
@@ -161,7 +163,24 @@ public class BrokerBasedPropertiesOverride {
     azureBackupStoreConfig.setConnectionString(azure.getConnectionString());
     azureBackupStoreConfig.setBasePath(azure.getBasePath());
     azureBackupStoreConfig.setCreateContainer(azure.isCreateContainer());
+    populateFromSasToken(override);
 
     override.getData().getBackup().setAzure(azureBackupStoreConfig);
+  }
+
+  private void populateFromSasToken(final BrokerBasedProperties override) {
+    final SasToken sasToken =
+        unifiedConfiguration.getCamunda().getData().getBackup().getAzure().getSasToken();
+    final SasTokenConfig sasTokenConfig = override.getData().getBackup().getAzure().getSasToken();
+
+    if (sasToken != null) {
+      override.getData().getBackup().getAzure().setSasToken(sasToken.toSasTokenConfig());
+    } else if (sasTokenConfig != null) {
+      override
+          .getData()
+          .getBackup()
+          .getAzure()
+          .setSasToken(SasToken.fromSasTokenConfig(sasTokenConfig).toSasTokenConfig());
+    }
   }
 }

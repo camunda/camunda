@@ -214,6 +214,7 @@ public class UnifiedConfigurationHelper {
       case "Duration" -> (T) DurationStyle.detectAndParse(strValue);
       case "Long" -> (T) Long.valueOf(strValue);
       case "DataSize" -> (T) DataSize.parse(strValue);
+      case "SasTokenType" -> (T) SasToken.SasTokenType.valueOf(strValue.toUpperCase());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }
