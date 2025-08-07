@@ -99,9 +99,19 @@ else
     exit 1
 fi
 
+# "Dumb" way to match if the base image already has a fully qualified name or not. If the prefix
+# before the slash contains a dot (indicating possibly a domain) or a colon (indicating a port),
+# followed by a slash, then we can assume it's fully qualified already.
+if [[ ! $BASE_IMAGE =~ ^(.+[\.|:].+)?/.*$ ]]; then
+  # No registry prefix, so we add the default one
+  BASE_IMAGE="docker.io/library/${BASE_IMAGE}"
+fi
+
 # Extract the actual labels from the info - make sure to sort keys so we always have the same
 # ordering for maps to compare things properly
-actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels')
+# Exclude the minimus.images.version label, since it changes every time the image is patched, and
+# we can't really know in advance reliably what it will be.
+actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels | del(."io.minimus.images.version")')
 
 if [[ -z "${actualLabels}" || "${actualLabels}" == "null" || "${actualLabels}" == "[]" ]]; then
   echo >&2 "No labels found in the given image ${imageName}; raw inspect output to follow"
@@ -118,7 +128,7 @@ expectedLabels=$(
     --arg REVISION "${REVISION}" \
     --arg DATE "${DATE}" \
     --arg DIGEST "${DIGEST}" \
-    --arg BASE_IMAGE "docker.io/library/${BASE_IMAGE}" \
+    --arg BASE_IMAGE "${BASE_IMAGE}" \
     "$(cat "${labelsGoldenFile}")"
 )
 
