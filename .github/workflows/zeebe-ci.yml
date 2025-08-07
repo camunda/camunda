@@ -106,7 +106,7 @@ jobs:
           job_name: "smoke-tests/${{ matrix.os }}-${{ matrix.arch }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          user_description: "team-distributed-systems"
           detailed_junit_flaky_tests: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}  # feature only supported on Linux for now
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -159,7 +159,7 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          user_description: "team-distributed-systems"
           detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -225,7 +225,7 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          user_description: "team-core-features"
           detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -283,7 +283,7 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          user_description: "team-distributed-systems"
           detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -354,6 +354,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-distributed-systems"
 
   test-summary:
     # Used by the merge queue to check all tests, including the unit test matrix.
@@ -424,6 +425,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          user_description: "team-distributed-systems"
   deploy-benchmark-images:
     name: Deploy benchmark images
     timeout-minutes: 5
@@ -470,6 +472,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-distributed-systems"
   deploy-snyk-projects:
     name: Deploy Snyk development projects
     needs: [ test-summary ]
@@ -524,3 +527,4 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          user_description: "General"

@@ -57,6 +57,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          # use setup-medic-lookup.sh to set up lookupTeamMedic lookup array
+          source .ci/scripts/ci/setup-medic-lookup.sh
+
+          # number of tests that need to fail before notifying team medic
+          FAILED_TEST_THRESHOLD=5
           # shellcheck disable=SC2016
           TOP5_FAILINGTESTS=$(bq query --format=json --use_legacy_sql=false --quiet=true 'SELECT test_class_name, test_name, COUNT(*) as number_of_fails FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name WHERE TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY), INTERVAL 7 DAY)<=ts.report_time AND ts.report_time<=TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY) AND ts.ci_url="https://github.com/camunda/camunda" AND test_status = "failure" AND ((build_trigger="merge_group" AND build_base_ref="refs/heads/main") OR (build_trigger="push" AND build_ref="refs/heads/main")) GROUP BY test_class_name, test_name ORDER BY number_of_fails DESC LIMIT 5')
 
@@ -69,6 +74,7 @@ jobs:
               FULLY_QUALIFIED_TEST_CLASS_NAME=$(echo "$top_failingtest" | jq -r '.test_class_name')
               TEST_CLASS_NAME="${FULLY_QUALIFIED_TEST_CLASS_NAME##*.}"
               TEST_NAME=$(echo "$top_failingtest" | jq -r '.test_name')
+              TEST_OWNER=$(echo "$top_failingtest" | jq -r '.user_description')
               SUFFIX=""
 
               # Try to find GH issues about related (failing) tests:
@@ -83,6 +89,13 @@ jobs:
               fi
 
               printf "• %sx \`%s.%s\`%s\n\n" "$NUMBER_OF_FAILS" "$TEST_CLASS_NAME" "$TEST_NAME" "$SUFFIX"
+
+              # only notify team medic if the owner is a team name and the number of failures is above the threshold
+              if [ "${NUMBER_OF_FAILS}" -ge "${FAILED_TEST_THRESHOLD}" ]; then
+                if [[ -n "${lookupTeamMedic[$TEST_OWNER]}" ]]; then
+                  printf "\t• %s\n" "${lookupTeamMedic[$TEST_OWNER]}"
+                fi
+              fi
 
             done
             echo ""

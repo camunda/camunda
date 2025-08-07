@@ -55,6 +55,7 @@ jobs:
     with:
       componentName: "Operate"
       suite: ${{ matrix.suite }}
+      suiteName: ${{ matrix.suiteName }}
 
   # Checks to see if Operate can properly build itself and a docker image
   build-operate-backend:
@@ -96,6 +97,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   operate-frontend-tests:
     if: inputs.runFeTests
@@ -172,7 +174,7 @@ jobs:
           job_name: "operate-ci/backup-restore"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          user_description: "team-data-layer"
           detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}

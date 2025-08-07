@@ -38,6 +38,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   fe-eslint:
     name: "ESLint / Core Features"
@@ -65,6 +66,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   fe-stylelint:
     name: "Stylelint / Core Features"
@@ -92,6 +94,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   fe-tests:
     name: "Run Unit Tests / Core Features"
@@ -119,6 +122,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   fe-visual-regression-tests:
     name: "Visual regression tests / Core Features"
@@ -161,6 +165,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   fe-a11y-tests:
     name: "a11y tests / Core Features"
@@ -203,3 +208,4 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"

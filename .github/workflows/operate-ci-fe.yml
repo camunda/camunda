@@ -68,6 +68,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   # Code linting
   operate-fe-eslint:
@@ -96,6 +97,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   # description: This workflow runs a11y accessibility tests on Operate
   operate-fe-a11y-tests:
@@ -139,6 +141,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   operate-fe-visual-regression-tests:
     name: "Visual regression tests / Core Features"
@@ -181,6 +184,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   operate-update-screenshots:
     name: "Update Screenshots / Core Features"
@@ -222,3 +226,4 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"

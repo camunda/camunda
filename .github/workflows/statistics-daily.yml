@@ -55,6 +55,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          # use setup-medic-lookup.sh to set up lookupTeamMedic lookup array
+          source .ci/scripts/ci/setup-medic-lookup.sh
+
+          # number of tests that need to fail before notifying team medic
+          FLAKY_TEST_THRESHOLD=10
           # shellcheck disable=SC2016
           NUMBER_OF_ALL_JOBS=$(bq query --format=json --use_legacy_sql=false --quiet=true 'SELECT COUNT(*) as number_of_all_jobs FROM `ci-30-162810.prod_ci_analytics.build_status_v2` WHERE TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY), INTERVAL 1 DAY)<=report_time AND report_time<=TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY) AND ci_url="https://github.com/camunda/camunda"' | jq -r '.[0].number_of_all_jobs')
           # shellcheck disable=SC2016
@@ -74,6 +79,7 @@ jobs:
               FULLY_QUALIFIED_TEST_CLASS_NAME=$(echo "$top_flakytest" | jq -r '.test_class_name')
               TEST_CLASS_NAME="${FULLY_QUALIFIED_TEST_CLASS_NAME##*.}"
               TEST_NAME=$(echo "$top_flakytest" | jq -r '.test_name')
+              TEST_OWNER=$(echo "$top_flakytest" | jq -r '.user_description')
               SUFFIX=""
 
               # Try to find GH issues about related flaky tests:
@@ -88,6 +94,12 @@ jobs:
               fi
 
               printf "• %sx \`%s.%s\`%s\n\n" "$NUMBER_OF_FLAKES" "$TEST_CLASS_NAME" "$TEST_NAME" "$SUFFIX"
+              # only notify if the owner is a team name and the number of flakes is above the threshold
+              if [ "${NUMBER_OF_FLAKES}" -ge "${FLAKY_TEST_THRESHOLD}" ]; then
+                if [[ -n "${lookupTeamMedic[$TEST_OWNER]}" ]]; then
+                  printf "\t• %s\n" "${lookupTeamMedic[$TEST_OWNER]}"
+                fi
+              fi
 
             done
             echo ""
