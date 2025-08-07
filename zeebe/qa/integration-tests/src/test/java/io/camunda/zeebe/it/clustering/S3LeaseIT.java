@@ -66,9 +66,9 @@ public class S3LeaseIT {
   private final TestCluster cluster =
       TestCluster.builder()
           .withBrokersCount(3)
-          .withGatewaysCount(1)
-          .withReplicationFactor(2)
+          .withReplicationFactor(1)
           .withPartitionsCount(3)
+          .withBrokerConfig(cfg -> cfg.withCreateSchema(false))
           .withEmbeddedGateway(false)
           .build();
 
