@@ -7,12 +7,14 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Azure;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import org.springframework.beans.BeanUtils;
@@ -128,6 +130,7 @@ public class BrokerBasedPropertiesOverride {
 
   private void populateFromBackup(final BrokerBasedProperties override) {
     populateFromS3(override);
+    populateFromAzure(override);
   }
 
   private void populateFromS3(final BrokerBasedProperties override) {
@@ -147,5 +150,18 @@ public class BrokerBasedPropertiesOverride {
     s3BackupStoreConfig.setSupportLegacyMd5(s3.isSupportLegacyMd5());
 
     override.getData().getBackup().setS3(s3BackupStoreConfig);
+  }
+
+  private void populateFromAzure(final BrokerBasedProperties override) {
+    final Azure azure = unifiedConfiguration.getCamunda().getData().getBackup().getAzure();
+    final AzureBackupStoreConfig azureBackupStoreConfig = override.getData().getBackup().getAzure();
+    azureBackupStoreConfig.setEndpoint(azure.getEndpoint());
+    azureBackupStoreConfig.setAccountName(azure.getAccountName());
+    azureBackupStoreConfig.setAccountKey(azure.getAccountKey());
+    azureBackupStoreConfig.setConnectionString(azure.getConnectionString());
+    azureBackupStoreConfig.setBasePath(azure.getBasePath());
+    azureBackupStoreConfig.setCreateContainer(azure.isCreateContainer());
+
+    override.getData().getBackup().setAzure(azureBackupStoreConfig);
   }
 }
