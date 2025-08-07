@@ -74,7 +74,7 @@ jobs:
               FULLY_QUALIFIED_TEST_CLASS_NAME=$(echo "$top_failingtest" | jq -r '.test_class_name')
               TEST_CLASS_NAME="${FULLY_QUALIFIED_TEST_CLASS_NAME##*.}"
               TEST_NAME=$(echo "$top_failingtest" | jq -r '.test_name')
-              TEST_OWNER=$(echo "$top_failingtest" | jq -r '.user_decription')
+              TEST_OWNER=$(echo "$top_failingtest" | jq -r '.user_description')
               SUFFIX=""
 
               # Try to find GH issues about related (failing) tests:
