@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -81,6 +82,7 @@ public class MultiTenantUserTaskOperationsTest {
         .authorization()
         .newAuthorization()
         .withPermissions(PermissionType.UPDATE_USER_TASK)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
         .withResourceId(PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withOwnerId(username)

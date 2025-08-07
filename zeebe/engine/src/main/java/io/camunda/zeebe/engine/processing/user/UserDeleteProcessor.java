@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -183,7 +184,10 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
 
     authorizationKeysForGroup.forEach(
         authorizationKey -> {
-          final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+          final var authorization =
+              new AuthorizationRecord()
+                  .setAuthorizationKey(authorizationKey)
+                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
           stateWriter.appendFollowUpEvent(
               authorizationKey, AuthorizationIntent.DELETED, authorization);
         });

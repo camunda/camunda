@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.authorization;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
@@ -62,8 +63,8 @@ public class AuthorizationUpdateAuthorizationTest {
             .withOwnerId(user.getUsername())
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
-            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-            .withResourceId("*")
+            .withResourceMatcher(WILDCARD.getMatcher())
+            .withResourceId(WILDCARD.getResourceId())
             .withPermissions(PermissionType.CREATE)
             .create(DEFAULT_USER.getUsername())
             .getValue()
@@ -73,6 +74,7 @@ public class AuthorizationUpdateAuthorizationTest {
     engine
         .authorization()
         .updateAuthorization(authorizationKey)
+        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
         .withPermissions(PermissionType.DELETE_FORM)
         .update(DEFAULT_USER.getUsername());
 
@@ -96,8 +98,8 @@ public class AuthorizationUpdateAuthorizationTest {
             .withOwnerId(user.getUsername())
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
-            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-            .withResourceId("*")
+            .withResourceMatcher(WILDCARD.getMatcher())
+            .withResourceId(WILDCARD.getResourceId())
             .withPermissions(PermissionType.CREATE)
             .create(DEFAULT_USER.getUsername())
             .getValue()
@@ -108,6 +110,7 @@ public class AuthorizationUpdateAuthorizationTest {
         .authorization()
         .updateAuthorization(authorizationKey)
         .withPermissions(PermissionType.DELETE_FORM)
+        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
         .update(user.getUsername());
 
     // then
@@ -129,8 +132,8 @@ public class AuthorizationUpdateAuthorizationTest {
             .withOwnerId(user.getUsername())
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType(AuthorizationResourceType.RESOURCE)
-            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-            .withResourceId("*")
+            .withResourceMatcher(WILDCARD.getMatcher())
+            .withResourceId(WILDCARD.getResourceId())
             .withPermissions(PermissionType.CREATE)
             .create(DEFAULT_USER.getUsername())
             .getValue()
@@ -142,6 +145,7 @@ public class AuthorizationUpdateAuthorizationTest {
             .authorization()
             .updateAuthorization(authorizationKey)
             .withPermissions(PermissionType.DELETE_FORM)
+            .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
             .expectRejection()
             .update(user.getUsername());
 
@@ -173,8 +177,8 @@ public class AuthorizationUpdateAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
-        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-        .withResourceId("*")
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .withPermissions(permissionType)
         .create(DEFAULT_USER.getUsername());
   }

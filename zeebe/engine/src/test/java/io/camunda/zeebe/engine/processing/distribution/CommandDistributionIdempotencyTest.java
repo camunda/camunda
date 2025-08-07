@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.distribution;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -180,8 +181,8 @@ public class CommandDistributionIdempotencyTest {
                       .authorization()
                       .newAuthorization()
                       .withOwnerId(user.getValue().getUsername())
-                      .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-                      .withResourceId("*")
+                      .withResourceMatcher(WILDCARD.getMatcher())
+                      .withResourceId(WILDCARD.getResourceId())
                       .withResourceType(AuthorizationResourceType.USER)
                       .withPermissions(PermissionType.READ)
                       .create();
@@ -200,8 +201,8 @@ public class CommandDistributionIdempotencyTest {
                           .authorization()
                           .newAuthorization()
                           .withOwnerId(user.getValue().getUsername())
-                          .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-                          .withResourceId("*")
+                          .withResourceMatcher(WILDCARD.getMatcher())
+                          .withResourceId(WILDCARD.getResourceId())
                           .withResourceType(AuthorizationResourceType.USER)
                           .withPermissions(PermissionType.READ)
                           .create()
@@ -224,15 +225,19 @@ public class CommandDistributionIdempotencyTest {
                           .authorization()
                           .newAuthorization()
                           .withOwnerId(user.getValue().getUsername())
-                          .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-                          .withResourceId("*")
+                          .withResourceMatcher(WILDCARD.getMatcher())
+                          .withResourceId(WILDCARD.getResourceId())
                           .withResourceType(AuthorizationResourceType.USER)
                           .withPermissions(PermissionType.READ)
                           .create()
                           .getValue()
                           .getAuthorizationKey();
 
-                  return ENGINE.authorization().updateAuthorization(key).update();
+                  return ENGINE
+                      .authorization()
+                      .updateAuthorization(key)
+                      .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+                      .update();
                 }),
             AuthorizationUpdateProcessor.class
           },

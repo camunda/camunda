@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -75,6 +76,7 @@ public class ResourceFetchAuthorizationTest {
         user,
         AuthorizationResourceType.RESOURCE,
         PermissionType.READ,
+        AuthorizationResourceMatcher.ID,
         resourceMetadata.getResourceId());
 
     // when
@@ -133,6 +135,7 @@ public class ResourceFetchAuthorizationTest {
       final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
+      final AuthorizationResourceMatcher matcher,
       final String resourceId) {
     engine
         .authorization()
@@ -141,6 +144,7 @@ public class ResourceFetchAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
+        .withResourceMatcher(matcher)
         .withResourceId(resourceId)
         .create(DEFAULT_USER.getUsername());
   }

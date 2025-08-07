@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -68,6 +69,7 @@ public final class JobThrowErrorTest {
         .newAuthorization()
         .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
         .withResourceId(PROCESS_ID)
         .withOwnerId(username)
         .withOwnerType(AuthorizationOwnerType.USER)

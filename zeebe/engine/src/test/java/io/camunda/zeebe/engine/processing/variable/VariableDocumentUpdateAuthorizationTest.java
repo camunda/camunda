@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -96,6 +97,7 @@ public class VariableDocumentUpdateAuthorizationTest {
         user,
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_PROCESS_INSTANCE,
+        AuthorizationResourceMatcher.ID,
         PROCESS_ID);
 
     // when
@@ -151,6 +153,7 @@ public class VariableDocumentUpdateAuthorizationTest {
       final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
+      final AuthorizationResourceMatcher matcher,
       final String resourceId) {
     engine
         .authorization()
@@ -159,6 +162,7 @@ public class VariableDocumentUpdateAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
+        .withResourceMatcher(matcher)
         .withResourceId(resourceId)
         .create(DEFAULT_USER.getUsername());
   }
