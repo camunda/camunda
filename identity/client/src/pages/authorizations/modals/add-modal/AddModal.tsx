@@ -24,8 +24,13 @@ import { useNotifications } from "src/components/notifications";
 import TextField from "src/components/form/TextField";
 import Divider from "src/components/form/Divider";
 import { DocumentationLink } from "src/components/documentation";
-import { Row, TextFieldContainer, PermissionsSectionLabel } from "./components";
-import OwnerSelection from "./OwnerSelection";
+import {
+  Row,
+  TextFieldContainer,
+  PermissionsSectionLabel,
+} from "../components";
+import OwnerSelection from "../owner-selection";
+import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
 
 type ResourcePermissionsType = {
   [key in keyof typeof ResourceType]: Authorization["permissionTypes"];
@@ -120,7 +125,7 @@ type FormData = {
   permissionTypes: Authorization["permissionTypes"];
 };
 
-const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
+export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   open,
   onClose,
   onSuccess,
@@ -131,6 +136,8 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   const [apiCall, { loading, error }] = useApiCall(createAuthorization, {
     suppressErrorNotification: true,
   });
+
+  const { DropdownAutoFocus } = useDropdownAutoFocus(open);
 
   const ownerTypeItems = Object.values(OwnerType);
   const allResourceTypes = Object.values(ResourceType);
@@ -185,32 +192,34 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
       onSubmit={handleSubmit(onSubmit)}
     >
       <Row>
-        <Controller
-          name="ownerType"
-          control={control}
-          render={({ field }) => (
-            <Dropdown
-              id="owner-type-dropdown"
-              label={t("selectOwnerType")}
-              titleText={t("ownerType")}
-              items={ownerTypeItems.filter((ownerType) => {
-                const excludedType = isOIDC
-                  ? []
-                  : [OwnerType.MAPPING_RULE, OwnerType.CLIENT];
+        <DropdownAutoFocus>
+          <Controller
+            name="ownerType"
+            control={control}
+            render={({ field }) => (
+              <Dropdown
+                id="owner-type-dropdown"
+                label={t("selectOwnerType")}
+                titleText={t("ownerType")}
+                items={ownerTypeItems.filter((ownerType) => {
+                  const excludedType = isOIDC
+                    ? []
+                    : [OwnerType.MAPPING_RULE, OwnerType.CLIENT];
 
-                return !excludedType.includes(ownerType);
-              })}
-              onChange={(item: { selectedItem: OwnerType }) => {
-                setValue("ownerId", "");
-                field.onChange(item.selectedItem);
-              }}
-              itemToString={(item: Authorization["ownerType"]) =>
-                item ? t(OwnerType[item]) : ""
-              }
-              selectedItem={field.value}
-            />
-          )}
-        />
+                  return !excludedType.includes(ownerType);
+                })}
+                onChange={(item: { selectedItem: OwnerType }) => {
+                  setValue("ownerId", "");
+                  field.onChange(item.selectedItem);
+                }}
+                itemToString={(item: Authorization["ownerType"]) =>
+                  item ? t(OwnerType[item]) : ""
+                }
+                selectedItem={field.value}
+              />
+            )}
+          />
+        </DropdownAutoFocus>
         <TextFieldContainer>
           <Controller
             name="ownerId"
@@ -264,7 +273,6 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
                 label={t("resourceId")}
                 placeholder={t("enterId")}
                 errors={fieldState.error?.message}
-                autoFocus
               />
             )}
           />
@@ -315,5 +323,3 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
     </FormModal>
   );
 };
-
-export default AddModal;
