@@ -333,14 +333,8 @@ public class OpenSearchQueryHelper {
   }
 
   private Query readPermissionQuery() {
-    if (!permissionsService.permissionsEnabled()) {
-      return null;
-    }
     final var allowed =
         permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
-    if (allowed == null) {
-      return null;
-    }
     return allowed.isAll()
         ? matchAll()
         : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());

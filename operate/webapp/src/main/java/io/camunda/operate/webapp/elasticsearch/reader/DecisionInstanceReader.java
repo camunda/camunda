@@ -335,14 +335,8 @@ public class DecisionInstanceReader extends AbstractReader
   }
 
   private QueryBuilder createReadPermissionQuery() {
-    if (!permissionsService.permissionsEnabled()) {
-      return null;
-    }
     final var allowed =
         permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE);
-    if (allowed == null) {
-      return null;
-    }
     return allowed.isAll()
         ? QueryBuilders.matchAllQuery()
         : QueryBuilders.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
