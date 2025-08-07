@@ -72,7 +72,7 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
     final Map<String, List<DRDDataEntryDto>> result =
         decisionInstanceReader.getDecisionInstanceDRDData(decisionInstanceId);
     if (result.isEmpty()) {
-      throw new NotFoundException("Decision instance nor found: " + decisionInstanceId);
+      throw new NotFoundException("Decision instance not found: " + decisionInstanceId);
     }
     return result;
   }

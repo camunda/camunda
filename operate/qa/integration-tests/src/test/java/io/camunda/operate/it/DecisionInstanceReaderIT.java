@@ -14,16 +14,16 @@ import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_1_3;
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_2_1;
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_2_2;
-import static io.camunda.operate.webapp.rest.DecisionInstanceRestService.DECISION_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto.DECISION_INSTANCE_INPUT_DTO_COMPARATOR;
 import static io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto.DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.data.util.DecisionDataUtil;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
+import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
@@ -32,57 +32,66 @@ import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MvcResult;
 
 public class DecisionInstanceReaderIT extends OperateAbstractIT {
 
-  private static final String QUERY_DECISION_INSTANCES_URL = DECISION_INSTANCE_URL + "/%s";
-
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
+  private DecisionInstanceEntity entity;
 
   @Autowired private DecisionDataUtil testDataUtil;
+  @Autowired private DecisionInstanceReader decisionInstanceReader;
+
+  @Before
+  public void setup() throws PersistenceException {
+    final List<DecisionInstanceEntity> decisionInstances = testDataUtil.createDecisionInstances();
+    searchTestRule.persistOperateEntitiesNew(decisionInstances);
+    entity = decisionInstances.getFirst();
+  }
 
   @Test
-  public void testGetDecisionInstanceByCorrectId() throws Exception {
-    final DecisionInstanceEntity entity = createData();
+  public void testGetDecisionInstanceByCorrectId() {
+    final DecisionInstanceDto result =
+        decisionInstanceReader.getDecisionInstance(DECISION_INSTANCE_ID_1_1);
 
-    final MvcResult mvcResult = getRequest(getQuery(DECISION_INSTANCE_ID_1_1));
-    final DecisionInstanceDto response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-
-    assertThat(response.getDecisionDefinitionId()).isEqualTo(entity.getDecisionDefinitionId());
-    assertThat(response.getDecisionId()).isEqualTo(entity.getDecisionId());
-    assertThat(response.getDecisionName()).isEqualTo(entity.getDecisionName());
-    assertThat(response.getDecisionVersion()).isEqualTo(entity.getDecisionVersion());
-    assertThat(response.getDecisionType()).isEqualTo(entity.getDecisionType());
-    assertThat(response.getErrorMessage()).isEqualTo(entity.getEvaluationFailure());
-    assertThat(response.getEvaluationDate())
+    assertThat(result.getDecisionDefinitionId()).isEqualTo(entity.getDecisionDefinitionId());
+    assertThat(result.getDecisionId()).isEqualTo(entity.getDecisionId());
+    assertThat(result.getDecisionName()).isEqualTo(entity.getDecisionName());
+    assertThat(result.getDecisionVersion()).isEqualTo(entity.getDecisionVersion());
+    assertThat(result.getDecisionType()).isEqualTo(entity.getDecisionType());
+    assertThat(result.getErrorMessage()).isEqualTo(entity.getEvaluationFailure());
+    assertThat(result.getEvaluationDate())
         .isEqualTo(entity.getEvaluationDate().truncatedTo(ChronoUnit.MILLIS));
-    assertThat(response.getId()).isEqualTo(entity.getId());
-    assertThat(response.getProcessInstanceId())
+    assertThat(result.getId()).isEqualTo(entity.getId());
+    assertThat(result.getProcessInstanceId())
         .isEqualTo(String.valueOf(entity.getProcessInstanceKey()));
-    assertThat(response.getResult()).isEqualTo(entity.getResult());
-    assertThat(response.getState().toString()).isEqualTo(entity.getState().toString());
+    assertThat(result.getResult()).isEqualTo(entity.getResult());
+    assertThat(result.getState().toString()).isEqualTo(entity.getState().toString());
 
-    assertThat(response.getEvaluatedInputs()).hasSize(2);
-    assertThat(response.getEvaluatedInputs())
+    assertThat(result.getEvaluatedInputs()).hasSize(2);
+    assertThat(result.getEvaluatedInputs())
         .isSortedAccordingTo(DECISION_INSTANCE_INPUT_DTO_COMPARATOR);
-    assertThat(response.getEvaluatedOutputs()).hasSize(3);
-    assertThat(response.getEvaluatedOutputs())
+    assertThat(result.getEvaluatedOutputs()).hasSize(3);
+    assertThat(result.getEvaluatedOutputs())
         .isSortedAccordingTo(DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR);
   }
 
   @Test
-  public void testGetDecisionInstanceDrdData() throws Exception {
-    createData();
+  public void testGetDecisionInstanceByIdThrowsNotFoundException() {
+    assertThatException()
+        .isThrownBy(() -> decisionInstanceReader.getDecisionInstance("none existent instance"))
+        .isInstanceOf(NotFoundException.class)
+        .withMessage("Could not find decision instance with id 'none existent instance'.");
+  }
 
-    // query completed instances
-    MvcResult mvcResult = getRequest(getDrdDataQuery(DECISION_INSTANCE_ID_1_1));
+  @Test
+  public void testGetDecisionInstanceDrdData() {
+    // search completed
     Map<String, List<DRDDataEntryDto>> response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+        decisionInstanceReader.getDecisionInstanceDRDData(DECISION_INSTANCE_ID_1_1);
 
     assertThat(response).hasSize(2);
     assertThat(response.get(DECISION_ID_1)).isNotNull();
@@ -103,9 +112,8 @@ public class DecisionInstanceReaderIT extends OperateAbstractIT {
     assertThat(response.get(DECISION_ID_2).get(1).getState())
         .isEqualTo(DecisionInstanceState.EVALUATED);
 
-    // query completed and failed
-    mvcResult = getRequest(getDrdDataQuery(DECISION_INSTANCE_ID_2_1));
-    response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    // search completed and failed
+    response = decisionInstanceReader.getDecisionInstanceDRDData(DECISION_INSTANCE_ID_2_1);
 
     assertThat(response).hasSize(2);
     assertThat(response.get(DECISION_ID_1)).isNotNull();
@@ -120,35 +128,5 @@ public class DecisionInstanceReaderIT extends OperateAbstractIT {
         .isEqualTo(DECISION_INSTANCE_ID_2_2);
     assertThat(response.get(DECISION_ID_2).get(0).getState())
         .isEqualTo(DecisionInstanceState.FAILED);
-  }
-
-  @Test
-  public void testGetDecisionInstanceDrdDataByWrongId() throws Exception {
-    createData();
-    final MvcResult mvcResult =
-        getRequestShouldFailWithException(getDrdDataQuery("55555-1"), NotFoundException.class);
-    assertThat(mvcResult.getResolvedException().getMessage())
-        .contains("Decision instance nor found: 55555-1");
-  }
-
-  @Test
-  public void testGetDecisionInstanceByWrongId() throws Exception {
-    createData();
-
-    getRequestShouldFailWithException(getQuery("867293586"), NotFoundException.class);
-  }
-
-  private DecisionInstanceEntity createData() throws PersistenceException {
-    final List<DecisionInstanceEntity> decisionInstances = testDataUtil.createDecisionInstances();
-    searchTestRule.persistOperateEntitiesNew(decisionInstances);
-    return decisionInstances.get(0);
-  }
-
-  private String getQuery(final String decisionInstanceId) {
-    return String.format(QUERY_DECISION_INSTANCES_URL, decisionInstanceId);
-  }
-
-  private String getDrdDataQuery(final String decisionInstanceId) {
-    return String.format(QUERY_DECISION_INSTANCES_URL + "/drd-data", decisionInstanceId);
   }
 }

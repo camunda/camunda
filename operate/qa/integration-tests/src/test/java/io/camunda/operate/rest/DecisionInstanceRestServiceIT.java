@@ -21,6 +21,7 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.DecisionInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.Test;
@@ -45,6 +46,37 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
   @MockitoBean private DecisionInstanceReader decisionInstanceReader;
 
   @MockitoBean private PermissionsService permissionsService;
+
+  @Test
+  public void testGetDecisionInstanceByWrongId() throws Exception {
+    // given
+    final String decisionInstanceId = "instanceId";
+    // when
+    when(decisionInstanceReader.getDecisionInstance(decisionInstanceId))
+        .thenThrow(
+            new NotFoundException(
+                String.format("Decision instance not found: " + decisionInstanceId)));
+    when(permissionsService.permissionsEnabled()).thenReturn(false);
+    final MvcResult mvcResult =
+        getRequestShouldFailWithException(
+            getDecisionInstanceByIdUrl(decisionInstanceId), NotFoundException.class);
+    assertThat(mvcResult.getResolvedException().getMessage())
+        .contains("Decision instance not found: " + decisionInstanceId);
+  }
+
+  @Test
+  public void testGetDecisionInstanceDrdDataByWrongId() throws Exception {
+    // given
+    final String decisionInstanceId = "instanceId";
+    // when
+    when(decisionInstanceReader.getDecisionInstance(decisionInstanceId)).thenReturn(null);
+    when(permissionsService.permissionsEnabled()).thenReturn(false);
+    final MvcResult mvcResult =
+        getRequestShouldFailWithException(
+            getDecisionInstanceDrdByIdUrl(decisionInstanceId), NotFoundException.class);
+    assertThat(mvcResult.getResolvedException().getMessage())
+        .contains("Decision instance not found: " + decisionInstanceId);
+  }
 
   @Test
   public void testDecisionInstanceFailsWhenNoPermissions() throws Exception {
