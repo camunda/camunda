@@ -115,8 +115,7 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
                     0,
                     String.format(
                         "OutputElement and OutputCollection must both be set, or neither of them set. outputElement:%s and outputCollection:%s.",
-                        ZeebeConstants.ATTRIBUTE_OUTPUT_ELEMENT,
-                        ZeebeConstants.ATTRIBUTE_OUTPUT_COLLECTION));
+                        adhoc.getOutputElement(), adhoc.getOutputCollection()));
               }
             });
   }
