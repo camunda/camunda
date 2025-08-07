@@ -11,4 +11,9 @@ import io.camunda.zeebe.exporter.http.matcher.Filter;
 import java.util.List;
 
 public record SubscriptionConfig(
-    String url, int batchSize, long batchInterval, List<String> rules, List<Filter> filters) {}
+    String url,
+    int batchSize,
+    long batchInterval,
+    List<String> rules,
+    List<Filter> filters,
+    String jsonFilter) {}

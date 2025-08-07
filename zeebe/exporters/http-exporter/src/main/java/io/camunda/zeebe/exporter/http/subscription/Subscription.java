@@ -18,29 +18,31 @@ import java.util.List;
 public class Subscription {
 
   private final ExporterHttpClient exporterHttpClient;
+  private final ObjectMapper objectMapper;
   private final String url;
   private final RecordMatcher matcher;
   private final Batch batch;
-  private final ObjectMapper objectMapper;
+  private final ObjectMapper filteredObjectMapper;
 
   public Subscription(
       final ExporterHttpClient exporterHttpClient,
-      final String url,
-      final RecordMatcher matcher,
       final ObjectMapper objectMapper,
+      final RecordMatcher matcher,
+      final String url,
+      final ObjectMapper filteredObjectMapper,
       final Batch batch) {
     this.exporterHttpClient = exporterHttpClient;
     this.url = url;
     this.matcher = matcher;
     this.objectMapper = objectMapper;
     this.batch = batch;
+    this.filteredObjectMapper = filteredObjectMapper;
   }
 
   public Long exportRecord(final Record<?> record) {
-    final var recordJson = toJson(record);
     final var recordPosition = record.getPosition();
-    if (matcher.matches(record, recordJson)) {
-      return batchRecord(new BatchEntry(recordJson, recordPosition));
+    if (matcher.matches(record, () -> toJson(record))) {
+      return batchRecord(new BatchEntry(toFilteredJson(record), recordPosition));
     }
     return null;
   }
@@ -101,6 +103,14 @@ public class Subscription {
   private String toJson(final Object object) {
     try {
       return objectMapper.writeValueAsString(object);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private String toFilteredJson(final Object object) {
+    try {
+      return filteredObjectMapper.writeValueAsString(object);
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }

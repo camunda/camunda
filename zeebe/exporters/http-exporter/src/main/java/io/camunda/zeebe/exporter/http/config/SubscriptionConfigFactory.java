@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.http.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.bohnman.squiggly.Squiggly;
 import io.camunda.zeebe.exporter.http.client.ExporterHttpClient;
 import io.camunda.zeebe.exporter.http.matcher.CombinedMatcher;
 import io.camunda.zeebe.exporter.http.matcher.Filter;
@@ -45,6 +46,14 @@ public class SubscriptionConfigFactory {
     }
   }
 
+  /**
+   * Reads a configuration node from the provided JSON node and merges it with the provided
+   * configuration. It is a quite manual parsing step as we need the rules as raw JSON strings.
+   *
+   * @param configNode
+   * @param configuration
+   * @return
+   */
   private SubscriptionConfig readConfigNode(
       final JsonNode configNode, final HttpExporterConfiguration configuration) {
     final var url =
@@ -57,9 +66,13 @@ public class SubscriptionConfigFactory {
         configuration.getBatchInterval() != null
             ? configuration.getBatchInterval()
             : configNode.get("batchInterval").asLong();
+    final var jsonFilter =
+        configuration.getJsonFilter() != null
+            ? configuration.getJsonFilter()
+            : configNode.has("jsonFilter") ? configNode.get("jsonFilter").asText() : null;
     final var rules = extractRules(configNode);
-    final List<Filter> filters = extractFilters(configNode);
-    return new SubscriptionConfig(url, batchSize, batchInterval, rules, filters);
+    final var filters = extractFilters(configNode);
+    return new SubscriptionConfig(url, batchSize, batchInterval, rules, filters, jsonFilter);
   }
 
   private URL getUrlFor(String path) {
@@ -131,6 +144,15 @@ public class SubscriptionConfigFactory {
     final CombinedMatcher combinedMatcher =
         new CombinedMatcher(valueTypeMatcher, ruleRecordMatcher);
     final Batch batch = new Batch(config.batchSize(), config.batchInterval());
-    return new Subscription(httpClient, config.url(), combinedMatcher, objectMapper, batch);
+
+    final ObjectMapper filteredObjectMapper;
+    if (config.jsonFilter() != null) {
+      filteredObjectMapper = Squiggly.init(objectMapper.copy(), config.jsonFilter());
+    } else {
+      filteredObjectMapper = objectMapper;
+    }
+
+    return new Subscription(
+        httpClient, objectMapper, combinedMatcher, config.url(), filteredObjectMapper, batch);
   }
 }

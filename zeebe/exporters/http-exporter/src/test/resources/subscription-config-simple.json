@@ -2,6 +2,7 @@
   "url": "http://localhost:8080",
   "batchSize": 10,
   "batchInterval": 500,
+  "jsonFilter": null,
   "filters": [],
   "rules": []
 }

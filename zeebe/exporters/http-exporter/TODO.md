@@ -1,6 +1,6 @@
 # HTTP Exporter
 
-Open TODOs for the HTTP Exporter in Zeebe
+TODOs for the HTTP Exporter in Zeebe
 
 ## Testing
 
@@ -23,7 +23,7 @@ Open TODOs for the HTTP Exporter in Zeebe
 
 ## JSON Views
 
-- [ ] Implement customizable mapping of Zeebe event types to HTTP JSON request payloads (JSON views).
+- [x] Implement customizable mapping of Zeebe event types to HTTP JSON request payloads (JSON views).
 
 ## Metrics
 

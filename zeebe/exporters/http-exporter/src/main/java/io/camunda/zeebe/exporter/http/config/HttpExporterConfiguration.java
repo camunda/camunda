@@ -16,12 +16,25 @@ public class HttpExporterConfiguration {
   private String url;
   private Integer batchSize;
   private Integer batchInterval;
+  private String jsonFilter;
+
+  public String getConfigPath() {
+    return configPath;
+  }
+
+  public void setConfigPath(final String configPath) {
+    this.configPath = configPath;
+  }
 
   public Integer getBatchSize() {
     return batchSize;
   }
 
   public void setBatchSize(final int batchSize) {
+    this.batchSize = batchSize;
+  }
+
+  public void setBatchSize(final Integer batchSize) {
     this.batchSize = batchSize;
   }
 
@@ -33,6 +46,10 @@ public class HttpExporterConfiguration {
     this.batchInterval = batchInterval;
   }
 
+  public void setBatchInterval(final Integer batchInterval) {
+    this.batchInterval = batchInterval;
+  }
+
   public String getUrl() {
     return url;
   }
@@ -41,11 +58,11 @@ public class HttpExporterConfiguration {
     this.url = url;
   }
 
-  public String getConfigPath() {
-    return configPath;
+  public String getJsonFilter() {
+    return jsonFilter;
   }
 
-  public void setConfigPath(final String configPath) {
-    this.configPath = configPath;
+  public void setJsonFilter(final String jsonFilter) {
+    this.jsonFilter = jsonFilter;
   }
 }

@@ -71,7 +71,8 @@ final class HttpExporterBatchIT {
 
   @Test
   void testSingleRecordBatching() {
-    exporter = new HttpExporter(new SubscriptionConfig(url, 1, 100, List.of(rule), List.of()));
+    exporter =
+        new HttpExporter(new SubscriptionConfig(url, 1, 100, List.of(rule), List.of(), null));
     exporter.configure(testContext);
     exporter.open(controller);
 
@@ -91,7 +92,8 @@ final class HttpExporterBatchIT {
 
   @Test
   void testBatching() {
-    exporter = new HttpExporter(new SubscriptionConfig(url, 10, 1000, List.of(rule), List.of()));
+    exporter =
+        new HttpExporter(new SubscriptionConfig(url, 10, 1000, List.of(rule), List.of(), null));
     exporter.configure(testContext);
     exporter.open(controller);
 

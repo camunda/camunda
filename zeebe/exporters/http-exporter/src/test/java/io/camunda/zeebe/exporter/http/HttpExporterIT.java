@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.http;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
@@ -26,12 +27,16 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Map;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,13 +55,14 @@ final class HttpExporterIT {
   private HttpExporter exporter;
   private final ExporterTestContext testContext = new ExporterTestContext();
   private Long logPosition = 0L;
+  private String url;
 
   @BeforeAll
   public void beforeAll() {
     wireMockRule.start();
     configureFor(wireMockRule.port());
-    final String url = "http://localhost:" + wireMockRule.port();
     stubFor(post(anyUrl()).willReturn(ok()));
+    url = "http://localhost:" + wireMockRule.port();
 
     final var config = new HttpExporterConfiguration();
     config.setUrl(url); // Set the URL to the WireMock server
@@ -90,10 +96,54 @@ final class HttpExporterIT {
     exporter.export(record);
 
     // then
-    verify(exactly(1), postRequestedFor(urlEqualTo("/")));
+    verify(
+        exactly(1),
+        postRequestedFor(urlEqualTo("/"))
+            .withRequestBody(
+                equalToJson(
+                    "[{\"valueType\":\"" + valueType.name() + "\", \"value\": {}}]", true, true)));
   }
 
   private <T extends RecordValue> Record<T> generateRecord(final ValueType valueType) {
     return factory.generateRecord(valueType, r -> r.withPosition(++logPosition));
+  }
+
+  @Test
+  void testWithIncidentRecordAndComplexFiltering() {
+    final var config = new HttpExporterConfiguration();
+    config.setUrl(url);
+    config.setConfigPath("classpath:subscription-config-incident.json");
+    testContext.setConfiguration(new ExporterTestConfiguration<>("test", config));
+    exporter.configure(testContext);
+
+    // given
+    final var record = createIncidentRecord(++logPosition, "testProcess");
+
+    // when
+    exporter.export(record);
+
+    // then
+    verify(
+        exactly(1),
+        postRequestedFor(urlEqualTo("/"))
+            .withRequestBody(
+                equalToJson(
+                    "[{\"valueType\":\"INCIDENT\", \"value\": {\"bpmnProcessId\": \"testProcess\"}}]",
+                    true,
+                    true)));
+  }
+
+  private Record<?> createIncidentRecord(final long position, final String bpmnProcessId) {
+    final Record<RecordValue> recordValueRecord = factory.generateRecord(ValueType.INCIDENT);
+    return factory.generateRecord(
+        ValueType.INCIDENT,
+        r ->
+            r.withIntent(IncidentIntent.CREATED)
+                .withPosition(position)
+                .withValue(
+                    ImmutableIncidentRecordValue.builder()
+                        .from((IncidentRecordValue) recordValueRecord.getValue())
+                        .withBpmnProcessId(bpmnProcessId)
+                        .build()));
   }
 }

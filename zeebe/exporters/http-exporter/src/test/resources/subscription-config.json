@@ -1,4 +1,5 @@
 {
   "batchSize": 10,
   "batchInterval": 500,
+  "jsonFilter": "valueType,value",
   "rules": [{"valueType": [{ "wildcard": "*" }]}]}

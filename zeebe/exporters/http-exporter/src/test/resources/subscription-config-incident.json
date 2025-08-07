@@ -1,0 +1,12 @@
+{
+  "batchSize": 1,
+  "batchInterval": 500,
+  "jsonFilter": "valueType,value",
+  "filters": [{
+    "valueType": "INCIDENT",
+    "intents": ["CREATED"]
+  }],
+  "rules": [
+    {"value": {"bpmnProcessId" : ["testProcess"]}}
+  ]
+}

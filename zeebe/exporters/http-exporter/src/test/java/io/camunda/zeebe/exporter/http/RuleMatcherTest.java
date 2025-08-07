@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.http;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.http.matcher.CombinedMatcher;
 import io.camunda.zeebe.exporter.http.matcher.Filter;
@@ -101,15 +102,19 @@ final class RuleMatcherTest {
     assertThat(incidentIntentCreatedMatcher.matches(incidentResolvedRecord)).isFalse();
     assertThat(incidentIntentCreatedMatcher.matches(jobRecord)).isFalse();
 
-    assertThat(
-            combinedMatcher.matches(
-                incidentCreatedRecord, objectMapper.writeValueAsString(incidentCreatedRecord)))
+    assertThat(combinedMatcher.matches(incidentCreatedRecord, () -> toJson(incidentCreatedRecord)))
         .isTrue();
     assertThat(
-            combinedMatcher.matches(
-                incidentResolvedRecord, objectMapper.writeValueAsString(incidentResolvedRecord)))
+            combinedMatcher.matches(incidentResolvedRecord, () -> toJson(incidentResolvedRecord)))
         .isFalse();
-    assertThat(combinedMatcher.matches(jobRecord, objectMapper.writeValueAsString(jobRecord)))
-        .isFalse();
+    assertThat(combinedMatcher.matches(jobRecord, () -> toJson(jobRecord))).isFalse();
+  }
+
+  private String toJson(final Object object) {
+    try {
+      return objectMapper.writeValueAsString(object);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

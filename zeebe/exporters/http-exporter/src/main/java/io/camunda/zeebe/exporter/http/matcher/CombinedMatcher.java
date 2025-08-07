@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.http.matcher;
 
 import io.camunda.zeebe.protocol.record.Record;
+import java.util.function.Supplier;
 
 public class CombinedMatcher implements RecordMatcher {
   private final FilterRecordMatcher filterRecordMatcher;
@@ -20,11 +21,11 @@ public class CombinedMatcher implements RecordMatcher {
   }
 
   @Override
-  public boolean matches(final Record<?> record, final String recordJson) {
+  public boolean matches(final Record<?> record, final Supplier<String> jsonSupplier) {
     if (filterRecordMatcher != null) {
       if (filterRecordMatcher.matches(record)) {
         if (ruleRecordMatcher != null) {
-          return ruleRecordMatcher.matches(recordJson);
+          return ruleRecordMatcher.matches(jsonSupplier.get());
         } else {
           return true;
         }
@@ -32,7 +33,7 @@ public class CombinedMatcher implements RecordMatcher {
         return false;
       }
     } else if (ruleRecordMatcher != null) {
-      return ruleRecordMatcher.matches(recordJson);
+      return ruleRecordMatcher.matches(jsonSupplier.get());
     } else {
       return true; // No matchers defined, so everything matches
     }
