@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -49,6 +50,7 @@ public final class AdHocSubProcessTest {
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
   private static final String AHSP_INNER_INSTANCE_ELEMENT_ID =
       "ad-hoc" + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+  private static final String AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE = "adHocSubProcessElements";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -596,7 +598,10 @@ public final class AdHocSubProcessTest {
             .getFirst();
 
     assertThat(
-            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(2))
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .filter(v -> v.getValue().getName().equals("activateElements"))
+                .limit(2))
         .extracting(Record::getValue)
         .extracting(
             VariableRecordValue::getName,
@@ -668,6 +673,48 @@ public final class AdHocSubProcessTest {
             VariableRecordValue::getValue,
             VariableRecordValue::getScopeKey)
         .contains(tuple("adHocResult", "[1,2]", processInstanceKey));
+  }
+
+  @Test
+  public void shouldCreateLocalAdHocSubProcessElementsVariable() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+            });
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A"))
+            .create();
+
+    final var adHocSubProcessKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
+            .getFirst()
+            .getKey();
+
+    // then
+    // actual variable assertions are done in detail in AdHocSubProcessElementsVariableTest
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .filter(
+                    v ->
+                        v.getIntent() == VariableIntent.CREATED
+                            && v.getValue().getName().equals(AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE))
+                .limit(1))
+        .first()
+        .describedAs(
+            "Variable adHocSubProcessElements should be created as local variable in sub-process scope")
+        .satisfies(
+            variableRecord ->
+                assertThat(variableRecord.getValue()).hasScopeKey(adHocSubProcessKey));
   }
 
   @Test

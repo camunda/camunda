@@ -14,6 +14,8 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
     implements ExecutableJobWorkerElement {
@@ -26,6 +28,7 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
   private JobWorkerProperties jobWorkerProperties;
 
   private final Map<String, ExecutableFlowNode> adHocActivitiesById = new HashMap<>();
+  private final DirectBuffer adHocActivitiesMetadata = new UnsafeBuffer();
 
   public ExecutableAdHocSubProcess(final String id) {
     super(id);
@@ -85,5 +88,13 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
   @Override
   public void setJobWorkerProperties(final JobWorkerProperties jobWorkerProperties) {
     this.jobWorkerProperties = jobWorkerProperties;
+  }
+
+  public DirectBuffer getAdHocActivitiesMetadata() {
+    return adHocActivitiesMetadata;
+  }
+
+  public void setAdHocActivitiesMetadata(final DirectBuffer activitiesMetadata) {
+    adHocActivitiesMetadata.wrap(activitiesMetadata);
   }
 }

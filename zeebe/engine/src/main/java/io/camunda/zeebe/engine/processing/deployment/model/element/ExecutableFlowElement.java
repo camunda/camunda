@@ -9,15 +9,22 @@ package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public interface ExecutableFlowElement {
 
   DirectBuffer getId();
 
+  DirectBuffer getName();
+
+  DirectBuffer getDocumentation();
+
   BpmnElementType getElementType();
 
   ExecutableFlowElement getFlowScope();
 
   BpmnEventType getEventType();
+
+  Map<String, String> getProperties();
 }

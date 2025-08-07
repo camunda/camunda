@@ -27,6 +27,7 @@ import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.TRANSACTION_ID;
 import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.USER_TASK_ID;
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Fail.fail;
 
 import io.camunda.zeebe.model.bpmn.AssociationDirection;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.model.bpmn.GatewayDirection;
 import io.camunda.zeebe.model.bpmn.TransactionMethod;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.Association;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
@@ -73,8 +75,14 @@ import io.camunda.zeebe.model.bpmn.instance.TimeDuration;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Transaction;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
@@ -1947,6 +1955,70 @@ public class ProcessBuilderTest {
         .done();
   }
 
+  @Test
+  public void testSetZeebeProperty() {
+    final ProcessBuilder processBuilder =
+        Bpmn.createExecutableProcess("process")
+            .zeebeProperty("processProperty", "processPropertyValue");
+
+    processBuilder
+        .startEvent("Start_Event")
+        .zeebeProperty("startEventProperty", "startEventPropertyValue")
+        .userTask("User_Task")
+        .zeebeProperty("userTaskProperty", "userTaskPropertyValue")
+        .serviceTask("Service_Task")
+        .zeebeProperty("serviceTaskProperty1", "serviceTaskPropertyValue1")
+        .zeebeProperty("serviceTaskProperty2", "serviceTaskPropertyValue2")
+        .exclusiveGateway("Exclusive_Gateway")
+        .zeebeProperty("gatewayProperty", "gatewayPropertyValue")
+        .defaultFlow()
+        .adHocSubProcess(
+            "Ad_Hoc_Sub_Process",
+            ahsp -> {
+              ahsp.zeebeProperty("adHocSubProcessProperty", "adHocSubProcessPropertyValue")
+                  .task("Ad_Hoc_Task")
+                  .zeebeProperty("adHocTaskProperty", "adHocTaskPropertyValue");
+            });
+
+    processBuilder.eventSubProcess(
+        "Event_Subprocess",
+        eventSubProcess -> {
+          eventSubProcess
+              .zeebeProperty("eventSubProcessProperty", "eventSubProcessPropertyValue")
+              .startEvent()
+              .userTask()
+              .endEvent();
+        });
+
+    modelInstance = processBuilder.done();
+
+    assertThat(getExtensionProperties("process"))
+        .containsExactly(entry("processProperty", "processPropertyValue"));
+
+    assertThat(getExtensionProperties("Start_Event"))
+        .containsExactly(entry("startEventProperty", "startEventPropertyValue"));
+
+    assertThat(getExtensionProperties("User_Task"))
+        .containsExactly(entry("userTaskProperty", "userTaskPropertyValue"));
+
+    assertThat(getExtensionProperties("Service_Task"))
+        .containsOnly(
+            entry("serviceTaskProperty1", "serviceTaskPropertyValue1"),
+            entry("serviceTaskProperty2", "serviceTaskPropertyValue2"));
+
+    assertThat(getExtensionProperties("Exclusive_Gateway"))
+        .containsExactly(entry("gatewayProperty", "gatewayPropertyValue"));
+
+    assertThat(getExtensionProperties("Ad_Hoc_Sub_Process"))
+        .containsExactly(entry("adHocSubProcessProperty", "adHocSubProcessPropertyValue"));
+
+    assertThat(getExtensionProperties("Ad_Hoc_Task"))
+        .containsExactly(entry("adHocTaskProperty", "adHocTaskPropertyValue"));
+
+    assertThat(getExtensionProperties("Event_Subprocess"))
+        .containsExactly(entry("eventSubProcessProperty", "eventSubProcessPropertyValue"));
+  }
+
   protected Message assertMessageEventDefinition(final String elementId, final String messageName) {
     final MessageEventDefinition messageEventDefinition =
         assertAndGetSingleEventDefinition(elementId, MessageEventDefinition.class);
@@ -2054,6 +2126,17 @@ public class ProcessBuilderTest {
     final EventDefinition eventDefinition = eventDefinitions.iterator().next();
     assertThat(eventDefinition).isNotNull().isInstanceOf(eventDefinitionType);
     return (T) eventDefinition;
+  }
+
+  protected Map<String, String> getExtensionProperties(final String elementId) {
+    final BaseElement element = modelInstance.getModelElementById(elementId);
+    return Optional.ofNullable(element.getSingleExtensionElement(ZeebeProperties.class))
+        .map(ZeebeProperties::getProperties)
+        .map(
+            properties ->
+                properties.stream()
+                    .collect(Collectors.toMap(ZeebeProperty::getName, ZeebeProperty::getValue)))
+        .orElseGet(Collections::emptyMap);
   }
 
   @Test

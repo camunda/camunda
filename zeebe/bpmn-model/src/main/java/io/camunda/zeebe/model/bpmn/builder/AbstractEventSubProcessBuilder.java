@@ -28,14 +28,18 @@ import java.util.function.Consumer;
 
 public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBuilder<B>>
     extends AbstractFlowElementBuilder<B, SubProcess>
-    implements ZeebeVariablesMappingBuilder<B>, ZeebeExecutionListenersBuilder<B> {
+    implements ZeebeVariablesMappingBuilder<B>,
+        ZeebeExecutionListenersBuilder<B>,
+        ZeebePropertiesBuilder<B> {
 
   private final ZeebeExecutionListenersBuilder<B> zeebeExecutionListenersBuilder;
+  private final ZeebePropertiesBuilder<B> zeebePropertiesBuilder;
 
   protected AbstractEventSubProcessBuilder(
       final BpmnModelInstance modelInstance, final SubProcess element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
     zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
+    zeebePropertiesBuilder = new ZeebePropertiesBuilderImpl<>(myself);
   }
 
   public StartEventBuilder startEvent() {
@@ -126,5 +130,10 @@ public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBui
   public B zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
     return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
+  }
+
+  @Override
+  public B zeebeProperty(final String name, final String value) {
+    return zeebePropertiesBuilder.zeebeProperty(name, value);
   }
 }

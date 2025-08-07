@@ -7,24 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
-import org.agrona.DirectBuffer;
-
 public class ExecutableLink extends AbstractFlowElement {
-
-  private DirectBuffer name;
 
   private ExecutableCatchEventElement catchEventElement;
 
   public ExecutableLink(final String id) {
     super(id);
-  }
-
-  public DirectBuffer getName() {
-    return name;
-  }
-
-  public void setName(final DirectBuffer name) {
-    this.name = name;
   }
 
   public void setCatchEvent(final ExecutableCatchEventElement catchEventElement) {

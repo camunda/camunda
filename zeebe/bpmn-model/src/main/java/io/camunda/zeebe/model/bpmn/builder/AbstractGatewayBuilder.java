@@ -26,14 +26,16 @@ import java.util.function.Consumer;
  */
 public abstract class AbstractGatewayBuilder<
         B extends AbstractGatewayBuilder<B, E>, E extends Gateway>
-    extends AbstractFlowNodeBuilder<B, E> {
+    extends AbstractFlowNodeBuilder<B, E> implements ZeebePropertiesBuilder<B> {
 
   private final ZeebeExecutionListenersBuilder<B> zeebeExecutionListenersBuilder;
+  private final ZeebePropertiesBuilder<B> zeebePropertiesBuilder;
 
   protected AbstractGatewayBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
     zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
+    zeebePropertiesBuilder = new ZeebePropertiesBuilderImpl<>(myself);
   }
 
   /**
@@ -58,5 +60,10 @@ public abstract class AbstractGatewayBuilder<
   public B zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
     return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
+  }
+
+  @Override
+  public B zeebeProperty(final String name, final String value) {
+    return zeebePropertiesBuilder.zeebeProperty(name, value);
   }
 }

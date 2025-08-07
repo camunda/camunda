@@ -33,16 +33,20 @@ import java.util.function.Consumer;
 public abstract class AbstractActivityBuilder<
         B extends AbstractActivityBuilder<B, E>, E extends Activity>
     extends AbstractFlowNodeBuilder<B, E>
-    implements ZeebeVariablesMappingBuilder<B>, ZeebeExecutionListenersBuilder<B> {
+    implements ZeebeVariablesMappingBuilder<B>,
+        ZeebeExecutionListenersBuilder<B>,
+        ZeebePropertiesBuilder<B> {
 
   private final ZeebeVariablesMappingBuilder<B> variablesMappingBuilder;
   private final ZeebeExecutionListenersBuilder<B> zeebeExecutionListenersBuilder;
+  private final ZeebePropertiesBuilder<B> zeebePropertiesBuilder;
 
   protected AbstractActivityBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
     variablesMappingBuilder = new ZeebeVariableMappingBuilderImpl<>(myself);
     zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
+    zeebePropertiesBuilder = new ZeebePropertiesBuilderImpl<>(myself);
   }
 
   public BoundaryEventBuilder boundaryEvent() {
@@ -190,5 +194,10 @@ public abstract class AbstractActivityBuilder<
   public B zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
     return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
+  }
+
+  @Override
+  public B zeebeProperty(final String name, final String value) {
+    return zeebePropertiesBuilder.zeebeProperty(name, value);
   }
 }

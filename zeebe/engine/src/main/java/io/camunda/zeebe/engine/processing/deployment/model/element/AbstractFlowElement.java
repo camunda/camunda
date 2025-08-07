@@ -10,14 +10,19 @@ package io.camunda.zeebe.engine.processing.deployment.model.element;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Collections;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public abstract class AbstractFlowElement implements ExecutableFlowElement {
 
   private final DirectBuffer id;
+  private DirectBuffer name;
+  private DirectBuffer documentation;
   private BpmnElementType elementType;
   private BpmnEventType eventType;
   private ExecutableFlowElement flowScope;
+  private Map<String, String> properties = Collections.emptyMap();
 
   public AbstractFlowElement(final String id) {
     this.id = BufferUtil.wrapString(id);
@@ -28,6 +33,24 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
   @Override
   public DirectBuffer getId() {
     return id;
+  }
+
+  @Override
+  public DirectBuffer getName() {
+    return name;
+  }
+
+  public void setName(final DirectBuffer name) {
+    this.name = name;
+  }
+
+  @Override
+  public DirectBuffer getDocumentation() {
+    return documentation;
+  }
+
+  public void setDocumentation(final DirectBuffer documentation) {
+    this.documentation = documentation;
   }
 
   @Override
@@ -55,5 +78,14 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
 
   public void setEventType(final BpmnEventType eventType) {
     this.eventType = eventType;
+  }
+
+  @Override
+  public Map<String, String> getProperties() {
+    return properties;
+  }
+
+  public void setProperties(final Map<String, String> properties) {
+    this.properties = properties;
   }
 }
