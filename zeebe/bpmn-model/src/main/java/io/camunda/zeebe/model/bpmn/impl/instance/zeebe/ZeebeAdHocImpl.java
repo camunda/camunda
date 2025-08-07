@@ -29,6 +29,8 @@ public class ZeebeAdHocImpl extends BpmnModelElementInstanceImpl implements Zeeb
 
   private static Attribute<String> activeElementsCollectionAttribute;
   private static Attribute<ZeebeAdHocImplementationType> implementationTypeAttribute;
+  private static Attribute<String> outputCollectionAttribute;
+  private static Attribute<String> outputElementAttribute;
 
   public ZeebeAdHocImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -56,6 +58,18 @@ public class ZeebeAdHocImpl extends BpmnModelElementInstanceImpl implements Zeeb
             .defaultValue(ZeebeAdHocImplementationType.BPMN)
             .build();
 
+    outputCollectionAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_OUTPUT_COLLECTION)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
+    outputElementAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_OUTPUT_ELEMENT)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
     typeBuilder.build();
   }
 
@@ -77,5 +91,25 @@ public class ZeebeAdHocImpl extends BpmnModelElementInstanceImpl implements Zeeb
   @Override
   public void setImplementationType(final ZeebeAdHocImplementationType implementationType) {
     implementationTypeAttribute.setValue(this, implementationType);
+  }
+
+  @Override
+  public String getOutputCollection() {
+    return outputCollectionAttribute.getValue(this);
+  }
+
+  @Override
+  public void setOutputCollection(final String outputCollection) {
+    outputCollectionAttribute.setValue(this, outputCollection);
+  }
+
+  @Override
+  public String getOutputElement() {
+    return outputElementAttribute.getValue(this);
+  }
+
+  @Override
+  public void setOutputElement(final String outputElement) {
+    outputElementAttribute.setValue(this, outputElement);
   }
 }

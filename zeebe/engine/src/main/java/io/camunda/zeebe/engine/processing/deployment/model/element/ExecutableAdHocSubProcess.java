@@ -16,6 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import java.util.Optional;
+import org.agrona.DirectBuffer;
 
 public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
     implements ExecutableJobWorkerElement {
@@ -26,6 +28,9 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
   private boolean cancelRemainingInstances;
   private ZeebeAdHocImplementationType implementationType;
   private JobWorkerProperties jobWorkerProperties;
+
+  private Optional<DirectBuffer> outputCollection = Optional.empty();
+  private Optional<Expression> outputElement = Optional.empty();
 
   private final Map<String, ExecutableFlowNode> adHocActivitiesById = new HashMap<>();
   private final DirectBuffer adHocActivitiesMetadata = new UnsafeBuffer();
@@ -96,5 +101,21 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
 
   public void setAdHocActivitiesMetadata(final DirectBuffer activitiesMetadata) {
     adHocActivitiesMetadata.wrap(activitiesMetadata);
+  }
+
+  public Optional<DirectBuffer> getOutputCollection() {
+    return outputCollection;
+  }
+
+  public void setOutputCollection(final DirectBuffer outputCollection) {
+    this.outputCollection = Optional.of(outputCollection);
+  }
+
+  public Optional<Expression> getOutputElement() {
+    return outputElement;
+  }
+
+  public void setOutputElement(final Expression outputElement) {
+    this.outputElement = Optional.of(outputElement);
   }
 }
