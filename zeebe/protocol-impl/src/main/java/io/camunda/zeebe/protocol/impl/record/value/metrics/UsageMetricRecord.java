@@ -15,7 +15,6 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.agrona.DirectBuffer;
@@ -59,17 +58,6 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
         .setResetTime(usageMetricRecord.getResetTime())
         .setStartTime(usageMetricRecord.getStartTime())
         .setEndTime(usageMetricRecord.getEndTime());
-  }
-
-  @Override
-  public Map<String, Object> getVariables() {
-    final Map<String, Object> variables = new HashMap<>();
-    if (!getCounterValues().isEmpty()) {
-      variables.putAll(getCounterValues());
-    } else {
-      variables.putAll(getSetValues());
-    }
-    return variables;
   }
 
   @Override
@@ -122,7 +110,6 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
     return this;
   }
 
-  @JsonIgnore
   @Override
   public Map<String, Long> getCounterValues() {
     return MsgPackConverter.convertToLongMap(counterValuesProp.getValue());
@@ -133,7 +120,6 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
     return this;
   }
 
-  @JsonIgnore
   @Override
   public Map<String, Set<Long>> getSetValues() {
     return MsgPackConverter.convertToSetLongMap(setValuesProp.getValue());

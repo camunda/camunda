@@ -1264,7 +1264,7 @@ public class CompactRecordLogger {
         .append(formatTime("end", value.getEndTime()))
         .append(" ")
         .append(formatTime("reset", value.getResetTime()))
-        .append(formatVariables(value));
+        .append(formatVariables(toMetricValueMap(value.getCounterValues(), value.getSetValues())));
 
     return result.toString();
   }
@@ -1410,6 +1410,38 @@ public class CompactRecordLogger {
             .sorted(Entry.comparingByKey())
             .map(entry -> entry.getKey() + "=" + formatVariableValue(entry.getValue()))
             .collect(Collectors.joining(", ", "{", "}"));
+  }
+
+  private String formatVariables(final Map<String, Object> metricValues) {
+    if (metricValues == null || metricValues.isEmpty()) {
+      return " (no metricValues)";
+    }
+    return " metricValues: "
+        + metricValues.entrySet().stream()
+            .sorted(Entry.comparingByKey())
+            .map(entry -> entry.getKey() + "=" + formatVariableValue(entry.getValue()))
+            .collect(Collectors.joining(", ", "{", "}"));
+  }
+
+  /**
+   * Combines metric values from counters or sets into a generic map.
+   *
+   * <p>If {@code counterValues} is not empty, its entries are added to the result map. Otherwise,
+   * {@code setValues} entries are added. Only one of the input maps is expected to be non-empty.
+   *
+   * @param counterValues a map of metric counters (String to Long)
+   * @param setValues a map of metric sets (String to Set<Long>)
+   * @return a generic map containing either counter or set values
+   */
+  public Map<String, Object> toMetricValueMap(
+      final Map<String, Long> counterValues, final Map<String, Set<Long>> setValues) {
+    final Map<String, Object> variables = new HashMap<>();
+    if (!counterValues.isEmpty()) {
+      variables.putAll(counterValues);
+    } else {
+      variables.putAll(setValues);
+    }
+    return variables;
   }
 
   /**

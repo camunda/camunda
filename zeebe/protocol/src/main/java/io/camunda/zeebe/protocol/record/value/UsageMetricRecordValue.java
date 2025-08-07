@@ -16,14 +16,14 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.Map;
 import java.util.Set;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableUsageMetricRecordValue.Builder.class)
-public interface UsageMetricRecordValue extends RecordValueWithVariables {
+public interface UsageMetricRecordValue extends RecordValue {
 
   IntervalType getIntervalType();
 

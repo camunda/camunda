@@ -83,13 +83,13 @@ class CompactRecordLoggerTest {
       when(value.getStartTime()).thenReturn(1718000000000L);
       when(value.getEndTime()).thenReturn(1718003600000L);
       when(value.getResetTime()).thenReturn(1718001800000L);
-      when(value.getVariables()).thenReturn(Map.of("tenant1", 42L, "tenant2", 84L));
+      when(value.getCounterValues()).thenReturn(Map.of("tenant1", 42L, "tenant2", 84L));
 
       final String result = logger.summarizeUsageMetrics(mockRecord);
 
       // then
       final String expected =
-          "RPI:ACTIVE start[2024-06-10T06:13:20] end[2024-06-10T07:13:20] reset[2024-06-10T06:43:20] vars: {tenant1=42, tenant2=84}";
+          "RPI:ACTIVE start[2024-06-10T06:13:20] end[2024-06-10T07:13:20] reset[2024-06-10T06:43:20] metricValues: {tenant1=42, tenant2=84}";
       assertThat(result).isEqualTo(expected);
     }
 
@@ -108,16 +108,15 @@ class CompactRecordLoggerTest {
       when(value.getStartTime()).thenReturn(1718000000000L);
       when(value.getEndTime()).thenReturn(1718003600000L);
       when(value.getResetTime()).thenReturn(1718001800000L);
-      when(value.getVariables())
-          .thenReturn(
-              java.util.Map.of("tenant1", Set.of(1234567L, 7654321L), "tenant2", Set.of(9876543L)));
+      when(value.getSetValues())
+          .thenReturn(Map.of("tenant1", Set.of(1234567L, 7654321L), "tenant2", Set.of(9876543L)));
 
       final String result = logger.summarizeUsageMetrics(mockRecord);
 
       // then
       assertThat(result)
           .startsWith(
-              "TU:ACTIVE start[2024-06-10T06:13:20] end[2024-06-10T07:13:20] reset[2024-06-10T06:43:20] vars: {")
+              "TU:ACTIVE start[2024-06-10T06:13:20] end[2024-06-10T07:13:20] reset[2024-06-10T06:43:20] metricValues: {")
           .satisfies(
               r ->
                   assertThat(r)

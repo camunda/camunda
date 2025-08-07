@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class UsageMetricRecordTest {
 
   @Test
-  void testGetVariablesReturnsCounterValuesIfNotEmpty() {
+  void testCounterValues() {
     // given
     final UsageMetricRecord usageMetricRecord = new UsageMetricRecord();
     final Map<String, Long> counterValues = Map.of("tenant1", 63L, "tenant2", 91L);
@@ -28,12 +28,12 @@ class UsageMetricRecordTest {
     // when
     usageMetricRecord.setCounterValues(buffer);
     // then
-    final Map<String, Object> variables = usageMetricRecord.getVariables();
-    assertThat(variables).isEqualTo(counterValues);
+    final Map<String, Long> actualCounterValues = usageMetricRecord.getCounterValues();
+    assertThat(actualCounterValues).isEqualTo(counterValues);
   }
 
   @Test
-  void testGetVariablesReturnsSetValues() {
+  void testSetValues() {
     // given
     final UsageMetricRecord usageMetricRecord = new UsageMetricRecord();
     final Map<String, Set<Long>> setValues = Map.of("tenant1", Set.of(1234567L, 7654321L));
@@ -42,8 +42,8 @@ class UsageMetricRecordTest {
     // when
     usageMetricRecord.setSetValues(buffer);
     // then
-    final Map<String, Object> variables = usageMetricRecord.getVariables();
-    assertThat(variables).containsKey("tenant1");
-    assertThat((Set<Long>) variables.get("tenant1")).containsExactlyInAnyOrder(1234567L, 7654321L);
+    final Map<String, Set<Long>> actualSetValues = usageMetricRecord.getSetValues();
+    assertThat(actualSetValues).containsKey("tenant1");
+    assertThat(actualSetValues.get("tenant1")).containsExactlyInAnyOrder(1234567L, 7654321L);
   }
 }

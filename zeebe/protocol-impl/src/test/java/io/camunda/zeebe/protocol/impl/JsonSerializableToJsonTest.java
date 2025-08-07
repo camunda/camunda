@@ -121,9 +121,6 @@ final class JsonSerializableToJsonTest {
   private static final String USAGE_METRICS_JSON = "{'tenant1': 5}";
   private static final DirectBuffer USAGE_METRICS_MSGPACK =
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(USAGE_METRICS_JSON));
-  private static final String USAGE_METRICS_TU_JSON = "{'tenant1': [123456789123456789]}";
-  private static final DirectBuffer USAGE_METRICS_TU_MSGPACK =
-      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(USAGE_METRICS_TU_JSON));
 
   private static final RuntimeException RUNTIME_EXCEPTION = new RuntimeException("test");
 
@@ -3535,31 +3532,33 @@ final class JsonSerializableToJsonTest {
         "resetTime": -1,
         "startTime": 123,
         "endTime": 124,
-        "variables": {"tenant1":5}
+        "counterValues": {"tenant1":5},
+        "setValues": {}
       }
       """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////////// UsageMetricRecord TU //////////////////////////////////
+      //////////////////////////////////// UsageMetricRecord eDI //////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "UsageMetricRecord TU",
+        "UsageMetricRecord eDI",
         (Supplier<UsageMetricRecord>)
             () ->
                 new UsageMetricRecord()
                     .setIntervalType(IntervalType.ACTIVE)
-                    .setEventType(EventType.TU)
+                    .setEventType(EventType.EDI)
                     .setStartTime(123L)
                     .setEndTime(124L)
-                    .setSetValues(USAGE_METRICS_TU_MSGPACK),
+                    .setCounterValues(USAGE_METRICS_MSGPACK),
         """
       {
         "intervalType": "ACTIVE",
-        "eventType": "TU",
+        "eventType": "EDI",
         "resetTime": -1,
         "startTime": 123,
         "endTime": 124,
-        "variables": {"tenant1":[123456789123456789]}
+        "counterValues": {"tenant1":5},
+        "setValues": {}
       }
       """
       },
@@ -3576,7 +3575,8 @@ final class JsonSerializableToJsonTest {
         "resetTime": -1,
         "startTime": -1,
         "endTime": -1,
-        "variables": {}
+        "counterValues": {},
+        "setValues": {}
       }
       """
       },
