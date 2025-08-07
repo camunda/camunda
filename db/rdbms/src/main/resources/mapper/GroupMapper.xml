@@ -13,10 +13,8 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.GroupDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}GROUPS g
-    <if test="filter.memberIds != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_ID = gm.GROUP_ID
-      AND gm.ENTITY_TYPE = #{filter.childMemberType}
-    </if>
+    LEFT JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_ID = gm.GROUP_ID
+    AND gm.ENTITY_TYPE = #{filter.childMemberType}
     <if test="filter.tenantId != null">
       JOIN ${prefix}TENANT_MEMBER tm ON g.GROUP_ID = tm.ENTITY_ID AND tm.ENTITY_TYPE = 'GROUP'
     </if>
@@ -64,6 +62,16 @@
       AND gm.ENTITY_TYPE = #{filter.childMemberType}
     </if>
     <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
+    <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" open="AND (" separator=" OR " close=")">
+        <if test="values != null and !values.isEmpty()">
+          gm.ENTITY_TYPE = #{memberType} AND gm.ENTITY_ID IN
+          <foreach collection="values" item="value" open="(" separator=" , " close=")">
+            #{value}
+          </foreach>
+        </if>
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="groupResultMap" type="io.camunda.db.rdbms.write.domain.GroupDbModel">
