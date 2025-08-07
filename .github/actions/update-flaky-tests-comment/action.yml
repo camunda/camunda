@@ -10,6 +10,9 @@ inputs:
   pr-number:
     description: 'Pull request number for the comment'
     required: true
+  branch-name:
+    description: 'Branch name where the comment will be posted'
+    required: true
 
 runs:
   using: composite
@@ -36,7 +39,7 @@ runs:
           // Step 2: Generate and post the PR comment
           const { main } = require('./.github/actions/update-flaky-tests-comment/src/comment-generator');
           console.log('[flaky-tests] 🚀 Generating comment...');
-          await main(context, github, processedData, ${{ inputs.pr-number }});
+          await main(context, github, processedData, ${{ inputs.pr-number }}, '${{ inputs.branch-name }}');
 
           /**
           * Processes the raw flaky test data and organizes it by package.
@@ -77,46 +80,28 @@ runs:
           * Parses a test name string into structured components.
           */
           function parseTestName(testName) {
-            const trimmed = testName?.trim();
-            if (!trimmed) return null;
+            const lastDotIndex = testName.lastIndexOf('.');
 
-            // Pattern: full.package.ClassNameTest.methodName
-            const testClassRegex = /^(.+)\.([A-Z][\w]*(?:Test|IT))\.(.+)$/;
-            const match = trimmed.match(testClassRegex);
-
-            if (match) {
-              const [, packageName, className, methodName] = match;
-              return {
-                packageName,
-                className,
-                methodName: normalizeMethodName(methodName)
-              };
+            if (lastDotIndex === -1) {
+              console.warn(`[flaky-tests] Could not parse test name: ${testName}`);
+              return null;
             }
 
-            // Fallback: try to extract package from last dot
-            const lastDot = trimmed.lastIndexOf('.');
-            if (lastDot !== -1) {
-              return {
-                packageName: trimmed.slice(0, lastDot),
-                className: '',
-                methodName: normalizeMethodName(trimmed.slice(lastDot + 1))
-              };
-            }
+            const fullyQualifiedClass = testName.slice(0, lastDotIndex);
+            let methodName = testName.slice(lastDotIndex + 1);
 
-            // Final fallback
+            // Remove trailing [index] if it exists
+            methodName = methodName.replace(/\[\d+\]\s*$/, '');
+
+            const classParts = fullyQualifiedClass.split('.');
+            const className = classParts[classParts.length - 1];
+            const packageName = classParts.slice(0, -1).join('.');
+
             return {
-              packageName: 'unknown',
-              className: '',
-              methodName: normalizeMethodName(trimmed)
+              packageName,
+              className,
+              methodName
             };
-          }
-
-          /**
-          * Normalizes method names by removing parameterization suffixes (e.g. `[1]`).
-          */
-          function normalizeMethodName(methodName) {
-            const match = methodName.match(/^(.*)\[\d+\]$/);
-            return match ? match[1] : methodName;
           }
 
           /**

@@ -1,6 +1,6 @@
 const helpers = require('./helpers');
 
-async function main(context, github, currentData, prNumber) {
+async function main(context, github, currentData, prNumber, branchName) {
   console.log(`📌 Processing flaky test comment for PR #${prNumber}`);
 
   const { owner, repo } = context.repo;
@@ -15,7 +15,7 @@ async function main(context, github, currentData, prNumber) {
   const mergedData = helpers.mergeFlakyData(currentData, historicalData);
 
   // Step 4: Generate comment content
-  const comment = buildComment(mergedData);
+  const comment = await buildComment(mergedData, github, branchName);
 
   if (!comment) {
     console.log('✅ No flaky tests found. Skipping comment.');
@@ -34,7 +34,7 @@ async function main(context, github, currentData, prNumber) {
   console.log('✅ Flaky test comment processed.');
 }
 
-function buildComment(mergedData) {
+async function buildComment(mergedData, github, branchName) {
   if (!mergedData?.tests?.length) return null;
 
   const lines = [
@@ -57,8 +57,9 @@ function buildComment(mergedData) {
 
   for (const test of allTests) {
     const icon = getFlakyIcon(test.flakiness);
+    const url = await generateTestSourceUrl(test, github, branchName);
 
-    lines.push(`- **${test.fullName}** – ${icon} **${test.flakiness}% flakiness**`);
+    lines.push(`- [**${test.fullName}**](${url}) – ${icon} **${test.flakiness}% flakiness**`);
     lines.push(`  - Location: \`${test.packageName}\``);
     lines.push(`  - Occurrences: ${test.occurrences} / ${test.totalRuns}`);
     lines.push('');
@@ -76,6 +77,38 @@ function getFlakyIcon(percent) {
   if (percent < 30) return '👀';
   if (percent <= 80) return '⚠️';
   return '💀';
+}
+
+async function generateTestSourceUrl(test, github, branchName) {
+    const originalUrl = await getTestSourceUrl(test, github);
+    console.log(`🔗 Original URL for test ${test.fullName}: ${originalUrl}`);
+
+    if (!originalUrl) {
+        console.warn(`No source URL found for test: ${test.fullName}`);
+        return '';
+    }
+
+    return originalUrl.replace(/blob\/[^/]+/, `tree/${branchName}`);
+}
+
+async function getTestSourceUrl(test, github) {
+  const repo = 'camunda/camunda';
+  const query = `repo:${repo} ${test.className.replace(/\$/g, ' ')} ${test.methodName}`;
+
+  console.log(`🔍 Searching for test source with query: ${query}`);
+
+  const { data } = await github.rest.search.code({
+    q: `${query}`,
+  });
+
+  console.log('🔍 Search results:', JSON.stringify(data, null, 2));
+
+  if (!data.items || data.items.length === 0) {
+    console.warn(`No match found for test: ${query}`);
+    return null;
+  }
+
+  return data.items[0].html_url;
 }
 
 async function getExistingComment(github, owner, repo, prNumber) {
