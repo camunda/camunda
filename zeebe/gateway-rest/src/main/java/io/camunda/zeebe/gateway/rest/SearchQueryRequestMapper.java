@@ -1957,7 +1957,7 @@ public final class SearchQueryRequestMapper {
         .map(
             f ->
                 FilterBuilders.authorization()
-                    .ownerIds(f.getOwnerId() == null ? null : f.getOwnerId())
+                    .ownerIds(f.getOwnerId())
                     .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
                     .resourceIds(f.getResourceIds())
                     .resourceType(
