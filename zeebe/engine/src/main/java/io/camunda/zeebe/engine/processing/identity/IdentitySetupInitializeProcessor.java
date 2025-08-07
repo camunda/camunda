@@ -60,6 +60,11 @@ public final class IdentitySetupInitializeProcessor
         initializationKey, IdentitySetupIntent.INITIALIZED, setupRecord);
   }
 
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
+  }
+
   private void createDefaultTenant(final long key, final TenantRecord defaultTenant) {
     commandWriter.appendFollowUpCommand(key, TenantIntent.CREATE, defaultTenant);
   }
