@@ -7,8 +7,10 @@
  */
 package io.camunda.operate.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
@@ -20,10 +22,14 @@ import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.DecisionInstanceRestService;
+import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -112,6 +118,44 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
         getRequestShouldFailWithNoAuthorization(getDecisionInstanceDrdByIdUrl(decisionInstanceId));
     // then
     assertErrorMessageContains(mvcResult, "No read permission for decision instance");
+  }
+
+  @Test
+  public void testDecisionInstanceSucceedsWhenPermissions() throws Exception {
+    // given
+    final String decisionInstanceId = "instanceId";
+    final String bpmnDecisionId = "decisionId";
+    // when
+    when(decisionInstanceReader.getDecisionInstance(decisionInstanceId))
+        .thenReturn(new DecisionInstanceDto().setDecisionId(bpmnDecisionId));
+    when(permissionsService.permissionsEnabled()).thenReturn(false);
+    final MvcResult mvcResult = getRequest(getDecisionInstanceByIdUrl(decisionInstanceId));
+    // then
+    final DecisionInstanceDto result =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    assertThat(result.getDecisionId()).isEqualTo(bpmnDecisionId);
+  }
+
+  @Test
+  public void testDecisionInstanceDrdSucceedsWhenPermissions() throws Exception {
+    // given
+    final String decisionInstanceId = "instanceId";
+    final String bpmnDecisionId = "decisionId";
+    // when
+    when(decisionInstanceReader.getDecisionInstanceDRDData(decisionInstanceId))
+        .thenReturn(
+            Map.of(
+                bpmnDecisionId,
+                List.of(
+                    new DRDDataEntryDto(
+                        decisionInstanceId, bpmnDecisionId, DecisionInstanceState.EVALUATED))));
+    when(permissionsService.permissionsEnabled()).thenReturn(false);
+    final MvcResult mvcResult = getRequest(getDecisionInstanceDrdByIdUrl(decisionInstanceId));
+    final Map<String, List<DRDDataEntryDto>> result =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    // then
+    assertThat(result.get(bpmnDecisionId).getFirst().getDecisionInstanceId())
+        .isEqualTo(decisionInstanceId);
   }
 
   public String getDecisionInstanceByIdUrl(final String id) {

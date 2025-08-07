@@ -7,29 +7,42 @@
  */
 package io.camunda.it.operate;
 
+import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.PermissionType.READ_DECISION_DEFINITION;
+import static io.camunda.client.api.search.enums.PermissionType.READ_DECISION_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.ResourceType.DECISION_DEFINITION;
+import static io.camunda.client.api.search.enums.ResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.startDefaultTestDecisionProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.qa.util.cluster.TestRestOperateClient.toJsonString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.Process;
-import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
+import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
+import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import java.time.Duration;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.springframework.http.HttpStatus;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
@@ -40,12 +53,12 @@ public class OperateInternalApiPermissionsIT {
   static final TestCamundaApplication STANDALONE_CAMUNDA =
       new TestCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
 
-  private static CamundaClient camundaClient;
-
   private static final String SUPER_USER_USERNAME = "super";
   private static final String RESTRICTED_USER_USERNAME = "restricted";
   private static final String PROCESS_DEFINITION_ID_1 = "service_tasks_v1";
   private static final String PROCESS_DEFINITION_ID_2 = "incident_process_v1";
+  private static Decision decisionToFind;
+  private static Decision decisionNotToFind;
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
   @UserDefinition
@@ -55,7 +68,10 @@ public class OperateInternalApiPermissionsIT {
           "password",
           List.of(
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(DECISION_DEFINITION, READ_DECISION_DEFINITION, List.of("*")),
+              new Permissions(DECISION_DEFINITION, READ_DECISION_INSTANCE, List.of("*")),
+              new Permissions(DECISION_REQUIREMENTS_DEFINITION, READ, List.of("*"))));
 
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
@@ -67,19 +83,32 @@ public class OperateInternalApiPermissionsIT {
                   PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_DEFINITION_ID_1))));
 
   @BeforeAll
-  public static void beforeAll(
-      @Authenticated(SUPER_USER_USERNAME) final CamundaClient superUserClient,
-      @Authenticated(RESTRICTED_USER_USERNAME) final CamundaClient restrictedUserClient)
-      throws Exception {
+  public static void beforeAll(final CamundaClient adminClient) throws Exception {
     final List<String> processes = List.of(PROCESS_DEFINITION_ID_1, PROCESS_DEFINITION_ID_2);
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
-                deployResource(camundaClient, String.format("process/%s.bpmn", process))
+                deployResource(adminClient, String.format("process/%s.bpmn", process))
                     .getProcesses()));
     assertThat(DEPLOYED_PROCESSES).hasSize(processes.size());
 
-    waitForProcessesToBeDeployed(camundaClient, DEPLOYED_PROCESSES.size());
+    waitForProcessesToBeDeployed(adminClient, DEPLOYED_PROCESSES.size());
+
+    // DMN
+    decisionToFind = startDefaultTestDecisionProcessInstance(adminClient, "decision_model.dmn");
+    decisionNotToFind =
+        startDefaultTestDecisionProcessInstance(adminClient, "decision_model_1.dmn");
+    // give restricted user access to one of the decisions
+    final var authResponse =
+        adminClient
+            .newCreateAuthorizationCommand()
+            .ownerId(RESTRICTED_USER_USERNAME)
+            .ownerType(OwnerType.USER)
+            .resourceId(decisionToFind.getDmnDecisionId())
+            .resourceType(DECISION_DEFINITION)
+            .permissionTypes(READ_DECISION_INSTANCE)
+            .send()
+            .join();
   }
 
   @AfterAll
@@ -124,14 +153,46 @@ public class OperateInternalApiPermissionsIT {
         .isEqualTo(403);
   }
 
-  private static void waitForProcessesToBeDeployed(
-      final CamundaClient camundaClient, final int expectedProcessDefinitions) {
-    Awaitility.await("Should processes be exported to Elasticsearch")
-        .atMost(Duration.ofSeconds(15))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () ->
-                assertThat(camundaClient.newProcessDefinitionSearchRequest().send().join().items())
-                    .hasSize(expectedProcessDefinitions));
+  @Test
+  public void shouldReturnOnlyAuthorizedDecisionInstances(final CamundaClient adminClient)
+      throws URISyntaxException, IOException, InterruptedException {
+    // given
+    final String decisionInstanceRequest =
+        toJsonString(
+            new DecisionInstanceListRequestDto()
+                .setQuery(new DecisionInstanceListQueryDto().setFailed(true).setEvaluated(true)));
+
+    final var adminOperateClient =
+        STANDALONE_CAMUNDA.newOperateClient(SUPER_USER_USERNAME, SUPER_USER.password());
+    final var restrictedOperateClient =
+        STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER_USERNAME, RESTRICTED_USER.password());
+
+    // when
+    final var adminResponse =
+        adminOperateClient.sendInternalSearchRequest(
+            "api/decision-instances", decisionInstanceRequest);
+    final var adminResponseDto =
+        adminOperateClient.mapResult(adminResponse, DecisionInstanceListResponseDto.class);
+
+    final var restrictedResponse =
+        restrictedOperateClient.sendInternalSearchRequest(
+            "api/decision-instances", decisionInstanceRequest);
+    final var restrictedResponseDto =
+        restrictedOperateClient.mapResult(
+            restrictedResponse, DecisionInstanceListResponseDto.class);
+
+    // then
+    assertThat(adminResponseDto.isRight()).isTrue();
+    assertThat(adminResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
+    assertThat(((DecisionInstanceListResponseDto) adminResponseDto.get()).getTotalCount())
+        .isEqualTo(2);
+
+    assertThat(restrictedResponseDto.isRight()).isTrue();
+    final DecisionInstanceListResponseDto restrictedDto =
+        (DecisionInstanceListResponseDto) restrictedResponseDto.get();
+    assertThat(restrictedResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
+    assertThat(restrictedDto.getTotalCount()).isOne();
+    assertThat(restrictedDto.getDecisionInstances().getFirst().getDecisionName())
+        .isEqualTo(decisionToFind.getDmnDecisionName());
   }
 }
