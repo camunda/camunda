@@ -94,26 +94,28 @@ class AdHocActivityParameterExtractorTest {
             """
             fromAi(toolCall.aSimpleValue)
             """,
-            new AdHocActivityParameter("aSimpleValue", null, null, null, null)),
+            new AdHocActivityParameter("toolCall.aSimpleValue", null, null, null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Only expression: Name + description",
             """
             fromAi(toolCall.aSimpleValue, "A simple value")
             """,
-            new AdHocActivityParameter("aSimpleValue", "A simple value", null, null, null)),
+            new AdHocActivityParameter(
+                "toolCall.aSimpleValue", "A simple value", null, null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Only expression: Name + description + type",
             """
             fromAi(toolCall.aSimpleValue, "A simple value", "string")
             """,
-            new AdHocActivityParameter("aSimpleValue", "A simple value", "string", null, null)),
+            new AdHocActivityParameter(
+                "toolCall.aSimpleValue", "A simple value", "string", null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Only expression: Name + description + type + schema",
             """
             fromAi(toolCall.aSimpleValue, "A simple value", "string", { enum: ["A", "B", "C"] })
             """,
             new AdHocActivityParameter(
-                "aSimpleValue",
+                "toolCall.aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
@@ -124,7 +126,7 @@ class AdHocActivityParameterExtractorTest {
             fromAi(toolCall.aSimpleValue, "A simple value", "string", { enum: ["A", "B", "C"] }, { optional: true })
             """,
             new AdHocActivityParameter(
-                "aSimpleValue",
+                "toolCall.aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
@@ -145,26 +147,28 @@ class AdHocActivityParameterExtractorTest {
             """
             fromAi(value: toolCall.aSimpleValue)
             """,
-            new AdHocActivityParameter("aSimpleValue", null, null, null, null)),
+            new AdHocActivityParameter("toolCall.aSimpleValue", null, null, null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Only expression: Name + description (named params)",
             """
             fromAi(value: toolCall.aSimpleValue, description: "A simple value")
             """,
-            new AdHocActivityParameter("aSimpleValue", "A simple value", null, null, null)),
+            new AdHocActivityParameter(
+                "toolCall.aSimpleValue", "A simple value", null, null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Only expression: Name + description + type (named params)",
             """
             fromAi(value: toolCall.aSimpleValue, description: "A simple value", type: "string")
             """,
-            new AdHocActivityParameter("aSimpleValue", "A simple value", "string", null, null)),
+            new AdHocActivityParameter(
+                "toolCall.aSimpleValue", "A simple value", "string", null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Only expression: Name + description + type + schema (named params)",
             """
             fromAi(value: toolCall.aSimpleValue, description: "A simple value", type: "string", schema: { enum: ["A", "B", "C"] })
             """,
             new AdHocActivityParameter(
-                "aSimpleValue",
+                "toolCall.aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
@@ -181,7 +185,7 @@ class AdHocActivityParameterExtractorTest {
             )
             """,
             new AdHocActivityParameter(
-                "aSimpleValue",
+                "toolCall.aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
@@ -198,7 +202,7 @@ class AdHocActivityParameterExtractorTest {
             )
             """,
             new AdHocActivityParameter(
-                "aSimpleValue",
+                "toolCall.aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
@@ -231,7 +235,7 @@ class AdHocActivityParameterExtractorTest {
             })
             """,
             new AdHocActivityParameter(
-                "multiValue",
+                "toolCall.multiValue",
                 "Select a multi value",
                 "array",
                 Map.of("items", Map.of("type", "string", "enum", List.of("foo", "bar", "baz"))),
@@ -242,45 +246,50 @@ class AdHocActivityParameterExtractorTest {
             1 + 2 + fromAi(toolCall.thirdValue, "The third value to add", "integer")
             """,
             new AdHocActivityParameter(
-                "thirdValue", "The third value to add", "integer", null, null)),
+                "toolCall.thirdValue", "The third value to add", "integer", null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Part of operation with conversion (integer)",
             """
             1 + 2 + number(fromAi(toolCall.thirdValue, "The third value to add", "integer"))
             """,
             new AdHocActivityParameter(
-                "thirdValue", "The third value to add", "integer", null, null)),
+                "toolCall.thirdValue", "The third value to add", "integer", null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Part of string concatenation",
             """
             "https://example.com/" + fromAi(toolCall.urlPath, "The URL path to use", "string")
             """,
-            new AdHocActivityParameter("urlPath", "The URL path to use", "string", null, null)),
+            new AdHocActivityParameter(
+                "toolCall.urlPath", "The URL path to use", "string", null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Part of string concatenation with conversion",
             """
             "https://example.com/" + string(fromAi(toolCall.urlPath, "The URL path to use", "string"))
             """,
-            new AdHocActivityParameter("urlPath", "The URL path to use", "string", null, null)),
+            new AdHocActivityParameter(
+                "toolCall.urlPath", "The URL path to use", "string", null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Multiple parameters, part of a context",
             """
             {
               foo: "bar",
-              bar: fromAi(toolCall.barValue, "A good bar value", "string"),
+              bar: fromAi(barValue, "A good bar value", "string"),
               combined: string(fromAi(toolCall.firstOne, "The first value")) + fromAi(toolCall.secondOne, "The second value", "string")
             }
             """,
             new AdHocActivityParameter("barValue", "A good bar value", "string", null, null),
-            new AdHocActivityParameter("firstOne", "The first value", null, null, null),
-            new AdHocActivityParameter("secondOne", "The second value", "string", null, null)),
+            new AdHocActivityParameter("toolCall.firstOne", "The first value", null, null, null),
+            new AdHocActivityParameter(
+                "toolCall.secondOne", "The second value", "string", null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Multiple parameters, part of a list",
             """
             ["something", fromAi(toolCall.firstValue, "The first value", "string"), fromAi(toolCall.secondValue, "The second value", "integer")]
             """,
-            new AdHocActivityParameter("firstValue", "The first value", "string", null, null),
-            new AdHocActivityParameter("secondValue", "The second value", "integer", null, null)),
+            new AdHocActivityParameter(
+                "toolCall.firstValue", "The first value", "string", null, null),
+            new AdHocActivityParameter(
+                "toolCall.secondValue", "The second value", "integer", null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Multiple parameters, part of a context and list",
             """
@@ -291,9 +300,12 @@ class AdHocActivityParameterExtractorTest {
               }
             }
             """,
-            new AdHocActivityParameter("firstValue", "The first value", "string", null, null),
-            new AdHocActivityParameter("secondValue", "The second value", "integer", null, null),
-            new AdHocActivityParameter("thirdValue", "The third value to add", null, null, null)),
+            new AdHocActivityParameter(
+                "toolCall.firstValue", "The first value", "string", null, null),
+            new AdHocActivityParameter(
+                "toolCall.secondValue", "The second value", "integer", null, null),
+            new AdHocActivityParameter(
+                "toolCall.thirdValue", "The third value to add", null, null, null)),
         new AdHocActivityParameterExtractionTestCase(
             "Multiple parameters, part of a context and list (named params)",
             """
@@ -313,11 +325,14 @@ class AdHocActivityParameterExtractorTest {
               }
             }
             """,
-            new AdHocActivityParameter("firstValue", "The first value", "string", null, null),
-            new AdHocActivityParameter("secondValue", "The second value", "integer", null, null),
-            new AdHocActivityParameter("thirdValue", "The third value to add", null, null, null),
             new AdHocActivityParameter(
-                "fourthValue",
+                "toolCall.firstValue", "The first value", "string", null, null),
+            new AdHocActivityParameter(
+                "toolCall.secondValue", "The second value", "integer", null, null),
+            new AdHocActivityParameter(
+                "toolCall.thirdValue", "The third value to add", null, null, null),
+            new AdHocActivityParameter(
+                "toolCall.fourthValue",
                 "The fourth value to add",
                 "array",
                 Map.of("items", Map.of("type", "string", "enum", List.of("foo", "bar", "baz"))),

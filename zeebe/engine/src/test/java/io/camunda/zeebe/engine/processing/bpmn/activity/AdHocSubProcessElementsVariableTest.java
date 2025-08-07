@@ -100,7 +100,7 @@ public final class AdHocSubProcessElementsVariableTest {
                     serviceTask
                         .zeebeJobType("serviceTaskJobType")
                         .zeebeInput("=fromAi(toolCall.a, \"Input A\", \"number\")", "inputA")
-                        .zeebeInput("=fromAi(toolCall.b, \"Input B\", \"number\")", "inputB")
+                        .zeebeInput("=fromAi(b, \"Input B\", \"number\")", "inputB")
                         .zeebeInput(
                             "=string(fromAi(toolCall.c, \"Input C\", \"number\"))", "inputC")
                         .zeebeInput("=123456", "inputD"); // not a parameter, just a static value
@@ -111,9 +111,9 @@ public final class AdHocSubProcessElementsVariableTest {
               null,
               null,
               List.of(
-                  new AdHocActivityParameter("a", "Input A", "number", null, null),
+                  new AdHocActivityParameter("toolCall.a", "Input A", "number", null, null),
                   new AdHocActivityParameter("b", "Input B", "number", null, null),
-                  new AdHocActivityParameter("c", "Input C", "number", null, null))));
+                  new AdHocActivityParameter("toolCall.c", "Input C", "number", null, null))));
 
   private static final AdHocSubProcessElementTestFixture USER_TASK =
       testFixture(
@@ -136,7 +136,7 @@ public final class AdHocSubProcessElementsVariableTest {
               null,
               List.of(
                   new AdHocActivityParameter(
-                      "userTaskInput", "Input for the user task", null, null, null))));
+                      "toolCall.userTaskInput", "Input for the user task", null, null, null))));
 
   private static final AdHocSubProcessElementTestFixture SCRIPT_TASK =
       testFixture(
@@ -167,7 +167,7 @@ public final class AdHocSubProcessElementsVariableTest {
               Map.of("io.camunda.test.property1", "value1"),
               List.of(
                   new AdHocActivityParameter(
-                      "inputVariable", "Input variable description", null, null, null))));
+                      "toolCall.inputVariable", "Input variable description", null, null, null))));
 
   private static final AdHocSubProcessElementTestFixture TASK_WITH_FOLLOW_UP =
       testFixture(
@@ -245,7 +245,7 @@ public final class AdHocSubProcessElementsVariableTest {
                             ={
                               comment: "Multiple params, positional & named, simple & complex",
                               foo: [
-                                fromAi(toolCall.firstValue),
+                                fromAi(firstValue),
                                 string(fromAi(toolCall.secondValue, "The second value",  "integer"))
                               ],
                               bar: {
@@ -267,29 +267,30 @@ public final class AdHocSubProcessElementsVariableTest {
               "A complex tool with nested parameters",
               Map.of("complexToolProperty", "complexValue"),
               List.of(
-                  new AdHocActivityParameter("aSimpleValue", "A simple value", null, null, null),
                   new AdHocActivityParameter(
-                      "anEnumValue",
+                      "toolCall.aSimpleValue", "A simple value", null, null, null),
+                  new AdHocActivityParameter(
+                      "toolCall.anEnumValue",
                       "An enum value",
                       "string",
                       Map.of("enum", List.of("A", "B", "C")),
                       null),
                   new AdHocActivityParameter(
-                      "anArrayValue",
+                      "toolCall.anArrayValue",
                       "An array value",
                       "array",
                       Map.of(
                           "items", Map.of("type", "string", "enum", List.of("foo", "bar", "baz"))),
                       null),
                   new AdHocActivityParameter(
-                      "urlPath", "The URL path to use", "string", null, null),
+                      "toolCall.urlPath", "The URL path to use", "string", null, null),
                   new AdHocActivityParameter("firstValue", null, null, null, null),
                   new AdHocActivityParameter(
-                      "secondValue", "The second value", "integer", null, null),
+                      "toolCall.secondValue", "The second value", "integer", null, null),
                   new AdHocActivityParameter(
-                      "thirdValue", "The third value to add", null, null, null),
+                      "toolCall.thirdValue", "The third value to add", null, null, null),
                   new AdHocActivityParameter(
-                      "fourthValue",
+                      "toolCall.fourthValue",
                       "The fourth value to add",
                       "array",
                       Map.of(

@@ -95,7 +95,7 @@ class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParame
                   }));
     }
 
-    return valueRef.names().last();
+    return String.join(".", CollectionConverters.asJava(valueRef.names()));
   }
 
   private String asString(final Exp exp, final String parameterName) {
