@@ -58,6 +58,25 @@ class UsageMetricsExportedApplierTest {
   }
 
   @Test
+  void shouldUpdateActiveBucketTimeWhenNotInitialized() {
+    // given
+    usageMetricState.recordRPIMetric("tenant1");
+    assertThat(usageMetricState.getActiveBucket().getFromTime()).isEqualTo(-1);
+    assertThat(usageMetricState.getActiveBucket().getToTime()).isEqualTo(-1);
+    assertThat(usageMetricState.getActiveBucket().getTenantRPIMap())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", 1L));
+
+    // when
+    usageMetricsExportedApplier.applyState(1L, new UsageMetricRecord().setResetTime(2L));
+
+    // then
+    assertThat(usageMetricState.getActiveBucket().getFromTime()).isEqualTo(2L);
+    assertThat(usageMetricState.getActiveBucket().getToTime()).isEqualTo(300002L);
+    assertThat(usageMetricState.getActiveBucket().getTenantRPIMap())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", 1L));
+  }
+
+  @Test
   void shouldResetActiveBucketRPI() {
     // given
     usageMetricState.resetActiveBucket(1L);

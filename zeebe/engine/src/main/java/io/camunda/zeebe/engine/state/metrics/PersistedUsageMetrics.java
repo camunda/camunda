@@ -35,6 +35,10 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
         .declareProperty(tenantTUMapProp);
   }
 
+  public boolean isInitialized() {
+    return fromTimeProp.getValue() != -1L && toTimeProp.getValue() != -1L;
+  }
+
   public long getFromTime() {
     return fromTimeProp.getValue();
   }
