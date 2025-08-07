@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Gcs;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -14,6 +15,8 @@ import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import org.springframework.beans.BeanUtils;
@@ -124,6 +127,7 @@ public class BrokerBasedPropertiesOverride {
 
   private void populateFromBackup(final BrokerBasedProperties override) {
     populateFromS3(override);
+    populateFromGcs(override);
   }
 
   private void populateFromS3(final BrokerBasedProperties override) {
@@ -160,5 +164,16 @@ public class BrokerBasedPropertiesOverride {
         .setReplication(unifiedDiskConfig.getFreeSpace().getReplication());
     brokerDiskConfig.setEnableMonitoring(unifiedDiskConfig.isMonitoringEnabled());
     brokerDiskConfig.setMonitoringInterval(unifiedDiskConfig.getMonitoringInterval());
+  }
+
+  private void populateFromGcs(final BrokerBasedProperties override) {
+    final Gcs gcs = unifiedConfiguration.getCamunda().getData().getBackup().getGcs();
+    final GcsBackupStoreConfig gcsBackupStoreConfig = override.getData().getBackup().getGcs();
+    gcsBackupStoreConfig.setBucketName(gcs.getBucketName());
+    gcsBackupStoreConfig.setBasePath(gcs.getBasePath());
+    gcsBackupStoreConfig.setHost(gcs.getHost());
+    gcsBackupStoreConfig.setAuth(GcsBackupStoreAuth.valueOf(gcs.getAuth().name()));
+
+    override.getData().getBackup().setGcs(gcsBackupStoreConfig);
   }
 }
