@@ -26,9 +26,9 @@ import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
-import io.camunda.process.test.api.mock.JobWorkerMock;
+import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.mock.JobWorkerMockImpl;
+import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -150,9 +150,9 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public JobWorkerMock mockJobWorker(final String jobType) {
+  public JobWorkerMockBuilder mockJobWorker(final String jobType) {
     final CamundaClient client = createClient();
-    return new JobWorkerMockImpl(jobType, client);
+    return new JobWorkerMockBuilderImpl(jobType, client);
   }
 
   @Override

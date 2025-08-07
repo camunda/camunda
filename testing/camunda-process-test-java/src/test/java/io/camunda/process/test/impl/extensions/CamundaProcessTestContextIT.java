@@ -18,6 +18,8 @@ package io.camunda.process.test.impl.extensions;
 import static io.camunda.process.test.api.CamundaAssert.assertThatDecision;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
@@ -27,6 +29,7 @@ import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
+import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -60,6 +63,23 @@ public class CamundaProcessTestContextIT {
   private CamundaClient client;
 
   @Test
+  void shouldMockJobWorkerWithNoInvocations() {
+    // Given
+    final JobWorkerMock jobWorkerMock = processTestContext.mockJobWorker("unknown").thenComplete();
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
+
+    // When
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // Then
+    assertThatProcessInstance(processInstanceEvent).isActive();
+
+    assertThat(jobWorkerMock.getInvocations()).isZero();
+    assertThat(jobWorkerMock.getActivatedJobs()).isEmpty();
+  }
+
+  @Test
   void shouldThrowBpmnErrorWithoutVariables() {
     // Given
     processTestContext.mockJobWorker("test").thenThrowBpmnError("bpmn-error");
@@ -78,7 +98,9 @@ public class CamundaProcessTestContextIT {
     // Given
     final Map<String, Object> variables = new HashMap<>();
     variables.put("abc", 123);
-    processTestContext.mockJobWorker("test").thenThrowBpmnError("bpmn-error", variables);
+
+    final JobWorkerMock mockedJobWorker =
+        processTestContext.mockJobWorker("test").thenThrowBpmnError("bpmn-error", variables);
     final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
 
     // When
@@ -91,6 +113,10 @@ public class CamundaProcessTestContextIT {
     final Map<String, Object> expectedVariables = new HashMap<>();
     expectedVariables.put("error_code", 123);
     assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
+
+    assertThat(mockedJobWorker.getInvocations()).isEqualTo(1);
+    assertThat(mockedJobWorker.getActivatedJobs().get(0).getElementId())
+        .isEqualTo("service-task-1");
   }
 
   @Test
@@ -113,8 +139,10 @@ public class CamundaProcessTestContextIT {
     // Given
     final Map<String, Object> variables = new HashMap<>();
     variables.put("abc", 123);
-    processTestContext.mockJobWorker("test").thenComplete(variables);
-    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
+    final JobWorkerMock mockedJobWorker =
+        processTestContext.mockJobWorker("test").thenComplete(variables);
+
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTaskAndVariables());
 
     // When
     final ProcessInstanceEvent processInstanceEvent =
@@ -124,17 +152,21 @@ public class CamundaProcessTestContextIT {
     assertThatProcessInstance(processInstanceEvent).isCompleted();
     assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
     assertThatProcessInstance(processInstanceEvent).hasVariables(variables);
+
+    assertThat(mockedJobWorker.getInvocations()).isEqualTo(1);
+    assertThat(mockedJobWorker.getActivatedJobs().get(0).getVariablesAsMap())
+        .contains(entry("error_code", "404"));
   }
 
   @Test
   void shouldMockJobWorkerWithJobHandlerBpmnError() {
     // Given
-    processTestContext
-        .mockJobWorker("test")
-        .withHandler(
-            (jobClient, job) -> {
-              jobClient.newThrowErrorCommand(job).errorCode("bpmn-error").send().join();
-            });
+    final JobWorkerMock mockedJobWorker =
+        processTestContext
+            .mockJobWorker("test")
+            .withHandler(
+                (jobClient, job) ->
+                    jobClient.newThrowErrorCommand(job).errorCode("bpmn-error").send().join());
     final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
 
     // When
@@ -144,17 +176,19 @@ public class CamundaProcessTestContextIT {
     // Then
     assertThatProcessInstance(processInstanceEvent).isCompleted();
     assertThatProcessInstance(processInstanceEvent).hasCompletedElements("error-end");
+
+    assertThat(mockedJobWorker.getInvocations()).isEqualTo(1);
+    assertThat(mockedJobWorker.getActivatedJobs().get(0).getType()).isEqualTo("test");
   }
 
   @Test
   void shouldMockJobWorkerWithJobHandlerSuccess() {
     // Given
-    processTestContext
-        .mockJobWorker("test")
-        .withHandler(
-            (jobClient, job) -> {
-              jobClient.newCompleteCommand(job).send().join();
-            });
+    final JobWorkerMock mockedJobWorker =
+        processTestContext
+            .mockJobWorker("test")
+            .withHandler((jobClient, job) -> jobClient.newCompleteCommand(job).send().join());
+
     final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
 
     // When
@@ -164,6 +198,9 @@ public class CamundaProcessTestContextIT {
     // Then
     assertThatProcessInstance(processInstanceEvent).isCompleted();
     assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
+
+    assertThat(mockedJobWorker.getInvocations()).isEqualTo(1);
+    assertThat(mockedJobWorker.getActivatedJobs().get(0).getVariablesAsMap()).isEmpty();
   }
 
   @Test
@@ -804,6 +841,21 @@ public class CamundaProcessTestContextIT {
     return Bpmn.createExecutableProcess("test-process")
         .startEvent()
         .serviceTask("service-task-1")
+        .zeebeJobType("test")
+        .boundaryEvent("error-boundary-event")
+        .error("bpmn-error")
+        .zeebeOutputExpression("abc", "error_code")
+        .endEvent("error-end")
+        .moveToActivity("service-task-1")
+        .endEvent("success-end")
+        .done();
+  }
+
+  private BpmnModelInstance processModelWithServiceTaskAndVariables() {
+    return Bpmn.createExecutableProcess("test-process")
+        .startEvent()
+        .serviceTask("service-task-1")
+        .zeebeInputExpression("\"404\"", "error_code")
         .zeebeJobType("test")
         .boundaryEvent("error-boundary-event")
         .error("bpmn-error")
