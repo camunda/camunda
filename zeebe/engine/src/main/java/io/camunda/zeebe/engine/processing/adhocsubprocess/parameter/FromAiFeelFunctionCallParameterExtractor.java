@@ -8,27 +8,24 @@
 package io.camunda.zeebe.engine.processing.adhocsubprocess.parameter;
 
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import org.camunda.feel.api.EvaluationResult;
-import org.camunda.feel.api.FeelEngineApi;
-import org.camunda.feel.api.FeelEngineBuilder;
+import org.camunda.feel.syntaxtree.ConstBool;
+import org.camunda.feel.syntaxtree.ConstContext;
+import org.camunda.feel.syntaxtree.ConstList;
+import org.camunda.feel.syntaxtree.ConstNumber;
 import org.camunda.feel.syntaxtree.ConstString;
 import org.camunda.feel.syntaxtree.Exp;
 import org.camunda.feel.syntaxtree.FunctionInvocation;
 import org.camunda.feel.syntaxtree.NamedFunctionParameters;
-import org.camunda.feel.syntaxtree.ParsedExpression;
 import org.camunda.feel.syntaxtree.PositionalFunctionParameters;
 import org.camunda.feel.syntaxtree.Ref;
 import scala.jdk.javaapi.CollectionConverters;
 
 class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParameterExtractor {
-
-  private final FeelEngineApi feelEngineApi = FeelEngineBuilder.forJava().build();
 
   @Override
   public String functionName() {
@@ -77,10 +74,10 @@ class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParame
       final Exp name, final Exp description, final Exp type, final Exp schema, final Exp options) {
 
     final var parameterName = parameterName(name);
-    final var descriptionStr = evaluateToString(description, "description");
-    final var typeStr = evaluateToString(type, "type");
-    final var schemaMap = evaluateToMap(schema, "schema");
-    final var optionsMap = evaluateToMap(options, "options");
+    final var descriptionStr = asString(description, "description");
+    final var typeStr = asString(type, "type");
+    final var schemaMap = asMap(schema, "schema");
+    final var optionsMap = asMap(options, "options");
 
     return new AdHocActivityParameter(
         parameterName, descriptionStr, typeStr, schemaMap, optionsMap);
@@ -94,58 +91,78 @@ class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParame
                   switch (value) {
                     case final ConstString stringResult ->
                         "string '%s'".formatted(stringResult.value());
-                    default -> value;
+                    default -> typeMismatchExceptionValue(value);
                   }));
     }
 
     return valueRef.names().last();
   }
 
-  private String evaluateToString(final Exp exp, final String parameterName) {
+  private String asString(final Exp exp, final String parameterName) {
     if (exp == null) {
       return null;
     }
 
-    final Object result = evaluate(exp, parameterName);
-    if (!(result instanceof final String resultString)) {
+    if (!(exp instanceof final ConstString constString)) {
       throw new IllegalArgumentException(
           "Expected fromAi() parameter '%s' to be a string, but received '%s'."
-              .formatted(parameterName, result));
+              .formatted(parameterName, typeMismatchExceptionValue(exp)));
     }
 
-    return resultString;
+    return constString.value();
   }
 
-  private Map<String, Object> evaluateToMap(final Exp exp, final String parameterName) {
+  private Map<String, Object> asMap(final Exp exp, final String parameterName) {
     if (exp == null) {
       return null;
     }
 
-    final Object result = evaluate(exp, parameterName);
-    if (!(result instanceof final Map<?, ?> resultMap)) {
+    if (!(exp instanceof final ConstContext constContext)) {
       throw new IllegalArgumentException(
-          "Expected fromAi() parameter '%s' to be a map, but received '%s'."
-              .formatted(parameterName, result));
+          "Expected fromAi() parameter '%s' to be a context (map), but received '%s'."
+              .formatted(parameterName, typeMismatchExceptionValue(exp)));
     }
 
-    return resultMap.entrySet().stream()
-        .collect(
-            Collectors.toMap(
-                entry -> entry.getKey().toString(),
-                entry -> (Object) entry.getValue(),
-                (v1, v2) -> v2,
-                LinkedHashMap::new));
+    return convertContext(constContext);
   }
 
-  private Object evaluate(final Exp exp, final String parameterName) {
-    final EvaluationResult result =
-        feelEngineApi.evaluate(new ParsedExpression(exp, ""), Collections.emptyMap());
-    if (result.isFailure()) {
-      throw new IllegalArgumentException(
-          "Failed to evaluate expression for fromAi() parameter '%s': %s"
-              .formatted(parameterName, result.failure().message()));
-    }
+  private Object convertConstant(final Object object) {
+    return switch (object) {
+      case null -> null;
+      case final ConstNumber constNumber -> constNumber.value();
+      case final ConstBool constBool -> constBool.value();
+      case final ConstString constString -> constString.value();
 
-    return result.result();
+      case final ConstList constList ->
+          CollectionConverters.asJava(constList.items()).stream()
+              .map(this::convertConstant)
+              .toList();
+
+      case final ConstContext constContext -> convertContext(constContext);
+
+      default ->
+          throw new IllegalArgumentException(
+              "Unsupported expression value in fromAi() function invocation: %s"
+                  .formatted(object.getClass().getSimpleName()));
+    };
+  }
+
+  private Map<String, Object> convertContext(final ConstContext constContext) {
+    return CollectionConverters.asJava(constContext.entries()).stream()
+        .collect(
+            LinkedHashMap::new,
+            (map, entry) ->
+                map.put(
+                    entry.productElement(0).toString(), convertConstant(entry.productElement(1))),
+            HashMap::putAll);
+  }
+
+  private Object typeMismatchExceptionValue(final Exp exp) {
+    return switch (exp) {
+      case final ConstString constString -> constString.value();
+      case final ConstNumber constNumber -> constNumber.value().toString();
+      case final ConstBool constBool -> constBool.value();
+      default -> exp;
+    };
   }
 }

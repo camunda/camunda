@@ -45,7 +45,7 @@ class AdHocActivityParameterExtractorTest {
   @ParameterizedTest
   @CsvSource({
     "\"toolCall.myVariable\",string 'toolCall.myVariable'",
-    "10,ConstNumber(10)",
+    "10,10",
     "[],ConstList(List())"
   })
   void throwsExceptionWhenValueIsNotAReference(
@@ -80,7 +80,7 @@ class AdHocActivityParameterExtractorTest {
             () -> extractParameters("fromAi(value: toolCall.myVariable, schema: \"dummy\")"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageStartingWith(
-            "Expected fromAi() parameter 'schema' to be a map, but received 'dummy'.");
+            "Expected fromAi() parameter 'schema' to be a context (map), but received 'dummy'.");
   }
 
   @Test
@@ -89,7 +89,7 @@ class AdHocActivityParameterExtractorTest {
             () -> extractParameters("fromAi(value: toolCall.myVariable, options: \"dummy\")"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageStartingWith(
-            "Expected fromAi() parameter 'options' to be a map, but received 'dummy'.");
+            "Expected fromAi() parameter 'options' to be a context (map), but received 'dummy'.");
   }
 
   private List<AdHocActivityParameter> extractParameters(final String expression) {
@@ -157,17 +157,6 @@ class AdHocActivityParameterExtractorTest {
             "Only expression: Name + description + type + schema + options (value not a child reference)",
             """
             fromAi(aSimpleValue, "A simple value", "string", { enum: ["A", "B", "C"] }, { optional: true })
-            """,
-            new AdHocActivityParameter(
-                "aSimpleValue",
-                "A simple value",
-                "string",
-                Map.of("enum", List.of("A", "B", "C")),
-                Map.of("optional", true))),
-        new AdHocActivityParameterExtractionTestCase(
-            "Only expression: Name + description + type + schema + options (expressions to generate params)",
-            """
-            fromAi(toolCall.aSimpleValue, string join(["A", "simple", "value"], " "), "str" + "ing", context put({}, "enum", ["A", "B", "C"]), { optional: not(false) })
             """,
             new AdHocActivityParameter(
                 "aSimpleValue",
@@ -247,23 +236,6 @@ class AdHocActivityParameterExtractorTest {
               schema: { enum: ["A", "B", "C"] },
               type: "string",
               value: aSimpleValue
-            )
-            """,
-            new AdHocActivityParameter(
-                "aSimpleValue",
-                "A simple value",
-                "string",
-                Map.of("enum", List.of("A", "B", "C")),
-                Map.of("optional", true))),
-        new AdHocActivityParameterExtractionTestCase(
-            "Only expression: Name + description + type + schema + options (named params, mixed order, expressions to generate params)",
-            """
-            fromAi(
-              description: string join(["A", "simple", "value"], " "),
-              options: { optional: not(false) },
-              schema: context put({}, "enum", ["A", "B", "C"]),
-              type: "str" + "ing",
-              value: toolCall.aSimpleValue
             )
             """,
             new AdHocActivityParameter(
