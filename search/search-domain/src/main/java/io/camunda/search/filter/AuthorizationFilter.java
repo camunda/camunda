@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public record AuthorizationFilter(
     Long authorizationKey,
@@ -46,7 +45,7 @@ public record AuthorizationFilter(
     }
 
     public Builder ownerIds(final List<String> value) {
-      final var filteredList = value.stream().filter(Objects::nonNull).collect(Collectors.toList());
+      final var filteredList = value.stream().filter(Objects::nonNull).toList();
       ownerIds = addValuesToList(ownerIds, filteredList);
       return this;
     }
