@@ -19,6 +19,7 @@ import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.I
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.SCOPE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.TYPE;
+import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.USERNAME;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.VARIABLE_NAME;
 import static io.camunda.webapps.schema.entities.operation.OperationState.LOCKED;
 import static io.camunda.webapps.schema.entities.operation.OperationState.SCHEDULED;
@@ -312,7 +313,8 @@ public class OperationReader extends AbstractReader
 
   @Override
   public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
-    final TermQueryBuilder operationIdQ = termQuery(BATCH_OPERATION_ID, batchOperationId);
+    final QueryBuilder operationIdQ =
+        joinWithAnd(termQuery(BATCH_OPERATION_ID, batchOperationId), createUsernameQuery());
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
             .source(new SearchSourceBuilder().query(operationIdQ));

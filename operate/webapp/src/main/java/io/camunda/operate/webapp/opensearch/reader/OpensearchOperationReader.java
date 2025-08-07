@@ -214,7 +214,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
     final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL)
-            .query(term(BATCH_OPERATION_ID, batchOperationId));
+            .query(and(term(BATCH_OPERATION_ID, batchOperationId), usernameQuery()));
 
     final List<OperationEntity> operationEntities =
         richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
