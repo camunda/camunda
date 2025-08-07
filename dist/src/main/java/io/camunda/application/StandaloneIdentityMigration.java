@@ -8,6 +8,8 @@
 package io.camunda.application;
 
 import io.camunda.application.commons.migration.BlockingMigrationsRunner;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.SpringApplication;
@@ -38,7 +40,11 @@ public class StandaloneIdentityMigration implements CommandLineRunner, ExitCodeG
         new SpringApplicationBuilder()
             .logStartupInfo(true)
             .web(WebApplicationType.NONE)
-            .sources(StandaloneIdentityMigration.class, BlockingMigrationsRunner.class)
+            .sources(
+                StandaloneIdentityMigration.class,
+                BlockingMigrationsRunner.class,
+                UnifiedConfigurationHelper.class,
+                UnifiedConfiguration.class)
             .profiles(Profile.IDENTITY_MIGRATION.getId())
             .addCommandLineProperties(true)
             .build(args);
