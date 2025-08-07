@@ -26,15 +26,22 @@ public class CamundaClientAuthProperties {
 
   /**
    * Authentication method to be used. If not set, it will be detected based on the presence of
-   * username, password, client id and client secret.
+   * username, password, client id and client secret. A default is set by `camunda.client.mode:
+   * saas`.
    */
   private AuthMethod method;
 
   // basic auth
-  /** Username to be used for basic authentication. */
+  /**
+   * Username to be used for basic authentication. A default is set by `camunda.client.auth.method:
+   * basic`.
+   */
   private String username;
 
-  /** Password to be used for basic authentication. */
+  /**
+   * Password to be used for basic authentication. A default is set by `camunda.client.auth.method:
+   * basic`.
+   */
   private String password;
 
   // self-managed and saas
@@ -44,10 +51,16 @@ public class CamundaClientAuthProperties {
   /** Client secret to be used when requesting access token from OAuth authorization server. */
   private String clientSecret;
 
-  /** The authorization server's URL, from which the access token will be requested. */
+  /**
+   * The authorization server's URL, from which the access token will be requested. A default is set
+   * by `camunda.client.mode: saas` and `camunda.client.auth.method: oidc`.
+   */
   private URI tokenUrl;
 
-  /** The resource for which the access token should be valid. */
+  /**
+   * The resource for which the access token should be valid. A default is set by
+   * `camunda.client.mode: saas` and `camunda.client.auth.method: oidc`.
+   */
   private String audience;
 
   /** The scopes of the access token. */

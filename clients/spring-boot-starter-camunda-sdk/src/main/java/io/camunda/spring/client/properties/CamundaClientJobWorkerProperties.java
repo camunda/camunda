@@ -30,7 +30,10 @@ public class CamundaClientJobWorkerProperties {
   /** Set the type of jobs to work on. */
   private String type;
 
-  /** Set the name of the worker owner. */
+  /**
+   * Set the name of the worker owner. Will be generated as `${beanName}#${methodName}` as long as
+   * set to default.
+   */
   private String name;
 
   /** Set the time for how long a job is exclusively assigned for a worker. */
@@ -51,13 +54,21 @@ public class CamundaClientJobWorkerProperties {
   /** Set whether a job should automatically be completed after the method invocation. */
   private Boolean autoComplete;
 
-  /** Set a list of variable names which should be fetched on job activation. */
+  /**
+   * Set a list of variable names which should be fetched on job activation. If set on defaults, it
+   * will extend the list of variables to fetch from the annotation. If set on override, it will
+   * replace the list of variables to fetch.
+   */
   private List<String> fetchVariables;
 
   /** Set whether the job worker is enabled. */
   private Boolean enabled;
 
-  /** Set for which tenants the jobs worker should be registered. */
+  /**
+   * Set for which tenants the jobs worker should be registered. If set on defaults, it will extend
+   * the list of tenant ids from the annotation. Of set on override, it will replace the list of
+   * tenant ids.
+   */
   private List<String> tenantIds;
 
   /** Set whether all variables should be fetched. Overrides `fetch-variables`. */
@@ -88,7 +99,7 @@ public class CamundaClientJobWorkerProperties {
     this(false);
   }
 
-  public CamundaClientJobWorkerProperties(boolean initWithDefaults) {
+  public CamundaClientJobWorkerProperties(final boolean initWithDefaults) {
     if (initWithDefaults) {
       tenantIds = DEFAULT_JOB_WORKER_TENANT_IDS;
       timeout = DEFAULT_JOB_TIMEOUT;

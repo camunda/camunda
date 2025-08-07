@@ -32,7 +32,7 @@ public class CamundaClientProperties {
   private boolean enabled = true;
 
   /**
-   * The client mode to be used. If not set, saas mode will be detected based on the presence of a
+   * The client mode to be used. If not set, `saas` mode will be detected based on the presence of a
    * `camunda.client.cloud.cluster-id`.
    */
   private ClientMode mode;
@@ -83,13 +83,13 @@ public class CamundaClientProperties {
 
   /**
    * The gRPC address of Camunda that the client can connect to. The address must be an absolute
-   * URL, including the scheme. Affected by `camunda.client.mode`.
+   * URL, including the scheme. An alternative default is set by both `camunda.client.mode`.
    */
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
 
   /**
    * The REST API address of Camunda that the client can connect to. The address must be an absolute
-   * URL, including the scheme. Affected by `camunda.client.mode`.
+   * URL, including the scheme. An alternative default is set by both`camunda.client.mode`.
    */
   private URI restAddress = DEFAULT_REST_ADDRESS;
 
