@@ -26,8 +26,8 @@ jobs:
         contains(github.event.pull_request.labels.*.name, 'deploy-preview')
       )
     name: Build Camunda
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 20
     steps:
     - name: Checkout
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -147,6 +147,18 @@ jobs:
         argocd_server: argocd.int.camunda.com
         argocd_wait_for_sync_timeout: "1800" # waits up to 30 minutes
         github_token: ${{ secrets.GITHUB_TOKEN }}
+  conflicts:
+    if: >
+      github.event.pull_request.state != 'closed' && (
+        contains(github.event.label.name, 'deploy-preview') ||
+        contains(github.event.pull_request.labels.*.name, 'deploy-preview')
+      )
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check PR for merge conflicts
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@main
+      with:
+        pull-request-id: ${{ github.event.pull_request.number }}
 
   clean:
     if: always() && needs.deploy-preview.result != 'skipped' && needs.deploy-preview.result != 'cancelled'

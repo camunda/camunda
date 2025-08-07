@@ -87,6 +87,7 @@ camunda-platform:
   connectors:
     enabled: true
     fullnameOverride: connectors
+    contextPath: /connectors
     # image:
     #   registry: camunda/connectors-bundle
     env:
@@ -115,6 +116,38 @@ camunda-platform:
     contextPath: /console
     # image:
     #   registry: camunda/console
+    # Overrides the default service URL because the preview environment
+    # is exposed through its own (separate)ingress controller.
+    overrideConfiguration: |
+      camunda:
+        console:
+          managed:
+            method: plain
+            releases:
+            - name: {{ .Release.Name }}
+              namespace: {{ .Release.Namespace }}
+              components:
+              - id: console
+                url: https://{{ include "ingress.domain" . }}{{ .Values.console.contextPath }}
+              - id: keycloak
+                url: https://{{ include "ingress.domain" . }}{{ .Values.global.identity.keycloak.contextPath }}
+              - id: identity
+                url: https://{{ include "ingress.domain" . }}{{ .Values.identity.contextPath }}
+              - id: webModelerWebApp
+                url: https://{{ include "ingress.domain" . }}{{ .Values.webModeler.contextPath }}
+              - id: optimize
+                url: https://{{ include "ingress.domain" . }}{{ .Values.optimize.contextPath }}
+              - id: operate
+                url: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}/operate
+              - id: tasklist
+                url: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}/tasklist
+              - id: coreIdentity
+                url: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}/identity
+              - id: connectors
+                url: https://{{ include "ingress.domain" . }}{{ .Values.connectors.contextPath }}
+              - id: core
+                urls:
+                  http: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}
     env:
     - name: JAVA_OPTS
       value: "-Xms512m -Xmx512m"

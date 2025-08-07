@@ -14,7 +14,7 @@ metadata:
     {{- include "commonAnnotations" $ | nindent 4 }}
     {{- include "infrapreviewenvironmentsingress.annotations" $ | nindent 4 -}}
     ingress.kubernetes.io/rewrite-target: "/"
-    nginx.ingress.kubernetes.io/app-root: {{ .Values.camundaPlatform.webModeler.contextPath }}
+    nginx.ingress.kubernetes.io/app-root: {{ .Values.camundaPlatform.console.contextPath }}
     nginx.ingress.kubernetes.io/proxy-buffer-size: 16k
 spec:
   ingressClassName: nginx
@@ -70,6 +70,13 @@ spec:
             port:
               number:  {{ .Values.camundaPlatform.webModeler.websockets.service.port }}
         path: {{ template "webModeler.websocketContextPath" $camundaPlatform }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "connectors.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.connectors.service.serverPort }}
+        path: {{ .Values.camundaPlatform.connectors.contextPath }}
         pathType: Prefix
   tls:
   - hosts:
