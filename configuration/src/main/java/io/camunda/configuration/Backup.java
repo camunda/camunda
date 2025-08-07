@@ -14,6 +14,9 @@ public class Backup {
   /** Configuration for backup store GCS */
   private Gcs gcs = new Gcs();
 
+  /** Configuration for backup store Azure */
+  private Azure azure = new Azure();
+
   public S3 getS3() {
     return s3;
   }
@@ -28,5 +31,13 @@ public class Backup {
 
   public void setGcs(final Gcs gcs) {
     this.gcs = gcs;
+  }
+
+  public Azure getAzure() {
+    return azure;
+  }
+
+  public void setAzure(final Azure azure) {
+    this.azure = azure;
   }
 }
