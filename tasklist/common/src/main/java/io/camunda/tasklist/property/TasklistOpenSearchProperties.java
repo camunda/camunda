@@ -67,11 +67,19 @@ public class TasklistOpenSearchProperties extends OpenSearchProperties {
     this.numberOfShardsPerIndex = numberOfShardsPerIndex;
   }
 
+  public int getNumberOfShards(final String indexName) {
+    return numberOfShardsPerIndex.getOrDefault(indexName, numberOfShards);
+  }
+
   public Map<String, Integer> getNumberOfReplicasPerIndex() {
     return numberOfReplicasPerIndex;
   }
 
   public void setNumberOfReplicasPerIndex(final Map<String, Integer> numberOfReplicasPerIndex) {
     this.numberOfReplicasPerIndex = numberOfReplicasPerIndex;
+  }
+
+  public int getNumberOfReplicas(final String indexName) {
+    return numberOfReplicasPerIndex.getOrDefault(indexName, numberOfReplicas);
   }
 }

@@ -18,7 +18,11 @@ import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.util.IndexSchemaValidatorUtil;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.slf4j.Logger;
@@ -76,7 +80,7 @@ public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil
               tasklistProperties.getOpenSearch().getIndexPrefix() + "*");
       final List<String> allIndexNames =
           map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
-      return indices.containsAll(allIndexNames) && validateNumberOfReplicas(allIndexNames);
+      return indices.containsAll(allIndexNames);
     } catch (final Exception e) {
       LOGGER.error("Check for existing schema failed", e);
       return false;
@@ -138,6 +142,26 @@ public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil
     return newerVersionsForIndex(indexDescriptor, versions);
   }
 
+  @Override
+  public boolean validateIndexConfiguration() {
+    return validateNumberOfReplicas() && validateComponentTemplateSettings();
+  }
+
+  private boolean validateComponentTemplateSettings() {
+    final var settings =
+        retryOpenSearchClient.getComponentTemplateProperties(
+            schemaManager.getComponentTemplateName());
+
+    final var expectedShards =
+        String.valueOf(tasklistProperties.getOpenSearch().getNumberOfShards());
+    final var expectedReplicas =
+        String.valueOf(tasklistProperties.getOpenSearch().getNumberOfReplicas());
+    final var actualShards = settings.numberOfShards();
+    final var actualReplicas = settings.numberOfReplicas();
+
+    return expectedShards.equals(actualShards) && expectedReplicas.equals(actualReplicas);
+  }
+
   private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
     final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
     return allIndexNames.stream()
@@ -147,14 +171,15 @@ public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil
         .collect(Collectors.toSet());
   }
 
-  public boolean validateNumberOfReplicas(final List<String> indexes) {
-    for (final String index : indexes) {
+  public boolean validateNumberOfReplicas() {
+    for (final IndexDescriptor index : indexDescriptors) {
       final IndexSettings response =
-          retryOpenSearchClient.getIndexSettingsFor(
-              index, RetryOpenSearchClient.NUMBERS_OF_REPLICA);
+          retryOpenSearchClient.getIndexSettingsFor(index.getFullQualifiedName());
       if (!response
           .numberOfReplicas()
-          .equals(String.valueOf(tasklistProperties.getOpenSearch().getNumberOfReplicas()))) {
+          .equals(
+              String.valueOf(
+                  tasklistProperties.getOpenSearch().getNumberOfReplicas(index.getIndexName())))) {
         return false;
       }
     }

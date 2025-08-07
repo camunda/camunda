@@ -67,11 +67,19 @@ public class TasklistElasticsearchProperties extends ElasticsearchProperties {
     this.numberOfShardsPerIndex = numberOfShardsPerIndex;
   }
 
+  public int getNumberOfShards(final String indexName) {
+    return numberOfShardsPerIndex.getOrDefault(indexName, numberOfShards);
+  }
+
   public Map<String, Integer> getNumberOfReplicasPerIndices() {
     return numberOfReplicasPerIndices;
   }
 
   public void setNumberOfReplicasPerIndices(final Map<String, Integer> numberOfReplicasPerIndices) {
     this.numberOfReplicasPerIndices = numberOfReplicasPerIndices;
+  }
+
+  public int getNumberOfReplicas(final String indexName) {
+    return numberOfReplicasPerIndices.getOrDefault(indexName, numberOfReplicas);
   }
 }

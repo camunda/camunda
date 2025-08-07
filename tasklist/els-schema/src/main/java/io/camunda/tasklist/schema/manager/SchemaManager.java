@@ -16,7 +16,7 @@ import java.util.Set;
 
 public interface SchemaManager {
 
-  public void createSchema();
+  void createSchema();
 
   IndexMapping getExpectedIndexFields(IndexDescriptor indexDescriptor);
 
@@ -27,4 +27,6 @@ public interface SchemaManager {
   void updateSchema(Map<IndexDescriptor, Set<IndexMappingProperty>> newFields);
 
   void createIndex(IndexDescriptor testIndex);
+
+  String getComponentTemplateName();
 }
