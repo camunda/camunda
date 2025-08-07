@@ -20,7 +20,7 @@ public abstract class SecondaryStorageDatabase {
         prefix() + ".url",
         url,
         String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
         legacyUrlProperties());
   }
 

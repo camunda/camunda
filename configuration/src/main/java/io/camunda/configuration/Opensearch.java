@@ -21,8 +21,6 @@ public class Opensearch extends SecondaryStorageDatabase {
     return Set.of(
         "camunda.database.url",
         "camunda.operate.opensearch.url",
-        "camunda.operate.zeebeOpensearch.url",
-        "camunda.tasklist.opensearch.url",
-        "camunda.tasklist.zeebeOpensearch.url");
+        "camunda.tasklist.opensearch.url");
   }
 }
