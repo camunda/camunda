@@ -23,6 +23,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,16 +47,43 @@ public final class AdHocSubProcessElementsVariableTest {
   private static final AdHocSubProcessElementTestFixture SIMPLE_TASK =
       testFixture(
           ahsp -> {
-            final var builder = ahsp.task("Simple_Task");
-            builder.name("Simple Task");
-            builder.documentation("The Simple Task documentation");
-            builder.zeebeProperty("someProperty", "someValue");
+            final var taskBuilder = ahsp.task("Simple_Task");
+            taskBuilder.name("Simple Task");
+            taskBuilder.documentation("The Simple Task documentation");
+            taskBuilder.zeebeProperty("someProperty", "someValue");
           },
           new AdHocActivityMetadata(
               "Simple_Task",
               "Simple Task",
               "The Simple Task documentation",
               Map.of("someProperty", "someValue")));
+
+  private static final AdHocSubProcessElementTestFixture TASK_WITH_PROPERTIES =
+      testFixture(
+          ahsp -> {
+            final var taskBuilder = ahsp.task("Task_With_Properties");
+            taskBuilder.name("Task With Properties");
+            taskBuilder.documentation("The task with properties documentation");
+            taskBuilder
+                .zeebeProperty("io.camunda.test.property1", "value1")
+                .zeebeProperty("io.camunda.test.property2", "value2")
+                .zeebeProperty("io.camunda.test.property3", "")
+                .zeebeProperty("io.camunda.test.property4", "   ")
+                .zeebeProperty("io.camunda.test.property5", null);
+          },
+          new AdHocActivityMetadata(
+              "Task_With_Properties",
+              "Task With Properties",
+              "The task with properties documentation",
+              new LinkedHashMap<>() {
+                {
+                  put("io.camunda.test.property1", "value1");
+                  put("io.camunda.test.property2", "value2");
+                  put("io.camunda.test.property3", null);
+                  put("io.camunda.test.property4", "   ");
+                  put("io.camunda.test.property5", null);
+                }
+              }));
 
   private static final AdHocSubProcessElementTestFixture SERVICE_TASK =
       testFixture(
@@ -101,7 +129,6 @@ public final class AdHocSubProcessElementsVariableTest {
                             .zeebeResultVariable("scriptTaskResult")
                             .zeebeExpression("inputVariable")
                             .zeebeProperty("io.camunda.test.property1", "value1")
-                            .zeebeProperty("io.camunda.test.property2", "value2")
                             .zeebeInput(
                                 "=fromAi(toolCall.inputVariable, \"Input variable description\")",
                                 "inputVariable");
@@ -116,9 +143,7 @@ public final class AdHocSubProcessElementsVariableTest {
               "Script_Task",
               "Script Task",
               "A script task with documentation",
-              Map.of(
-                  "io.camunda.test.property1", "value1",
-                  "io.camunda.test.property2", "value2")));
+              Map.of("io.camunda.test.property1", "value1")));
 
   private static final AdHocSubProcessElementTestFixture TASK_WITH_FOLLOW_UP =
       testFixture(
@@ -250,6 +275,7 @@ public final class AdHocSubProcessElementsVariableTest {
   public static Collection<AdHocSubProcessElementsScenario> scenarios() {
     return List.of(
         scenario("Simple Task", SIMPLE_TASK),
+        scenario("Task With Properties", TASK_WITH_PROPERTIES),
         scenario("Service Task", SERVICE_TASK),
         scenario("User Task", USER_TASK),
         scenario("Script Task", SCRIPT_TASK),
@@ -269,6 +295,7 @@ public final class AdHocSubProcessElementsVariableTest {
         scenario(
             "All supported elements",
             SIMPLE_TASK,
+            TASK_WITH_PROPERTIES,
             SERVICE_TASK,
             USER_TASK,
             SCRIPT_TASK,

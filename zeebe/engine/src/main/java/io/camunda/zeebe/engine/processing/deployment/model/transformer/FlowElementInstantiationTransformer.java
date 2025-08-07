@@ -57,7 +57,6 @@ import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.Task;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
@@ -66,7 +65,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -164,8 +162,14 @@ public final class FlowElementInstantiationTransformer
         .map(
             properties ->
                 properties.stream()
-                    .filter(zeebeProperty -> !zeebeProperty.getName().isEmpty())
-                    .collect(Collectors.toMap(ZeebeProperty::getName, ZeebeProperty::getValue)))
+                    .filter(
+                        zeebeProperty ->
+                            zeebeProperty.getName() != null && !zeebeProperty.getName().isEmpty())
+                    .collect(
+                        HashMap<String, String>::new,
+                        (map, zeebeProperty) ->
+                            map.put(zeebeProperty.getName(), zeebeProperty.getValue()),
+                        HashMap::putAll))
         .ifPresent(executableElement::setProperties);
   }
 }
