@@ -143,6 +143,12 @@ public class ElementInstanceFilterImpl
   }
 
   @Override
+  public ElementInstanceFilter scopeKey(final long value) {
+    filter.setScopeKey(ParseUtil.keyToString(value));
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.ElementInstanceFilter getSearchRequestProperty() {
     return filter;
   }
