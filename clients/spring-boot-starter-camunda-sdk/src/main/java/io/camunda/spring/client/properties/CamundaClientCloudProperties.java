@@ -15,13 +15,21 @@
  */
 package io.camunda.spring.client.properties;
 
-import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
-
 public class CamundaClientCloudProperties {
+
+  /** Set the region the Camunda client will connect to. */
   private String region;
+
+  /** Set the cluster id the Camunda client will connect to. */
   private String clusterId;
-  @Deprecated private String baseUrl;
+
+  /** Set the port the Camunda client will connect to. */
   private Integer port;
+
+  /**
+   * Set the domain the Camunda client will connect to. Change this to connect to a non-productive
+   * instance of Camunda Cloud.
+   */
   private String domain;
 
   public Integer getPort() {
@@ -46,17 +54,6 @@ public class CamundaClientCloudProperties {
 
   public void setClusterId(final String clusterId) {
     this.clusterId = clusterId;
-  }
-
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.cloud.domain")
-  public String getBaseUrl() {
-    return baseUrl;
-  }
-
-  @Deprecated
-  public void setBaseUrl(final String baseUrl) {
-    this.baseUrl = baseUrl;
   }
 
   public String getDomain() {
