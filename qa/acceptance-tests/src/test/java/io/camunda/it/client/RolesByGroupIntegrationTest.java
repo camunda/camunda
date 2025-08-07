@@ -10,23 +10,14 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.RoleResult;
+import io.camunda.client.api.search.response.Role;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -36,11 +27,6 @@ public class RolesByGroupIntegrationTest {
   private static CamundaClient camundaClient;
 
   private static final String EXISTING_ROLE_ID = Strings.newRandomValidIdentityId();
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-
-  private static final ObjectMapper OBJECT_MAPPER =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   @BeforeAll
   static void setup() {
@@ -133,14 +119,7 @@ public class RolesByGroupIntegrationTest {
     // then
     Awaitility.await("Role was deleted and unassigned")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        searchRolesByGroupId(
-                                camundaClient.getConfiguration().getRestAddress().toString(),
-                                groupId)
-                            .items())
-                    .isEmpty());
+        .untilAsserted(() -> assertThat(searchRolesByGroupId(groupId).items()).isEmpty());
   }
 
   @Test
@@ -162,11 +141,7 @@ public class RolesByGroupIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
-                assertThat(
-                        searchRolesByGroupId(
-                                camundaClient.getConfiguration().getRestAddress().toString(),
-                                groupId)
-                            .items())
+                assertThat(searchRolesByGroupId(groupId).items())
                     .anyMatch(r -> EXISTING_ROLE_ID.equals(r.getRoleId())));
 
     // when
@@ -180,14 +155,7 @@ public class RolesByGroupIntegrationTest {
     // then
     Awaitility.await("Group is unassigned from the role")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        searchRolesByGroupId(
-                                camundaClient.getConfiguration().getRestAddress().toString(),
-                                groupId)
-                            .items())
-                    .isEmpty());
+        .untilAsserted(() -> assertThat(searchRolesByGroupId(groupId).items()).isEmpty());
   }
 
   @Test
@@ -383,11 +351,7 @@ public class RolesByGroupIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
-                assertThat(
-                        searchRolesByGroupId(
-                                camundaClient.getConfiguration().getRestAddress().toString(),
-                                groupId)
-                            .items())
+                assertThat(searchRolesByGroupId(groupId).items())
                     .anyMatch(r -> EXISTING_ROLE_ID.equals(r.getRoleId())));
 
     // when
@@ -401,14 +365,7 @@ public class RolesByGroupIntegrationTest {
     // then
     Awaitility.await("Group is unassigned from the role")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        searchRolesByGroupId(
-                                camundaClient.getConfiguration().getRestAddress().toString(),
-                                groupId)
-                            .items())
-                    .isEmpty());
+        .untilAsserted(() -> assertThat(searchRolesByGroupId(groupId).items()).isEmpty());
   }
 
   private static void createRole(
@@ -438,28 +395,11 @@ public class RolesByGroupIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
-                assertThat(
-                        searchRolesByGroupId(
-                                camundaClient.getConfiguration().getRestAddress().toString(),
-                                groupId)
-                            .items())
+                assertThat(searchRolesByGroupId(groupId).items())
                     .anyMatch(r -> roleId.equals(r.getRoleId())));
   }
 
-  // TODO once available, this test should use the client to make the request
-  private static RoleSearchResponse searchRolesByGroupId(
-      final String restAddress, final String groupId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/groups/" + groupId + "/roles/search")))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .build();
-
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
+  private static SearchResponse<Role> searchRolesByGroupId(final String groupId) {
+    return camundaClient.newRolesByGroupSearchRequest(groupId).send().join();
   }
-
-  private record RoleSearchResponse(List<RoleResult> items) {}
 }
