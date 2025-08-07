@@ -10125,6 +10125,7 @@ components:
           type: array
           items:
             type: string
+          uniqueItems: true
         operationReference:
           $ref: '#/components/schemas/OperationReference'
         startInstructions:

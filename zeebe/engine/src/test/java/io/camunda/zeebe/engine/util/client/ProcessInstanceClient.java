@@ -133,7 +133,7 @@ public final class ProcessInstanceClient {
     }
 
     public ProcessInstanceCreationClient withTags(final String... tags) {
-      processInstanceCreationRecord.setTags(List.of(tags));
+      processInstanceCreationRecord.setTags(Set.of(tags));
       return this;
     }
 

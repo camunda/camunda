@@ -22,9 +22,10 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
@@ -42,6 +43,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue START_INSTRUCTIONS_KEY = new StringValue("startInstructions");
   private static final StringValue RUNTIME_INSTRUCTIONS_KEY =
       new StringValue("runtimeInstructions");
+  private static final StringValue TAGS_KEY = new StringValue("tags");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -62,7 +64,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
           new ArrayProperty<>(
               RUNTIME_INSTRUCTIONS_KEY, ProcessInstanceCreationRuntimeInstruction::new);
   private final ArrayProperty<StringValue> tagsProperty =
-      new ArrayProperty<>("tags", StringValue::new);
+      new ArrayProperty<>(TAGS_KEY, StringValue::new);
 
   public ProcessInstanceCreationRecord() {
     super(10);
@@ -228,13 +230,13 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
-  public List<String> getTags() {
-    final var tags = new ArrayList<String>();
+  public Set<String> getTags() {
+    final var tags = new HashSet<String>();
     tagsProperty.forEach(e -> tags.add(e.toString()));
     return tags;
   }
 
-  public ProcessInstanceCreationRecord setTags(final List<String> tags) {
+  public ProcessInstanceCreationRecord setTags(final Set<String> tags) {
     tagsProperty.reset();
     tags.forEach(e -> tagsProperty.add().wrap(e));
     return this;

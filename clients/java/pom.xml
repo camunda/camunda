@@ -267,6 +267,10 @@
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
 
   </dependencies>
 

@@ -25,7 +25,9 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceRecord extends UnifiedRecordValue
@@ -330,13 +332,13 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public List<String> getTags() {
-    final var tags = new ArrayList<String>();
+  public Set<String> getTags() {
+    final var tags = new HashSet<String>();
     tagsProp.forEach(e -> tags.add(e.toString()));
     return tags;
   }
 
-  public ProcessInstanceRecord setTags(final List<String> tags) {
+  public ProcessInstanceRecord setTags(final Set<String> tags) {
     tagsProp.reset();
     tags.forEach(e -> tagsProp.add().wrap(e));
     return this;

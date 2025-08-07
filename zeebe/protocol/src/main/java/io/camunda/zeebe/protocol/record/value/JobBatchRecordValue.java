@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import java.util.List;
+import java.util.Set;
 import org.immutables.value.Value;
 
 /**
@@ -75,4 +76,6 @@ public interface JobBatchRecordValue extends RecordValue {
    * @return the identifiers of the tenants that this job batch may contain jobs for
    */
   List<String> getTenantIds();
+
+  Set<String> getTags();
 }

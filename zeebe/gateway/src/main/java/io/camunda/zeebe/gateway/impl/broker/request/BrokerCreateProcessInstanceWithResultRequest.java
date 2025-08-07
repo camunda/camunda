@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.List;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public final class BrokerCreateProcessInstanceWithResultRequest
@@ -46,7 +47,7 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     return this;
   }
 
-  public BrokerCreateProcessInstanceWithResultRequest setTags(final List<String> tags) {
+  public BrokerCreateProcessInstanceWithResultRequest setTags(final Set<String> tags) {
     requestDto.setTags(tags);
     return this;
   }
