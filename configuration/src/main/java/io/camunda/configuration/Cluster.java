@@ -11,7 +11,8 @@ import java.util.Set;
 
 public class Cluster {
 
-  private static final String PREFIX = "camunda.cluster.";
+  private static final String PREFIX = "camunda.cluster";
+
   private static final String LEGACY_NODEID_PROPERTY = "zeebe.broker.cluster.nodeId";
   private static final String LEGACY_PARTITION_COUNT_PROPERTY =
       "zeebe.broker.cluster.partitionsCount";
@@ -61,7 +62,7 @@ public class Cluster {
 
   public int getNodeId() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "node-id",
+        PREFIX + ".node-id",
         nodeId,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
@@ -74,7 +75,7 @@ public class Cluster {
 
   public int getPartitionCount() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "partition-count",
+        PREFIX + ".partition-count",
         partitionCount,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
@@ -87,7 +88,7 @@ public class Cluster {
 
   public int getReplicationFactor() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "replication-factor",
+        PREFIX + ".replication-factor",
         replicationFactor,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
@@ -100,7 +101,7 @@ public class Cluster {
 
   public int getSize() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "size",
+        PREFIX + ".size",
         size,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,

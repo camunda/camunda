@@ -11,7 +11,8 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import java.util.Set;
 
 public class System {
-  private static final String PREFIX = "camunda.system.";
+  private static final String PREFIX = "camunda.system";
+
   private static final Set<String> LEGACY_CPU_THREAD_COUNT_PROPERTIES =
       Set.of("zeebe.broker.threads.cpuThreadCount");
   private static final Set<String> LEGACY_IO_THREAD_COUNT_PROPERTIES =
@@ -44,7 +45,7 @@ public class System {
 
   public int getCpuThreadCount() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "cpu-thread-count",
+        PREFIX + ".cpu-thread-count",
         cpuThreadCount,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -57,7 +58,7 @@ public class System {
 
   public int getIoThreadCount() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "io-thread-count",
+        PREFIX + ".io-thread-count",
         ioThreadCount,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -70,7 +71,7 @@ public class System {
 
   public boolean getClockControlled() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "clock-controlled",
+        PREFIX + ".clock-controlled",
         clockControlled,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,

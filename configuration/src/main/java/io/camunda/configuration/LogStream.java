@@ -12,7 +12,7 @@ import java.util.Set;
 import org.springframework.util.unit.DataSize;
 
 public class LogStream {
-  private static final String PREFIX = "camunda.data.primary-storage.log-stream.";
+  private static final String PREFIX = "camunda.data.primary-storage.log-stream";
 
   private static final Set<String> LEGACY_INDEX_DENSITY_PROPERTIES =
       Set.of("zeebe.broker.data.logIndexDensity");
@@ -35,7 +35,7 @@ public class LogStream {
 
   public int getLogIndexDensity() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "log-index-density",
+        PREFIX + ".log-index-density",
         logIndexDensity,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -48,7 +48,7 @@ public class LogStream {
 
   public DataSize getLogSegmentSize() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "log-segment-size",
+        PREFIX + ".log-segment-size",
         logSegmentSize,
         DataSize.class,
         BackwardsCompatibilityMode.SUPPORTED,
