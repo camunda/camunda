@@ -9,7 +9,7 @@
 import {Button, Modal} from '@carbon/react';
 import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {Container} from '../../Footer/styled';
+import {Container} from '../styled.tsx';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {useNavigate} from 'react-router-dom';
@@ -21,6 +21,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
 import {getMigrationBatchOperationFilter} from './getMigrationBatchOperationFilter';
 import {extractIdsFromQuery} from './extractIdsFromQuery';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 const Footer: React.FC = observer(() => {
   const baseFilter = useProcessInstanceFilters().filter;
@@ -136,6 +137,7 @@ const Footer: React.FC = observer(() => {
                     flowNodeMapping,
                     batchOperationQuery,
                     targetProcessDefinitionKey,
+                    sourceProcessDefinitionKey,
                   } = processInstanceMigrationStore.state;
 
                   if (!batchOperationQuery || !targetProcessDefinitionKey) {
@@ -148,6 +150,7 @@ const Footer: React.FC = observer(() => {
                   const filter = getMigrationBatchOperationFilter({
                     ids,
                     excludeIds,
+                    sourceProcessDefinitionKey,
                     baseFilter,
                   });
 
@@ -164,7 +167,7 @@ const Footer: React.FC = observer(() => {
                     },
                   });
 
-                  processInstanceMigrationStore.setHasPendingRequest();
+                  panelStatesStore.expandOperationsPanel();
                   processInstanceMigrationStore.disable();
 
                   tracking.track({

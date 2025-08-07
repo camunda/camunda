@@ -32,38 +32,42 @@ const useMigrateProcessInstanceBatchOperation = (
   return useMutation({
     mutationKey: ['createProcessInstanceMigrationBatchOperation'],
     mutationFn: async (payload: CreateMigrationBatchOperationRequestBody) => {
-      const response = await migrateProcessInstanceBatchOperation(payload);
+      const {response, error} =
+        await migrateProcessInstanceBatchOperation(payload);
 
-      const queryPayload = {
-        filter: {batchOperationKey: response.batchOperationKey},
-      };
-      const OPERATION_PENDING = 'Batch operation is still pending';
+      if (response !== null) {
+        const queryPayload = {
+          filter: {batchOperationKey: response.batchOperationKey},
+        };
+        const OPERATION_PENDING = 'Batch operation is still pending';
 
-      await queryClient.fetchQuery({
-        queryKey: ['queryBatchOperations', queryPayload],
-        queryFn: async () => {
-          const {response: batchResponse, error} =
-            await queryBatchOperations(queryPayload);
-          if (error) {
-            throw new Error(error.response?.statusText);
-          }
+        await queryClient.fetchQuery({
+          queryKey: ['queryBatchOperations', queryPayload],
+          queryFn: async () => {
+            const {response: batchResponse, error} =
+              await queryBatchOperations(queryPayload);
+            if (error) {
+              throw new Error(error.response?.statusText);
+            }
 
-          const hasActiveOperation = batchResponse.items.some(
-            (item) => item.state === 'ACTIVE',
-          );
+            const hasActiveOperation = batchResponse.items.some(
+              (item) => item.state === 'ACTIVE',
+            );
 
-          if (batchResponse.page.totalItems === 0 || hasActiveOperation) {
-            throw new Error(OPERATION_PENDING);
-          }
-          return batchResponse;
-        },
-        retry: (_, error) => {
-          return error.message === OPERATION_PENDING;
-        },
-        retryDelay: 5000,
-      });
+            if (batchResponse.page.totalItems === 0 || hasActiveOperation) {
+              throw new Error(OPERATION_PENDING);
+            }
+            return batchResponse;
+          },
+          retry: (_, error) => {
+            return error.message === OPERATION_PENDING;
+          },
+          retryDelay: 5000,
+        });
 
-      return response;
+        return response;
+      }
+      throw error;
     },
     ...options,
   });
