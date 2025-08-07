@@ -85,6 +85,8 @@ public interface TestSearchRepository {
       String indexName, String idFieldName, List<Long> ids, boolean ignoreAbsentIndex)
       throws IOException;
 
+  Long getIndexTemplatePriority(String templateName);
+
   record IndexSettings(Integer shards, Integer replicas) {}
 
   enum DynamicMappingType {
