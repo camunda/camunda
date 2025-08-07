@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -59,7 +58,6 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               "camunda.tasklist.elasticsearch.url=http://legacy-mismatching-url:4321",
               "camunda.operate.elasticsearch.url=http://legacy-mismatching-url:4321");
 
-  @Disabled
   @Test
   void testOperateshouldFailWhenUsingLegacyDatabaseProperties() {
     operateRunner.run(
@@ -68,12 +66,11 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
           assertThat(context.getStartupFailure())
               .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
               .rootCause()
-              .hasMessageContaining("Ambiguous legacy configuration")
-              .hasMessageNotContaining("conflicts");
+              .hasMessageContaining("Ambiguous configuration")
+              .hasMessageContaining("conflicts");
         });
   }
 
-  @Disabled
   @Test
   void testTasklistshouldFailWhenUsingLegacyDatabaseProperties() {
     tasklistRunner.run(
@@ -82,8 +79,8 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
           assertThat(context.getStartupFailure())
               .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
               .rootCause()
-              .hasMessageContaining("Ambiguous legacy configuration")
-              .hasMessageNotContaining("conflicts");
+              .hasMessageContaining("Ambiguous configuration")
+              .hasMessageContaining("conflicts");
         });
   }
 
