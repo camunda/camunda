@@ -323,7 +323,6 @@ describe('InstancesByProcess', () => {
     ).toBeInTheDocument();
 
     expect(
-      // eslint-disable-next-line testing-library/no-node-access
       screen.getByRole('button', {name: 'Go to Modeler'}).closest('a'),
     ).toHaveAttribute('href', 'https://link-to-modeler');
   });

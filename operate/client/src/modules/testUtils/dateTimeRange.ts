@@ -29,9 +29,7 @@ const pickDateTimeRange = async ({
   toTime?: string;
 }) => {
   expect(screen.getByTestId('date-range-modal')).toHaveClass('is-visible');
-  // eslint-disable-next-line testing-library/no-node-access
   const monthName = document.querySelector('.cur-month')?.textContent;
-  // eslint-disable-next-line testing-library/no-node-access
   const year = document.querySelector<HTMLInputElement>('.cur-year')?.value;
   const month = new Date(`${monthName} 01, ${year}`).getMonth() + 1;
 
