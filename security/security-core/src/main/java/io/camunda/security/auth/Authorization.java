@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.A
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.BATCH;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DOCUMENT;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
@@ -161,6 +162,10 @@ public record Authorization<T>(
 
     public Builder<T> usageMetric() {
       return resourceType(USAGE_METRIC);
+    }
+
+    public Builder<T> document() {
+      return resourceType(DOCUMENT);
     }
 
     public Builder<T> resourceId(final String resourceId) {
