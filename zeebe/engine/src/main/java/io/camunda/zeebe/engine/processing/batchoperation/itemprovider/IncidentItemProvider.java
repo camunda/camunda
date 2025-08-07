@@ -9,10 +9,13 @@ package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
 import com.google.common.collect.Lists;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
@@ -107,14 +110,7 @@ public class IncidentItemProvider implements ItemProvider {
     String endCursor = null;
     ItemPage result = null;
     while (result == null || !result.isLastPage()) {
-      try {
-        result = fetchIncidentPage(filter, endCursor, pageSize);
-        metrics.recordQueryAgainstSecondaryDatabase();
-      } catch (final Exception e) {
-        metrics.recordFailedQueryAgainstSecondaryDatabase();
-        throw e;
-      }
-
+      result = fetchIncidentPage(filter, endCursor, pageSize);
       items.addAll(result.items());
       endCursor = result.endCursor();
     }
@@ -128,8 +124,7 @@ public class IncidentItemProvider implements ItemProvider {
     final var query =
         SearchQueryBuilders.incidentSearchQuery().filter(incidentFilter).page(page).build();
 
-    final var result =
-        searchClientsProxy.withSecurityContext(securityContext).searchIncidents(query);
+    final var result = retryingQueryExecutor.runRetryable(() -> doQuery(query));
 
     return new ItemPage(
         result.items().stream()
@@ -138,5 +133,15 @@ public class IncidentItemProvider implements ItemProvider {
         result.endCursor(),
         result.total(),
         result.items().isEmpty() || result.total() < pageSize);
+  }
+
+  private SearchQueryResult<IncidentEntity> doQuery(final IncidentQuery query) {
+    try {
+      metrics.recordQueryAgainstSecondaryDatabase();
+      return searchClientsProxy.withSecurityContext(securityContext).searchIncidents(query);
+    } catch (final Exception e) {
+      metrics.recordFailedQueryAgainstSecondaryDatabase();
+      throw e;
+    }
   }
 }

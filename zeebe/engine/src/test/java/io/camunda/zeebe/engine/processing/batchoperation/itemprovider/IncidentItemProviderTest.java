@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -130,6 +131,9 @@ class IncidentItemProviderTest {
             new Item(51, 5),
             new Item(52, 5));
     assertThat(resultPage.isLastPage()).isFalse();
+
+    // 1 for procesInstances, 3 for incidents
+    verify(retryingQueryExecutor, times(4)).runRetryable(any());
   }
 
   @Test
