@@ -142,7 +142,7 @@ public final class BpmnAdHocSubProcessBehavior {
     final var hasActiveSequenceFlows = adHocSubProcessInstance.getActiveSequenceFlows() > 0;
 
     if (cancelRemainingInstances) {
-      // terminate all remaining child instances & directly complete ad-hoc sub-process if there
+      // terminate all remaining child instances or directly complete ad-hoc sub-process if there
       // is no child activity left
       if (hasActiveChildInstances) {
         terminateChildInstances(adHocSubProcessContext);
