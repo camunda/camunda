@@ -1078,56 +1078,6 @@ public final class AdHocSubProcessTest {
             tuple("results", "[]"), tuple("results", "[\"a\"]"), tuple("results", "[\"a\",\"b\"]"));
   }
 
-  @Test
-  public void shouldCreateIncidentWhenOneOfOutputCollectionOrElementIsEmpty() {
-    // given
-    final BpmnModelInstance process =
-        process(
-            adHocSubProcess -> {
-              adHocSubProcess
-                  .zeebeActiveElementsCollectionExpression("activateElements")
-                  .zeebeOutputCollection("results");
-              adHocSubProcess.serviceTask("A", t -> t.zeebeJobType("A"));
-              adHocSubProcess.serviceTask("B", t -> t.zeebeJobType("B"));
-              adHocSubProcess.task("C");
-            });
-
-    ENGINE.deployment().withXmlResource(process).deploy();
-
-    final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("activateElements", List.of("A", "B"))
-            .create();
-
-    // when
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType("A")
-        .withVariable("result", "a")
-        .complete();
-
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType("B")
-        .withVariable("result", "b")
-        .complete();
-
-    // then
-    assertThat(
-            RecordingExporter.variableRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withName("results")
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
-        .containsSequence(
-            tuple("results", "[]"), tuple("results", "[\"a\"]"), tuple("results", "[\"a\",\"b\"]"));
-  }
-
   private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {
     return r ->
         r.getIntent() == SignalIntent.BROADCASTED
