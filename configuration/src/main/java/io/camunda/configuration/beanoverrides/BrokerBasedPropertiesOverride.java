@@ -50,6 +50,8 @@ public class BrokerBasedPropertiesOverride {
     // with zeebe.broker.*
     populateFromSystem(override);
 
+    populateFromPrimaryStorage(override);
+
     // TODO: Populate the bean from rest of camunda.* sections
     // populateFromData(override);
 
@@ -89,5 +91,22 @@ public class BrokerBasedPropertiesOverride {
     final var enableVersionCheck =
         unifiedConfiguration.getCamunda().getSystem().getUpgrade().getEnableVersionCheck();
     override.getExperimental().setVersionCheckRestrictionEnabled(enableVersionCheck);
+  }
+
+  private void populateFromPrimaryStorage(final BrokerBasedProperties override) {
+    final var primaryStorage = unifiedConfiguration.getCamunda().getData().getPrimaryStorage();
+    final var data = override.getData();
+    data.setDirectory(primaryStorage.getDirectory());
+    data.setRuntimeDirectory(primaryStorage.getRuntimeDirectory());
+    data.setLogIndexDensity(primaryStorage.getLogStream().getLogIndexDensity());
+    data.setLogSegmentSize(primaryStorage.getLogStream().getLogSegmentSize());
+    final var brokerDiskConfig = data.getDisk();
+    final var unifiedDiskConfig = primaryStorage.getDisk();
+    brokerDiskConfig.getFreeSpace().setProcessing(unifiedDiskConfig.getFreeSpace().getProcessing());
+    brokerDiskConfig
+        .getFreeSpace()
+        .setReplication(unifiedDiskConfig.getFreeSpace().getReplication());
+    brokerDiskConfig.setEnableMonitoring(unifiedDiskConfig.isMonitoringEnabled());
+    brokerDiskConfig.setMonitoringInterval(unifiedDiskConfig.getMonitoringInterval());
   }
 }
