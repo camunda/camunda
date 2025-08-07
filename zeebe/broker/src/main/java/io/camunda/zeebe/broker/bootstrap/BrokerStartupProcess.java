@@ -45,8 +45,9 @@ public final class BrokerStartupProcess {
 
   private List<StartupStep<BrokerStartupContext>> buildStartupSteps(final BrokerCfg config) {
     final var result = new ArrayList<StartupStep<BrokerStartupContext>>();
-    /*result.add(
-    new NodeIdMapperStartupStep(config.getLeaseConfig(), config.getCluster().getClusterSize()));*/
+    // result.add(
+    //     new NodeIdMapperStartupStep(config.getLeaseConfig(),
+    // config.getCluster().getClusterSize()));
     result.add(new ClusterServicesStep());
     result.add(new ClusterConfigurationManagerStep());
 

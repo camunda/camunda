@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.broker.clustering;
 
+import com.google.common.net.HostAndPort;
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberConfig;
 import io.atomix.cluster.NodeConfig;
 import io.atomix.cluster.discovery.BootstrapDiscoveryConfig;
+import io.atomix.cluster.discovery.KubernetesDiscoveryConfig;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.net.Address;
@@ -19,6 +21,7 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -28,7 +31,7 @@ public final class ClusterConfigFactory {
   public ClusterConfig mapConfiguration(final BrokerCfg config) {
     final var cluster = config.getCluster();
     final var name = cluster.getClusterName();
-    final var discovery = discoveryConfig(cluster.getInitialContactPoints());
+    final var discovery = k8sDiscoveryConfig(cluster.getInitialContactPoints().getFirst());
     final var membership = membershipConfig(cluster.getMembership());
     final var network = config.getNetwork();
 
@@ -72,6 +75,14 @@ public final class ClusterConfigFactory {
             .collect(Collectors.toSet());
 
     return new BootstrapDiscoveryConfig().setNodes(nodes);
+  }
+
+  private KubernetesDiscoveryConfig k8sDiscoveryConfig(final String contactPoint) {
+    final HostAndPort parsedAddress = HostAndPort.fromString(contactPoint).withDefaultPort(26502);
+    return new KubernetesDiscoveryConfig()
+        .setDiscoveryInterval(Duration.ofMinutes(1))
+        .setPort(parsedAddress.getPort())
+        .setServiceFqdn(parsedAddress.getHost());
   }
 
   private MessagingConfig messagingConfig(final ClusterCfg cluster, final NetworkCfg network) {
