@@ -7,6 +7,9 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REPLICA;
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_SHARDS;
 import static io.camunda.tasklist.util.CollectionUtil.map;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -18,7 +21,11 @@ import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.util.IndexSchemaValidatorUtil;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,9 +88,7 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
               tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
       final List<String> allAliasesNames = map(indexDescriptors, IndexDescriptor::getAlias);
 
-      return indices.containsAll(allIndexNames)
-          && aliases.containsAll(allAliasesNames)
-          && validateNumberOfReplicas(allIndexNames);
+      return indices.containsAll(allIndexNames) && aliases.containsAll(allAliasesNames);
     } catch (final Exception e) {
       LOGGER.error("Check for existing schema failed", e);
       return false;
@@ -145,6 +150,26 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
     return newerVersionsForIndex(indexDescriptor, versions);
   }
 
+  @Override
+  public boolean validateIndexConfiguration() {
+    return validateIndicesNumberOfReplicas() && validateComponentTemplateSettings();
+  }
+
+  private boolean validateComponentTemplateSettings() {
+    final var settings =
+        retryElasticsearchClient.getComponentTemplateProperties(
+            schemaManager.getComponentTemplateName(), NUMBERS_OF_SHARDS, NUMBERS_OF_REPLICA);
+
+    final var expectedShards =
+        String.valueOf(tasklistProperties.getElasticsearch().getNumberOfShards());
+    final var expectedReplicas =
+        String.valueOf(tasklistProperties.getElasticsearch().getNumberOfReplicas());
+    final var actualShards = settings.get(NUMBERS_OF_SHARDS);
+    final var actualReplicas = settings.get(NUMBERS_OF_REPLICA);
+
+    return expectedShards.equals(actualShards) && expectedReplicas.equals(actualReplicas);
+  }
+
   private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
     final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
     return allIndexNames.stream()
@@ -154,14 +179,18 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
         .collect(Collectors.toSet());
   }
 
-  public boolean validateNumberOfReplicas(final List<String> indexes) {
-    for (final String index : indexes) {
+  private boolean validateIndicesNumberOfReplicas() {
+    for (final var index : indexDescriptors) {
       final Map<String, String> response =
           retryElasticsearchClient.getIndexSettingsFor(
-              index, RetryElasticsearchClient.NUMBERS_OF_REPLICA);
+              index.getFullQualifiedName(), NUMBERS_OF_REPLICA);
       if (!response
-          .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA)
-          .equals(String.valueOf(tasklistProperties.getElasticsearch().getNumberOfReplicas()))) {
+          .getOrDefault(NUMBERS_OF_REPLICA, NO_REPLICA)
+          .equals(
+              String.valueOf(
+                  tasklistProperties
+                      .getElasticsearch()
+                      .getNumberOfReplicas(index.getIndexName())))) {
         return false;
       }
     }

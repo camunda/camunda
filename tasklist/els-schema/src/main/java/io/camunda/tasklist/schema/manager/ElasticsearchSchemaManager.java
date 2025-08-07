@@ -161,14 +161,14 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     createIndex(indexDescriptor, indexDescriptor.getSchemaClasspathFilename());
   }
 
-  private String settingsTemplateName() {
-    final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
-    return String.format("%s_template", elsConfig.getIndexPrefix());
+  @Override
+  public String getComponentTemplateName() {
+    return String.format("%s_template", tasklistProperties.getElasticsearch().getIndexPrefix());
   }
 
   public void createDefaults() {
     final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
-    final String settingsTemplate = settingsTemplateName();
+    final String settingsTemplate = getComponentTemplateName();
     LOGGER.info(
         "Create default settings from '{}' with {} shards and {} replicas per index.",
         settingsTemplate,
@@ -232,7 +232,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
       final TemplateDescriptor templateDescriptor, final String templateClasspathResource) {
     final PutComposableIndexTemplateRequest request =
         prepareComposableTemplateRequest(templateDescriptor, templateClasspathResource);
-    putIndexTemplate(request);
+    putIndexTemplate(request, false);
 
     // This is necessary, otherwise tasklist won't find indexes at startup
     createIndex(templateDescriptor);
@@ -244,15 +244,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
       LOGGER.debug("Index [{}] was successfully created", indexName);
     } else {
       LOGGER.debug("Index [{}] was NOT created", indexName);
-    }
-  }
-
-  private void putIndexTemplate(final PutComposableIndexTemplateRequest request) {
-    final boolean created = retryElasticsearchClient.createTemplate(request);
-    if (created) {
-      LOGGER.debug("Template [{}] was successfully created", request.name());
-    } else {
-      LOGGER.debug("Template [{}] was NOT created", request.name());
     }
   }
 
@@ -278,7 +269,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         new ComposableIndexTemplate.Builder()
             .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
             .template(template)
-            .componentTemplates(List.of(settingsTemplateName()))
+            .componentTemplates(List.of(getComponentTemplateName()))
             .build();
     final PutComposableIndexTemplateRequest request =
         new PutComposableIndexTemplateRequest()
@@ -302,14 +293,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   private Settings getIndexSettings(final String indexName) {
     final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
-    final var shards =
-        elsConfig
-            .getNumberOfShardsPerIndex()
-            .getOrDefault(indexName, elsConfig.getNumberOfShards());
-    final var replicas =
-        elsConfig
-            .getNumberOfReplicasPerIndices()
-            .getOrDefault(indexName, elsConfig.getNumberOfReplicas());
+    final var shards = elsConfig.getNumberOfShards(indexName);
+    final var replicas = elsConfig.getNumberOfReplicas(indexName);
     return Settings.builder()
         .put(NUMBER_OF_SHARDS, shards)
         .put(NUMBER_OF_REPLICAS, replicas)

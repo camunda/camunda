@@ -7,6 +7,8 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_SHARDS;
 import static io.camunda.tasklist.util.apps.schema.TestIndexDescriptorConfiguration.getSchemaFilePath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -16,12 +18,11 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
-import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import io.camunda.tasklist.util.ElasticsearchHelper;
 import io.camunda.tasklist.util.ElasticsearchTestExtension;
-import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestIndexDescriptor;
@@ -58,8 +59,8 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
   @Autowired private List<IndexDescriptor> indexDescriptors;
   @Autowired private List<TemplateDescriptor> templateDescriptors;
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
-  @Autowired private IndexSchemaValidator indexSchemaValidator;
-  @Autowired private NoSqlHelper noSqlHelper;
+  @Autowired private IndexSchemaValidatorElasticSearch indexSchemaValidator;
+  @Autowired private ElasticsearchHelper noSqlHelper;
   @Autowired private SchemaManager schemaManager;
   @Autowired private TestIndexDescriptor testIndexDescriptor;
   @Autowired private TestTemplateDescriptor testTemplateDescriptor;
@@ -84,16 +85,14 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
           .isTrue();
       assertThat(
               retryElasticsearchClient
-                  .getIndexSettingsFor(
-                      indexDescriptor.getFullQualifiedName(),
-                      RetryElasticsearchClient.NUMBERS_OF_REPLICA)
-                  .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA))
+                  .getIndexSettingsFor(indexDescriptor.getFullQualifiedName(), NUMBERS_OF_REPLICA)
+                  .get(NUMBERS_OF_REPLICA))
           .isEqualTo(String.valueOf(initialNumberOfReplicas));
     }
 
     tasklistProperties.getElasticsearch().setNumberOfReplicas(modifiedNumberOfReplicas);
 
-    assertThat(indexSchemaValidator.schemaExists()).isFalse();
+    assertThat(indexSchemaValidator.validateIndexConfiguration()).isFalse();
 
     schemaManager.createSchema();
 
@@ -104,10 +103,8 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
           .isTrue();
       assertThat(
               retryElasticsearchClient
-                  .getIndexSettingsFor(
-                      indexDescriptor.getFullQualifiedName(),
-                      RetryElasticsearchClient.NUMBERS_OF_REPLICA)
-                  .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA))
+                  .getIndexSettingsFor(indexDescriptor.getFullQualifiedName(), NUMBERS_OF_REPLICA)
+                  .get(NUMBERS_OF_REPLICA))
           .isEqualTo(String.valueOf(modifiedNumberOfReplicas));
     }
   }
@@ -220,5 +217,65 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
                         new IndexMappingProperty()
                             .setName("prop2")
                             .setTypeDefinition(Map.of("type", "keyword")))));
+  }
+
+  @Test
+  public void shouldChangeNumberOfReplicasForComponentTemplate() {
+    final int initialNumberOfReplicas = 1;
+    final int modifiedNumberOfReplicas = 2;
+
+    tasklistProperties.getElasticsearch().setNumberOfReplicas(initialNumberOfReplicas);
+    schemaManager.createSchema();
+
+    // Verify initial component template replica settings
+    final String componentTemplateName = schemaManager.getComponentTemplateName();
+    final var initialSettings =
+        retryElasticsearchClient.getComponentTemplateProperties(
+            componentTemplateName, NUMBERS_OF_REPLICA);
+    assertThat(initialSettings.get(NUMBERS_OF_REPLICA))
+        .isEqualTo(String.valueOf(initialNumberOfReplicas));
+
+    tasklistProperties.getElasticsearch().setNumberOfReplicas(modifiedNumberOfReplicas);
+
+    assertThat(indexSchemaValidator.validateIndexConfiguration()).isFalse();
+
+    schemaManager.createSchema();
+
+    // Verify modified component template replica settings
+    final var modifiedSettings =
+        retryElasticsearchClient.getComponentTemplateProperties(
+            componentTemplateName, NUMBERS_OF_REPLICA);
+    assertThat(modifiedSettings.get(NUMBERS_OF_REPLICA))
+        .isEqualTo(String.valueOf(modifiedNumberOfReplicas));
+  }
+
+  @Test
+  public void shouldChangeNumberOfShardsForComponentTemplate() {
+    final int initialNumberOfShards = 2;
+    final int modifiedNumberOfShards = 3;
+
+    tasklistProperties.getElasticsearch().setNumberOfShards(initialNumberOfShards);
+    schemaManager.createSchema();
+
+    // Verify initial component template shard settings
+    final String componentTemplateName = schemaManager.getComponentTemplateName();
+    final var initialSettings =
+        retryElasticsearchClient.getComponentTemplateProperties(
+            componentTemplateName, NUMBERS_OF_SHARDS);
+    assertThat(initialSettings.get(NUMBERS_OF_SHARDS))
+        .isEqualTo(String.valueOf(initialNumberOfShards));
+
+    tasklistProperties.getElasticsearch().setNumberOfShards(modifiedNumberOfShards);
+
+    assertThat(indexSchemaValidator.validateIndexConfiguration()).isFalse();
+
+    schemaManager.createSchema();
+
+    // Verify modified component template shard settings
+    final Map<String, String> modifiedSettings =
+        retryElasticsearchClient.getComponentTemplateProperties(
+            componentTemplateName, NUMBERS_OF_SHARDS);
+    assertThat(modifiedSettings.get(NUMBERS_OF_SHARDS))
+        .isEqualTo(String.valueOf(modifiedNumberOfShards));
   }
 }

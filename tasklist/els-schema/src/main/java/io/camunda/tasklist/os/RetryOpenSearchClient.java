@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.os;
 
-import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultForNullValue;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -67,7 +65,6 @@ public class RetryOpenSearchClient {
 
   public static final String REFRESH_INTERVAL = "index.refresh_interval";
   public static final String NO_REFRESH = "-1";
-  public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
   public static final String NO_REPLICA = "0";
   public static final String SCROLL_KEEP_ALIVE_MS = "60000ms";
   public static final int DEFAULT_NUMBER_OF_RETRIES =
@@ -172,17 +169,10 @@ public class RetryOpenSearchClient {
 
           final String replicas =
               getOrDefaultNumbersOfReplica(createIndexRequest.index(), NO_REPLICA);
-          if (!replicas.equals(
-              String.valueOf(tasklistProperties.getOpenSearch().getNumberOfReplicas()))) {
+          final var requestedReplicas = createIndexRequest.settings().numberOfReplicas();
+          if (!replicas.equals(requestedReplicas)) {
             final IndexSettings indexSettings =
-                new IndexSettings.Builder()
-                    .settings(
-                        IndexSettings.of(
-                            s ->
-                                s.numberOfReplicas(
-                                    String.valueOf(
-                                        tasklistProperties.getOpenSearch().getNumberOfReplicas()))))
-                    .build();
+                IndexSettings.of(b -> b.settings(s -> s.numberOfReplicas(requestedReplicas)));
             setIndexSettingsFor(indexSettings, createIndexRequest.index());
           }
           return true;
@@ -248,10 +238,6 @@ public class RetryOpenSearchClient {
     return openSearchClient.indices().existsIndexTemplate(it -> it.name(templatePattern)).value();
   }
 
-  public boolean createTemplate(final PutIndexTemplateRequest request) {
-    return createTemplate(request, false);
-  }
-
   public boolean createTemplate(final PutIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
@@ -299,7 +285,7 @@ public class RetryOpenSearchClient {
         });
   }
 
-  public IndexSettings getIndexSettingsFor(final String indexName, final String... fields) {
+  public IndexSettings getIndexSettingsFor(final String indexName) {
     return executeWithRetries(
         "GetIndexSettings " + indexName,
         () -> {
@@ -311,7 +297,7 @@ public class RetryOpenSearchClient {
   }
 
   public String getOrDefaultRefreshInterval(final String indexName, final String defaultValue) {
-    final IndexSettings settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
+    final IndexSettings settings = getIndexSettingsFor(indexName);
     String refreshInterval;
     if (settings.refreshInterval() == null) {
       refreshInterval = defaultValue;
@@ -325,7 +311,7 @@ public class RetryOpenSearchClient {
   }
 
   public String getOrDefaultNumbersOfReplica(final String indexName, final String defaultValue) {
-    final IndexSettings settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+    final IndexSettings settings = getIndexSettingsFor(indexName);
 
     String numbersOfReplica;
     if (settings.numberOfReplicas() == null) {
@@ -558,52 +544,23 @@ public class RetryOpenSearchClient {
   public boolean createComponentTemplate(final PutComponentTemplateRequest request) {
     return executeWithRetries(
         "CreateComponentTemplate " + request.name(),
-        () -> {
-          if (!templatesExist(request.name())
-              || !getOrDefaultComponentTemplateNumbersOfReplica(request.name(), NO_REPLICA)
-                  .equals(
-                      String.valueOf(tasklistProperties.getOpenSearch().getNumberOfReplicas()))) {
-            return openSearchClient.cluster().putComponentTemplate(request).acknowledged();
-          }
-          return false;
-        });
+        () -> openSearchClient.cluster().putComponentTemplate(request).acknowledged());
   }
 
-  protected Map<String, String> getComponentTemplateProperties(
-      final String templatePattern, final String... fields) {
+  IndexSettings getComponentTemplateProperties(final String templatePattern) {
     return executeWithRetries(
         "GetComponentTemplateSettings " + templatePattern,
         () -> {
-          final Map<String, String> settings = new HashMap<>();
           final GetComponentTemplateResponse response =
               openSearchClient.cluster().getComponentTemplate(ct -> ct.name(templatePattern));
-          if (response.componentTemplates().size() > 0) {
-            for (final String field : fields) {
-              settings.put(
-                  field,
-                  response
-                      .componentTemplates()
-                      .get(0)
-                      .componentTemplate()
-                      .template()
-                      .settings()
-                      .get(templatePattern)
-                      .numberOfReplicas());
-            }
-          }
-          return settings;
+          return response
+              .componentTemplates()
+              .get(0)
+              .componentTemplate()
+              .template()
+              .settings()
+              .get("index");
         });
-  }
-
-  public String getOrDefaultComponentTemplateNumbersOfReplica(
-      final String templatePattern, final String defaultValue) {
-    final Map<String, String> settings =
-        getComponentTemplateProperties(templatePattern, NUMBERS_OF_REPLICA);
-    String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
-    if (numbersOfReplica.trim().equals(NO_REPLICA)) {
-      numbersOfReplica = defaultValue;
-    }
-    return numbersOfReplica;
   }
 
   public int doWithEachSearchResult(

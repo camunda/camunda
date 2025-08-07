@@ -84,16 +84,14 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
           .isTrue();
       assertThat(
               retryOpenSearchClient
-                  .getIndexSettingsFor(
-                      indexDescriptor.getFullQualifiedName(),
-                      RetryOpenSearchClient.NUMBERS_OF_REPLICA)
+                  .getIndexSettingsFor(indexDescriptor.getFullQualifiedName())
                   .numberOfReplicas())
           .isEqualTo(String.valueOf(initialNumberOfReplicas));
     }
 
     tasklistProperties.getOpenSearch().setNumberOfReplicas(modifiedNumberOfReplicas);
 
-    assertThat(indexSchemaValidator.schemaExists()).isFalse();
+    assertThat(indexSchemaValidator.validateIndexConfiguration()).isFalse();
 
     schemaManager.createSchema();
 
@@ -104,9 +102,7 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
           .isTrue();
       assertThat(
               retryOpenSearchClient
-                  .getIndexSettingsFor(
-                      indexDescriptor.getFullQualifiedName(),
-                      RetryOpenSearchClient.NUMBERS_OF_REPLICA)
+                  .getIndexSettingsFor(indexDescriptor.getFullQualifiedName())
                   .numberOfReplicas())
           .isEqualTo(String.valueOf(modifiedNumberOfReplicas));
     }
@@ -214,5 +210,59 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
                 .map(Property::_kind)
                 .collect(Collectors.toSet()))
         .containsOnly(Keyword);
+  }
+
+  @Test
+  public void shouldChangeNumberOfReplicasForComponentTemplate() {
+    final int initialNumberOfReplicas = 1;
+    final int modifiedNumberOfReplicas = 2;
+
+    tasklistProperties.getOpenSearch().setNumberOfReplicas(initialNumberOfReplicas);
+    schemaManager.createSchema();
+
+    // Verify initial component template replica settings
+    final String componentTemplateName = schemaManager.getComponentTemplateName();
+    final var initialSettings =
+        retryOpenSearchClient.getComponentTemplateProperties(componentTemplateName);
+    assertThat(initialSettings.numberOfReplicas())
+        .isEqualTo(String.valueOf(initialNumberOfReplicas));
+
+    tasklistProperties.getOpenSearch().setNumberOfReplicas(modifiedNumberOfReplicas);
+
+    assertThat(indexSchemaValidator.validateIndexConfiguration()).isFalse();
+
+    schemaManager.createSchema();
+
+    // Verify modified component template replica settings
+    final var modifiedSettings =
+        retryOpenSearchClient.getComponentTemplateProperties(componentTemplateName);
+    assertThat(modifiedSettings.numberOfReplicas())
+        .isEqualTo(String.valueOf(modifiedNumberOfReplicas));
+  }
+
+  @Test
+  public void shouldChangeNumberOfShardsForComponentTemplate() {
+    final int initialNumberOfShards = 2;
+    final int modifiedNumberOfShards = 3;
+
+    tasklistProperties.getOpenSearch().setNumberOfShards(initialNumberOfShards);
+    schemaManager.createSchema();
+
+    // Verify initial component template shard settings
+    final String componentTemplateName = schemaManager.getComponentTemplateName();
+    final var initialSettings =
+        retryOpenSearchClient.getComponentTemplateProperties(componentTemplateName);
+    assertThat(initialSettings.numberOfShards()).isEqualTo(String.valueOf(initialNumberOfShards));
+
+    tasklistProperties.getOpenSearch().setNumberOfShards(modifiedNumberOfShards);
+
+    assertThat(indexSchemaValidator.validateIndexConfiguration()).isFalse();
+
+    schemaManager.createSchema();
+
+    // Verify modified component template shard settings
+    final var modifiedSettings =
+        retryOpenSearchClient.getComponentTemplateProperties(componentTemplateName);
+    assertThat(modifiedSettings.numberOfShards()).isEqualTo(String.valueOf(modifiedNumberOfShards));
   }
 }
