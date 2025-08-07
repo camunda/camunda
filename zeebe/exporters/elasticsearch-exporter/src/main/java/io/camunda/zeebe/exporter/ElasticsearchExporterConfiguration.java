@@ -151,6 +151,8 @@ public class ElasticsearchExporterConfiguration {
   }
 
   public static class IndexConfiguration {
+
+    private static final int DEFAULT_INDEX_TEMPLATE_PRIORITY = 20;
     // prefix for index and templates
     public String prefix = "zeebe-record";
 
@@ -227,6 +229,7 @@ public class ElasticsearchExporterConfiguration {
     // index settings
     private Integer numberOfShards = null;
     private Integer numberOfReplicas = null;
+    private int templatePriority = DEFAULT_INDEX_TEMPLATE_PRIORITY;
 
     public Integer getNumberOfShards() {
       return numberOfShards;
@@ -242,6 +245,14 @@ public class ElasticsearchExporterConfiguration {
 
     public void setNumberOfReplicas(final Integer numberOfReplicas) {
       this.numberOfReplicas = numberOfReplicas;
+    }
+
+    public int getTemplatePriority() {
+      return templatePriority;
+    }
+
+    public void setTemplatePriority(final int templatePriority) {
+      this.templatePriority = templatePriority;
     }
 
     @Override

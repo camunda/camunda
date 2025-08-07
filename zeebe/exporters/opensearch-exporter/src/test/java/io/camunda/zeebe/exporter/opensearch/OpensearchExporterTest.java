@@ -479,6 +479,17 @@ final class OpensearchExporterTest {
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
     }
+
+    @Test
+    void shouldForbidNegativePriority() {
+      // given
+      config.index.setPriority(-1);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context))
+          .isInstanceOf(ExporterException.class)
+          .hasMessage("Opensearch index template priority must be >= 0. Current value: -1");
+    }
   }
 
   @Nested
