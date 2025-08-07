@@ -20,7 +20,9 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.retry.RetryingQueryExecutor;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -29,6 +31,7 @@ class ProcessInstanceItemProviderTest {
 
   private SearchClientsProxy searchClientsProxy = mock(SearchClientsProxy.class);
   private final BatchOperationMetrics metrics = mock(BatchOperationMetrics.class);
+  private final RetryingQueryExecutor retryingQueryExecutor = mock(RetryingQueryExecutor.class);
 
   private ProcessInstanceItemProvider provider;
 
@@ -43,10 +46,13 @@ class ProcessInstanceItemProviderTest {
     when(engineConfiguration.getBatchOperationQueryInClauseSize()).thenReturn(5);
 
     when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
+    when(retryingQueryExecutor.runRetryable(any()))
+        .thenAnswer(invocation -> ((Callable<?>) invocation.getArgument(0)).call());
 
     provider =
         new ProcessInstanceItemProvider(
             searchClientsProxy,
+            retryingQueryExecutor,
             metrics,
             new ProcessInstanceFilter.Builder().build(),
             authentication);

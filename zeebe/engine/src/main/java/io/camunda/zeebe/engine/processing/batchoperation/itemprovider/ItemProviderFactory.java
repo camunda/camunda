@@ -13,19 +13,23 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.retry.RetryingQueryExecutor;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 
 public class ItemProviderFactory {
 
   private final SearchClientsProxy searchClientsProxy;
+  private final RetryingQueryExecutor retryingQueryExecutor;
   private final BatchOperationMetrics metrics;
   private final int partitionId;
 
   public ItemProviderFactory(
       final SearchClientsProxy searchClientsProxy,
+      final RetryingQueryExecutor retryingQueryExecutor,
       final BatchOperationMetrics metrics,
       final int partitionId) {
     this.searchClientsProxy = searchClientsProxy;
+    this.retryingQueryExecutor = retryingQueryExecutor;
     this.metrics = metrics;
     this.partitionId = partitionId;
   }
@@ -55,6 +59,7 @@ public class ItemProviderFactory {
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
+        retryingQueryExecutor,
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
@@ -68,6 +73,7 @@ public class ItemProviderFactory {
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
+        retryingQueryExecutor,
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
@@ -80,6 +86,7 @@ public class ItemProviderFactory {
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
+        retryingQueryExecutor,
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
@@ -92,6 +99,7 @@ public class ItemProviderFactory {
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
     return new IncidentItemProvider(
         searchClientsProxy,
+        retryingQueryExecutor,
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)

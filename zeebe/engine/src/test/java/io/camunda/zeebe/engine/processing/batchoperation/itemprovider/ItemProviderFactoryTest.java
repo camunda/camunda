@@ -14,6 +14,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.retry.RetryingQueryExecutor;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import org.junit.jupiter.api.Test;
@@ -22,8 +23,9 @@ class ItemProviderFactoryTest {
 
   private final SearchClientsProxy searchClientsProxy = mock(SearchClientsProxy.class);
   private final BatchOperationMetrics metrics = mock(BatchOperationMetrics.class);
+  private final RetryingQueryExecutor retryingQueryExecutor = mock(RetryingQueryExecutor.class);
   private final ItemProviderFactory factory =
-      new ItemProviderFactory(searchClientsProxy, metrics, 1);
+      new ItemProviderFactory(searchClientsProxy, retryingQueryExecutor, metrics, 1);
 
   @Test
   void shouldSetFiltersForCancelProcessInstance() {

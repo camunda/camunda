@@ -11,28 +11,33 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
+import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.retry.RetryingQueryExecutor;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.stream.Collectors;
 
 public class ProcessInstanceItemProvider implements ItemProvider {
 
   private final SearchClientsProxy searchClientsProxy;
+  private final RetryingQueryExecutor retryingQueryExecutor;
   private final BatchOperationMetrics metrics;
   private final SecurityContext securityContext;
   private final ProcessInstanceFilter filter;
 
   public ProcessInstanceItemProvider(
       final SearchClientsProxy searchClientsProxy,
+      final RetryingQueryExecutor retryingQueryExecutor,
       final BatchOperationMetrics metrics,
       final ProcessInstanceFilter filter,
       final CamundaAuthentication authentication) {
     this.searchClientsProxy = searchClientsProxy;
+    this.retryingQueryExecutor = retryingQueryExecutor;
     this.metrics = metrics;
     this.filter = filter;
     securityContext =
@@ -50,17 +55,8 @@ public class ProcessInstanceItemProvider implements ItemProvider {
             .resultConfig(c -> c.onlyKey(true))
             .build();
 
-    final SearchQueryResult<ProcessInstanceEntity> result;
-
-    try {
-      metrics.recordQueryAgainstSecondaryDatabase();
-      result =
-          searchClientsProxy.withSecurityContext(securityContext).searchProcessInstances(query);
-    } catch (final Exception e) {
-      metrics.recordFailedQueryAgainstSecondaryDatabase();
-      throw e;
-    }
-
+    final SearchQueryResult<ProcessInstanceEntity> result =
+        retryingQueryExecutor.runRetryable(() -> doQuery(query));
     final boolean isLastPage = result.items().isEmpty() || result.total() < pageSize;
 
     return new ItemPage(
@@ -70,6 +66,16 @@ public class ProcessInstanceItemProvider implements ItemProvider {
         result.endCursor(),
         result.total(),
         isLastPage);
+  }
+
+  private SearchQueryResult<ProcessInstanceEntity> doQuery(final ProcessInstanceQuery query) {
+    try {
+      metrics.recordQueryAgainstSecondaryDatabase();
+      return searchClientsProxy.withSecurityContext(securityContext).searchProcessInstances(query);
+    } catch (final Exception e) {
+      metrics.recordFailedQueryAgainstSecondaryDatabase();
+      throw e;
+    }
   }
 
   @VisibleForTesting

@@ -18,6 +18,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.util.FilterUtil;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.retry.RetryingQueryExecutor;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 public class IncidentItemProvider implements ItemProvider {
 
   private final SearchClientsProxy searchClientsProxy;
+  private final RetryingQueryExecutor retryingQueryExecutor;
   private final ProcessInstanceFilter filter;
   private final ProcessInstanceItemProvider processInstanceItemProvider;
   private final SecurityContext securityContext;
@@ -35,14 +37,17 @@ public class IncidentItemProvider implements ItemProvider {
 
   public IncidentItemProvider(
       final SearchClientsProxy searchClientsProxy,
+      final RetryingQueryExecutor retryingQueryExecutor,
       final BatchOperationMetrics metrics,
       final ProcessInstanceFilter filter,
       final CamundaAuthentication authentication) {
     this.searchClientsProxy = searchClientsProxy;
+    this.retryingQueryExecutor = retryingQueryExecutor;
     this.metrics = metrics;
     this.filter = filter;
     processInstanceItemProvider =
-        new ProcessInstanceItemProvider(searchClientsProxy, metrics, filter, authentication);
+        new ProcessInstanceItemProvider(
+            searchClientsProxy, retryingQueryExecutor, metrics, filter, authentication);
     securityContext =
         createSecurityContext(
             authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));

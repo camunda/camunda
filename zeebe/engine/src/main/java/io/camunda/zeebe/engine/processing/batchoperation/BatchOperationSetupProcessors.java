@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcess
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResolveIncidentBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.retry.ExponentialBackoffRetryingQueryExecutor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -145,7 +146,14 @@ public final class BatchOperationSetupProcessors {
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
-                new ItemProviderFactory(searchClientsProxy, batchOperationMetrics, partitionId),
+                new ItemProviderFactory(
+                    searchClientsProxy,
+                    new ExponentialBackoffRetryingQueryExecutor(
+                        engineConfiguration.getBatchOperationQueryRetryMax(),
+                        engineConfiguration.getBatchOperationQueryRetryInitialDelay(),
+                        engineConfiguration.getBatchOperationQueryRetryBackoffFactor()),
+                    batchOperationMetrics,
+                    partitionId),
                 engineConfiguration,
                 partitionId,
                 batchOperationMetrics));
