@@ -53,11 +53,12 @@ function buildComment(mergedData) {
 
   if (!allTests.length) return null;
 
-  for (const test of allTests) {
-    const flakiness = Math.round((test.occurrences / test.totalRuns) * 100);
-    const icon = getFlakyIcon(flakiness);
+  allTests.sort((a, b) => b.flakiness - a.flakiness);
 
-    lines.push(`- **${test.fullName}** – ${icon} **${flakiness}% flakiness**`);
+  for (const test of allTests) {
+    const icon = getFlakyIcon(test.flakiness);
+
+    lines.push(`- **${test.fullName}** – ${icon} **${test.flakiness}% flakiness**`);
     lines.push(`  - Location: \`${test.packageName}\``);
     lines.push(`  - Occurrences: ${test.occurrences} / ${test.totalRuns}`);
     lines.push('');

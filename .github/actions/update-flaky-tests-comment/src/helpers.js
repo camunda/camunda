@@ -85,13 +85,16 @@ function mergeFlakyData(current, historical) {
   const packageMap = {};
 
   for (const test of merged.values()) {
+    const flakiness = Math.round((test.occurrences / test.totalRuns) * 100);
+
     if (!packageMap[test.packageName]) packageMap[test.packageName] = [];
     packageMap[test.packageName].push({
       className: test.className,
       methodName: test.methodName,
       jobs: test.jobs,
       occurrences: test.occurrences,
-      totalRuns: test.totalRuns
+      totalRuns: test.totalRuns,
+      flakiness
     });
   }
 
@@ -112,7 +115,8 @@ function prepareFirstRunData(currentData) {
       flakys: pkg.flakys.map(test => ({
         ...test,
         occurrences: test.occurrences || 1,
-        totalRuns: 1
+        totalRuns: 1,
+        flakiness: test.occurrences * 100
       }))
     }))
   };
