@@ -20,6 +20,7 @@ import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
+import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
@@ -263,6 +264,12 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<UsageMetricTUMapper> usageMetricTUMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, UsageMetricTUMapper.class);
+  }
+
+  @Bean
+  MapperFactoryBean<MessageSubscriptionMapper> messageSubscriptionMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, MessageSubscriptionMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

@@ -47,6 +47,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -122,7 +123,7 @@ class RdbmsExporterIT {
     final var key =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
-    assertThat(processInstance).isNotNull();
+    assertThat(processInstance).isNotEmpty();
 
     // given
     final var processInstanceCompletedRecord = getProcessInstanceCompletedRecord(1L, key);
@@ -148,7 +149,7 @@ class RdbmsExporterIT {
     final var key =
         ((ProcessInstanceRecordValue) rootProcessInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
-    assertThat(processInstance).isNotNull();
+    assertThat(processInstance).isNotEmpty();
 
     // given
     final var rootProcessInstanceCompletedRecord =
@@ -225,7 +226,7 @@ class RdbmsExporterIT {
     final var key =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
-    assertThat(processInstance).isNotNull();
+    assertThat(processInstance).isNotEmpty();
 
     final var variable = rdbmsService.getVariableReader().findOne(variableCreated.getKey());
     final VariableRecordValue variableRecordValue =
@@ -272,7 +273,7 @@ class RdbmsExporterIT {
     // then
     final var key = ((UserTaskRecordValue) userTaskRecord.getValue()).getUserTaskKey();
     final var userTask = rdbmsService.getUserTaskReader().findOne(key);
-    assertThat(userTask).isNotNull();
+    assertThat(userTask).isNotEmpty();
   }
 
   @Test
@@ -587,7 +588,27 @@ class RdbmsExporterIT {
     // then
     final var formKey = ((Form) formCreatedRecord.getValue()).getFormKey();
     final var formEntity = rdbmsService.getFormReader().findOne(formKey);
-    assertThat(formEntity).isNotNull();
+    assertThat(formEntity).isNotEmpty();
+  }
+
+  @Test
+  public void shouldExportMessageSubscription() {
+    // given
+    final var messageSubscriptionRecord =
+        ImmutableRecord.builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
+            .withIntent(ProcessMessageSubscriptionIntent.CREATED)
+            .withPosition(2L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when
+    exporter.export(messageSubscriptionRecord);
+
+    // then
+    final var messageSubscription =
+        rdbmsService.getMessageSubscriptionReader().findOne(messageSubscriptionRecord.getKey());
+    assertThat(messageSubscription).isNotEmpty();
   }
 
   @Test
@@ -602,7 +623,7 @@ class RdbmsExporterIT {
     final var mappingRuleId =
         ((MappingRuleRecordValue) mappingRuleCreatedRecord.getValue()).getMappingRuleId();
     final var mappingRule = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
-    assertThat(mappingRule).isNotNull();
+    assertThat(mappingRule).isNotEmpty();
 
     // given
     final var mappingDeletedRecord = mappingRuleCreatedRecord.withIntent(MappingRuleIntent.DELETED);

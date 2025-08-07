@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -34,6 +35,7 @@ import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
+import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
@@ -72,6 +74,7 @@ public class RdbmsWriter {
   private final SequenceFlowWriter sequenceFlowWriter;
   private final UsageMetricWriter usageMetricWriter;
   private final UsageMetricTUWriter usageMetricTUWriter;
+  private final MessageSubscriptionWriter messageSubscriptionWriter;
 
   private final HistoryCleanupService historyCleanupService;
 
@@ -92,7 +95,8 @@ public class RdbmsWriter {
       final JobMapper jobMapper,
       final SequenceFlowMapper sequenceFlowMapper,
       final UsageMetricMapper usageMetricMapper,
-      final UsageMetricTUMapper usageMetricTUMapper) {
+      final UsageMetricTUMapper usageMetricTUMapper,
+      final MessageSubscriptionMapper messageSubscriptionMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
@@ -121,7 +125,10 @@ public class RdbmsWriter {
     sequenceFlowWriter = new SequenceFlowWriter(executionQueue, sequenceFlowMapper);
     usageMetricWriter = new UsageMetricWriter(executionQueue, usageMetricMapper);
     usageMetricTUWriter = new UsageMetricTUWriter(executionQueue, usageMetricTUMapper);
+    messageSubscriptionWriter =
+        new MessageSubscriptionWriter(executionQueue, messageSubscriptionMapper);
 
+    // TODO: Do I need to update this?
     historyCleanupService =
         new HistoryCleanupService(
             config,
@@ -218,6 +225,10 @@ public class RdbmsWriter {
 
   public UsageMetricTUWriter getUsageMetricTUWriter() {
     return usageMetricTUWriter;
+  }
+
+  public MessageSubscriptionWriter getMessageSubscriptionWriter() {
+    return messageSubscriptionWriter;
   }
 
   public ExporterPositionService getExporterPositionService() {
