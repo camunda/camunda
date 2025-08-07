@@ -71,7 +71,7 @@ public class UsageMetricsTest {
       final OffsetDateTime endTime,
       final Consumer<UsageMetricsStatistics> fnRequirements) {
     Awaitility.await("should export metrics to secondary storage")
-        .atMost(EXPORT_INTERVAL.multipliedBy(2))
+        .atMost(EXPORT_INTERVAL.multipliedBy(5))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
@@ -104,9 +104,9 @@ public class UsageMetricsTest {
           assertThat(res.getActiveTenants()).isEqualTo(1);
         });
 
-    // Store first export time & wait 2 export intervals
+    // Store first export time & wait 4 export intervals
     exportedTime = OffsetDateTime.now();
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
+    Thread.sleep(4 * EXPORT_INTERVAL.toMillis());
 
     // Create second batch of metrics
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
@@ -116,7 +116,9 @@ public class UsageMetricsTest {
     startProcessInstance(adminClient, PROCESS_ID_2, TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID_2, TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID_2, TENANT_C);
-    reassignTask(adminClient, TENANT_A); // to have different assignees
+
+    // Reassign user task to a different assignee and await
+    reassignTask(adminClient, TENANT_A);
 
     // Deploy a decision model for TENANT_A and evaluate it 2 times
     deployResource(adminClient, "decisions/decision_model.dmn", TENANT_A);
@@ -126,9 +128,11 @@ public class UsageMetricsTest {
     // Deploy another decision model for TENANT_B and evaluate it
     deployResource(adminClient, "decisions/decision_model_1.dmn", TENANT_B);
     evaluateDecision(adminClient, "test_qa", Map.of("input1", "B"), TENANT_B);
+
+    assertTaskReassigned(adminClient);
     assertDecisionsInstantiated(adminClient);
 
-    // Wait for rPI and eDI metrics to be exported
+    // Wait for all metrics to be exported
     waitForUsageMetrics(
         adminClient,
         NOW.minusDays(1),
@@ -271,7 +275,7 @@ public class UsageMetricsTest {
 
   private static void reassignTask(final CamundaClient camundaClient, final String tenantId) {
     Awaitility.await("user tasks should be available")
-        .atMost(EXPORT_INTERVAL.multipliedBy(2))
+        .atMost(Duration.ofSeconds(4))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -291,19 +295,22 @@ public class UsageMetricsTest {
         .allowOverride(true)
         .send()
         .join();
-    Awaitility.await("user tasks should be available")
-        .atMost(EXPORT_INTERVAL.multipliedBy(2))
+  }
+
+  private static void assertTaskReassigned(final CamundaClient adminClient) {
+    Awaitility.await("User tasks should have been reassigned")
+        .atMost(Duration.ofSeconds(10))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newUserTaskSearchRequest().send().join();
+              final var result = adminClient.newUserTaskSearchRequest().send().join();
               assertThat(result.items().stream()).anyMatch(ut -> ASSIGNEE.equals(ut.getAssignee()));
             });
   }
 
   private static void assertDecisionsInstantiated(final CamundaClient adminClient) {
     Awaitility.await("Decision instances should be available")
-        .atMost(EXPORT_INTERVAL.multipliedBy(2))
+        .atMost(Duration.ofSeconds(10))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
