@@ -22,10 +22,12 @@ public class NodeIdMapper {
   private final S3Lease lease;
   private final ScheduledExecutorService executor;
   private int brokerId;
+  private final String taskId;
 
   public NodeIdMapper(final S3LeaseConfig config, final int clusterSize) {
     executor = newSingleThreadScheduledExecutor();
-    lease = new S3Lease(config, UUID.randomUUID().toString().substring(0, 6), clusterSize);
+    taskId = UUID.randomUUID().toString().substring(0, 6);
+    lease = new S3Lease(config, taskId, clusterSize);
   }
 
   public int start() {
@@ -53,7 +55,7 @@ public class NodeIdMapper {
           if (brokerId < 0) {
             scheduleBusyLease(future);
           } else {
-            LOG.info("Lease acquired for brokerId: {}", brokerId);
+            LOG.info("Lease acquired for brokerId: {} by task: {}", brokerId, taskId);
             future.complete(brokerId);
           }
         },

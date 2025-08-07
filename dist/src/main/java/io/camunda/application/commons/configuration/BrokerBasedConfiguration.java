@@ -14,6 +14,7 @@ import io.camunda.application.commons.configuration.WorkingDirectoryConfiguratio
 import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
+import io.camunda.zeebe.broker.clustering.mapper.NodeIdMapper;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
@@ -41,11 +42,15 @@ public class BrokerBasedConfiguration {
   public BrokerBasedConfiguration(
       final WorkingDirectory workingDirectory,
       final BrokerBasedProperties properties,
-      final LifecycleProperties lifecycle) {
+      final LifecycleProperties lifecycle,
+      final NodeIdMapper nodeIdMapper) {
     this.workingDirectory = workingDirectory;
     this.properties = properties;
     this.lifecycle = lifecycle;
-
+    final var brokerId = nodeIdMapper.start();
+    properties.getCluster().setNodeId(brokerId);
+    final var dir = properties.getData().getDirectory();
+    properties.getData().setDirectory(dir + "/node-" + brokerId);
     properties.init(workingDirectory.path().toAbsolutePath().toString());
   }
 

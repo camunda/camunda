@@ -8,7 +8,9 @@
 package io.camunda.application.commons.configuration;
 
 import io.camunda.application.Profile;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.clustering.mapper.NodeIdMapper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -49,6 +51,11 @@ public record WorkingDirectoryConfiguration(Environment environment) {
   private boolean shouldUseTemporaryFolder() {
     return environment.acceptsProfiles(
         Profiles.of(Profile.DEVELOPMENT.getId(), Profile.TEST.getId()));
+  }
+
+  @Bean
+  public NodeIdMapper nodeIdMapper(final BrokerBasedProperties properties) {
+    return new NodeIdMapper(properties.getLeaseConfig(), properties.getCluster().getClusterSize());
   }
 
   public record WorkingDirectory(Path path, boolean isTemporary) {}

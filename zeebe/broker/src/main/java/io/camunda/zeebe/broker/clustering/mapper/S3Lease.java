@@ -140,6 +140,11 @@ public class S3Lease {
               .headObject(HeadObjectRequest.builder().bucket(bucketName).key(objectKey).build())
               .join();
     } catch (final CompletionException e) {
+      LOG.error(
+          "Failed to renew lease for nodeId {}:{} {}",
+          objectKey,
+          taskId,
+          e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
       return false;
     }
 
