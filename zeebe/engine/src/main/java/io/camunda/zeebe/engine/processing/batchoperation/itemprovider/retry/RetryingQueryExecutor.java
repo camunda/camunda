@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation.itemprovider.retry;
 
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 /**
@@ -14,6 +17,10 @@ import java.util.concurrent.Callable;
  * handle the logic for retrying operations that may fail.
  */
 public interface RetryingQueryExecutor {
+
+  Set<Reason> FAIL_IMMEDIATELY_REASONS =
+      Set.of(
+          Reason.NOT_FOUND, Reason.NOT_UNIQUE, Reason.SECONDARY_STORAGE_NOT_SET, Reason.FORBIDDEN);
 
   /**
    * Executes a retryable operation, retrying it if it fails.
@@ -24,4 +31,15 @@ public interface RetryingQueryExecutor {
    * @throws RuntimeException if the operation fails after all retries
    */
   <V> V runRetryable(Callable<V> retryableOperation);
+
+  /**
+   * Determines whether the operation should fail immediately based on the exception.
+   *
+   * @param exception the exception that occurred during the operation
+   * @return true if the operation should fail immediately, false otherwise
+   */
+  default boolean shouldFailImmediately(final Exception exception) {
+    return exception instanceof CamundaSearchException
+        && FAIL_IMMEDIATELY_REASONS.contains(((CamundaSearchException) exception).getReason());
+  }
 }

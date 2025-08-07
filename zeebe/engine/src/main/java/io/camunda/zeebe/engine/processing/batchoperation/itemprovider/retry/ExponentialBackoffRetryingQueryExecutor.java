@@ -48,7 +48,7 @@ public class ExponentialBackoffRetryingQueryExecutor implements RetryingQueryExe
         try {
           return retryableOperation.call();
         } catch (final Exception e) {
-          if (--numAttempts == 0) {
+          if (shouldFailImmediately(e) || --numAttempts == 0) {
             throw new RuntimeException("Max retries reached", e);
           }
           LOG.warn(

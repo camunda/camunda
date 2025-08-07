@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
+import io.camunda.search.exception.CamundaSearchException;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import org.junit.jupiter.api.Test;
@@ -86,5 +87,19 @@ class ExponentialBackoffRetryingQueryExecutorTest {
     // The total delay should be at least the sum of the delays for 3 retries:
     // 50ms + 100ms = 150ms
     assertThat(endTime - startTime).isGreaterThan(150);
+  }
+
+  @Test
+  public void shouldFailImmediatelyOnCamundaSearchExceptionWithReasonNotFound() throws Exception {
+    final var retryStrategy =
+        new ExponentialBackoffRetryingQueryExecutor(maxRetries, initialRetryDelay, backoffFactor);
+
+    final Callable<String> callable = mock(Callable.class);
+    when(callable.call())
+        .thenThrow(new CamundaSearchException("error", CamundaSearchException.Reason.NOT_FOUND));
+
+    assertThatThrownBy(() -> retryStrategy.runRetryable(callable)).cause().hasMessage("error");
+
+    verify(callable, times(1)).call();
   }
 }
