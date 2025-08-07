@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBatchRecord> {
@@ -52,6 +53,11 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
 
   public BrokerActivateJobsRequest setTenantIds(final List<String> tenantIds) {
     requestDto.setTenantIds(tenantIds);
+    return this;
+  }
+
+  public BrokerActivateJobsRequest setTags(final Set<String> tags) {
+    requestDto.setTags(tags);
     return this;
   }
 

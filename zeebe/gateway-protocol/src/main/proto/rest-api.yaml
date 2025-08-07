@@ -8589,6 +8589,12 @@ components:
           items:
             type: string
           nullable: true
+        tags:
+          description: list of tags that will be associated with the process instance, and will also be forwarded to job workers etc.
+          type: array
+          items:
+            type: string
+          uniqueItems: true
       required:
         - type
         - timeout

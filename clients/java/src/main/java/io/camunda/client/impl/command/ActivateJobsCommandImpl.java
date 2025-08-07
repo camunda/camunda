@@ -152,6 +152,16 @@ public final class ActivateJobsCommandImpl
   }
 
   @Override
+  public ActivateJobsCommandStep3 tags(final String... tags) {
+    final Set<String> uniqueTags = new HashSet<>(Arrays.asList(tags)); // ensure no duplicates
+
+    //    grpcRequestObjectBuilder.setTags(uniqueTags);
+    httpRequestObject.setTags(uniqueTags);
+
+    return this;
+  }
+
+  @Override
   public CamundaFuture<ActivateJobsResponse> send() {
     grpcRequestObjectBuilder.clearTenantIds();
     httpRequestObject.setTenantIds(new ArrayList<>());
