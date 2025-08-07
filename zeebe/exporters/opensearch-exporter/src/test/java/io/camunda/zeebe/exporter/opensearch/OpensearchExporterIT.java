@@ -632,7 +632,8 @@ final class OpensearchExporterIT {
       export(record);
 
       // then
-      final var template = testClient.getIndexTemplate(ValueType.JOB);
+      final var template =
+          testClient.getIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
       assertThat(template)
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
@@ -651,7 +652,8 @@ final class OpensearchExporterIT {
       export(record);
 
       // then
-      final var template = testClient.getIndexTemplate(ValueType.JOB);
+      final var template =
+          testClient.getIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
       assertThat(template)
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
