@@ -53,7 +53,7 @@ fi
 
 printf "\nTest: connectors api \n"
 
-STATUS="$( curl localhost:8085/actuator/health | jq '.status' )"
+STATUS="$( curl localhost:8086/actuator/health | jq '.status' )"
 echo $STATUS
 if [[ "$STATUS" != "\"UP\"" ]]; then
    echo "test failed"
