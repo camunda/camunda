@@ -11,8 +11,11 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +31,15 @@ public class NodeIdMapper {
     executor = newSingleThreadScheduledExecutor();
     taskId = UUID.randomUUID().toString().substring(0, 6);
     lease = new S3Lease(config, taskId, clusterSize);
+  }
+
+  public boolean isHealthy() {
+    final ScheduledFuture<Boolean> future = executor.schedule(() -> true, 0, TimeUnit.SECONDS);
+    try {
+      return future.get(5, TimeUnit.SECONDS);
+    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
+      return false;
+    }
   }
 
   public int start() {
