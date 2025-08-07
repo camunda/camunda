@@ -39,6 +39,14 @@
     RESOURCE_ID
     FROM ${prefix}AUTHORIZATIONS
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
+    <!--
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND RESOURCE_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        close=")">
+        #{resourceId}
+      </foreach>
+    </if> -->
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <!-- inner orderBy for keyset pagination -->

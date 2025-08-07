@@ -37,10 +37,13 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
@@ -52,7 +55,12 @@ import org.springframework.test.context.TestPropertySource;
 @DataJdbcTest
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
-@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
+@TestPropertySource(
+    properties = {
+      "spring.liquibase.enabled=false",
+      "camunda.database.type=rdbms",
+      "logging.level.io.camunda.db.rdbms=TRACE"
+    })
 public class RoleSpecificFilterIT {
   public static final String ROLE_ID = "roleId";
   public static final long ROLE_KEY = 1337L;
@@ -103,6 +111,41 @@ public class RoleSpecificFilterIT {
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(roles.total()).isEqualTo(2);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"GROUP, 2", "CLIENT, 0"})
+  public void shouldFilterRolesForMemberType(final EntityType memberType, final int expectedCount) {
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var anotherRoleId = Strings.newRandomValidIdentityId();
+    final var group = GroupFixtures.createRandomized(b -> b);
+    final var userId = Strings.newRandomValidIdentityId();
+    createAndSaveUser(
+        rdbmsWriter,
+        UserFixtures.createRandomized(
+            b -> b.username(userId).name("User 1337").password("password")));
+    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveRole(
+        rdbmsWriter, RoleFixtures.createRandomized(b -> b.roleId(roleId).name("Role 1337")));
+    createAndSaveRole(
+        rdbmsWriter,
+        RoleFixtures.createRandomized(b -> b.roleId(anotherRoleId).name("Another Role 1337")));
+
+    addUserToRole(roleId, userId);
+    addGroupToRole(roleId, group.groupId());
+    addGroupToRole(anotherRoleId, group.groupId());
+
+    final var roles =
+        roleReader.search(
+            new RoleQuery(
+                new RoleFilter.Builder()
+                    .memberIdsByType(Map.of(memberType, Set.of(group.groupId())))
+                    .build(),
+                RoleSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(roles.total()).isEqualTo(expectedCount);
+    assertThat(roles.items()).hasSize(expectedCount);
   }
 
   @Test

@@ -13,11 +13,21 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}ROLES r
-    LEFT JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
-    AND rm.ENTITY_TYPE = #{filter.childMemberType}
+    <if test="filter.memberIds != null">
+      JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
+      AND rm.ENTITY_TYPE = #{filter.childMemberType}
+    </if>
     <if test="filter.tenantId != null">
       JOIN ${prefix}TENANT_MEMBER tm ON r.ROLE_ID = tm.ENTITY_ID
       AND tm.ENTITY_TYPE = 'ROLE'
+    </if>
+    <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+      JOIN ${prefix}ROLE_MEMBER rmt ON r.ROLE_ID = rmt.ROLE_ID
+      AND rmt.ENTITY_TYPE IN (
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" separator=", ">
+        #{memberType}
+      </foreach>
+      )
     </if>
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
   </select>
@@ -35,9 +45,18 @@
     rm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
     FROM ${prefix}ROLES r
     LEFT JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
+    AND rm.ENTITY_TYPE = #{filter.childMemberType}
     <if test="filter.tenantId != null">
       JOIN ${prefix}TENANT_MEMBER tm ON r.ROLE_ID = tm.ENTITY_ID
       AND tm.ENTITY_TYPE = 'ROLE'
+    </if>
+    <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+      JOIN ${prefix}ROLE_MEMBER rmt ON r.ROLE_ID = rmt.ROLE_ID
+      AND rmt.ENTITY_TYPE IN (
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" separator=", ">
+        #{memberType}
+      </foreach>
+      )
     </if>
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
     ) t
@@ -58,9 +77,10 @@
       AND rm.ENTITY_TYPE = #{filter.childMemberType}
     </if>
     <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
-      <foreach collection="filter.memberIdsByType" index="memberType" item="values" open="AND (" separator=" OR " close=")">
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" open="AND ("
+        separator=" OR " close=")">
         <if test="values != null and !values.isEmpty()">
-          rm.ENTITY_TYPE = #{memberType} AND rm.ENTITY_ID IN
+          rmt.ENTITY_TYPE = #{memberType} AND rmt.ENTITY_ID IN
           <foreach collection="values" item="value" open="(" separator=" , " close=")">
             #{value}
           </foreach>
@@ -71,8 +91,8 @@
   </sql>
 
   <resultMap id="roleResultMap" type="io.camunda.db.rdbms.write.domain.RoleDbModel">
-    <id column="ROLE_ID" property="roleId" />
-    <result column="ROLE_KEY" property="roleKey" />
+    <id column="ROLE_ID" property="roleId"/>
+    <result column="ROLE_KEY" property="roleKey"/>
     <result column="NAME" property="name"/>
     <result column="DESCRIPTION" property="description"/>
     <collection property="members" ofType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
@@ -92,7 +112,7 @@
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel">
     UPDATE ${prefix}ROLES
-    SET NAME = #{name},
+    SET NAME        = #{name},
         DESCRIPTION = #{description}
     WHERE ROLE_ID = #{roleId}
   </update>
