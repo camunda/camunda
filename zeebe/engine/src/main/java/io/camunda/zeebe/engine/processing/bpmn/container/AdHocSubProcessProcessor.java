@@ -236,8 +236,21 @@ public class AdHocSubProcessProcessor
       final ExecutableAdHocSubProcess adHocSubProcess,
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext) {
-    return behaviorFor(adHocSubProcess)
-        .beforeExecutionPathCompleted(adHocSubProcess, adHocSubProcessContext, childContext);
+    return adHocSubProcess
+        .getOutputCollection()
+        .map(
+            outputCollectionVariableName ->
+                updateOutputCollection(
+                    adHocSubProcess,
+                    outputCollectionVariableName,
+                    adHocSubProcessContext,
+                    childContext))
+        .orElse(Either.right(null))
+        .flatMap(
+            ok ->
+                behaviorFor(adHocSubProcess)
+                    .beforeExecutionPathCompleted(
+                        adHocSubProcess, adHocSubProcessContext, childContext));
   }
 
   @Override
@@ -383,21 +396,19 @@ public class AdHocSubProcessProcessor
         final ExecutableAdHocSubProcess adHocSubProcess,
         final BpmnElementContext adHocSubProcessContext,
         final BpmnElementContext childContext) {
-      return adHocSubProcess
-          .getOutputCollection()
-          .map(
-              outputCollectionVariableName ->
-                  updateOutputCollection(
-                      adHocSubProcess,
-                      outputCollectionVariableName,
-                      adHocSubProcessContext,
-                      childContext))
-          .orElse(Either.right(null))
-          .flatMap(
-              ok ->
-                  behaviorFor(adHocSubProcess)
-                      .beforeExecutionPathCompleted(
-                          adHocSubProcess, adHocSubProcessContext, childContext));
+      final Expression completionConditionExpression = adHocSubProcess.getCompletionCondition();
+      if (completionConditionExpression == null) {
+        return Either.right(null);
+      }
+
+      return expressionProcessor
+          .evaluateBooleanExpression(
+              completionConditionExpression, adHocSubProcessContext.getElementInstanceKey())
+          .mapLeft(
+              failure ->
+                  new Failure(
+                      "Failed to evaluate completion condition. " + failure.getMessage(),
+                      ErrorType.EXTRACT_VALUE_ERROR));
     }
 
     @Override
