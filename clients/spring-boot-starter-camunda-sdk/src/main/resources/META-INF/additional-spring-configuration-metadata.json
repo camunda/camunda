@@ -14,7 +14,7 @@
     },
     {
       "name": "camunda.client.cloud",
-      "description": "Properties related to the connection of the Camunda client to Camunda cloud. They will only be used to compose connection details if the client is configured to `camunda.client.mode: saas`."
+      "description": "Properties related to the connection of the Camunda client to Camunda cloud. They will only be used to compose default connection details if the client is configured to `camunda.client.mode: saas`."
     },
     {
       "name": "camunda.client.worker",
@@ -100,6 +100,30 @@
     }
   ],
   "properties": [
+    {
+      "name": "camunda.client.worker.defaults.tenant-ids",
+      "defaultValue": ["<default>"]
+    },
+    {
+      "name": "camunda.client.worker.defaults.timeout",
+      "defaultValue": "PT5M"
+    },
+    {
+      "name": "camunda.client.worker.defaults.max-jobs-active",
+      "defaultValue": 32
+    },
+    {
+      "name": "camunda.client.worker.defaults.poll-interval",
+      "defaultValue": "PT0.1S"
+    },
+    {
+      "name": "camunda.client.worker.defaults.name",
+      "defaultValue": "default"
+    },
+    {
+      "name": "camunda.client.worker.defaults.stream-enabled",
+      "defaultValue": false
+    },
     {
       "name": "camunda.client.auth.connect-timeout",
       "defaultValue": "PT5S"
