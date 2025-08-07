@@ -22,6 +22,7 @@
     "@camunda/camunda-composite-components": "0.17.0",
     "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.78.2",
+    "fuse.js": "7.1.0",
     "i18next": "25.3.0",
     "react": "18.3.1",
     "react-debounced": "1.1.2",

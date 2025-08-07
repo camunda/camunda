@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
@@ -31,21 +31,31 @@ const AssignRolesModal: FC<
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
   const [loadingAssignRole, setLoadingAssignRole] = useState(false);
 
+  const [search, setSearch] = useState<Record<string, unknown>>({});
+  const handleSearchChange = (search: string) => {
+    if (search === "") {
+      setSearch({});
+      return;
+    }
+
+    setSearch({ filter: { name: search } });
+  };
+
   const {
     data: roleSearchResults,
     loading,
     reload,
     error,
-  } = useApi(searchRoles);
+  } = useApi(searchRoles, search);
+
+  const unassignedFilter = useCallback(
+    ({ roleId }: Role) =>
+      !assignedRoles.some((role) => role.roleId === roleId) &&
+      !selectedRoles.some((role) => role.roleId === roleId),
+    [assignedRoles, selectedRoles],
+  );
 
   const [callAssignRole] = useApiCall(assignGroupRole);
-
-  const unassignedRoles =
-    roleSearchResults?.items.filter(
-      ({ roleId }) =>
-        !assignedRoles.some((role) => role.roleId === roleId) &&
-        !selectedRoles.some((role) => role.roleId === roleId),
-    ) || [];
 
   const onSelectRole = (role: Role) => {
     setSelectedRoles([...selectedRoles, role]);
@@ -130,11 +140,13 @@ const AssignRolesModal: FC<
       )}
       <DropdownSearch
         autoFocus
-        items={unassignedRoles}
+        items={roleSearchResults?.items || []}
         itemTitle={({ roleId }) => roleId}
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByRoleId")}
         onSelect={onSelectRole}
+        onChange={handleSearchChange}
+        filter={unassignedFilter}
       />
       {!loading && error && (
         <TranslatedErrorInlineNotification

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
@@ -35,25 +35,34 @@ const AssignMappingRulesModal: FC<
   const [loadingAssignMappingRule, setLoadingAssignMappingRule] =
     useState(false);
 
+  const [mappingRuleFilter, setMappingRuleFilter] = useState({});
+  const handleMappingRuleFilterChange = (search: string) => {
+    if (!search.trim()) {
+      setMappingRuleFilter({});
+      return;
+    }
+    setMappingRuleFilter({ filter: { name: search } });
+  };
+
   const {
     data: mappingRuleSearchResults,
     loading,
     reload,
     error,
-  } = useApi(searchMappingRule);
+  } = useApi(searchMappingRule, mappingRuleFilter);
 
   const [callAssignMappingRule] = useApiCall(assignRoleMappingRule);
 
-  const unassignedMappingRules =
-    mappingRuleSearchResults?.items.filter(
-      ({ mappingRuleId }) =>
-        !assignedMappingRules.some(
-          (mappingRule) => mappingRule.mappingRuleId === mappingRuleId,
-        ) &&
-        !selectedMappingRules.some(
-          (mappingRule) => mappingRule.mappingRuleId === mappingRuleId,
-        ),
-    ) || [];
+  const unassignedFilter = useCallback(
+    ({ mappingRuleId }: MappingRule) =>
+      !assignedMappingRules.some(
+        (mappingRule) => mappingRule.mappingRuleId === mappingRuleId,
+      ) &&
+      !selectedMappingRules.some(
+        (mappingRule) => mappingRule.mappingRuleId === mappingRuleId,
+      ),
+    [assignedMappingRules, selectedMappingRules],
+  );
 
   const onSelectMappingRule = (mappingRule: MappingRule) => {
     setSelectedMappingRules([...selectedMappingRules, mappingRule]);
@@ -132,11 +141,13 @@ const AssignMappingRulesModal: FC<
       )}
       <DropdownSearch
         autoFocus
-        items={unassignedMappingRules}
+        items={mappingRuleSearchResults?.items || []}
         itemTitle={({ mappingRuleId }) => mappingRuleId}
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByMappingRuleId")}
         onSelect={onSelectMappingRule}
+        onChange={handleMappingRuleFilterChange}
+        filter={unassignedFilter}
       />
       {!loading && error && (
         <TranslatedErrorInlineNotification
