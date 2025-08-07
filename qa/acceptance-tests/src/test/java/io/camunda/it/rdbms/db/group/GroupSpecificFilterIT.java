@@ -28,10 +28,13 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
@@ -103,6 +106,31 @@ public class GroupSpecificFilterIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().groupKey()).isEqualTo(1337L);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"USER, 1", "GROUP, 0"})
+  public void shouldFindWithMemberTyep(final EntityType memberType, final int expectedCount) {
+    createAndSaveRandomGroups(rdbmsWriter);
+    createAndSaveGroup(
+        rdbmsWriter,
+        GroupFixtures.createRandomized(
+            b -> b.groupId("groupId").groupKey(1337L).name("Group 1337")));
+    GroupMemberFixtures.createAndSaveRandomGroupMember(
+        rdbmsWriter,
+        b -> b.groupId("groupId").entityId("entityId").entityType(EntityType.USER.name()));
+
+    final var searchResult =
+        groupReader.search(
+            new GroupQuery(
+                new GroupFilter.Builder()
+                    .memberIdsByType(Map.of(memberType, Set.of("entityId")))
+                    .build(),
+                GroupSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(expectedCount);
+    assertThat(searchResult.items()).hasSize(expectedCount);
   }
 
   static List<GroupFilter> shouldFindWithSpecificFilterParameters() {
