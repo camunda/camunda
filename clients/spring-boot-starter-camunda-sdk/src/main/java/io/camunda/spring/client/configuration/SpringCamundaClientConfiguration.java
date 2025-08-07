@@ -15,12 +15,9 @@
  */
 package io.camunda.spring.client.configuration;
 
-import static java.util.Optional.ofNullable;
-
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
@@ -28,17 +25,14 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.unit.DataSize;
 
-public class CamundaClientConfigurationImpl implements CamundaClientConfiguration {
-  public static final CamundaClientBuilderImpl DEFAULT =
-      (CamundaClientBuilderImpl) new CamundaClientBuilderImpl().withProperties(new Properties());
-  private static final Logger LOG = LoggerFactory.getLogger(CamundaClientConfigurationImpl.class);
+public class SpringCamundaClientConfiguration implements CamundaClientConfiguration {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SpringCamundaClientConfiguration.class);
   private final CamundaClientProperties camundaClientProperties;
   private final JsonMapper jsonMapper;
   private final List<ClientInterceptor> interceptors;
@@ -48,7 +42,7 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
   private final String gatewayAddress;
   private final boolean plaintext;
 
-  public CamundaClientConfigurationImpl(
+  public SpringCamundaClientConfiguration(
       final CamundaClientProperties camundaClientProperties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
@@ -65,13 +59,6 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
     plaintext = composePlaintext();
   }
 
-  private static <T> T propertyOrDefault(final T property, final T defaultValue) {
-    if (property == null) {
-      return defaultValue;
-    }
-    return property;
-  }
-
   @Override
   public String getGatewayAddress() {
     return gatewayAddress;
@@ -79,77 +66,62 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public URI getRestAddress() {
-    return propertyOrDefault(camundaClientProperties.getRestAddress(), DEFAULT.getRestAddress());
+    return camundaClientProperties.getRestAddress();
   }
 
   @Override
   public URI getGrpcAddress() {
-    return propertyOrDefault(camundaClientProperties.getGrpcAddress(), DEFAULT.getGrpcAddress());
+    return camundaClientProperties.getGrpcAddress();
   }
 
   @Override
   public String getDefaultTenantId() {
-    return propertyOrDefault(camundaClientProperties.getTenantId(), DEFAULT.getDefaultTenantId());
+    return camundaClientProperties.getTenantId();
   }
 
   @Override
   public List<String> getDefaultJobWorkerTenantIds() {
-    return propertyOrDefault(
-        camundaClientProperties.getWorker().getDefaults().getTenantIds(),
-        DEFAULT.getDefaultJobWorkerTenantIds());
+    return camundaClientProperties.getWorker().getDefaults().getTenantIds();
   }
 
   @Override
   public int getNumJobWorkerExecutionThreads() {
-    return propertyOrDefault(
-        camundaClientProperties.getExecutionThreads(), DEFAULT.getNumJobWorkerExecutionThreads());
+    return camundaClientProperties.getExecutionThreads();
   }
 
   @Override
   public int getDefaultJobWorkerMaxJobsActive() {
-    return propertyOrDefault(
-        camundaClientProperties.getWorker().getDefaults().getMaxJobsActive(),
-        DEFAULT.getDefaultJobWorkerMaxJobsActive());
+    return camundaClientProperties.getWorker().getDefaults().getMaxJobsActive();
   }
 
   @Override
   public String getDefaultJobWorkerName() {
-    return propertyOrDefault(
-        camundaClientProperties.getWorker().getDefaults().getName(),
-        DEFAULT.getDefaultJobWorkerName());
+    return camundaClientProperties.getWorker().getDefaults().getName();
   }
 
   @Override
   public Duration getDefaultJobTimeout() {
-    return propertyOrDefault(
-        camundaClientProperties.getWorker().getDefaults().getTimeout(),
-        DEFAULT.getDefaultJobTimeout());
+    return camundaClientProperties.getWorker().getDefaults().getTimeout();
   }
 
   @Override
   public Duration getDefaultJobPollInterval() {
-    return propertyOrDefault(
-        camundaClientProperties.getWorker().getDefaults().getPollInterval(),
-        DEFAULT.getDefaultJobPollInterval());
+    return camundaClientProperties.getWorker().getDefaults().getPollInterval();
   }
 
   @Override
   public Duration getDefaultMessageTimeToLive() {
-    return propertyOrDefault(
-        camundaClientProperties.getMessageTimeToLive(), DEFAULT.getDefaultMessageTimeToLive());
+    return camundaClientProperties.getMessageTimeToLive();
   }
 
   @Override
   public Duration getDefaultRequestTimeout() {
-    return propertyOrDefault(
-        camundaClientProperties.getRequestTimeout(), DEFAULT.getDefaultRequestTimeout());
+    return camundaClientProperties.getRequestTimeout();
   }
 
   @Override
   public Duration getDefaultRequestTimeoutOffset() {
-    return propertyOrDefault(
-        camundaClientProperties.getRequestTimeoutOffset(),
-        DEFAULT.getDefaultRequestTimeoutOffset());
+    return camundaClientProperties.getRequestTimeoutOffset();
   }
 
   @Override
@@ -159,8 +131,7 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public String getCaCertificatePath() {
-    return propertyOrDefault(
-        camundaClientProperties.getCaCertificatePath(), DEFAULT.getCaCertificatePath());
+    return camundaClientProperties.getCaCertificatePath();
   }
 
   @Override
@@ -170,7 +141,7 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public Duration getKeepAlive() {
-    return propertyOrDefault(camundaClientProperties.getKeepAlive(), DEFAULT.getKeepAlive());
+    return camundaClientProperties.getKeepAlive();
   }
 
   @Override
@@ -190,24 +161,17 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public String getOverrideAuthority() {
-    return propertyOrDefault(
-        camundaClientProperties.getOverrideAuthority(), DEFAULT.getOverrideAuthority());
+    return camundaClientProperties.getOverrideAuthority();
   }
 
   @Override
   public int getMaxMessageSize() {
-    return ofNullable(camundaClientProperties.getMaxMessageSize())
-        .map(DataSize::toBytes)
-        .map(Math::toIntExact)
-        .orElse(DEFAULT.getMaxMessageSize());
+    return Math.toIntExact(camundaClientProperties.getMaxMessageSize().toBytes());
   }
 
   @Override
   public int getMaxMetadataSize() {
-    return ofNullable(camundaClientProperties.getMaxMetadataSize())
-        .map(DataSize::toBytes)
-        .map(Math::toIntExact)
-        .orElse(DEFAULT.getMaxMetadataSize());
+    return Math.toIntExact(camundaClientProperties.getMaxMetadataSize().toBytes());
   }
 
   @Override
@@ -222,9 +186,7 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public boolean getDefaultJobWorkerStreamEnabled() {
-    return propertyOrDefault(
-        camundaClientProperties.getWorker().getDefaults().getStreamEnabled(),
-        DEFAULT.getDefaultJobWorkerStreamEnabled());
+    return camundaClientProperties.getWorker().getDefaults().getStreamEnabled();
   }
 
   @Override
@@ -234,8 +196,7 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public boolean preferRestOverGrpc() {
-    return propertyOrDefault(
-        camundaClientProperties.getPreferRestOverGrpc(), DEFAULT.preferRestOverGrpc());
+    return camundaClientProperties.getPreferRestOverGrpc();
   }
 
   private String composeGatewayAddress() {

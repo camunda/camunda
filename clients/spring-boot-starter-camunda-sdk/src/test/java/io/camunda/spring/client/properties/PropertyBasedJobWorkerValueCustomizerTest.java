@@ -226,9 +226,8 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldApplyGlobalOverride() {
     // given
     final CamundaClientProperties properties = properties();
-    final CamundaClientJobWorkerProperties override = new CamundaClientJobWorkerProperties();
+    final CamundaClientJobWorkerProperties override = properties.getWorker().getDefaults();
     override.setEnabled(false);
-    properties.getWorker().setDefaults(override);
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
@@ -435,10 +434,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
       final Function<JobWorkerValue, Object> getter,
       final Object expected) {
     final CamundaClientProperties properties = properties();
-    final CamundaClientJobWorkerProperties jobWorkerProperties =
-        new CamundaClientJobWorkerProperties();
-    properties.getWorker().setDefaults(jobWorkerProperties);
-    setter.accept(jobWorkerProperties, expected);
+    setter.accept(properties.getWorker().getDefaults(), expected);
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
@@ -536,43 +532,6 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldApplyDeprecatedDefaultTenantIdsWhenNothingElseConfigured() {
-    // given
-    final CamundaClientProperties properties = properties();
-    properties.setTenantIds(List.of("testTenantId1", "testTenantId2"));
-
-    final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties);
-
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    // when
-    customizer.customize(jobWorkerValue);
-    // then
-    assertThat(jobWorkerValue.getTenantIds())
-        .containsExactlyInAnyOrder("testTenantId1", "testTenantId2");
-  }
-
-  @Test
-  void shouldApplyWorkerDefaultTenantIdsWhenDeprecatedDefaultTenantIdsAreSet() {
-    // given
-    final CamundaClientProperties properties = properties();
-    properties.setTenantIds(List.of("testTenantId1", "testTenantId2"));
-    properties.getWorker().getDefaults().setTenantIds(List.of("testTenantId3", "testTenantId4"));
-
-    final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties);
-
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    // when
-    customizer.customize(jobWorkerValue);
-    // then
-    assertThat(jobWorkerValue.getTenantIds())
-        .containsExactlyInAnyOrder("testTenantId3", "testTenantId4");
-  }
-
-  @Test
   void shouldMergeClientDefaultTenantIdsAndWorkerAnnotationTenantIdsWhenNothingElseConfigured() {
     // given
     final CamundaClientProperties properties = properties();
@@ -597,7 +556,6 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final CamundaClientProperties properties = properties();
     properties.getWorker().getDefaults().setTenantIds(List.of("workerDefaultsId"));
     properties.setTenantId("clientDefaultId");
-    properties.setTenantIds(List.of("deprecatedClientDefaults"));
     final CamundaClientJobWorkerProperties overrideJobWorkerValue =
         new CamundaClientJobWorkerProperties();
     overrideJobWorkerValue.setTenantIds(List.of("overriddenTenantId"));
