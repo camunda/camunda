@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class NodeIdMapper {
 
-  private static final Logger log = LoggerFactory.getLogger(NodeIdMapper.class);
+  private static final Logger LOG = LoggerFactory.getLogger(NodeIdMapper.class);
   private final S3Lease lease;
   private final ScheduledExecutorService executor;
   private int brokerId;
@@ -53,7 +53,7 @@ public class NodeIdMapper {
           if (brokerId < 0) {
             scheduleBusyLease(future);
           } else {
-            log.info("Lease acquired for brokerId: {}", brokerId);
+            LOG.info("Lease acquired for brokerId: {}", brokerId);
             future.complete(brokerId);
           }
         },
@@ -67,7 +67,7 @@ public class NodeIdMapper {
           if (lease.renewLease(brokerId)) {
             scheduleRenewal(brokerId);
           } else {
-            log.info("Renewal lease not acquired");
+            LOG.info("Renewal lease not acquired");
             Runtime.getRuntime().halt(1);
           }
         },

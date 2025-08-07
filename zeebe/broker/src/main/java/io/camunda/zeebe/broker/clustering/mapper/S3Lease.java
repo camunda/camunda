@@ -28,7 +28,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 public class S3Lease {
   private static final String TASK_ID_METADATA_KEY = "taskid";
   private static final String EXPIRY_METADATA_KEY = "expiry";
-  private static final Logger log = LoggerFactory.getLogger(S3Lease.class);
+  private static final Logger LOG = LoggerFactory.getLogger(S3Lease.class);
   private final S3AsyncClient client;
   private final String leaseKey;
   private final String bucketName;
@@ -57,9 +57,9 @@ public class S3Lease {
 
       try {
         final var res = client.putObject(putRequest, AsyncRequestBody.fromString(taskId)).join();
-        log.info("File created for nodeId {}: {}", nodeId, res.eTag());
+        LOG.info("File created for nodeId {}: {}", nodeId, res.eTag());
       } catch (final Exception e) {
-        log.error("File creation failed for nodeId {}: {}", nodeId, e.getMessage());
+        LOG.error("File creation failed for nodeId {}: {}", nodeId, e.getMessage());
       }
     }
   }
@@ -121,11 +121,11 @@ public class S3Lease {
             .build();
 
     try {
-      log.info("Attempting to acquire lease for nodeId {} with taskId {}", objectKey, taskId);
+      LOG.info("Attempting to acquire lease for nodeId {} with taskId {}", objectKey, taskId);
       client.putObject(putRequest, AsyncRequestBody.fromString(taskId)).join();
       return true;
     } catch (final Exception e) {
-      log.error("Failed to acquire lease for nodeId {}: {}", objectKey, e.getMessage());
+      LOG.error("Failed to acquire lease for nodeId {}: {}", objectKey, e.getMessage());
       return false;
     }
   }
@@ -206,7 +206,7 @@ public class S3Lease {
     config.endpoint().ifPresent(endpoint -> builder.endpointOverride(URI.create(endpoint)));
     config.region().ifPresent(region -> builder.region(Region.of(region)));
     if (config.getAccessKey() == null || config.getSecretKey() == null) {
-      log.warn(
+      LOG.warn(
           "S3 lease configuration is missing access key or secret key. "
               + "This may lead to authentication issues when trying to acquire leases.");
     } else {
