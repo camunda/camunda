@@ -21,9 +21,17 @@ type SelectionProps = {
   type: OwnerType;
   ownerId: string;
   onChange: (newOwner: string) => void;
+  onBlur: () => void;
+  isEmpty?: boolean;
 };
 
-const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
+const Selection: FC<SelectionProps> = ({
+  type,
+  ownerId,
+  onChange,
+  onBlur,
+  isEmpty = false,
+}) => {
   const { t } = useTranslate("authorizations");
 
   switch (type) {
@@ -34,8 +42,10 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
             value={ownerId}
             label={t("username")}
             onChange={onChange}
+            onBlur={onBlur}
             placeholder={t("enterUsername")}
             type="text"
+            errors={isEmpty ? t("usernameRequired") : ""}
           />
         );
       }
@@ -43,9 +53,11 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
         <OwnerSelection
           id="userSelection"
           onChange={onChange}
+          onBlur={onBlur}
           searchFn={searchUser}
           getId={(user) => user.username}
           itemToString={(user) => user.name || user.username}
+          isEmpty={isEmpty}
         />
       );
     case OwnerType.GROUP:
@@ -54,9 +66,11 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
           <OwnerSelection
             id="groupSelection"
             onChange={onChange}
+            onBlur={onBlur}
             searchFn={searchGroups}
             getId={(group) => group.groupId}
             itemToString={(group) => group.name || group.groupId}
+            isEmpty={isEmpty}
           />
         );
       }
@@ -65,8 +79,10 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
           value={ownerId}
           label={t("groupId")}
           onChange={onChange}
+          onBlur={onBlur}
           placeholder={t("enterGroupId")}
           type="text"
+          errors={isEmpty ? t("groupIdRequired") : ""}
         />
       );
     case OwnerType.MAPPING_RULE:
@@ -74,11 +90,13 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
         <OwnerSelection
           id="mappingRuleSelection"
           onChange={onChange}
+          onBlur={onBlur}
           searchFn={searchMappingRule}
           getId={(mappingRule) => mappingRule.mappingRuleId}
           itemToString={(mappingRule) =>
             mappingRule.name || mappingRule.mappingRuleId
           }
+          isEmpty={isEmpty}
         />
       );
     case OwnerType.ROLE:
@@ -86,9 +104,11 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
         <OwnerSelection
           id="roleSelection"
           onChange={onChange}
+          onBlur={onBlur}
           searchFn={searchRoles}
           getId={(role) => role.roleId}
           itemToString={(role) => role.name || role.roleId}
+          isEmpty={isEmpty}
         />
       );
     case OwnerType.CLIENT:
@@ -97,8 +117,10 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
           value={ownerId}
           label={t("owner")}
           onChange={onChange}
+          onBlur={onBlur}
           placeholder={t("enterId")}
           type="text"
+          errors={isEmpty ? t("ownerRequired") : ""}
         />
       );
     default:
