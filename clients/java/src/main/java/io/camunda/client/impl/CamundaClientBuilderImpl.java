@@ -17,13 +17,8 @@ package io.camunda.client.impl;
 
 import static io.camunda.client.ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES;
 import static io.camunda.client.ClientProperties.CA_CERTIFICATE_PATH;
-import static io.camunda.client.ClientProperties.DEFAULT_JOB_POLL_INTERVAL;
-import static io.camunda.client.ClientProperties.DEFAULT_JOB_TIMEOUT;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_NAME;
-import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
-import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
-import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET;
 import static io.camunda.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.client.ClientProperties.GRPC_ADDRESS;
 import static io.camunda.client.ClientProperties.JOB_WORKER_EXECUTION_THREADS;
@@ -86,9 +81,20 @@ public final class CamundaClientBuilderImpl
   public static final URI DEFAULT_REST_ADDRESS = getURIFromString("http://0.0.0.0:8080");
   public static final String DEFAULT_JOB_WORKER_NAME_VAR = "default";
   public static final Duration DEFAULT_MESSAGE_TTL = Duration.ofHours(1);
+  public static final boolean DEFAULT_PREFER_REST_OVER_GRPC = false;
+  public static final int DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS = 1;
+  public static final int DEFAULT_MAX_MESSAGE_SIZE = 5 * ONE_MB;
+  public static final int DEFAULT_MAX_METADATA_SIZE = 16 * ONE_KB;
+  public static final Duration DEFAULT_KEEP_ALIVE = Duration.ofSeconds(45);
+  public static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(10);
+  public static final Duration DEFAULT_REQUEST_TIMEOUT_OFFSET = Duration.ofSeconds(1);
+  public static final List<String> DEFAULT_JOB_WORKER_TENANT_IDS =
+      Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  public static final Duration DEFAULT_JOB_TIMEOUT = Duration.ofMinutes(5);
+  public static final int DEFAULT_MAX_JOBS_ACTIVE = 32;
+  public static final Duration DEFAULT_JOB_POLL_INTERVAL = Duration.ofMillis(100);
+  public static final boolean DEFAULT_STREAM_ENABLED = false;
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
-  private static final boolean DEFAULT_PREFER_REST_OVER_GRPC = false;
-
   private boolean applyEnvironmentVariableOverrides = true;
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
@@ -100,23 +106,23 @@ public final class CamundaClientBuilderImpl
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
   private List<String> defaultJobWorkerTenantIds =
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
-  private int jobWorkerMaxJobsActive = 32;
-  private int numJobWorkerExecutionThreads = 1;
+  private int jobWorkerMaxJobsActive = DEFAULT_MAX_JOBS_ACTIVE;
+  private int numJobWorkerExecutionThreads = DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
   private String defaultJobWorkerName = DEFAULT_JOB_WORKER_NAME_VAR;
-  private Duration defaultJobTimeout = Duration.ofMinutes(5);
-  private Duration defaultJobPollInterval = Duration.ofMillis(100);
+  private Duration defaultJobTimeout = DEFAULT_JOB_TIMEOUT;
+  private Duration defaultJobPollInterval = DEFAULT_JOB_POLL_INTERVAL;
   private Duration defaultMessageTimeToLive = DEFAULT_MESSAGE_TTL;
-  private Duration defaultRequestTimeout = Duration.ofSeconds(10);
-  private Duration defaultRequestTimeoutOffset = Duration.ofSeconds(1);
+  private Duration defaultRequestTimeout = DEFAULT_REQUEST_TIMEOUT;
+  private Duration defaultRequestTimeoutOffset = DEFAULT_REQUEST_TIMEOUT_OFFSET;
   private boolean usePlaintextConnection = false;
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
-  private Duration keepAlive = Duration.ofSeconds(45);
+  private Duration keepAlive = DEFAULT_KEEP_ALIVE;
   private JsonMapper jsonMapper = new CamundaObjectMapper();
   private String overrideAuthority;
-  private int maxMessageSize = 5 * ONE_MB;
-  private int maxMetadataSize = 16 * ONE_KB;
-  private boolean streamEnabled = false;
+  private int maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
+  private int maxMetadataSize = DEFAULT_MAX_METADATA_SIZE;
+  private boolean streamEnabled = DEFAULT_STREAM_ENABLED;
   private boolean grpcAddressUsed = true;
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
@@ -300,7 +306,7 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         value -> defaultJobWorkerTenantIds(Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
-        DEFAULT_JOB_WORKER_TENANT_IDS,
+        io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS,
         io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS);
 
     BuilderUtils.applyPropertyValueIfNotNull(
@@ -321,13 +327,13 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         value -> defaultJobTimeout(Duration.ofMillis(Long.parseLong(value))),
-        DEFAULT_JOB_TIMEOUT,
+        io.camunda.client.ClientProperties.DEFAULT_JOB_TIMEOUT,
         io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_TIMEOUT);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         value -> defaultJobPollInterval(Duration.ofMillis(Long.parseLong(value))),
-        DEFAULT_JOB_POLL_INTERVAL,
+        io.camunda.client.ClientProperties.DEFAULT_JOB_POLL_INTERVAL,
         io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_POLL_INTERVAL);
 
     BuilderUtils.applyPropertyValueIfNotNull(
@@ -339,13 +345,13 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         value -> defaultRequestTimeout(Duration.ofMillis(Long.parseLong(value))),
-        DEFAULT_REQUEST_TIMEOUT,
+        io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT,
         io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         value -> defaultRequestTimeoutOffset(Duration.ofMillis(Long.parseLong(value))),
-        DEFAULT_REQUEST_TIMEOUT_OFFSET);
+        io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
