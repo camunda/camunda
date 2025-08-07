@@ -8,8 +8,11 @@
 package io.camunda.configuration;
 
 public class Backup {
-  /** Configuration for backup store S3 */
+  /** Configuration for backup store AWS S3 */
   private S3 s3 = new S3();
+
+  /** Configuration for backup store GCS */
+  private Gcs gcs = new Gcs();
 
   public S3 getS3() {
     return s3;
@@ -17,5 +20,13 @@ public class Backup {
 
   public void setS3(final S3 s3) {
     this.s3 = s3;
+  }
+
+  public Gcs getGcs() {
+    return gcs;
+  }
+
+  public void setGcs(final Gcs gcs) {
+    this.gcs = gcs;
   }
 }
