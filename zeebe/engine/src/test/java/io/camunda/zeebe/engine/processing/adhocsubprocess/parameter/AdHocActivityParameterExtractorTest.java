@@ -9,16 +9,18 @@ package io.camunda.zeebe.engine.processing.adhocsubprocess.parameter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.camunda.feel.api.FeelEngineApi;
 import org.camunda.feel.api.FeelEngineBuilder;
 import org.camunda.feel.api.ParseResult;
 import org.camunda.feel.syntaxtree.ParsedExpression;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -57,39 +59,13 @@ class AdHocActivityParameterExtractorTest {
                 + exceptionMessage);
   }
 
-  @Test
-  void throwsExceptionWhenDescriptionValueIsNotAString() {
-    assertThatThrownBy(
-            () -> extractParameters("fromAi(value: toolCall.myVariable, description: 10)"))
+  @ParameterizedTest
+  @MethodSource("parameterTypeMismatches")
+  void throwsExceptionOnParameterTypeMismatch(
+      final String expression, final String exceptionMessage) {
+    assertThatThrownBy(() -> extractParameters(expression))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageStartingWith(
-            "Expected fromAi() parameter 'description' to be a string, but received '10'");
-  }
-
-  @Test
-  void throwsExceptionWhenTypeValueIsNotAString() {
-    assertThatThrownBy(() -> extractParameters("fromAi(value: toolCall.myVariable, type: 10)"))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageStartingWith(
-            "Expected fromAi() parameter 'type' to be a string, but received '10'.");
-  }
-
-  @Test
-  void throwsExceptionWhenSchemaValueIsNotAContext() {
-    assertThatThrownBy(
-            () -> extractParameters("fromAi(value: toolCall.myVariable, schema: \"dummy\")"))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageStartingWith(
-            "Expected fromAi() parameter 'schema' to be a context (map), but received 'dummy'.");
-  }
-
-  @Test
-  void throwsExceptionWhenOptionsValueIsNotAContext() {
-    assertThatThrownBy(
-            () -> extractParameters("fromAi(value: toolCall.myVariable, options: \"dummy\")"))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageStartingWith(
-            "Expected fromAi() parameter 'options' to be a context (map), but received 'dummy'.");
+        .hasMessageStartingWith(exceptionMessage);
   }
 
   private List<AdHocActivityParameter> extractParameters(final String expression) {
@@ -346,6 +322,34 @@ class AdHocActivityParameterExtractorTest {
                 "array",
                 Map.of("items", Map.of("type", "string", "enum", List.of("foo", "bar", "baz"))),
                 null)));
+  }
+
+  static Stream<Arguments> parameterTypeMismatches() {
+    return Stream.of(
+        arguments(
+            "fromAi(value: toolCall.myVariable, description: 10)",
+            "Expected fromAi() parameter 'description' to be a string, but received '10'."),
+        arguments(
+            "fromAi(value: toolCall.myVariable, description: string join([\"A\", \"simple\", \"value\"], \" \"))",
+            "Expected fromAi() parameter 'description' to be a string, but received 'FunctionInvocation"),
+        arguments(
+            "fromAi(value: toolCall.myVariable, type: 10)",
+            "Expected fromAi() parameter 'type' to be a string, but received '10'."),
+        arguments(
+            "fromAi(value: toolCall.myVariable, type: \"str\" + \"ing\")",
+            "Expected fromAi() parameter 'type' to be a string, but received 'Addition"),
+        arguments(
+            "fromAi(value: toolCall.myVariable, schema: \"dummy\")",
+            "Expected fromAi() parameter 'schema' to be a context (map), but received 'dummy'."),
+        arguments(
+            "fromAi(value: toolCall.myVariable, schema: context put({}, \"enum\", [\"A\", \"B\", \"C\"]))",
+            "Expected fromAi() parameter 'schema' to be a context (map), but received 'FunctionInvocation"),
+        arguments(
+            "fromAi(value: toolCall.myVariable, options: \"dummy\")",
+            "Expected fromAi() parameter 'options' to be a context (map), but received 'dummy'."),
+        arguments(
+            "fromAi(value: toolCall.myVariable, options: context put({}, \"required\", false))",
+            "Expected fromAi() parameter 'options' to be a context (map), but received 'FunctionInvocation"));
   }
 
   record AdHocActivityParameterExtractionTestCase(
