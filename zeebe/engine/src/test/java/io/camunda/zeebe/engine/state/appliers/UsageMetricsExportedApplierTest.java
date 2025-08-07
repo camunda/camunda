@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import static io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics.TIME_NOT_SET;
 import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -55,6 +56,25 @@ class UsageMetricsExportedApplierTest {
     verify(mockUsageMetricsState).getActiveBucket();
     verify(mockUsageMetricsState, never()).getOrCreateActiveBucket();
     verify(mockUsageMetricsState, never()).resetActiveBucket(1L);
+  }
+
+  @Test
+  void shouldUpdateActiveBucketTimeWhenNotInitialized() {
+    // given
+    usageMetricState.recordRPIMetric("tenant1");
+    assertThat(usageMetricState.getActiveBucket().getFromTime()).isEqualTo(TIME_NOT_SET);
+    assertThat(usageMetricState.getActiveBucket().getToTime()).isEqualTo(TIME_NOT_SET);
+    assertThat(usageMetricState.getActiveBucket().getTenantRPIMap())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", 1L));
+
+    // when
+    usageMetricsExportedApplier.applyState(1L, new UsageMetricRecord().setResetTime(2L));
+
+    // then
+    assertThat(usageMetricState.getActiveBucket().getFromTime()).isEqualTo(2L);
+    assertThat(usageMetricState.getActiveBucket().getToTime()).isEqualTo(300002L);
+    assertThat(usageMetricState.getActiveBucket().getTenantRPIMap())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", 1L));
   }
 
   @Test

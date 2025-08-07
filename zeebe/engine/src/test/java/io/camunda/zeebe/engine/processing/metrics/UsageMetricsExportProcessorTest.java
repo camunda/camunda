@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.metrics;
 
+import static io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics.TIME_NOT_SET;
 import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -78,8 +79,32 @@ class UsageMetricsExportProcessorTest {
     assertThat(actual.getIntervalType()).isEqualTo(IntervalType.ACTIVE);
     assertThat(actual.getEventType()).isEqualTo(EventType.NONE);
     assertThat(actual.getResetTime()).isEqualTo(2);
-    assertThat(actual.getStartTime()).isEqualTo(-1);
-    assertThat(actual.getEndTime()).isEqualTo(-1);
+    assertThat(actual.getStartTime()).isEqualTo(TIME_NOT_SET);
+    assertThat(actual.getEndTime()).isEqualTo(TIME_NOT_SET);
+    assertThat(actual.getCounterValues()).isEmpty();
+    assertThat(actual.getSetValues()).isEmpty();
+  }
+
+  @Test
+  void shouldAppendExportedNoneEventWhenBucketNotInitialized() {
+    // given
+    when(state.getActiveBucket())
+        .thenReturn(new PersistedUsageMetrics().setTenantRPIMap(Map.of(TENANT_1, 10L)));
+
+    // when
+    processor.processRecord(record);
+
+    // then
+    verify(state).getActiveBucket();
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
+    final var actual = recordArgumentCaptor.getValue();
+    assertThat(actual.getIntervalType()).isEqualTo(IntervalType.ACTIVE);
+    assertThat(actual.getEventType()).isEqualTo(EventType.NONE);
+    assertThat(actual.getResetTime()).isEqualTo(2);
+    assertThat(actual.getStartTime()).isEqualTo(TIME_NOT_SET);
+    assertThat(actual.getEndTime()).isEqualTo(TIME_NOT_SET);
     assertThat(actual.getCounterValues()).isEmpty();
     assertThat(actual.getSetValues()).isEmpty();
   }

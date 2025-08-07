@@ -31,7 +31,7 @@ public class UsageMetricsExportedApplier
     final var activeBucket = usageMetricState.getActiveBucket();
 
     // uninitialized bucket created on-demand
-    if (activeBucket != null && activeBucket.getFromTime() == -1) {
+    if (activeBucket != null && !activeBucket.isInitialized()) {
       LOG.debug("Update active bucket time {}", record.getResetTime());
       usageMetricState.updateActiveBucketTime(record.getResetTime());
     }

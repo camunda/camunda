@@ -20,8 +20,10 @@ import org.agrona.DirectBuffer;
 
 public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
 
-  private final LongProperty fromTimeProp = new LongProperty("fromTime", -1L);
-  private final LongProperty toTimeProp = new LongProperty("toTime", -1L);
+  public static final int TIME_NOT_SET = -1;
+
+  private final LongProperty fromTimeProp = new LongProperty("fromTime", TIME_NOT_SET);
+  private final LongProperty toTimeProp = new LongProperty("toTime", TIME_NOT_SET);
   private final DocumentProperty tenantRPIMapProp = new DocumentProperty("tenantRPI");
   private final DocumentProperty tenantEDIMapProp = new DocumentProperty("tenantEDI");
   private final DocumentProperty tenantTUMapProp = new DocumentProperty("tenantTU");
@@ -33,6 +35,10 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
         .declareProperty(tenantRPIMapProp)
         .declareProperty(tenantEDIMapProp)
         .declareProperty(tenantTUMapProp);
+  }
+
+  public boolean isInitialized() {
+    return fromTimeProp.getValue() != TIME_NOT_SET && toTimeProp.getValue() != TIME_NOT_SET;
   }
 
   public long getFromTime() {
