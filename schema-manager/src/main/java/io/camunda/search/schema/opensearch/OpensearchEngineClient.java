@@ -490,6 +490,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
                   t.aliases(indexTemplateDescriptor.getAlias(), a -> a)
                       .mappings(templateFields.mappings())
                       .settings(templateFields.settings()))
+          .priority(settings.getTemplatePriority())
           .composedOf(indexTemplateDescriptor.getComposedOf())
           .build();
     } catch (final IOException e) {
@@ -525,6 +526,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
                   t.settings(updatedTemplateSettings)
                       .mappings(currentIndexTemplateState.mappings())
                       .aliases(currentIndexTemplateState.aliases()))
+          .priority(currentSettings.getTemplatePriority())
           .build();
 
     } catch (final IOException e) {

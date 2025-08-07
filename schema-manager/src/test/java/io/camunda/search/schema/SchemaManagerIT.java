@@ -1021,4 +1021,159 @@ public class SchemaManagerIT {
     assertThat(retrievedArchiveIndex2.at("/mappings/properties/foo/type").asText())
         .isEqualTo("keyword");
   }
+
+  @TestTemplate
+  void shouldSetIndexTemplatePriorityWhenCreatingTemplate(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    config.index().setTemplatePriority(100);
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    // when
+    schemaManager.startup();
+
+    // then
+    final var retrievedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
+    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(100);
+  }
+
+  @TestTemplate
+  void shouldUseDefaultPriorityWhenTemplatePriorityNotSet(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    // templatePriority is not set, should be null
+    assertThat(config.index().getTemplatePriority()).isNull();
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    // when
+    schemaManager.startup();
+
+    // then
+    final var retrievedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
+    // When priority is not set, it should either be missing or null/0 depending on search engine
+    final var priorityNode = retrievedTemplate.at("/index_template/priority");
+    assertThat(priorityNode.isMissingNode()).isTrue();
+  }
+
+  @TestTemplate
+  void shouldUpdateIndexTemplatePriorityWhenSettingsChange(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given - create template with initial priority
+    config.index().setTemplatePriority(50);
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    // verify initial priority is set
+    var retrievedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(50);
+
+    // when - update template settings with new priority via startup
+    config.index().setTemplatePriority(200);
+
+    schemaManager.startup();
+
+    // then - verify priority was updated
+    retrievedTemplate = searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(200);
+  }
+
+  @TestTemplate
+  void shoulUnsetIndexTemplatePriorityWhenSettingsIsRemoved(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given - create template with initial priority
+    config.index().setTemplatePriority(50);
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    // verify initial priority is set
+    var retrievedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(50);
+
+    // when - unset template priority setting
+    config.index().setTemplatePriority(null);
+
+    schemaManager.startup();
+
+    // then - verify priority was updated
+    retrievedTemplate = searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+    assertThat(retrievedTemplate.at("/index_template/priority").isMissingNode()).isTrue();
+  }
+
+  @TestTemplate
+  void shouldPreservePriorityWhenUpdatingTemplateMappings(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given - create template with priority
+    config.index().setTemplatePriority(150);
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    // verify initial priority is set
+    var retrievedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(150);
+
+    // when - update template mappings
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+    schemaManager.startup();
+
+    // then - priority should be preserved
+    retrievedTemplate = searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(150);
+
+    // and mapping should be updated
+    assertThat(
+            mappingsMatch(
+                retrievedTemplate.at("/index_template/template/mappings"),
+                "/mappings-added-property.json"))
+        .isTrue();
+  }
 }
