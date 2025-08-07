@@ -7,31 +7,29 @@
  */
 package io.camunda.db.rdbms.read.security;
 
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.ResourceAccessController;
-import java.util.Optional;
-import java.util.function.Function;
+import io.camunda.search.clients.auth.AbstractResourceAccessController;
+import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.security.reader.TenantAccessProvider;
 
-public class RdbmsResourceAccessController implements ResourceAccessController {
+public class RdbmsResourceAccessController extends AbstractResourceAccessController {
 
-  @Override
-  public <T> T doGet(
-      final SecurityContext securityContext,
-      final Function<ResourceAccessChecks, T> resourceChecksApplier) {
-    return resourceChecksApplier.apply(ResourceAccessChecks.disabled());
+  private final ResourceAccessProvider resourceAccessProvider;
+  private final TenantAccessProvider tenantAccessProvider;
+
+  public RdbmsResourceAccessController(
+      final ResourceAccessProvider resourceAccessProvider,
+      final TenantAccessProvider tenantAccessProvider) {
+    this.resourceAccessProvider = resourceAccessProvider;
+    this.tenantAccessProvider = tenantAccessProvider;
   }
 
   @Override
-  public <T> T doSearch(
-      final SecurityContext securityContext,
-      final Function<ResourceAccessChecks, T> resourceChecksApplier) {
-    return resourceChecksApplier.apply(ResourceAccessChecks.disabled());
+  protected ResourceAccessProvider getResourceAccessProvider() {
+    return resourceAccessProvider;
   }
 
   @Override
-  public boolean supports(final SecurityContext securityContext) {
-    return Optional.of(securityContext).map(SecurityContext::authentication).isPresent()
-        && !isAnonymousAuthentication(securityContext.authentication());
+  protected TenantAccessProvider getTenantAccessProvider() {
+    return tenantAccessProvider;
   }
 }
