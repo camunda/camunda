@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { FC } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
@@ -15,6 +16,12 @@ import { createRole } from "src/utility/api/roles";
 import { isValidRoleId } from "src/pages/roles/modals/isValidRoleId";
 import { useNotifications } from "src/components/notifications";
 
+type FormData = {
+  roleName: string;
+  roleId: string;
+  description: string;
+};
+
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
@@ -22,18 +29,20 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     suppressErrorNotification: true,
   });
 
-  const [roleName, setRoleName] = useState("");
-  const [roleId, setRoleId] = useState("");
-  const [description, setDescription] = useState("");
-  const [isRoleIdValid, setIsRoleIdValid] = useState(true);
+  const { control, handleSubmit } = useForm<FormData>({
+    defaultValues: {
+      roleName: "",
+      roleId: "",
+      description: "",
+    },
+    mode: "all",
+  });
 
-  const isSubmitDisabled = loading || !roleName || !roleId || !isRoleIdValid;
-
-  const handleSubmit = async () => {
+  const onSubmit = async (data: FormData) => {
     const { success } = await callAddRole({
-      name: roleName,
-      description,
-      roleId,
+      name: data.roleName,
+      description: data.description,
+      roleId: data.roleId,
     });
 
     if (success) {
@@ -41,15 +50,11 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         kind: "success",
         title: t("roleCreated"),
         subtitle: t("createRoleSuccess", {
-          roleName,
+          roleName: data.roleName,
         }),
       });
       onSuccess();
     }
-  };
-
-  const validateRoleId = () => {
-    setIsRoleIdValid(isValidRoleId(roleId));
   };
 
   return (
@@ -60,35 +65,54 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       error={error}
       loadingDescription={t("creatingRole")}
       confirmLabel={t("createRole")}
-      submitDisabled={isSubmitDisabled}
       onClose={onClose}
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
     >
-      <TextField
-        label={t("roleId")}
-        value={roleId}
-        placeholder={t("roleIdPlaceholder")}
-        errors={!isRoleIdValid ? [t("pleaseEnterValidRoleId")] : []}
-        helperText={t("roleIdHelperText")}
-        autoFocus
-        onChange={(value) => {
-          setRoleId(value);
+      <Controller
+        name="roleId"
+        control={control}
+        rules={{
+          validate: (value) =>
+            isValidRoleId(value) || t("pleaseEnterValidRoleId"),
         }}
-        onBlur={validateRoleId}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label={t("roleId")}
+            placeholder={t("roleIdPlaceholder")}
+            errors={fieldState.error?.message}
+            helperText={t("roleIdHelperText")}
+            autoFocus
+          />
+        )}
       />
-      <TextField
-        label={t("roleName")}
-        value={roleName}
-        placeholder={t("roleNamePlaceholder")}
-        onChange={setRoleName}
+      <Controller
+        name="roleName"
+        control={control}
+        rules={{
+          required: t("roleNameRequired"),
+        }}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label={t("roleName")}
+            placeholder={t("roleNamePlaceholder")}
+            errors={fieldState.error?.message}
+          />
+        )}
       />
-      <TextField
-        label={t("description")}
-        value={description || ""}
-        placeholder={t("roleDescriptionPlaceholder")}
-        cols={2}
-        enableCounter
-        onChange={setDescription}
+      <Controller
+        name="description"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            label={t("description")}
+            placeholder={t("roleDescriptionPlaceholder")}
+            cols={2}
+            enableCounter
+          />
+        )}
       />
     </FormModal>
   );
