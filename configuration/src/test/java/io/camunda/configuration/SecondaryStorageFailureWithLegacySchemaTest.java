@@ -56,8 +56,6 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               // url
               "camunda.data.secondary-storage.elasticsearch.url=http://new-mismatching-url:4321",
               "camunda.database.url=http://legacy-mismatching-url:4321",
-              "camunda.operate.zeebeElasticsearch.url=http://legacy-mismatching-url:4321",
-              "camunda.tasklist.zeebeElasticsearch.url=http://legacy-mismatching-url:4321",
               "camunda.tasklist.elasticsearch.url=http://legacy-mismatching-url:4321",
               "camunda.operate.elasticsearch.url=http://legacy-mismatching-url:4321");
 

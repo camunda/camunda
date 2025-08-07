@@ -21,8 +21,6 @@ public class Elasticsearch extends SecondaryStorageDatabase {
     return Set.of(
         "camunda.database.url",
         "camunda.operate.elasticsearch.url",
-        "camunda.operate.zeebeElasticsearch.url",
-        "camunda.tasklist.elasticsearch.url",
-        "camunda.tasklist.zeebeElasticsearch.url");
+        "camunda.tasklist.elasticsearch.url");
   }
 }
