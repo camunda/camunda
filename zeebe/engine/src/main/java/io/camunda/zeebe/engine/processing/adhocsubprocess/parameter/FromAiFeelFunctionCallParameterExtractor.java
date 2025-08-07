@@ -88,8 +88,8 @@ class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParame
 
   private String parameterName(final Exp value) {
     if (!(value instanceof final Ref valueRef)) {
-      throw new RuntimeException(
-          "Expected parameter 'value' to be a reference (e.g. 'toolCall.customParameter'), but received %s."
+      throw new IllegalArgumentException(
+          "Expected fromAi() parameter 'value' to be a reference (e.g. 'toolCall.customParameter'), but received %s."
               .formatted(
                   switch (value) {
                     case final ConstString stringResult ->
@@ -108,8 +108,8 @@ class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParame
 
     final Object result = evaluate(exp, parameterName);
     if (!(result instanceof final String resultString)) {
-      throw new RuntimeException(
-          "Expected parameter '%s' to be a string, but received '%s'."
+      throw new IllegalArgumentException(
+          "Expected fromAi() parameter '%s' to be a string, but received '%s'."
               .formatted(parameterName, result));
     }
 
@@ -123,8 +123,8 @@ class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParame
 
     final Object result = evaluate(exp, parameterName);
     if (!(result instanceof final Map<?, ?> resultMap)) {
-      throw new RuntimeException(
-          "Expected parameter '%s' to be a map, but received '%s'."
+      throw new IllegalArgumentException(
+          "Expected fromAi() parameter '%s' to be a map, but received '%s'."
               .formatted(parameterName, result));
     }
 
@@ -141,8 +141,8 @@ class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParame
     final EvaluationResult result =
         feelEngineApi.evaluate(new ParsedExpression(exp, ""), Collections.emptyMap());
     if (result.isFailure()) {
-      throw new RuntimeException(
-          "Failed to evaluate expression for parameter '%s': %s"
+      throw new IllegalArgumentException(
+          "Failed to evaluate expression for fromAi() parameter '%s': %s"
               .formatted(parameterName, result.failure().message()));
     }
 

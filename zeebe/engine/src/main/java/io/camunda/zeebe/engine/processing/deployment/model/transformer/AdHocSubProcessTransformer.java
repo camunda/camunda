@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.FeelExpression;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata;
+import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.parameter.AdHocActivityParameterExtractor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
@@ -155,20 +156,7 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
                   final String elementName = BufferUtil.bufferAsString(flowNode.getName());
                   final String documentation =
                       BufferUtil.bufferAsString(flowNode.getDocumentation());
-
-                  final var parameters =
-                      flowNode
-                          .getInputMappings()
-                          .map(
-                              inputMappings -> {
-                                if (inputMappings instanceof final FeelExpression feelExpression) {
-                                  return parameterExtractor.extractParameters(
-                                      feelExpression.getParsedExpression());
-                                }
-
-                                return null;
-                              })
-                          .orElseGet(Collections::emptyList);
+                  final var parameters = extractAdHocActivityParameters(flowNode);
 
                   return new AdHocActivityMetadata(
                       elementId, elementName, documentation, flowNode.getProperties(), parameters);
@@ -177,6 +165,28 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
 
     final byte[] msgPack = MsgPackConverter.convertToMsgPack(activitiesMetadata);
     executableAdHocSubProcess.setAdHocActivitiesMetadata(BufferUtil.wrapArray(msgPack));
+  }
+
+  private List<AdHocActivityParameter> extractAdHocActivityParameters(
+      final ExecutableFlowNode adHocActivity) {
+    try {
+      return adHocActivity
+          .getInputMappings()
+          .map(
+              inputMappings -> {
+                if (inputMappings instanceof final FeelExpression feelExpression) {
+                  return parameterExtractor.extractParameters(feelExpression.getParsedExpression());
+                }
+
+                return null;
+              })
+          .orElseGet(Collections::emptyList);
+    } catch (final Exception e) {
+      throw new RuntimeException(
+          "Failed to extract ad-hoc activity parameters for element '%s'. %s"
+              .formatted(BufferUtil.bufferAsString(adHocActivity.getId()), e.getMessage()),
+          e);
+    }
   }
 
   /**
