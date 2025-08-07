@@ -74,6 +74,19 @@ zeebe:
       rdbms:
         # Classname doesn't matter, since this exporter is present via spring bean
         className: RdbmsExporter
+        args:
+          flushInterval: PT0.5S
+          maxQueueSize: 1000
+          history:
+            defaultHistoryTTL: PT1M
+            defaultBatchOperationHistoryTTL: PT7D
+            batchOperationCancelProcessInstanceHistoryTTL: PT1D
+            batchOperationMigrateProcessInstanceHistoryTTL: PT10D
+            batchOperationModifyProcessInstanceHistoryTTL: PT7D
+            batchOperationResolveIncidentHistoryTTL: PT5D
+            minHistoryCleanupInterval: PT1S
+            maxHistoryCleanupInterval: PT1H
+            historyCleanupBatchSize: 1000
       #elasticsearch:
       #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
       #  args:

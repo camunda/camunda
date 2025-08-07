@@ -20,7 +20,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public interface BatchOperationMapper {
+public interface BatchOperationMapper extends HistoryCleanupMapper {
 
   void insert(BatchOperationDbModel batchOperationDbModel);
 
@@ -45,6 +45,16 @@ public interface BatchOperationMapper {
   Long countItems(BatchOperationItemDbQuery query);
 
   List<BatchOperationItemEntity> searchItems(BatchOperationItemDbQuery query);
+
+  int updateHistoryCleanupDate(UpdateHistoryCleanupDateDto dto);
+
+  int cleanupHistory(CleanupBatchOperationHistoryDto dto);
+
+  int cleanupItemHistory(CleanupBatchOperationHistoryDto dto);
+
+  record CleanupBatchOperationHistoryDto(OffsetDateTime cleanupDate, int limit) {}
+
+  record UpdateHistoryCleanupDateDto(String batchOperationKey, OffsetDateTime historyCleanupDate) {}
 
   record BatchOperationUpdateDto(
       String batchOperationKey, BatchOperationState state, OffsetDateTime endDate) {}

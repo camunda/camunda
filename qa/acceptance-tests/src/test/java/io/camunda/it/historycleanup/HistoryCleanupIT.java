@@ -90,4 +90,63 @@ public class HistoryCleanupIT {
     assertThat(result.page().totalItems()).isEqualTo(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isNotEqualTo(processInstanceKey);
   }
+
+  @Test
+  void shouldDeleteBatchOperationsWhichAreMarkedForCleanup() {
+    // given
+    deployResource(camundaClient, RESOURCE_NAME).getProcesses().getFirst();
+    waitForProcessesToBeDeployed(camundaClient, 1);
+    // start two PIs
+    startProcessInstance(
+        camundaClient, "PROCESS_WITH_USER_TASK_PRE_ASSIGNED", "{\"variable\":\"bud\"}");
+    startProcessInstance(
+        camundaClient, "PROCESS_WITH_USER_TASK_PRE_ASSIGNED", "{\"variable\":\"bud2\"}");
+    // await them
+    waitForProcessInstancesToStart(camundaClient, 2);
+    waitForElementInstances(camundaClient, 4);
+
+    // when we complete the user task of one instance
+    final UserTask userTask =
+        Awaitility.await("until a task is available for completion")
+            .atMost(TIMEOUT_DATA_AVAILABILITY)
+            .ignoreExceptions() // Ignore exceptions and continue retrying
+            .until(
+                () -> camundaClient.newUserTaskSearchRequest().send().join().items().getFirst(),
+                Objects::nonNull);
+    camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
+
+    // then one of the process instance should be ended, but still exist to query
+    final Long processInstanceKey = userTask.getProcessInstanceKey();
+    waitUntilProcessInstanceIsEnded(camundaClient, processInstanceKey);
+
+    // and soon it should be gone
+    Awaitility.await("should wait until process and tasks are deleted")
+        .atMost(Duration.ofMinutes(5))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceSearchRequest()
+                      .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(0);
+
+              final var taskAmount =
+                  camundaClient
+                      .newUserTaskSearchRequest()
+                      .filter(b -> b.userTaskKey(userTask.getUserTaskKey()))
+                      .send()
+                      .join()
+                      .page()
+                      .totalItems();
+              assertThat(taskAmount).isZero();
+            });
+
+    // the other should still exist
+    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+    assertThat(result.page().totalItems()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey()).isNotEqualTo(processInstanceKey);
+  }
 }

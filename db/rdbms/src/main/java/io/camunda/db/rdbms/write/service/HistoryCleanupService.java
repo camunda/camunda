@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -22,6 +23,10 @@ public class HistoryCleanupService {
   private static final Logger LOG = LoggerFactory.getLogger(HistoryCleanupService.class);
 
   private final Duration defaultHistoryTTL;
+  private final Duration batchOperationCancelProcessInstanceHistoryTTL;
+  private final Duration batchOperationMigrateProcessInstanceHistoryTTL;
+  private final Duration batchOperationModifyProcessInstanceHistoryTTL;
+  private final Duration batchOperationResolveIncidentHistoryTTL;
   private final Duration minCleanupInterval;
   private final Duration maxCleanupInterval;
   private final int cleanupBatchSize;
@@ -36,6 +41,7 @@ public class HistoryCleanupService {
   private final DecisionInstanceWriter decisionInstanceWriter;
   private final JobWriter jobWriter;
   private final SequenceFlowWriter sequenceFlowWriter;
+  private final BatchOperationWriter batchOperationWriter;
 
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
@@ -49,14 +55,24 @@ public class HistoryCleanupService {
       final DecisionInstanceWriter decisionInstanceWriter,
       final JobWriter jobWriter,
       final SequenceFlowWriter sequenceFlowWriter,
+      final BatchOperationWriter batchOperationWriter,
       final RdbmsWriterMetrics metrics) {
     LOG.info(
-        "Creating HistoryCleanupService with default history ttl {}", config.defaultHistoryTTL());
+        "Creating HistoryCleanupService with default history ttl {}",
+        config.history().defaultHistoryTTL());
 
-    defaultHistoryTTL = config.defaultHistoryTTL();
-    minCleanupInterval = config.minHistoryCleanupInterval();
-    maxCleanupInterval = config.maxHistoryCleanupInterval();
-    cleanupBatchSize = config.historyCleanupBatchSize();
+    defaultHistoryTTL = config.history().defaultHistoryTTL();
+    batchOperationCancelProcessInstanceHistoryTTL =
+        config.history().batchOperationCancelProcessInstanceHistoryTTL();
+    batchOperationMigrateProcessInstanceHistoryTTL =
+        config.history().batchOperationMigrateProcessInstanceHistoryTTL();
+    batchOperationModifyProcessInstanceHistoryTTL =
+        config.history().batchOperationModifyProcessInstanceHistoryTTL();
+    batchOperationResolveIncidentHistoryTTL =
+        config.history().batchOperationResolveIncidentHistoryTTL();
+    minCleanupInterval = config.history().minHistoryCleanupInterval();
+    maxCleanupInterval = config.history().maxHistoryCleanupInterval();
+    cleanupBatchSize = config.history().historyCleanupBatchSize();
     this.processInstanceWriter = processInstanceWriter;
     this.incidentWriter = incidentWriter;
     this.flowNodeInstanceWriter = flowNodeInstanceWriter;
@@ -65,6 +81,7 @@ public class HistoryCleanupService {
     this.decisionInstanceWriter = decisionInstanceWriter;
     this.jobWriter = jobWriter;
     this.sequenceFlowWriter = sequenceFlowWriter;
+    this.batchOperationWriter = batchOperationWriter;
     this.metrics = metrics;
   }
 
@@ -84,6 +101,32 @@ public class HistoryCleanupService {
     decisionInstanceWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     jobWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     sequenceFlowWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
+  }
+
+  public void scheduleBatchOperationForHistoryCleanup(
+      final String batchOperationKey,
+      final BatchOperationType batchOperationType,
+      final OffsetDateTime endDate) {
+
+    final var ttl = resolveBatchOperationTTL(batchOperationType);
+    final var historyCleanupDate = endDate.plus(ttl);
+
+    LOG.trace(
+        "Scheduling batch operation cleanup for key {} at {}",
+        batchOperationKey,
+        historyCleanupDate);
+    batchOperationWriter.scheduleForHistoryCleanup(batchOperationKey, historyCleanupDate);
+  }
+
+  @VisibleForTesting
+  public Duration resolveBatchOperationTTL(final BatchOperationType type) {
+    return switch (type) {
+      case CANCEL_PROCESS_INSTANCE -> batchOperationCancelProcessInstanceHistoryTTL;
+      case MIGRATE_PROCESS_INSTANCE -> batchOperationMigrateProcessInstanceHistoryTTL;
+      case MODIFY_PROCESS_INSTANCE -> batchOperationModifyProcessInstanceHistoryTTL;
+      case RESOLVE_INCIDENT -> batchOperationResolveIncidentHistoryTTL;
+      default -> defaultHistoryTTL;
+    };
   }
 
   public Duration cleanupHistory(final int partitionId, final OffsetDateTime cleanupDate) {
@@ -114,6 +157,11 @@ public class HistoryCleanupService {
     numDeletedRecords.put(
         "sequenceFlow",
         sequenceFlowWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+    numDeletedRecords.put(
+        "batchOperationItem",
+        batchOperationWriter.cleanupItemHistory(cleanupDate, cleanupBatchSize));
+    numDeletedRecords.put(
+        "batchOperation", batchOperationWriter.cleanupHistory(cleanupDate, cleanupBatchSize));
     final long end = System.currentTimeMillis();
     sample.close();
 
@@ -171,6 +219,7 @@ public class HistoryCleanupService {
     return nextDuration;
   }
 
+  @VisibleForTesting
   public Duration getHistoryCleanupInterval() {
     return defaultHistoryTTL;
   }

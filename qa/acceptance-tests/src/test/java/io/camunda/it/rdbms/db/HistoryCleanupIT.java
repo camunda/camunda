@@ -14,6 +14,7 @@ import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
+import io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures;
 import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
@@ -21,6 +22,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.UserTaskFixtures;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
+import io.camunda.search.entities.BatchOperationType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -44,7 +46,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
 public class HistoryCleanupIT {
 
-  private static final List<String> TABLE_NAMES =
+  private static final List<String> PROCESS_RELATED_TABLE_NAMES =
       List.of(
           "VARIABLE",
           "FLOW_NODE_INSTANCE",
@@ -68,7 +70,7 @@ public class HistoryCleanupIT {
   }
 
   @Test
-  public void shouldUpdateHistoryCleanupDate() {
+  public void shouldUpdateHistoryCleanupDateForProcess() {
     // GIVEN
     final Long processInstanceKey = createRandomProcessWithCleanupRelevantData();
 
@@ -79,7 +81,7 @@ public class HistoryCleanupIT {
 
     // THEN
     final var expectedDate = now.plus(historyCleanupService.getHistoryCleanupInterval());
-    getHistoryCleanupDates(processInstanceKey)
+    getProcessRelatedHistoryCleanupDates(processInstanceKey)
         .forEach(
             (tableName, historyCleanupDate) -> {
               historyCleanupDate.forEach(
@@ -98,10 +100,35 @@ public class HistoryCleanupIT {
             });
   }
 
+  @Test
+  public void shouldUpdateHistoryCleanupDateForBatchOperation() {
+    // GIVEN
+    final var batchOperation =
+        BatchOperationFixtures.createAndSaveBatchOperation(rdbmsWriter, b -> b);
+    final var batchOperationKey = batchOperation.batchOperationKey();
+    final BatchOperationType batchOperationType = batchOperation.operationType();
+
+    BatchOperationFixtures.createAndSaveRandomBatchOperationItems(
+        rdbmsWriter, batchOperationKey, 5);
+
+    // WHEN we schedule history cleanup
+    final OffsetDateTime now = OffsetDateTime.now();
+    historyCleanupService.scheduleBatchOperationForHistoryCleanup(
+        batchOperationKey, batchOperationType, now);
+    rdbmsWriter.flush();
+
+    // THEN
+    final var expectedDate =
+        now.plus(historyCleanupService.resolveBatchOperationTTL(batchOperationType));
+    assertThat(getBatchOperationHistoryCleanupDate(batchOperationKey))
+        .describedAs("should update the history cleanup date for batch operation")
+        .isNotNull()
+        .isCloseTo(expectedDate, within(10, ChronoUnit.MILLIS));
+  }
+
   private Long createRandomProcessWithCleanupRelevantData() {
     final Long processInstanceKey =
-        ProcessInstanceFixtures.createAndSaveRandomProcessInstance(
-                rdbmsService.createWriter(0), b -> b)
+        ProcessInstanceFixtures.createAndSaveRandomProcessInstance(rdbmsWriter, b -> b)
             .processInstanceKey();
 
     ElementInstanceFixtures.createAndSaveRandomElementInstances(
@@ -122,10 +149,11 @@ public class HistoryCleanupIT {
     return processInstanceKey;
   }
 
-  private Map<String, List<Object>> getHistoryCleanupDates(final Long processInstanceKey) {
+  private Map<String, List<Object>> getProcessRelatedHistoryCleanupDates(
+      final Long processInstanceKey) {
     final Map<String, List<Object>> historyCleanupDatesMap = new HashMap<>();
 
-    TABLE_NAMES.forEach(
+    PROCESS_RELATED_TABLE_NAMES.forEach(
         tableName -> {
           final List<Object> historyCleanupDates =
               jdbcTemplate
@@ -141,5 +169,14 @@ public class HistoryCleanupIT {
         });
 
     return historyCleanupDatesMap;
+  }
+
+  private OffsetDateTime getBatchOperationHistoryCleanupDate(final String batchOperationKey) {
+    return jdbcTemplate.queryForObject(
+        "SELECT HISTORY_CLEANUP_DATE FROM BATCH_OPERATION "
+            + "WHERE BATCH_OPERATION_KEY = '"
+            + batchOperationKey
+            + "'",
+        OffsetDateTime.class);
   }
 }

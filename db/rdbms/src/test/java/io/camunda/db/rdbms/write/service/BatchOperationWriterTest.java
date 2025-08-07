@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
@@ -27,10 +28,13 @@ class BatchOperationWriterTest {
   private final ExecutionQueue executionQueue = Mockito.mock(ExecutionQueue.class);
   private final VendorDatabaseProperties vendorDatabaseProperties =
       Mockito.mock(VendorDatabaseProperties.class);
+  private final BatchOperationMapper batchOperationMapper =
+      Mockito.mock(BatchOperationMapper.class);
   private final BatchOperationWriter batchOperationWriter =
       new BatchOperationWriter(
           null,
           executionQueue,
+          batchOperationMapper,
           RdbmsWriterConfig.builder().batchOperationItemInsertBlockSize(10).build(),
           vendorDatabaseProperties);
 

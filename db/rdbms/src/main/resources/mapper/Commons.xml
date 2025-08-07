@@ -176,18 +176,18 @@
   </sql>
   <sql id="historyCleanup" databaseId="oracle">
     DELETE
-    FROM ${prefix} ${tableName}
+    FROM ${prefix}${tableName}
     WHERE rowid IN (SELECT rowid
-                    FROM ${prefix} ${tableName}
+                    FROM ${prefix}${tableName}
                     WHERE PARTITION_ID = #{partitionId}
                       AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
                       AND ROWNUM &lt;= #{limit})
   </sql>
   <sql id="historyCleanup" databaseId="postgresql">
     DELETE
-    FROM ${prefix} ${tableName}
+    FROM ${prefix}${tableName}
     WHERE ctid IN (SELECT ctid
-                   FROM ${prefix} ${tableName}
+                   FROM ${prefix}${tableName}
                    WHERE PARTITION_ID = #{partitionId}
                      AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
                    LIMIT #{limit})
