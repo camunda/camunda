@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.metrics;
 
+import static io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics.TIME_NOT_SET;
 import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -78,8 +79,8 @@ class UsageMetricsExportProcessorTest {
     assertThat(actual.getIntervalType()).isEqualTo(IntervalType.ACTIVE);
     assertThat(actual.getEventType()).isEqualTo(EventType.NONE);
     assertThat(actual.getResetTime()).isEqualTo(2);
-    assertThat(actual.getStartTime()).isEqualTo(-1);
-    assertThat(actual.getEndTime()).isEqualTo(-1);
+    assertThat(actual.getStartTime()).isEqualTo(TIME_NOT_SET);
+    assertThat(actual.getEndTime()).isEqualTo(TIME_NOT_SET);
     assertThat(actual.getCounterValues()).isEmpty();
     assertThat(actual.getSetValues()).isEmpty();
   }
@@ -102,8 +103,8 @@ class UsageMetricsExportProcessorTest {
     assertThat(actual.getIntervalType()).isEqualTo(IntervalType.ACTIVE);
     assertThat(actual.getEventType()).isEqualTo(EventType.NONE);
     assertThat(actual.getResetTime()).isEqualTo(2);
-    assertThat(actual.getStartTime()).isEqualTo(-1);
-    assertThat(actual.getEndTime()).isEqualTo(-1);
+    assertThat(actual.getStartTime()).isEqualTo(TIME_NOT_SET);
+    assertThat(actual.getEndTime()).isEqualTo(TIME_NOT_SET);
     assertThat(actual.getCounterValues()).isEmpty();
     assertThat(actual.getSetValues()).isEmpty();
   }
