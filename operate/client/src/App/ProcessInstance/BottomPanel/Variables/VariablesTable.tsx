@@ -8,7 +8,7 @@
 
 import {useRef} from 'react';
 import {useForm, useFormState} from 'react-final-form';
-import {Button, Loading} from '@carbon/react';
+import {Button, Loading, SkeletonText} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
 import {StructuredList, VariableName, VariableValue} from './styled';
 import {StructuredRows} from 'modules/components/StructuredList';
@@ -26,6 +26,8 @@ import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIs
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {Restricted} from 'modules/components/Restricted';
 import {useVariables} from 'modules/queries/variables/useVariables';
+import {SkeletonPlaceholder} from '@carbon/react';
+import {useMutationState} from '@tanstack/react-query';
 
 type Props = {
   scopeId: string | null;
@@ -41,6 +43,8 @@ const VariablesTable: React.FC<Props> = ({
   const {initialValues} = useFormState();
   const form = useForm<VariableFormValues>();
   const variableNameRef = useRef<HTMLDivElement>(null);
+
+  const mutationState = useMutationState();
 
   const {
     data: variablesData,

@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {Form as ReactFinalForm} from 'react-final-form';
+import {Form as ReactFinalForm, useForm} from 'react-final-form';
 import {type VariableFormValues} from 'modules/types/variables';
 
 import {Content, EmptyMessageContainer} from './styled';
@@ -18,17 +18,27 @@ import {Loading} from '@carbon/react';
 import {VariablesForm} from './VariablesForm';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {addVariable, getScopeId, updateVariable} from 'modules/utils/variables';
+import {getScopeId} from 'modules/utils/variables';
 import {useQueryClient} from '@tanstack/react-query';
 import {
   VARIABLES_SEARCH_QUERY_KEY,
   useVariables,
 } from 'modules/queries/variables/useVariables';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {useElementInstanceVariables} from 'modules/mutations/elementInstances/useElementInstanceVariables';
+import {variablesStore} from 'modules/stores/variables';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const queryClient = useQueryClient();
+  const elementInstanceKey = flowNodeSelectionStore.selectedFlowNodeInstanceId;
   const {displayStatus} = useVariables();
+  const queryClient = useQueryClient();
+
+  // todo: remove ! operator
+  const mutation = useElementInstanceVariables(
+    elementInstanceKey!,
+    processInstanceId,
+  );
 
   if (displayStatus === 'error') {
     return (
@@ -67,53 +77,57 @@ const VariablesContent: React.FC = observer(() => {
         render={(props) => <VariablesForm {...props} />}
         onSubmit={async (values, form) => {
           const {initialValues} = form.getState();
+          const isNewVariable = initialValues.name === '';
 
           const {name, value} = values;
 
-          if (name === undefined || value === undefined) {
+          if (!elementInstanceKey) {
             return;
           }
 
-          const params = {
-            id: processInstanceId,
-            name,
-            value,
-            invalidateQueries: () => {
-              queryClient.invalidateQueries({
-                queryKey: [VARIABLES_SEARCH_QUERY_KEY],
-              });
-            },
-            onSuccess: () => {
-              notificationsStore.displayNotification({
-                kind: 'success',
-                title: 'Variable added',
-                isDismissable: true,
-              });
-
-              form.reset({});
-            },
-            onError: (statusCode: number) => {
-              notificationsStore.displayNotification({
-                kind: 'error',
-                title: 'Variable could not be saved',
-                subtitle:
-                  statusCode === 403 ? 'You do not have permission' : undefined,
-                isDismissable: true,
-              });
-
-              form.reset({});
-            },
-          };
-
-          if (initialValues.name === '') {
-            const result = await addVariable(params);
-            if (result === 'VALIDATION_ERROR') {
-              return {name: 'Name should be unique'};
-            }
-          } else if (initialValues.name === name) {
-            updateVariable(params);
-            form.reset({});
+          if (isNewVariable) {
+            variablesStore.setPendingItem({
+              name,
+              value,
+              hasActiveOperation: true,
+              isFirst: false,
+              sortValues: null,
+              isPreview: false,
+            });
           }
+
+          mutation.mutate(
+            {name, value},
+            {
+              onSuccess: () => {
+                notificationsStore.displayNotification({
+                  kind: 'success',
+                  title: isNewVariable ? 'Variable added' : 'Variable updated',
+                  isDismissable: true,
+                });
+              },
+              onError: () => {
+                notificationsStore.displayNotification({
+                  kind: 'error',
+                  title: 'Variable could not be saved',
+                  // subtitle:
+                  //   error.statusCode === 403
+                  //     ? 'You do not have permission'
+                  //     : undefined,
+                  isDismissable: true,
+                });
+              },
+              onSettled: async () => {
+                await queryClient.invalidateQueries({
+                  queryKey: [VARIABLES_SEARCH_QUERY_KEY],
+                });
+                if (isNewVariable) {
+                  variablesStore.setPendingItem(null);
+                }
+                form.reset({});
+              },
+            },
+          );
         }}
       />
     </Content>
