@@ -58,7 +58,6 @@ jobs:
         shell: bash
         run: |
           # use setup-medic-lookup.sh to set up lookupTeamMedic lookup array
-          chmod +x .ci/scripts/ci/setup-medic-lookup.sh
           source .ci/scripts/ci/setup-medic-lookup.sh
 
           # number of tests that need to fail before notifying team medic

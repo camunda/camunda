@@ -49,17 +49,13 @@ jobs:
         run: |
           gcloud info
 
-      - name: Setup Medic Lookup
-        run: |
-          bash .ci/scripts/ci/setup-medic-lookup.sh
-
       - name: Create message with BigQuery data
         id: message
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          chmod +x .ci/scripts/ci/setup-medic-lookup.sh
+          # use setup-medic-lookup.sh to set up lookupTeamMedic lookup array
           source .ci/scripts/ci/setup-medic-lookup.sh
 
           # number of tests that need to fail before notifying team medic
