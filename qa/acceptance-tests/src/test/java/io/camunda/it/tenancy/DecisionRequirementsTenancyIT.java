@@ -62,6 +62,9 @@ public class DecisionRequirementsTenancyIT {
     assignUserToTenant(adminClient, ADMIN, TENANT_B);
     assignUserToTenant(adminClient, USER1, TENANT_A);
 
+    waitForUserAssignment(adminClient, TENANT_A, 2);
+    waitForUserAssignment(adminClient, TENANT_B, 1);
+
     deployResource(adminClient, "decisions/decision_model.dmn", TENANT_A);
     deployResource(adminClient, "decisions/decision_model_1.dmn", TENANT_B);
 
@@ -189,6 +192,19 @@ public class DecisionRequirementsTenancyIT {
         .tenantId(tenant)
         .send()
         .join();
+  }
+
+  private static void waitForUserAssignment(
+      final CamundaClient client, final String tenant, final int numOfAssignments) {
+
+    Awaitility.await("should assign users to tenant " + tenant)
+        .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result = client.newUsersByTenantSearchRequest(tenant).send().join();
+              assertThat(result.items()).hasSize(numOfAssignments);
+            });
   }
 
   private static void waitForDecisionRequirementsToBeDeployed(
