@@ -218,6 +218,7 @@ public class UnifiedConfigurationHelper {
       case "DataSize" -> (T) DataSize.parse(strValue);
       case "GcsBackupStoreAuth" -> (T) GcsBackupStoreAuth.valueOf(strValue.toUpperCase());
       case "File" -> (T) new File(strValue);
+      case "SasTokenType" -> (T) SasToken.SasTokenType.valueOf(strValue.toUpperCase());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }

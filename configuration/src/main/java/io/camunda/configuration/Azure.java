@@ -58,6 +58,16 @@ public class Azure {
   /** Defines the container name where backup contents are saved. */
   private boolean createContainer = true;
 
+  /**
+   * This setting defines the SAS token to use. These can be of user delegation, service or account
+   * type. Note that user delegation and service SAS tokens do not support the creation of
+   * containers, therefore createContainer configuration will be overridden to false if sasToken is
+   * configured. The user must make sure that the container already exists, or it will lead to a
+   * runtime error. See more in: <a
+   * href="https://learn.microsoft.com/en-us/rest/api/storageservices/delegate-access-with-shared-access-signature">...</a>
+   */
+  private SasToken sasToken;
+
   public String getEndpoint() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + "endpoint",
@@ -134,5 +144,13 @@ public class Azure {
 
   public void setCreateContainer(final boolean createContainer) {
     this.createContainer = createContainer;
+  }
+
+  public SasToken getSasToken() {
+    return sasToken;
+  }
+
+  public void setSasToken(final SasToken sasToken) {
+    this.sasToken = sasToken;
   }
 }
