@@ -242,6 +242,11 @@ public class OpenSearchSchemaManager implements SchemaManager {
     createIndex(request, indexDescriptor.getFullQualifiedName());
   }
 
+  @Override
+  public String getComponentTemplateName() {
+    return String.format("%s_template", tasklistProperties.getOpenSearch().getIndexPrefix());
+  }
+
   private PutIndexTemplateRequest prepareIndexTemplateRequest(
       final TemplateDescriptor templateDescriptor, final String json) {
     final var templateSettings = templateSettings(templateDescriptor);
@@ -264,7 +269,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
               .name(templateDescriptor.getTemplateName())
               .indexPatterns(templateDescriptor.getIndexPattern())
               .template(template)
-              .composedOf(settingsTemplateName())
+              .composedOf(getComponentTemplateName())
               .build();
       return request;
     } catch (final Exception ex) {
@@ -342,7 +347,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   private void createDefaults() {
     final TasklistOpenSearchProperties elsConfig = tasklistProperties.getOpenSearch();
 
-    final String settingsTemplateName = settingsTemplateName();
+    final String settingsTemplateName = getComponentTemplateName();
     LOGGER.info(
         "Create default settings '{}' with {} shards and {} replicas per index.",
         settingsTemplateName,
@@ -357,12 +362,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   private IndexSettings getIndexSettings(final String indexName) {
     final var osConfig = tasklistProperties.getOpenSearch();
-    final var shards =
-        osConfig.getNumberOfShardsPerIndex().getOrDefault(indexName, osConfig.getNumberOfShards());
-    final var replicas =
-        osConfig
-            .getNumberOfReplicasPerIndex()
-            .getOrDefault(indexName, osConfig.getNumberOfReplicas());
+    final var shards = osConfig.getNumberOfShards(indexName);
+    final var replicas = osConfig.getNumberOfReplicas(indexName);
     return IndexSettings.of(
         b -> b.numberOfShards(String.valueOf(shards)).numberOfReplicas(String.valueOf(replicas)));
   }
@@ -373,11 +374,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
         b ->
             b.numberOfShards(String.valueOf(osConfig.getNumberOfShards()))
                 .numberOfReplicas(String.valueOf(osConfig.getNumberOfReplicas())));
-  }
-
-  private String settingsTemplateName() {
-    final TasklistOpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
-    return String.format("%s_template", osConfig.getIndexPrefix());
   }
 
   private void createTemplates() {
@@ -398,7 +394,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
             .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
             .template(template)
             .name(templateDescriptor.getTemplateName())
-            .composedOf(List.of(settingsTemplateName()))
+            .composedOf(List.of(getComponentTemplateName()))
             .build(),
         overwrite);
 
