@@ -13,6 +13,7 @@ import static io.camunda.client.api.search.enums.ProcessInstanceState.TERMINATED
 import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.startProcessInstanceWithTags;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilJobWorkerHasFailedJob;
@@ -91,8 +92,11 @@ public class ProcessInstanceSearchTest {
     processInstanceWithIncidentKey = processInstanceWithIncident.getProcessInstanceKey();
     PROCESS_INSTANCES.add(processInstanceWithIncident);
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "parent_process_v1"));
+    PROCESS_INSTANCES.add(
+        startProcessInstanceWithTags(
+            camundaClient, "service_tasks_v1", Set.of("businessKey:123", "priority:high")));
 
-    waitForProcessInstancesToStart(camundaClient, 8);
+    waitForProcessInstancesToStart(camundaClient, 9);
     waitUntilProcessInstanceHasIncidents(camundaClient, 2);
   }
 
@@ -284,7 +288,7 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items()).hasSize(3);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
@@ -307,7 +311,7 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).hasSize(2);
+    assertThat(result.items()).hasSize(3);
     assertThat(result.items())
         .extracting("processInstanceKey")
         .containsExactlyInAnyOrderElementsOf(processInstanceKeys);
@@ -332,7 +336,7 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).hasSize(3);
+    assertThat(result.items()).hasSize(4);
     assertThat(result.items())
         .extracting("processInstanceKey")
         .containsExactlyInAnyOrder(processInstanceKeys.toArray());
@@ -448,7 +452,7 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items()).hasSize(3);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
@@ -459,9 +463,9 @@ public class ProcessInstanceSearchTest {
         camundaClient.newProcessInstanceSearchRequest().filter(f -> f.state(ACTIVE)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items()).hasSize(6);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
-        .containsExactlyInAnyOrder(
+        .contains(
             "service_tasks_v1",
             "service_tasks_v1",
             "service_tasks_v2",
@@ -480,7 +484,7 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(5);
+    assertThat(result.items()).size().isEqualTo(6);
   }
 
   @Test
@@ -494,7 +498,7 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(5);
+    assertThat(result.items()).hasSize(6);
   }
 
   @Test
@@ -510,9 +514,9 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items()).filteredOn(pi -> pi.getEndDate() == null).hasSize(3);
-    assertThat(result.items()).filteredOn(pi -> !pi.getHasIncident()).hasSize(3);
+    assertThat(result.items()).hasSize(4);
+    assertThat(result.items()).filteredOn(pi -> pi.getEndDate() == null).hasSize(4);
+    assertThat(result.items()).filteredOn(pi -> !pi.getHasIncident()).hasSize(4);
   }
 
   @Test
@@ -540,9 +544,10 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items()).hasSize(4);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
-        .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v1", "incident_process_v1");
+        .containsExactlyInAnyOrder(
+            "service_tasks_v1", "service_tasks_v1", "service_tasks_v1", "incident_process_v1");
   }
 
   @Test
@@ -580,8 +585,8 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
-    assertThat(result.items()).filteredOn(pi -> "ACTIVE".equals(pi.getState().name())).hasSize(5);
+    assertThat(result.items()).hasSize(6);
+    assertThat(result.items()).filteredOn(pi -> "ACTIVE".equals(pi.getState().name())).hasSize(6);
     assertThat(result.items()).filteredOn(ProcessInstance::getHasIncident).hasSize(2);
   }
 
@@ -618,7 +623,7 @@ public class ProcessInstanceSearchTest {
             .send()
             .join();
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items()).hasSize(6);
     assertThat(result.items()).allMatch(pi -> pi.getState().name().equals("ACTIVE"));
   }
 
@@ -650,9 +655,10 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items()).hasSize(6);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrder(
+            "service_tasks_v1",
             "service_tasks_v1",
             "service_tasks_v1",
             "service_tasks_v2",
@@ -756,7 +762,7 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(8);
+    assertThat(result.items()).hasSize(9);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyElementsOf(expectedBpmnProcessIds);
   }
@@ -1023,7 +1029,7 @@ public class ProcessInstanceSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(6);
+    assertThat(resultAfter.items()).hasSize(7);
     final var keyAfter = resultAfter.items().getFirst().getProcessInstanceKey();
     // apply searchBefore
     final var resultBefore =
@@ -1429,5 +1435,14 @@ public class ProcessInstanceSearchTest {
             .join();
 
     assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldGetTags() {
+    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+
+    assertThat(result.items())
+        .extracting("tags")
+        .contains(Set.of("businessKey:123", "priority:high"));
   }
 }

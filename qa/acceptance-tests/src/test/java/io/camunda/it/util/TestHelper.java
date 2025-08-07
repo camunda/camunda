@@ -176,6 +176,17 @@ public final class TestHelper {
     return createProcessInstanceCommandStep3.send().join();
   }
 
+  public static ProcessInstanceEvent startProcessInstanceWithTags(
+      final CamundaClient camundaClient, final String bpmnProcessId, final Set<String> tags) {
+    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
+        createProcessInstanceCommandStep3 =
+            camundaClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
+    if (tags != null) {
+      createProcessInstanceCommandStep3.tags(tags.toArray(new String[0]));
+    }
+    return createProcessInstanceCommandStep3.send().join();
+  }
+
   public static void waitForProcessInstancesToStart(
       final CamundaClient camundaClient, final int expectedProcessInstances) {
     waitForProcessInstancesToStart(camundaClient, f -> {}, expectedProcessInstances);

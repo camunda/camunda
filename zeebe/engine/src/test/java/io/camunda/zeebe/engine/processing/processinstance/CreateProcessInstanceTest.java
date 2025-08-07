@@ -266,7 +266,7 @@ public final class CreateProcessInstanceTest {
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     final var tags = value.getTags();
-    assertThat(tags).containsExactly("businessKey: 1234", "priority: high");
+    assertThat(tags).containsExactlyInAnyOrder("businessKey: 1234", "priority: high");
   }
 
   @Test

@@ -561,7 +561,8 @@ public final class SearchQueryResponseMapper {
         .endDate(formatDate(p.endDate()))
         .state(toProtocolState(p.state()))
         .hasIncident(p.hasIncident())
-        .tenantId(p.tenantId());
+        .tenantId(p.tenantId())
+        .tags(p.tags());
   }
 
   public static List<BatchOperationResponse> toBatchOperations(

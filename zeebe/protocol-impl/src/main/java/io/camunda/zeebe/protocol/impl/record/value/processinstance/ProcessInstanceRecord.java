@@ -332,6 +332,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
   public Set<String> getTags() {
     final var tags = new HashSet<String>();
     tagsProp.forEach(e -> tags.add(e.toString()));
