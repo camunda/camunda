@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {requestWithThrow} from 'modules/request';
+import {type RequestResult, requestWithThrow} from 'modules/request';
 import {
   endpoints,
   type CreateMigrationBatchOperationRequestBody,
@@ -15,16 +15,12 @@ import {
 
 const migrateProcessInstanceBatchOperation = async (
   payload: CreateMigrationBatchOperationRequestBody,
-): Promise<CreateMigrationBatchOperationResponseBody> => {
-  const {response, error} =
-    await requestWithThrow<CreateMigrationBatchOperationResponseBody>({
-      url: endpoints.createMigrationBatchOperation.getUrl(),
-      method: endpoints.createMigrationBatchOperation.method,
-      body: payload,
-    });
-
-  if (error) throw error;
-  return response;
+): RequestResult<CreateMigrationBatchOperationResponseBody> => {
+  return requestWithThrow<CreateMigrationBatchOperationResponseBody>({
+    url: endpoints.createMigrationBatchOperation.getUrl(),
+    method: endpoints.createMigrationBatchOperation.method,
+    body: payload,
+  });
 };
 
 export {migrateProcessInstanceBatchOperation};

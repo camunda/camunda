@@ -14,9 +14,11 @@ import {processesStore} from 'modules/stores/processes/processes.migration';
 import {TopPanel} from './TopPanel';
 import {BottomPanel} from './BottomPanel';
 import {Footer} from './Footer';
+import {Footer as FooterV2} from './Footer/v2';
 import {PAGE_TITLE} from 'modules/constants';
 import {MigrationSummaryNotification} from './MigrationSummaryNotification';
 import {observer} from 'mobx-react';
+import {IS_MIGRATION_BATCH_OPERATION_V2} from 'modules/feature-flags';
 
 const MigrationView: React.FC = observer(() => {
   useEffect(() => {
@@ -47,7 +49,7 @@ const MigrationView: React.FC = observer(() => {
         type="migrate"
         topPanel={<TopPanel />}
         bottomPanel={<BottomPanel />}
-        footer={<Footer />}
+        footer={IS_MIGRATION_BATCH_OPERATION_V2 ? <FooterV2 /> : <Footer />}
         additionalTopContent={
           processInstanceMigrationStore.isSummaryStep ? (
             <MigrationSummaryNotification />

@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, within} from 'modules/testing-library';
-import {Footer} from '.';
+import {render, screen, within} from 'modules/testing-library.ts';
+import {Footer} from './index.tsx';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
 import {MemoryRouter} from 'react-router-dom';

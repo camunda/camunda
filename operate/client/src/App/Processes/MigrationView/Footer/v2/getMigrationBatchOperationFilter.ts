@@ -14,13 +14,17 @@ import type {
 const getMigrationBatchOperationFilter = ({
   ids,
   excludeIds,
+  sourceProcessDefinitionKey,
   baseFilter = {},
 }: {
   ids?: string[];
   excludeIds?: string[];
+  sourceProcessDefinitionKey?: string | null;
   baseFilter?: GetProcessDefinitionStatisticsRequestBody['filter'];
 }): CreateMigrationBatchOperationRequestBody['filter'] => {
-  const filter = {...baseFilter};
+  const filter: CreateMigrationBatchOperationRequestBody['filter'] = {
+    ...baseFilter,
+  };
 
   const keyFilter =
     typeof baseFilter.processInstanceKey === 'object' &&
@@ -38,6 +42,10 @@ const getMigrationBatchOperationFilter = ({
 
   if (Object.keys(keyFilter).length > 0) {
     filter.processInstanceKey = keyFilter;
+  }
+
+  if (sourceProcessDefinitionKey) {
+    filter.processDefinitionKey = {$eq: sourceProcessDefinitionKey};
   }
 
   return filter;

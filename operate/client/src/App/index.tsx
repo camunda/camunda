@@ -30,7 +30,6 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
-import {IS_MIGRATION_BATCH_OPERATION_V2} from 'modules/feature-flags';
 
 const Wrapper: React.FC = () => {
   return (
@@ -78,9 +77,7 @@ const routes = createRoutesFromElements(
       <Route
         path={Paths.processes()}
         lazy={async () => {
-          const {Processes} = IS_MIGRATION_BATCH_OPERATION_V2
-            ? await import('./Processes/v2/index')
-            : await import('./Processes/index');
+          const {Processes} = await import('./Processes/index');
           return {Component: Processes};
         }}
       />
