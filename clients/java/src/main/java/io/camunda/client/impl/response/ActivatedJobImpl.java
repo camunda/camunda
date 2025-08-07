@@ -24,9 +24,15 @@ import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.ListenerEventType;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.protocol.Protocol;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ActivatedJobImpl implements ActivatedJob {
@@ -224,6 +230,50 @@ public final class ActivatedJobImpl implements ActivatedJob {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public Set<String> getTags() {
+    final Object rawTags = customHeaders.get(Protocol.TAGS_HEADER_NAME);
+
+    if (rawTags == null) {
+      return Collections.emptySet();
+    }
+
+    if (rawTags instanceof String) {
+      final String tagsString = (String) rawTags;
+      if (tagsString.isEmpty()) {
+        return Collections.emptySet();
+      }
+
+      try {
+        // Parse JSON array string to List<String>, then convert to Set
+        final List<?> tagList = jsonMapper.fromJson(tagsString, java.util.List.class);
+        final Set<String> tagSet = new HashSet<>();
+
+        for (final Object tag : tagList) {
+          if (tag instanceof String) {
+            tagSet.add((String) tag);
+          }
+        }
+        return tagSet;
+      } catch (final Exception e) {
+        // If JSON parsing fails, treat as empty
+        return Collections.emptySet();
+      }
+    }
+
+    if (rawTags instanceof Collection) {
+      final Set<String> tagSet = new HashSet<>();
+      for (final Object tag : (Collection<?>) rawTags) {
+        if (tag instanceof String) {
+          tagSet.add((String) tag);
+        }
+      }
+      return tagSet;
+    }
+
+    return Collections.emptySet();
   }
 
   @Override

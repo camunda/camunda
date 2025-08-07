@@ -113,6 +113,9 @@ public final class Protocol {
   /** Linked resources header used in service task */
   public static final String LINKED_RESOURCES_HEADER_NAME = "linkedResources";
 
+  /** Tags header used for tags users can define as meta data */
+  public static final String TAGS_HEADER_NAME = "tags";
+
   public static long encodePartitionId(final int partitionId, final long key) {
     return ((long) partitionId << KEY_BITS) + key;
   }
