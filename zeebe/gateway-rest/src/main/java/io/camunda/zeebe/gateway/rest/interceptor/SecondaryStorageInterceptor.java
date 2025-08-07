@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.interceptor;
 
+import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
+
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,7 +30,7 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
 
   public SecondaryStorageInterceptor(
       @Value("${camunda.database.type:elasticsearch}") final String databaseType) {
-    secondaryStorageDisabled = "none".equalsIgnoreCase(databaseType);
+    secondaryStorageDisabled = CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(databaseType);
   }
 
   @Override

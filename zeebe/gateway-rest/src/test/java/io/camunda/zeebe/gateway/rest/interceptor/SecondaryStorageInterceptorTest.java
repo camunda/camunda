@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.interceptor;
 
+import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
@@ -58,7 +59,7 @@ class SecondaryStorageInterceptorTest {
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
 
-    final var interceptor = new SecondaryStorageInterceptor("none");
+    final var interceptor = new SecondaryStorageInterceptor(CAMUNDA_DATABASE_TYPE_NONE);
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageUnavailableException.class);
   }

@@ -7,7 +7,7 @@
  */
 package io.camunda.operate;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageEnabled;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;

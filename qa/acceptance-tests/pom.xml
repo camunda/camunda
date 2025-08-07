@@ -142,7 +142,6 @@
       <artifactId>spring-context</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
@@ -210,6 +209,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-utils</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

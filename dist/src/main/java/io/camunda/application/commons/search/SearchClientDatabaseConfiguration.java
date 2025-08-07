@@ -7,8 +7,6 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageDisabled;
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
@@ -50,6 +48,8 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.security.reader.ResourceAccessController;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.util.List;
 import org.springframework.context.annotation.Bean;

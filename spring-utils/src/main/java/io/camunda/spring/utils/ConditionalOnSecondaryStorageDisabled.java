@@ -5,10 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.condition;
+package io.camunda.spring.utils;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageEnabled.OnSecondaryStorageEnabledCondition;
-import io.camunda.application.commons.utils.DatabaseTypeUtils;
+import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -17,21 +18,24 @@ import java.lang.annotation.Target;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
+/**
+ * Conditional annotation that activates beans only when secondary storage is disabled
+ * (camunda.database.type=none).
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
-@Conditional(OnSecondaryStorageEnabledCondition.class)
-public @interface ConditionalOnSecondaryStorageEnabled {
+@Conditional(ConditionalOnSecondaryStorageDisabled.NoSecondaryStorageCondition.class)
+public @interface ConditionalOnSecondaryStorageDisabled {
 
-  class OnSecondaryStorageEnabledCondition implements Condition {
+  class NoSecondaryStorageCondition implements Condition {
 
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-      final Environment env = context.getEnvironment();
-      return DatabaseTypeUtils.isSecondaryStorageEnabled(env);
+      final String dbType = context.getEnvironment().getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
+      return CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(dbType);
     }
   }
 }

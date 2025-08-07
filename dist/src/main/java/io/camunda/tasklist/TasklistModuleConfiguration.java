@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageEnabled;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.zeebe.broker.Broker;

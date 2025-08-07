@@ -7,7 +7,8 @@
  */
 package io.camunda.it.nodb;
 
-import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -28,13 +29,13 @@ import org.junit.jupiter.api.Test;
  * test validates the complete engine-only deployment scenario where database.type=none.
  */
 @ZeebeIntegration
-public class NoSecondaryStorageTest {
+public class NoAuthNoSecondaryStorageTest {
 
   @TestZeebe
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
-          .withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "none")
+          .withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE)
           .withProperty("spring.profiles.active", "broker");
 
   @AutoClose private CamundaClient camundaClient;

@@ -19,6 +19,7 @@ import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.TenantServices;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import jakarta.json.Json;
 import jakarta.json.JsonString;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +41,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+@ConditionalOnSecondaryStorageEnabled
 @Profile("consolidated-auth")
 public class OidcCamundaUserService implements CamundaUserService {
   private static final String SALES_PLAN_TYPE = "";

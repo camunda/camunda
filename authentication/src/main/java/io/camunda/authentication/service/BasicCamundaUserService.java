@@ -20,6 +20,7 @@ import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+@ConditionalOnSecondaryStorageEnabled
 @Profile("consolidated-auth")
 public class BasicCamundaUserService implements CamundaUserService {
 

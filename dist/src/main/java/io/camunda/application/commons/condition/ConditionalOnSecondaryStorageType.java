@@ -7,8 +7,9 @@
  */
 package io.camunda.application.commons.condition;
 
+import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType.OnSecondaryStorageTypeCondition;
-import io.camunda.application.commons.utils.DatabaseTypeUtils;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -37,7 +38,7 @@ public @interface ConditionalOnSecondaryStorageType {
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final var env = context.getEnvironment();
-      final var configuredType = env.getProperty(DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE);
+      final var configuredType = env.getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
 
       final var type =
           Optional.ofNullable(configuredType)

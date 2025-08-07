@@ -28,22 +28,26 @@ import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.converter.UsernamePasswordAuthenticationTokenConverter;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
+import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.GroupServices;
-import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -393,6 +397,7 @@ public class WebSecurityConfig {
 
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+  @ConditionalOnSecondaryStorageEnabled
   public static class BasicConfiguration {
 
     @Bean
@@ -528,13 +533,9 @@ public class WebSecurityConfig {
 
     @Bean
     public TokenClaimsConverter tokenClaimsConverter(
-        final MappingRuleServices mappingRuleServices,
-        final TenantServices tenantServices,
-        final RoleServices roleServices,
-        final GroupServices groupServices,
-        final SecurityConfiguration securityConfiguration) {
-      return new TokenClaimsConverter(
-          mappingRuleServices, tenantServices, roleServices, groupServices, securityConfiguration);
+        final SecurityConfiguration securityConfiguration,
+        final MembershipService membershipService) {
+      return new TokenClaimsConverter(securityConfiguration, membershipService);
     }
 
     @Bean
@@ -558,6 +559,13 @@ public class WebSecurityConfig {
         final SecurityConfiguration securityConfiguration) {
       return new InMemoryClientRegistrationRepository(
           OidcClientRegistration.create(securityConfiguration.getAuthentication().getOidc()));
+    }
+
+    @Bean
+    public OidcGroupsLoader oidcGroupsLoader(final SecurityConfiguration securityConfiguration) {
+      final String groupsClaim =
+          securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
+      return new OidcGroupsLoader(groupsClaim);
     }
 
     @Bean
@@ -667,6 +675,7 @@ public class WebSecurityConfig {
 
     @Bean
     @Order(ORDER_WEBAPP_API)
+    @ConditionalOnSecondaryStorageEnabled
     public SecurityFilterChain oidcWebappSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
@@ -778,6 +787,25 @@ public class WebSecurityConfig {
       }
     }
   }
+
+  /**
+   * Configuration that provides fail-fast behavior when Basic Authentication is configured but
+   * secondary storage is disabled (camunda.database.type=none). This prevents misleading security
+   * flows and provides clear error messages.
+   */
+  @Configuration
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+  @ConditionalOnSecondaryStorageDisabled
+  public static class BasicAuthenticationNoDbConfiguration {
+
+    @Bean
+    public BasicAuthenticationNoDbFailFastBean basicAuthenticationNoDbFailFastBean() {
+      throw new BasicAuthenticationNotSupportedException();
+    }
+  }
+
+  /** Marker bean for Basic Auth no-db fail-fast configuration. */
+  public static class BasicAuthenticationNoDbFailFastBean {}
 
   protected static class NoContentResponseHandler
       implements AuthenticationSuccessHandler, LogoutSuccessHandler {

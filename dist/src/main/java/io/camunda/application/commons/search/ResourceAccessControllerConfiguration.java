@@ -7,7 +7,6 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.read.security.RdbmsResourceAccessController;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
@@ -21,6 +20,7 @@ import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.reader.TenantAccessProvider;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
