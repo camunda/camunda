@@ -16,9 +16,12 @@
 package io.camunda.process.test.impl.mock;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.process.test.api.mock.JobWorkerMock;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +32,8 @@ public class JobWorkerMockImpl implements JobWorkerMock {
 
   private final String jobType;
   private final CamundaClient client;
+
+  private final List<ActivatedJob> activatedJobs = new ArrayList<>();
 
   /**
    * Constructs a `JobWorkerMock` instance.
@@ -74,6 +79,7 @@ public class JobWorkerMockImpl implements JobWorkerMock {
               variables,
               jobType,
               job.getKey());
+
           jobClient
               .newThrowErrorCommand(job)
               .errorCode(errorCode)
@@ -92,9 +98,20 @@ public class JobWorkerMockImpl implements JobWorkerMock {
               jobType,
               job.getKey());
 
+          activatedJobs.add(job);
           jobHandler.handle(client, job);
         };
 
     client.newWorker().jobType(jobType).handler(loggingJobHandler).open();
+  }
+
+  @Override
+  public int getInvocations() {
+    return activatedJobs.size();
+  }
+
+  @Override
+  public List<ActivatedJob> getActivatedJobs() {
+    return activatedJobs;
   }
 }
