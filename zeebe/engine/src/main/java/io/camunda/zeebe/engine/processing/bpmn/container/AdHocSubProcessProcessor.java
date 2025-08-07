@@ -109,6 +109,10 @@ public class AdHocSubProcessProcessor
   @Override
   public Either<Failure, ?> onComplete(
       final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+    element
+        .getOutputCollection()
+        .ifPresent(variableName -> stateBehavior.propagateVariable(context, variableName));
+
     return variableMappingBehavior
         .applyOutputMappings(context, element)
         .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
@@ -276,8 +280,7 @@ public class AdHocSubProcessProcessor
         .evaluateAnyExpression(outputElementExpression, childContext.getElementInstanceKey())
         .mapLeft(
             failure -> {
-              // TODO - is this the proper way to create an incident on evaluation failure?
-              incidentBehavior.createIncident(failure, childContext);
+              incidentBehavior.createIncident(failure, adHocSubProcessContext);
               return new Failure(failure.getMessage(), ErrorType.EXTRACT_VALUE_ERROR);
             })
         .flatMap(
@@ -290,14 +293,12 @@ public class AdHocSubProcessProcessor
                   .appendToOutputCollection(outputCollectionValue, outputElementValue)
                   .mapLeft(
                       failure -> {
-                        // TODO - is this the proper way to create an incident on eappend failure?
-                        incidentBehavior.createIncident(failure, childContext);
+                        incidentBehavior.createIncident(failure, adHocSubProcessContext);
                         return new Failure(failure.getMessage(), ErrorType.EXTRACT_VALUE_ERROR);
                       });
             })
         .thenDo(
             updatedCollection ->
-                // TODO - is this propagating outputCollection variable to parent scope?
                 stateBehavior.setLocalVariable(
                     adHocSubProcessContext, outputCollectionVariableName, updatedCollection));
   }
