@@ -94,11 +94,9 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
             ProcessIndex.VERSION);
 
     final Query query =
-        (!permissionsService.permissionsEnabled())
-            ? ACTIVE_INCIDENT_QUERY
-            : and(
-                ACTIVE_INCIDENT_QUERY,
-                createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
+        and(
+            ACTIVE_INCIDENT_QUERY,
+            createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
 
     final var uniqueProcessInstances =
         cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
@@ -244,9 +242,6 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   private Query createQueryForProcessesByPermission(final PermissionType permission) {
     final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(permission);
-    if (allowed == null) {
-      return null;
-    }
     return allowed.isAll()
         ? matchAll()
         : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
