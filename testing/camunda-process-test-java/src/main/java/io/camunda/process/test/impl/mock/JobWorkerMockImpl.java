@@ -95,6 +95,17 @@ public class JobWorkerMockImpl implements JobWorkerMock {
           jobHandler.handle(client, job);
         };
 
-    client.newWorker().jobType(jobType).handler(loggingJobHandler).open();
+    final JobHandler safeLoggingJobHandler =
+        (client, job) -> {
+          try {
+            loggingJobHandler.handle(client, job);
+          } catch (final AssertionError e) {
+            e.printStackTrace(System.err);
+
+            client.newFailCommand(job.getKey()).retries(0).send().join();
+          }
+        };
+
+    client.newWorker().jobType(jobType).handler(safeLoggingJobHandler).open();
   }
 }

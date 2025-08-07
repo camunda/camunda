@@ -18,6 +18,8 @@ package io.camunda.process.test.impl.extensions;
 import static io.camunda.process.test.api.CamundaAssert.assertThatDecision;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Fail.fail;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
@@ -31,6 +33,8 @@ import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -144,6 +148,34 @@ public class CamundaProcessTestContextIT {
     // Then
     assertThatProcessInstance(processInstanceEvent).isCompleted();
     assertThatProcessInstance(processInstanceEvent).hasCompletedElements("error-end");
+  }
+
+  @Test
+  void shouldMockJobWorkerWithAssertionError() {
+    // Given
+    final ByteArrayOutputStream errStream = new ByteArrayOutputStream();
+    System.setErr(new PrintStream(errStream));
+
+    processTestContext
+        .mockJobWorker("test")
+        .withHandler(
+            (jobClient, job) -> {
+              fail("AssertionError in MockJobWorker");
+
+              // Should never reach this code
+              jobClient.newCompleteCommand(job).send().join();
+            });
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
+
+    // When
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // Then the process instance should still be active since the jobWorker failed
+    assertThatProcessInstance(processInstanceEvent).isActive();
+    assertThat(errStream.toString()).contains("AssertionError in MockJobWorker");
+
+    System.setErr(System.err);
   }
 
   @Test
