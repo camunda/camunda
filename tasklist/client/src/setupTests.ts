@@ -64,6 +64,7 @@ beforeAll(() => {
         t,
         i18n: {
           changeLanguage: () => new Promise<void>(() => {}),
+          resolvedLanguage: 'en',
         },
       };
     },

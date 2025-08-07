@@ -295,6 +295,7 @@
     "taskCompletedNotification": "Aufgabe abgeschlossen",
     "taskCouldNotBeCompletedNotification": "Aufgabe konnte nicht abgeschlossen werden",
     "processViewProcessVersion": "Version: {{version}}",
+    "processVersionTooltip": "Prozess-Deployment-Version",
     "variablesTitle": "Variablen",
     "variablesAddVariableTooltip": "Sie müssen die Aufgabe zuweisen, um Variablen hinzuzufügen",
     "variablesNoVariablesHeading": "Aufgabe hat keine Variablen",

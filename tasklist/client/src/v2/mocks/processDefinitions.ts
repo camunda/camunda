@@ -20,7 +20,7 @@ function getProcessDefinitionMock(
 
   return {
     processDefinitionId: `process${id}`,
-    processDefinitionKey: id,
+    processDefinitionKey: `${id}`,
     tenantId: DEFAULT_TENANT_ID,
     version: 1,
     name: `Process ${id}`,

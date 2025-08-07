@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type InlineLoadingProps, Stack} from '@carbon/react';
+import {type InlineLoadingProps, Stack, Tag, Tooltip} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {AsyncActionButton} from 'common/components/AsyncActionButton';
 import {useTranslation} from 'react-i18next';
@@ -15,11 +15,16 @@ import {ProcessTag} from './ProcessTag';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import type {MultiModeProcess} from 'common/processes';
+import type {ProcessDefinition} from '@vzeta/camunda-api-zod-schemas/8.8';
 type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';
 
 type ProcessTagVariant = React.ComponentProps<typeof ProcessTag>['variant'];
+
+function isV2(process: MultiModeProcess): process is ProcessDefinition {
+  return 'processDefinitionKey' in process;
+}
 
 function convertStatus(status: LoadingStatus): InlineLoadingStatus {
   if (status === 'active-tasks') {
@@ -53,8 +58,8 @@ function getTags(process: MultiModeProcess): ProcessTagVariant[] {
   const tags: ProcessTagVariant[] = [];
 
   if (
-    'startEventFormId' in process &&
-    typeof process.startEventFormId === 'string'
+    (!isV2(process) && typeof process.startEventFormId === 'string') ||
+    (isV2(process) && process.hasStartForm === true)
   ) {
     tags.push('start-form');
   }
@@ -66,16 +71,16 @@ function getNormalizedProcess(process: MultiModeProcess): {
   bpmnProcessId: string;
   hasStartForm: boolean;
 } {
-  if ('bpmnProcessId' in process) {
+  if (isV2(process)) {
     return {
-      bpmnProcessId: process.bpmnProcessId,
-      hasStartForm: process.startEventFormId !== null,
+      bpmnProcessId: process.processDefinitionId,
+      hasStartForm: process.hasStartForm,
     };
   }
 
   return {
-    bpmnProcessId: process.processDefinitionId,
-    hasStartForm: false,
+    bpmnProcessId: process.bpmnProcessId,
+    hasStartForm: process.startEventFormId !== null,
   };
 }
 
@@ -114,7 +119,16 @@ const ProcessTile: React.FC<Props> = ({
     <div className={cn(className, styles.container)} {...props}>
       <Stack className={styles.content} data-testid="process-tile-content">
         <Stack className={styles.titleWrapper}>
-          <h4 className={styles.title}>{displayName}</h4>
+          <div className={styles.titleRow}>
+            <h4 className={styles.title}>{displayName}</h4>
+            {isV2(process) ? (
+              <Tooltip label={t('processVersionTooltip')}>
+                <Tag size="sm" type="cyan">
+                  v{process.version}
+                </Tag>
+              </Tooltip>
+            ) : null}
+          </div>
           <span className={styles.subtitle}>
             {displayName === bpmnProcessId ? '' : bpmnProcessId}
           </span>
