@@ -18,6 +18,7 @@ import io.camunda.identity.webapp.controllers.IdentityClientConfigController;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.SaasConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Map;
@@ -29,7 +30,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-class IdentityClientConfigControllerParameterizedTest {
+class IdentityClientConfigControllerTest {
 
   private MockMvc mockMvc;
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -42,16 +43,58 @@ class IdentityClientConfigControllerParameterizedTest {
   static Stream<Arguments> configurationProvider() {
     return Stream.of(
         // AuthMethod, GroupsClaim, MultiTenancyEnabled, ExpectedIsOidc, ExpectedCamundaGroups,
-        // ExpectedTenantsApi
-        Arguments.of(AuthenticationMethod.OIDC, null, true, "true", "true", "true"),
-        Arguments.of(AuthenticationMethod.OIDC, null, false, "true", "true", "false"),
-        Arguments.of(AuthenticationMethod.OIDC, "", false, "true", "true", "false"),
-        Arguments.of(AuthenticationMethod.OIDC, "groups", true, "true", "false", "true"),
-        Arguments.of(AuthenticationMethod.OIDC, "groups", false, "true", "false", "false"),
-        Arguments.of(AuthenticationMethod.BASIC, null, true, "false", "true", "true"),
-        Arguments.of(AuthenticationMethod.BASIC, null, false, "false", "true", "false"),
-        Arguments.of(AuthenticationMethod.BASIC, "groups", true, "false", "true", "true"),
-        Arguments.of(AuthenticationMethod.BASIC, "groups", false, "false", "true", "false"));
+        // ExpectedTenantsApi, ExpectedOrganizationId, ExpectedClusterId
+        Arguments.of(
+            AuthenticationMethod.OIDC,
+            null,
+            true,
+            "true",
+            "true",
+            "true",
+            "test-org",
+            "test-cluster"),
+        Arguments.of(
+            AuthenticationMethod.OIDC,
+            null,
+            false,
+            "true",
+            "true",
+            "false",
+            "test-org",
+            "test-cluster"),
+        Arguments.of(
+            AuthenticationMethod.OIDC,
+            "",
+            false,
+            "true",
+            "true",
+            "false",
+            "test-org",
+            "test-cluster"),
+        Arguments.of(
+            AuthenticationMethod.OIDC,
+            "groups",
+            true,
+            "true",
+            "false",
+            "true",
+            "test-org",
+            "test-cluster"),
+        Arguments.of(
+            AuthenticationMethod.OIDC,
+            "groups",
+            false,
+            "true",
+            "false",
+            "false",
+            "test-org",
+            "test-cluster"),
+        Arguments.of(AuthenticationMethod.BASIC, null, true, "false", "true", "true", null, null),
+        Arguments.of(AuthenticationMethod.BASIC, null, false, "false", "true", "false", null, null),
+        Arguments.of(
+            AuthenticationMethod.BASIC, "groups", true, "false", "true", "true", null, null),
+        Arguments.of(
+            AuthenticationMethod.BASIC, "groups", false, "false", "true", "false", null, null));
   }
 
   @ParameterizedTest(
@@ -64,12 +107,19 @@ class IdentityClientConfigControllerParameterizedTest {
       final boolean multiTenancyEnabled,
       final String expectedIsOidc,
       final String expectedCamundaGroups,
-      final String expectedTenantsApi)
+      final String expectedTenantsApi,
+      final String expectedOrganizationId,
+      final String expectedClusterId)
       throws Exception {
 
     // Create controller with specific configuration
     final var securityConfiguration =
-        createSecurityConfiguration(authMethod, groupsClaim, multiTenancyEnabled);
+        createSecurityConfiguration(
+            authMethod,
+            groupsClaim,
+            multiTenancyEnabled,
+            expectedOrganizationId,
+            expectedClusterId);
     final var controller = new IdentityClientConfigController(securityConfiguration);
 
     // Setup MockMvc with the controller for this specific test
@@ -92,13 +142,17 @@ class IdentityClientConfigControllerParameterizedTest {
     assertThat(configResponse)
         .containsEntry("isOidc", expectedIsOidc)
         .containsEntry("isCamundaGroupsEnabled", expectedCamundaGroups)
-        .containsEntry("isTenantsApiEnabled", expectedTenantsApi);
+        .containsEntry("isTenantsApiEnabled", expectedTenantsApi)
+        .containsEntry("organizationId", expectedOrganizationId)
+        .containsEntry("clusterId", expectedClusterId);
   }
 
   private SecurityConfiguration createSecurityConfiguration(
       final AuthenticationMethod authMethod,
       final String groupsClaim,
-      final boolean multiTenancyEnabled) {
+      final boolean multiTenancyEnabled,
+      final String organizationId,
+      final String clusterId) {
 
     final var securityConfiguration = new SecurityConfiguration();
 
@@ -118,6 +172,12 @@ class IdentityClientConfigControllerParameterizedTest {
     final var multiTenancy = new MultiTenancyConfiguration();
     multiTenancy.setApiEnabled(multiTenancyEnabled);
     securityConfiguration.setMultiTenancy(multiTenancy);
+
+    // Configure SaaS
+    final var saasConfiguration = new SaasConfiguration();
+    saasConfiguration.setOrganizationId(organizationId);
+    saasConfiguration.setClusterId(clusterId);
+    securityConfiguration.setSaas(saasConfiguration);
 
     return securityConfiguration;
   }
