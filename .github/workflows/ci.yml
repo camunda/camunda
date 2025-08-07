@@ -934,6 +934,7 @@ jobs:
           dockerfile: camunda.Dockerfile
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
+          minimus: true
 
       # We need to free up some space to let the step after this block succeed.
       # With this cleanup, at the time of measuring, we go from a 100% disk usage (73/74 GB) to a

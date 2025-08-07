@@ -667,6 +667,7 @@ jobs:
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
           platforms: ${{ env.PLATFORMS }}
           dockerfile: camunda.Dockerfile
+          minimus: true
       - name: Verify Camunda Docker image
         uses: ./.github/actions/verify-platform-docker
         with:
