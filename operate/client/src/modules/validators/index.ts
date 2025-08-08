@@ -18,6 +18,7 @@ import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';
 import {parseDate} from '../utils/date/formatDate';
 import {validateMultipleVariableValues} from './validateMultipleVariableValues';
+import z from 'zod';
 
 const ERRORS = {
   decisionsIds:
@@ -254,11 +255,13 @@ const validateMultipleVariableValuesValid: FieldValidator<
 const validateOperationIdCharacters: FieldValidator<
   ProcessInstanceFilters['operationId']
 > = (value = '') => {
-  if (
-    value !== '' &&
-    !/^[0-9]+$/.test(value) &&
-    !/^[a-f0-9-]{1,36}/.test(value)
-  ) {
+  const schema = z.union([
+    z.string().length(0),
+    z.string().regex(/^[0-9]+$/),
+    z.string().regex(/^[a-f0-9-]{1,36}/),
+  ]);
+
+  if (!schema.safeParse(value).success) {
     return ERRORS.operationId;
   }
 };
@@ -269,13 +272,13 @@ const validateOperationIdCharacters: FieldValidator<
 const validateOperationIdComplete: FieldValidator<
   ProcessInstanceFilters['operationId']
 > = promisifyValidator((value = '') => {
-  if (
-    value !== '' &&
-    !/^[0-9]{16,19}$/.test(value) &&
-    !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$/.test(
-      value,
-    )
-  ) {
+  const schema = z.union([
+    z.string().length(0),
+    z.string().regex(/^[0-9]{16,19}$/),
+    z.uuid(),
+  ]);
+
+  if (!schema.safeParse(value).success) {
     return ERRORS.operationId;
   }
 }, VALIDATION_TIMEOUT);

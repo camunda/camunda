@@ -189,6 +189,8 @@ describe('validators', () => {
   it('should validate operationId without delay', () => {
     const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     expect(validateOperationIdCharacters('', {})).toBeUndefined();
+    expect(validateOperationIdCharacters('f', {})).toBeUndefined();
+    expect(validateOperationIdCharacters('1', {})).toBeUndefined();
     expect(
       validateOperationIdCharacters('1f4d40c3-7cce-4e51-8abe-0cda8d42f04f', {}),
     ).toBeUndefined();
