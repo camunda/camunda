@@ -250,6 +250,10 @@ jobs:
           git push --tags
           git push --all
 
+      - name: Clean Release
+        run: |
+          mvn release:clean
+
       - name: Perform release
         run: |
           ./mvnw -f optimize \
