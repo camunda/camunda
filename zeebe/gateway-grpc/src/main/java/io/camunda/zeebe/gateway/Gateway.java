@@ -403,7 +403,7 @@ public final class Gateway implements CloseableSilently {
     if (securityConfiguration.isApiProtected()) {
       final var handler =
           switch (securityConfiguration.getAuthentication().getMethod()) {
-            case BASIC -> new AuthenticationHandler.BasicAuth(userServices, passwordEncoder);
+            case BASIC -> basicAuth();
             case OIDC ->
                 new AuthenticationHandler.Oidc(
                     jwtDecoder, securityConfiguration.getAuthentication().getOidc());
@@ -411,6 +411,15 @@ public final class Gateway implements CloseableSilently {
       interceptors.add(new AuthenticationInterceptor(handler));
     }
     return ServerInterceptors.intercept(service, interceptors);
+  }
+
+  private AuthenticationHandler.BasicAuth basicAuth() {
+    LOG.atWarn()
+        .log(
+            "Basic Authentication only supports a very small number of API requests per second. "
+                + "Please refer to the documentation https://docs.camunda.io/docs/next/self-managed/operational-guides/troubleshooting/");
+
+    return new AuthenticationHandler.BasicAuth(userServices, passwordEncoder);
   }
 
   private static StatusException grpcStatusException(final int code, final String msg) {
