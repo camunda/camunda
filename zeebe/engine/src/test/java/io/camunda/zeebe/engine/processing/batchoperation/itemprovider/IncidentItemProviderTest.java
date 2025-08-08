@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,7 +26,9 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.retry.RetryingQueryExecutor;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -34,6 +37,7 @@ class IncidentItemProviderTest {
 
   private SearchClientsProxy searchClientsProxy = mock(SearchClientsProxy.class);
   private final BatchOperationMetrics metrics = mock(BatchOperationMetrics.class);
+  private final RetryingQueryExecutor retryingQueryExecutor = mock(RetryingQueryExecutor.class);
 
   private IncidentItemProvider provider;
 
@@ -49,9 +53,13 @@ class IncidentItemProviderTest {
 
     when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
 
+    when(retryingQueryExecutor.runRetryable(any()))
+        .thenAnswer(invocation -> ((Callable<?>) invocation.getArgument(0)).call());
+
     provider =
         new IncidentItemProvider(
             searchClientsProxy,
+            retryingQueryExecutor,
             metrics,
             new ProcessInstanceFilter.Builder().build(),
             authentication);
@@ -123,6 +131,9 @@ class IncidentItemProviderTest {
             new Item(51, 5),
             new Item(52, 5));
     assertThat(resultPage.isLastPage()).isFalse();
+
+    // 1 for procesInstances, 3 for incidents
+    verify(retryingQueryExecutor, times(4)).runRetryable(any());
   }
 
   @Test

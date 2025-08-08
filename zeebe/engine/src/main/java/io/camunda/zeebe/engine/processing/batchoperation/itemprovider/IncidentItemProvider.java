@@ -9,15 +9,19 @@ package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
 import com.google.common.collect.Lists;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.util.FilterUtil;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.retry.RetryingQueryExecutor;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -28,6 +32,7 @@ import java.util.stream.Collectors;
 public class IncidentItemProvider implements ItemProvider {
 
   private final SearchClientsProxy searchClientsProxy;
+  private final RetryingQueryExecutor retryingQueryExecutor;
   private final ProcessInstanceFilter filter;
   private final ProcessInstanceItemProvider processInstanceItemProvider;
   private final SecurityContext securityContext;
@@ -35,14 +40,17 @@ public class IncidentItemProvider implements ItemProvider {
 
   public IncidentItemProvider(
       final SearchClientsProxy searchClientsProxy,
+      final RetryingQueryExecutor retryingQueryExecutor,
       final BatchOperationMetrics metrics,
       final ProcessInstanceFilter filter,
       final CamundaAuthentication authentication) {
     this.searchClientsProxy = searchClientsProxy;
+    this.retryingQueryExecutor = retryingQueryExecutor;
     this.metrics = metrics;
     this.filter = filter;
     processInstanceItemProvider =
-        new ProcessInstanceItemProvider(searchClientsProxy, metrics, filter, authentication);
+        new ProcessInstanceItemProvider(
+            searchClientsProxy, retryingQueryExecutor, metrics, filter, authentication);
     securityContext =
         createSecurityContext(
             authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
@@ -102,14 +110,7 @@ public class IncidentItemProvider implements ItemProvider {
     String endCursor = null;
     ItemPage result = null;
     while (result == null || !result.isLastPage()) {
-      try {
-        result = fetchIncidentPage(filter, endCursor, pageSize);
-        metrics.recordQueryAgainstSecondaryDatabase();
-      } catch (final Exception e) {
-        metrics.recordFailedQueryAgainstSecondaryDatabase();
-        throw e;
-      }
-
+      result = fetchIncidentPage(filter, endCursor, pageSize);
       items.addAll(result.items());
       endCursor = result.endCursor();
     }
@@ -123,8 +124,7 @@ public class IncidentItemProvider implements ItemProvider {
     final var query =
         SearchQueryBuilders.incidentSearchQuery().filter(incidentFilter).page(page).build();
 
-    final var result =
-        searchClientsProxy.withSecurityContext(securityContext).searchIncidents(query);
+    final var result = retryingQueryExecutor.runRetryable(() -> doQuery(query));
 
     return new ItemPage(
         result.items().stream()
@@ -133,5 +133,15 @@ public class IncidentItemProvider implements ItemProvider {
         result.endCursor(),
         result.total(),
         result.items().isEmpty() || result.total() < pageSize);
+  }
+
+  private SearchQueryResult<IncidentEntity> doQuery(final IncidentQuery query) {
+    try {
+      metrics.recordQueryAgainstSecondaryDatabase();
+      return searchClientsProxy.withSecurityContext(securityContext).searchIncidents(query);
+    } catch (final Exception e) {
+      metrics.recordFailedQueryAgainstSecondaryDatabase();
+      throw e;
+    }
   }
 }

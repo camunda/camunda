@@ -40,6 +40,10 @@ public final class EngineConfiguration {
   public static final int DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE = 10000;
   // Oracle can only have 1000 elements in `IN` clause
   public static final int DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE = 1000;
+  public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX = 0;
+  public static final Duration DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY =
+      Duration.ofSeconds(1);
+  public static final double DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR = 2.0;
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
@@ -63,6 +67,11 @@ public final class EngineConfiguration {
   private int batchOperationDbChunkSize = DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE;
   private int batchOperationQueryPageSize = DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
   private int batchOperationQueryInClauseSize = DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
+  private int batchOperationQueryRetryMax = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX;
+  private Duration batchOperationQueryRetryInitialDelay =
+      DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY;
+  private double batchOperationQueryRetryBackoffFactor =
+      DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
 
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
 
@@ -215,6 +224,35 @@ public final class EngineConfiguration {
   public EngineConfiguration setBatchOperationQueryInClauseSize(
       final int batchOperationQueryInClauseSize) {
     this.batchOperationQueryInClauseSize = batchOperationQueryInClauseSize;
+    return this;
+  }
+
+  public int getBatchOperationQueryRetryMax() {
+    return batchOperationQueryRetryMax;
+  }
+
+  public EngineConfiguration setBatchOperationQueryRetryMax(final int batchOperationQueryRetryMax) {
+    this.batchOperationQueryRetryMax = batchOperationQueryRetryMax;
+    return this;
+  }
+
+  public Duration getBatchOperationQueryRetryInitialDelay() {
+    return batchOperationQueryRetryInitialDelay;
+  }
+
+  public EngineConfiguration setBatchOperationQueryRetryInitialDelay(
+      final Duration batchOperationQueryRetryInitialDelay) {
+    this.batchOperationQueryRetryInitialDelay = batchOperationQueryRetryInitialDelay;
+    return this;
+  }
+
+  public double getBatchOperationQueryRetryBackoffFactor() {
+    return batchOperationQueryRetryBackoffFactor;
+  }
+
+  public EngineConfiguration setBatchOperationQueryRetryBackoffFactor(
+      final double batchOperationQueryRetryBackoffFactor) {
+    this.batchOperationQueryRetryBackoffFactor = batchOperationQueryRetryBackoffFactor;
     return this;
   }
 

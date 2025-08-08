@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -73,7 +74,11 @@ abstract class AbstractBatchOperationTest {
                   cfg.getInitialization()
                       .getDefaultRoles()
                       .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))))
-          .withEngineConfig(cfg -> cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE))
+          .withEngineConfig(
+              cfg ->
+                  cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE)
+                      .setBatchOperationQueryRetryMax(2)
+                      .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(100)))
           .withSearchClientsProxy(searchClientsProxy);
 
   @Before
