@@ -32,7 +32,7 @@ public class SMKeycloakMigrationHandlerConfigTest {
     final List<String> expectedOrder =
         List.of(
             "RoleMigrationHandler",
-            "GroupMigrationHandler",
+            "GroupAuthorizationMigrationHandler",
             "UserRoleMigrationHandler",
             "ClientMigrationHandler",
             "AuthorizationMigrationHandler",

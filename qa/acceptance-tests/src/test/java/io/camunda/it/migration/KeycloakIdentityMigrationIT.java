@@ -24,8 +24,6 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
-import io.camunda.client.api.search.response.Group;
-import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.Tenant;
@@ -354,11 +352,6 @@ public class KeycloakIdentityMigrationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var groups = client.newGroupsSearchRequest().send().join();
-              assertThat(groups.items())
-                  .extracting(Group::getGroupId)
-                  .contains("groupa", "groupb", "groupc");
-
               final var authorizations = client.newAuthorizationSearchRequest().send().join();
               assertThat(authorizations.items())
                   .extracting(Authorization::getOwnerId)
@@ -367,18 +360,6 @@ public class KeycloakIdentityMigrationIT {
 
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
-
-    final var groups = client.newGroupsSearchRequest().send().join();
-    assertThat(groups.items())
-        .extracting(Group::getGroupId, Group::getName)
-        .contains(tuple("groupa", "groupA"), tuple("groupb", "groupB"), tuple("groupc", "groupC"));
-
-    final var usersGroupA = client.newUsersByGroupSearchRequest("groupa").send().join();
-    assertThat(usersGroupA.items()).extracting(GroupUser::getUsername).containsExactly("user0");
-    final var usersGroupB = client.newUsersByGroupSearchRequest("groupb").send().join();
-    assertThat(usersGroupB.items()).extracting(GroupUser::getUsername).containsExactly("user0");
-    final var usersGroupC = client.newUsersByGroupSearchRequest("groupc").send().join();
-    assertThat(usersGroupC.items()).extracting(GroupUser::getUsername).containsExactly("user1");
 
     final var authorizations = client.newAuthorizationSearchRequest().send().join();
     assertThat(authorizations.items())

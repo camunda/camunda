@@ -11,13 +11,12 @@ import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.handler.sm.AuthorizationMigrationHandler;
 import io.camunda.migration.identity.handler.sm.ClientMigrationHandler;
-import io.camunda.migration.identity.handler.sm.GroupMigrationHandler;
+import io.camunda.migration.identity.handler.sm.GroupAuthorizationMigrationHandler;
 import io.camunda.migration.identity.handler.sm.RoleMigrationHandler;
 import io.camunda.migration.identity.handler.sm.TenantMigrationHandler;
 import io.camunda.migration.identity.handler.sm.UserRoleMigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import org.springframework.context.annotation.Bean;
@@ -45,18 +44,13 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(2)
-  public GroupMigrationHandler groupMigrationHandler(
+  public GroupAuthorizationMigrationHandler groupMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
-      final GroupServices groupServices,
       final AuthorizationServices authorizationServices,
       final CamundaAuthentication authentication,
       final IdentityMigrationProperties migrationProperties) {
-    return new GroupMigrationHandler(
-        managementIdentityClient,
-        groupServices,
-        authorizationServices,
-        authentication,
-        migrationProperties);
+    return new GroupAuthorizationMigrationHandler(
+        managementIdentityClient, authorizationServices, authentication, migrationProperties);
   }
 
   @Bean
