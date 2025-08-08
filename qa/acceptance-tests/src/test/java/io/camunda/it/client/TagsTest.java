@@ -13,6 +13,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.time.Duration;
+import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,13 +22,17 @@ import org.junit.jupiter.api.Test;
 public class TagsTest {
 
   private static CamundaClient client;
+  private String jobType = "my-job";
 
   @BeforeEach
   public void setUp() {
+    // Make sure jobs are unique for each test
+    jobType = UUID.randomUUID().toString();
+
     final var process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("my-task", t -> t.zeebeJobType("my-job"))
+            .serviceTask("my-task", t -> t.zeebeJobType(jobType))
             .endEvent()
             .done();
 
@@ -52,7 +57,8 @@ public class TagsTest {
     final var foundProcessInstance =
         client.newProcessInstanceGetRequest(processInstance.getProcessInstanceKey()).send().join();
 
-    assertThat(foundProcessInstance.getTags()).containsOnly("priority:medium", "businessKey:123");
+    assertThat(foundProcessInstance.getTags())
+        .containsExactlyInAnyOrder("priority:medium", "businessKey:123");
   }
 
   @Test
@@ -92,7 +98,8 @@ public class TagsTest {
     assertThat(foundProcessInstances.size()).isEqualTo(1);
 
     final var foundProcessInstance = foundProcessInstances.getFirst();
-    assertThat(foundProcessInstance.getTags()).containsOnly("priority:medium", "businessKey:123");
+    assertThat(foundProcessInstance.getTags())
+        .containsExactlyInAnyOrder("priority:medium", "businessKey:123");
   }
 
   @Test
@@ -107,12 +114,12 @@ public class TagsTest {
             .send()
             .join();
 
-    waitForJobs(processInstance.getProcessDefinitionKey(), 1);
+    waitForJobs(processInstance.getProcessInstanceKey());
 
     final var job =
         client
             .newActivateJobsCommand()
-            .jobType("my-job")
+            .jobType(jobType)
             .maxJobsToActivate(1)
             .send()
             .join()
@@ -120,7 +127,7 @@ public class TagsTest {
             .getFirst();
 
     // then
-    assertThat(job.getTags()).containsOnly("businessKey:123", "priority:high");
+    assertThat(job.getTags()).containsExactlyInAnyOrder("businessKey:123", "priority:high");
     //    final String businessKey = job.getTags().getByKey("businessKey");
   }
 
@@ -145,12 +152,13 @@ public class TagsTest {
             .send()
             .join();
 
-    waitForJobs(processInstance.getProcessDefinitionKey(), 2);
+    waitForJobs(
+        processInstance.getProcessInstanceKey(), otherProcessInstance.getProcessInstanceKey());
 
     final var jobs =
         client
             .newActivateJobsCommand()
-            .jobType("my-job")
+            .jobType(jobType)
             .maxJobsToActivate(2)
             .tags("priority:high")
             .send()
@@ -161,7 +169,7 @@ public class TagsTest {
     assertThat(jobs.size()).isEqualTo(1);
 
     final var job = jobs.getFirst();
-    assertThat(job.getTags()).containsOnly("priority:high", "businessKey:124");
+    assertThat(job.getTags()).containsExactlyInAnyOrder("priority:high", "businessKey:124");
     //    final String businessKey = job.getTags().getByKey("businessKey");
   }
 
@@ -180,7 +188,7 @@ public class TagsTest {
                     .isEmpty());
   }
 
-  private void waitForJobs(final long processDefinitionKey, final int count) {
+  private void waitForJobs(final Long... processInstanceKeys) {
     Awaitility.await()
         .ignoreExceptions()
         .timeout(Duration.ofSeconds(30))
@@ -188,11 +196,11 @@ public class TagsTest {
             () ->
                 client
                         .newJobSearchRequest()
-                        .filter(f -> f.processDefinitionKey(processDefinitionKey))
+                        .filter(f -> f.processInstanceKey(k -> k.in(processInstanceKeys)))
                         .send()
                         .join()
                         .items()
                         .size()
-                    >= count);
+                    >= processInstanceKeys.length);
   }
 }
