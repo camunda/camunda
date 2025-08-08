@@ -65,17 +65,33 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
     processInstancesSelectionStore.reset();
   };
 
-  const getBodyText = () =>
-    modalMode === null
-      ? ''
-      : `About to ${ACTION_NAMES[modalMode]} ${pluralSuffix(
-          selectedInstancesCount,
-          'Instance',
-        )}.${
-          modalMode === 'CANCEL_PROCESS_INSTANCE'
-            ? ' In case there are called instances, these will be canceled too.'
-            : ''
-        } `;
+  const getBodyText = () => {
+    if (modalMode === null) {
+      return '';
+    }
+
+    const runningInstancesCount =
+      processInstancesSelectionStore.checkedRunningProcessInstanceIds.length;
+
+    const operationMessage = `${pluralSuffix(
+      selectedInstancesCount,
+      'Instance',
+    )} selected for ${ACTION_NAMES[modalMode]} operation.`;
+
+    const messages = [operationMessage];
+
+    if (modalMode === 'CANCEL_PROCESS_INSTANCE') {
+      messages.push(
+        'In case there are called instances, these will be canceled too.',
+      );
+    }
+
+    if (selectedInstancesCount > runningInstancesCount) {
+      messages.push('Finished instances in your selection will be ignored.');
+    }
+
+    return messages.join(' ');
+  };
 
   if (selectedInstancesCount === 0) {
     return null;
@@ -104,11 +120,16 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
           <TableBatchAction
             renderIcon={Error}
             onClick={() => setModalMode('CANCEL_PROCESS_INSTANCE')}
-            disabled={batchModificationStore.state.isEnabled}
+            disabled={
+              batchModificationStore.state.isEnabled ||
+              !processInstancesSelectionStore.hasSelectedRunningInstances
+            }
             title={
               batchModificationStore.state.isEnabled
                 ? 'Not available in batch modification mode'
-                : undefined
+                : !processInstancesSelectionStore.hasSelectedRunningInstances
+                  ? 'No running process instances selected. Please select at least one active or incident process instance to cancel.'
+                  : undefined
             }
           >
             Cancel
@@ -116,11 +137,16 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
           <TableBatchAction
             renderIcon={RetryFailed}
             onClick={() => setModalMode('RESOLVE_INCIDENT')}
-            disabled={batchModificationStore.state.isEnabled}
+            disabled={
+              batchModificationStore.state.isEnabled ||
+              !processInstancesSelectionStore.hasSelectedRunningInstances
+            }
             title={
               batchModificationStore.state.isEnabled
                 ? 'Not available in batch modification mode'
-                : undefined
+                : !processInstancesSelectionStore.hasSelectedRunningInstances
+                  ? 'No running process instances selected. Please select at least one active or incident process instance to retry.'
+                  : undefined
             }
           >
             Retry

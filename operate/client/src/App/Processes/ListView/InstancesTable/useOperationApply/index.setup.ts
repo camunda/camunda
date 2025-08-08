@@ -54,7 +54,7 @@ const mockData = {
       operationType: 'RESOLVE_INCIDENT',
       query: {
         ...baseQuery,
-        ids: ['1'],
+        ids: ['2251799813685594'],
         excludeIds: [],
       },
     },
@@ -78,7 +78,7 @@ const mockData = {
       operationType: 'RESOLVE_INCIDENT',
       query: {
         ...baseQuery,
-        ids: ['1'],
+        ids: ['2251799813685594'],
         excludeIds: [],
         processIds: ['demoProcess1'],
       },
