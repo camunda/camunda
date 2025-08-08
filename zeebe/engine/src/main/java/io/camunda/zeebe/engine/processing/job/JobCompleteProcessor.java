@@ -219,27 +219,36 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private void handleAdHocSubProcessJob(
       final TypedCommandWriter commandWriter, final JobRecord jobRecord) {
 
-    final List<JobResultActivateElementValue> activateElements =
-        jobRecord.getResult().getActivateElements();
+    final var jobResult = jobRecord.getResult();
 
-    final AdHocSubProcessInstructionRecord activationRecord =
+    final AdHocSubProcessInstructionRecord instructionRecord =
         new AdHocSubProcessInstructionRecord()
-            .setAdHocSubProcessInstanceKey(jobRecord.getElementInstanceKey());
+            .setAdHocSubProcessInstanceKey(jobRecord.getElementInstanceKey())
+            .setCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled());
 
-    activateElements.stream()
-        .map(JobResultActivateElement.class::cast)
-        .forEach(
-            element ->
-                activationRecord
-                    .activateElements()
-                    .add()
-                    .setElementId(element.getElementId())
-                    .setVariables(element.getVariablesBuffer()));
+    if (!jobResult.getActivateElements().isEmpty()) {
+      jobResult.getActivateElements().stream()
+          .map(JobResultActivateElement.class::cast)
+          .forEach(
+              element ->
+                  instructionRecord
+                      .activateElements()
+                      .add()
+                      .setElementId(element.getElementId())
+                      .setVariables(element.getVariablesBuffer()));
 
-    commandWriter.appendFollowUpCommand(
-        jobRecord.getElementInstanceKey(),
-        AdHocSubProcessInstructionIntent.ACTIVATE,
-        activationRecord);
+      commandWriter.appendFollowUpCommand(
+          jobRecord.getElementInstanceKey(),
+          AdHocSubProcessInstructionIntent.ACTIVATE,
+          instructionRecord);
+    }
+
+    if (jobResult.isCompletionConditionFulfilled()) {
+      commandWriter.appendFollowUpCommand(
+          jobRecord.getElementInstanceKey(),
+          AdHocSubProcessInstructionIntent.COMPLETE,
+          instructionRecord);
+    }
   }
 
   private Either<Rejection, JobRecord> checkAdHocSubprocessActivationTargetsAreValid(

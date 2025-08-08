@@ -325,21 +325,8 @@ public class AdHocSubProcessProcessor
       }
 
       if (satisfiesCompletionCondition) {
-        if (adHocSubProcess.isCancelRemainingInstances()) {
-          // terminate all remaining child instances & directly complete ad-hoc sub-process if there
-          // is no child activity left - otherwise see onChildTerminated
-          final boolean hasNoActiveChildren =
-              stateTransitionBehavior.terminateChildInstances(adHocSubProcessContext);
-          if (hasNoActiveChildren) {
-            stateTransitionBehavior.completeElement(adHocSubProcessContext);
-          }
-        } else {
-          // complete ad-hoc sub-process if possible, otherwise skip completion as the same block
-          // will be evaluated when the next activity is completed
-          if (stateBehavior.canBeCompleted(childContext)) {
-            stateTransitionBehavior.completeElement(adHocSubProcessContext);
-          }
-        }
+        adHocSubProcessBehavior.completionConditionFulfilled(
+            adHocSubProcessContext, adHocSubProcess.isCancelRemainingInstances());
       }
     }
   }
@@ -377,12 +364,24 @@ public class AdHocSubProcessProcessor
       // job before creating the new one.
       jobBehavior.cancelJob(adHocSubProcessContext);
 
-      jobBehavior
-          .evaluateJobExpressions(adHocSubProcess.getJobWorkerProperties(), adHocSubProcessContext)
-          .thenDo(
-              jobProperties ->
-                  jobBehavior.createNewAdHocSubProcessJob(
-                      adHocSubProcessContext, adHocSubProcess, jobProperties));
+      final var adHocSubProcessInstance =
+          stateBehavior.getElementInstance(adHocSubProcessContext.getElementInstanceKey());
+      if (adHocSubProcessInstance.isCompletionConditionFulfilled()) {
+        adHocSubProcessBehavior.completionConditionFulfilled(
+            adHocSubProcessContext,
+            adHocSubProcess.isCancelRemainingInstances(),
+            adHocSubProcessInstance);
+      } else {
+        // If the completion is fulfilled we should not create a new job. The ad-hoc sub-process
+        // will be completed soon.
+        jobBehavior
+            .evaluateJobExpressions(
+                adHocSubProcess.getJobWorkerProperties(), adHocSubProcessContext)
+            .thenDo(
+                jobProperties ->
+                    jobBehavior.createNewAdHocSubProcessJob(
+                        adHocSubProcessContext, adHocSubProcess, jobProperties));
+      }
     }
   }
 }

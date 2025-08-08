@@ -39,6 +39,9 @@
             },
             "tenantId": {
               "type": "keyword"
+            },
+            "completionConditionFulfilled": {
+              "type": "boolean"
             }
           }
         }
