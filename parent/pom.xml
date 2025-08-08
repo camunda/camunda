@@ -79,7 +79,7 @@
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.17.0</version.opensearch>
     <version.opensearch-java>2.19.0</version.opensearch-java>
-    <version.opensearch.testcontainers>2.1.4</version.opensearch.testcontainers>
+    <version.opensearch.testcontainers>3.0.2</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>4.31.1</version.protobuf>
     <version.protobuf-common>2.59.2</version.protobuf-common>
