@@ -2318,7 +2318,7 @@ final class JsonSerializableToJsonTest {
                   .setElementId("234")
                   .setVariables(VARIABLES_MSGPACK);
 
-              adHocSubProcessInstructionRecord.cancelRemainingInstances(true);
+              adHocSubProcessInstructionRecord.setCancelRemainingInstances(true);
 
               return adHocSubProcessInstructionRecord;
             },

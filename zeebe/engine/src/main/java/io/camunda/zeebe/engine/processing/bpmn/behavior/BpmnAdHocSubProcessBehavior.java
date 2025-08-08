@@ -157,7 +157,7 @@ public final class BpmnAdHocSubProcessBehavior {
     }
   }
 
-  private void terminateChildInstances(final BpmnElementContext adHocSubProcessContext) {
+  public void terminateChildInstances(final BpmnElementContext adHocSubProcessContext) {
     elementInstanceState
         .getChildren(adHocSubProcessContext.getElementInstanceKey())
         .forEach(
