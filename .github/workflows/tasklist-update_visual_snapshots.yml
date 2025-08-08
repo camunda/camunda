@@ -19,7 +19,7 @@ jobs:
     if: github.event.pull_request.state != 'closed' && (github.event.label.name == 'update-snapshots' || contains( github.event.pull_request.labels.*.name, 'update-snapshots'))
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.53.2
+      image: mcr.microsoft.com/playwright:v1.54.2
       options: --user 1001:1000
 
     steps:
