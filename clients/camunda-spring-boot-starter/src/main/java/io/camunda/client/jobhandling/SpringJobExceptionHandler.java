@@ -23,6 +23,9 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.api.response.ThrowErrorResponse;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.spring.client.exception.BpmnError;
+import io.camunda.spring.client.exception.JobError;
+import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
 import io.camunda.client.impl.worker.JobExceptionHandlerImpl;
@@ -48,7 +51,12 @@ public class SpringJobExceptionHandler extends JobExceptionHandlerImpl {
         DEFAULT_VARIABLES_PROVIDER);
     this.jobWorkerValue = jobWorkerValue;
     this.metricsRecorder = metricsRecorder;
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
+  }
+
+  private CommandWrapper createCommandWrapper(
+      final FinalCommandStep<?> command, final ActivatedJob job, final int maxRetries) {
+    return new CommandWrapper(
+        command, job, commandExceptionHandlingStrategy, metricsRecorder, maxRetries);
   }
 
   @Override
@@ -59,14 +67,19 @@ public class SpringJobExceptionHandler extends JobExceptionHandlerImpl {
     if (exception instanceof final JobError jobError) {
       LOG.trace("Caught job error on {}", job);
       final CommandWrapper command =
-          createCommandWrapper(createFailJobCommand(jobClient, job, jobError), job, jobWorkerValue);
+          createCommandWrapper(
+              createFailJobCommand(context.jobClient(), context.job(), jobError),
+              context.job(),
+              context.maxRetries());
       command.executeAsyncWithMetrics(
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
     } else if (exception instanceof final BpmnError bpmnError) {
       LOG.trace("Caught BPMN error on {}", job);
       final CommandWrapper command =
           createCommandWrapper(
-              createThrowErrorCommand(jobClient, job, bpmnError), job, jobWorkerValue);
+              createThrowErrorCommand(context.jobClient(), context.job(), bpmnError),
+              context.job(),
+              context.maxRetries());
       command.executeAsyncWithMetrics(
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_BPMN_ERROR, job.getType());
     } else {
