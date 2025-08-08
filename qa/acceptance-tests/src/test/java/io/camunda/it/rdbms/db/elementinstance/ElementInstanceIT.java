@@ -198,7 +198,8 @@ public class ElementInstanceIT {
             "processDefinitionId",
             "bpmnProcessId",
             "flowNodeInstanceKey",
-            "key")
+            "key",
+            "level")
         .isEqualTo(expected);
 
     assertThat(actual.flowNodeInstanceKey()).isEqualTo(expected.flowNodeInstanceKey());

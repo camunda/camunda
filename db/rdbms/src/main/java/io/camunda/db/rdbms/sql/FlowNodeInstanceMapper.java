@@ -23,7 +23,7 @@ public interface FlowNodeInstanceMapper extends ProcessBasedHistoryCleanupMapper
 
   Long count(FlowNodeInstanceDbQuery filter);
 
-  List<FlowNodeInstanceEntity> search(FlowNodeInstanceDbQuery filter);
+  List<FlowNodeInstanceDbModel> search(FlowNodeInstanceDbQuery filter);
 
   record EndFlowNodeDto(
       long flowNodeInstanceKey,
