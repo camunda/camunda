@@ -16,7 +16,10 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record MappingRuleDbQuery(
-    MappingRuleFilter filter, DbQuerySorting<MappingRuleEntity> sort, DbQueryPage page) {
+    MappingRuleFilter filter,
+    List<String> authorizedResourceIds,
+    DbQuerySorting<MappingRuleEntity> sort,
+    DbQueryPage page) {
 
   public static MappingRuleDbQuery of(
       final Function<MappingRuleDbQuery.Builder, ObjectBuilder<MappingRuleDbQuery>> fn) {
@@ -28,6 +31,7 @@ public record MappingRuleDbQuery(
     private static final MappingRuleFilter EMPTY_FILTER = FilterBuilders.mappingRule().build();
 
     private MappingRuleFilter filter;
+    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
     private DbQuerySorting<MappingRuleEntity> sort;
     private DbQueryPage page;
 
@@ -43,6 +47,11 @@ public record MappingRuleDbQuery(
 
     public Builder page(final DbQueryPage value) {
       page = value;
+      return this;
+    }
+
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
       return this;
     }
 
@@ -63,7 +72,8 @@ public record MappingRuleDbQuery(
     public MappingRuleDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new MappingRuleDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      return new MappingRuleDbQuery(filter, authorizedResourceIds, sort, page);
     }
   }
 }

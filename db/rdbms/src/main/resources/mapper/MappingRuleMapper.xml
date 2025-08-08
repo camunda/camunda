@@ -45,7 +45,9 @@
       JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
       AND rm.ENTITY_TYPE = 'MAPPING_RULE'
     </if>
-    <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+    </where>
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.MappingRuleDbQuery"
@@ -66,7 +68,15 @@
       JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
       AND rm.ENTITY_TYPE = 'MAPPING_RULE'
     </if>
-    <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND MAPPING_RULE_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+    </where>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -74,7 +84,7 @@
   </select>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
+    1 = 1
     <if test="filter.mappingRuleId != null">
       AND MAPPING_RULE_ID = #{filter.mappingRuleId}
     </if>
