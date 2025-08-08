@@ -230,7 +230,7 @@ jobs:
 
       - name: Clean release
         run: |
-          mvn release:clean
+          ./mvnw release:clean
 
       - name: Prepare release
         run: |
