@@ -79,7 +79,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
       if (camundaClientProperties.getWorker().getDefaults().getFetchVariables() != null) {
         variables.addAll(camundaClientProperties.getWorker().getDefaults().getFetchVariables());
       }
-      variables.addAll(jobWorkerValue.getJobWorkerFactory().getUsedVariableNames());
+      variables.addAll(jobWorkerValue.getJobHandlerFactory().getUsedVariableNames());
       jobWorkerValue.setFetchVariables(variables.stream().distinct().toList());
       LOG.debug(
           "Worker '{}': Fetching only required variables {}", jobWorkerValue.getName(), variables);
@@ -87,7 +87,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private boolean hasActivatedJobInjected(final JobWorkerValue jobWorkerValue) {
-    return jobWorkerValue.getJobWorkerFactory().usesActivatedJob();
+    return jobWorkerValue.getJobHandlerFactory().usesActivatedJob();
   }
 
   private void applyOverrides(final JobWorkerValue editedJobWorkerValue) {
@@ -165,7 +165,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
         jobWorkerValue.setName(defaultJobWorkerName);
       } else {
         final String generatedJobWorkerName =
-            jobWorkerValue.getJobWorkerFactory().getGeneratedJobWorkerName();
+            jobWorkerValue.getJobHandlerFactory().getGeneratedJobWorkerName();
         LOG.debug(
             "Worker '{}': Setting name to generated {}",
             jobWorkerValue.getName(),
@@ -187,7 +187,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
       } else {
 
         final String generatedJobWorkerType =
-            jobWorkerValue.getJobWorkerFactory().getGeneratedJobWorkerType();
+            jobWorkerValue.getJobHandlerFactory().getGeneratedJobWorkerType();
         LOG.debug(
             "Worker '{}': Setting type to generated {}",
             jobWorkerValue.getName(),

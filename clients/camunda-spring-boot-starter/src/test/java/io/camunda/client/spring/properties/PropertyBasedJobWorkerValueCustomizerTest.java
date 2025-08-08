@@ -65,7 +65,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "emptyWorker")));
     // when
     customizer.customize(jobWorkerValue);
@@ -104,7 +104,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
         new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setFetchVariables(List.of("a", "var1", "b"));
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "activatedJobWorker")));
     // when
     customizer.customize(jobWorkerValue);
@@ -120,7 +120,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     // when
     customizer.customize(jobWorkerValue);
@@ -134,7 +134,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     // when
     customizer.customize(jobWorkerValue);
@@ -150,7 +150,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     // when
     customizer.customize(jobWorkerValue);
@@ -164,7 +164,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     // when
     customizer.customize(jobWorkerValue);
@@ -178,7 +178,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     // when
     customizer.customize(jobWorkerValue);
@@ -192,7 +192,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     // when
     customizer.customize(jobWorkerValue);
@@ -206,7 +206,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     // when
     customizer.customize(jobWorkerValue);
@@ -224,7 +224,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     assertThat(jobWorkerValue.getEnabled()).isNull();
     // when
@@ -242,7 +242,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     assertThat(jobWorkerValue.getEnabled()).isNull();
     // when
@@ -262,7 +262,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     assertThat(jobWorkerValue.getEnabled()).isNull();
     // when
@@ -277,7 +277,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(
             methodInfo(this, "testBean", "sampleWorkerWithJsonProperty")));
 
@@ -297,7 +297,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(
             methodInfo(this, "testBean", "sampleWorkerWithJsonProperty")));
     jobWorkerValue.setType("initialValue");
@@ -317,7 +317,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(
             methodInfo(this, "testBean", "sampleWorkerWithJsonProperty")));
     customizer.customize(jobWorkerValue);
@@ -336,7 +336,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(
             methodInfo(this, "testBean", "sampleWorkerWithJsonProperty")));
     jobWorkerValue.setType("initialValue");
@@ -459,7 +459,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "emptyWorker")));
     customizer.customize(jobWorkerValue);
     final Object result = getter.apply(jobWorkerValue);
@@ -476,7 +476,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(
             methodInfo(this, "testBean", "sampleWorkerWithEmptyJsonProperty")));
 
@@ -497,7 +497,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
         new PropertyBasedJobWorkerValueCustomizer(properties);
 
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     // when
     customizer.customize(jobWorkerValue);
@@ -515,7 +515,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
         new PropertyBasedJobWorkerValueCustomizer(properties);
 
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     jobWorkerValue.setTenantIds(List.of("annotationTenantId"));
     // when
@@ -533,7 +533,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     customizer.customize(jobWorkerValue);
     assertThat(jobWorkerValue.getTenantIds()).containsOnly("testTenantId");
@@ -550,7 +550,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
         new PropertyBasedJobWorkerValueCustomizer(properties);
 
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     // when
     customizer.customize(jobWorkerValue);
@@ -569,7 +569,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
         new PropertyBasedJobWorkerValueCustomizer(properties);
 
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     jobWorkerValue.setTenantIds(List.of("annotationTenantId"));
     // when
@@ -595,7 +595,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
 
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setTenantIds(List.of("annotationWorkerDefaultsId"));
-    jobWorkerValue.setJobWorkerFactory(
+    jobWorkerValue.setJobHandlerFactory(
         new SpringBeanJobHandlerFactory(methodInfo(this, "testBean", "sampleWorker")));
     // when
     customizer.customize(jobWorkerValue);
