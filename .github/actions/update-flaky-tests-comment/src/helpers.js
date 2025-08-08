@@ -1,3 +1,28 @@
+function parseTestName(testName) {
+  const lastDotIndex = testName.lastIndexOf('.');
+
+  if (lastDotIndex === -1) {
+    console.warn(`[flaky-tests]  Could not parse test name: ${testName}`);
+    return null;
+  }
+
+  const fullyQualifiedClass = testName.slice(0, lastDotIndex);
+  let methodName = testName.slice(lastDotIndex + 1);
+
+  // Remove trailing [index] if it exists
+  methodName = methodName.replace(/\[\d+]\s*$/, '');
+
+  const classParts = fullyQualifiedClass.split('.');
+  const className = classParts[classParts.length - 1];
+  const packageName = classParts.slice(0, -1).join('.');
+
+  return {
+    packageName,
+    className,
+    methodName
+  };
+}
+
 function parseComment(body) {
   try {
     const match = body.match(/_👻 Haunted Tests — They Fail When No One's Watching_\n\n([\s\S]*?)\n\nIf the changes affect this area/);
@@ -27,10 +52,10 @@ function parseComment(body) {
 
     return {
       totalRuns,
-      flakys: tests
+      flakyTests: tests
     };
   } catch (err) {
-    console.error('❌ Failed to parse comment:', err);
+    console.error('[flaky-tests] Failed to parse comment:', err);
     return null;
   }
 }
@@ -41,12 +66,12 @@ function mergeFlakyData(current, historical) {
   const newTotal = historical.totalRuns + 1;
   const merged = new Map();
 
-  for (const oldTest of historical.flakys) {
+  for (const oldTest of historical.flakyTests) {
     const key = getTestKey(oldTest);
     merged.set(key, { ...oldTest, totalRuns: newTotal });
   }
 
-  for (const test of current.flakys) {
+  for (const test of current.flakyTests) {
     const key = getTestKey(test);
     const existing = merged.get(key);
 
@@ -73,14 +98,14 @@ function mergeFlakyData(current, historical) {
     flakys.push({ ...test, flakiness });
   }
 
-  return { flakys };
+  return { flakyTests: flakys };
 }
 
 function prepareFirstRunData(currentData) {
-  if (!currentData?.flakys?.length) return { flakys: [] };
+  if (!currentData?.flakyTests?.length) return { flakyTests: [] };
 
   return {
-    flakys: currentData.flakys.map(test => ({
+    flakyTests: currentData.flakyTests.map(test => ({
       ...test,
       occurrences: test.occurrences || 1,
       totalRuns: 1,
@@ -94,6 +119,8 @@ function getTestKey(test) {
 }
 
 module.exports = {
+  parseTestName,
+  getTestKey,
   parseComment,
   mergeFlakyData
 };

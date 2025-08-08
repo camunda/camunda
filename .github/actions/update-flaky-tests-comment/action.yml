@@ -33,83 +33,11 @@ runs:
           }
 
           // Step 1: Process and structure the flaky test data
+          const { processFlakyTestsData } = require('./.github/actions/update-flaky-tests-comment/src/flaky-tests-data-processor');
           const processedData = processFlakyTestsData(flakyTestsData);
           console.log('[flaky-tests] Processed data:', JSON.stringify(processedData, null, 2));
 
           // Step 2: Generate and post the PR comment
-          const { main } = require('./.github/actions/update-flaky-tests-comment/src/comment-generator');
+          const { main } = require('./.github/actions/update-flaky-tests-comment/src/flaky-tests-comment-generator');
           console.log('[flaky-tests] 🚀 Generating comment...');
           await main(context, github, processedData, ${{ inputs.pr-number }}, '${{ inputs.branch-name }}');
-
-          /**
-          * Processes the raw flaky test data and organizes it into a flat list.
-          */
-          function processFlakyTestsData(rawData) {
-            const testMap = new Map();
-            const getTestKey = (test) => `${test.packageName}.${test.className}.${test.methodName}`;
-
-            rawData.forEach(({ job, flaky_tests }) => {
-              if (!flaky_tests || flaky_tests.trim() === '') {
-                console.log(`[flaky-tests] Skipping job "${job}" - no flaky tests`);
-                return;
-              }
-
-              const testNames = flaky_tests
-                .match(/(?:[^\s(]+(?:\([^)]+\))?(?:\[\d+\])?)+/g) || []
-                .map(t => t.trim())
-                .filter(Boolean);
-
-              console.log(`[flaky-tests] Job "${job}": found ${testNames.length} test(s)`);
-
-              testNames.forEach(testName => {
-                const parsedTest = parseTestName(testName);
-                if (parsedTest) {
-                  const key = getTestKey(parsedTest);
-                  const existingTest = testMap.get(key);
-
-                  if (existingTest) {
-                    if (!existingTest.jobs.includes(job)) {
-                      existingTest.jobs.push(job);
-                    }
-                    existingTest.occurrences++;
-                  } else {
-                    testMap.set(key, {
-                      ...parsedTest,
-                      jobs: [job],
-                      occurrences: 1
-                    });
-                  }
-                }
-              });
-            });
-
-            return { flakys: Array.from(testMap.values()) };
-          }
-
-          /**
-          * Parses a test name string into structured components.
-          */
-          function parseTestName(testName) {
-            const lastDotIndex = testName.lastIndexOf('.');
-
-            if (lastDotIndex === -1) {
-              console.warn(`[flaky-tests] Could not parse test name: ${testName}`);
-              return null;
-            }
-
-            const fullyQualifiedClass = testName.slice(0, lastDotIndex);
-            let methodName = testName.slice(lastDotIndex + 1);
-
-            // Remove trailing [index] if it exists
-            methodName = methodName.replace(/\[\d+\]\s*$/, '');
-
-            const classParts = fullyQualifiedClass.split('.');
-            const className = classParts[classParts.length - 1];
-            const packageName = classParts.slice(0, -1).join('.');
-
-            return {
-              packageName,
-              className,
-              methodName
-            };
-          }
