@@ -15,7 +15,9 @@
  */
 package io.camunda.process.test.api.mock;
 
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -60,4 +62,18 @@ public interface JobWorkerMock {
    * @param jobHandler the custom job handler to use for processing jobs.
    */
   void withHandler(JobHandler jobHandler);
+
+  /**
+   * Gets the number of times the Job Worker was invoked.
+   *
+   * @return number of Job Worker invocations.
+   */
+  int getInvocations();
+
+  /**
+   * Gets all activated jobs every time the Job Worker was invoked.
+   *
+   * @return the activated jobs, or empty if there are none.
+   */
+  List<ActivatedJob> getActivatedJobs();
 }
