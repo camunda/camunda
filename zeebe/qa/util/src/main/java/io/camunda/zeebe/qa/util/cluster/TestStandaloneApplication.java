@@ -13,7 +13,7 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
-import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Optional;
@@ -41,7 +41,7 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
    * Modifies the broker configuration. Will still mutate the configuration if the broker is
    * started, but likely has no effect until it's restarted.
    */
-  T withBrokerConfig(final Consumer<BrokerBasedProperties> modifier);
+  T withBrokerConfig(final Consumer<LegacyBrokerBasedProperties> modifier);
 
   /**
    * Modifies the security configuration. Will still mutate the configuration if the broker is
@@ -49,7 +49,7 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
    */
   T withSecurityConfig(final Consumer<CamundaSecurityProperties> modifier);
 
-  BrokerBasedProperties brokerConfig();
+  LegacyBrokerBasedProperties brokerConfig();
 
   default Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return Optional.empty();

@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.network;
 
 import io.atomix.utils.net.Address;
 import io.camunda.client.api.response.Topology;
-import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -162,5 +162,5 @@ final class SecureClusteredMessagingIT {
   }
 
   private record TestCase(
-      Consumer<BrokerBasedProperties> brokerConfig, Consumer<GatewayCfg> gatewayConfig) {}
+      Consumer<LegacyBrokerBasedProperties> brokerConfig, Consumer<GatewayCfg> gatewayConfig) {}
 }
