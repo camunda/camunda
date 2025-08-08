@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public record AuthorizationFilter(
@@ -44,7 +45,8 @@ public record AuthorizationFilter(
     }
 
     public Builder ownerIds(final List<String> value) {
-      ownerIds = addValuesToList(ownerIds, value);
+      final var filteredList = value.stream().filter(Objects::nonNull).toList();
+      ownerIds = addValuesToList(ownerIds, filteredList);
       return this;
     }
 
