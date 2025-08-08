@@ -35,11 +35,19 @@ export const waitForItemInList = async (
 
       if (emptyStateLocator) {
         await Promise.race([
-          page.getByRole('cell').filter({hasText: /.+/}).first().waitFor(),
+          page
+            .getByRole('cell')
+            .filter({hasText: /.+/, hasNot: page.locator('div')})
+            .first()
+            .waitFor(),
           emptyStateLocator?.waitFor(),
         ]);
       } else {
-        await page.getByRole('cell').filter({hasText: /.+/}).first().waitFor();
+        await page
+          .getByRole('cell')
+          .filter({hasText: /.+/, hasNot: page.locator('div')})
+          .first()
+          .waitFor();
       }
 
       return await item.isVisible();
