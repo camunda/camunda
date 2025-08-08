@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -29,13 +30,13 @@ import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
-import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -56,6 +57,8 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 public class TenantControllerTest {
 
   private static final String TENANT_BASE_URL = "/v2/tenants";
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
 
   @Nested
   @WebMvcTest(TenantController.class)
@@ -66,6 +69,7 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private InitializationConfiguration initializationConfiguration;
 
     @BeforeEach
     void setup() {
@@ -73,6 +77,7 @@ public class TenantControllerTest {
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
       when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(tenantServices);
+      when(initializationConfiguration.getIdentifierPattern()).thenReturn(ID_PATTERN);
     }
 
     @ParameterizedTest
@@ -191,8 +196,8 @@ public class TenantControllerTest {
     @ValueSource(
         strings = {
           "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-          "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
-          "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+          "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<",
+          "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
         })
     void shouldRejectTenantCreationWithIllegalCharactersInId(final String id) {
       // given
@@ -219,7 +224,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, TENANT_BASE_URL),
+                  .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, TENANT_BASE_URL),
               JsonCompareMode.STRICT);
 
       // then
@@ -473,7 +478,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, uri),
+                  .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -510,7 +515,7 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, IdentifierPatterns.ID_PATTERN, uri),
+                  .formatted(entityIdName, InitializationConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -572,7 +577,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, uri),
+                  .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -610,7 +615,7 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, IdentifierPatterns.ID_PATTERN, uri),
+                  .formatted(entityIdName, InitializationConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -658,6 +663,7 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private InitializationConfiguration initializationConfiguration;
 
     @ParameterizedTest
     @MethodSource("tenantControllerRequests")

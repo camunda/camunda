@@ -8,11 +8,6 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_REGEX;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.MAX_LENGTH;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
@@ -20,54 +15,19 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.springframework.http.ProblemDetail;
 
 public final class RoleRequestValidator {
   private RoleRequestValidator() {}
 
-  public static void validateRoleName(final String name, final List<String> violations) {
-    if (name == null || name.isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
-    }
-  }
-
-  private static void validateId(
-      final String id, final String propertyName, final List<String> violations) {
-    if (id == null || id.isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(propertyName));
-    } else if (id.length() > MAX_LENGTH) {
-      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(propertyName, MAX_LENGTH));
-    } else if (!ID_PATTERN.matcher(id).matches()) {
-      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(propertyName, ID_REGEX));
-    }
-  }
-
-  public static void validateRoleId(final String id, final List<String> violations) {
-    validateId(id, "roleId", violations);
-  }
-
-  public static void validateMemberId(
-      final String entityId, final EntityType entityType, final List<String> violations) {
-    switch (entityType) {
-      case USER:
-        validateId(entityId, "username", violations);
-        break;
-      case GROUP:
-        validateId(entityId, "groupId", violations);
-        break;
-      case MAPPING_RULE:
-        validateId(entityId, "mappingRuleId", violations);
-        break;
-      default:
-        validateId(entityId, "entityId", violations);
-    }
-  }
-
-  public static void validateRoleDescription(
-      final String description, final List<String> violations) {
-    if (description == null) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
-    }
+  public static Optional<ProblemDetail> validateCreateRequest(
+      final RoleCreateRequest request, final Pattern identifierPattern) {
+    return validate(
+        violations -> {
+          validateRoleId(request.getRoleId(), violations, identifierPattern);
+          validateRoleName(request.getName(), violations);
+        });
   }
 
   public static Optional<ProblemDetail> validateUpdateRequest(final RoleUpdateRequest request) {
@@ -78,20 +38,61 @@ public final class RoleRequestValidator {
         });
   }
 
-  public static Optional<ProblemDetail> validateCreateRequest(final RoleCreateRequest request) {
+  public static Optional<ProblemDetail> validateMemberRequest(
+      final String roleId,
+      final String memberId,
+      final EntityType memberType,
+      final Pattern identifierPattern) {
     return validate(
         violations -> {
-          validateRoleId(request.getRoleId(), violations);
-          validateRoleName(request.getName(), violations);
+          validateRoleId(roleId, violations, identifierPattern);
+          validateMemberId(memberId, memberType, violations, identifierPattern);
         });
   }
 
-  public static Optional<ProblemDetail> validateMemberRequest(
-      final String roleId, final String memberId, final EntityType memberType) {
-    return validate(
-        violations -> {
-          validateRoleId(roleId, violations);
-          validateMemberId(memberId, memberType, violations);
-        });
+  private static void validateRoleName(final String name, final List<String> violations) {
+    if (name == null || name.isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
+    }
+  }
+
+  private static void validateId(
+      final String id,
+      final String propertyName,
+      final List<String> violations,
+      final Pattern identifierPattern) {
+    IdentifierValidator.validateId(id, propertyName, violations, identifierPattern);
+  }
+
+  private static void validateRoleId(
+      final String id, final List<String> violations, final Pattern identifierPattern) {
+    validateId(id, "roleId", violations, identifierPattern);
+  }
+
+  private static void validateMemberId(
+      final String entityId,
+      final EntityType entityType,
+      final List<String> violations,
+      final Pattern identifierPattern) {
+    switch (entityType) {
+      case USER:
+        validateId(entityId, "username", violations, identifierPattern);
+        break;
+      case GROUP:
+        validateId(entityId, "groupId", violations, identifierPattern);
+        break;
+      case MAPPING_RULE:
+        validateId(entityId, "mappingRuleId", violations, identifierPattern);
+        break;
+      default:
+        validateId(entityId, "entityId", violations, identifierPattern);
+    }
+  }
+
+  private static void validateRoleDescription(
+      final String description, final List<String> violations) {
+    if (description == null) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
+    }
   }
 }

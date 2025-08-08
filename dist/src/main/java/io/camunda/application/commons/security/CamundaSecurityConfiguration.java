@@ -8,10 +8,12 @@
 package io.camunda.application.commons.security;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
+import java.util.regex.PatternSyntaxException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -38,6 +40,12 @@ public class CamundaSecurityConfiguration {
   }
 
   @Bean
+  public InitializationConfiguration initializationConfiguration(
+      final SecurityConfiguration securityConfiguration) {
+    return securityConfiguration.getInitialization();
+  }
+
+  @Bean
   public MultiTenancyConfiguration multiTenancyConfiguration(
       final SecurityConfiguration securityConfiguration) {
     return securityConfiguration.getMultiTenancy();
@@ -56,6 +64,22 @@ public class CamundaSecurityConfiguration {
                   true,
                   "camunda.security.authentication.unprotected-api",
                   true));
+    }
+
+    final var initializationCfg = camundaSecurityProperties.getInitialization();
+    final var idRegex = initializationCfg.getIdentifierRegex();
+    try {
+      final var idPattern = initializationCfg.getIdentifierPattern();
+      // TODO: use AuthorizationScope.WILDCARD_CHAR from #36158
+      if (idPattern != null && idPattern.matcher("*").matches()) {
+        throw new IllegalStateException(
+            "The configured identifier pattern (%s=%s) allows the asterisk ('*') which is a reserved character. Please use a different pattern."
+                .formatted("camunda.security.initialization.identifierRegex", idRegex));
+      }
+    } catch (final PatternSyntaxException regEx) {
+      throw new IllegalStateException(
+          "The configured identifier pattern (%s=%s) is invalid. Please use a different pattern."
+              .formatted("camunda.security.initialization.identifierRegex", idRegex));
     }
   }
 
