@@ -23,6 +23,17 @@ import io.camunda.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.spring.client.annotation.value.DeploymentValue;
+import io.camunda.spring.client.annotation.value.DocumentValue;
+import io.camunda.spring.client.annotation.value.DocumentValue.ParameterType;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.annotation.value.VariableValue;
+import io.camunda.spring.client.bean.BeanInfo;
+import io.camunda.spring.client.bean.ClassInfo;
+import io.camunda.spring.client.bean.MethodInfo;
+import io.camunda.spring.client.bean.ParameterInfo;
+import io.camunda.spring.client.jobhandling.SpringBeanJobHandlerFactory;
+import io.camunda.spring.client.jobhandling.DocumentContext;
 import io.camunda.client.jobhandling.DocumentContext;
 import io.camunda.client.spring.bean.BeanInfo;
 import io.camunda.client.spring.bean.ClassInfo;
@@ -112,22 +123,28 @@ public class AnnotationUtil {
     if (methodAnnotation.isPresent()) {
       final JobWorker annotation = methodAnnotation.get();
       return Optional.of(
-          new JobWorkerValue(
-              annotation.type(),
-              annotation.name(),
-              Duration.of(annotation.timeout(), ChronoUnit.MILLIS),
-              annotation.maxJobsActive(),
-              Duration.of(annotation.requestTimeout(), ChronoUnit.SECONDS),
-              Duration.of(annotation.pollInterval(), ChronoUnit.MILLIS),
-              annotation.autoComplete(),
-              Arrays.asList(annotation.fetchVariables()),
-              annotation.enabled(),
-              methodInfo,
-              Arrays.asList(annotation.tenantIds()),
-              annotation.fetchAllVariables(),
-              annotation.streamEnabled(),
-              Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS),
-              annotation.maxRetries()));
+              new JobWorkerValue(
+                  annotation.type(),
+                  annotation.name(),
+                  Duration.of(annotation.timeout(), ChronoUnit.MILLIS),
+                  annotation.maxJobsActive(),
+                  Duration.of(annotation.requestTimeout(), ChronoUnit.SECONDS),
+                  Duration.of(annotation.pollInterval(), ChronoUnit.MILLIS),
+                  annotation.autoComplete(),
+                  Arrays.asList(annotation.fetchVariables()),
+                  annotation.enabled(),
+                  methodInfo::invoke,
+                  Arrays.asList(annotation.tenantIds()),
+                  annotation.fetchAllVariables(),
+                  annotation.streamEnabled(),
+                  Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS),
+                  annotation.maxRetries(),
+                  new SpringBeanJobHandlerFactory(methodInfo)))
+          .map(
+              v -> {
+                v.setMethodInfo(methodInfo);
+                return v;
+              });
     }
     return Optional.empty();
   }
@@ -139,22 +156,28 @@ public class AnnotationUtil {
     if (methodAnnotation.isPresent()) {
       final io.camunda.zeebe.spring.client.annotation.JobWorker annotation = methodAnnotation.get();
       return Optional.of(
-          new JobWorkerValue(
-              annotation.type(),
-              annotation.name(),
-              Duration.of(annotation.timeout(), ChronoUnit.MILLIS),
-              annotation.maxJobsActive(),
-              Duration.of(annotation.requestTimeout(), ChronoUnit.SECONDS),
-              Duration.of(annotation.pollInterval(), ChronoUnit.MILLIS),
-              annotation.autoComplete(),
-              Arrays.asList(annotation.fetchVariables()),
-              annotation.enabled(),
-              methodInfo,
-              Arrays.asList(annotation.tenantIds()),
-              annotation.fetchAllVariables(),
-              annotation.streamEnabled(),
-              Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS),
-              annotation.maxRetries()));
+              new JobWorkerValue(
+                  annotation.type(),
+                  annotation.name(),
+                  Duration.of(annotation.timeout(), ChronoUnit.MILLIS),
+                  annotation.maxJobsActive(),
+                  Duration.of(annotation.requestTimeout(), ChronoUnit.SECONDS),
+                  Duration.of(annotation.pollInterval(), ChronoUnit.MILLIS),
+                  annotation.autoComplete(),
+                  Arrays.asList(annotation.fetchVariables()),
+                  annotation.enabled(),
+                  methodInfo::invoke,
+                  Arrays.asList(annotation.tenantIds()),
+                  annotation.fetchAllVariables(),
+                  annotation.streamEnabled(),
+                  Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS),
+                  annotation.maxRetries(),
+                  new SpringBeanJobHandlerFactory(methodInfo)))
+          .map(
+              v -> {
+                v.setMethodInfo(methodInfo);
+                return v;
+              });
     }
     return Optional.empty();
   }
