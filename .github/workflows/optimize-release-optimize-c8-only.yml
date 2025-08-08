@@ -228,6 +228,10 @@ jobs:
         with:
           work-dir: ./optimize
 
+      - name: Clean release
+        run: |
+          mvn release:clean
+
       - name: Prepare release
         run: |
           ./mvnw -f optimize \
@@ -249,10 +253,6 @@ jobs:
         run: |
           git push --tags
           git push --all
-
-      - name: Clean Release
-        run: |
-          mvn release:clean
 
       - name: Perform release
         run: |
