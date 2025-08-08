@@ -18,6 +18,7 @@ package io.camunda.spring.client.annotation.value;
 import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.spring.client.jobhandling.JobHandlerFactory;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.util.function.ThrowingFunction;
@@ -32,13 +33,14 @@ public class JobWorkerValue implements Cloneable {
   private Boolean autoComplete;
   private List<String> fetchVariables;
   private Boolean enabled;
-  private ThrowingFunction<Object[], Object> method;
   private List<String> tenantIds;
   private Boolean forceFetchAllVariables;
   private Boolean streamEnabled;
   private Duration streamTimeout;
   private Integer maxRetries;
+  // cannot be changed from change set
   private JobHandlerFactory jobHandlerFactory;
+  private ThrowingFunction<Object[], Object> method;
 
   @Deprecated(forRemoval = true)
   private MethodInfo methodInfo;
@@ -69,10 +71,10 @@ public class JobWorkerValue implements Cloneable {
     this.requestTimeout = requestTimeout;
     this.pollInterval = pollInterval;
     this.autoComplete = autoComplete;
-    this.fetchVariables = fetchVariables;
+    this.fetchVariables = Collections.unmodifiableList(fetchVariables);
     this.enabled = enabled;
     this.method = method;
-    this.tenantIds = tenantIds;
+    this.tenantIds = Collections.unmodifiableList(tenantIds);
     this.forceFetchAllVariables = forceFetchAllVariables;
     this.streamEnabled = streamEnabled;
     this.streamTimeout = streamTimeout;
@@ -141,7 +143,7 @@ public class JobWorkerValue implements Cloneable {
   }
 
   public void setFetchVariables(final List<String> fetchVariables) {
-    this.fetchVariables = fetchVariables;
+    this.fetchVariables = Collections.unmodifiableList(fetchVariables);
   }
 
   public Boolean getEnabled() {
@@ -165,7 +167,7 @@ public class JobWorkerValue implements Cloneable {
   }
 
   public void setTenantIds(final List<String> tenantIds) {
-    this.tenantIds = tenantIds;
+    this.tenantIds = Collections.unmodifiableList(tenantIds);
   }
 
   public Boolean getForceFetchAllVariables() {
@@ -200,11 +202,11 @@ public class JobWorkerValue implements Cloneable {
     this.maxRetries = maxRetries;
   }
 
-  public JobHandlerFactory getJobWorkerFactory() {
+  public JobHandlerFactory getJobHandlerFactory() {
     return jobHandlerFactory;
   }
 
-  public void setJobWorkerFactory(final JobHandlerFactory jobHandlerFactory) {
+  public void setJobHandlerFactory(final JobHandlerFactory jobHandlerFactory) {
     this.jobHandlerFactory = jobHandlerFactory;
   }
 
