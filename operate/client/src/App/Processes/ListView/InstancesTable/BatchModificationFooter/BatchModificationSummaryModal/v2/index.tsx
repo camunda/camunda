@@ -11,23 +11,28 @@ import {observer} from 'mobx-react';
 import {Modal} from '@carbon/react';
 import {useLocation} from 'react-router-dom';
 import {type StateProps} from 'modules/components/ModalStateManager';
-import {getProcessInstanceFilters} from 'modules/utils/filter';
+import {
+  getProcessInstanceFilters,
+  getProcessInstancesRequestFilters,
+} from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Title, DataTable} from '../styled';
-import useOperationApply from '../../../useOperationApply';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
+import {notificationsStore} from 'modules/stores/notifications';
+import {useModifyProcessInstanceBatchOperation} from 'modules/mutations/processInstance/useModifyProcessInstanceBatchOperation';
+import {processInstancesStore} from 'modules/stores/processInstances';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
     const location = useLocation();
 
-    const {applyBatchOperation} = useOperationApply();
     const processInstancesFilters = getProcessInstanceFilters(location.search);
     const {flowNodeId: sourceFlowNodeId, process: bpmnProcessId} =
       processInstancesFilters;
@@ -35,15 +40,27 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
     const processName = process?.name ?? process?.bpmnProcessId ?? 'Process';
     const {selectedTargetFlowNodeId: targetFlowNodeId} =
       batchModificationStore.state;
+    const {selectedProcessInstanceIds, excludedProcessInstanceIds} =
+      processInstancesSelectionStore;
+
+    const query = getProcessInstancesRequestFilters();
+    const filterIds = query.ids || [];
+
+    const ids: string[] =
+      selectedProcessInstanceIds.length > 0
+        ? selectedProcessInstanceIds
+        : filterIds;
 
     const processDefinitionKey = useProcessDefinitionKeyContext();
     const {data: processDefinitionData} = useListViewXml({
       processDefinitionKey,
     });
+
     const sourceFlowNodeName = getFlowNodeName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
       flowNodeId: sourceFlowNodeId,
     });
+
     const targetFlowNodeName = getFlowNodeName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
       flowNodeId: targetFlowNodeId ?? undefined,
@@ -54,25 +71,42 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       processDefinitionKey,
       sourceFlowNodeId,
     );
+
     const isPrimaryButtonDisabled =
-      sourceFlowNodeId === undefined || targetFlowNodeId === null;
+      !sourceFlowNodeId || targetFlowNodeId === null;
+
+    const mutation = useModifyProcessInstanceBatchOperation({
+      onSuccess: () => {
+        panelStatesStore.expandOperationsPanel();
+        batchModificationStore.reset();
+        tracking.track({
+          eventName: 'batch-operation',
+          operationType: 'MODIFY_PROCESS_INSTANCE',
+        });
+      },
+      onError: ({message}) => {
+        processInstancesStore.unmarkProcessInstancesWithActiveOperations({
+          instanceIds: ids,
+          operationType: 'MODIFY_PROCESS_INSTANCE',
+          shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
+        });
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Operation could not be created',
+          subtitle: message.includes('403')
+            ? 'You do not have permission'
+            : undefined,
+          isDismissable: true,
+        });
+      },
+    });
+
     const headers = [
-      {
-        header: 'Operation',
-        key: 'operation',
-        width: '30%',
-      },
-      {
-        header: 'Flow Node',
-        key: 'flowNode',
-        width: '40%',
-      },
-      {
-        header: 'Affected instances',
-        key: 'affectedInstances',
-        width: '30%',
-      },
+      {header: 'Operation', key: 'operation', width: '30%'},
+      {header: 'Flow Node', key: 'flowNode', width: '40%'},
+      {header: 'Affected instances', key: 'affectedInstances', width: '30%'},
     ];
+
     const rows = [
       {
         id: 'batchMove',
@@ -93,25 +127,48 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
         onRequestClose={() => setOpen(false)}
         preventCloseOnClickOutside
         onRequestSubmit={() => {
-          if (isPrimaryButtonDisabled) {
-            return;
-          }
+          if (!sourceFlowNodeId || !targetFlowNodeId) return;
+
           tracking.track({
             eventName: 'batch-move-modification-apply-button-clicked',
           });
           setOpen(false);
           batchModificationStore.reset();
-          applyBatchOperation({
-            operationType: 'MODIFY_PROCESS_INSTANCE',
-            modifications: [
+
+          if (selectedProcessInstanceIds.length > 0) {
+            processInstancesStore.markProcessInstancesWithActiveOperations({
+              ids: selectedProcessInstanceIds,
+              operationType: 'MODIFY_PROCESS_INSTANCE',
+            });
+          } else {
+            processInstancesStore.markProcessInstancesWithActiveOperations({
+              ids: excludedProcessInstanceIds,
+              operationType: 'MODIFY_PROCESS_INSTANCE',
+              shouldPollAllVisibleIds: true,
+            });
+          }
+
+          const processInstanceKey: {$in?: string[]; $notIn?: string[]} = {};
+          if (ids.length) processInstanceKey.$in = ids;
+          if (excludedProcessInstanceIds.length)
+            processInstanceKey.$notIn = excludedProcessInstanceIds;
+
+          mutation.mutate({
+            moveInstructions: [
               {
-                modification: 'MOVE_TOKEN',
-                fromFlowNodeId: sourceFlowNodeId,
-                toFlowNodeId: targetFlowNodeId,
+                sourceElementId: sourceFlowNodeId,
+                targetElementId: targetFlowNodeId,
               },
             ],
-            onSuccess: panelStatesStore.expandOperationsPanel,
+            filter: {
+              processDefinitionKey: {$eq: processDefinitionKey},
+              ...(Object.keys(processInstanceKey).length > 0 && {
+                processInstanceKey,
+              }),
+            },
           });
+
+          setOpen(false);
         }}
       >
         <p>
