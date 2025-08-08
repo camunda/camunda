@@ -5,9 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.feel.impl.parameter;
+package io.camunda.zeebe.feel.tagged.impl;
 
-import io.camunda.zeebe.feel.impl.FromAiFunction;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;

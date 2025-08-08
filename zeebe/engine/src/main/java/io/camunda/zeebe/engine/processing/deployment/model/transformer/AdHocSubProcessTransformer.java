@@ -20,8 +20,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelE
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
-import io.camunda.zeebe.feel.impl.parameter.TaggedParameter;
-import io.camunda.zeebe.feel.impl.parameter.TaggedParameterExtractor;
+import io.camunda.zeebe.feel.tagged.impl.TaggedParameter;
+import io.camunda.zeebe.feel.tagged.impl.TaggedParameterExtractor;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
