@@ -35,7 +35,7 @@ async function main(context, github, currentData, prNumber, branchName) {
 }
 
 async function buildComment(mergedData, github, branchName) {
-  if (!mergedData?.tests?.length) return null;
+  if (!mergedData?.flakys?.length) return null;
 
   const lines = [
     `# 🧪 Flaky Tests Summary`,
@@ -43,13 +43,10 @@ async function buildComment(mergedData, github, branchName) {
     ``
   ];
 
-  const allTests = mergedData.tests.flatMap(pkg =>
-      pkg.flakys.map(test => ({
-        ...test,
-        packageName: pkg.packageName,
-        fullName: test.className ? `${test.className}.${test.methodName}` : test.methodName
-      }))
-  );
+  const allTests = mergedData.flakys.map(test => ({
+    ...test,
+    fullName: test.className ? `${test.className}.${test.methodName}` : test.methodName
+  }));
 
   if (!allTests.length) return null;
 

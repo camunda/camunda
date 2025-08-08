@@ -4,7 +4,7 @@ function parseComment(body) {
     if (!match) return null;
 
     const section = match[1];
-    const regex = /- \*\*(.*?)\*\* – .* \*\*(\d+)% flakiness\*\*\n  - Location: `(.*?)`\n  - Occurrences: (\d+) \/ (\d+)/g;
+    const regex = /- \*\*(.*?)\*\* – .* \*\*(\d+)% flakiness\*\*\n {2}- Location: `(.*?)`\n {2}- Occurrences: (\d+) \/ (\d+)/g;
 
     const tests = [];
     let totalRuns = 1;
@@ -12,9 +12,9 @@ function parseComment(body) {
 
     while ((m = regex.exec(section)) !== null) {
       const [_, fullName, , pkg, occurrences, runs] = m;
-      const [className, methodName] = fullName.includes('.')
-          ? [fullName.substring(0, fullName.lastIndexOf('.')), fullName.split('.').pop()]
-          : ['', fullName];
+      const lastDotIndex = fullName.lastIndexOf('.');
+      const className = lastDotIndex > -1 ? fullName.substring(0, lastDotIndex) : '';
+      const methodName = lastDotIndex > -1 ? fullName.substring(lastDotIndex + 1) : fullName;
 
       tests.push({
         packageName: pkg,
@@ -30,21 +30,12 @@ function parseComment(body) {
 
     return {
       totalRuns,
-      tests: groupByPackage(tests)
+      flakys: tests
     };
   } catch (err) {
     console.error('❌ Failed to parse comment:', err);
     return null;
   }
-}
-
-function groupByPackage(tests) {
-  const map = {};
-  for (const test of tests) {
-    if (!map[test.packageName]) map[test.packageName] = [];
-    map[test.packageName].push(test);
-  }
-  return Object.entries(map).map(([packageName, flakys]) => ({ packageName, flakys }));
 }
 
 function mergeFlakyData(current, historical) {
@@ -53,71 +44,50 @@ function mergeFlakyData(current, historical) {
   const newTotal = historical.totalRuns + 1;
   const merged = new Map();
 
-  for (const oldTest of historical.tests.flatMap(pkg => pkg.flakys.map(test => ({ ...test, packageName: pkg.packageName })))) {
+  for (const oldTest of historical.flakys) {
     const key = getTestKey(oldTest);
     merged.set(key, { ...oldTest, totalRuns: newTotal });
   }
 
-  for (const pkg of current.tests) {
-    for (const test of pkg.flakys) {
-      const key = `${pkg.packageName}.${test.className}.${test.methodName}`;
-      const existing = merged.get(key);
+  for (const test of current.flakys) {
+    const key = getTestKey(test);
+    const existing = merged.get(key);
 
-      if (existing) {
-        const jobs = [...new Set([...existing.jobs, ...test.jobs])];
-        merged.set(key, {
-          ...existing,
-          jobs,
-          occurrences: existing.occurrences + 1,
-          totalRuns: newTotal
-        });
-      } else {
-        merged.set(key, {
-          ...test,
-          packageName: pkg.packageName,
-          occurrences: 1,
-          totalRuns: newTotal
-        });
-      }
+    if (existing) {
+      const jobs = [...new Set([...existing.jobs, ...test.jobs])];
+      merged.set(key, {
+        ...existing,
+        jobs,
+        occurrences: existing.occurrences + 1,
+        totalRuns: newTotal
+      });
+    } else {
+      merged.set(key, {
+        ...test,
+        occurrences: 1,
+        totalRuns: newTotal
+      });
     }
   }
 
-  const packageMap = {};
-
+  const flakys = [];
   for (const test of merged.values()) {
     const flakiness = Math.round((test.occurrences / test.totalRuns) * 100);
-
-    if (!packageMap[test.packageName]) packageMap[test.packageName] = [];
-    packageMap[test.packageName].push({
-      className: test.className,
-      methodName: test.methodName,
-      jobs: test.jobs,
-      occurrences: test.occurrences,
-      totalRuns: test.totalRuns,
-      flakiness
-    });
+    flakys.push({ ...test, flakiness });
   }
 
-  return {
-    tests: Object.entries(packageMap).map(([packageName, flakys]) => ({
-      packageName,
-      flakys
-    }))
-  };
+  return { flakys };
 }
 
 function prepareFirstRunData(currentData) {
-  if (!currentData?.tests?.length) return { tests: [] };
+  if (!currentData?.flakys?.length) return { flakys: [] };
 
   return {
-    tests: currentData.tests.map(pkg => ({
-      packageName: pkg.packageName,
-      flakys: pkg.flakys.map(test => ({
-        ...test,
-        occurrences: test.occurrences || 1,
-        totalRuns: 1,
-        flakiness: test.occurrences * 100
-      }))
+    flakys: currentData.flakys.map(test => ({
+      ...test,
+      occurrences: test.occurrences || 1,
+      totalRuns: 1,
+      flakiness: (test.occurrences || 1) * 100
     }))
   };
 }

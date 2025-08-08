@@ -42,10 +42,11 @@ runs:
           await main(context, github, processedData, ${{ inputs.pr-number }}, '${{ inputs.branch-name }}');
 
           /**
-          * Processes the raw flaky test data and organizes it by package.
+          * Processes the raw flaky test data and organizes it into a flat list.
           */
           function processFlakyTestsData(rawData) {
-            const packageMap = new Map();
+            const testMap = new Map();
+            const getTestKey = (test) => `${test.packageName}.${test.className}.${test.methodName}`;
 
             rawData.forEach(({ job, flaky_tests }) => {
               if (!flaky_tests || flaky_tests.trim() === '') {
@@ -54,26 +55,35 @@ runs:
               }
 
               const testNames = flaky_tests
-              .split(/\s+/)
-              .map(t => t.trim())
-              .filter(Boolean);
+                .split(/\s+/)
+                .map(t => t.trim())
+                .filter(Boolean);
 
               console.log(`[flaky-tests] Job "${job}": found ${testNames.length} test(s)`);
 
               testNames.forEach(testName => {
                 const parsedTest = parseTestName(testName);
                 if (parsedTest) {
-                  addTestToMap(packageMap, parsedTest, job);
+                  const key = getTestKey(parsedTest);
+                  const existingTest = testMap.get(key);
+
+                  if (existingTest) {
+                    if (!existingTest.jobs.includes(job)) {
+                      existingTest.jobs.push(job);
+                    }
+                    existingTest.occurrences++;
+                  } else {
+                    testMap.set(key, {
+                      ...parsedTest,
+                      jobs: [job],
+                      occurrences: 1
+                    });
+                  }
                 }
               });
             });
 
-            return {
-              tests: Array.from(packageMap.entries()).map(([packageName, tests]) => ({
-                packageName,
-                flakys: Array.from(tests.values())
-              }))
-            };
+            return { flakys: Array.from(testMap.values()) };
           }
 
           /**
@@ -102,31 +112,4 @@ runs:
               className,
               methodName
             };
-          }
-
-          /**
-          * Adds a parsed test to the package map.
-          */
-          function addTestToMap(packageMap, { packageName, className, methodName }, jobName) {
-            if (!packageMap.has(packageName)) {
-              packageMap.set(packageName, new Map());
-            }
-
-            const testsMap = packageMap.get(packageName);
-            const testKey = className ? `${className}.${methodName}` : methodName;
-
-            if (testsMap.has(testKey)) {
-              const testEntry = testsMap.get(testKey);
-              if (!testEntry.jobs.includes(jobName)) {
-                testEntry.jobs.push(jobName);
-              }
-                testEntry.occurrences++;
-              } else {
-                testsMap.set(testKey, {
-                  className,
-                  methodName,
-                  jobs: [jobName],
-                  occurrences: 1
-                });
-              }
           }
