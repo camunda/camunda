@@ -31,7 +31,11 @@ public final class FormServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new FormServices(
-            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
+            mock(BrokerClient.class),
+            mock(SecurityContextProvider.class),
+            client,
+            null,
+            mock(ApiServicesExecutorProvider.class));
   }
 
   @Test

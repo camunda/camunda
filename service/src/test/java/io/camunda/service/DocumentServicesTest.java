@@ -45,7 +45,8 @@ public class DocumentServicesTest {
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             mock(CamundaAuthentication.class),
-            registry);
+            registry,
+            mock(ApiServicesExecutorProvider.class));
   }
 
   @Test

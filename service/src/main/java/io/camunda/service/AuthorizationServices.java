@@ -38,15 +38,20 @@ public class AuthorizationServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuthorizationSearchClient authorizationSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.authorizationSearchClient = authorizationSearchClient;
   }
 
   @Override
   public AuthorizationServices withAuthentication(final CamundaAuthentication authentication) {
     return new AuthorizationServices(
-        brokerClient, securityContextProvider, authorizationSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        authorizationSearchClient,
+        authentication,
+        executorProvider);
   }
 
   @Override

@@ -24,13 +24,15 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   public ResourceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
   }
 
   @Override
   public ResourceServices withAuthentication(final CamundaAuthentication authentication) {
-    return new ResourceServices(brokerClient, securityContextProvider, authentication);
+    return new ResourceServices(
+        brokerClient, securityContextProvider, authentication, executorProvider);
   }
 
   public CompletableFuture<DeploymentRecord> deployResources(

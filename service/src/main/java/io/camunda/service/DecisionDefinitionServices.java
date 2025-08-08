@@ -42,8 +42,9 @@ public final class DecisionDefinitionServices
       final SecurityContextProvider securityContextProvider,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
       final DecisionRequirementsServices decisionRequirementServices,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.decisionDefinitionSearchClient = decisionDefinitionSearchClient;
     this.decisionRequirementServices = decisionRequirementServices;
   }
@@ -55,7 +56,8 @@ public final class DecisionDefinitionServices
         securityContextProvider,
         decisionDefinitionSearchClient,
         decisionRequirementServices,
-        authentication);
+        authentication,
+        executorProvider);
   }
 
   @Override

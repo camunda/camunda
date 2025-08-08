@@ -34,8 +34,9 @@ public final class UsageMetricsServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UsageMetricsSearchClient usageMetricsSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.usageMetricsSearchClient = usageMetricsSearchClient;
   }
 
@@ -81,6 +82,10 @@ public final class UsageMetricsServices
   @Override
   public UsageMetricsServices withAuthentication(final CamundaAuthentication authentication) {
     return new UsageMetricsServices(
-        brokerClient, securityContextProvider, usageMetricsSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        usageMetricsSearchClient,
+        authentication,
+        executorProvider);
   }
 }

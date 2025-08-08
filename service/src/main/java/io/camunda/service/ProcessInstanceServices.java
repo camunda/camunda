@@ -72,8 +72,9 @@ public final class ProcessInstanceServices
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentServices incidentServices,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.incidentServices = incidentServices;
@@ -87,7 +88,8 @@ public final class ProcessInstanceServices
         processInstanceSearchClient,
         sequenceFlowSearchClient,
         incidentServices,
-        authentication);
+        authentication,
+        executorProvider);
   }
 
   @Override
