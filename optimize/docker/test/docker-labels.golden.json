@@ -6,7 +6,7 @@
   "io.openshift.wants": "zeebe,elasticsearch,identity,keycloak,opensearch",
   "io.openshift.tags": "bpmn,optimization,camunda",
   "org.opencontainers.image.authors": "optimize@camunda.com",
-  "org.opencontainers.image.base.name": "docker.io/library/alpine:3.22.0",
+  "org.opencontainers.image.base.name": "docker.io/library/alpine:3.22.1",
   "org.opencontainers.image.base.digest": $BASEDIGEST,
   "org.opencontainers.image.created": $DATE,
   "org.opencontainers.image.description": "Provides business activity monitoring for workflows and uses BPMN-based analysis to uncover process bottlenecks",

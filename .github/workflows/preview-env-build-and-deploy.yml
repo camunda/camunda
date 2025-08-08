@@ -18,186 +18,147 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
-jobs:
-  conflicts:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    runs-on: ubuntu-latest
-    name: Check Conflicts
+jobs:  
+  build-camunda:
+    if: >
+      github.event.pull_request.state != 'closed' && (
+        contains(github.event.label.name, 'deploy-preview') ||
+        contains(github.event.pull_request.labels.*.name, 'deploy-preview')
+      )
+    name: Build Camunda
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 20
     steps:
-      - name: Check PR for merge conflicts
-        uses: camunda/infra-global-github-actions/preview-env/conflicts@main
-        with:
-          pull-request-id: ${{ github.event.pull_request.number }}
+    - name: Checkout
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-  build-zeebe:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Zeebe Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout ${{ github.head_ref }} branch
-        uses: actions/checkout@v4
-        with:
-          ref: refs/heads/${{ github.head_ref }}
-          fetch-depth: 0 # fetches all history for all branches and tags
+    - uses: ./.github/actions/setup-build
+      with:
+        dockerhub-readonly: true
+        harbor: true
+        vault-address: ${{ secrets.VAULT_ADDR }}
+        vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      - uses: ./.github/actions/setup-build
-        with:
-          dockerhub: true
-          harbor: true
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+    - uses: ./.github/actions/build-zeebe
+      id: build-camunda
+      with:
+        maven-extra-args: -PskipFrontendBuild
 
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C -PskipFrontendBuild
-
-      - name: Set environment variables
-        env:
-          HEAD_REF: ${{ github.head_ref }}
-        run: |
-          GIT_COMMIT_HASH=$(git rev-parse "$HEAD_REF")
-          echo "VERSION=pr-$GIT_COMMIT_HASH" >> "$GITHUB_ENV"
-
-      - uses: ./.github/actions/build-platform-docker
-        with:
-          repository: registry.camunda.cloud/team-camunda/zeebe
-          version: ${{ env.VERSION }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
+    - uses: ./.github/actions/build-platform-docker
+      id: build-camunda-docker
+      with:
+        repository: registry.camunda.cloud/team-camunda/camunda
+        distball: ${{ steps.build-camunda.outputs.distball }}
+        platforms: linux/amd64
+        dockerfile: camunda.Dockerfile
+        push: true
+        version: pr-${{ github.event.pull_request.head.sha }}
 
   build-optimize:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Optimize Build
+    if: >
+      github.event.pull_request.state != 'closed' && (
+        contains(github.event.label.name, 'deploy-preview') ||
+        contains(github.event.pull_request.labels.*.name, 'deploy-preview')
+      )
+    name: Build Optimize
     uses: ./.github/workflows/optimize-ci-build-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref }}
       pushDocker: true
 
-  build-operate:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Operate Build
-    uses: ./.github/workflows/operate-ci-build-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref }}
-      previewEnv: true
-
-  build-tasklist:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Tasklist Build
-    uses: ./.github/workflows/tasklist-ci-build-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref }}
-      previewEnv: true
-
   deploy-preview:
+    if: >
+      github.event.pull_request.state != 'closed' && (
+        contains(github.event.label.name, 'deploy-preview') ||
+        contains(github.event.pull_request.labels.*.name, 'deploy-preview')
+      )
+    name: Deploy Preview Environment C8SM
+    needs:
+    - build-camunda
+    - build-optimize
     # permission needed for the camunda/infra-global-github-actions/preview-env/create
     # action to have access to Kubernetes events
     permissions:
       contents: read
       deployments: write
       id-token: write
-    if: |
-        needs.build-tasklist.result != 'skipped' && needs.build-tasklist.result != 'cancelled' &&
-        needs.build-operate.result != 'skipped' && needs.build-operate.result != 'cancelled' &&
-        needs.build-optimize.result != 'skipped' && needs.build-optimize.result != 'cancelled' &&
-        needs.build-zeebe.result != 'skipped' && needs.build-zeebe.result != 'cancelled'
-    needs: [ build-optimize, build-operate, build-tasklist, conflicts, build-zeebe ]
     runs-on: ubuntu-latest
-    name: Deploy Preview Environment C8SM
-    env:
-      BRANCH_NAME: ${{ github.head_ref }} # head_ref = branch on PR
-
+    timeout-minutes: 40
     steps:
-      #########################################################################
-      # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
-      - id: sanitize
-        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
-        with:
-          branch: ${{ env.BRANCH_NAME }}
-          max_length: '15'
+    #########################################################################
+    # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
+    - id: sanitize
+      uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+      with:
+        branch: ${{ github.head_ref }}
+        max_length: '15'
 
-      #########################################################################
-      # Setup: import secrets from vault
-      - name: Import secrets
-        id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
+    #########################################################################
+    # Setup: import secrets from vault
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
 
-      #########################################################################
-      # Setup: checkout code. This is required because we are using
-      # composite actions and deployment manifests.
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+    #########################################################################
+    # Setup: checkout code. This is required because we are using
+    # composite actions and deployment manifests.
+    - name: Checkout
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: "Read Java / Version Info"
-        id: pom-info
-        uses: YunaBraska/java-info-action@main
+    #########################################################################
+    # Determine the argocd arguments that need to be passed to the create app command
+    - name: Determine Argocd Arguments for c8sm
+      shell: bash
+      run: |
+        echo "argocd_arguments=--dest-namespace ${app_name} \
+          --file .ci/preview-environments/argo/c8sm.yml \
+          --helm-set global.preview.git.branch=${revision} \
+          --helm-set global.preview.ingress.domain=camunda.camunda.cloud \
+          --helm-set camunda-platform.core.image.tag=${docker_tag} \
+          --helm-set camunda-platform.optimize.image.tag=${docker_tag} \
+          --name ${app_name} \
+          --revision ${revision} \
+          --helm-set git.branch=${revision} \
+          --upsert" >> "$GITHUB_ENV"
+      env:
+        docker_tag: "pr-${{ github.event.pull_request.head.sha }}"
+        revision: ${{ github.head_ref }}
+        app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
 
-      #########################################################################
-      # Determine the argocd arguments that need to be passed to the create app command
-      - name: Determine Argocd Arguments for c8sm
-        shell: bash
-        run: |
-          echo "argocd_arguments=--dest-namespace ${app_name} \
-            --file .ci/preview-environments/argo/c8sm.yml \
-            --helm-set global.ingress.host=${app_url} \
-            --helm-set global.identity.auth.publicIssuerUrl=https://${app_url}/auth/realms/camunda-platform \
-            --helm-set global.identity.auth.operate.redirectUrl=https://${app_url}/operate \
-            --helm-set global.identity.auth.tasklist.redirectUrl=https://${app_url}/tasklist \
-            --helm-set global.identity.auth.optimize.redirectUrl=https://${app_url}/optimize \
-            --helm-set global.identity.auth.webModeler.redirectUrl=https://${app_url}/modeler \
-            --helm-set global.identity.auth.console.redirectUrl=https://${app_url}/console \
-            --helm-set global.identity.auth.connectors.redirectUrl=https://${app_url}/connectors \
-            --helm-set camunda-platform.identity.fullURL=https://${app_url}/identity \
-            --helm-set camunda-platform.operate.image.tag=${docker_tag} \
-            --helm-set camunda-platform.optimize.image.tag=${docker_tag} \
-            --helm-set camunda-platform.tasklist.image.tag=${docker_tag} \
-            --helm-set camunda-platform.zeebe.image.tag=${docker_tag} \
-            --helm-set camunda-platform.zeebeGateway.ingress.grpc.host=zeebe-${app_url} \
-            --name ${app_name} \
-            --revision ${revision} \
-            --helm-set git.branch=${revision} \
-            --upsert" >> "$GITHUB_ENV"
-        env:
-          docker_tag: "pr-${{ github.event.pull_request.head.sha }}"
-          revision: ${{ env.BRANCH_NAME }}
-          app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
-          app_url: ${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud
-
-      #########################################################################
-      # Create a preview environment
-      - name: Deploy Preview Environment for c8sm
-        uses: camunda/infra-global-github-actions/preview-env/create@main
-        with:
-          revision: ${{ env.BRANCH_NAME }}
-          argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-          app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
-          app_url: https://${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud/operate
-          argocd_arguments: ${{ env.argocd_arguments }}
-          argocd_server: argocd.int.camunda.com
-          argocd_wait_for_sync_timeout: "1800" # waits up to 30 minutes
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-  comment:
-    if: always() && needs.deploy-preview.result != 'skipped' && needs.deploy-preview.result != 'cancelled'
-    name: Create Deployment Result Summary Comment
+    #########################################################################
+    # Create a preview environment
+    - name: Deploy Preview Environment for c8sm
+      uses: camunda/infra-global-github-actions/preview-env/create@main
+      with:
+        revision: ${{ github.head_ref }}
+        argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+        app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
+        app_url: https://${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud
+        argocd_arguments: ${{ env.argocd_arguments }}
+        argocd_server: argocd.int.camunda.com
+        argocd_wait_for_sync_timeout: "1800" # waits up to 30 minutes
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+  conflicts:
+    if: >
+      github.event.pull_request.state != 'closed' && (
+        contains(github.event.label.name, 'deploy-preview') ||
+        contains(github.event.pull_request.labels.*.name, 'deploy-preview')
+      )
     runs-on: ubuntu-latest
-    needs: [deploy-preview]
     steps:
-      - uses: camunda/infra-global-github-actions/preview-env/comment@main
+    - name: Check PR for merge conflicts
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@main
+      with:
+        pull-request-id: ${{ github.event.pull_request.number }}
 
   clean:
     if: always() && needs.deploy-preview.result != 'skipped' && needs.deploy-preview.result != 'cancelled'
@@ -207,3 +168,11 @@ jobs:
     secrets: inherit
     with:
       pull-request: ${{ github.event.pull_request.number }}
+
+  comment:
+    if: always() && needs.deploy-preview.result != 'skipped' && needs.deploy-preview.result != 'cancelled'
+    name: Create Deployment Result Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-preview]
+    steps:
+    - uses: camunda/infra-global-github-actions/preview-env/comment@main

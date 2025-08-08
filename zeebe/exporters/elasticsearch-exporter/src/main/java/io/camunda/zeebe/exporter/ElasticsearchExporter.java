@@ -70,8 +70,6 @@ public class ElasticsearchExporter implements Exporter {
     pluginRepository.load(configuration.getInterceptorPlugins());
 
     context.setFilter(new ElasticsearchRecordFilter(configuration));
-    // Re-create the schema manager on every configuration change
-    schemaManager = new ElasticsearchExporterSchemaManager(client, configuration);
     registry = context.getMeterRegistry();
   }
 

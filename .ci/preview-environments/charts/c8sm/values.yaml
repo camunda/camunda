@@ -1,505 +1,404 @@
-git:
-  # will be set by the "preview-env-deploy" action
-  branch: master
-  # Defines the repository URL to use for annotating resources
-  repoUrl: https://github.com/camunda/camunda.git
+---
+# Default values for the Connectors preview environment
 
+# Global values
 global:
+
+  # Common labels
   labels:
-    camunda.cloud/source: argocd
+    # app label will be dynamically set according to preview envrionment name
+    app: monorepo
     camunda.cloud/managed-by: Helm
-    app: camunda-camunda-cloud
-    team: camunda
-  ingress:
-    enabled: true
-    className: nginx
-    annotations:
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/auth-url: "https://vouch.camunda.cloud/validate"
-      nginx.ingress.kubernetes.io/configuration-snippet: |
-        recursive_error_pages on;
-        error_page 400 = @error400;
-        error_page 500 501 502 503 504 = @service_unavailable;
-      nginx.ingress.kubernetes.io/server-snippet: |-
-        location @error400 { return 302 https://vouch.camunda.cloud/v1/logout; }
-        location @service_unavailable {
-        ssi on;
-        return 503 '
-          <!DOCTYPE html>
-          <html lang=en-US>
-          <head>
-            <meta charset=utf-8>
-            <base target="_blank">
-            <title>Preview Environment not available</title>
-            <meta name=viewport content="width=device-width, initial-scale=1">
-            <style>
-            body {
-                font-family: IBM Plex Sans, sans-serif;
-                text-align: center;
-                padding: 50px;
-            }
+    camunda.cloud/source: argocd
+    team: monorepo-devops
+  
+  image:
+    pullSecrets:
+    - name: dockerhub-registry
+    - name: registry-camunda-cloud
 
-            h1 {
-                color: #FC5D0D;
-            }
+  # still required by some subcharts (e.g. elasticsearch)
+  imagePullSecrets:
+  - name: dockerhub-registry
+  - name: registry-camunda-cloud
 
-            mark {
-                background: #EEE;
-                padding: 2px 4px;
-                border: 1px solid #b4b4b4;
-                border-radius: 3px;
-            }
+  # Preview environment configurations
+  preview:
+    git:
+      # GitHub references for annotating resources
+      # Branch name will be dynamically set with PR branch name
+      branch: main
+      repoUrl: https://github.com/camunda/camunda
+    ingress:
+      # The domain name under which to expose the preview environment
+      domain: camunda.camunda.cloud
 
-            p {
-                color: #555;
-            }
+  # Camunda 8 Self-Managed global configurations
+  elasticsearch:
+    # necessary due to name override bugs
+    url:
+      host: elasticsearch
 
-            .center-container {
-                display: inline-block;
-                text-align: left;
-                padding: 0 10%;
-            }
-
-            #common-issues {
-                display: flex;
-                justify-content: center;
-                padding: 0 10%;
-            }
-
-            #innerlist {
-                padding: 0;
-                text-align: left;
-            }
-
-            li {
-                margin-bottom: 10px;
-                list-style: none;
-            }
-
-            li:before {
-                content: "\2022";
-                display: inline-block;
-                width: 1em;
-                margin-left: -1em;
-            }
-
-            .margin {
-                margin-top: 4px;
-            }
-
-            a {
-                color: #0072CE;
-            }
-           </style>
-          </head>
-          <body>
-              <h1>
-               Your Preview Environment Is Currently Unavailable
-              </h1>
-              <p>
-                <b>If you just deployed your <a href="https://confluence.camunda.com/display/HAN/Preview+Environments" class="link">Preview Environment</a> a few minutes ago, it is very likely this will auto-resolve within 15 minutes.
-                <br>If it does not, here is how you can debug it.</b>
-                <br>
-                <div id="common-issues">
-                  <h3>Troubleshooting:</h3>
-                </div>
-                <div class="center-container">
-                 <ul id="innerlist">
-                    <li>
-                        &#128011; Check that the Docker image of the application for the Preview Environment has been created and uploaded to Harbor Docker Registry</a>.
-                        <ul>
-                            <li class="margin">How to log into Harbor: <a href="https://confluence.camunda.com/pages/viewpage.action?spaceKey=HAN&title=Harbor+Docker+Registry#HarborDockerRegistry-HowdoIandmyteamuseit?" class="link"> Guide</a>.</li>
-                        </ul>
-                     </li>
-                    <li>
-                       &#9729; Your Preview Environment is deployed in the <a href="https://confluence.camunda.com/display/HAN/Infrastructure+Platform#InfrastructurePlatform-Clusters" class="link"> camunda-ci </a> Kubernetes cluster.
-                       <ul>
-                          <li>
-                             You can check the logs of the corresponding Argo CD application, and of the application&apos;s Kubernetes pods</a>.
-                             <ul class="margin">
-                                <li>How to log into ArgoCD: click on the <mark>Log in via Okta</mark> button.</li>
-                                <li>Make sure to check the application&apos;s pod logs to ensure the application is running successfully.</li>
-                             </ul>
-                          </li>
-                          <li class="margin">
-                             You can also check the logs of the application with <mark>kubectl</mark> directly.
-                             <ul class="margin">
-                                <li>How to get access to a Kubernetes cluster: <a href="https://confluence.camunda.com/display/HAN/Accessing+Kubernetes+Clusters" class="link">Guide </a> </li>
-                                <li>How to see logs with <mark>kubectl</mark>: <a href="https://confluence.camunda.com/display/HAN/Useful+Kubernetes+Commands+and+Utilities" class="link">Guide</a> </li>
-                             </ul>
-                           </li>
-                       </ul>
-                    <li> &#128221; Check the logs of the workflows in GitHub. The workflows for building and pushing the application Docker image to Harbor and to create a Preview Environment in ArgoCD should be passing. Try re-rerunning them if they failed. </li>
-                 </ul>
-                </br></br>
-                If none of these steps helped resolving the issue, feel free to ask a question in the
-                <a href="https://camunda.slack.com/archives/C5AHF1D8T" class="link">#ask-infra</a> channel.
-               </div>
-              </p>
-          </body>
-          </html>';
-        }
-      nginx.ingress.kubernetes.io/auth-response-headers: X-Vouch-User,X-Vouch-IdP-Claims-preferred_username
-      nginx.ingress.kubernetes.io/auth-signin: "https://vouch.camunda.cloud/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err"
-      nginx.ingress.kubernetes.io/auth-snippet: |-
-        auth_request_set $auth_resp_jwt $upstream_http_x_vouch_jwt;
-        auth_request_set $auth_resp_err $upstream_http_x_vouch_err;
-        auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
-      nginx.ingress.kubernetes.io/session-cookie-change-on-failure: "true"
-      nginx.ingress.kubernetes.io/session-cookie-conditional-samesite-none: "true"
-    host: "test.camunda.camunda.cloud"
-    tls:
-      enabled: true
-      secretName: camunda-tls
   identity:
     auth:
-      # will be replaced by the preview-env-deploy workflow
-      publicIssuerUrl: "https://test.camunda.camunda.cloud/auth/realms/camunda-platform"
-      operate:
-        # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https://test.camunda.camunda.cloud/operate"
-        existingSecret:
-          name: identity-secret-for-components
-      tasklist:
-        # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https://test.camunda.camunda.cloud/tasklist"
-        existingSecret:
-          name: identity-secret-for-components
-      optimize:
-        # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https://test.camunda.camunda.cloud/optimize"
-        existingSecret:
-          name: identity-secret-for-components
-      webModeler:
-        # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https:/test.camunda.camunda.cloud/modeler"
-      console:
-        # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https://test.camunda.camunda.cloud/console"
-        existingSecret:
-          name: identity-secret-for-components
+      # Enable Camunda Identity-based authentication
+      enabled: true
+      # Token issuer (Keycloak) URL
+      publicIssuerUrl: https://{{ include "ingress.domain" . }}/auth/realms/camunda-platform
+      admin:
+        enabled: true
+        # fixed secret, to avoid generating a random one each time
+        existingSecret: admin
       connectors:
-        # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https://test.camunda.camunda.cloud/connectors"
-        existingSecret:
-          name: identity-secret-for-components
-      zeebe:
-        existingSecret:
-          name: identity-secret-for-components
-
-camunda-platform:
-  enabled: true
-
-  elasticsearch:
-    master:
-      replicaCount: 1
-      persistence:
-        size: 15Gi
-      nodeSelector:
-        cloud.google.com/gke-nodepool: previews
-      tolerations:
-        - key: "previews"
-          operator: "Exists"
-          effect: "NoSchedule"
-
-  identity:
-    env:
-      - name: KEYCLOAK_USERS_0_ROLES_0
-        value: Identity
-      - name: KEYCLOAK_USERS_0_ROLES_1
-        value: Operate
-      - name: KEYCLOAK_USERS_0_ROLES_2
-        value: Tasklist
-      - name: KEYCLOAK_USERS_0_ROLES_3
-        value: Optimize
-      - name: KEYCLOAK_USERS_0_ROLES_4
-        value: Web Modeler
-      - name: KEYCLOAK_USERS_0_ROLES_5
-        value: Console
-      - name: KEYCLOAK_CLIENTS_2_ID
-        value: venom
-      - name: KEYCLOAK_CLIENTS_2_NAME
-        value: Venom
-      - name: KEYCLOAK_CLIENTS_2_SECRET
-      - name: KEYCLOAK_CLIENTS_2_ID
-        value: venom
-      - name: KEYCLOAK_CLIENTS_2_NAME
-        value: Venom
-      - name: KEYCLOAK_CLIENTS_2_SECRET
-        valueFrom:
-          secretKeyRef:
-            name: identity-secret-for-components
-            key: identity-secret
-      - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
-        value: /dummy
-      - name: KEYCLOAK_CLIENTS_2_ROOT_URL
-        value: http://dummy
-      - name: KEYCLOAK_CLIENTS_2_TYPE
-        value: CONFIDENTIAL
-      # Identity access.
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_RESOURCE_SERVER_ID
-        value: camunda-identity-resource-server
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_DEFINITION
-        value: read
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_RESOURCE_SERVER_ID
-        value: camunda-identity-resource-server
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_DEFINITION
-        value: write
-      # Operate access.
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_RESOURCE_SERVER_ID
-        value: operate-api
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_DEFINITION
-        value: "read:*"
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_RESOURCE_SERVER_ID
-        value: operate-api
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_DEFINITION
-        value: "write:*"
-      # Tasklist access.
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_RESOURCE_SERVER_ID
-        value: tasklist-api
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_DEFINITION
-        value: "read:*"
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_RESOURCE_SERVER_ID
-        value: tasklist-api
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_DEFINITION
-        value: "write:*"
-      # Optimize access.
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_RESOURCE_SERVER_ID
-        value: optimize-api
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_DEFINITION
-        value: "write:*"
-      # Zeebe access.
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_RESOURCE_SERVER_ID
-        value: zeebe-api
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_DEFINITION
-        value: "write:*"
-      # WebModeler access.
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_RESOURCE_SERVER_ID
-        value: web-modeler-api
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_DEFINITION
-        value: "write:*"
-      # Console access.
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_RESOURCE_SERVER_ID
-        value: console-api
-      - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_DEFINITION
-        value: "write:*"
-      - name: KEYCLOAK_CLIENTS_3_ID
-        value: test
-      - name: KEYCLOAK_CLIENTS_3_NAME
-        value: Test
-      - name: KEYCLOAK_CLIENTS_3_SECRET
-        value: ${DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET}
-      - name: KEYCLOAK_CLIENTS_3_REDIRECT_URIS_0
-        value: /dummy
-      - name: KEYCLOAK_CLIENTS_3_ROOT_URL
-        value: http://dummy
-      - name: KEYCLOAK_CLIENTS_3_TYPE
-        value: CONFIDENTIAL
-      # Identity access.
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_0_RESOURCE_SERVER_ID
-        value: camunda-identity-resource-server
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_0_DEFINITION
-        value: read
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_1_RESOURCE_SERVER_ID
-        value: camunda-identity-resource-server
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_1_DEFINITION
-        value: write
-      # Operate access.
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_2_RESOURCE_SERVER_ID
-        value: operate-api
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_2_DEFINITION
-        value: "read:*"
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_3_RESOURCE_SERVER_ID
-        value: operate-api
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_3_DEFINITION
-        value: "write:*"
-      # Tasklist access.
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_4_RESOURCE_SERVER_ID
-        value: tasklist-api
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_4_DEFINITION
-        value: "read:*"
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_5_RESOURCE_SERVER_ID
-        value: tasklist-api
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_5_DEFINITION
-        value: "write:*"
-      # Optimize access.
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_6_RESOURCE_SERVER_ID
-        value: optimize-api
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_6_DEFINITION
-        value: "write:*"
-      # Zeebe access.
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_7_RESOURCE_SERVER_ID
-        value: zeebe-api
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_7_DEFINITION
-        value: "write:*"
-      # WebModeler access.
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_8_RESOURCE_SERVER_ID
-        value: web-modeler-api
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_8_DEFINITION
-        value: "write:*"
-      # Console access.
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_9_RESOURCE_SERVER_ID
-        value: console-api
-      - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_9_DEFINITION
-        value: "write:*"
-    contextPath: "/identity"
-    # will be replaced by the preview-env-deploy workflow
-    fullURL: "https://test.camunda.camunda.cloud/identity"
+        # fixed secret, to avoid generating a random one each time
+        existingSecret: connectors
+      console:
+        # fixed secret, to avoid generating a random one each time
+        existingSecret: console
+        redirectUrl: https://{{ include "ingress.domain" . }}/console
+      core:
+        # fixed secret, to avoid generating a random one each time
+        existingSecret: core
+        redirectUrl: https://{{ include "ingress.domain" . }}/core
+      optimize:
+        # fixed secret, to avoid generating a random one each time
+        existingSecret: optimize
+        redirectUrl: https://{{ include "ingress.domain" . }}/optimize
+      webModeler:
+        redirectUrl: https://{{ include "ingress.domain" . }}/modeler
     keycloak:
-      nodeSelector:
-        cloud.google.com/gke-nodepool: previews
-      tolerations:
-        - key: "previews"
-          operator: "Exists"
-          effect: "NoSchedule"
-    nodeSelector:
-      cloud.google.com/gke-nodepool: previews
-    tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
+      contextPath: /auth
 
-  operate:
-    env:
-      - name: SPRING_PROFILES_ACTIVE
-        value: dev-data
-    image:
-      registry: registry.camunda.cloud
-      repository: team-camunda/operate
-      # will be replaced by the preview-env-deploy workflow
-      tag: latest
-      pullSecrets:
-      - name: registry-camunda-cloud
-    contextPath: "/operate"
-    nodeSelector:
-      cloud.google.com/gke-nodepool: previews
-    tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
+  secrets:
+    name: camunda-credentials
 
-  optimize:
-    image:
-      registry: registry.camunda.cloud
-      repository: team-camunda/optimize
-      # will be replaced by the preview-env-deploy workflow
-      tag: latest
-      pullSecrets:
-        - name: registry-camunda-cloud
-    contextPath: "/optimize"
-    nodeSelector:
-      cloud.google.com/gke-nodepool: previews
-    tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
+  security:
+    authentication:
+      method: oidc
 
-  tasklist:
-    image:
-      registry: registry.camunda.cloud
-      repository: team-camunda/tasklist
-      # will be replaced by the preview-env-deploy workflow
-      tag: latest
-      pullSecrets:
-        - name: registry-camunda-cloud
-    contextPath: "/tasklist"
-    nodeSelector:
-      cloud.google.com/gke-nodepool: previews
-    tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
+  zeebeClusterName: zeebe-cluster
 
-  zeebe:
-    image:
-      registry: registry.camunda.cloud
-      repository: team-camunda/zeebe
-      # will be replaced by the preview-env-deploy workflow
-      tag: latest
-      pullSecrets:
-        - name: registry-camunda-cloud
-    nodeSelector:
-      cloud.google.com/gke-nodepool: previews
-    tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
 
-  webModeler:
-    contextPath: "/modeler"
-    restapi:
-      nodeSelector:
-        cloud.google.com/gke-nodepool: previews
-      tolerations:
-        - key: "previews"
-          operator: "Exists"
-          effect: "NoSchedule"
-    webapp:
-      nodeSelector:
-        cloud.google.com/gke-nodepool: previews
-      tolerations:
-        - key: "previews"
-          operator: "Exists"
-          effect: "NoSchedule"
+# Camunda 8 Self-Managed configurations
+camunda-platform:
 
-  console:
-    contextPath: "/console"
-    nodeSelector:
-      cloud.google.com/gke-nodepool: previews
-    tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
+  fullnameOverride: camunda
 
   connectors:
-    contextPath: "/connectors"
+    enabled: true
+    fullnameOverride: connectors
+    contextPath: /connectors
+    # image:
+    #   registry: camunda/connectors-bundle
+    env:
+    - name: JAVA_OPTS
+      value: "-Xms512m -Xmx512m"
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 0.5
+        memory: 512Mi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    persistence:
+      enabled: true
+      size: 50Mi
+    tolerations:
+    - key: "previews"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  console:
+    enabled: true
+    fullnameOverride: console
+    contextPath: /console
+    # image:
+    #   registry: camunda/console
+    # Overrides the default service URL because the preview environment
+    # is exposed through its own (separate)ingress controller.
+    overrideConfiguration: |
+      camunda:
+        console:
+          managed:
+            method: plain
+            releases:
+            - name: {{ .Release.Name }}
+              namespace: {{ .Release.Namespace }}
+              components:
+              - id: console
+                url: https://{{ include "ingress.domain" . }}{{ .Values.console.contextPath }}
+              - id: keycloak
+                url: https://{{ include "ingress.domain" . }}{{ .Values.global.identity.keycloak.contextPath }}
+              - id: identity
+                url: https://{{ include "ingress.domain" . }}{{ .Values.identity.contextPath }}
+              - id: webModelerWebApp
+                url: https://{{ include "ingress.domain" . }}{{ .Values.webModeler.contextPath }}
+              - id: optimize
+                url: https://{{ include "ingress.domain" . }}{{ .Values.optimize.contextPath }}
+              - id: operate
+                url: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}/operate
+              - id: tasklist
+                url: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}/tasklist
+              - id: coreIdentity
+                url: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}/identity
+              - id: connectors
+                url: https://{{ include "ingress.domain" . }}{{ .Values.connectors.contextPath }}
+              - id: core
+                urls:
+                  http: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}
+    env:
+    - name: JAVA_OPTS
+      value: "-Xms512m -Xmx512m"
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 0.5
+        memory: 512Mi
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
     tolerations:
+    - key: "previews"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  core:
+    enabled: true
+    fullnameOverride: core
+    contextPath: /core
+    image:
+      registry: registry.camunda.cloud
+      repository: team-camunda/camunda
+    clusterSize: "1"
+    partitionCount: "1"
+    replicationFactor: "1"
+    persistenceType: disk
+    pvcSize: 1Gi
+    javaOpts: >-
+      -Xms512m -Xmx512m
+      -XX:+HeapDumpOnOutOfMemoryError
+      -XX:HeapDumpPath=/usr/local/zeebe/data
+      -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
+      -XX:+ExitOnOutOfMemoryError
+    data:
+      disk:
+        ## Adjustement required due to PVC size
+        freeSpace:
+          processing: 110MB
+          replication: 10MB
+    resources:
+      limits:
+        cpu: "1"
+        memory: 1Gi
+      requests:
+        cpu: "500m"
+        memory: 512Mi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+    - key: "previews"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  elasticsearch:
+    enabled: true
+    fullnameOverride: elasticsearch
+    # image:
+    #   repository: bitnami/elasticsearch
+    #   tag: latest
+    master:
+      fullnameOverride: elasticsearch-master
+      replicaCount: 1
+      heapSize: 512m
+      persistence:
+        enabled: true
+        size: 1Gi
+      resources:
+        limits:
+          cpu: 1
+          memory: 1Gi
+        requests:
+          cpu: 0.5
+          memory: 512Mi
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
       - key: "previews"
         operator: "Exists"
         effect: "NoSchedule"
 
-  zeebeGateway:
-    contextPath: "/zeebe"
-    replicas: 1
-    ingress:
-      grpc:
-        enabled: true
-        className: nginx
-        host: "test.camunda.camunda.cloud"
-        annotations:
-          ingress.kubernetes.io/rewrite-target: "/"
-          nginx.ingress.kubernetes.io/ssl-redirect: "true"
-          nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-          nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-        tls:
-          enabled: true
-          secretName: camunda-tls
+  identity:
+    enabled: true
+    fullnameOverride: identity
+    contextPath: /identity
+    fullURL: https://{{ include "ingress.domain" . }}{{ .Values.identity.contextPath }}
+    # image:
+    #     repository: camunda/identity
+    resources:
+      limits:
+        cpu: "1"
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
+    persistence:
+      enabled: true
+      size: 50Mi
     tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
+    - key: "previews"
+      operator: "Exists"
+      effect: "NoSchedule"
 
   identityKeycloak:
-    auth:
-      existingSecret: keycloak-admin-secret
-      passwordSecretKey: admin-password
-      adminUser: admin
-
+    enabled: true
+    fullnameOverride: identity-keycloak
+    extraEnvVars:
+    # Required as TLS is enabled 
+    - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
+      value: "true"
+    resources:
+      limits:
+        cpu: "1"
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+    - key: "previews"
+      operator: "Exists"
+      effect: "NoSchedule"
     postgresql:
-      enabled: true
-      auth:
-        existingSecret: postgres-secret
-        secretKeys:
-          userPasswordKey: password
+      fullnameOverride: identity-keycloak-postgresql
       primary:
+        persistence:
+          enabled: true
+          size: 1Gi
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
         nodeSelector:
           cloud.google.com/gke-nodepool: previews
         tolerations:
-          - key: "previews"
-            operator: "Exists"
-            effect: "NoSchedule"
+        - key: "previews"
+          operator: "Exists"
+          effect: "NoSchedule"
+
+  optimize:
+    enabled: true
+    fullnameOverride: optimize
+    contextPath: /optimize
+    partitionCount: "1"
+    image:
+      registry: registry.camunda.cloud
+      repository: team-camunda/optimize
+    env:
+    - name: JAVA_OPTS
+      value: "-Xms512m -Xmx512m"
+    resources:
+      limits:
+        cpu: "1"
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    persistence:
+      enabled: false
+      size: 50Mi
+    tolerations:
+    - key: "previews"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  webModeler:
+    enabled: true
+    fullnameOverride: web-modeler
+    contextPath: /modeler
+    restapi:
+      # image:
+      #   repository: camunda/web-modeler-restapi
+      mail:
+        # This value is required, otherwise, the restapi pod won't start.
+        fromAddress: noreply@example.com
+      resources:
+        limits:
+          cpu: "1"
+          memory: 1Gi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
+    webapp:
+      # image:
+      #   repository: camunda/web-modeler-webapp
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
+        requests:
+          cpu: 40m
+          memory: 256Mi
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
+    websockets:
+      # image:
+      #   repository: camunda/web-modeler-websockets
+      resources:
+        limits:
+          cpu: 20m
+          memory: 64Mi
+        requests:
+          cpu: 20m
+          memory: 64Mi
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
+
+  # WebModeler PostgreSQL
+  webModelerPostgresql:
+    enabled: true
+    fullnameOverride: web-modeler-postgresql
+    auth:
+      # fixed secret, to avoid generating a random password each time
+      existingSecret: camunda-credentials
+    primary:
+      persistence:
+        enabled: true
+        size: 1Gi
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 250m
+          memory: 256Mi
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"

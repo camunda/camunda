@@ -1,7 +1,7 @@
 # type: Preview Environment
 # owner: @camunda/monorepo-devops-team
 ---
-name: Preview Env Teardown
+name: Preview Environment Teardown
 
 on:
   pull_request:
@@ -10,7 +10,11 @@ on:
 jobs:
   teardown-preview:
     # check whether the unlabel name was deploy-preview || check whether the PR was closed / merged and whether deploy-preview was part of the array
-    if: github.event.label.name == 'deploy-preview' || (github.event.action == 'closed' && contains( github.event.pull_request.labels.*.name, 'deploy-preview') )
+    if: >
+      github.event.label.name == 'deploy-preview' || (
+        github.event.action == 'closed' &&
+        contains(github.event.pull_request.labels.*.name, 'deploy-preview')
+      )
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -77,3 +81,11 @@ jobs:
     secrets: inherit
     with:
       pull-request: ${{ github.event.pull_request.number }}
+
+  comment:
+    if: always() && needs.teardown-preview.result != 'skipped'
+    name: Remove Deployment Result Summary
+    runs-on: ubuntu-24.04
+    needs: [teardown-preview]
+    steps:
+    - uses: camunda/infra-global-github-actions/preview-env/comment@main
