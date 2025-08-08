@@ -55,7 +55,7 @@ runs:
               }
 
               const testNames = flaky_tests
-                .split(/\s+/)
+                .match(/(?:[^\s(]+(?:\([^)]+\))?(?:\[\d+\])?)+/g) || []
                 .map(t => t.trim())
                 .filter(Boolean);
 
