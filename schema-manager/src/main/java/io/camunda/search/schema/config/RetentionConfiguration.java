@@ -7,6 +7,9 @@
  */
 package io.camunda.search.schema.config;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class RetentionConfiguration {
 
   private static final String DEFAULT_RETENTION_MINIMUM_AGE = "30d";
@@ -14,6 +17,14 @@ public class RetentionConfiguration {
   private boolean enabled = false;
   private String minimumAge = DEFAULT_RETENTION_MINIMUM_AGE;
   private String policyName = DEFAULT_RETENTION_POLICY_NAME;
+
+  // Map of index names or patterns to index-specific retention policies.
+  // Keys can be:
+  // - Exact index names as defined in IndexDescriptor implementations including component name
+  //   (e.g., "camunda-usage-metric-tu")
+  // - Patterns using wildcards to match multiple indices (e.g., "camunda-usage-metric.*" matches
+  //   "camunda-usage-metric" and "camunda-usage-metric-tu")
+  private Map<String, IndexRetentionPolicy> indexPolicies = new HashMap<>();
 
   public boolean isEnabled() {
     return enabled;
@@ -39,6 +50,14 @@ public class RetentionConfiguration {
     this.policyName = policyName;
   }
 
+  public Map<String, IndexRetentionPolicy> getIndexPolicies() {
+    return indexPolicies;
+  }
+
+  public void setIndexPolicies(final Map<String, IndexRetentionPolicy> indexPolicies) {
+    this.indexPolicies = indexPolicies != null ? indexPolicies : new HashMap<>();
+  }
+
   @Override
   public String toString() {
     return "RetentionConfiguration{"
@@ -50,6 +69,8 @@ public class RetentionConfiguration {
         + ", policyName='"
         + policyName
         + '\''
+        + ", indexPolicies="
+        + indexPolicies
         + '}';
   }
 }
