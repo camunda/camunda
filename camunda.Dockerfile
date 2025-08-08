@@ -13,6 +13,8 @@ ARG DIST="distball"
 
 ### Build camunda from scratch ###
 FROM reg.mini.dev/openjdk:21-dev AS build
+
+# hadolint ignore=DL3002
 USER root
 WORKDIR /camunda
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
@@ -25,6 +27,7 @@ RUN --mount=type=cache,target=/root/.m2,rw \
 # hadolint ignore=DL3006
 FROM ubuntu:noble@sha256:a08e551cb33850e4740772b38217fc1796a66da2506d312abe51acda354ff061 AS distball
 
+# hadolint ignore=DL3002
 USER root
 WORKDIR /camunda
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
