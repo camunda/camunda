@@ -12,11 +12,22 @@ public class Api {
   /** Configuration for long-polling behavior */
   private LongPolling longPolling = new LongPolling();
 
+  /** Configuration for rest behavior */
+  private Rest rest = new Rest();
+
   public LongPolling getLongPolling() {
     return longPolling;
   }
 
   public void setLongPolling(final LongPolling longPolling) {
     this.longPolling = longPolling;
+  }
+
+  public Rest getRest() {
+    return rest;
+  }
+
+  public void setRest(final Rest rest) {
+    this.rest = rest;
   }
 }
