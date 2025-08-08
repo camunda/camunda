@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.feel.impl;
 
+import io.camunda.zeebe.feel.tagged.impl.FromAiFunction;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
