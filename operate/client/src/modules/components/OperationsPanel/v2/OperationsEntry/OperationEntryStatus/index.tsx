@@ -15,11 +15,11 @@ import {
 } from 'modules/components/OperationsPanel/OperationsEntry/OperationEntryStatus/styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
-interface Props {
+type Props = {
   type: BatchOperationType;
   failedCount?: number;
   completedCount?: number;
-}
+};
 
 const OperationEntryStatus: React.FC<Props> = ({
   type,
