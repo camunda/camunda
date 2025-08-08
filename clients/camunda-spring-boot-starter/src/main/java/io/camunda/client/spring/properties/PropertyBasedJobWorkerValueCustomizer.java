@@ -22,6 +22,8 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static org.apache.commons.lang3.StringUtils.*;
 
+import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.annotation.value.JobWorkerValue;
@@ -39,7 +41,6 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.ReflectionUtils;
 
 public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCustomizer {
   private static final Logger LOG =
@@ -78,11 +79,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
       if (camundaClientProperties.getWorker().getDefaults().getFetchVariables() != null) {
         variables.addAll(camundaClientProperties.getWorker().getDefaults().getFetchVariables());
       }
-      variables.addAll(
-          readZeebeVariableParameters(jobWorkerValue.getMethodInfo()).stream()
-              .map(this::extractVariableName)
-              .toList());
-      variables.addAll(readVariablesAsTypeParameters(jobWorkerValue.getMethodInfo()));
+      variables.addAll(jobWorkerValue.getJobWorkerFactory().getUsedVariableNames());
       jobWorkerValue.setFetchVariables(variables.stream().distinct().toList());
       LOG.debug(
           "Worker '{}': Fetching only required variables {}", jobWorkerValue.getName(), variables);
@@ -90,37 +87,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private boolean hasActivatedJobInjected(final JobWorkerValue jobWorkerValue) {
-    return jobWorkerValue.getMethodInfo().getParameters().stream()
-        .anyMatch(p -> p.getParameter().getType().isAssignableFrom(ActivatedJob.class));
-  }
-
-  private List<ParameterInfo> readZeebeVariableParameters(final MethodInfo methodInfo) {
-    return getVariableParameters(methodInfo);
-  }
-
-  private String extractVariableName(final ParameterInfo parameterInfo) {
-    // get can be used here as the list is already filtered by readZeebeVariableParameters
-    return getVariableValue(parameterInfo).get().getName();
-  }
-
-  private List<String> readVariablesAsTypeParameters(final MethodInfo methodInfo) {
-    final List<String> result = new ArrayList<>();
-    final List<ParameterInfo> parameters = getVariablesAsTypeParameters(methodInfo);
-    parameters.forEach(
-        pi ->
-            ReflectionUtils.doWithFields(
-                pi.getParameter().getType(), f -> result.add(extractFieldName(f))));
-    return result;
-  }
-
-  private String extractFieldName(final Field field) {
-    if (field.isAnnotationPresent(JsonProperty.class)) {
-      final String value = field.getAnnotation(JsonProperty.class).value();
-      if (StringUtils.isNotBlank(value)) {
-        return value;
-      }
-    }
-    return field.getName();
+    return jobWorkerValue.getJobWorkerFactory().usesActivatedJob();
   }
 
   private void applyOverrides(final JobWorkerValue editedJobWorkerValue) {
@@ -198,9 +165,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
         jobWorkerValue.setName(defaultJobWorkerName);
       } else {
         final String generatedJobWorkerName =
-            jobWorkerValue.getMethodInfo().getBeanInfo().getBeanName()
-                + "#"
-                + jobWorkerValue.getMethodInfo().getMethodName();
+            jobWorkerValue.getJobWorkerFactory().getGeneratedJobWorkerName();
         LOG.debug(
             "Worker '{}': Setting name to generated {}",
             jobWorkerValue.getName(),
@@ -220,7 +185,9 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
             defaultJobWorkerType);
         jobWorkerValue.setType(defaultJobWorkerType);
       } else {
-        final String generatedJobWorkerType = jobWorkerValue.getMethodInfo().getMethodName();
+
+        final String generatedJobWorkerType =
+            jobWorkerValue.getJobWorkerFactory().getGeneratedJobWorkerType();
         LOG.debug(
             "Worker '{}': Setting type to generated {}",
             jobWorkerValue.getName(),
