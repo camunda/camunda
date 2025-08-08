@@ -1192,10 +1192,10 @@
   resolved "https://registry.yarnpkg.com/@bpmn-io/dmn-variable-resolver/-/dmn-variable-resolver-0.7.0.tgz#3c42e13f2c8d95624c42508e50034c57bc1059ac"
   integrity sha512-ssL8fch5U0q8efbrHdgSGznh5Dlk+R0MNnazCtDpyac6yqlgn/JQ/HewCjacTk4XFubbMiDbuEIESHLBsWCBxg==
 
-"@bpmn-io/element-template-icon-renderer@0.5.2":
-  version "0.5.2"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/element-template-icon-renderer/-/element-template-icon-renderer-0.5.2.tgz#59eb1af097a51857147cc27a09993b22247f79ef"
-  integrity sha512-cKu79k1vIizRMPV5kHDxqRs/INlxBc7kgBl8xYmAVqVx29dGNltcg6yk+UN6hWzTWfaJ/VLpMhs1Zn//RlSHkQ==
+"@bpmn-io/element-template-icon-renderer@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/element-template-icon-renderer/-/element-template-icon-renderer-1.0.0.tgz#9fc2fdbf3dd9025a140bc6a1e2f1f97f97710b2b"
+  integrity sha512-m0m3kKS1PvYqouogzxnHxf+iX+/HOUxJG/RBSy4uN5HqqNdK5fHtTUtFzuXVWIEkcDCFfwF0cqQg/qE7HLSCYA==
   dependencies:
     inherits-browser "^0.1.0"
     tiny-svg "^3.0.1"
