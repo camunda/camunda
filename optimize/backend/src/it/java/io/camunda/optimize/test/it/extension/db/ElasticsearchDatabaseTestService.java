@@ -91,7 +91,6 @@ import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
-import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
 import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
@@ -99,7 +98,6 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DatabaseHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -334,17 +332,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void deleteTerminatedSessionsIndex() {
     deleteIndexOfMapping(new TerminatedUserSessionIndexES());
-  }
-
-  @Override
-  public void deleteAllVariableUpdateInstanceIndices() {
-    final String[] indexNames =
-        getOptimizeElasticClient()
-            .getAllIndicesForAlias(
-                getIndexNameService()
-                    .getOptimizeIndexAliasForIndex(new VariableUpdateInstanceIndexES()))
-            .toArray(String[]::new);
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(indexNames);
   }
 
   @Override
@@ -946,11 +933,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                 indexNameToAliasMap.get(index).aliases().entrySet().stream()
                     .anyMatch(a -> a.getValue().isWriteIndex()))
         .toList();
-  }
-
-  @Override
-  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
-    return new VariableUpdateInstanceIndexES();
   }
 
   @Override

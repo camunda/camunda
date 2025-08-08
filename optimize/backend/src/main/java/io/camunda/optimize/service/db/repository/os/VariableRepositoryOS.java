@@ -22,7 +22,6 @@ import static io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex.
 import static io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex.N_GRAM_FIELD;
 import static io.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex.INGESTION_TIMESTAMP;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex.TIMESTAMP;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
@@ -44,7 +43,6 @@ import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespon
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableSourceDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQueryDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.filter.FilterContext;
@@ -52,13 +50,10 @@ import io.camunda.optimize.service.db.os.OpenSearchCompositeAggregationScroller;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.client.dsl.AggregationDSL;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
-import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
-import io.camunda.optimize.service.db.os.reader.OpensearchReaderUtil;
 import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.VariableUpdateInstanceIndexOS;
 import io.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.repository.VariableRepository;
@@ -66,14 +61,11 @@ import io.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFac
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.db.util.ProcessVariableHelper;
-import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DefinitionQueryUtilOS;
 import io.camunda.optimize.service.util.InstanceIndexUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -82,7 +74,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -90,7 +81,6 @@ import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
-import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation.Builder.ContainerBuilder;
@@ -113,7 +103,6 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.MgetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
@@ -222,18 +211,6 @@ public class VariableRepositoryOS implements VariableRepository {
   }
 
   @Override
-  public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
-    osClient.deleteByQueryTask(
-        String.format("variable updates of %d process instances", processInstanceIds.size()),
-        QueryDSL.stringTerms(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds),
-        false,
-        osClient
-            .getIndexNameService()
-            .getOptimizeIndexNameWithVersionWithWildcardSuffix(
-                new VariableUpdateInstanceIndexOS()));
-  }
-
-  @Override
   public Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
       final List<String> processDefinitionKeys) {
 
@@ -266,41 +243,6 @@ public class VariableRepositoryOS implements VariableRepository {
         .peek(label -> label.setDefinitionKey(label.getDefinitionKey().toLowerCase(Locale.ENGLISH)))
         .collect(
             Collectors.toMap(DefinitionVariableLabelsDto::getDefinitionKey, Function.identity()));
-  }
-
-  @Override
-  public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
-      final Set<String> processInstanceIds) {
-
-    final Query query =
-        QueryDSL.stringTerms(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds);
-    final SearchRequest.Builder searchRequest =
-        new Builder()
-            .index(DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
-            .query(query)
-            .sort(
-                new SortOptions.Builder()
-                    .field(new FieldSort.Builder().field(TIMESTAMP).order(SortOrder.Asc).build())
-                    .build())
-            .size(MAX_RESPONSE_SIZE_LIMIT)
-            .scroll(
-                new Time.Builder()
-                    .time(
-                        String.valueOf(
-                            configurationService
-                                .getOpenSearchConfiguration()
-                                .getScrollTimeoutInSeconds()))
-                    .build());
-    final OpenSearchDocumentOperations.AggregatedResult<Hit<VariableUpdateInstanceDto>> scrollResp;
-    try {
-      scrollResp =
-          osClient.retrieveAllScrollResults(searchRequest, VariableUpdateInstanceDto.class);
-    } catch (final IOException e) {
-      LOG.error("Was not able to retrieve private entities!", e);
-      throw new OptimizeRuntimeException("Was not able to retrieve private entities!", e);
-    }
-
-    return OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp);
   }
 
   @Override
@@ -386,20 +328,6 @@ public class VariableRepositoryOS implements VariableRepository {
     }
   }
 
-  private List<String> extractVariableValues(
-      final Map<String, Aggregate> aggregations,
-      final DecisionVariableValueRequestDto requestDto,
-      final String variableFieldLabel) {
-    return extractVariableValues(
-        aggregations, requestDto.getResultOffset(), requestDto.getNumResults(), variableFieldLabel);
-  }
-
-  private List<String> extractVariableValues(
-      final Map<String, Aggregate> aggregations, final ProcessVariableValuesQueryDto requestDto) {
-    return extractVariableValues(
-        aggregations, requestDto.getResultOffset(), requestDto.getNumResults(), VARIABLES);
-  }
-
   @Override
   public List<ProcessVariableNameResponseDto> getVariableNames(
       final ProcessVariableNameRequestDto variableNameRequest,
@@ -443,6 +371,67 @@ public class VariableRepositoryOS implements VariableRepository {
     LOG.debug(
         "getVariableNamesForInstancesMatchingQuery: Functionality not implemented for OpenSearch");
     return List.of();
+  }
+
+  @Override
+  public List<String> getVariableValues(
+      final ProcessVariableValuesQueryDto requestDto,
+      final List<ProcessVariableSourceDto> processVariableSources) {
+    final BoolQuery.Builder query = new BoolQuery.Builder();
+    processVariableSources.forEach(
+        source -> {
+          query.should(
+              DefinitionQueryUtilOS.createDefinitionQuery(
+                  source.getProcessDefinitionKey(),
+                  source.getProcessDefinitionVersions(),
+                  source.getTenantIds(),
+                  new ProcessInstanceIndexOS(source.getProcessDefinitionKey()),
+                  processDefinitionReader::getLatestVersionToKey));
+          if (source.getProcessInstanceId() != null) {
+            query.must(
+                QueryDSL.term(
+                    ProcessInstanceIndex.PROCESS_INSTANCE_ID, source.getProcessInstanceId()));
+          }
+        });
+
+    final SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .query(query.build().toQuery())
+            .size(0)
+            .aggregations(getVariableValueAggregation(requestDto))
+            .index(PROCESS_INSTANCE_MULTI_ALIAS);
+    try {
+      final String errorMsg =
+          String.format(
+              "Was not able to fetch values for variable [%s] with type [%s] ",
+              requestDto.getName(), requestDto.getType().getId());
+      final SearchResponse<ProcessInstanceDto> searchResponse =
+          osClient.search(searchRequest, ProcessInstanceDto.class, errorMsg);
+      final Map<String, Aggregate> aggregations = searchResponse.aggregations();
+
+      return extractVariableValues(aggregations, requestDto);
+    } catch (final RuntimeException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        LOG.info(
+            "Was not able to fetch variable values because no instance indices exist. Returning empty list.");
+        return Collections.emptyList();
+      }
+      throw e;
+    }
+  }
+
+  private List<String> extractVariableValues(
+      final Map<String, Aggregate> aggregations,
+      final DecisionVariableValueRequestDto requestDto,
+      final String variableFieldLabel) {
+    return extractVariableValues(
+        aggregations, requestDto.getResultOffset(), requestDto.getNumResults(), variableFieldLabel);
+  }
+
+  private List<String> extractVariableValues(
+      final Map<String, Aggregate> aggregations, final ProcessVariableValuesQueryDto requestDto) {
+    return extractVariableValues(
+        aggregations, requestDto.getResultOffset(), requestDto.getNumResults(), VARIABLES);
   }
 
   public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(
@@ -523,53 +512,6 @@ public class VariableRepositoryOS implements VariableRepository {
     final String variableType = bucket.key().get(TYPE_AGGREGATION).to(String.class);
     return processVariableNameResponseDtoFrom(
         definitionLabelsByKey, processDefinitionKey, variableName, variableType);
-  }
-
-  @Override
-  public List<String> getVariableValues(
-      final ProcessVariableValuesQueryDto requestDto,
-      final List<ProcessVariableSourceDto> processVariableSources) {
-    final BoolQuery.Builder query = new BoolQuery.Builder();
-    processVariableSources.forEach(
-        source -> {
-          query.should(
-              DefinitionQueryUtilOS.createDefinitionQuery(
-                  source.getProcessDefinitionKey(),
-                  source.getProcessDefinitionVersions(),
-                  source.getTenantIds(),
-                  new ProcessInstanceIndexOS(source.getProcessDefinitionKey()),
-                  processDefinitionReader::getLatestVersionToKey));
-          if (source.getProcessInstanceId() != null) {
-            query.must(
-                QueryDSL.term(
-                    ProcessInstanceIndex.PROCESS_INSTANCE_ID, source.getProcessInstanceId()));
-          }
-        });
-
-    final SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .query(query.build().toQuery())
-            .size(0)
-            .aggregations(getVariableValueAggregation(requestDto))
-            .index(PROCESS_INSTANCE_MULTI_ALIAS);
-    try {
-      final String errorMsg =
-          String.format(
-              "Was not able to fetch values for variable [%s] with type [%s] ",
-              requestDto.getName(), requestDto.getType().getId());
-      final SearchResponse<ProcessInstanceDto> searchResponse =
-          osClient.search(searchRequest, ProcessInstanceDto.class, errorMsg);
-      final Map<String, Aggregate> aggregations = searchResponse.aggregations();
-
-      return extractVariableValues(aggregations, requestDto);
-    } catch (final RuntimeException e) {
-      if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        LOG.info(
-            "Was not able to fetch variable values because no instance indices exist. Returning empty list.");
-        return Collections.emptyList();
-      }
-      throw e;
-    }
   }
 
   private List<String> extractVariableValues(
