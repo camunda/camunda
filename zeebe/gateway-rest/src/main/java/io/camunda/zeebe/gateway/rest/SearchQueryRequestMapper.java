@@ -1047,6 +1047,9 @@ public final class SearchQueryRequestMapper {
           builder.variables(either.get());
         }
       }
+      ofNullable(filter.getTag())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::tagsOperations);
     }
     return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
@@ -1798,6 +1801,16 @@ public final class SearchQueryRequestMapper {
         .valueTypedOperations(operations)
         .buildList();
   }
+
+  //
+  //  private static List<StringFilterProperty> toVariableValueFilters(
+  //      final String name, final StringFilterProperty value) {
+  //    final List<Operation<String>> operations = mapToOperations(String.class).apply(value);
+  //    return new VariableValueFilter.Builder()
+  //        .name(name)
+  //        .valueTypedOperations(operations)
+  //        .buildList();
+  //  }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
       final SearchQueryPageRequest requestedPage) {

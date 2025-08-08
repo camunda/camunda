@@ -281,6 +281,7 @@ abstract class AbstractBatchOperationTest {
         null,
         false,
         null,
+        null,
         null);
   }
 

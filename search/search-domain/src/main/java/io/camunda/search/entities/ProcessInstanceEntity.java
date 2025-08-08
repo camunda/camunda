@@ -9,6 +9,7 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessInstanceEntity(
@@ -25,7 +26,8 @@ public record ProcessInstanceEntity(
     ProcessInstanceState state,
     Boolean hasIncident,
     String tenantId,
-    String treePath)
+    String treePath,
+    Set<String> tags)
     implements TenantOwnedEntity {
 
   public enum ProcessInstanceState {

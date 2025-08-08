@@ -32,6 +32,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,7 +72,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           ProcessInstanceState.ACTIVE,
           false,
           "tenant",
-          "PI_123");
+          "PI_123",
+          Set.of());
 
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
@@ -87,7 +89,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "startDate": "2024-01-01T00:00:00.000Z",
             "state": "ACTIVE",
             "hasIncident": false,
-            "tenantId": "tenant"
+            "tenantId": "tenant",
+            "tags": []
           }
           """;
 
@@ -107,7 +110,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "startDate": "2024-01-01T00:00:00.000Z",
                   "state": "ACTIVE",
                   "hasIncident": false,
-                  "tenantId": "tenant"
+                  "tenantId": "tenant",
+                  "tags": []
                 }
               ],
               "page": {

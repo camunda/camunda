@@ -20,6 +20,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
+import java.util.Set;
 
 public class ProcessInstanceImpl implements ProcessInstance {
 
@@ -36,6 +37,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final ProcessInstanceState state;
   private final Boolean hasIncident;
   private final String tenantId;
+  private final Set<String> tags;
 
   public ProcessInstanceImpl(final ProcessInstanceResult item) {
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
@@ -51,6 +53,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
     state = EnumUtil.convert(item.getState(), ProcessInstanceState.class);
     hasIncident = item.getHasIncident();
     tenantId = item.getTenantId();
+    tags = item.getTags();
   }
 
   @Override
@@ -116,5 +119,10 @@ public class ProcessInstanceImpl implements ProcessInstance {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return tags;
   }
 }

@@ -39,6 +39,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -166,7 +167,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setStartDate(OffsetDateTime.now())
             .setEndDate(OffsetDateTime.now())
             .setState(ProcessInstanceState.ACTIVE)
-            .setTreePath("PI_111");
+            .setTreePath("PI_111")
+            .setTags(Set.of("businessKey:123", "priority:high"));
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -232,6 +234,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .withBpmnElementType(BpmnElementType.PROCESS)
             .withElementInstancePath(List.of(List.of(111L)))
             .withProcessDefinitionPath(List.of(222L))
+            .withTags(Set.of("businessKey:123", "priority:high"))
             .build();
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
@@ -286,6 +289,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     assertThat(processInstanceForListViewEntity.getJoinRelation())
         .isEqualTo(new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
     assertThat(processInstanceForListViewEntity.getTreePath()).isEqualTo("PI_111");
+    assertThat(processInstanceForListViewEntity.getTags())
+        .containsExactlyInAnyOrder("businessKey:123", "priority:high");
 
     // process name and version tag is read from the cache
     assertThat(processInstanceForListViewEntity.getProcessName()).isEqualTo("test-process-name");

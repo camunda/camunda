@@ -20,6 +20,7 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.ListenerEventType;
 import java.util.Map;
+import java.util.Set;
 
 public interface ActivatedJob {
 
@@ -133,4 +134,6 @@ public interface ActivatedJob {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/13560")
   String getTenantId();
+
+  Set<String> getTags();
 }

@@ -17,6 +17,7 @@ package io.camunda.process.test.utils;
 
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
+import java.util.Set;
 
 public class ProcessInstanceBuilder implements ProcessInstance {
 
@@ -37,6 +38,7 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   private ProcessInstanceState state;
   private Boolean hasIncident;
   private String tenantId;
+  private Set<String> tags;
 
   @Override
   public Long getProcessInstanceKey() {
@@ -101,6 +103,16 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return tags;
+  }
+
+  public ProcessInstanceBuilder setTags(final Set<String> tags) {
+    this.tags = tags;
+    return this;
   }
 
   public ProcessInstanceBuilder setTenantId(final String tenantId) {
