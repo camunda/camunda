@@ -14,7 +14,7 @@ type Props = {
   isOpen: boolean;
 };
 
-const IncidentsBanner: React.FC<Props> = observer((_props) => {
+const IncidentsBanner: React.FC<Props> = observer((_props: Props) => {
   // Replaced by CTA in header
   return null;
 });

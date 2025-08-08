@@ -26,7 +26,7 @@ type Props = {
   processInstance: ProcessInstance;
 };
 
-const IncidentsWrapper: React.FC<Props> = observer(({processInstance}) => {
+const IncidentsWrapper: React.FC<Props> = observer(({processInstance}: Props) => {
   const incidents = useIncidents();
   const filteredIncidents = getFilteredIncidents(incidents);
   const [areFiltersVisible, setAreFiltersVisible] = useState(false);
