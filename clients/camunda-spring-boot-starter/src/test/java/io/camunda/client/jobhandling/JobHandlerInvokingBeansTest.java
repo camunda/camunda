@@ -84,7 +84,7 @@ public class JobHandlerInvokingBeansTest {
     final DefaultResultProcessorStrategy defaultResultProcessorStrategy =
         new DefaultResultProcessorStrategy();
     return workerValue
-        .getJobWorkerFactory()
+        .getJobHandlerFactory()
         .getJobHandler(
             new JobHandlerFactoryContext(
                 commandExceptionHandlingStrategy,
