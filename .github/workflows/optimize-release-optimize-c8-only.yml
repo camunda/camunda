@@ -228,6 +228,10 @@ jobs:
         with:
           work-dir: ./optimize
 
+      - name: Clean release
+        run: |
+          ./mvnw release:clean
+
       - name: Prepare release
         run: |
           ./mvnw -f optimize \
@@ -281,8 +285,9 @@ jobs:
           draft: true
           name: ${{ env.TAG }}
           tag_name: ${{ env.TAG }}
-          generate_release_notes: true
           make_latest: \"false\"
+          body: |
+            Please refer to the [Camunda Monorepo ${{ env.RELEASE_VERSION }} Release Notes](https://github.com/camunda/camunda/releases/tag/${{ env.RELEASE_VERSION }}) for full details.
 
       - name: Auto-update previous version
         run: |
