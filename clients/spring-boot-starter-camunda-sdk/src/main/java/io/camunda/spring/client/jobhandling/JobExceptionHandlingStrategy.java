@@ -18,13 +18,11 @@ package io.camunda.spring.client.jobhandling;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
 
 public interface JobExceptionHandlingStrategy {
   void handleException(Exception exception, ExceptionHandlingContext context) throws Exception;
 
-  record ExceptionHandlingContext(
-      JobClient jobClient, ActivatedJob job, JobWorkerValue jobWorkerValue) {}
+  record ExceptionHandlingContext(JobClient jobClient, ActivatedJob job, int maxRetries) {}
 
   interface CommandWrapperCreator {
     CommandWrapper create(FinalCommandStep<?> command);
