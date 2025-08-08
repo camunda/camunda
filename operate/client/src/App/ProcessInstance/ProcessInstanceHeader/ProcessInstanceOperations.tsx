@@ -17,7 +17,6 @@ import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
 import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
 import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
-import {useHasActiveBatchOperationMutation} from 'modules/mutations/processInstance/useHasActiveBatchOperationMutation';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
 import {useCreateIncidentResolutionBatchOperation} from 'modules/mutations/processInstance/useCreateIncidentResolutionBatchOperation';
 import {operationsStore, type ErrorHandler} from 'modules/stores/operations';
@@ -41,9 +40,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   ] = useState(false);
 
   const {data: hasActiveOperationLegacy} = useHasActiveOperations();
-  const hasActiveBatchOperationMutation = useHasActiveBatchOperationMutation(
-    processInstance.processInstanceKey,
-  );
 
   const {
     mutate: cancelProcessInstance,
@@ -166,7 +162,11 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const isInstanceActive = processInstance.state === 'ACTIVE';
   const {isModificationModeEnabled} = modificationsStore;
 
-  if (processInstance.hasIncident && !isModificationModeEnabled) {
+  if (
+    isInstanceActive &&
+    processInstance.hasIncident &&
+    !isModificationModeEnabled
+  ) {
     operations.push({
       type: 'RESOLVE_INCIDENT',
       onExecute: resolveIncident,
@@ -201,7 +201,8 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     processInstancesStore.processInstanceIdsWithActiveOperations.includes(
       processInstance.processInstanceKey,
     ) ||
-    hasActiveBatchOperationMutation;
+    isCancelProcessInstancePending ||
+    isResolveIncidentPending;
 
   return (
     <>
