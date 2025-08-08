@@ -16,18 +16,26 @@
 package io.camunda.spring.client.jobhandling;
 
 import io.camunda.client.api.worker.JobHandler;
+import java.util.Collections;
 import java.util.List;
 
 public interface JobHandlerFactory {
-  Object invoke(final Object... args) throws Exception;
 
   JobHandler getJobHandler(JobHandlerFactoryContext context);
 
-  String getGeneratedJobWorkerName();
+  default String getGeneratedJobWorkerName() {
+    return null;
+  }
 
-  String getGeneratedJobWorkerType();
+  default String getGeneratedJobWorkerType() {
+    return null;
+  }
 
-  boolean usesActivatedJob();
+  default boolean usesActivatedJob() {
+    return true;
+  }
 
-  List<String> getUsedVariableNames();
+  default List<String> getUsedVariableNames() {
+    return Collections.emptyList();
+  }
 }
