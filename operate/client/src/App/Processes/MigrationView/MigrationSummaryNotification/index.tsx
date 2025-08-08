@@ -22,8 +22,8 @@ const MigrationSummaryNotification: React.FC = () => {
             observe progress of this in the operations panel.
           </p>
           <p>
-            The flow nodes listed below will be mapped from the source on the
-            left side to target on the right side.
+            The elements and sequence flows listed below will be mapped from the
+            source on the left side to target on the right side.
           </p>
         </MigrationSummary>
       }

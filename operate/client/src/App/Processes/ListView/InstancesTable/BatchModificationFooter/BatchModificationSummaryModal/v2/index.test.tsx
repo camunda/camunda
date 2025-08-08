@@ -52,7 +52,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
               onClick={async () => {
                 await processesStore.fetchProcesses();
                 batchModificationStore.enable();
-                batchModificationStore.selectTargetFlowNode('StartEvent_1');
+                batchModificationStore.selectTargetItem('StartEvent_1');
               }}
             >
               init

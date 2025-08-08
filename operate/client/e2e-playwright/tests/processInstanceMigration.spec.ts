@@ -193,112 +193,112 @@ test.describe.skip('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(48);
+    await expect(page.getByLabel(/target item for/i)).toHaveCount(48);
 
+    await expect(page.getByLabel(/target item for check payment/i)).toHaveValue(
+      'checkPayment',
+    );
+    await expect(page.getByLabel(/target item for ship articles/i)).toHaveValue(
+      'shipArticles',
+    );
     await expect(
-      page.getByLabel(/target flow node for check payment/i),
-    ).toHaveValue('checkPayment');
-    await expect(
-      page.getByLabel(/target flow node for ship articles/i),
-    ).toHaveValue('shipArticles');
-    await expect(
-      page.getByLabel(/target flow node for request for payment/i),
+      page.getByLabel(/target item for request for payment/i),
     ).toHaveValue('requestForPayment');
-    await expect(page.getByLabel(/target flow node for task a/i)).toHaveValue(
+    await expect(page.getByLabel(/target item for task a/i)).toHaveValue(
       'TaskA',
     );
-    await expect(page.getByLabel(/target flow node for task b/i)).toHaveValue(
+    await expect(page.getByLabel(/target item for task b/i)).toHaveValue(
       'TaskB',
     );
-    await expect(page.getByLabel(/target flow node for task c/i)).toHaveValue(
+    await expect(page.getByLabel(/target item for task c/i)).toHaveValue(
       'TaskC',
     );
-    await expect(page.getByLabel(/target flow node for task d/i)).toHaveValue(
+    await expect(page.getByLabel(/target item for task d/i)).toHaveValue(
       'TaskD',
     );
     await expect(
-      page.getByLabel(/target flow node for message interrupting/i),
+      page.getByLabel(/target item for message interrupting/i),
     ).toHaveValue('MessageInterrupting');
     await expect(
-      page.getByLabel(/target flow node for timer interrupting/i),
+      page.getByLabel(/target item for timer interrupting/i),
     ).toHaveValue('TimerInterrupting');
     await expect(
-      page.getByLabel(/target flow node for message non-interrupting/i),
+      page.getByLabel(/target item for message non-interrupting/i),
     ).toHaveValue('MessageNonInterrupting');
     await expect(
-      page.getByLabel(/target flow node for timer non-interrupting/i),
+      page.getByLabel(/target item for timer non-interrupting/i),
     ).toHaveValue('TimerNonInterrupting');
     await expect(
-      page.getByLabel(/target flow node for message intermediate catch$/i),
+      page.getByLabel(/target item for message intermediate catch$/i),
     ).toHaveValue('MessageIntermediateCatch');
     await expect(
-      page.getByLabel(/target flow node for timer intermediate catch$/i),
+      page.getByLabel(/target item for timer intermediate catch$/i),
     ).toHaveValue('TimerIntermediateCatch');
     await expect(
-      page.getByLabel(/target flow node for message event sub process/i),
+      page.getByLabel(/target item for message event sub process/i),
     ).toHaveValue('MessageEventSubProcess');
     await expect(
-      page.getByLabel(/target flow node for timer event sub process/i),
+      page.getByLabel(/target item for timer event sub process/i),
     ).toHaveValue('TimerEventSubProcess');
-    await expect(page.getByLabel(/target flow node for task e/i)).toHaveValue(
+    await expect(page.getByLabel(/target item for task e/i)).toHaveValue(
       'TaskE',
     );
-    await expect(page.getByLabel(/target flow node for task f/i)).toHaveValue(
+    await expect(page.getByLabel(/target item for task f/i)).toHaveValue(
       'TaskF',
     );
     await expect(
-      page.getByLabel(/target flow node for message receive task/i),
+      page.getByLabel(/target item for message receive task/i),
     ).toHaveValue('MessageReceiveTask');
     await expect(
-      page.getByLabel(/target flow node for business rule task/i),
+      page.getByLabel(/target item for business rule task/i),
     ).toHaveValue('BusinessRuleTask');
-    await expect(
-      page.getByLabel(/target flow node for script task/i),
-    ).toHaveValue('ScriptTask');
-    await expect(
-      page.getByLabel(/target flow node for send task/i),
-    ).toHaveValue('SendTask');
-    await expect(
-      page.getByLabel(/target flow node for timer start event/i),
-    ).toHaveValue('TimerStartEvent');
-    await expect(
-      page.getByLabel(/target flow node for signal start event/i),
-    ).toHaveValue('SignalStartEvent');
-    await expect(
-      page.getByLabel(/target flow node for signal boundary event/i),
-    ).toHaveValue('SignalBoundaryEvent');
-    await expect(
-      page.getByLabel(/target flow node for signal intermediate catch/i),
-    ).toHaveValue('SignalIntermediateCatch');
-    await expect(
-      page.getByLabel(/target flow node for signal event sub process/i),
-    ).toHaveValue('SignalEventSubProcess');
-    await expect(
-      page.getByLabel(/target flow node for error event sub process/i),
-    ).toHaveValue('ErrorEventSubProcess');
-    await expect(
-      page.getByLabel(/target flow node for error start event/i),
-    ).toHaveValue('ErrorStartEvent');
-    await expect(page.getByLabel(/target flow node for task g/i)).toHaveValue(
-      'TaskG',
+    await expect(page.getByLabel(/target item for script task/i)).toHaveValue(
+      'ScriptTask',
+    );
+    await expect(page.getByLabel(/target item for send task/i)).toHaveValue(
+      'SendTask',
     );
     await expect(
-      page.getByLabel(/target flow node for sub process/i),
-    ).toHaveValue('SubProcess');
+      page.getByLabel(/target item for timer start event/i),
+    ).toHaveValue('TimerStartEvent');
     await expect(
-      page.getByLabel(/target flow node for multi instance sub process/i),
+      page.getByLabel(/target item for signal start event/i),
+    ).toHaveValue('SignalStartEvent');
+    await expect(
+      page.getByLabel(/target item for signal boundary event/i),
+    ).toHaveValue('SignalBoundaryEvent');
+    await expect(
+      page.getByLabel(/target item for signal intermediate catch/i),
+    ).toHaveValue('SignalIntermediateCatch');
+    await expect(
+      page.getByLabel(/target item for signal event sub process/i),
+    ).toHaveValue('SignalEventSubProcess');
+    await expect(
+      page.getByLabel(/target item for error event sub process/i),
+    ).toHaveValue('ErrorEventSubProcess');
+    await expect(
+      page.getByLabel(/target item for error start event/i),
+    ).toHaveValue('ErrorStartEvent');
+    await expect(page.getByLabel(/target item for task g/i)).toHaveValue(
+      'TaskG',
+    );
+    await expect(page.getByLabel(/target item for sub process/i)).toHaveValue(
+      'SubProcess',
+    );
+    await expect(
+      page.getByLabel(/target item for multi instance sub process/i),
     ).toHaveValue('MultiInstanceSubProcess');
     await expect(
-      page.getByLabel(/target flow node for multi instance task/i),
+      page.getByLabel(/target item for multi instance task/i),
     ).toHaveValue('MultiInstanceTask');
     await expect(
-      page.getByLabel(/target flow node for compensation task/i),
+      page.getByLabel(/target item for compensation task/i),
     ).toHaveValue('CompensationTask');
     await expect(
-      page.getByLabel(/target flow node for compensation boundary event/i),
+      page.getByLabel(/target item for compensation boundary event/i),
     ).toHaveValue('CompensationBoundaryEvent');
     await expect(
-      page.getByLabel(/target flow node for message start event/i),
+      page.getByLabel(/target item for message start event/i),
     ).toHaveValue('MessageStartEvent');
 
     // Expect pre-selected process and version

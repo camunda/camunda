@@ -55,6 +55,7 @@
     "test:e2e": "cross-env IS_E2E=true PORT=8081 ZEEBE_GATEWAY_ADDRESS=localhost:26503 ZEEBE_REST_GATEWAY_ADDRESS=http://localhost:8081 playwright test --project=e2e",
     "test:a11y": "playwright test --project=a11y",
     "test:visual": "playwright test --project=visual-light --project=visual-dark",
+    "test:visual:update": "playwright test --update-snapshots --project=visual-light --project=visual-dark",
     "generate-screenshots": "playwright test --project=screenshot-generator",
     "test:e2e:ci": "cross-env IS_E2E=true PORT=8080 playwright test --project=e2e",
     "coverage": "npm run test -- --coverage --changed",

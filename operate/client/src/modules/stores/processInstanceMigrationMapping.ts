@@ -30,6 +30,30 @@ class ProcessInstanceMigrationMappingStore {
     makeAutoObservable(this);
   }
 
+  getMappableSequenceFlows(
+    selectableSourceSequenceFlows?: BusinessObject[],
+    selectableTargetSequenceFlows?: BusinessObject[],
+  ) {
+    if (!selectableTargetSequenceFlows) {
+      return [];
+    }
+
+    return selectableSourceSequenceFlows?.map((sourceSequenceFlow) => {
+      return {
+        sourceItem: {
+          id: sourceSequenceFlow.id,
+          name: sourceSequenceFlow.name,
+        },
+        selectableTargetItem: selectableTargetSequenceFlows.map(
+          ({id, name}) => ({
+            id,
+            name,
+          }),
+        ),
+      };
+    });
+  }
+
   /**
    * Returns an array of source flow nodes which each contains an array of mappable target flow nodes.
    */
@@ -44,8 +68,8 @@ class ProcessInstanceMigrationMappingStore {
     const sourceFlowNodeMappings = selectableSourceFlowNodes?.map(
       (sourceFlowNode) => {
         return {
-          sourceFlowNode: {id: sourceFlowNode.id, name: sourceFlowNode.name},
-          selectableTargetFlowNodes: selectableTargetFlowNodes
+          sourceItem: {id: sourceFlowNode.id, name: sourceFlowNode.name},
+          selectableTargetItem: selectableTargetFlowNodes
             .filter((targetFlowNode) => {
               /**
                * For events allow only target flow nodes with the same event type

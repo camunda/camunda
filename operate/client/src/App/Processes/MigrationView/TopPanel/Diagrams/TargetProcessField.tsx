@@ -36,7 +36,7 @@ const TargetProcessField: React.FC = observer(() => {
           };
         })}
         onChange={({selectedItem}) => {
-          processInstanceMigrationStore.resetFlowNodeMapping();
+          processInstanceMigrationStore.resetItemMapping();
 
           if (isNil(selectedItem)) {
             processInstanceMigrationStore.setTargetProcessDefinitionKey(null);
