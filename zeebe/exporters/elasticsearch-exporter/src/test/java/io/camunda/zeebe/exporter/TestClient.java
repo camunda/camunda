@@ -136,9 +136,28 @@ final class TestClient implements CloseableSilently {
 
   void deleteIndexTemplates() {
     try {
-      final var request = new Request("DELETE", "/_index_template/*");
+      final var request =
+          new Request("DELETE", "/_index_template/%s*".formatted(config.index.prefix));
       restClient.performRequest(request);
     } catch (final IOException e) {
+      if (e.getMessage() != null && e.getMessage().contains("404 Not Found")) {
+        // Ignore 404 errors - no templates to delete
+        return;
+      }
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  void deleteComponentTemplates() {
+    try {
+      final var request =
+          new Request("DELETE", "/_component_template/%s*".formatted(config.index.prefix));
+      restClient.performRequest(request);
+    } catch (final IOException e) {
+      if (e.getMessage() != null && e.getMessage().contains("404 Not Found")) {
+        // Ignore 404 errors - no templates to delete
+        return;
+      }
       throw new UncheckedIOException(e);
     }
   }
