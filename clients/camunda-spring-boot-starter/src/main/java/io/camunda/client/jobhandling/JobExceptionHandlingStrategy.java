@@ -23,8 +23,7 @@ import io.camunda.client.api.worker.JobClient;
 public interface JobExceptionHandlingStrategy {
   void handleException(Exception exception, ExceptionHandlingContext context) throws Exception;
 
-  record ExceptionHandlingContext(
-      JobClient jobClient, ActivatedJob job, JobWorkerValue jobWorkerValue) {}
+  record ExceptionHandlingContext(JobClient jobClient, ActivatedJob job, int maxRetries) {}
 
   interface CommandWrapperCreator {
     CommandWrapper create(FinalCommandStep<?> command);
