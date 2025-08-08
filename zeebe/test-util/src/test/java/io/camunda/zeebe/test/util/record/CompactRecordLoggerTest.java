@@ -8,12 +8,10 @@
 package io.camunda.zeebe.test.util.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import java.util.List;
@@ -72,20 +70,22 @@ class CompactRecordLoggerTest {
     void shouldSummarizeUsageMetricsWithCounterCorrectly() {
       // given
       final var logger = new CompactRecordLogger(java.util.List.of());
-      final var mockRecord = mock(Record.class);
-      final var value = mock(UsageMetricRecordValue.class);
+      final var usageMetricsRecord =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.USAGE_METRIC)
+              .withValue(
+                  ImmutableUsageMetricRecordValue.builder()
+                      .withEventType(EventType.RPI)
+                      .withIntervalType(IntervalType.ACTIVE)
+                      .withStartTime(1718000000000L)
+                      .withEndTime(1718003600000L)
+                      .withResetTime(1718001800000L)
+                      .withCounterValues(Map.of("tenant1", 42L, "tenant2", 84L))
+                      .build())
+              .build();
 
       // when
-      when(mockRecord.getValueType()).thenReturn(ValueType.USAGE_METRIC);
-      when(mockRecord.getValue()).thenReturn(value);
-      when(value.getEventType()).thenReturn(EventType.RPI);
-      when(value.getIntervalType()).thenReturn(IntervalType.ACTIVE);
-      when(value.getStartTime()).thenReturn(1718000000000L);
-      when(value.getEndTime()).thenReturn(1718003600000L);
-      when(value.getResetTime()).thenReturn(1718001800000L);
-      when(value.getCounterValues()).thenReturn(Map.of("tenant1", 42L, "tenant2", 84L));
-
-      final String result = logger.summarizeUsageMetrics(mockRecord);
+      final String result = logger.summarizeUsageMetrics(usageMetricsRecord);
 
       // then
       final String expected =
@@ -97,21 +97,24 @@ class CompactRecordLoggerTest {
     void shouldSummarizeUsageMetricsWithSetCorrectly() {
       // given
       final var logger = new CompactRecordLogger(java.util.List.of());
-      final var mockRecord = mock(Record.class);
-      final var value = mock(UsageMetricRecordValue.class);
+      final var usageMetricsRecord =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.USAGE_METRIC)
+              .withValue(
+                  ImmutableUsageMetricRecordValue.builder()
+                      .withEventType(EventType.TU)
+                      .withIntervalType(IntervalType.ACTIVE)
+                      .withStartTime(1718000000000L)
+                      .withEndTime(1718003600000L)
+                      .withResetTime(1718001800000L)
+                      .withSetValues(
+                          Map.of(
+                              "tenant1", Set.of(1234567L, 7654321L), "tenant2", Set.of(9876543L)))
+                      .build())
+              .build();
 
       // when
-      when(mockRecord.getValueType()).thenReturn(ValueType.USAGE_METRIC);
-      when(mockRecord.getValue()).thenReturn(value);
-      when(value.getEventType()).thenReturn(EventType.TU);
-      when(value.getIntervalType()).thenReturn(IntervalType.ACTIVE);
-      when(value.getStartTime()).thenReturn(1718000000000L);
-      when(value.getEndTime()).thenReturn(1718003600000L);
-      when(value.getResetTime()).thenReturn(1718001800000L);
-      when(value.getSetValues())
-          .thenReturn(Map.of("tenant1", Set.of(1234567L, 7654321L), "tenant2", Set.of(9876543L)));
-
-      final String result = logger.summarizeUsageMetrics(mockRecord);
+      final String result = logger.summarizeUsageMetrics(usageMetricsRecord);
 
       // then
       assertThat(result)
