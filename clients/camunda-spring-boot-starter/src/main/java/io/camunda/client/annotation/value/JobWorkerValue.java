@@ -15,12 +15,14 @@
  */
 package io.camunda.client.annotation.value;
 
-import io.camunda.client.bean.MethodInfo;
+import io.camunda.client.spring.bean.MethodInfo;
+import io.camunda.spring.client.jobhandling.JobHandlerFactory;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import org.springframework.util.function.ThrowingFunction;
 
-public class JobWorkerValue {
+public class JobWorkerValue implements Cloneable {
   private String type;
   private String name;
   private Duration timeout;
@@ -30,12 +32,17 @@ public class JobWorkerValue {
   private Boolean autoComplete;
   private List<String> fetchVariables;
   private Boolean enabled;
-  private MethodInfo methodInfo;
+  private ThrowingFunction<Object[], Object> method;
   private List<String> tenantIds;
   private Boolean forceFetchAllVariables;
   private Boolean streamEnabled;
   private Duration streamTimeout;
   private Integer maxRetries = 0;
+  private Duration retryBackoff;
+  private JobHandlerFactory jobHandlerFactory;
+
+  @Deprecated(forRemoval = true)
+  private MethodInfo methodInfo;
   private Duration retryBackoff;
 
   public JobWorkerValue() {}
@@ -50,13 +57,14 @@ public class JobWorkerValue {
       final Boolean autoComplete,
       final List<String> fetchVariables,
       final Boolean enabled,
-      final MethodInfo methodInfo,
+      final ThrowingFunction<Object[], Object> method,
       final List<String> tenantIds,
       final Boolean forceFetchAllVariables,
       final Boolean streamEnabled,
       final Duration streamTimeout,
       final Integer maxRetries,
-      final Duration retryBackoff) {
+      final Duration retryBackoff,
+      final JobHandlerFactory jobHandlerFactory) {
     this.type = type;
     this.name = name;
     this.timeout = timeout;
@@ -66,13 +74,14 @@ public class JobWorkerValue {
     this.autoComplete = autoComplete;
     this.fetchVariables = fetchVariables;
     this.enabled = enabled;
-    this.methodInfo = methodInfo;
+    this.method = method;
     this.tenantIds = tenantIds;
     this.forceFetchAllVariables = forceFetchAllVariables;
     this.streamEnabled = streamEnabled;
     this.streamTimeout = streamTimeout;
     this.maxRetries = maxRetries;
     this.retryBackoff = retryBackoff;
+    this.jobHandlerFactory = jobHandlerFactory;
   }
 
   public String getType() {
@@ -147,12 +156,12 @@ public class JobWorkerValue {
     this.enabled = enabled;
   }
 
-  public MethodInfo getMethodInfo() {
-    return methodInfo;
+  public ThrowingFunction<Object[], Object> getMethod() {
+    return method;
   }
 
-  public void setMethodInfo(final MethodInfo methodInfo) {
-    this.methodInfo = methodInfo;
+  public void setMethod(final ThrowingFunction<Object[], Object> method) {
+    this.method = method;
   }
 
   public List<String> getTenantIds() {
@@ -203,6 +212,24 @@ public class JobWorkerValue {
     this.retryBackoff = retryBackoff;
   }
 
+  public JobHandlerFactory getJobWorkerFactory() {
+    return jobHandlerFactory;
+  }
+
+  public void setJobWorkerFactory(final JobHandlerFactory jobHandlerFactory) {
+    this.jobHandlerFactory = jobHandlerFactory;
+  }
+
+  @Deprecated(forRemoval = true)
+  public MethodInfo getMethodInfo() {
+    return methodInfo;
+  }
+
+  @Deprecated(forRemoval = true)
+  public void setMethodInfo(final MethodInfo methodInfo) {
+    this.methodInfo = methodInfo;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -215,12 +242,13 @@ public class JobWorkerValue {
         autoComplete,
         fetchVariables,
         enabled,
-        methodInfo,
+        method,
         tenantIds,
         forceFetchAllVariables,
         streamEnabled,
         streamTimeout,
         maxRetries,
+        jobHandlerFactory,
         retryBackoff);
   }
 
@@ -239,13 +267,25 @@ public class JobWorkerValue {
         && Objects.equals(autoComplete, that.autoComplete)
         && Objects.equals(fetchVariables, that.fetchVariables)
         && Objects.equals(enabled, that.enabled)
-        && Objects.equals(methodInfo, that.methodInfo)
+        && Objects.equals(method, that.method)
         && Objects.equals(tenantIds, that.tenantIds)
         && Objects.equals(forceFetchAllVariables, that.forceFetchAllVariables)
         && Objects.equals(streamEnabled, that.streamEnabled)
         && Objects.equals(streamTimeout, that.streamTimeout)
         && Objects.equals(maxRetries, that.maxRetries)
-        && Objects.equals(retryBackoff, that.retryBackoff);
+        && Objects.equals(retryBackoff, that.retryBackoff)
+        && Objects.equals(jobHandlerFactory, that.jobHandlerFactory);
+  }
+
+  @Override
+  public JobWorkerValue clone() {
+    try {
+      final JobWorkerValue clone = (JobWorkerValue) super.clone();
+      // TODO: copy mutable state here, so the clone can't change the internals of the original
+      return clone;
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError();
+    }
   }
 
   @Override
@@ -271,8 +311,8 @@ public class JobWorkerValue {
         + fetchVariables
         + ", enabled="
         + enabled
-        + ", methodInfo="
-        + methodInfo
+        + ", method="
+        + method
         + ", tenantIds="
         + tenantIds
         + ", forceFetchAllVariables="
@@ -285,6 +325,8 @@ public class JobWorkerValue {
         + maxRetries
         + ", retryBackoff="
         + retryBackoff
+        + ", jobWorkerFactory="
+        + jobHandlerFactory
         + '}';
   }
 }
