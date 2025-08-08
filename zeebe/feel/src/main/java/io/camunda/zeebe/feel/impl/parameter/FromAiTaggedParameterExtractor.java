@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.adhocsubprocess.parameter;
+package io.camunda.zeebe.feel.impl.parameter;
 
-import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
+import io.camunda.zeebe.feel.impl.FromAiFunction;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,15 +25,15 @@ import org.camunda.feel.syntaxtree.PositionalFunctionParameters;
 import org.camunda.feel.syntaxtree.Ref;
 import scala.jdk.javaapi.CollectionConverters;
 
-class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParameterExtractor {
+public class FromAiTaggedParameterExtractor implements FunctionInvocationTaggedParameterExtractor {
 
   @Override
   public String functionName() {
-    return "fromAi";
+    return FromAiFunction.FUNCTION_NAME;
   }
 
   @Override
-  public AdHocActivityParameter mapToParameter(final FunctionInvocation functionInvocation) {
+  public TaggedParameter extract(final FunctionInvocation functionInvocation) {
     return switch (functionInvocation.params()) {
       case final PositionalFunctionParameters positionalFunctionParameters ->
           fromPositionalFunctionInvocationParams(
@@ -49,7 +49,7 @@ class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParame
     };
   }
 
-  private AdHocActivityParameter fromPositionalFunctionInvocationParams(final List<Exp> params) {
+  private TaggedParameter fromPositionalFunctionInvocationParams(final List<Exp> params) {
     final Function<Integer, Exp> getParam =
         index -> (params.size() > index ? params.get(index) : null);
 
@@ -61,7 +61,7 @@ class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParame
         getParam.apply(4));
   }
 
-  private AdHocActivityParameter fromNamedFunctionInvocationParams(final Map<String, Exp> params) {
+  private TaggedParameter fromNamedFunctionInvocationParams(final Map<String, Exp> params) {
     return fromFunctionInvocationParams(
         params.get("value"),
         params.get("description"),
@@ -70,7 +70,7 @@ class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParame
         params.get("options"));
   }
 
-  private AdHocActivityParameter fromFunctionInvocationParams(
+  private TaggedParameter fromFunctionInvocationParams(
       final Exp name, final Exp description, final Exp type, final Exp schema, final Exp options) {
 
     final var parameterName = parameterName(name);
@@ -79,8 +79,7 @@ class FromAiFeelFunctionCallParameterExtractor implements FeelFunctionCallParame
     final var schemaMap = asMap(schema, "schema");
     final var optionsMap = asMap(options, "options");
 
-    return new AdHocActivityParameter(
-        parameterName, descriptionStr, typeStr, schemaMap, optionsMap);
+    return new TaggedParameter(parameterName, descriptionStr, typeStr, schemaMap, optionsMap);
   }
 
   private String parameterName(final Exp value) {

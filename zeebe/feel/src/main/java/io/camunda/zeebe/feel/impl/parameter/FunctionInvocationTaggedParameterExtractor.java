@@ -5,14 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.adhocsubprocess.parameter;
+package io.camunda.zeebe.feel.impl.parameter;
 
-import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
 import org.camunda.feel.syntaxtree.FunctionInvocation;
 
 /** Function specific parameter extractor. */
-interface FeelFunctionCallParameterExtractor {
+public interface FunctionInvocationTaggedParameterExtractor {
+
+  /** The function name this extractor is responsible for. */
   String functionName();
 
-  AdHocActivityParameter mapToParameter(final FunctionInvocation functionInvocation);
+  /** Transform a function invocation into a {@link TaggedParameter}. */
+  TaggedParameter extract(final FunctionInvocation functionInvocation);
 }

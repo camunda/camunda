@@ -11,7 +11,6 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.FeelExpression;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
-import io.camunda.zeebe.engine.processing.adhocsubprocess.parameter.AdHocActivityParameterExtractor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
@@ -21,6 +20,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelE
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
+import io.camunda.zeebe.feel.impl.parameter.TaggedParameter;
+import io.camunda.zeebe.feel.impl.parameter.TaggedParameterExtractor;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
@@ -40,8 +41,7 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
   private final TaskDefinitionTransformer taskDefinitionTransformer =
       new TaskDefinitionTransformer();
   private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
-  private final AdHocActivityParameterExtractor parameterExtractor =
-      new AdHocActivityParameterExtractor();
+  private final TaggedParameterExtractor taggedParameterExtractor = new TaggedParameterExtractor();
 
   @Override
   public Class<AdHocSubProcess> getType() {
@@ -175,7 +175,11 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
           .map(
               inputMappings -> {
                 if (inputMappings instanceof final FeelExpression feelExpression) {
-                  return parameterExtractor.extractParameters(feelExpression.getParsedExpression());
+                  return taggedParameterExtractor
+                      .extractParameters(feelExpression.getParsedExpression())
+                      .stream()
+                      .map(this::mapAdHocActivityParameter)
+                      .toList();
                 }
 
                 return null;
@@ -187,6 +191,15 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
               .formatted(BufferUtil.bufferAsString(adHocActivity.getId()), e.getMessage()),
           e);
     }
+  }
+
+  private AdHocActivityParameter mapAdHocActivityParameter(final TaggedParameter parameter) {
+    return new AdHocActivityParameter(
+        parameter.name(),
+        parameter.description(),
+        parameter.type(),
+        parameter.schema(),
+        parameter.options());
   }
 
   /**

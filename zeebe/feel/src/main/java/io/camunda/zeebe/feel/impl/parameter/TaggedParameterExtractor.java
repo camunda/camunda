@@ -5,43 +5,49 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.adhocsubprocess.parameter;
+package io.camunda.zeebe.feel.impl.parameter;
 
-import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.camunda.feel.syntaxtree.FunctionInvocation;
 import org.camunda.feel.syntaxtree.ParsedExpression;
 import scala.Product;
 import scala.jdk.javaapi.CollectionConverters;
 
 /**
- * Generic parameter extractor delegating actual function call handling to individual
- * FunctionCallParameterExtractors.
+ * Extracts "tagged" parameters such as fromAi() into a structured format that can be used for
+ * further processing, such as generating a JSON schema or documentation.
+ *
+ * <p>Delegating actual function call handling to individual {@link
+ * FunctionInvocationTaggedParameterExtractor} implementations handling a specific function.
  */
-public class AdHocActivityParameterExtractor {
+public class TaggedParameterExtractor {
 
-  private final Map<String, FeelFunctionCallParameterExtractor> parameterExtractors =
+  private final Map<String, FunctionInvocationTaggedParameterExtractor> extractorsByFunctionName =
       new LinkedHashMap<>();
 
-  public AdHocActivityParameterExtractor() {
-    registerParameterExtractor(new FromAiFeelFunctionCallParameterExtractor());
+  public TaggedParameterExtractor() {
+    this(List.of(new FromAiTaggedParameterExtractor()));
   }
 
-  private void registerParameterExtractor(final FeelFunctionCallParameterExtractor extractor) {
-    parameterExtractors.put(extractor.functionName(), extractor);
+  public TaggedParameterExtractor(
+      final List<FunctionInvocationTaggedParameterExtractor> extractorsByFunctionName) {
+    Objects.requireNonNull(extractorsByFunctionName, "Parameter extractors must not be null");
+    extractorsByFunctionName.forEach(
+        extractor -> this.extractorsByFunctionName.put(extractor.functionName(), extractor));
   }
 
-  public List<AdHocActivityParameter> extractParameters(final ParsedExpression parsedExpression) {
+  public List<TaggedParameter> extractParameters(final ParsedExpression parsedExpression) {
     final var extracted = extractParameters(parsedExpression.expression(), new ArrayList<>());
     return Collections.unmodifiableList(extracted);
   }
 
-  private List<AdHocActivityParameter> extractParameters(
-      final Object object, final List<AdHocActivityParameter> extracted) {
+  private List<TaggedParameter> extractParameters(
+      final Object object, final List<TaggedParameter> extracted) {
     if (isSupportedFunctionInvocation(object)) {
       processFunctionInvocation((FunctionInvocation) object, extracted);
       return extracted;
@@ -66,12 +72,12 @@ public class AdHocActivityParameterExtractor {
 
   private boolean isSupportedFunctionInvocation(final Object object) {
     return object instanceof final FunctionInvocation functionInvocation
-        && parameterExtractors.containsKey(functionInvocation.function());
+        && extractorsByFunctionName.containsKey(functionInvocation.function());
   }
 
   private void processFunctionInvocation(
-      final FunctionInvocation functionInvocation, final List<AdHocActivityParameter> extracted) {
+      final FunctionInvocation functionInvocation, final List<TaggedParameter> extracted) {
     extracted.add(
-        parameterExtractors.get(functionInvocation.function()).mapToParameter(functionInvocation));
+        extractorsByFunctionName.get(functionInvocation.function()).extract(functionInvocation));
   }
 }
