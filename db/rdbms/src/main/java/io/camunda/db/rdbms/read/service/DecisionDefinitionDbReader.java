@@ -15,6 +15,7 @@ import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +43,19 @@ public class DecisionDefinitionDbReader extends AbstractEntityReader<DecisionDef
       final DecisionDefinitionQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort =
         convertSort(query.sort(), DecisionDefinitionSearchColumn.DECISION_DEFINITION_KEY);
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         DecisionDefinitionDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for decision definition with filter {}", dbQuery);
     final var totalHits = decisionDefinitionMapper.count(dbQuery);
@@ -62,5 +73,19 @@ public class DecisionDefinitionDbReader extends AbstractEntityReader<DecisionDef
 
   public SearchQueryResult<DecisionDefinitionEntity> search(final DecisionDefinitionQuery query) {
     return search(query, ResourceAccessChecks.disabled());
+  }
+
+  /**
+   * Checks if the search result should be empty based on resource and tenant authorization.
+   * Returns {@code true} if authorization is enabled but no authorized resource or tenant IDs are present.
+   *
+   * @param resourceAccessChecks the resource access checks containing authorization and tenant checks
+   * @return {@code true} if the search result should be empty, {@code false
+   */
+  private boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
+    return resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty()
+        || resourceAccessChecks.tenantCheck().enabled()
+            && resourceAccessChecks.getAuthorizedTenantIds().isEmpty();
   }
 }
