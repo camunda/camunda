@@ -113,6 +113,19 @@
     ut.HISTORY_CLEANUP_DATE
     FROM ${prefix}USER_TASK ut
     <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND ut.PROCESS_DEFINITION_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        close=")">
+        #{resourceId}
+      </foreach>
+    </if>
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND ut.TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+    </if>
     ) filtered
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>

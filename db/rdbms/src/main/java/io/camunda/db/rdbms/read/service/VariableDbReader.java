@@ -43,9 +43,19 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
   public SearchQueryResult<VariableEntity> search(
       final VariableQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), VariableSearchColumn.VAR_KEY);
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         VariableDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
     LOG.trace("[RDBMS DB] Search for variables with filter {}", query);
     final var totalHits = variableMapper.count(dbQuery);
     final var hits = variableMapper.search(dbQuery);
@@ -66,6 +76,20 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
 
   public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
     return search(query, ResourceAccessChecks.disabled());
+  }
+
+  /**
+   * Checks if the search result should be empty based on resource and tenant authorization.
+   * Returns {@code true} if authorization is enabled but no authorized resource or tenant IDs are present.
+   *
+   * @param resourceAccessChecks the resource access checks containing authorization and tenant checks
+   * @return {@code true} if the search result should be empty, {@code false
+   */
+  private boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
+    return resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty()
+        || resourceAccessChecks.tenantCheck().enabled()
+            && resourceAccessChecks.getAuthorizedTenantIds().isEmpty();
   }
 
   public record SearchResult(List<VariableEntity> hits, Integer total) {}
