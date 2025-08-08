@@ -230,22 +230,17 @@ public class DecisionReader extends AbstractReader
   }
 
   private QueryBuilder buildQuery(final String tenantId) {
-    QueryBuilder decisionIdQ = null;
-    if (permissionsService.permissionsEnabled()) {
-      final var allowed =
-          permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_DEFINITION);
-      if (allowed != null && !allowed.isAll()) {
-        decisionIdQ = QueryBuilders.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
-      }
-    }
+    final var allowed =
+        permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_DEFINITION);
+    final QueryBuilder decisionIdQ =
+        allowed.isAll()
+            ? matchAllQuery()
+            : QueryBuilders.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
+
     QueryBuilder tenantIdQ = null;
     if (securityConfiguration.getMultiTenancy().isChecksEnabled()) {
       tenantIdQ = tenantId != null ? termQuery(DecisionIndex.TENANT_ID, tenantId) : null;
     }
-    QueryBuilder q = joinWithAnd(decisionIdQ, tenantIdQ);
-    if (q == null) {
-      q = matchAllQuery();
-    }
-    return q;
+    return joinWithAnd(decisionIdQ, tenantIdQ);
   }
 }

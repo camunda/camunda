@@ -116,13 +116,10 @@ public class IncidentStatisticsReader extends AbstractReader
                         cardinality(UNIQ_PROCESS_INSTANCES)
                             .field(IncidentTemplate.PROCESS_INSTANCE_KEY)));
 
-    var query = ACTIVE_INCIDENT_QUERY;
-    if (permissionsService.permissionsEnabled()) {
-      query =
-          joinWithAnd(
-              ACTIVE_INCIDENT_QUERY,
-              createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
-    }
+    final var query =
+        joinWithAnd(
+            ACTIVE_INCIDENT_QUERY,
+            createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
 
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
@@ -184,7 +181,8 @@ public class IncidentStatisticsReader extends AbstractReader
     final QueryBuilder runningInstanceQuery =
         joinWithAnd(
             termQuery(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
-            termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
+            termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+            createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
     final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
     try {
       final SearchRequest searchRequest =
@@ -283,9 +281,6 @@ public class IncidentStatisticsReader extends AbstractReader
   private QueryBuilder createQueryForProcessesByPermission(final PermissionType permission) {
     final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(permission);
-    if (allowed == null) {
-      return null;
-    }
     return allowed.isAll()
         ? QueryBuilders.matchAllQuery()
         : QueryBuilders.termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());

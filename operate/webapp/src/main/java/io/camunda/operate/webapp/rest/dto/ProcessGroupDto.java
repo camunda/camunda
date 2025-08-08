@@ -13,7 +13,6 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,10 +50,7 @@ public class ProcessGroupDto {
               groupDto.setTenantId(process0.getTenantId());
               groupDto.setName(process0.getName());
               groupDto.setPermissions(
-                  (!permissionsService.permissionsEnabled())
-                      ? new HashSet<>()
-                      : permissionsService.getProcessDefinitionPermissions(
-                          process0.getBpmnProcessId()));
+                  permissionsService.getProcessDefinitionPermissions(process0.getBpmnProcessId()));
               groupDto.setProcesses(DtoCreator.create(group, ProcessDto.class));
               groups.add(groupDto);
             });

@@ -73,7 +73,6 @@ public class ProcessInstanceRestServiceTest {
             flowNodeStatisticsReader,
             sequenceFlowStore);
 
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForProcess(any(), any(PermissionType.class)))
         .thenReturn(true);
   }

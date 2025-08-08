@@ -94,11 +94,9 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
             ProcessIndex.VERSION);
 
     final Query query =
-        (!permissionsService.permissionsEnabled())
-            ? ACTIVE_INCIDENT_QUERY
-            : and(
-                ACTIVE_INCIDENT_QUERY,
-                createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
+        and(
+            ACTIVE_INCIDENT_QUERY,
+            createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
 
     final var uniqueProcessInstances =
         cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
@@ -167,7 +165,8 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
         withTenantCheck(
             and(
                 term(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
-                term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION)));
+                term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+                createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE)));
 
     searchAggBuckets(query)
         .forEach(
@@ -244,9 +243,6 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   private Query createQueryForProcessesByPermission(final PermissionType permission) {
     final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(permission);
-    if (allowed == null) {
-      return null;
-    }
     return allowed.isAll()
         ? matchAll()
         : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
