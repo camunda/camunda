@@ -15,7 +15,7 @@ import {
   Header,
   ProgressBar,
 } from 'modules/components/OperationsPanel/OperationsEntry/styled';
-import OperationEntryStatus from './OperationEntryStatus';
+import {OperationEntryStatus} from './OperationEntryStatus';
 import {Error, Tools, RetryFailed, MigrateAlt} from '@carbon/react/icons';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
@@ -87,9 +87,9 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
       {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
       <Details>
         <OperationEntryStatus
-          batchOperationType={batchOperationType}
-          operationsFailedCount={operationsFailedCount}
-          operationsCompletedCount={operationsCompletedCount}
+          type={batchOperationType}
+          failedCount={operationsFailedCount}
+          completedCount={operationsCompletedCount}
         />
 
         {endDate !== undefined && isComplete && (
@@ -100,4 +100,4 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   );
 };
 
-export default OperationsEntry;
+export {OperationsEntry};

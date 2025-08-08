@@ -12,7 +12,7 @@ import {CollapsablePanel as BaseCollapsablePanel} from 'modules/components/Colla
 import {observer} from 'mobx-react';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {OperationsList, EmptyMessageContainer} from '../styled';
-import OperationsEntry from './OperationsEntry';
+import {OperationsEntry} from './OperationsEntry';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {EMPTY_MESSAGE} from '../constants';
 import {InlineNotification} from '@carbon/react';
@@ -30,7 +30,6 @@ const OperationsPanel: React.FC = observer(() => {
 
   const {data, isError, isLoading, isFetched, isFetching, fetchNextPage} =
     useBatchOperations({
-      filter: {},
       sort: [{field: 'startDate', order: 'desc'}],
     });
 

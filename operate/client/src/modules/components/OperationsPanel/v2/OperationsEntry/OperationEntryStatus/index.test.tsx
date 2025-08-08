@@ -7,15 +7,15 @@
  */
 
 import {render, screen} from '@testing-library/react';
-import OperationsEntryStatus from './index';
+import {OperationEntryStatus} from './index';
 
-describe('OperationsEntryStatus', () => {
+describe('OperationEntryStatus', () => {
   it('should render instance status count when there is one instance with success status', () => {
     render(
-      <OperationsEntryStatus
-        batchOperationType="CANCEL_PROCESS_INSTANCE"
-        operationsFailedCount={0}
-        operationsCompletedCount={1}
+      <OperationEntryStatus
+        type="CANCEL_PROCESS_INSTANCE"
+        failedCount={0}
+        completedCount={1}
       />,
     );
 
@@ -25,10 +25,10 @@ describe('OperationsEntryStatus', () => {
 
   it('should render instance status count when there is one instance with fail status', () => {
     render(
-      <OperationsEntryStatus
-        batchOperationType="CANCEL_PROCESS_INSTANCE"
-        operationsFailedCount={1}
-        operationsCompletedCount={0}
+      <OperationEntryStatus
+        type="CANCEL_PROCESS_INSTANCE"
+        failedCount={1}
+        completedCount={0}
       />,
     );
 
@@ -38,10 +38,10 @@ describe('OperationsEntryStatus', () => {
 
   it('should render only success instance status count when all operations have been successful', () => {
     render(
-      <OperationsEntryStatus
-        batchOperationType="CANCEL_PROCESS_INSTANCE"
-        operationsFailedCount={0}
-        operationsCompletedCount={3}
+      <OperationEntryStatus
+        type="CANCEL_PROCESS_INSTANCE"
+        failedCount={0}
+        completedCount={3}
       />,
     );
 
@@ -51,10 +51,10 @@ describe('OperationsEntryStatus', () => {
 
   it('should render only failed instance status count when all operations have failed', () => {
     render(
-      <OperationsEntryStatus
-        batchOperationType="CANCEL_PROCESS_INSTANCE"
-        operationsFailedCount={3}
-        operationsCompletedCount={0}
+      <OperationEntryStatus
+        type="CANCEL_PROCESS_INSTANCE"
+        failedCount={3}
+        completedCount={0}
       />,
     );
 
@@ -64,10 +64,10 @@ describe('OperationsEntryStatus', () => {
 
   it('should render success and fail instance status count when there is a mix of failed and successful operations', () => {
     render(
-      <OperationsEntryStatus
-        batchOperationType="CANCEL_PROCESS_INSTANCE"
-        operationsFailedCount={2}
-        operationsCompletedCount={4}
+      <OperationEntryStatus
+        type="CANCEL_PROCESS_INSTANCE"
+        failedCount={2}
+        completedCount={4}
       />,
     );
 

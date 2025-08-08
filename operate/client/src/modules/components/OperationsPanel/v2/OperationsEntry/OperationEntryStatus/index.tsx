@@ -16,43 +16,43 @@ import {
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
 interface Props {
-  batchOperationType: BatchOperationType;
-  operationsFailedCount?: number;
-  operationsCompletedCount?: number;
+  type: BatchOperationType;
+  failedCount?: number;
+  completedCount?: number;
 }
 
 const OperationEntryStatus: React.FC<Props> = ({
-  batchOperationType,
-  operationsFailedCount = 0,
-  operationsCompletedCount = 0,
+  type,
+  failedCount = 0,
+  completedCount = 0,
 }) => {
   return (
     <StatusContainer>
-      {operationsCompletedCount > 0 ? (
+      {completedCount > 0 ? (
         <>
           <CheckmarkFilled />
           <Text>
             <>
-              {batchOperationType === 'RESOLVE_INCIDENT'
-                ? `${operationsCompletedCount} ${operationsCompletedCount === 1 ? 'retry' : 'retries'} succeeded`
-                : `${pluralSuffix(operationsCompletedCount, 'instance')} succeeded`}
+              {type === 'RESOLVE_INCIDENT'
+                ? `${completedCount} ${completedCount === 1 ? 'retry' : 'retries'} succeeded`
+                : `${pluralSuffix(completedCount, 'instance')} succeeded`}
             </>
           </Text>
         </>
       ) : null}
-      {operationsCompletedCount > 0 && operationsFailedCount > 0 ? ' / ' : null}
-      {operationsFailedCount ? (
+      {completedCount > 0 && failedCount > 0 ? ' / ' : null}
+      {failedCount ? (
         <>
           <WarningFilled />
           <Text>
             <>
-              {batchOperationType === 'RESOLVE_INCIDENT'
-                ? operationsCompletedCount > 0
-                  ? `${operationsFailedCount} failed`
-                  : `${operationsFailedCount} ${operationsFailedCount === 1 ? 'retry' : 'retries'} failed`
-                : operationsCompletedCount > 0
-                  ? `${operationsFailedCount} failed`
-                  : `${pluralSuffix(operationsFailedCount, 'instance')} failed`}
+              {type === 'RESOLVE_INCIDENT'
+                ? completedCount > 0
+                  ? `${failedCount} failed`
+                  : `${failedCount} ${failedCount === 1 ? 'retry' : 'retries'} failed`
+                : completedCount > 0
+                  ? `${failedCount} failed`
+                  : `${pluralSuffix(failedCount, 'instance')} failed`}
             </>
           </Text>
         </>
@@ -61,4 +61,4 @@ const OperationEntryStatus: React.FC<Props> = ({
   );
 };
 
-export default OperationEntryStatus;
+export {OperationEntryStatus};
