@@ -67,6 +67,7 @@ defaults:
 env:
   RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
+  RELEASE_TAG: ${{ inputs.releaseProcessDryRun && format('dryrun-{0}', inputs.releaseVersion) || inputs.releaseVersion }}
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
 jobs:
   release:
@@ -167,7 +168,7 @@ jobs:
           #   This is the reason why we have to set it at least as empty string.
           ./mvnw release:prepare -B \
             -Dresume=false \
-            -Dtag="${RELEASE_VERSION}" \
+            -Dtag="${RELEASE_TAG}" \
             -DreleaseVersion="${RELEASE_VERSION}" \
             -DdevelopmentVersion="${DEVELOPMENT_VERSION}" \
             -DpushChanges="${PUSH_CHANGES}" \
