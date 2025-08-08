@@ -38,6 +38,9 @@ class CompactRecordLoggerTest {
       // Excluding ValueTypes not yet supported by CompactRecordLogger.
       // They will be covered in follow-up PRs as part of:
       // https://github.com/camunda/camunda/issues/31825.
+      //
+      // When you introduce a new ValueType, please avoid excluding new Value Types here.
+      // Instead, please add a new value logger to CompactRecordLogger.valueLoggers.
       mode = EnumSource.Mode.EXCLUDE,
       names = {
         "ESCALATION",
