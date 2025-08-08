@@ -7,11 +7,17 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Azure;
+import io.camunda.configuration.S3;
+import io.camunda.configuration.SasToken;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
+import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -54,6 +60,8 @@ public class BrokerBasedPropertiesOverride {
 
     // TODO: Populate the bean from rest of camunda.* sections
     // populateFromData(override);
+    // from camunda.data.* sections
+    populateFromData(override);
 
     return override;
   }
@@ -116,5 +124,63 @@ public class BrokerBasedPropertiesOverride {
         .setReplication(unifiedDiskConfig.getFreeSpace().getReplication());
     brokerDiskConfig.setEnableMonitoring(unifiedDiskConfig.isMonitoringEnabled());
     brokerDiskConfig.setMonitoringInterval(unifiedDiskConfig.getMonitoringInterval());
+  }
+
+  private void populateFromData(final BrokerBasedProperties override) {
+    populateFromBackup(override);
+  }
+
+  private void populateFromBackup(final BrokerBasedProperties override) {
+    populateFromS3(override);
+    populateFromAzure(override);
+  }
+
+  private void populateFromS3(final BrokerBasedProperties override) {
+    final S3 s3 = unifiedConfiguration.getCamunda().getData().getBackup().getS3();
+    final S3BackupStoreConfig s3BackupStoreConfig = override.getData().getBackup().getS3();
+    s3BackupStoreConfig.setBucketName(s3.getBucketName());
+    s3BackupStoreConfig.setEndpoint(s3.getEndpoint());
+    s3BackupStoreConfig.setRegion(s3.getRegion());
+    s3BackupStoreConfig.setAccessKey(s3.getAccessKey());
+    s3BackupStoreConfig.setSecretKey(s3.getSecretKey());
+    s3BackupStoreConfig.setApiCallTimeout(s3.getApiCallTimeout());
+    s3BackupStoreConfig.setForcePathStyleAccess(s3.isForcePathStyleAccess());
+    s3BackupStoreConfig.setCompression(s3.getCompression());
+    s3BackupStoreConfig.setMaxConcurrentConnections(s3.getMaxConcurrentConnections());
+    s3BackupStoreConfig.setConnectionAcquisitionTimeout(s3.getConnectionAcquisitionTimeout());
+    s3BackupStoreConfig.setBasePath(s3.getBasePath());
+    s3BackupStoreConfig.setSupportLegacyMd5(s3.isSupportLegacyMd5());
+
+    override.getData().getBackup().setS3(s3BackupStoreConfig);
+  }
+
+  private void populateFromAzure(final BrokerBasedProperties override) {
+    final Azure azure = unifiedConfiguration.getCamunda().getData().getBackup().getAzure();
+    final AzureBackupStoreConfig azureBackupStoreConfig = override.getData().getBackup().getAzure();
+    azureBackupStoreConfig.setEndpoint(azure.getEndpoint());
+    azureBackupStoreConfig.setAccountName(azure.getAccountName());
+    azureBackupStoreConfig.setAccountKey(azure.getAccountKey());
+    azureBackupStoreConfig.setConnectionString(azure.getConnectionString());
+    azureBackupStoreConfig.setBasePath(azure.getBasePath());
+    azureBackupStoreConfig.setCreateContainer(azure.isCreateContainer());
+    populateFromSasToken(override);
+
+    override.getData().getBackup().setAzure(azureBackupStoreConfig);
+  }
+
+  private void populateFromSasToken(final BrokerBasedProperties override) {
+    final SasToken sasToken =
+        unifiedConfiguration.getCamunda().getData().getBackup().getAzure().getSasToken();
+    final SasTokenConfig sasTokenConfig = override.getData().getBackup().getAzure().getSasToken();
+
+    if (sasToken != null) {
+      override.getData().getBackup().getAzure().setSasToken(sasToken.toSasTokenConfig());
+    } else if (sasTokenConfig != null) {
+      override
+          .getData()
+          .getBackup()
+          .getAzure()
+          .setSasToken(SasToken.fromSasTokenConfig(sasTokenConfig).toSasTokenConfig());
+    }
   }
 }
