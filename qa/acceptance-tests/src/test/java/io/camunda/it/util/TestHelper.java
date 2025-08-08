@@ -14,6 +14,7 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -21,12 +22,17 @@ import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
+import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.Comparator;
@@ -617,10 +623,54 @@ public final class TestHelper {
             });
   }
 
+  public static Decision startDefaultTestDecisionProcessInstance(
+      final CamundaClient camundaClient, final String dmnResource) {
+    final var decisionDeployment =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath(String.format("decisions/%s", dmnResource))
+            .send()
+            .join()
+            .getDecisions()
+            .getFirst();
+    waitForDecisionsToBeDeployed(
+        camundaClient,
+        decisionDeployment.getDecisionKey(),
+        decisionDeployment.getDecisionRequirementsKey(),
+        1,
+        1);
+    deployResource(
+            camundaClient,
+            Bpmn.createExecutableProcess("dmn_process")
+                .startEvent()
+                .businessRuleTask("dmn_task")
+                .zeebeCalledDecisionId(decisionDeployment.getDmnDecisionId())
+                .zeebeResultVariable("{\"output1\": \"B\"}")
+                .endEvent()
+                .done(),
+            "dmn_process.bpmn")
+        .getProcesses()
+        .getFirst();
+    final long processInstanceKey =
+        startProcessInstance(camundaClient, "dmn_process").getProcessInstanceKey();
+    waitForDecisionToBeEvaluated(camundaClient, processInstanceKey, 1);
+    return decisionDeployment;
+  }
+
   public static void waitForDecisionsToBeDeployed(
       final CamundaClient camundaClient,
+      final long decisionKey,
+      final long decisionRequirementsKey,
       final int expectedDecisionDefinitions,
       final int expectedDecisionRequirements) {
+    final DecisionDefinitionFilter decisionDefinitionFilter =
+        decisionKey != -1
+            ? new DecisionDefinitionFilterImpl().decisionDefinitionKey(decisionKey)
+            : new DecisionDefinitionFilterImpl();
+    final DecisionRequirementsFilter decisionRequirementsFilter =
+        decisionRequirementsKey != -1
+            ? new DecisionRequirementsFilterImpl().decisionRequirementsKey(decisionRequirementsKey)
+            : new DecisionRequirementsFilterImpl();
     Awaitility.await("should receive data from ES")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -629,6 +679,7 @@ public final class TestHelper {
               assertThat(
                       camundaClient
                           .newDecisionDefinitionSearchRequest()
+                          .filter(decisionDefinitionFilter)
                           .send()
                           .join()
                           .items()
@@ -637,6 +688,7 @@ public final class TestHelper {
               assertThat(
                       camundaClient
                           .newDecisionRequirementsSearchRequest()
+                          .filter(decisionRequirementsFilter)
                           .send()
                           .join()
                           .items()
@@ -645,14 +697,29 @@ public final class TestHelper {
             });
   }
 
+  public static void waitForDecisionsToBeDeployed(
+      final CamundaClient camundaClient,
+      final int expectedDecisionDefinitions,
+      final int expectedDecisionRequirements) {
+    waitForDecisionsToBeDeployed(
+        camundaClient, -1, -1, expectedDecisionDefinitions, expectedDecisionRequirements);
+  }
+
   public static void waitForDecisionToBeEvaluated(
-      final CamundaClient camundaClient, final int expectedDecisionInstances) {
+      final CamundaClient camundaClient,
+      final long processInstanceKey,
+      final int expectedDecisionInstances) {
     Awaitility.await("should deploy decision definitions and wait for import")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newDecisionInstanceSearchRequest()
+                      .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .send()
+                      .join();
               assertThat(result.items()).hasSize(expectedDecisionInstances);
             });
   }
