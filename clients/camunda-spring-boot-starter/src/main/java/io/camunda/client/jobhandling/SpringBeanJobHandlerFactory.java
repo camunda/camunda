@@ -54,11 +54,6 @@ public class SpringBeanJobHandlerFactory implements JobHandlerFactory {
   }
 
   @Override
-  public Object invoke(final Object... args) throws Exception {
-    return methodInfo.invoke(args);
-  }
-
-  @Override
   public JobHandler getJobHandler(final JobHandlerFactoryContext context) {
     return new JobHandlerInvokingSpringBeans(
         context.jobWorkerValue().getName(),
