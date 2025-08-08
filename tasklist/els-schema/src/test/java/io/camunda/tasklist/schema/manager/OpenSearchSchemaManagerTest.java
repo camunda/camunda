@@ -9,7 +9,6 @@ package io.camunda.tasklist.schema.manager;
 
 import static io.camunda.tasklist.property.TasklistProperties.OPEN_SEARCH;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -62,8 +61,10 @@ class OpenSearchSchemaManagerTest {
   @Test
   void createTemplateShouldCreateIndexWithSettingsAndAliasAndMappings() throws IOException {
     // given
-    when(tasklistProperties.getOpenSearch().getNumberOfShards()).thenReturn(3);
-    when(tasklistProperties.getOpenSearch().getNumberOfReplicas()).thenReturn(2);
+    when(tasklistProperties.getOpenSearch().getNumberOfShards(taskTemplate.getIndexName()))
+        .thenReturn(3);
+    when(tasklistProperties.getOpenSearch().getNumberOfReplicas(taskTemplate.getIndexName()))
+        .thenReturn(2);
     when(tasklistProperties.getOpenSearch().getIndexPrefix()).thenReturn("prefix");
 
     // when
