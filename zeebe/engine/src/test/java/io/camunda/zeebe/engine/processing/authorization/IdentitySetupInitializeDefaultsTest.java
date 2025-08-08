@@ -175,7 +175,12 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.USAGE_METRIC)
-                    .hasOnlyPermissionTypes(PermissionType.READ));
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.DOCUMENT)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE));
   }
 
   @Test
@@ -267,6 +272,10 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.USAGE_METRIC)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.DOCUMENT)
                     .hasOnlyPermissionTypes(PermissionType.READ));
   }
 

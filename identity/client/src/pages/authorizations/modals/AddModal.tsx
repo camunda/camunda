@@ -110,6 +110,7 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.READ,
     PermissionType.UPDATE,
   ],
+  DOCUMENT: [PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE],
 };
 
 type FormData = {
