@@ -95,10 +95,20 @@ public class CamundaClientJobWorkerProperties {
    */
   private Integer maxRetries;
 
+  /**
+   * This instantiates the properties without any defaults. Intended to be used by {@link
+   * CamundaClientWorkerProperties#getOverride()}.
+   */
   public CamundaClientJobWorkerProperties() {
     this(false);
   }
 
+  /**
+   * This instantiates the properties optionally with defaults if set to <code>true</code>. Intended
+   * to be used by {@link CamundaClientWorkerProperties#getDefaults()}.
+   *
+   * @param initWithDefaults whether default properties should be set on creation
+   */
   public CamundaClientJobWorkerProperties(final boolean initWithDefaults) {
     if (initWithDefaults) {
       tenantIds = DEFAULT_JOB_WORKER_TENANT_IDS;
