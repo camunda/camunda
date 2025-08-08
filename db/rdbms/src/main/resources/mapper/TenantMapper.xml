@@ -13,6 +13,8 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.TenantDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}TENANT t
+    LEFT JOIN ${prefix}TENANT_MEMBER tm ON t.TENANT_ID = tm.TENANT_ID
+    AND tm.ENTITY_TYPE = #{filter.childMemberType}
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
   </select>
 
@@ -21,10 +23,11 @@
     SELECT * FROM (
     SELECT
     TENANT_KEY,
-    TENANT_ID,
+    t.TENANT_ID,
     NAME,
     DESCRIPTION
-    FROM ${prefix}TENANT
+    FROM ${prefix}TENANT t
+    LEFT JOIN ${prefix}TENANT_MEMBER tm ON t.TENANT_ID = tm.TENANT_ID
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -36,10 +39,27 @@
     WHERE 1 = 1
     <if test="filter.key != null">AND TENANT_KEY = #{filter.key}</if>
     <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
-      AND TENANT_ID IN
+      AND t.TENANT_ID IN
       <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.name != null">AND NAME = #{filter.name}</if>
+    <if test="filter.memberIds != null">
+      AND tm.ENTITY_ID IN
+      <foreach collection="filter.memberIds" item="memberId" open="(" separator="," close=")">
+        #{memberId}
+      </foreach>
+      AND tm.ENTITY_TYPE = #{filter.childMemberType}
+    </if>
+    <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" open="AND (" separator=" OR " close=")">
+        <if test="values != null and !values.isEmpty()">
+          tm.ENTITY_TYPE = #{memberType} AND tm.ENTITY_ID IN
+          <foreach collection="values" item="value" open="(" separator=" , " close=")">
+            #{value}
+          </foreach>
+        </if>
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="tenantResultMap" type="io.camunda.db.rdbms.write.domain.TenantDbModel">
