@@ -7,12 +7,15 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Backup;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import org.springframework.beans.BeanUtils;
@@ -110,7 +113,13 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromBackup(final BrokerBasedProperties override) {
+    final Backup backup = unifiedConfiguration.getCamunda().getData().getBackup();
+    final BackupStoreCfg backupStoreCfg = override.getData().getBackup();
+    backupStoreCfg.setStore(BackupStoreType.valueOf(backup.getStore().name()));
+
     populateFromS3(override);
+
+    override.getData().setBackup(backupStoreCfg);
   }
 
   private void populateFromS3(final BrokerBasedProperties override) {

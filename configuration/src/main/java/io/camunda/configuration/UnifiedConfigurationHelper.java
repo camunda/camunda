@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.Backup.BackupStoreType;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -214,6 +215,7 @@ public class UnifiedConfigurationHelper {
       case "Duration" -> (T) DurationStyle.detectAndParse(strValue);
       case "Long" -> (T) Long.valueOf(strValue);
       case "DataSize" -> (T) DataSize.parse(strValue);
+      case "BackupStoreType" -> (T) BackupStoreType.valueOf(strValue.toUpperCase());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }

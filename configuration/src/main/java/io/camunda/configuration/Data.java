@@ -11,6 +11,7 @@ public class Data {
 
   /** This section allows to configure primary Zeebe's data storage. */
   private PrimaryStorage primaryStorage = new PrimaryStorage();
+
   private Backup backup = new Backup();
 
   public PrimaryStorage getPrimaryStorage() {
