@@ -31,20 +31,20 @@
   </resultMap>
 
   <select id="usageMetricTenantsStatistics"
-    parameterType="io.camunda.search.filter.UsageMetricsFilter"
+    parameterType="io.camunda.db.rdbms.read.domain.UsageMetricsDbQuery"
     resultMap="UsageMetricStatisticsResultMap"
     statementType="PREPARED">
     SELECT TENANT_ID,
       SUM(CASE WHEN EVENT_TYPE = 0 THEN EVENT_VALUE END) AS RPI,
       SUM(CASE WHEN EVENT_TYPE = 1 THEN EVENT_VALUE END) AS EDI
     FROM ${prefix}USAGE_METRIC
-    <bind name="filter" value="_parameter" />
+    <bind name="query.filter" value="_parameter" />
     <include refid="io.camunda.db.rdbms.sql.UsageMetricMapper.usageMetricStatisticsFilter"/>
     GROUP BY TENANT_ID
   </select>
 
   <select id="usageMetricStatistics"
-    parameterType="io.camunda.search.filter.UsageMetricsFilter"
+    parameterType="io.camunda.db.rdbms.read.domain.UsageMetricsDbQuery"
     resultMap="UsageMetricStatisticsResultMap2"
     statementType="PREPARED">
     SELECT
@@ -52,12 +52,18 @@
       SUM(CASE WHEN EVENT_TYPE = 1 THEN EVENT_VALUE END) AS EDI,
       COUNT(distinct TENANT_ID)                          AS AT
     FROM ${prefix}USAGE_METRIC
-    <bind name="filter" value="_parameter" />
+    <bind name="query.filter" value="_parameter" />
     <include refid="io.camunda.db.rdbms.sql.UsageMetricMapper.usageMetricStatisticsFilter"/>
   </select>
 
   <sql id="usageMetricStatisticsFilter">
     <where>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
       <if test="filter.startTime != null">
         AND EVENT_TIME &gt;= #{filter.startTime}
       </if>
