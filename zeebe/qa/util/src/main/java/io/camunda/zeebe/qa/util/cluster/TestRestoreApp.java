@@ -33,16 +33,16 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
     this.config = config;
 
     //noinspection resource
-    withBean("config", config, LegacyBrokerBasedProperties.class)
-        .withAdditionalProfile(Profile.RESTORE);
-    withProperty("camunda.cluster.partition-count", config.getCluster().getPartitionsCount());
-    withProperty("camunda.cluster.node-id", config.getCluster().getNodeId());
-    withProperty("camunda.cluster.replication-factor", config.getCluster().getReplicationFactor());
-    withProperty("camunda.cluster.size", config.getCluster().getClusterSize());
-    withProperty("camunda.data.primary-storage.directory", config.getData().getDirectory());
-    withProperty("zeebe.broker.data.directory", config.getData().getDirectory());
-    withProperty(
-        "camunda.data.primary-storage.runtime-directory", config.getData().getRuntimeDirectory());
+//    withBean("config", config, LegacyBrokerBasedProperties.class)
+//        .withAdditionalProfile(Profile.RESTORE);
+//    withProperty("camunda.cluster.partition-count", config.getCluster().getPartitionsCount());
+//    withProperty("camunda.cluster.node-id", config.getCluster().getNodeId());
+//    withProperty("camunda.cluster.replication-factor", config.getCluster().getReplicationFactor());
+//    withProperty("camunda.cluster.size", config.getCluster().getClusterSize());
+//    withProperty("camunda.data.primary-storage.directory", config.getData().getDirectory());
+//    withProperty("zeebe.broker.data.directory", config.getData().getDirectory());
+//    withProperty(
+//        "camunda.data.primary-storage.runtime-directory", config.getData().getRuntimeDirectory());
   }
 
   @Override
@@ -83,14 +83,14 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   public TestRestoreApp withBrokerConfig(final Consumer<BrokerCfg> modifier) {
     modifier.accept(config);
 
-    withProperty("camunda.cluster.partition-count", config.getCluster().getPartitionsCount());
-    withProperty("camunda.cluster.node-id", config.getCluster().getNodeId());
-    withProperty("camunda.cluster.replication-factor", config.getCluster().getReplicationFactor());
-    withProperty("camunda.cluster.size", config.getCluster().getClusterSize());
-    withProperty("camunda.data.primary-storage.directory", config.getData().getDirectory());
-    withProperty("zeebe.broker.data.directory", config.getData().getDirectory());
-    withProperty(
-        "camunda.data.primary-storage.runtime-directory", config.getData().getRuntimeDirectory());
+//    withProperty("camunda.cluster.partition-count", config.getCluster().getPartitionsCount());
+//    withProperty("camunda.cluster.node-id", config.getCluster().getNodeId());
+//    withProperty("camunda.cluster.replication-factor", config.getCluster().getReplicationFactor());
+//    withProperty("camunda.cluster.size", config.getCluster().getClusterSize());
+//    withProperty("camunda.data.primary-storage.directory", config.getData().getDirectory());
+//    withProperty("zeebe.broker.data.directory", config.getData().getDirectory());
+//    withProperty(
+//        "camunda.data.primary-storage.runtime-directory", config.getData().getRuntimeDirectory());
 
     return this;
   }
