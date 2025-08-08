@@ -17,21 +17,19 @@ package io.camunda.process.test.impl.configuration;
 
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
-import jakarta.annotation.PostConstruct;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Objects;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "camunda.process-test")
-public class CamundaProcessTestRuntimeConfiguration {
-
-  @Autowired
-  private LegacyCamundaProcessTestRuntimeConfiguration legacyConfiguration =
+@ConfigurationProperties(prefix = "io.camunda.process.test")
+@Deprecated
+public class LegacyCamundaProcessTestRuntimeConfiguration {
+  private static final LegacyCamundaProcessTestRuntimeConfiguration DEFAULT_CONFIGURATION =
       new LegacyCamundaProcessTestRuntimeConfiguration();
 
   private String camundaDockerImageName =
@@ -51,66 +49,9 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
-  private boolean preferLegacyConfiguration = false;
-
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
 
-  @PostConstruct
-  public void init() {
-    this.preferLegacyConfiguration = legacyConfiguration.isCustomConfiguration();
-  }
-
-  /**
-   * Gets the Camunda docker image version.
-   *
-   * @return the camunda docker image version
-   * @deprecated use getCamundaDockerImageVersion
-   * @since 8.8.0
-   */
-  @Deprecated
-  public String getCamundaVersion() {
-    return getCamundaDockerImageVersion();
-  }
-
-  /**
-   * Sets the Camunda docker image version.
-   *
-   * @param camundaDockerImageVersion the Camunda docker image version to set
-   * @deprecated use setCamundaDockerImageVersion
-   * @since 8.8.0
-   */
-  @Deprecated
-  public void setCamundaVersion(final String camundaDockerImageVersion) {
-    this.camundaDockerImageVersion = camundaDockerImageVersion;
-  }
-
-  /**
-   * Gets the Camunda docker image version.
-   *
-   * @return the camunda docker image version
-   */
-  public String getCamundaDockerImageVersion() {
-    if (preferLegacyConfiguration) {
-      return legacyConfiguration.getCamundaDockerImageVersion();
-    }
-
-    return camundaDockerImageVersion;
-  }
-
-  /**
-   * Sets the Camunda docker image version.
-   *
-   * @param camundaDockerImageVersion the Camunda docker image version to set
-   */
-  public void setCamundaDockerImageVersion(final String camundaDockerImageVersion) {
-    this.camundaDockerImageVersion = camundaDockerImageVersion;
-  }
-
   public String getCamundaDockerImageName() {
-    if (preferLegacyConfiguration) {
-      return legacyConfiguration.getCamundaDockerImageName();
-    }
-
     return camundaDockerImageName;
   }
 
@@ -118,11 +59,15 @@ public class CamundaProcessTestRuntimeConfiguration {
     this.camundaDockerImageName = camundaDockerImageName;
   }
 
-  public Map<String, String> getCamundaEnvVars() {
-    if (preferLegacyConfiguration) {
-      return legacyConfiguration.getCamundaEnvVars();
-    }
+  public String getCamundaDockerImageVersion() {
+    return camundaDockerImageVersion;
+  }
 
+  public void setCamundaDockerImageVersion(final String camundaDockerImageVersion) {
+    this.camundaDockerImageVersion = camundaDockerImageVersion;
+  }
+
+  public Map<String, String> getCamundaEnvVars() {
     return camundaEnvVars;
   }
 
@@ -131,10 +76,6 @@ public class CamundaProcessTestRuntimeConfiguration {
   }
 
   public List<Integer> getCamundaExposedPorts() {
-    if (preferLegacyConfiguration) {
-      return legacyConfiguration.getCamundaExposedPorts();
-    }
-
     return camundaExposedPorts;
   }
 
@@ -143,10 +84,6 @@ public class CamundaProcessTestRuntimeConfiguration {
   }
 
   public boolean isConnectorsEnabled() {
-    if (preferLegacyConfiguration) {
-      return legacyConfiguration.isConnectorsEnabled();
-    }
-
     return connectorsEnabled;
   }
 
@@ -155,10 +92,6 @@ public class CamundaProcessTestRuntimeConfiguration {
   }
 
   public String getConnectorsDockerImageName() {
-    if (preferLegacyConfiguration) {
-      return legacyConfiguration.getConnectorsDockerImageName();
-    }
-
     return connectorsDockerImageName;
   }
 
@@ -167,10 +100,6 @@ public class CamundaProcessTestRuntimeConfiguration {
   }
 
   public String getConnectorsDockerImageVersion() {
-    if (preferLegacyConfiguration) {
-      return legacyConfiguration.getConnectorsDockerImageVersion();
-    }
-
     return connectorsDockerImageVersion;
   }
 
@@ -179,10 +108,6 @@ public class CamundaProcessTestRuntimeConfiguration {
   }
 
   public Map<String, String> getConnectorsEnvVars() {
-    if (preferLegacyConfiguration) {
-      return legacyConfiguration.getConnectorsEnvVars();
-    }
-
     return connectorsEnvVars;
   }
 
@@ -191,10 +116,6 @@ public class CamundaProcessTestRuntimeConfiguration {
   }
 
   public Map<String, String> getConnectorsSecrets() {
-    if (preferLegacyConfiguration) {
-      return legacyConfiguration.getConnectorsSecrets();
-    }
-
     return connectorsSecrets;
   }
 
@@ -203,10 +124,6 @@ public class CamundaProcessTestRuntimeConfiguration {
   }
 
   public CamundaProcessTestRuntimeMode getRuntimeMode() {
-    if (preferLegacyConfiguration) {
-      return legacyConfiguration.getRuntimeMode();
-    }
-
     return runtimeMode;
   }
 
@@ -215,14 +132,51 @@ public class CamundaProcessTestRuntimeConfiguration {
   }
 
   public RemoteConfiguration getRemote() {
-    if (preferLegacyConfiguration) {
-      return legacyConfiguration.getRemote();
-    }
-
     return remote;
   }
 
   public void setRemote(final RemoteConfiguration remote) {
     this.remote = remote;
+  }
+
+  public boolean isCustomConfiguration() {
+    return this != DEFAULT_CONFIGURATION;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final LegacyCamundaProcessTestRuntimeConfiguration that =
+        (LegacyCamundaProcessTestRuntimeConfiguration) o;
+    return connectorsEnabled == that.connectorsEnabled
+        && Objects.equals(camundaDockerImageName, that.camundaDockerImageName)
+        && Objects.equals(camundaDockerImageVersion, that.camundaDockerImageVersion)
+        && Objects.equals(camundaEnvVars, that.camundaEnvVars)
+        && Objects.equals(camundaExposedPorts, that.camundaExposedPorts)
+        && Objects.equals(connectorsDockerImageName, that.connectorsDockerImageName)
+        && Objects.equals(connectorsDockerImageVersion, that.connectorsDockerImageVersion)
+        && Objects.equals(connectorsEnvVars, that.connectorsEnvVars)
+        && Objects.equals(connectorsSecrets, that.connectorsSecrets)
+        && runtimeMode == that.runtimeMode
+        && Objects.equals(remote, that.remote);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        camundaDockerImageName,
+        camundaDockerImageVersion,
+        camundaEnvVars,
+        camundaExposedPorts,
+        connectorsEnabled,
+        connectorsDockerImageName,
+        connectorsDockerImageVersion,
+        connectorsEnvVars,
+        connectorsSecrets,
+        runtimeMode,
+        remote);
   }
 }
