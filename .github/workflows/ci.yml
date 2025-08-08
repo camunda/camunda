@@ -55,6 +55,7 @@ jobs:
       openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
       stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
       rdbms-integration-tests: ${{steps.filter.outputs.rdbms-integration-tests}}
+      renovate-config-changes: ${{ steps.filter.outputs.renovate-config-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -1158,6 +1159,26 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "General"
 
+  renovatelint:
+    if: needs.detect-changes.outputs.renovate-config-changes == 'true'
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          npx --yes --package "renovate@41.51.1" -c "renovate-config-validator"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -1186,6 +1207,7 @@ jobs:
       - protobuf-checks
       - rdbms-h2-integration-tests
       - rdbms-integration-tests
+      - renovatelint
       - setup-unit-tests
       - tasklist-ci
       - zeebe-ci
