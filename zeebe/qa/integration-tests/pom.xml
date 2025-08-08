@@ -589,14 +589,14 @@
     </dependency>
 
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core-test</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
