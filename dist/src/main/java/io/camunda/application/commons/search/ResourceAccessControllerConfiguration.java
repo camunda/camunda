@@ -65,7 +65,9 @@ public class ResourceAccessControllerConfiguration {
 
   @Bean
   @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
-  public ResourceAccessController rdbmsResourceAccessController() {
-    return new RdbmsResourceAccessController();
+  public ResourceAccessController rdbmsResourceAccessController(
+      final ResourceAccessProvider resourceAccessProvider,
+      final TenantAccessProvider tenantAccessProvider) {
+    return new RdbmsResourceAccessController(resourceAccessProvider, tenantAccessProvider);
   }
 }

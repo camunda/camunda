@@ -8,9 +8,9 @@
 package io.camunda.application.commons.condition;
 
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageDisabled.OnSecondaryStorageDisabled;
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageEnabled.OnSecondaryStorageEnabledCondition;
-import io.camunda.application.commons.utils.DatabaseTypeUtils;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled.OnSecondaryStorageEnabledCondition;
+import io.camunda.spring.utils.DatabaseTypeUtils;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -7,8 +7,8 @@
  */
 package io.camunda.application.initializers;
 
-import static io.camunda.application.commons.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import org.springframework.context.ApplicationContextInitializer;
