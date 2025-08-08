@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ResponseMapperTest {
@@ -145,19 +146,8 @@ class ResponseMapperTest {
     void shouldMapActivatedJobWithUserTaskPropertiesBasedOnJobKind(
         final ActivatedJobWithUserTaskPropsCase testCase) {
       // given
-      final JobRecord jobRecord = mockJobRecord(testCase);
-
-      final JobBatchRecord batchRecordMock = mock(JobBatchRecord.class);
-      final ValueArray<JobRecord> jobsValueArrayMock = mockValueArray(jobRecord);
-      when(batchRecordMock.jobs()).thenReturn(jobsValueArrayMock);
-      final LongValue jobKey = mock(LongValue.class);
-      when(jobKey.getValue()).thenReturn(123L);
-      final ValueArray<LongValue> jobKeysValueArrayMock = mockValueArray(jobKey);
-      when(batchRecordMock.jobKeys()).thenReturn(jobKeysValueArrayMock);
-
-      final var activatedJob = mock(io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob.class);
-      when(activatedJob.jobKey()).thenReturn(123L);
-      when(activatedJob.jobRecord()).thenReturn(jobRecord);
+      final JobRecord jobRecord = mockJobRecord(testCase.jobKind, testCase.headers);
+      final var activatedJob = mockActivatedJob(jobRecord);
 
       // when
       final var result = ResponseMapper.toActivatedJob(activatedJob);
@@ -166,11 +156,42 @@ class ResponseMapperTest {
       assertThat(result).satisfies(testCase.assertions);
     }
 
-    private static JobRecord mockJobRecord(final ActivatedJobWithUserTaskPropsCase testCase) {
+    @ParameterizedTest
+    @EnumSource(JobKind.class)
+    void shouldMapActivatedJobWithJobKind(final JobKind jobKind) {
+      // given
+      final JobRecord jobRecord = mockJobRecord(jobKind, Map.of());
+      final var activatedJob = mockActivatedJob(jobRecord);
+
+      // when
+      final var result = ResponseMapper.toActivatedJob(activatedJob);
+
+      // then
+      assertThat(result.getKind().name()).isEqualTo(jobKind.name());
+    }
+
+    @ParameterizedTest
+    @EnumSource(JobListenerEventType.class)
+    void shouldMapActivatedJobWithListenerEventType(final JobListenerEventType listenerEventType) {
+      // given
+      final JobRecord jobRecord = mockJobRecord(JobKind.TASK_LISTENER, Map.of());
+      when(jobRecord.getJobListenerEventType()).thenReturn(listenerEventType);
+
+      final var activatedJob = mockActivatedJob(jobRecord);
+
+      // when
+      final var result = ResponseMapper.toActivatedJob(activatedJob);
+
+      // then
+      assertThat(result.getListenerEventType().name()).isEqualTo(listenerEventType.name());
+    }
+
+    private static JobRecord mockJobRecord(
+        final JobKind jobKind, final Map<String, String> customHeaders) {
       final JobRecord jobRecord = mock(JobRecord.class);
-      when(jobRecord.getJobKind()).thenReturn(testCase.jobKind);
+      when(jobRecord.getJobKind()).thenReturn(jobKind);
       when(jobRecord.getJobListenerEventType()).thenReturn(JobListenerEventType.START);
-      when(jobRecord.getCustomHeaders()).thenReturn(testCase.headers);
+      when(jobRecord.getCustomHeaders()).thenReturn(customHeaders);
       when(jobRecord.getTypeBuffer()).thenReturn(BufferUtil.wrapString("type"));
       when(jobRecord.getBpmnProcessId()).thenReturn("procId");
       when(jobRecord.getElementId()).thenReturn("elementId");
@@ -187,6 +208,23 @@ class ResponseMapperTest {
       when(jobRecord.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
       when(jobRecord.getLength()).thenReturn(1);
       return jobRecord;
+    }
+
+    private io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob mockActivatedJob(
+        final JobRecord jobRecord) {
+      final JobBatchRecord batchRecordMock = mock(JobBatchRecord.class);
+      final ValueArray<JobRecord> jobsValueArrayMock = mockValueArray(jobRecord);
+      when(batchRecordMock.jobs()).thenReturn(jobsValueArrayMock);
+      final LongValue jobKey = mock(LongValue.class);
+      when(jobKey.getValue()).thenReturn(123L);
+      final ValueArray<LongValue> jobKeysValueArrayMock = mockValueArray(jobKey);
+      when(batchRecordMock.jobKeys()).thenReturn(jobKeysValueArrayMock);
+
+      final var activatedJob = mock(io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob.class);
+      when(activatedJob.jobKey()).thenReturn(123L);
+      when(activatedJob.jobRecord()).thenReturn(jobRecord);
+
+      return activatedJob;
     }
 
     private static <T> ValueArray<T> mockValueArray(final T... values) {
