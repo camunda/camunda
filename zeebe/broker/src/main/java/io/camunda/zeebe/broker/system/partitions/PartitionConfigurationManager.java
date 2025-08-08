@@ -76,6 +76,48 @@ final class PartitionConfigurationManager {
   }
 
   /**
+   * Deletes the given exporter in this partition. This information will be added to the
+   * PartitionContext so that it can be used in the next role transitions.
+   *
+   * <p>This method access and updates PartitionContext. Hence, it must be executed from the
+   * ZeebePartition actor.
+   *
+   * @param exporterId the id of the exporter to delete
+   * @return the future that completes when the exporter is deleted
+   */
+  ActorFuture<Void> deleteExporter(final String exporterId) {
+    final var exportedDeleted = executor.<Void>createFuture();
+
+    // Update the config in PartitionContext so that the next role transitions use the latest config
+    final var updatedConfig =
+        context
+            .getDynamicPartitionConfig()
+            .updateExporting(config -> config.deleteExporter(exporterId));
+    context.setDynamicPartitionConfig(updatedConfig);
+
+    final var exporterDirector = context.getExporterDirector();
+    if (exporterDirector != null) {
+      exporterDirector.deleteExporter(exporterId).onComplete(exportedDeleted);
+    } else {
+      // The operation succeeds even if the ExporterDirector is not available because during the
+      // next role transition, the transition step can access the latest state from the
+      // PartitionContext.
+      exportedDeleted.complete(null);
+    }
+
+    exportedDeleted.onComplete(
+        (nothing, error) -> {
+          if (error == null) {
+            logger.debug("Exporter {} deleted", exporterId);
+          } else {
+            logger.warn("Failed to delete exporter {}", exporterId, error);
+          }
+        });
+
+    return exportedDeleted;
+  }
+
+  /**
    * Enables the given exporter in this partition. This information will be added to the
    * PartitionContext. The exporter will be initialized from the exporter with the id specified by
    * initializeFrom if it is not null.

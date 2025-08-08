@@ -128,6 +128,93 @@ final class PartitionConfigurationManagerTest {
   }
 
   @Nested
+  final class ExporterDelete {
+    private final String exporterId = "exporterA";
+    private final DynamicPartitionConfig partitionConfig =
+        new DynamicPartitionConfig(
+            new ExportersConfig(
+                Map.of(
+                    exporterId, new ExporterState(0, State.CONFIG_NOT_FOUND, Optional.empty()))));
+
+    @BeforeEach
+    void setup() {
+      partitionTransitionContext = new TestPartitionTransitionContext();
+      partitionTransitionContext.setExporterRepository(new ExporterRepository());
+      partitionConfigurationManager =
+          new PartitionConfigurationManager(
+              LOGGER,
+              partitionTransitionContext,
+              partitionTransitionContext.getExportedDescriptors(),
+              testConcurrencyControl);
+    }
+
+    @Test
+    void shouldDeleteExporterAndUpdateConfigInContext() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
+      when(mockExporterDirector.deleteExporter(exporterId))
+          .thenReturn(testConcurrencyControl.createCompletedFuture());
+      partitionTransitionContext.setExporterDirector(mockExporterDirector);
+
+      // when
+      partitionConfigurationManager.deleteExporter(exporterId).join();
+
+      // then
+      assertThat(
+              partitionTransitionContext
+                  .getDynamicPartitionConfig()
+                  .exporting()
+                  .exporters()
+                  .get(exporterId))
+          .isNull();
+      verify(mockExporterDirector).deleteExporter(exporterId);
+    }
+
+    @Test
+    void shouldRemoveExporterFromConfigWhenExporterDirectorIsNotAvailable() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      assertThat(
+              partitionTransitionContext
+                  .getDynamicPartitionConfig()
+                  .exporting()
+                  .exporters()
+                  .containsKey(exporterId))
+          .isTrue();
+
+      // when
+      partitionConfigurationManager.deleteExporter(exporterId).join();
+
+      // then
+      assertThat(
+              partitionTransitionContext
+                  .getDynamicPartitionConfig()
+                  .exporting()
+                  .exporters()
+                  .containsKey(exporterId))
+          .describedAs("Exporter should be removed from the context config")
+          .isFalse();
+    }
+
+    @Test
+    void shouldFailFutureIfDeletingExporterFailed() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
+      when(mockExporterDirector.deleteExporter(exporterId))
+          .thenReturn(testConcurrencyControl.failedFuture(new RuntimeException("force fail")));
+      partitionTransitionContext.setExporterDirector(mockExporterDirector);
+
+      // when - then
+      assertThat(partitionConfigurationManager.deleteExporter(exporterId))
+          .failsWithin(Duration.ofMillis(100))
+          .withThrowableOfType(ExecutionException.class)
+          .withMessageContaining("force fail");
+    }
+  }
+
+  @Nested
   final class ExporterEnable {
     private final String exporterIdToEnable = "exporterA";
     private final String validExporterToInitialize = "exporterB";
