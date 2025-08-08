@@ -21,7 +21,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class CamundaClientWorkerProperties {
   @NestedConfigurationProperty
-  private CamundaClientJobWorkerProperties defaults = new CamundaClientJobWorkerProperties();
+  private CamundaClientJobWorkerProperties defaults = new CamundaClientJobWorkerProperties(true);
 
   @NestedConfigurationProperty
   private Map<String, CamundaClientJobWorkerProperties> override = new HashMap<>();

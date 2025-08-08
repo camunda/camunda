@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.properties;
+package io.camunda.spring.client;
 
+import io.camunda.spring.client.properties.CamundaClientProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @EnableConfigurationProperties(CamundaClientProperties.class)

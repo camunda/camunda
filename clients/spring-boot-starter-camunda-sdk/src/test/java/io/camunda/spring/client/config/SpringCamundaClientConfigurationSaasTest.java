@@ -15,15 +15,19 @@
  */
 package io.camunda.spring.client.config;
 
-import static io.camunda.spring.client.configuration.CamundaClientConfigurationImpl.*;
+import static io.camunda.spring.client.configuration.SpringCamundaClientConfiguration.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.spring.client.configuration.CamundaClientAllAutoConfiguration;
 import io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Properties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,14 +38,17 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 @SpringBootTest(
     classes = {CamundaClientAllAutoConfiguration.class, CamundaClientProdAutoConfiguration.class},
     properties = {
-      "camunda.client.mode=self-managed",
-      "camunda.client.auth.method=oidc",
+      "camunda.client.mode=saas",
+      "camunda.client.cloud.cluster-id=12345",
+      "camunda.client.cloud.region=bru-2",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret",
       "logging.level.io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration=debug"
     })
 @ExtendWith(OutputCaptureExtension.class)
-public class CamundaClientConfigurationImplSelfManagedTest {
+public class SpringCamundaClientConfigurationSaasTest {
+  public static final CamundaClientBuilderImpl DEFAULT =
+      (CamundaClientBuilderImpl) new CamundaClientBuilderImpl().withProperties(new Properties());
   @Autowired CamundaClientConfiguration camundaClientConfiguration;
   @Autowired JsonMapper jsonMapper;
   @Autowired CamundaClientExecutorService zeebeClientExecutorService;
@@ -58,8 +65,9 @@ public class CamundaClientConfigurationImplSelfManagedTest {
   }
 
   @Test
-  void shouldHaveGatewayAddress() {
-    assertThat(camundaClientConfiguration.getGatewayAddress()).isEqualTo("localhost:26500");
+  void shouldHaveGatewayAddress() throws URISyntaxException {
+    assertThat(camundaClientConfiguration.getGrpcAddress())
+        .isEqualTo(new URI("https://12345.bru-2.zeebe.camunda.io:443"));
   }
 
   @Test
@@ -118,7 +126,7 @@ public class CamundaClientConfigurationImplSelfManagedTest {
 
   @Test
   void shouldHavePlaintextConnectionEnabled() {
-    assertThat(camundaClientConfiguration.isPlaintextConnectionEnabled()).isEqualTo(true);
+    assertThat(camundaClientConfiguration.isPlaintextConnectionEnabled()).isEqualTo(false);
   }
 
   @Test
@@ -189,14 +197,14 @@ public class CamundaClientConfigurationImplSelfManagedTest {
   }
 
   @Test
-  void shouldHaveDefaultPreferRestOverGrpc() {
-    assertThat(camundaClientConfiguration.preferRestOverGrpc())
-        .isEqualTo(DEFAULT.preferRestOverGrpc());
-  }
-
-  @Test
   void shouldNotLogClientInfoAtStartup(final CapturedOutput output) {
     assertThat(output).contains("clientId='***'");
     assertThat(output).contains("clientSecret='***'");
+  }
+
+  @Test
+  void shouldHaveDefaultPreferRestOverGrpc() {
+    assertThat(camundaClientConfiguration.preferRestOverGrpc())
+        .isEqualTo(DEFAULT.preferRestOverGrpc());
   }
 }

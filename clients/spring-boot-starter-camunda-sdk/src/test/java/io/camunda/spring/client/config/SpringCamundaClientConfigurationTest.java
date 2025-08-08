@@ -16,13 +16,12 @@
 package io.camunda.spring.client.config;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.mock;
 
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.NoopCredentialsProvider;
-import io.camunda.spring.client.configuration.CamundaClientConfigurationImpl;
+import io.camunda.spring.client.configuration.SpringCamundaClientConfiguration;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
@@ -33,15 +32,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-public class CamundaClientConfigurationImplTest {
-  private static CamundaClientConfigurationImpl configuration(
+public class SpringCamundaClientConfigurationTest {
+  private static SpringCamundaClientConfiguration configuration(
       final CamundaClientProperties properties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
       final CamundaClientExecutorService executorService,
       final CredentialsProvider credentialsProvider) {
-    return new CamundaClientConfigurationImpl(
+    return new SpringCamundaClientConfiguration(
         properties, jsonMapper, interceptors, chainHandlers, executorService, credentialsProvider);
   }
 
@@ -63,7 +62,7 @@ public class CamundaClientConfigurationImplTest {
 
   @Test
   void shouldCreateSingletonCredentialProvider() {
-    final CamundaClientConfigurationImpl configuration =
+    final SpringCamundaClientConfiguration configuration =
         configuration(
             properties(),
             jsonMapper(),
@@ -81,7 +80,7 @@ public class CamundaClientConfigurationImplTest {
   void shouldConfigurePlaintextAndGatewayAddress(final String protocol, final boolean plaintext) {
     final CamundaClientProperties properties = properties();
     properties.setGrpcAddress(URI.create(String.format("%s://some-host:21500", protocol)));
-    final CamundaClientConfigurationImpl configuration =
+    final SpringCamundaClientConfiguration configuration =
         configuration(
             properties,
             jsonMapper(),
@@ -95,9 +94,8 @@ public class CamundaClientConfigurationImplTest {
 
   @Test
   void shouldPrintToString() {
-    final CamundaClientConfigurationImpl camundaClientConfiguration =
-        new CamundaClientConfigurationImpl(
-            mock(CamundaClientProperties.class), null, null, null, null, null);
+    final SpringCamundaClientConfiguration camundaClientConfiguration =
+        new SpringCamundaClientConfiguration(properties(), null, null, null, null, null);
     final String toStringOutput = camundaClientConfiguration.toString();
     assertThat(toStringOutput).matches("CamundaClientConfigurationImpl\\{.*}");
   }

@@ -15,6 +15,8 @@
  */
 package io.camunda.spring.client.properties;
 
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.spring.client.annotation.AnnotationUtil.getVariableParameters;
 import static io.camunda.spring.client.annotation.AnnotationUtil.getVariableValue;
 import static io.camunda.spring.client.annotation.AnnotationUtil.getVariablesAsTypeParameters;
@@ -186,7 +188,8 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   private void applyDefaultWorkerName(final JobWorkerValue jobWorkerValue) {
     final String defaultJobWorkerName = camundaClientProperties.getWorker().getDefaults().getName();
     if (isBlank(jobWorkerValue.getName())) {
-      if (isNotBlank(defaultJobWorkerName)) {
+      if (isNotBlank(defaultJobWorkerName)
+          && !DEFAULT_JOB_WORKER_NAME_VAR.equals(defaultJobWorkerName)) {
         LOG.debug(
             "Worker '{}': Setting name to default {}",
             jobWorkerValue.getName(),
@@ -230,14 +233,10 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
     final Set<String> tenantIds = new HashSet<>();
 
     // we consider default worker tenant ids configurations first
-    if (camundaClientProperties.getWorker().getDefaults().getTenantIds() != null
-        && !camundaClientProperties.getWorker().getDefaults().getTenantIds().isEmpty()) {
+    if (!DEFAULT_JOB_WORKER_TENANT_IDS.equals(
+        camundaClientProperties.getWorker().getDefaults().getTenantIds())) {
       tenantIds.addAll(camundaClientProperties.getWorker().getDefaults().getTenantIds());
-    } else if (camundaClientProperties.getTenantIds() != null
-        && !camundaClientProperties.getTenantIds().isEmpty()) {
-      // the deprecated config only gets considered in the absence of it's successor
-      tenantIds.addAll(camundaClientProperties.getTenantIds());
-    } else if (StringUtils.isNotBlank(camundaClientProperties.getTenantId())) {
+    } else {
       // the default tenant set on the client is included in the default if no other default is set
       tenantIds.add(camundaClientProperties.getTenantId());
     }

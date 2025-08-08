@@ -15,37 +15,83 @@
  */
 package io.camunda.spring.client.properties;
 
+import static io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder.*;
+
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
-import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class CamundaClientAuthProperties {
+
+  /**
+   * Authentication method to be used. If not set, it will be detected based on the presence of
+   * username, password, client id and client secret. A default is set by `camunda.client.mode:
+   * saas`.
+   */
   private AuthMethod method;
+
   // basic auth
+  /**
+   * Username to be used for basic authentication. A default is set by `camunda.client.auth.method:
+   * basic`.
+   */
   private String username;
+
+  /**
+   * Password to be used for basic authentication. A default is set by `camunda.client.auth.method:
+   * basic`.
+   */
   private String password;
 
   // self-managed and saas
+  /** Client id to be used when requesting access token from OAuth authorization server. */
   private String clientId;
+
+  /** Client secret to be used when requesting access token from OAuth authorization server. */
   private String clientSecret;
 
-  @Deprecated private URI issuer;
+  /**
+   * The authorization server's URL, from which the access token will be requested. A default is set
+   * by `camunda.client.mode: saas` and `camunda.client.auth.method: oidc`.
+   */
   private URI tokenUrl;
+
+  /**
+   * The resource for which the access token should be valid. A default is set by
+   * `camunda.client.mode: saas` and `camunda.client.auth.method: oidc`.
+   */
   private String audience;
+
+  /** The scopes of the access token. */
   private String scope;
+
+  /** The resource for which the access token should be valid. */
   private String resource;
 
+  /** Path to keystore used for OAuth identity provider. */
   private Path keystorePath;
+
+  /** Password to keystore used for OAuth identity provider. */
   private String keystorePassword;
+
+  /** Keystore key password used for OAuth identity provider. */
   private String keystoreKeyPassword;
+
+  /** Path to truststore used for OAuth identity provider. */
   private Path truststorePath;
+
+  /** Password to truststore used for OAuth identity provider. */
   private String truststorePassword;
 
-  private String credentialsCachePath;
-  private Duration connectTimeout;
-  private Duration readTimeout;
+  /** The location for the credentials cache file. */
+  private String credentialsCachePath = DEFAULT_CREDENTIALS_CACHE_PATH;
+
+  /** The connection timeout of requests to the OAuth credentials provider. */
+  private Duration connectTimeout = DEFAULT_CONNECT_TIMEOUT;
+
+  /** The data read timeout of requests to the OAuth credentials provider. */
+  private Duration readTimeout = DEFAULT_READ_TIMEOUT;
 
   @NestedConfigurationProperty
   private CamundaClientAuthClientAssertionProperties clientAssertion =
@@ -97,19 +143,6 @@ public class CamundaClientAuthProperties {
 
   public void setCredentialsCachePath(final String credentialsCachePath) {
     this.credentialsCachePath = credentialsCachePath;
-  }
-
-  @Deprecated
-  @DeprecatedConfigurationProperty(
-      reason = "The expected property value if a token url, renamed",
-      replacement = "camunda.client.auth.token-url")
-  public URI getIssuer() {
-    return issuer;
-  }
-
-  @Deprecated
-  public void setIssuer(final URI issuer) {
-    this.issuer = issuer;
   }
 
   public String getUsername() {

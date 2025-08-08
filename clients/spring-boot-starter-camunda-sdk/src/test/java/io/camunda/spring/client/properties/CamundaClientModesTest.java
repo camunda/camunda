@@ -17,6 +17,7 @@ package io.camunda.spring.client.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.spring.client.CamundaClientPropertiesTestConfig;
 import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
 import java.net.URI;
 import org.junit.jupiter.api.Nested;

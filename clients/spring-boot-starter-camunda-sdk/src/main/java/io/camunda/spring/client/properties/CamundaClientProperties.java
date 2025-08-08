@@ -15,67 +15,102 @@
  */
 package io.camunda.spring.client.properties;
 
+import static io.camunda.client.impl.CamundaClientBuilderImpl.*;
 import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.checkIfUriIsAbsolute;
 
-import io.camunda.spring.client.properties.common.IdentityProperties;
-import io.camunda.spring.client.properties.common.ZeebeClientProperties;
+import io.camunda.client.api.command.CommandWithTenantStep;
 import java.net.URI;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.unit.DataSize;
 
 @ConfigurationProperties("camunda.client")
 public class CamundaClientProperties {
-  private Boolean enabled;
+
+  /** Whether the Camunda client is enabled. If disabled, no bean is created. */
+  private boolean enabled = true;
+
+  /**
+   * The client mode to be used. If not set, `saas` mode will be detected based on the presence of a
+   * `camunda.client.cloud.cluster-id`.
+   */
   private ClientMode mode;
-
-  @Deprecated(forRemoval = true, since = "8.8")
-  private String clusterId;
-
-  @Deprecated(forRemoval = true, since = "8.8")
-  private String region;
 
   @NestedConfigurationProperty
   private CamundaClientCloudProperties cloud = new CamundaClientCloudProperties();
 
-  @Deprecated(forRemoval = true, since = "8.8")
-  @NestedConfigurationProperty
-  private List<String> tenantIds = new ArrayList<>();
-
   @NestedConfigurationProperty
   private CamundaClientAuthProperties auth = new CamundaClientAuthProperties();
 
-  @NestedConfigurationProperty private IdentityProperties identity = new IdentityProperties();
+  /** The number of threads for invocation of job workers. */
+  private Integer executionThreads = DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
 
-  @NestedConfigurationProperty
-  @Deprecated(forRemoval = true, since = "8.8")
-  private ZeebeClientProperties zeebe = new ZeebeClientProperties();
+  /** The time-to-live which is used when none is provided for a message. */
+  private Duration messageTimeToLive = DEFAULT_MESSAGE_TTL;
 
-  private Integer executionThreads;
-  private Duration messageTimeToLive;
-  private DataSize maxMessageSize;
-  private DataSize maxMetadataSize;
+  /**
+   * A custom maxMessageSize allows the client to receive larger or smaller responses from Camunda.
+   * Technically, it specifies the maxInboundMessageSize of the gRPC channel.
+   */
+  private DataSize maxMessageSize = DataSize.ofBytes(DEFAULT_MAX_MESSAGE_SIZE);
+
+  /**
+   * A custom maxMetadataSize allows the client to receive larger or smaller response headers from
+   * Camunda. Technically, it specifies the maxInboundMetadataSize of the gRPC channel.
+   */
+  private DataSize maxMetadataSize = DataSize.ofBytes(DEFAULT_MAX_METADATA_SIZE);
+
+  /** Path to a root CA certificate to be used instead of the certificate in the default store. */
   private String caCertificatePath;
-  private Duration keepAlive;
+
+  /** Time interval between keep alive messages sent to the gateway. */
+  private Duration keepAlive = DEFAULT_KEEP_ALIVE;
+
+  /**
+   * Overrides the authority used with TLS virtual hosting. Specifically, to override hostname
+   * verification in the TLS handshake. It does not change what host is actually connected to.
+   */
   private String overrideAuthority;
 
   @NestedConfigurationProperty
   private CamundaClientWorkerProperties worker = new CamundaClientWorkerProperties();
 
-  private Boolean preferRestOverGrpc;
-  private URI grpcAddress;
-  private URI restAddress;
+  /**
+   * If true, will prefer to use REST over gRPC for calls which can be done over both REST and gRPC.
+   */
+  private boolean preferRestOverGrpc = DEFAULT_PREFER_REST_OVER_GRPC;
+
+  /**
+   * The gRPC address of Camunda that the client can connect to. The address must be an absolute
+   * URL, including the scheme. An alternative default is set by both `camunda.client.mode`.
+   */
+  private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
+
+  /**
+   * The REST API address of Camunda that the client can connect to. The address must be an absolute
+   * URL, including the scheme. An alternative default is set by both`camunda.client.mode`.
+   */
+  private URI restAddress = DEFAULT_REST_ADDRESS;
 
   @NestedConfigurationProperty
   private CamundaClientDeploymentProperties deployment = new CamundaClientDeploymentProperties();
 
-  private String tenantId;
-  private Duration requestTimeout;
-  private Duration requestTimeoutOffset;
+  /**
+   * The tenant identifier which is used for tenant-aware commands when no tenant identifier is set.
+   */
+  private String tenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+
+  /** The request timeout used if not overridden by the command. */
+  private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
+
+  /**
+   * The request timeout client offset is used in commands where the request timeout is also passed
+   * to the server. This ensures that the client timeout does not occur before the server timeout.
+   * The client-side timeout for these commands is calculated as the sum of request timeout plus
+   * offset.
+   */
+  private Duration requestTimeoutOffset = DEFAULT_REQUEST_TIMEOUT_OFFSET;
 
   public CamundaClientCloudProperties getCloud() {
     return cloud;
@@ -173,11 +208,11 @@ public class CamundaClientProperties {
     this.maxMetadataSize = maxMetadataSize;
   }
 
-  public Boolean getPreferRestOverGrpc() {
+  public boolean getPreferRestOverGrpc() {
     return preferRestOverGrpc;
   }
 
-  public void setPreferRestOverGrpc(final Boolean preferRestOverGrpc) {
+  public void setPreferRestOverGrpc(final boolean preferRestOverGrpc) {
     this.preferRestOverGrpc = preferRestOverGrpc;
   }
 
@@ -223,65 +258,11 @@ public class CamundaClientProperties {
     this.auth = auth;
   }
 
-  @Deprecated(forRemoval = true, since = "8.8")
-  @DeprecatedConfigurationProperty(replacement = "camunda.client")
-  public ZeebeClientProperties getZeebe() {
-    return zeebe;
-  }
-
-  @Deprecated
-  public void setZeebe(final ZeebeClientProperties zeebe) {
-    this.zeebe = zeebe;
-  }
-
-  @Deprecated(forRemoval = true, since = "8.8")
-  @DeprecatedConfigurationProperty
-  public IdentityProperties getIdentity() {
-    return identity;
-  }
-
-  public void setIdentity(final IdentityProperties identity) {
-    this.identity = identity;
-  }
-
-  @Deprecated(forRemoval = true, since = "8.8")
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.defaults.tenant-ids")
-  public List<String> getTenantIds() {
-    return tenantIds;
-  }
-
-  @Deprecated(forRemoval = true, since = "8.8")
-  public void setTenantIds(final List<String> tenantIds) {
-    this.tenantIds = tenantIds;
-  }
-
-  @Deprecated(forRemoval = true, since = "8.8")
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.cloud.cluster-id")
-  public String getClusterId() {
-    return clusterId;
-  }
-
-  @Deprecated(forRemoval = true)
-  public void setClusterId(final String clusterId) {
-    this.clusterId = clusterId;
-  }
-
-  @Deprecated(forRemoval = true, since = "8.8")
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.cloud.region")
-  public String getRegion() {
-    return region;
-  }
-
-  @Deprecated(forRemoval = true, since = "8.8")
-  public void setRegion(final String region) {
-    this.region = region;
-  }
-
-  public Boolean getEnabled() {
+  public boolean getEnabled() {
     return enabled;
   }
 
-  public void setEnabled(final Boolean enabled) {
+  public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
   }
 
@@ -296,8 +277,6 @@ public class CamundaClientProperties {
         + cloud
         + ", auth="
         + auth
-        + ", identity="
-        + identity
         + ", executionThreads="
         + executionThreads
         + ", messageTimeToLive="

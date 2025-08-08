@@ -15,9 +15,6 @@
  */
 package io.camunda.spring.client.configuration;
 
-import static io.camunda.spring.client.configuration.CamundaClientConfigurationImpl.DEFAULT;
-import static java.util.Optional.ofNullable;
-
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
@@ -61,8 +58,7 @@ public class CamundaClientAllAutoConfiguration {
   @ConditionalOnMissingBean
   public CamundaClientExecutorService camundaClientExecutorService() {
     return CamundaClientExecutorService.createDefault(
-        ofNullable(camundaClientProperties.getExecutionThreads())
-            .orElse(DEFAULT.getNumJobWorkerExecutionThreads()));
+        camundaClientProperties.getExecutionThreads());
   }
 
   @Bean

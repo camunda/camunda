@@ -15,8 +15,6 @@
  */
 package io.camunda.spring.client.configuration;
 
-import static io.camunda.spring.client.configuration.CamundaClientConfigurationImpl.DEFAULT;
-
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -44,10 +42,7 @@ public class ExecutorServiceConfiguration {
   @Bean
   public CamundaClientExecutorService camundaClientThreadPool(
       @Autowired(required = false) final MeterRegistry meterRegistry) {
-    final int executionThreads =
-        camundaClientProperties.getExecutionThreads() == null
-            ? DEFAULT.getNumJobWorkerExecutionThreads()
-            : camundaClientProperties.getExecutionThreads();
+    final int executionThreads = camundaClientProperties.getExecutionThreads();
     final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(executionThreads);
     if (meterRegistry != null) {
       final MeterBinder threadPoolMetrics =

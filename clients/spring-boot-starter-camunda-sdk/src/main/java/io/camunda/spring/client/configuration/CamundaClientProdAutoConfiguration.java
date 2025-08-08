@@ -65,7 +65,7 @@ public class CamundaClientProdAutoConfiguration {
       final List<AsyncExecChainHandler> chainHandlers,
       final CamundaClientExecutorService camundaClientExecutorService,
       final CredentialsProvider camundaClientCredentialsProvider) {
-    return new CamundaClientConfigurationImpl(
+    return new SpringCamundaClientConfiguration(
         camundaClientProperties,
         jsonMapper,
         interceptors,

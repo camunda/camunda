@@ -1,8 +1,842 @@
 {
-  "properties": [{
-    "name": "zeebe.client.broker.gateway-address",
-    "deprecation": {
-      "level": "error"
+  "groups": [
+    {
+      "name": "camunda.client.auth.client-assertion",
+      "description": "Properties related to oidc authentication using client-assertion instead of a client secret."
+    },
+    {
+      "name": "camunda.client",
+      "description": "Properties related to the Camunda client."
+    },
+    {
+      "name": "camunda.client.auth",
+      "description": "Properties related to the authentication of the Camunda client."
+    },
+    {
+      "name": "camunda.client.cloud",
+      "description": "Properties related to the connection of the Camunda client to SaaS. They will only be used to compose default connection details if the client is configured to `camunda.client.mode: saas`."
+    },
+    {
+      "name": "camunda.client.worker",
+      "description": "Properties related to the job workers being registered to the Camunda client."
+    },
+    {
+      "name": "camunda.client.deployment",
+      "description": "Properties related to the automatic deployment at startup."
+    },
+    {
+      "name": "camunda.client.worker.defaults",
+      "description": "Properties related to the global defaults of job workers being registered to the Camunda client."
+    },
+    {
+      "name": "camunda.client.worker.override",
+      "description": "Properties related to the override of individual job workers being registered to the Camunda client. Overrides are composed in key-value pairs where the key is the job type of the worker and the values have the same properties as `camunda.client.worker.defaults` each: `camunda.client.worker.override.<job-type>.<property-name>: <property-value>`."
+    },
+    {
+      "name": "camunda.client.zeebe",
+      "type": "io.camunda.spring.client.properties.common.ZeebeClientProperties"
+    },
+    {
+      "name": "camunda.client.zeebe.defaults",
+      "type": "io.camunda.spring.client.annotation.value.JobWorkerValue"
+    },
+    {
+      "name": "camunda.client.zeebe.deployment",
+      "type": "io.camunda.spring.client.properties.CamundaClientZeebeDeploymentProperties"
+    },
+    {
+      "name": "camunda.client.zeebe.override",
+      "type": "java.util.Map",
+      "description": "Properties related to the override of individual job workers being registered to the Camunda client. Replaced by `camunda.client.worker.override`."
+    },
+    {
+      "name": "camunda.client.identity",
+      "type": "io.camunda.spring.client.properties.common.IdentityProperties"
+    },
+    {
+      "name": "common",
+      "type": "io.camunda.spring.client.properties.CommonConfigurationProperties"
+    },
+    {
+      "name": "common.keycloak",
+      "type": "io.camunda.spring.client.properties.common.Keycloak"
+    },
+    {
+      "name": "zeebe",
+      "type": "io.camunda.spring.client.properties.CamundaSelfManagedProperties"
+    },
+    {
+      "name": "zeebe.client",
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties"
+    },
+    {
+      "name": "zeebe.client.broker",
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Broker"
+    },
+    {
+      "name": "zeebe.client.cloud",
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud"
+    },
+    {
+      "name": "zeebe.client.job",
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Job"
+    },
+    {
+      "name": "zeebe.client.message",
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Message"
+    },
+    {
+      "name": "zeebe.client.security",
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Security"
+    },
+    {
+      "name": "zeebe.client.worker",
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Worker"
+    },
+    {
+      "name": "zeebe.client.worker.override",
+      "type": "java.util.Map",
+      "description": "Properties related to the override of individual job workers being registered to the Camunda client. Replaced by `camunda.client.worker.override`."
     }
-  }]
+  ],
+  "properties": [
+    {
+      "name": "camunda.client.worker.defaults.tenant-ids",
+      "defaultValue": ["<default>"]
+    },
+    {
+      "name": "camunda.client.worker.defaults.timeout",
+      "defaultValue": "PT5M"
+    },
+    {
+      "name": "camunda.client.worker.defaults.max-jobs-active",
+      "defaultValue": 32
+    },
+    {
+      "name": "camunda.client.worker.defaults.poll-interval",
+      "defaultValue": "PT0.1S"
+    },
+    {
+      "name": "camunda.client.worker.defaults.name",
+      "defaultValue": "default"
+    },
+    {
+      "name": "camunda.client.worker.defaults.stream-enabled",
+      "defaultValue": false
+    },
+    {
+      "name": "camunda.client.auth.connect-timeout",
+      "defaultValue": "PT5S"
+    },
+    {
+      "name": "camunda.client.auth.read-timeout",
+      "defaultValue": "PT5S"
+    },
+    {
+      "name": "camunda.client.auth.credentials-cache-path",
+      "defaultValue": "$HOME/.camunda/credentials"
+    },
+    {
+      "name": "camunda.client.max-metadata-size",
+      "defaultValue": "16KB"
+    },
+    {
+      "name": "camunda.client.tenant-id",
+      "defaultValue": "<default>"
+    },
+    {
+      "name": "camunda.client.request-timeout-offset",
+      "defaultValue": "PT1S"
+    },
+    {
+      "name": "camunda.client.request-timeout",
+      "defaultValue": "PT10S"
+    },
+    {
+      "name": "camunda.client.rest-address",
+      "defaultValue": "http://0.0.0.0:8080"
+    },
+    {
+      "name": "camunda.client.grpc-address",
+      "defaultValue": "http://0.0.0.0:26500"
+    },
+    {
+      "name": "camunda.client.prefer-rest-over-grpc",
+      "defaultValue": false
+    },
+    {
+      "name": "camunda.client.max-message-size",
+      "defaultValue": "5MB"
+    },
+    {
+      "name": "camunda.client.message-time-to-live",
+      "defaultValue": "PT1H"
+    },
+    {
+      "name": "camunda.client.execution-threads",
+      "defaultValue": 1
+    },
+    {
+      "name": "common.auth-url",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
+      "deprecation": {
+        "replacement": "camunda.client.auth.token-url"
+      }
+    },
+    {
+      "name": "common.base-url",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
+      "deprecation": {
+        "replacement": "camunda.client.rest-address"
+      }
+    },
+    {
+      "name": "common.client-id",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
+      "deprecation": {
+        "replacement": "camunda.client.auth.client-id"
+      }
+    },
+    {
+      "name": "common.client-secret",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
+      "deprecation": {
+        "replacement": "camunda.client.auth.client-secret"
+      }
+    },
+    {
+      "name": "common.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
+      "deprecation": {
+        "replacement": "camunda.client.enabled"
+      }
+    },
+    {
+      "name": "common.keycloak.realm",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.common.Keycloak",
+      "deprecation": {
+        "reason": "There is no keycloak-specific configuration for camunda, the issuer is provided as url.",
+        "replacement": "camunda.client.auth.token-url"
+      }
+    },
+    {
+      "name": "common.keycloak.token-url",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.common.Keycloak",
+      "deprecation": {
+        "reason": "There is no keycloak-specific configuration for camunda, the issuer is provided as url.",
+        "replacement": "camunda.client.auth.token-url"
+      }
+    },
+    {
+      "name": "common.keycloak.url",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.common.Keycloak",
+      "deprecation": {
+        "reason": "There is no keycloak-specific configuration for camunda, the issuer is provided as url.",
+        "replacement": "camunda.client.auth.token-url"
+      }
+    },
+    {
+      "name": "common.password",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
+      "deprecation": {
+        "replacement": "camunda.client.auth.password"
+      }
+    },
+    {
+      "name": "common.url",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
+      "deprecation": {
+        "reason": "The rest address is the unified endpoint for all interaction with Camunda.",
+        "replacement": "camunda.client.rest-address"
+      }
+    },
+    {
+      "name": "common.username",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
+      "deprecation": {
+        "replacement": "camunda.client.auth.username"
+      }
+    },
+    {
+      "name": "zeebe.client.apply-environment-variable-overrides",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
+      "deprecation": {
+        "reason": "Only the environment variables belonging to the Spring SDK will be applied."
+      }
+    },
+    {
+      "name": "zeebe.client.broker.gateway-address",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Broker",
+      "deprecation": {
+        "level": "error",
+        "replacement": "camunda.client.grpc-address"
+      }
+    },
+    {
+      "name": "zeebe.client.broker.grpc-address",
+      "type": "java.net.URI",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Broker",
+      "deprecation": {
+        "replacement": "camunda.client.grpc-address"
+      }
+    },
+    {
+      "name": "zeebe.client.broker.keep-alive",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Broker",
+      "deprecation": {
+        "replacement": "camunda.client.keep-alive"
+      }
+    },
+    {
+      "name": "zeebe.client.broker.rest-address",
+      "type": "java.net.URI",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Broker",
+      "deprecation": {
+        "replacement": "camunda.client.rest-address"
+      }
+    },
+    {
+      "name": "zeebe.client.cloud.auth-url",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
+      "deprecation": {
+        "replacement": "camunda.client.auth.token-url"
+      }
+    },
+    {
+      "name": "zeebe.client.cloud.base-url",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
+      "deprecation": {
+        "reason": "The zeebe client url is now configured as http\/https url.",
+        "replacement": "camunda.client.grpc-address"
+      }
+    },
+    {
+      "name": "zeebe.client.cloud.client-id",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
+      "deprecation": {
+        "replacement": "camunda.client.auth.client-id"
+      }
+    },
+    {
+      "name": "zeebe.client.cloud.client-secret",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
+      "deprecation": {
+        "replacement": "camunda.client.auth.client-secret"
+      }
+    },
+    {
+      "name": "zeebe.client.cloud.cluster-id",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
+      "deprecation": {
+        "replacement": "camunda.client.cluster-id"
+      }
+    },
+    {
+      "name": "zeebe.client.cloud.credentials-cache-path",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
+      "deprecation": {
+        "replacement": "camunda.client.auth.credentials-cache-path"
+      }
+    },
+    {
+      "name": "zeebe.client.cloud.port",
+      "type": "java.lang.Integer",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
+      "deprecation": {
+        "reason": "The zeebe client url is now configured as http\/https url.",
+        "replacement": "camunda.client.grpc-address"
+      }
+    },
+    {
+      "name": "zeebe.client.cloud.region",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
+      "deprecation": {
+        "replacement": "camunda.client.region"
+      }
+    },
+    {
+      "name": "zeebe.client.cloud.scope",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
+      "deprecation": {
+        "replacement": "camunda.client.scope"
+      }
+    },
+    {
+      "name": "zeebe.client.connection-mode",
+      "type": "java.lang.String",
+      "description": "Connection mode can be set to \"CLOUD\" (connect to SaaS with properties), or \"ADDRESS\" (to use a manually set address to the broker) If not set, \"CLOUD\" is used if a `zeebe.client.cloud.cluster-id` property is set, \"ADDRESS\" otherwise.",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
+      "deprecation": {
+        "reason": "There are client modes now.",
+        "replacement": "camunda.client.mode"
+      }
+    },
+    {
+      "name": "zeebe.client.default-job-worker-stream-enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.stream-enabled"
+      }
+    },
+    {
+      "name": "zeebe.client.default-job-worker-tenant-ids",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.tenant-ids"
+      }
+    },
+    {
+      "name": "zeebe.client.default-tenant-id",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
+      "deprecation": {
+        "reason": "the first provided tenant id is applied.",
+        "replacement": "camunda.client.worker.defaults.tenant-ids"
+      }
+    },
+    {
+      "name": "zeebe.client.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
+      "deprecation": {
+        "replacement": "camunda.client.enabled"
+      }
+    },
+    {
+      "name": "zeebe.client.job.poll-interval",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Job",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.poll-interval"
+      }
+    },
+    {
+      "name": "zeebe.client.job.timeout",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Job",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.timeout"
+      }
+    },
+    {
+      "name": "zeebe.client.message.max-message-size",
+      "type": "java.lang.Integer",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Message",
+      "deprecation": {
+        "replacement": "camunda.client.max-message-size"
+      }
+    },
+    {
+      "name": "zeebe.client.message.time-to-live",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Message",
+      "deprecation": {
+        "replacement": "camunda.client.message-time-to-live"
+      }
+    },
+    {
+      "name": "zeebe.client.request-timeout",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
+      "deprecation": {
+        "replacement": "camunda.client.request-timeout"
+      }
+    },
+    {
+      "name": "zeebe.client.security.cert-path",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Security",
+      "deprecation": {
+        "replacement": "camunda.client.ca-certificate-path"
+      }
+    },
+    {
+      "name": "zeebe.client.security.override-authority",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Security",
+      "deprecation": {
+        "replacement": "camunda.client.override-authority"
+      }
+    },
+    {
+      "name": "zeebe.client.security.plaintext",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Security",
+      "deprecation": {
+        "reason": "plaintext is determined by the url protocol (http\/https) now.",
+        "replacement": "camunda.client.grpc-address"
+      }
+    },
+    {
+      "name": "zeebe.client.worker.default-name",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Worker",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.name"
+      }
+    },
+    {
+      "name": "zeebe.client.worker.default-type",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Worker",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.type"
+      }
+    },
+    {
+      "name": "zeebe.client.worker.max-jobs-active",
+      "type": "java.lang.Integer",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Worker",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.max-jobs-active"
+      }
+    },
+    {
+      "name": "zeebe.client.worker.threads",
+      "type": "java.lang.Integer",
+      "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Worker",
+      "deprecation": {
+        "replacement": "camunda.client.execution-threads"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.auto-complete",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.auto-complete"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.enabled"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.fetch-variables",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.fetch-variables"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.force-fetch-all-variables",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.force-fetch-all-variables"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.max-jobs-active",
+      "type": "java.lang.Integer",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.max-jobs-active"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.max-retries",
+      "type": "java.lang.Integer",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.max-retries"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.name",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.name"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.poll-interval",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.poll-interval"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.request-timeout",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.request-timeout"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.stream-enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.stream-enabled"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.stream-timeout",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.stream-timeout"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.tenant-ids",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.tenant-ids"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.timeout",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.timeout"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.defaults.type",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.type"
+      }
+    },
+    {
+      "name": "camunda.client.auth.issuer",
+      "type": "java.net.URI",
+      "sourceType": "io.camunda.spring.client.properties.CamundaClientAuthProperties",
+      "deprecation": {
+        "replacement": "camunda.client.auth.token-url"
+      }
+    },
+    {
+      "name": "camunda.client.cluster-id",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.CamundaClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.cloud.cluster-id"
+      }
+    },
+    {
+      "name": "camunda.client.region",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.CamundaClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.cloud.region"
+      }
+    },
+    {
+      "name": "camunda.client.tenant-ids",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "io.camunda.spring.client.properties.CamundaClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.tenant-ids"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.audience",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.auth.audience"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.base-url",
+      "type": "java.net.URL",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.restAddress"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.ca-certificate-path",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.ca-certificate-path"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.enabled"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.execution-threads",
+      "type": "java.lang.Integer",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.execution-threads"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.grpc-address",
+      "type": "java.net.URI",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.grpc-address"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.keep-alive",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.keep-alive"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.max-message-size",
+      "type": "org.springframework.util.unit.DataSize",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.max-message-size"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.max-metadata-size",
+      "type": "org.springframework.util.unit.DataSize",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.max-metadata-size"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.message-time-to-live",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.message-time-to-live"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.override-authority",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.override-authority"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.prefer-rest-over-grpc",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.prefer-rest-over-grpc"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.request-timeout",
+      "type": "java.time.Duration",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.worker.defaults.request-timeout"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.rest-address",
+      "type": "java.net.URI",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.rest-address"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.scope",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "deprecation": {
+        "replacement": "camunda.client.auth.scope"
+      }
+    },
+    {
+      "name": "camunda.client.zeebe.deployment.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.properties.CamundaClientZeebeDeploymentProperties",
+      "deprecation": {
+        "replacement": "camunda.client.deployment.enabled"
+      }
+    },
+    {
+      "name": "camunda.client.identity.audience",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.common.IdentityProperties",
+      "deprecation": {
+        "replacement": "camunda.client.auth.audience",
+        "reason": "Identity is now part of Camunda."
+      }
+    },
+    {
+      "name": "camunda.client.identity.base-url",
+      "type": "java.net.URL",
+      "sourceType": "io.camunda.spring.client.properties.common.IdentityProperties",
+      "deprecation": {
+        "reason": "Identity is now part of Camunda."
+      }
+    },
+    {
+      "name": "camunda.client.identity.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "io.camunda.spring.client.properties.common.IdentityProperties",
+      "deprecation": {
+        "replacement": "camunda.client.enabled",
+        "reason": "Identity is now part of Camunda."
+      }
+    },
+    {
+      "name": "camunda.client.identity.scope",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.common.IdentityProperties",
+      "deprecation": {
+        "replacement": "camunda.client.auth.scope",
+        "reason": "Identity is now part of Camunda."
+      }
+    },
+    {
+      "name": "camunda.client.cloud.base-url",
+      "type": "java.lang.String",
+      "sourceType": "io.camunda.spring.client.properties.CamundaClientCloudProperties",
+      "deprecation": {
+        "replacement": "camunda.client.cloud.domain"
+      }
+    }
+  ]
 }
