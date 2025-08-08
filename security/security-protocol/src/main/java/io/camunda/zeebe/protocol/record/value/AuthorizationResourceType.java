@@ -36,8 +36,7 @@ public enum AuthorizationResourceType {
       PermissionType.UPDATE_USER_TASK,
       PermissionType.CREATE_PROCESS_INSTANCE,
       PermissionType.DELETE_PROCESS_INSTANCE),
-  DECISION_REQUIREMENTS_DEFINITION(
-      PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
+  DECISION_REQUIREMENTS_DEFINITION(PermissionType.READ),
   DECISION_DEFINITION(
       PermissionType.READ_DECISION_DEFINITION,
       PermissionType.READ_DECISION_INSTANCE,
