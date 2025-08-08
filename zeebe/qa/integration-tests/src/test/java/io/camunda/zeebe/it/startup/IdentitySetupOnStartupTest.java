@@ -19,7 +19,8 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -27,7 +28,7 @@ import org.springframework.util.unit.DataSize;
 
 final class IdentitySetupOnStartupTest {
 
-  private static final LogCapturer LOG_CAPTURER = new LogCapturer();
+  private final LogCapturer logCapturer = new LogCapturer();
 
   /**
    * Cluster with 3 partitions (to induce command distribution), and reduced sizes for max message
@@ -45,14 +46,22 @@ final class IdentitySetupOnStartupTest {
             cfg.getProcessing().setMaxCommandsInBatch(100);
           });
 
-  @BeforeAll
-  static void setup() {
+  @BeforeEach
+  void setup() {
     final Logger logger = (Logger) Loggers.PROCESSOR_LOGGER;
-    LOG_CAPTURER.stop();
-    LOG_CAPTURER.list.clear();
-    LOG_CAPTURER.setContext(logger.getLoggerContext());
-    LOG_CAPTURER.start();
-    logger.addAppender(LOG_CAPTURER);
+    logCapturer.stop();
+    logCapturer.list.clear();
+    logCapturer.setContext(logger.getLoggerContext());
+    logCapturer.start();
+    logger.addAppender(logCapturer);
+  }
+
+  @AfterEach
+  void after() {
+    final Logger logger = (Logger) Loggers.PROCESSOR_LOGGER;
+    logger.detachAppender(logCapturer);
+    logCapturer.stop();
+    logCapturer.list.clear();
   }
 
   @Test
@@ -64,7 +73,7 @@ final class IdentitySetupOnStartupTest {
         .isNotNull();
 
     assertThat(
-            LOG_CAPTURER.contains(
+            logCapturer.contains(
                 "Expected to process commands in a batch, but exceeded the resulting batch size after processing",
                 Level.WARN))
         .describedAs("Expect that the command batch size is not exceeded by identity setup")
