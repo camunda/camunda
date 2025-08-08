@@ -17,49 +17,100 @@ package io.camunda.spring.client.jobhandling;
 
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 public sealed interface JobWorkerChangeSet {
-  void applyChanges(JobWorkerValue jobWorkerValue);
+
+  /**
+   * Applies the changes to the provided the {@link JobWorkerValue}
+   *
+   * @param jobWorkerValue the {@link JobWorkerValue} to change
+   * @return true if there has been an actual change, false if not
+   */
+  boolean applyChanges(JobWorkerValue jobWorkerValue);
+
+  static <T> boolean updateIfChanged(final T original, final T updated, final Consumer<T> setter) {
+    if (!Objects.equals(original, updated)) {
+      setter.accept(updated);
+      return true;
+    }
+    return false;
+  }
 
   record NoopChangeSet() implements JobWorkerChangeSet {
 
     @Override
-    public void applyChanges(final JobWorkerValue jobWorkerValue) {
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
       // do nothing
+      return false;
     }
   }
 
   record ResetChangeSet(JobWorkerValue original) implements JobWorkerChangeSet {
     @Override
-    public void applyChanges(final JobWorkerValue jobWorkerValue) {}
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      // both are equals, no reset required
+      if (Objects.equals(original, jobWorkerValue)) {
+        return false;
+      }
+      // reset name
+      boolean changed =
+          updateIfChanged(original.getName(), jobWorkerValue.getName(), jobWorkerValue::setName);
+      // reset type
+      changed =
+          updateIfChanged(original.getType(), jobWorkerValue.getType(), jobWorkerValue::setType)
+              || changed;
+      // reset enabled
+      changed =
+          updateIfChanged(
+                  original.getEnabled(), jobWorkerValue.getEnabled(), jobWorkerValue::setEnabled)
+              || changed;
+      // reset tenant ids
+      changed =
+          updateIfChanged(
+                  original.getTenantIds(),
+                  jobWorkerValue.getTenantIds(),
+                  jobWorkerValue::setTenantIds)
+              || changed;
+      return changed;
+    }
   }
 
   record EnabledChangeSet(boolean enabled) implements JobWorkerChangeSet {
     @Override
-    public void applyChanges(final JobWorkerValue jobWorkerValue) {
-      jobWorkerValue.setEnabled(enabled);
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(jobWorkerValue.getEnabled(), enabled, jobWorkerValue::setEnabled);
     }
   }
 
   record NameChangeSet(String name) implements JobWorkerChangeSet {
     @Override
-    public void applyChanges(final JobWorkerValue jobWorkerValue) {
-      jobWorkerValue.setName(name);
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(jobWorkerValue.getName(), name, jobWorkerValue::setName);
     }
   }
 
   record TypeChangeSet(String type) implements JobWorkerChangeSet {
 
     @Override
-    public void applyChanges(final JobWorkerValue jobWorkerValue) {
-      jobWorkerValue.setType(type);
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(jobWorkerValue.getType(), type, jobWorkerValue::setType);
     }
   }
 
   record ComposedChangeSet(List<JobWorkerChangeSet> changeSets) implements JobWorkerChangeSet {
     @Override
-    public void applyChanges(final JobWorkerValue jobWorkerValue) {
-      changeSets.forEach(changeSet -> changeSet.applyChanges(jobWorkerValue));
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return changeSets.stream().anyMatch(changeSet -> changeSet.applyChanges(jobWorkerValue));
+    }
+  }
+
+  record TenantIdsChangeSet(List<String> tenantIds) implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(
+          jobWorkerValue.getTenantIds(), tenantIds, jobWorkerValue::setTenantIds);
     }
   }
 }
