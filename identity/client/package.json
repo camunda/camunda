@@ -11,7 +11,6 @@
     "test:lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test:licenses": "license-checker --excludePrivatePackages --excludePackages 'wicg-inert@3.1.2' --onlyAllow 'Apache-2.0;MIT;0BSD;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;WTFPL;OFL-1.1;CC-BY-4.0;' --production",
     "test:unit": "",
-    "test:e2e": "yarn playwright test e2e/tests",
     "test": "yarn test:unit & yarn test:format && yarn test:licenses && yarn test:lint",
     "preview": "vite preview",
     "extract-sbom": "vite build --mode sbom",
@@ -35,7 +34,6 @@
     "styled-components": "6.1.13"
   },
   "devDependencies": {
-    "@playwright/test": "^1.51.1",
     "@types/carbon-components-react": "^7.55.13",
     "@types/carbon__elements": "^11.10.3",
     "@types/event-source-polyfill": "1.0.5",
@@ -50,7 +48,6 @@
     "eslint": "9.32.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-license-header": "^0.8.0",
-    "eslint-plugin-playwright": "^2.2.0",
     "eslint-plugin-prettier": "^5.2.6",
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.4.19",
