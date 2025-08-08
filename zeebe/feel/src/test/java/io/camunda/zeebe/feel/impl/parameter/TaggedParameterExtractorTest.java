@@ -5,13 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.adhocsubprocess.parameter;
+package io.camunda.zeebe.feel.impl.parameter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -24,16 +23,15 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class AdHocActivityParameterExtractorTest {
+class TaggedParameterExtractorTest {
 
   private final FeelEngineApi feelEngine = FeelEngineBuilder.forJava().build();
-  private final AdHocActivityParameterExtractor extractor = new AdHocActivityParameterExtractor();
+  private final TaggedParameterExtractor extractor = new TaggedParameterExtractor();
 
   @ParameterizedTest
   @MethodSource("testFeelExpressionsWithExpectedParameters")
-  void extractsAllParametersFromExpression(
-      final AdHocActivityParameterExtractionTestCase testCase) {
-    final List<AdHocActivityParameter> parameters = extractParameters(testCase.expression());
+  void extractsAllParametersFromExpression(final TaggedParameterExtractionTestCase testCase) {
+    final List<TaggedParameter> parameters = extractParameters(testCase.expression());
 
     if (testCase.expectedParameters.isEmpty()) {
       assertThat(parameters).isEmpty();
@@ -68,7 +66,7 @@ class AdHocActivityParameterExtractorTest {
         .hasMessageStartingWith(exceptionMessage);
   }
 
-  private List<AdHocActivityParameter> extractParameters(final String expression) {
+  private List<TaggedParameter> extractParameters(final String expression) {
     final ParseResult parseResult = feelEngine.parseExpression(expression);
     assertThat(parseResult.isSuccess())
         .describedAs("Failed to parse expression: %s", parseResult.failure().message())
@@ -77,103 +75,98 @@ class AdHocActivityParameterExtractorTest {
     return extractParameters(parseResult.parsedExpression());
   }
 
-  private List<AdHocActivityParameter> extractParameters(final ParsedExpression parsedExpression) {
+  private List<TaggedParameter> extractParameters(final ParsedExpression parsedExpression) {
     return extractor.extractParameters(parsedExpression);
   }
 
-  static List<AdHocActivityParameterExtractionTestCase>
-      testFeelExpressionsWithExpectedParameters() {
+  static List<TaggedParameterExtractionTestCase> testFeelExpressionsWithExpectedParameters() {
     return List.of(
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "No parameters",
             """
             "hello"
             """),
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name",
             """
             fromAi(toolCall.aSimpleValue)
             """,
-            new AdHocActivityParameter("toolCall.aSimpleValue", null, null, null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+            new TaggedParameter("toolCall.aSimpleValue", null, null, null, null)),
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name + description",
             """
             fromAi(toolCall.aSimpleValue, "A simple value")
             """,
-            new AdHocActivityParameter(
-                "toolCall.aSimpleValue", "A simple value", null, null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+            new TaggedParameter("toolCall.aSimpleValue", "A simple value", null, null, null)),
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name + description + type",
             """
             fromAi(toolCall.aSimpleValue, "A simple value", "string")
             """,
-            new AdHocActivityParameter(
-                "toolCall.aSimpleValue", "A simple value", "string", null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+            new TaggedParameter("toolCall.aSimpleValue", "A simple value", "string", null, null)),
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name + description + type + schema",
             """
             fromAi(toolCall.aSimpleValue, "A simple value", "string", { enum: ["A", "B", "C"] })
             """,
-            new AdHocActivityParameter(
+            new TaggedParameter(
                 "toolCall.aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
                 null)),
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name + description + type + schema + options",
             """
             fromAi(toolCall.aSimpleValue, "A simple value", "string", { enum: ["A", "B", "C"] }, { optional: true })
             """,
-            new AdHocActivityParameter(
+            new TaggedParameter(
                 "toolCall.aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
                 Map.of("optional", true))),
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name + description + type + schema + options (value not a child reference)",
             """
             fromAi(aSimpleValue, "A simple value", "string", { enum: ["A", "B", "C"] }, { optional: true })
             """,
-            new AdHocActivityParameter(
+            new TaggedParameter(
                 "aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
                 Map.of("optional", true))),
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name (named params)",
             """
             fromAi(value: toolCall.aSimpleValue)
             """,
-            new AdHocActivityParameter("toolCall.aSimpleValue", null, null, null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+            new TaggedParameter("toolCall.aSimpleValue", null, null, null, null)),
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name + description (named params)",
             """
             fromAi(value: toolCall.aSimpleValue, description: "A simple value")
             """,
-            new AdHocActivityParameter(
-                "toolCall.aSimpleValue", "A simple value", null, null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+            new TaggedParameter("toolCall.aSimpleValue", "A simple value", null, null, null)),
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name + description + type (named params)",
             """
             fromAi(value: toolCall.aSimpleValue, description: "A simple value", type: "string")
             """,
-            new AdHocActivityParameter(
-                "toolCall.aSimpleValue", "A simple value", "string", null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+            new TaggedParameter("toolCall.aSimpleValue", "A simple value", "string", null, null)),
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name + description + type + schema (named params)",
             """
             fromAi(value: toolCall.aSimpleValue, description: "A simple value", type: "string", schema: { enum: ["A", "B", "C"] })
             """,
-            new AdHocActivityParameter(
+            new TaggedParameter(
                 "toolCall.aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
                 null)),
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name + description + type + schema + options (named params)",
             """
             fromAi(
@@ -184,13 +177,13 @@ class AdHocActivityParameterExtractorTest {
               options: { optional: true }
             )
             """,
-            new AdHocActivityParameter(
+            new TaggedParameter(
                 "toolCall.aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
                 Map.of("optional", true))),
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name + description + type + schema + options (named params, mixed order)",
             """
             fromAi(
@@ -201,13 +194,13 @@ class AdHocActivityParameterExtractorTest {
               value: toolCall.aSimpleValue
             )
             """,
-            new AdHocActivityParameter(
+            new TaggedParameter(
                 "toolCall.aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
                 Map.of("optional", true))),
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "Only expression: Name + description + type + schema + options (named params, mixed order, value not a child reference)",
             """
             fromAi(
@@ -218,13 +211,13 @@ class AdHocActivityParameterExtractorTest {
               value: aSimpleValue
             )
             """,
-            new AdHocActivityParameter(
+            new TaggedParameter(
                 "aSimpleValue",
                 "A simple value",
                 "string",
                 Map.of("enum", List.of("A", "B", "C")),
                 Map.of("optional", true))),
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "Array schema with sub-schema",
             """
             fromAi(toolCall.multiValue, "Select a multi value", "array", {
@@ -234,41 +227,39 @@ class AdHocActivityParameterExtractorTest {
               }
             })
             """,
-            new AdHocActivityParameter(
+            new TaggedParameter(
                 "toolCall.multiValue",
                 "Select a multi value",
                 "array",
                 Map.of("items", Map.of("type", "string", "enum", List.of("foo", "bar", "baz"))),
                 null)),
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "Part of operation (integer)",
             """
             1 + 2 + fromAi(toolCall.thirdValue, "The third value to add", "integer")
             """,
-            new AdHocActivityParameter(
+            new TaggedParameter(
                 "toolCall.thirdValue", "The third value to add", "integer", null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "Part of operation with conversion (integer)",
             """
             1 + 2 + number(fromAi(toolCall.thirdValue, "The third value to add", "integer"))
             """,
-            new AdHocActivityParameter(
+            new TaggedParameter(
                 "toolCall.thirdValue", "The third value to add", "integer", null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+        new TaggedParameterExtractionTestCase(
             "Part of string concatenation",
             """
             "https://example.com/" + fromAi(toolCall.urlPath, "The URL path to use", "string")
             """,
-            new AdHocActivityParameter(
-                "toolCall.urlPath", "The URL path to use", "string", null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+            new TaggedParameter("toolCall.urlPath", "The URL path to use", "string", null, null)),
+        new TaggedParameterExtractionTestCase(
             "Part of string concatenation with conversion",
             """
             "https://example.com/" + string(fromAi(toolCall.urlPath, "The URL path to use", "string"))
             """,
-            new AdHocActivityParameter(
-                "toolCall.urlPath", "The URL path to use", "string", null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+            new TaggedParameter("toolCall.urlPath", "The URL path to use", "string", null, null)),
+        new TaggedParameterExtractionTestCase(
             "Multiple parameters, part of a context",
             """
             {
@@ -277,20 +268,17 @@ class AdHocActivityParameterExtractorTest {
               combined: string(fromAi(toolCall.firstOne, "The first value")) + fromAi(toolCall.secondOne, "The second value", "string")
             }
             """,
-            new AdHocActivityParameter("barValue", "A good bar value", "string", null, null),
-            new AdHocActivityParameter("toolCall.firstOne", "The first value", null, null, null),
-            new AdHocActivityParameter(
-                "toolCall.secondOne", "The second value", "string", null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+            new TaggedParameter("barValue", "A good bar value", "string", null, null),
+            new TaggedParameter("toolCall.firstOne", "The first value", null, null, null),
+            new TaggedParameter("toolCall.secondOne", "The second value", "string", null, null)),
+        new TaggedParameterExtractionTestCase(
             "Multiple parameters, part of a list",
             """
             ["something", fromAi(toolCall.firstValue, "The first value", "string"), fromAi(toolCall.secondValue, "The second value", "integer")]
             """,
-            new AdHocActivityParameter(
-                "toolCall.firstValue", "The first value", "string", null, null),
-            new AdHocActivityParameter(
-                "toolCall.secondValue", "The second value", "integer", null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+            new TaggedParameter("toolCall.firstValue", "The first value", "string", null, null),
+            new TaggedParameter("toolCall.secondValue", "The second value", "integer", null, null)),
+        new TaggedParameterExtractionTestCase(
             "Multiple parameters, part of a context and list",
             """
             {
@@ -300,13 +288,10 @@ class AdHocActivityParameterExtractorTest {
               }
             }
             """,
-            new AdHocActivityParameter(
-                "toolCall.firstValue", "The first value", "string", null, null),
-            new AdHocActivityParameter(
-                "toolCall.secondValue", "The second value", "integer", null, null),
-            new AdHocActivityParameter(
-                "toolCall.thirdValue", "The third value to add", null, null, null)),
-        new AdHocActivityParameterExtractionTestCase(
+            new TaggedParameter("toolCall.firstValue", "The first value", "string", null, null),
+            new TaggedParameter("toolCall.secondValue", "The second value", "integer", null, null),
+            new TaggedParameter("toolCall.thirdValue", "The third value to add", null, null, null)),
+        new TaggedParameterExtractionTestCase(
             "Multiple parameters, part of a context and list (named params)",
             """
             {
@@ -325,13 +310,10 @@ class AdHocActivityParameterExtractorTest {
               }
             }
             """,
-            new AdHocActivityParameter(
-                "toolCall.firstValue", "The first value", "string", null, null),
-            new AdHocActivityParameter(
-                "toolCall.secondValue", "The second value", "integer", null, null),
-            new AdHocActivityParameter(
-                "toolCall.thirdValue", "The third value to add", null, null, null),
-            new AdHocActivityParameter(
+            new TaggedParameter("toolCall.firstValue", "The first value", "string", null, null),
+            new TaggedParameter("toolCall.secondValue", "The second value", "integer", null, null),
+            new TaggedParameter("toolCall.thirdValue", "The third value to add", null, null, null),
+            new TaggedParameter(
                 "toolCall.fourthValue",
                 "The fourth value to add",
                 "array",
@@ -367,13 +349,13 @@ class AdHocActivityParameterExtractorTest {
             "Expected fromAi() parameter 'options' to be a context (map), but received 'FunctionInvocation"));
   }
 
-  record AdHocActivityParameterExtractionTestCase(
-      String description, String expression, List<AdHocActivityParameter> expectedParameters) {
+  record TaggedParameterExtractionTestCase(
+      String description, String expression, List<TaggedParameter> expectedParameters) {
 
-    AdHocActivityParameterExtractionTestCase(
+    TaggedParameterExtractionTestCase(
         final String description,
         final String expression,
-        final AdHocActivityParameter... expectedParameters) {
+        final TaggedParameter... expectedParameters) {
       this(description, expression, List.of(expectedParameters));
     }
 

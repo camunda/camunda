@@ -26,7 +26,7 @@ public class FeelFunctionProvider extends JavaFunctionProvider {
       Map.of(
           "cycle",
           List.of(CycleFunction.INSTANCE, CycleInfiniteFunction.INSTANCE),
-          "fromAi",
+          FromAiFunction.FUNCTION_NAME,
           FromAiFunction.INSTANCES);
 
   @Override

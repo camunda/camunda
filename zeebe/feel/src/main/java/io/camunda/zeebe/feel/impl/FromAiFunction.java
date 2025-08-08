@@ -12,6 +12,8 @@ import org.camunda.feel.context.JavaFunction;
 import org.camunda.feel.syntaxtree.Val;
 
 public class FromAiFunction extends JavaFunction {
+  public static final String FUNCTION_NAME = "fromAi";
+
   public static final List<JavaFunction> INSTANCES =
       List.of(
           new FromAiFunction(List.of("value")),
