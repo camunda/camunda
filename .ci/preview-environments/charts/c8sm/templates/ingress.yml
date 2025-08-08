@@ -1,0 +1,140 @@
+# We connot use .Values.global.ingress.annotations to include "infrapreviewenvironmentsingress.annotations" due
+# to the "toYaml" function used before "tpl". A similar custom ingress must be used instead.
+# https://github.com/camunda/camunda-platform-helm/blob/1814ba5e3ad4c012288dcaf7b0f8a3ceff860b4e/charts/camunda-platform/templates/camunda/ingress.yaml#L9
+---
+{{- $camundaPlatform := deepCopy (index .Subcharts "camunda-platform") -}}
+{{- $_ := set .Values "camundaPlatform" (deepCopy (index .Values "camunda-platform")) -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "camundaPlatform.fullname" $camundaPlatform }}
+  labels:
+    {{- include "commonLabels" $ | nindent 4 }}
+  annotations: 
+    {{- include "commonAnnotations" $ | nindent 4 }}
+    {{- include "infrapreviewenvironmentsingress.annotations" $ | nindent 4 -}}
+    ingress.kubernetes.io/rewrite-target: "/"
+    nginx.ingress.kubernetes.io/app-root: {{ .Values.camundaPlatform.console.contextPath }}
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 16k
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: {{ include "ingress.domain" $ | quote }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: {{ template "console.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.console.service.port }}
+        path: {{ .Values.camundaPlatform.console.contextPath }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "core.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.core.service.httpPort }}
+        path: {{ .Values.camundaPlatform.core.contextPath }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ include "identity.keycloak.service" $camundaPlatform }}
+            port:
+              number: {{ include "identity.keycloak.port" $camundaPlatform }}
+        path: {{ include "identity.keycloak.contextPath" $camundaPlatform }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "identity.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.identity.service.port }}
+        path: {{ .Values.camundaPlatform.identity.contextPath }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "optimize.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.optimize.service.port }}
+        path: {{ .Values.camundaPlatform.optimize.contextPath }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "webModeler.webapp.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.webModeler.webapp.service.port }}
+        path: {{ .Values.camundaPlatform.webModeler.contextPath }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "webModeler.websockets.fullname" $camundaPlatform }}
+            port:
+              number:  {{ .Values.camundaPlatform.webModeler.websockets.service.port }}
+        path: {{ template "webModeler.websocketContextPath" $camundaPlatform }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "connectors.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.connectors.service.serverPort }}
+        path: {{ .Values.camundaPlatform.connectors.contextPath }}
+        pathType: Prefix
+  tls:
+  - hosts:
+    - {{ include "ingress.domain" $ | quote }}
+    secretName: camunda-wildcard-certificate-tls
+
+---
+# Separate ingress for OIDC discovery endpoint without authentication
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "camundaPlatform.fullname" $camundaPlatform }}-oidc-discovery
+  labels:
+    {{- include "commonLabels" $ | nindent 4 }}
+  annotations: 
+    {{- include "commonAnnotations" $ | nindent 4 }}
+    # NOTE: No infrapreviewenvironmentsingress.annotations - allows free access
+    ingress.kubernetes.io/rewrite-target: "/"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 16k
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: {{ include "ingress.domain" $ | quote }}
+    http:
+      paths:
+      # OIDC Discovery endpoint - no authentication required
+      - backend:
+          service:
+            name: {{ include "identity.keycloak.service" $camundaPlatform }}
+            port:
+              number: {{ include "identity.keycloak.port" $camundaPlatform }}
+        path: /auth/realms/camunda-platform/.well-known/openid-configuration
+        pathType: Exact
+      # JWK Set endpoint for JWT token validation - no authentication required
+      - backend:
+          service:
+            name: {{ include "identity.keycloak.service" $camundaPlatform }}
+            port:
+              number: {{ include "identity.keycloak.port" $camundaPlatform }}
+        path: /auth/realms/camunda-platform/protocol/openid-connect/certs
+        pathType: Exact
+      # Token endpoint for OAuth2 flows - no authentication required for the endpoint itself
+      - backend:
+          service:
+            name: {{ include "identity.keycloak.service" $camundaPlatform }}
+            port:
+              number: {{ include "identity.keycloak.port" $camundaPlatform }}
+        path: /auth/realms/camunda-platform/protocol/openid-connect/token
+        pathType: Exact
+      # UserInfo endpoint for user details - no authentication required for the endpoint itself
+      - backend:
+          service:
+            name: {{ include "identity.keycloak.service" $camundaPlatform }}
+            port:
+              number: {{ include "identity.keycloak.port" $camundaPlatform }}
+        path: /auth/realms/camunda-platform/protocol/openid-connect/userinfo
+        pathType: Exact
+  tls:
+  - hosts:
+    - {{ include "ingress.domain" $ | quote }}
+    secretName: camunda-wildcard-certificate-tls

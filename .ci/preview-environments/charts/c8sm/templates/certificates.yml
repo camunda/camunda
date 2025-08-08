@@ -1,8 +1,9 @@
+# Replicate the wildcard certificate from the camunda namespace
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: camunda-tls
+  name: camunda-wildcard-certificate-tls
   labels: {{ include "commonLabels" $ | nindent 4 }}
   annotations: {{ include "commonAnnotations" $ | nindent 4 }}
     replicator.v1.mittwald.de/replicate-from: camunda/camunda-wildcard-certificate-tls
