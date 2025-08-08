@@ -35,3 +35,6 @@ export interface CamundaUser {
 
 export const getAuthentication: ApiDefinition<CamundaUser> = () =>
   apiGet("/authentication/me");
+
+export const getSaasUserToken: ApiDefinition<string> = () =>
+  apiGet("/authentication/me/token");
