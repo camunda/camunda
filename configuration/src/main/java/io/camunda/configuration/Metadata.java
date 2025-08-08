@@ -14,7 +14,8 @@ import java.time.Duration;
 import java.util.Set;
 
 public class Metadata {
-  private static final String PREFIX = "camunda.cluster.metadata.";
+  private static final String PREFIX = "camunda.cluster.metadata";
+
   private static final Set<String> LEGACY_SYNC_DELAY_PROPERTIES =
       Set.of("zeebe.broker.cluster.configManager.gossip.syncDelay");
   private static final Set<String> LEGACY_SYNC_REQUEST_TIMEOUT_PROPERTIES =
@@ -37,7 +38,7 @@ public class Metadata {
 
   public Duration getSyncDelay() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "sync-delay", syncDelay, Duration.class, SUPPORTED, LEGACY_SYNC_DELAY_PROPERTIES);
+        PREFIX + ".sync-delay", syncDelay, Duration.class, SUPPORTED, LEGACY_SYNC_DELAY_PROPERTIES);
   }
 
   public void setSyncDelay(final Duration syncDelay) {
@@ -46,7 +47,7 @@ public class Metadata {
 
   public Duration getSyncRequestTimeout() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "sync-request-timeout",
+        PREFIX + ".sync-request-timeout",
         syncRequestTimeout,
         Duration.class,
         SUPPORTED,
@@ -59,7 +60,7 @@ public class Metadata {
 
   public int getGossipFanout() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "gossip-fanout",
+        PREFIX + ".gossip-fanout",
         gossipFanout,
         Integer.class,
         SUPPORTED,

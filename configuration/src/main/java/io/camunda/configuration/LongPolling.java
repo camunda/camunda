@@ -12,7 +12,8 @@ import io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults;
 import java.util.Set;
 
 public class LongPolling {
-  private static final String PREFIX = "camunda.api.long-polling.";
+  private static final String PREFIX = "camunda.api.long-polling";
+
   private static final Set<String> LEGACY_ENABLED_PROPERTIES =
       Set.of("zeebe.gateway.longPolling.enabled");
   private static final Set<String> LEGACY_TIMEOUT_PROPERTIES =
@@ -40,7 +41,7 @@ public class LongPolling {
 
   public boolean isEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "enabled",
+        PREFIX + ".enabled",
         enabled,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -53,7 +54,7 @@ public class LongPolling {
 
   public long getTimeout() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "timeout",
+        PREFIX + ".timeout",
         timeout,
         Long.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -66,7 +67,7 @@ public class LongPolling {
 
   public long getProbeTimeout() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "probe-timeout",
+        PREFIX + ".probe-timeout",
         probeTimeout,
         Long.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -79,7 +80,7 @@ public class LongPolling {
 
   public int getMinEmptyResponses() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "min-empty-responses",
+        PREFIX + ".min-empty-responses",
         minEmptyResponses,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,

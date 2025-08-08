@@ -12,7 +12,7 @@ import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import java.util.Set;
 
 public class Upgrade {
-  private static final String PREFIX = "camunda.system.upgrade.";
+  private static final String PREFIX = "camunda.system.upgrade";
 
   private static final Set<String> LEGACY_ENABLE_VERSION_CHECK_PROPERTIES =
       Set.of("zeebe.broker.experimental.versionCheckRestrictionEnabled");
@@ -26,7 +26,7 @@ public class Upgrade {
 
   public boolean getEnableVersionCheck() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "enable-version-check",
+        PREFIX + ".enable-version-check",
         enableVersionCheck,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,

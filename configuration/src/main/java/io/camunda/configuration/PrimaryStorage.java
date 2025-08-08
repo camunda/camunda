@@ -12,7 +12,7 @@ import java.util.Set;
 
 public class PrimaryStorage {
 
-  private static final String PREFIX = "camunda.data.primary-storage.";
+  private static final String PREFIX = "camunda.data.primary-storage";
 
   private static final Set<String> LEGACY_DIRECTORY_PROPERTIES =
       Set.of("zeebe.broker.data.directory");
@@ -38,7 +38,7 @@ public class PrimaryStorage {
 
   public String getDirectory() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "directory",
+        PREFIX + ".directory",
         directory,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -51,7 +51,7 @@ public class PrimaryStorage {
 
   public String getRuntimeDirectory() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "runtime-directory",
+        PREFIX + ".runtime-directory",
         runtimeDirectory,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,

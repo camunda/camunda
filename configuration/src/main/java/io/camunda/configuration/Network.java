@@ -15,7 +15,7 @@ import java.util.Set;
 /** Network configuration for cluster communication. */
 public class Network {
 
-  private static final String PREFIX = "camunda.cluster.network.";
+  private static final String PREFIX = "camunda.cluster.network";
 
   private static final Map<String, String> LEGACY_GATEWAY_NETWORK_PROPERTIES =
       Map.of("host", "zeebe.gateway.cluster.host");
@@ -29,7 +29,7 @@ public class Network {
 
   public String getHost() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "host",
+        PREFIX + ".host",
         host,
         String.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
