@@ -7,17 +7,10 @@
  */
 package io.camunda.application.commons.condition;
 
-<<<<<<< HEAD
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
-
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType.OnSecondaryStorageTypeCondition;
-import io.camunda.search.connect.configuration.DatabaseConfig;
-=======
-import static io.camunda.application.commons.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType.OnSecondaryStorageTypeCondition;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
->>>>>>> e55bf49b179 (Revert "Revert "feat: migrate secondary storage type and ES url to the UC"")
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
