@@ -6,7 +6,6 @@
 # has trouble with custom versioning schemes
 ARG BASE_IMAGE="reg.mini.dev/openjre:21-dev"
 ARG BASE_DIGEST="sha256:80e113714c426176d4c8159d0729bfbe799784f04e4efac4b376a9f17e0fa689"
-ARG JDK_IMAGE=""
 
 # set to "build" to build camunda from scratch instead of using a distball
 ARG DIST="distball"
@@ -24,8 +23,8 @@ RUN --mount=type=cache,target=/root/.m2,rw \
     mv dist/target/camunda-zeebe .
 
 ### Extract camunda from distball ###
-# hadolint ignore=DL3006
-FROM ubuntu:noble@sha256:a08e551cb33850e4740772b38217fc1796a66da2506d312abe51acda354ff061 AS distball
+# hadolint ignore=DL3006,DL3007
+FROM ubuntu:noble AS distball
 
 # hadolint ignore=DL3002
 USER root
