@@ -242,9 +242,10 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
               label={t("selectResourceType")}
               titleText={t("resourceType")}
               items={resourceTypeItems}
-              onChange={(item: { selectedItem: ResourceType }) =>
-                field.onChange(item.selectedItem)
-              }
+              onChange={(item: { selectedItem: ResourceType }) => {
+                setValue("permissionTypes", []);
+                field.onChange(item.selectedItem);
+              }}
               itemToString={(item: string) => (item ? t(item) : "")}
               selectedItem={
                 resourceTypeItems.find((item) => item === field.value) || ""
