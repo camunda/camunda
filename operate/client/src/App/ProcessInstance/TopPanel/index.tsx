@@ -12,11 +12,9 @@ import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {incidentsStore} from 'modules/stores/incidents';
-import {IncidentsBanner} from './IncidentsBanner';
-import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from './styled';
-import {IncidentsWrapper} from '../IncidentsWrapper';
+import {tracking} from 'modules/tracking';
 import {
   CANCELED_BADGE,
   MODIFICATIONS,
@@ -91,7 +89,7 @@ const TopPanel: React.FC = observer(() => {
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
   const currentSelection = flowNodeSelectionStore.state.selection;
   const {sourceFlowNodeIdForMoveOperation} = modificationsStore.state;
-  const [isInTransition, setIsInTransition] = useState(false);
+  const [_isInTransition] = useState(false);
   const {data: flowNodeInstancesStatistics} = useFlownodeInstancesStatistics();
   const {data: statistics} = useFlownodeStatistics();
   const {data: selectableFlowNodes} = useSelectableFlowNodes();
@@ -219,9 +217,7 @@ const TopPanel: React.FC = observer(() => {
   const modifiableFlowNodes = useModifiableFlowNodes();
 
   const {
-    setIncidentBarOpen,
     state: {isIncidentBarOpen},
-    incidentsCount,
   } = incidentsStore;
 
   const {isModificationModeEnabled} = modificationsStore;
@@ -252,24 +248,6 @@ const TopPanel: React.FC = observer(() => {
 
   return (
     <Container>
-      {incidentsCount > 0 && (
-        <IncidentsBanner
-          onClick={() => {
-            if (isInTransition) {
-              return;
-            }
-
-            tracking.track({
-              eventName: isIncidentBarOpen
-                ? 'incidents-panel-closed'
-                : 'incidents-panel-opened',
-            });
-
-            setIncidentBarOpen(!isIncidentBarOpen);
-          }}
-          isOpen={incidentsStore.state.isIncidentBarOpen}
-        />
-      )}
       {modificationsStore.state.status === 'moving-token' &&
         businessObjects && (
           <ModificationInfoBanner
@@ -403,12 +381,7 @@ const TopPanel: React.FC = observer(() => {
               </Diagram>
             )}
         </DiagramShell>
-        {processInstance?.hasIncident && (
-          <IncidentsWrapper
-            setIsInTransition={setIsInTransition}
-            processInstance={processInstance}
-          />
-        )}
+        {/* Incidents panel is rendered as page rightPanel to ensure proper overlay layering */}
       </DiagramPanel>
     </Container>
   );

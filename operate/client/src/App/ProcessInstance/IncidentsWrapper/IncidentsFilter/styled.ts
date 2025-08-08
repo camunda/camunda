@@ -7,21 +7,17 @@
  */
 
 import styled from 'styled-components';
-import {Stack as BaseStack, Layer as BaseLayer} from '@carbon/react';
+import {Stack as BaseStack} from '@carbon/react';
 
 const Container = styled.div`
   display: flex;
   width: 100%;
-  justify-content: flex-end;
-  padding: var(--cds-spacing-01) var(--cds-spacing-05);
+  flex-direction: column;
+  padding: var(--cds-spacing-05) var(--cds-spacing-05) var(--cds-spacing-03);
 `;
 
 const Stack = styled(BaseStack)`
-  align-items: center;
+  width: 100%;
 `;
 
-const Layer = styled(BaseLayer)`
-  margin-left: auto;
-`;
-
-export {Container, Stack, Layer};
+export {Container, Stack};

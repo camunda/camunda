@@ -6,67 +6,88 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 
-import {IncidentsOverlay} from './IncidentsOverlay';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
-import {Transition} from './styled';
 import {IncidentsFilter} from './IncidentsFilter';
-import {IncidentsTable} from './IncidentsTable';
-import {PanelHeader} from 'modules/components/PanelHeader';
+import {IncidentsTiles} from './tiles/IncidentsTiles';
+
+import {Filter as FilterIcon} from '@carbon/react/icons';
+import pluralSuffix from 'modules/utils/pluralSuffix';
 import {getFilteredIncidents, init} from 'modules/utils/incidents';
 import {useIncidents} from 'modules/hooks/incidents';
+import {CollapsablePanel} from 'modules/components/CollapsablePanel';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {FilterRow, ResultsText, FilterButton, ResetButton} from './styled';
+
 
 type Props = {
   processInstance: ProcessInstance;
-  setIsInTransition: (isTransitionActive: boolean) => void;
 };
 
-const IncidentsWrapper: React.FC<Props> = observer(
-  ({setIsInTransition, processInstance}) => {
-    const incidents = useIncidents();
-    const filteredIncidents = getFilteredIncidents(incidents);
+const IncidentsWrapper: React.FC<Props> = observer(({processInstance}) => {
+  const incidents = useIncidents();
+  const filteredIncidents = getFilteredIncidents(incidents);
+  const [areFiltersVisible, setAreFiltersVisible] = useState(false);
+  const hasActiveFilters = 
+    incidentsStore.state.selectedErrorTypes.length > 0 || 
+    incidentsStore.state.selectedFlowNodes.length > 0;
 
-    useEffect(() => {
-      init(processInstance);
+  useEffect(() => {
+    init(processInstance);
 
-      return () => {
-        incidentsStore.reset();
-      };
-    }, [processInstance]);
+    return () => {
+      incidentsStore.reset();
+    };
+  }, [processInstance]);
 
-    if (incidentsStore.incidentsCount === 0) {
-      return null;
-    }
+  if (incidentsStore.incidentsCount === 0) {
+    return null;
+  }
 
-    return (
-      <>
-        <Transition
-          in={incidentsStore.state.isIncidentBarOpen}
-          onEnter={() => setIsInTransition(true)}
-          onEntered={() => setIsInTransition(false)}
-          onExit={() => setIsInTransition(true)}
-          onExited={() => setIsInTransition(false)}
-          mountOnEnter
-          unmountOnExit
-          timeout={400}
-        >
-          <IncidentsOverlay>
-            <PanelHeader
-              title="Incidents View"
-              count={filteredIncidents.length}
-              size="sm"
+  return (
+    <CollapsablePanel
+      label="Incidents"
+      panelPosition="RIGHT"
+      maxWidth={420}
+      isOverlay
+      isCollapsed={!incidentsStore.state.isIncidentBarOpen}
+      onToggle={() =>
+        incidentsStore.setIncidentBarOpen(
+          !incidentsStore.state.isIncidentBarOpen,
+        )
+      }
+    >
+      <FilterRow>
+        <ResultsText>
+          {pluralSuffix(filteredIncidents.length, 'result')}
+        </ResultsText>
+        <div style={{display: 'flex', alignItems: 'center'}}>
+          <FilterButton
+            type="button"
+            onClick={() => setAreFiltersVisible((v) => !v)}
+            data-testid="toggle-incidents-filters"
+            aria-expanded={areFiltersVisible}
+            $isActive={true}
+          >
+            <FilterIcon size={16} />
+            {areFiltersVisible ? 'Hide filters' : 'Filter'}
+          </FilterButton>
+          {hasActiveFilters && (
+            <ResetButton
+              type="button"
+              onClick={() => incidentsStore.clearSelection()}
+              data-testid="reset-incidents-filters"
             >
-              <IncidentsFilter />
-            </PanelHeader>
-            <IncidentsTable />
-          </IncidentsOverlay>
-        </Transition>
-      </>
-    );
-  },
-);
-
+              Reset filters
+            </ResetButton>
+          )}
+        </div>
+      </FilterRow>
+      {areFiltersVisible && <IncidentsFilter />}
+      <IncidentsTiles />
+    </CollapsablePanel>
+  );
+});
 export {IncidentsWrapper};

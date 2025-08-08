@@ -35,15 +35,9 @@ describe('IncidentsFilter', () => {
   });
 
   it('should render the table', async () => {
-    render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
-      {
-        wrapper: Wrapper,
-      },
-    );
+    render(<IncidentsWrapper processInstance={mockProcessInstance} />, {
+      wrapper: Wrapper,
+    });
 
     const table = within(await screen.findByRole('table'));
 
@@ -57,10 +51,7 @@ describe('IncidentsFilter', () => {
 
   it('should render the filters', async () => {
     const {user} = render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
+      <IncidentsWrapper processInstance={mockProcessInstance} />,
       {
         wrapper: Wrapper,
       },
