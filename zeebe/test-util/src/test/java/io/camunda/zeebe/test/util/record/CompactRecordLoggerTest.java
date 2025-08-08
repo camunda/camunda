@@ -54,9 +54,9 @@ class CompactRecordLoggerTest {
     assertThat(compactRecordLogger.getSupportedValueTypes())
         .as(
             """
-                    Expected CompactRecordLogger to support logging for value type '%s'.
-                    If you're introducing a new record, make sure to add a compact logger for it.
-                """,
+            Expected CompactRecordLogger to support logging for value type '%s'.
+            If you're introducing a new record, make sure to add a compact logger for it.
+            """,
             valueType)
         .contains(valueType);
   }
