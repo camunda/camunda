@@ -15,15 +15,19 @@
  */
 package io.camunda.spring.client.actuator;
 
+import static java.util.Optional.ofNullable;
+
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.ComposedChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.EnabledChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.NameChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.NoopChangeSet;
+import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.TenantIdsChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.TypeChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
@@ -52,16 +56,42 @@ public class JobWorkerController {
   }
 
   @WriteOperation
+  public void updateJobWorkers(
+      @Nullable final String name,
+      @Nullable final Boolean enabled,
+      @Nullable final String tenantIds,
+      @Nullable final Boolean reset,
+      @Nullable final Boolean applyCustomizers) {
+    if (reset != null && reset) {
+      jobWorkerManager.resetJobWorkers();
+    } else {
+      jobWorkerManager.updateJobWorkers(
+          createChangeSet(null, name, enabled, tenantIds),
+          ofNullable(applyCustomizers).orElse(false));
+    }
+  }
+
+  @WriteOperation
   public void updateJobWorker(
       @Selector final String finalType,
       @Nullable final String type,
       @Nullable final String name,
-      @Nullable final Boolean enabled) {
-    jobWorkerManager.updateJobWorker(finalType, createChangeSet(type, name, enabled));
+      @Nullable final Boolean enabled,
+      @Nullable final String tenantIds,
+      @Nullable final Boolean reset,
+      @Nullable final Boolean applyCustomizers) {
+    if (reset != null && reset) {
+      jobWorkerManager.resetJobWorker(finalType);
+    } else {
+      jobWorkerManager.updateJobWorker(
+          finalType,
+          createChangeSet(type, name, enabled, tenantIds),
+          ofNullable(applyCustomizers).orElse(false));
+    }
   }
 
   private JobWorkerChangeSet createChangeSet(
-      final String type, final String name, final Boolean enabled) {
+      final String type, final String name, final Boolean enabled, final String tenantIds) {
     final List<JobWorkerChangeSet> changeSets = new ArrayList<>();
     if (enabled != null) {
       changeSets.add(new EnabledChangeSet(enabled));
@@ -71,6 +101,10 @@ public class JobWorkerController {
     }
     if (type != null) {
       changeSets.add(new TypeChangeSet(type));
+    }
+    if (tenantIds != null) {
+      changeSets.add(
+          new TenantIdsChangeSet(Arrays.stream(tenantIds.split(",")).map(String::trim).toList()));
     }
     if (changeSets.isEmpty()) {
       return new NoopChangeSet();
@@ -87,10 +121,8 @@ public class JobWorkerController {
         type,
         jobWorkerValue.getType(),
         jobWorkerValue.getName(),
-        jobWorkerValue.getEnabled() == null || jobWorkerValue.getEnabled());
+        ofNullable(jobWorkerValue.getEnabled()).orElse(true));
   }
 
   public record JobWorkerDto(String type, String currentType, String name, boolean enabled) {}
-
-  public record ChangeSetDto(String type, String name, Boolean enabled) {}
 }
