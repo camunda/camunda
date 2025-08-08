@@ -7,25 +7,20 @@
  */
 package io.camunda.migration.identity.handler.sm;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.dto.Group;
-import io.camunda.migration.identity.dto.Role;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.GroupServices;
-import io.camunda.service.GroupServices.GroupDTO;
-import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -34,10 +29,9 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Set;
@@ -53,27 +47,24 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class GroupMigrationHandlerTest {
+public class GroupAuthorizationMigrationHandlerTest {
 
   private final ManagementIdentityClient managementIdentityClient;
-  private final GroupServices groupService;
   private final AuthorizationServices authorizationServices;
 
-  private final GroupMigrationHandler migrationHandler;
+  private final GroupAuthorizationMigrationHandler migrationHandler;
 
-  public GroupMigrationHandlerTest(
+  public GroupAuthorizationMigrationHandlerTest(
       @Mock final ManagementIdentityClient managementIdentityClient,
       @Mock(answer = Answers.RETURNS_SELF) final GroupServices groupService,
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices) {
     this.managementIdentityClient = managementIdentityClient;
-    this.groupService = groupService;
     this.authorizationServices = authorizationServices;
     final var migrationProperties = new IdentityMigrationProperties();
     migrationProperties.setBackpressureDelay(100);
     migrationHandler =
-        new GroupMigrationHandler(
+        new GroupAuthorizationMigrationHandler(
             managementIdentityClient,
-            groupService,
             authorizationServices,
             CamundaAuthentication.none(),
             migrationProperties);
@@ -92,23 +83,6 @@ public class GroupMigrationHandlerTest {
                 new Group("id2", groupNameWithUnsupportedChars),
                 new Group("id3", "Normal Group")))
         .thenReturn(List.of());
-    when(groupService.createGroup(any(GroupDTO.class)))
-        .thenReturn(CompletableFuture.completedFuture(null));
-    // users
-    when(managementIdentityClient.fetchGroupUsers(any()))
-        .thenReturn(List.of(new User("id", "username1", "name", "email")))
-        .thenReturn(List.of(new User("id", "username2", "name", "email")))
-        .thenReturn(List.of(new User("id", "username3", "name", "email")));
-    when(groupService.assignMember(any(GroupMemberDTO.class)))
-        .thenReturn(CompletableFuture.completedFuture(null));
-    // roles
-    when(managementIdentityClient.fetchGroupRoles(any()))
-        .thenReturn(List.of())
-        .thenReturn(List.of())
-        .thenReturn(
-            List.of(
-                new Role(
-                    "Role@Name#With$Special%Chars", "Description for Role with special chars")));
     // authorizations
     when(managementIdentityClient.fetchGroupAuthorizations(any()))
         .thenReturn(List.of())
@@ -140,34 +114,6 @@ public class GroupMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    final var groupCapture = ArgumentCaptor.forClass(GroupDTO.class);
-    verify(groupService, times(3)).createGroup(groupCapture.capture());
-    final var capturedGroups = groupCapture.getAllValues();
-    assertThat(capturedGroups).hasSize(3);
-    assertThat(capturedGroups.getFirst().groupId())
-        .isEqualTo(longGroupName.toLowerCase().substring(0, 256));
-    assertThat(capturedGroups.get(1).groupId()).doesNotContain("#", "$", "%").contains("_");
-    assertThat(capturedGroups.getLast().groupId()).isEqualTo("normal_group");
-
-    final var memberCapture = ArgumentCaptor.forClass(GroupMemberDTO.class);
-    verify(groupService, times(4)).assignMember(memberCapture.capture());
-    final var capturedMembers = memberCapture.getAllValues();
-    assertThat(capturedMembers).hasSize(4);
-    assertThat(capturedMembers.getFirst().groupId())
-        .isEqualTo(longGroupName.toLowerCase().substring(0, 256));
-    assertThat(capturedMembers.getFirst().memberType()).isEqualTo(EntityType.USER);
-    assertThat(capturedMembers.getFirst().memberId()).isEqualTo("username1");
-    assertThat(capturedMembers.get(1).groupId()).doesNotContain("#", "$", "%").contains("_");
-    assertThat(capturedMembers.get(1).memberType()).isEqualTo(EntityType.USER);
-    assertThat(capturedMembers.get(1).memberId()).isEqualTo("username2");
-    assertThat(capturedMembers.get(2).groupId()).isEqualTo("normal_group");
-    assertThat(capturedMembers.get(2).memberType()).isEqualTo(EntityType.USER);
-    assertThat(capturedMembers.get(2).memberId()).isEqualTo("username3");
-
-    assertThat(capturedMembers.getLast().groupId()).isEqualTo("normal_group");
-    assertThat(capturedMembers.getLast().memberId()).isEqualTo("role@name_with_special_chars");
-    assertThat(capturedMembers.getLast().memberType()).isEqualTo(EntityType.ROLE);
-
     final ArgumentCaptor<CreateAuthorizationRequest> request =
         ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
     verify(authorizationServices, times(3)).createAuthorization(request.capture());
@@ -214,13 +160,6 @@ public class GroupMigrationHandlerTest {
     when(managementIdentityClient.fetchGroups(anyInt()))
         .thenReturn(List.of(new Group("id1", "Group1")))
         .thenReturn(List.of());
-    when(groupService.createGroup(any(GroupDTO.class)))
-        .thenReturn(CompletableFuture.completedFuture(null));
-    when(managementIdentityClient.fetchGroupUsers(any()))
-        .thenReturn(List.of(new User("id", "username1", "name", "email")));
-    when(groupService.assignMember(any(GroupMemberDTO.class)))
-        .thenReturn(CompletableFuture.completedFuture(null));
-    when(managementIdentityClient.fetchGroupRoles(any())).thenReturn(List.of());
     when(managementIdentityClient.fetchGroupAuthorizations(any()))
         .thenThrow(new NotImplementedException("Authorizations endpoint unavailable"));
 
@@ -234,29 +173,6 @@ public class GroupMigrationHandlerTest {
     when(managementIdentityClient.fetchGroups(anyInt()))
         .thenReturn(List.of(new Group("id1", "Group1")))
         .thenReturn(List.of());
-    when(groupService.createGroup(any(GroupDTO.class)))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                ErrorMapper.mapError(
-                    new BrokerRejectionException(
-                        new BrokerRejection(
-                            GroupIntent.CREATE,
-                            -1,
-                            RejectionType.ALREADY_EXISTS,
-                            "group already exists")))));
-    when(managementIdentityClient.fetchGroupUsers(any()))
-        .thenReturn(List.of(new User("id", "username1", "name", "email")));
-    when(groupService.assignMember(any(GroupMemberDTO.class)))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                ErrorMapper.mapError(
-                    new BrokerRejectionException(
-                        new BrokerRejection(
-                            GroupIntent.ADD_ENTITY,
-                            -1,
-                            RejectionType.ALREADY_EXISTS,
-                            "group membership already exists")))));
-    when(managementIdentityClient.fetchGroupRoles(any())).thenReturn(List.of());
     when(managementIdentityClient.fetchGroupAuthorizations(any()))
         .thenReturn(
             List.of(
@@ -267,104 +183,21 @@ public class GroupMigrationHandlerTest {
                     "process-definition",
                     Set.of("READ", "UPDATE_PROCESS_INSTANCE", "START_PROCESS_INSTANCE"))));
     when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            AuthorizationIntent.CREATE,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "authorization already exists")))));
 
     // when
     migrationHandler.migrate();
     // then
     verify(authorizationServices, times(1))
         .createAuthorization(any(CreateAuthorizationRequest.class));
-  }
-
-  @Test
-  public void shouldRetryWithBackpressureOnGroupCreation() {
-    // given
-    when(managementIdentityClient.fetchGroups(anyInt()))
-        .thenReturn(
-            List.of(
-                new Group("id1", "groupName"),
-                new Group("id2", "groupName"),
-                new Group("id3", "groupName")))
-        .thenReturn(List.of());
-    when(groupService.createGroup(any(GroupDTO.class)))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                ErrorMapper.mapError(
-                    new BrokerErrorException(
-                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    migrationHandler.migrate();
-
-    // then
-    verify(groupService, times(4)).createGroup(any(GroupDTO.class));
-  }
-
-  @Test
-  public void shouldRetryWithBackpressureOnGroupUserAssignation() {
-    // given
-    when(managementIdentityClient.fetchGroups(anyInt()))
-        .thenReturn(
-            List.of(
-                new Group("id1", "groupName"),
-                new Group("id2", "groupName"),
-                new Group("id3", "groupName")))
-        .thenReturn(List.of());
-    when(groupService.createGroup(any(GroupDTO.class)))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    when(managementIdentityClient.fetchGroupUsers(any()))
-        .thenReturn(List.of(new User("id", "username1", "name", "email")))
-        .thenReturn(List.of(new User("id", "username2", "name", "email")))
-        .thenReturn(List.of(new User("id", "username3", "name", "email")));
-    when(groupService.assignMember(any(GroupMemberDTO.class)))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                ErrorMapper.mapError(
-                    new BrokerErrorException(
-                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    migrationHandler.migrate();
-
-    // then
-    verify(groupService, times(3)).createGroup(any(GroupDTO.class));
-    verify(groupService, times(4)).assignMember(any(GroupMemberDTO.class));
-  }
-
-  @Test
-  public void shouldRetryWithBackpressureOnGroupRoleAssignation() {
-    // given
-    when(managementIdentityClient.fetchGroups(anyInt()))
-        .thenReturn(
-            List.of(
-                new Group("id1", "groupName"),
-                new Group("id2", "groupName"),
-                new Group("id3", "groupName")))
-        .thenReturn(List.of());
-    when(groupService.createGroup(any(GroupDTO.class)))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    when(managementIdentityClient.fetchGroupRoles(any()))
-        .thenReturn(List.of(new Role("RoleName1", "Role description")))
-        .thenReturn(List.of(new Role("RoleName2", "Role description")))
-        .thenReturn(List.of(new Role("RoleName3", "Role description")));
-    when(groupService.assignMember(any(GroupMemberDTO.class)))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                ErrorMapper.mapError(
-                    new BrokerErrorException(
-                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    migrationHandler.migrate();
-
-    // then
-    verify(groupService, times(3)).createGroup(any(GroupDTO.class));
-    verify(groupService, times(4)).assignMember(any(GroupMemberDTO.class));
   }
 
   @Test
@@ -377,8 +210,6 @@ public class GroupMigrationHandlerTest {
                 new Group("id2", "groupName"),
                 new Group("id3", "groupName")))
         .thenReturn(List.of());
-    when(groupService.createGroup(any(GroupDTO.class)))
-        .thenReturn(CompletableFuture.completedFuture(null));
 
     when(managementIdentityClient.fetchGroupAuthorizations(any()))
         .thenReturn(List.of())
@@ -415,7 +246,6 @@ public class GroupMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(groupService, times(3)).createGroup(any(GroupDTO.class));
     verify(authorizationServices, times(4))
         .createAuthorization(any(CreateAuthorizationRequest.class));
   }
