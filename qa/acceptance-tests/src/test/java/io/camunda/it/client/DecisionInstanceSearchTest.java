@@ -9,6 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceIsEnded;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,6 +87,7 @@ class DecisionInstanceSearchTest {
 
     waitUntilProcessInstanceIsEnded(camundaClient, processInstanceKey);
     waitForDecisionsToBeEvaluated(camundaClient, 5);
+    waitForElementInstances(camundaClient, f -> f.processInstanceKey(processInstanceKey), 3);
   }
 
   @Test
