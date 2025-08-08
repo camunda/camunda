@@ -26,11 +26,11 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 public class S3Lease {
+  public static final int LEASE_EXPIRY_SECONDS = 60;
   private static final String TASK_ID_METADATA_KEY = "taskid";
   private static final String EXPIRY_METADATA_KEY = "expiry";
   private static final Logger LOG = LoggerFactory.getLogger(S3Lease.class);
   private final S3AsyncClient client;
-  private final String leaseKey;
   private final String bucketName;
   private final int clusterSize;
   private final String taskId;
@@ -40,7 +40,6 @@ public class S3Lease {
     client = buildClient(config);
     bucketName = config.bucketName();
     this.clusterSize = clusterSize;
-    leaseKey = config.basePath().map(basePath -> basePath + "/lease").orElse("lease");
     initializeFiles();
   }
 
@@ -59,7 +58,10 @@ public class S3Lease {
         final var res = client.putObject(putRequest, AsyncRequestBody.fromString(taskId)).join();
         LOG.info("File created for nodeId {}: {}", nodeId, res.eTag());
       } catch (final Exception e) {
-        LOG.error("File creation failed for nodeId {}: {}", nodeId, e.getMessage());
+        LOG.error(
+            "File creation failed for nodeId {}: {}",
+            nodeId,
+            e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
       }
     }
   }
@@ -86,7 +88,7 @@ public class S3Lease {
                           .minusSeconds(1)
                           .toEpochMilli())); // Get the expiry timestamp from metadata
       final boolean isCurrentLeaseExpired =
-          Instant.ofEpochMilli(Long.valueOf(expiry)).isBefore(Instant.now());
+          Instant.ofEpochMilli(Long.parseLong(expiry)).isBefore(Instant.now());
 
       if (currentLeaseHolder == null || currentLeaseHolder.isBlank() || isCurrentLeaseExpired) {
         final String currentETag = headResponse.eTag();
@@ -96,8 +98,7 @@ public class S3Lease {
         }
       }
     }
-
-    return -1; // return the nodeId for which the lease is acquired
+    throw new LeaseException("Could not acquire lease for any nodeId in the cluster");
   }
 
   private boolean atomicAcquireLease(
@@ -115,7 +116,7 @@ public class S3Lease {
                     EXPIRY_METADATA_KEY,
                     String.valueOf(
                         Instant.now()
-                            .plusSeconds(60)
+                            .plusSeconds(LEASE_EXPIRY_SECONDS)
                             .toEpochMilli()))) // Store the taskId in metadata
             .ifMatch(currentETag)
             .build();
@@ -125,7 +126,10 @@ public class S3Lease {
       client.putObject(putRequest, AsyncRequestBody.fromString(taskId)).join();
       return true;
     } catch (final Exception e) {
-      LOG.error("Failed to acquire lease for nodeId {}: {}", objectKey, e.getMessage());
+      LOG.error(
+          "Failed to acquire lease for nodeId {}: {}",
+          objectKey,
+          e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
       return false;
     }
   }
@@ -184,11 +188,8 @@ public class S3Lease {
               .ifMatch(headResponse.eTag())
               .build();
 
-      try {
-        client.putObject(putRequest, AsyncRequestBody.fromString(taskId)).join();
-      } catch (final Exception e) {
-        // Nothing
-      }
+      client.putObject(putRequest, AsyncRequestBody.fromString(taskId)).join();
+      LOG.info("Successfully release lease for nodeId {}: {}", objectKey, taskId);
     }
   }
 

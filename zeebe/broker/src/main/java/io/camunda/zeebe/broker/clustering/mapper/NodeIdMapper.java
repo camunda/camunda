@@ -9,8 +9,13 @@ package io.camunda.zeebe.broker.clustering.mapper;
 
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
+import io.camunda.zeebe.util.retry.RetryConfiguration;
+import io.camunda.zeebe.util.retry.RetryDecorator;
+import java.io.Closeable;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -19,7 +24,7 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NodeIdMapper {
+public class NodeIdMapper implements Closeable {
 
   private static final Logger LOG = LoggerFactory.getLogger(NodeIdMapper.class);
   private final S3Lease lease;
@@ -43,36 +48,51 @@ public class NodeIdMapper {
   }
 
   public int start() {
-    final var brokerId = busyAcquireLease();
+    final var brokerId = acquireLease();
     scheduleRenewal(brokerId);
     this.brokerId = brokerId;
     return brokerId;
   }
 
-  public void shutdown() {
+  @Override
+  public void close() {
     executor.shutdown();
     lease.releaseLease(brokerId);
   }
 
-  private int busyAcquireLease() {
-    final var future = new CompletableFuture<Integer>();
-    scheduleBusyLease(future);
-    return future.join();
+  private int acquireLease() {
+    return CompletableFuture.supplyAsync(
+            () -> {
+              try {
+                return busyAcquireLease();
+              } catch (final Exception e) {
+                LOG.error("Failed to acquire lease: {}", e.getMessage());
+                throw new CompletionException(e);
+              }
+            },
+            executor)
+        .join();
   }
 
-  private void scheduleBusyLease(final CompletableFuture future) {
-    executor.schedule(
+  private int busyAcquireLease() throws Exception {
+    final var retryConfig = new RetryConfiguration();
+    // TODO: Externalize config
+    retryConfig.setMaxRetries(Integer.MAX_VALUE);
+    retryConfig.setMinRetryDelay(Duration.ofMillis(500));
+    retryConfig.setMaxRetryDelay(Duration.ofSeconds(5));
+    retryConfig.setRetryDelayMultiplier(1.25);
+    final RetryDecorator retryDecorator =
+        new RetryDecorator(retryConfig, LeaseException.class::isInstance);
+
+    return retryDecorator.decorate(
+        "Acquire Initial Lease",
         () -> {
-          final int brokerId = lease.acquireLease();
-          if (brokerId < 0) {
-            scheduleBusyLease(future);
-          } else {
-            LOG.info("Lease acquired for brokerId: {} by task: {}", brokerId, taskId);
-            future.complete(brokerId);
+          final var acquiredId = lease.acquireLease();
+          if (acquiredId >= 0) {
+            LOG.info("Lease acquired for brokerId: {} by task: {}", acquiredId, taskId);
           }
-        },
-        10,
-        TimeUnit.SECONDS);
+          return acquiredId;
+        });
   }
 
   private void scheduleRenewal(final int brokerId) {
@@ -82,10 +102,13 @@ public class NodeIdMapper {
             scheduleRenewal(brokerId);
           } else {
             LOG.info("Renewal lease not acquired");
+            if (executor.isShutdown() || executor.isTerminated()) {
+              return;
+            }
             Runtime.getRuntime().halt(1);
           }
         },
-        10,
+        S3Lease.LEASE_EXPIRY_SECONDS / 6, // 10sec
         TimeUnit.SECONDS);
   }
 }
