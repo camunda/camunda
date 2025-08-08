@@ -7,11 +7,16 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Gcs;
+import io.camunda.configuration.S3;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
+import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -54,6 +59,8 @@ public class BrokerBasedPropertiesOverride {
 
     // TODO: Populate the bean from rest of camunda.* sections
     // populateFromData(override);
+    // from camunda.data.* sections
+    populateFromData(override);
 
     return override;
   }
@@ -101,6 +108,34 @@ public class BrokerBasedPropertiesOverride {
     override.getExperimental().setVersionCheckRestrictionEnabled(enableVersionCheck);
   }
 
+  private void populateFromData(final BrokerBasedProperties override) {
+    populateFromBackup(override);
+  }
+
+  private void populateFromBackup(final BrokerBasedProperties override) {
+    populateFromS3(override);
+    populateFromGcs(override);
+  }
+
+  private void populateFromS3(final BrokerBasedProperties override) {
+    final S3 s3 = unifiedConfiguration.getCamunda().getData().getBackup().getS3();
+    final S3BackupStoreConfig s3BackupStoreConfig = override.getData().getBackup().getS3();
+    s3BackupStoreConfig.setBucketName(s3.getBucketName());
+    s3BackupStoreConfig.setEndpoint(s3.getEndpoint());
+    s3BackupStoreConfig.setRegion(s3.getRegion());
+    s3BackupStoreConfig.setAccessKey(s3.getAccessKey());
+    s3BackupStoreConfig.setSecretKey(s3.getSecretKey());
+    s3BackupStoreConfig.setApiCallTimeout(s3.getApiCallTimeout());
+    s3BackupStoreConfig.setForcePathStyleAccess(s3.isForcePathStyleAccess());
+    s3BackupStoreConfig.setCompression(s3.getCompression());
+    s3BackupStoreConfig.setMaxConcurrentConnections(s3.getMaxConcurrentConnections());
+    s3BackupStoreConfig.setConnectionAcquisitionTimeout(s3.getConnectionAcquisitionTimeout());
+    s3BackupStoreConfig.setBasePath(s3.getBasePath());
+    s3BackupStoreConfig.setSupportLegacyMd5(s3.isSupportLegacyMd5());
+
+    override.getData().getBackup().setS3(s3BackupStoreConfig);
+  }
+
   private void populateFromPrimaryStorage(final BrokerBasedProperties override) {
     final var primaryStorage = unifiedConfiguration.getCamunda().getData().getPrimaryStorage();
     final var data = override.getData();
@@ -116,5 +151,16 @@ public class BrokerBasedPropertiesOverride {
         .setReplication(unifiedDiskConfig.getFreeSpace().getReplication());
     brokerDiskConfig.setEnableMonitoring(unifiedDiskConfig.isMonitoringEnabled());
     brokerDiskConfig.setMonitoringInterval(unifiedDiskConfig.getMonitoringInterval());
+  }
+
+  private void populateFromGcs(final BrokerBasedProperties override) {
+    final Gcs gcs = unifiedConfiguration.getCamunda().getData().getBackup().getGcs();
+    final GcsBackupStoreConfig gcsBackupStoreConfig = override.getData().getBackup().getGcs();
+    gcsBackupStoreConfig.setBucketName(gcs.getBucketName());
+    gcsBackupStoreConfig.setBasePath(gcs.getBasePath());
+    gcsBackupStoreConfig.setHost(gcs.getHost());
+    gcsBackupStoreConfig.setAuth(GcsBackupStoreAuth.valueOf(gcs.getAuth().name()));
+
+    override.getData().getBackup().setGcs(gcsBackupStoreConfig);
   }
 }
