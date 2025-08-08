@@ -37,7 +37,18 @@ import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.api.response.ThrowErrorResponse;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.jobhandling.parameter.DefaultParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.result.DefaultResultProcessorStrategy;
+import io.camunda.spring.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy;
+import io.camunda.spring.client.jobhandling.result.ResultProcessor;
+import io.camunda.spring.client.metrics.DefaultNoopMetricsRecorder;
+import io.camunda.spring.client.metrics.MetricsRecorder;
+import io.camunda.spring.client.test.util.JobWorkerPermutations;
+import io.camunda.spring.client.test.util.JobWorkerPermutationsGenerator.*;
+import io.camunda.spring.client.testsupport.JobWorkerPermutationsUtil;
 import io.camunda.client.jobhandling.parameter.DefaultParameterResolverStrategy;
 import io.camunda.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.client.jobhandling.result.DefaultResultProcessorStrategy;
@@ -63,6 +74,27 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class JobHandlerInvokingBeansTest {
 
+  private static JobHandler jobHandlerInvokingSpringBeans(
+      final JobWorkerValue workerValue,
+      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+      final MetricsRecorder metricsRecorder,
+      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
+    final DefaultParameterResolverStrategy defaultParameterResolverStrategy =
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
+    final DefaultResultProcessorStrategy defaultResultProcessorStrategy =
+        new DefaultResultProcessorStrategy();
+    return workerValue
+        .getJobWorkerFactory()
+        .getJobHandler(
+            new JobHandlerFactoryContext(
+                commandExceptionHandlingStrategy,
+                metricsRecorder,
+                defaultParameterResolverStrategy,
+                defaultResultProcessorStrategy,
+                jobExceptionHandlingStrategy,
+                workerValue));
+  }
+
   @ParameterizedTest
   @EnumSource(
       value = Response.class,
@@ -70,13 +102,11 @@ public class JobHandlerInvokingBeansTest {
   void shouldAutoComplete(final Response response) throws Exception {
     final JobWorkerValue jobWorkerValue =
         jobWorkerValue(new TestDimension(AutoComplete.YES, response, List.of()));
-    final JobHandlerInvokingBeans jobHandler =
-        new JobHandlerInvokingBeans(
+    final JobHandler jobHandler =
+        jobHandlerInvokingSpringBeans(
             jobWorkerValue,
             commandExceptionHandlingStrategy(),
             metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue),
             jobExceptionHandlingStrategy());
 
     final JobClient jobClient = mock(JobClient.class);
@@ -99,13 +129,11 @@ public class JobHandlerInvokingBeansTest {
   void shouldNotAutoComplete() throws Exception {
     final JobWorkerValue jobWorkerValue =
         jobWorkerValue(new TestDimension(AutoComplete.NO, Response.VOID, List.of()));
-    final JobHandlerInvokingBeans jobHandler =
-        new JobHandlerInvokingBeans(
+    final JobHandler jobHandler =
+        jobHandlerInvokingSpringBeans(
             jobWorkerValue,
             commandExceptionHandlingStrategy(),
             metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue),
             jobExceptionHandlingStrategy());
 
     final JobClient jobClient = mock(JobClient.class);
@@ -121,13 +149,11 @@ public class JobHandlerInvokingBeansTest {
   void shouldFailJob(final AutoComplete autoComplete, final Response response) throws Exception {
     final JobWorkerValue jobWorkerValue =
         jobWorkerValue(new TestDimension(autoComplete, response, List.of()));
-    final JobHandlerInvokingBeans jobHandler =
-        new JobHandlerInvokingBeans(
+    final JobHandler jobHandler =
+        jobHandlerInvokingSpringBeans(
             jobWorkerValue,
             commandExceptionHandlingStrategy(),
             metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue),
             jobExceptionHandlingStrategy());
 
     final JobClient jobClient = mock(JobClient.class);
@@ -156,13 +182,11 @@ public class JobHandlerInvokingBeansTest {
       throws Exception {
     final JobWorkerValue jobWorkerValue =
         jobWorkerValue(new TestDimension(autoComplete, response, List.of()));
-    final JobHandlerInvokingBeans jobHandler =
-        new JobHandlerInvokingBeans(
+    final JobHandler jobHandler =
+        jobHandlerInvokingSpringBeans(
             jobWorkerValue,
             commandExceptionHandlingStrategy(),
             metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue),
             jobExceptionHandlingStrategy());
 
     final JobClient jobClient = mock(JobClient.class);
