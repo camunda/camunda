@@ -69,7 +69,7 @@ public class TagsTest {
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
-            .tags("businessKey:123", "priority:medium")
+            .tags("businessKey:123", "priority:medium", "testTag:test")
             .send()
             .join();
 
@@ -88,18 +88,16 @@ public class TagsTest {
     final var foundProcessInstances =
         client
             .newProcessInstanceSearchRequest()
-            //            .filter(f -> f.tag("businessKey:123"))
-            //            .filter(f -> f.tags("businessKey:123"))
-            .filter(f -> f.processInstanceKey(processInstance.getProcessInstanceKey()))
+            .filter(f -> f.tags("testTag:test"))
             .send()
             .join()
             .items();
 
-    assertThat(foundProcessInstances.size()).isEqualTo(1);
+    assertThat(foundProcessInstances).hasSize(1);
 
     final var foundProcessInstance = foundProcessInstances.getFirst();
     assertThat(foundProcessInstance.getTags())
-        .containsExactlyInAnyOrder("priority:medium", "businessKey:123");
+        .containsExactlyInAnyOrder("priority:medium", "businessKey:123", "testTag:test");
   }
 
   @Test

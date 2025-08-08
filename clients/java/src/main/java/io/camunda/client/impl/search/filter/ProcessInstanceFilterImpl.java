@@ -326,6 +326,20 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
+  public ProcessInstanceFilter tags(final String... tags) {
+    tag(b -> b.in(tags));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter tag(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setTag(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public ProcessInstanceFilterBase orFilters(final List<Consumer<ProcessInstanceFilterBase>> fns) {
     for (final Consumer<ProcessInstanceFilterBase> fn : fns) {
       final ProcessInstanceFilterImpl orFilter = new ProcessInstanceFilterImpl();
