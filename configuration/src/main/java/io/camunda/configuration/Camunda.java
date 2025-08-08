@@ -54,12 +54,4 @@ public class Camunda {
   public void setApi(final Api api) {
     this.api = api;
   }
-
-  public Data getData() {
-    return data;
-  }
-
-  public void setData(final Data data) {
-    this.data = data;
-  }
 }

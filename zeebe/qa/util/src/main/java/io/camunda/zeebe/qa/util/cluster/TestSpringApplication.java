@@ -8,7 +8,7 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
-import static io.camunda.application.commons.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
@@ -295,10 +295,8 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
         Set.of(
             "camunda.data.secondary-storage.elasticsearch.url",
             "camunda.database.url",
-            "camunda.operate.zeebeElasticsearch.url",
             "camunda.operate.elasticsearch.url",
-            "camunda.tasklist.elasticsearch.url",
-            "camunda.tasklist.zeebeElasticsearch.url");
+            "camunda.tasklist.elasticsearch.url");
 
     for (final String property : properties) {
       application.withProperty(property, url);
