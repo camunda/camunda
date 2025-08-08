@@ -56,8 +56,9 @@ async function buildComment(mergedData, github, branchName) {
     const icon = getFlakyIcon(test.flakiness);
     const url = await generateTestSourceUrl(test, github, branchName);
 
-    lines.push(`- [**${test.fullName}**](${url}) – ${icon} **${test.flakiness}% flakiness**`);
-    lines.push(`  - Location: \`${test.packageName}\``);
+    lines.push(`- [**${test.methodName}**](${url}) – ${icon} **${test.flakiness}% flakiness**`);
+    lines.push(`  - Package: \`${test.packageName}\``);
+    lines.push(`  - Class: \`${test.className ? `${test.className}` : ''}\``);
     lines.push(`  - Occurrences: ${test.occurrences} / ${test.totalRuns}`);
     lines.push('');
   }

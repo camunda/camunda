@@ -4,20 +4,17 @@ function parseComment(body) {
     if (!match) return null;
 
     const section = match[1];
-    const regex = /- \*\*(.*?)\*\* – .* \*\*(\d+)% flakiness\*\*\n {2}- Location: `(.*?)`\n {2}- Occurrences: (\d+) \/ (\d+)/g;
+    const regex = /- \*\*(.*?)\*\* – .*? \*\*(\d+)% flakiness\*\*\n {2}- Package: `(.*?)`\n {2}- Class: `(.*?)`\n {2}- Occurrences: (\d+) \/ (\d+)/g;
 
     const tests = [];
     let totalRuns = 1;
     let m;
 
     while ((m = regex.exec(section)) !== null) {
-      const [_, fullName, , pkg, occurrences, runs] = m;
-      const lastDotIndex = fullName.lastIndexOf('.');
-      const className = lastDotIndex > -1 ? fullName.substring(0, lastDotIndex) : '';
-      const methodName = lastDotIndex > -1 ? fullName.substring(lastDotIndex + 1) : fullName;
+      const [_, methodName, , packageName, className, occurrences, runs] = m;
 
       tests.push({
-        packageName: pkg,
+        packageName,
         className,
         methodName,
         jobs: [],
