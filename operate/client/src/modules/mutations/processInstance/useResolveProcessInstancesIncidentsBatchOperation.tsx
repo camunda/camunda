@@ -15,8 +15,8 @@ import type {
   CreateIncidentResolutionBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOperations.ts';
-import {resolveProcessInstancesIncidentsBatchOperation} from 'modules/api/v2/processInstances/resolveProcessInstancesIncidentsBatchOperation.ts';
+import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOperations';
+import {resolveProcessInstancesIncidentsBatchOperation} from 'modules/api/v2/processInstances/resolveProcessInstancesIncidentsBatchOperation';
 
 function useCancelProcessInstancesBatchOperation(
   options?: Partial<

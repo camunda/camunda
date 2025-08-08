@@ -16,7 +16,7 @@ import type {
   CreateCancellationBatchOperationResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 import {cancelProcessInstancesBatchOperation} from 'modules/api/v2/processInstances/cancelProcessInstancesBatchOperation';
-import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOperations.ts';
+import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOperations';
 
 function useCancelProcessInstancesBatchOperation(
   options?: Partial<
