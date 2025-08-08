@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
@@ -33,6 +35,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementR
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -50,6 +53,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
@@ -57,22 +61,30 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -81,6 +93,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -123,7 +136,7 @@ public class CompactRecordLogger {
           entry("EVENT", "EVNT"),
           entry("DECISION_REQUIREMENTS", "DRG"),
           entry("EVALUATION", "EVAL"),
-          entry("SIGNAL_SUBSCRIPTION", "SIG_SUBSCRIPTION"),
+          entry("SIGNAL_SUBSCRIPTION", "SIG_SUB"),
           entry("SIGNAL", "SIG"),
           entry("COMMAND_DISTRIBUTION", "DSTR"),
           entry("USER_TASK", "UT"),
@@ -133,7 +146,12 @@ public class CompactRecordLogger {
           entry("ASYNC_REQUEST", "ASYNC"),
           entry("MULTI_INSTANCE", "MI"),
           entry("INPUT_COLLECTION_EVALUATED", "IN_COL_EVAL"),
-          entry("BATCH_OPERATION", "BO"));
+          entry("BATCH_OPERATION", "BO"),
+          entry("AUTHORIZATION", "AUTH"),
+          entry("ASYNC_REQUEST", "ASYNC"),
+          entry("COMPENSATION_SUB", "COMP_SUB"),
+          entry("USAGE_METRICS", "USG_MTRCS"),
+          entry("CREATE_WITH_AWAITING_RESULT", "WITH_RESULT"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -142,6 +160,7 @@ public class CompactRecordLogger {
           entry(RecordType.COMMAND_REJECTION, 'R'));
 
   private final Map<ValueType, Function<Record<?>, String>> valueLoggers = new HashMap<>();
+
   private final int keyDigits;
   private final int valueTypeChars;
   private final int intentChars;
@@ -154,6 +173,8 @@ public class CompactRecordLogger {
   private ObjectMapper objectMapper;
 
   {
+    valueLoggers.put(ValueType.NULL_VAL, this::summarizeMiscValue);
+    valueLoggers.put(ValueType.SBE_UNKNOWN, this::summarizeMiscValue);
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
     valueLoggers.put(ValueType.DEPLOYMENT_DISTRIBUTION, this::summarizeDeploymentDistribution);
     valueLoggers.put(ValueType.PROCESS, this::summarizeProcess);
@@ -166,6 +187,7 @@ public class CompactRecordLogger {
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, this::summarizeMessageStartEventSubscription);
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
+    valueLoggers.put(ValueType.PROCESS_INSTANCE_BATCH, this::summarizeProcessInstanceBatch);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
     valueLoggers.put(
         ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
@@ -174,6 +196,7 @@ public class CompactRecordLogger {
     valueLoggers.put(
         ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, this::summarizeAdHocSubProcessInstruction);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
+    valueLoggers.put(ValueType.VARIABLE_DOCUMENT, this::summarizeVariableDocument);
     valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
     valueLoggers.put(ValueType.ERROR, this::summarizeError);
     valueLoggers.put(ValueType.PROCESS_EVENT, this::summarizeProcessEvent);
@@ -191,6 +214,11 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
     valueLoggers.put(ValueType.MAPPING_RULE, this::summarizeMappingRule);
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
+    valueLoggers.put(ValueType.USER, this::summarizeUser);
+    valueLoggers.put(ValueType.AUTHORIZATION, this::summarizeAuthorization);
+    valueLoggers.put(ValueType.RESOURCE, this::summarizeResource);
+    valueLoggers.put(ValueType.RESOURCE_DELETION, this::summarizeResourceDeletion);
+    valueLoggers.put(ValueType.COMPENSATION_SUBSCRIPTION, this::summarizeCompensationSubscription);
     valueLoggers.put(ValueType.MULTI_INSTANCE, this::summarizeMultiInstance);
     valueLoggers.put(ValueType.RUNTIME_INSTRUCTION, this::summarizeRuntimeInstruction);
     valueLoggers.put(ValueType.BATCH_OPERATION_CREATION, this::summarizeBatchOperationCreation);
@@ -201,6 +229,8 @@ public class CompactRecordLogger {
         ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
         this::summarizeBatchOperationPartitionLifecycle);
     valueLoggers.put(ValueType.BATCH_OPERATION_EXECUTION, this::summarizeBatchOperationExecution);
+    valueLoggers.put(ValueType.USAGE_METRIC, this::summarizeUsageMetrics);
+    valueLoggers.put(ValueType.PROCESS_INSTANCE_RESULT, this::summarizeProcessInstanceResult);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -208,7 +238,7 @@ public class CompactRecordLogger {
     multiPartition = isMultiPartition();
     hasTimerEvents = records.stream().anyMatch(r -> r.getValueType() == ValueType.TIMER);
 
-    final var highestPosition = this.records.getLast().getPosition();
+    final var highestPosition = this.records.isEmpty() ? 0 : this.records.getLast().getPosition();
 
     int digits = 0;
     long num = highestPosition;
@@ -237,6 +267,10 @@ public class CompactRecordLogger {
             .mapToInt(String::length)
             .max()
             .orElse(0);
+  }
+
+  public Set<ValueType> getSupportedValueTypes() {
+    return valueLoggers.keySet();
   }
 
   public void log() {
@@ -433,14 +467,6 @@ public class CompactRecordLogger {
     return String.format(" in <process %s[%s]>", formattedDefinitionKey, formattedInstanceKey);
   }
 
-  private String summarizeVariables(final Map<String, Object> variables) {
-    if (variables != null && !variables.isEmpty()) {
-      return " with variables: " + variables;
-    } else {
-      return " (no vars)";
-    }
-  }
-
   private String summarizeIncident(final Record<?> record) {
     final var value = (IncidentRecordValue) record.getValue();
 
@@ -498,9 +524,7 @@ public class CompactRecordLogger {
       result.append(" ").append(value.getErrorCode()).append(":").append(value.getErrorMessage());
     }
 
-    result
-        .append(summarizeCustomHeaders(value.getCustomHeaders()))
-        .append(summarizeVariables(value.getVariables()));
+    result.append(summarizeCustomHeaders(value.getCustomHeaders())).append(formatVariables(value));
 
     return result.toString();
   }
@@ -602,7 +626,7 @@ public class CompactRecordLogger {
       result.append(" correlationKey: ").append(value.getCorrelationKey());
     }
 
-    result.append(summarizeVariables(value.getVariables()));
+    result.append(formatVariables(value));
 
     return result.toString();
   }
@@ -630,7 +654,7 @@ public class CompactRecordLogger {
         .append("\"")
         .append(" starting <process ")
         .append(formatId(value.getBpmnProcessId()))
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .toString();
   }
 
@@ -657,7 +681,7 @@ public class CompactRecordLogger {
         .append("]")
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
-        .append(summarizeVariables(value.getVariables()));
+        .append(formatVariables(value));
     return result.toString();
   }
 
@@ -671,6 +695,21 @@ public class CompactRecordLogger {
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
         .append(summarizeTreePath(value))
         .toString();
+  }
+
+  private String summarizeProcessInstanceBatch(final Record<?> record) {
+    final var value = (ProcessInstanceBatchRecordValue) record.getValue();
+    final var elementKey = value.getBatchElementInstanceKey();
+    final var processKey = value.getProcessInstanceKey();
+    final var result = new StringBuilder();
+
+    result.append("idx:").append(value.getIndex());
+    result.append(" PI:").append(shortenKey(processKey));
+    if (elementKey != processKey) {
+      result.append(" EI:").append(shortenKey(elementKey));
+    }
+
+    return result.append(formatTenant(value)).toString();
   }
 
   private String summarizeTreePath(final ProcessInstanceRecordValue value) {
@@ -705,7 +744,7 @@ public class CompactRecordLogger {
         .append(formatId(value.getBpmnProcessId()))
         .append(">")
         .append(summarizeStartInstructions(value.getStartInstructions()))
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .toString();
   }
 
@@ -789,8 +828,8 @@ public class CompactRecordLogger {
         .append("]")
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
-        .append(summarizeVariables(value.getVariables()))
-        .append(" (tenant: %s)".formatted(value.getTenantId()));
+        .append(formatVariables(value))
+        .append(formatTenant(value));
 
     return result.toString();
   }
@@ -812,13 +851,24 @@ public class CompactRecordLogger {
 
     final var builder = new StringBuilder();
     builder
-        .append(String.format("%s->%s", value.getName(), value.getValue()))
+        .append(String.format("%s->%s", value.getName(), formatVariableValue(value.getValue())))
         .append(String.format(" in <process [%s]", shortenKey(value.getProcessInstanceKey())));
     if (value.getProcessInstanceKey() != value.getScopeKey()) {
       // only add if they're different, no need to state things twice
       builder.append(String.format(" at [%s]", shortenKey(value.getScopeKey())));
     }
     return builder.append(">").toString();
+  }
+
+  private String summarizeVariableDocument(final Record<?> record) {
+    final var value = (VariableDocumentRecordValue) record.getValue();
+
+    return "[%s] in <scope [%s]>%s%s"
+        .formatted(
+            value.getUpdateSemantics(),
+            shortenKey(value.getScopeKey()),
+            formatVariables(value),
+            formatTenant(value));
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {
@@ -871,7 +921,7 @@ public class CompactRecordLogger {
     return summarizeElementInformation(value.getTargetElementId(), value.getScopeKey())
         + summarizeProcessInformation(
             value.getProcessDefinitionKey(), value.getProcessInstanceKey())
-        + summarizeVariables(value.getVariables());
+        + formatVariables(value);
   }
 
   private String summarizeDecisionRequirements(final Record<?> record) {
@@ -898,7 +948,7 @@ public class CompactRecordLogger {
     return new StringBuilder()
         .append(value.getDecisionOutput())
         .append(summarizeDecisionInformation(value.getDecisionId(), value.getDecisionKey()))
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
         .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()))
@@ -916,7 +966,7 @@ public class CompactRecordLogger {
         .append("\"")
         .append(value.getSignalName())
         .append("\"")
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .toString();
   }
 
@@ -968,7 +1018,7 @@ public class CompactRecordLogger {
           summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()));
     }
 
-    result.append(summarizeVariables(value.getVariables()));
+    result.append(formatVariables(value));
 
     return result.toString();
   }
@@ -1011,7 +1061,7 @@ public class CompactRecordLogger {
     result
         .append(" processInstanceKey: ")
         .append(value.getProcessInstanceKey())
-        .append(summarizeVariables(value.getVariables()));
+        .append(formatVariables(value));
 
     return result.toString();
   }
@@ -1105,6 +1155,37 @@ public class CompactRecordLogger {
     return builder.toString();
   }
 
+  private String summarizeUser(final Record<?> record) {
+    final var value = (UserRecordValue) record.getValue();
+
+    final StringBuilder builder = new StringBuilder();
+    if (record.getKey() != value.getUserKey()) {
+      builder.append(shortenKey(value.getUserKey())).append(" ");
+    }
+
+    builder
+        .append("u=")
+        .append(formatId(value.getUsername()))
+        .append(" @=")
+        .append(value.getEmail())
+        .append(" n=")
+        .append(value.getName());
+
+    return builder.toString();
+  }
+
+  private String summarizeAuthorization(final Record<?> record) {
+    final var value = (AuthorizationRecordValue) record.getValue();
+
+    return "%s %s can %s %s %s"
+        .formatted(
+            value.getOwnerType(),
+            formatId(value.getOwnerId()),
+            value.getPermissionTypes(),
+            value.getResourceType(),
+            formatId(value.getResourceId()));
+  }
+
   private String summarizeAsyncRequest(final Record<?> record) {
     final var value = (AsyncRequestRecordValue) record.getValue();
 
@@ -1117,6 +1198,33 @@ public class CompactRecordLogger {
         .append(shortenKey(value.getScopeKey()))
         .append("]")
         .toString();
+  }
+
+  private String summarizeResource(final Record<?> record) {
+    final var value = (Resource) record.getValue();
+    final var result = new StringBuilder();
+
+    result
+        .append(value.getResourceName())
+        .append(" -> ")
+        .append(formatId(value.getResourceId()))
+        .append(" v")
+        .append(value.getVersion());
+
+    if (StringUtils.isNotEmpty(value.getVersionTag())) {
+      result.append("(tag-").append(value.getVersionTag()).append(")");
+    }
+
+    if (value.isDuplicate()) {
+      result.append(" (dup)");
+    }
+
+    return result.append(formatTenant(value)).toString();
+  }
+
+  private String summarizeResourceDeletion(final Record<?> record) {
+    final var value = (ResourceDeletionRecordValue) record.getValue();
+    return "res:%s%s".formatted(shortenKey(value.getResourceKey()), formatTenant(value));
   }
 
   private String summarizeMultiInstance(final Record<?> record) {
@@ -1139,6 +1247,75 @@ public class CompactRecordLogger {
     if (value.getElementId() != null) {
       result.append(" interrupted by \"").append(value.getElementId()).append("\"");
     }
+    return result.toString();
+  }
+
+  protected String summarizeUsageMetrics(final Record<?> record) {
+    final var result = new StringBuilder();
+    final var value = (UsageMetricRecordValue) record.getValue();
+    result
+        .append(value.getEventType())
+        .append(":")
+        .append(value.getIntervalType())
+        .append(" ")
+        .append(formatTime("start", value.getStartTime()))
+        .append(" ")
+        .append(formatTime("end", value.getEndTime()))
+        .append(" ")
+        .append(formatTime("reset", value.getResetTime()))
+        .append(formatVariables(toMetricValueMap(value.getCounterValues(), value.getSetValues())));
+
+    return result.toString();
+  }
+
+  private String summarizeCompensationSubscription(final Record<?> record) {
+    final var result = new StringBuilder();
+    final var value = (CompensationSubscriptionRecordValue) record.getValue();
+    if (value.getThrowEventInstanceKey() < 0) {
+      // compensation subscription has not been triggered yet, for example:
+      // E COMP_SUB CREATED #28->#22 K11 "CompHandler" → "TaskToCompensate"[K08] in <process
+      // K03[K04]>
+      // explains that the compensation handler is registered for the compensable activity
+      result
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getCompensationHandlerId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getCompensationHandlerInstanceKey()))
+          .append("]")
+          .append(" → ")
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getCompensableActivityId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getCompensableActivityInstanceKey()))
+          .append("]")
+          .append(
+              summarizeProcessInformation(
+                  value.getProcessDefinitionKey(), value.getProcessInstanceKey()));
+    } else {
+      // an event was thrown triggering the compensation, for example:
+      // E COMP_SUB TRIGGERED #39->#22 K11 "CompThrowEvent"[K13] → "CompensationHandler"[K15] (no
+      // vars)
+      // explains that the throw event has triggered the compensation handler without vars
+      result
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getThrowEventId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getThrowEventInstanceKey()))
+          .append("]")
+          .append(" → ")
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getCompensationHandlerId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getCompensationHandlerInstanceKey()))
+          .append("]")
+          .append(formatVariables(value));
+    }
+
+    result.append(formatTenant(value));
     return result.toString();
   }
 
@@ -1195,9 +1372,112 @@ public class CompactRecordLogger {
     return sb.toString();
   }
 
+  private String summarizeProcessInstanceResult(final Record<?> record) {
+    final var value = (ProcessInstanceResultRecordValue) record.getValue();
+    return new StringBuilder()
+        .append(
+            summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
+        .append(formatVariables(value))
+        .toString();
+  }
+
   private String formatPinnedTime(final long time) {
     final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
     return "%s (timestamp: %d)".formatted(shortenDateTime(dateTime), time);
+  }
+
+  private String formatTime(final String name, final long time) {
+    final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneOffset.UTC);
+    return "%s[%s]".formatted(name, shortenDateTime(dateTime));
+  }
+
+  private String formatTenant(final TenantOwned value) {
+    final String tenantId = value.getTenantId();
+    return StringUtils.isEmpty(tenantId) || TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
+        ? ""
+        : " (tenant: %s)".formatted(tenantId);
+  }
+
+  private String formatVariables(final RecordValueWithVariables value) {
+    final var variables = value.getVariables();
+    if (variables == null || variables.isEmpty()) {
+      return " (no vars)";
+    }
+
+    return " vars: "
+        + variables.entrySet().stream()
+            .sorted(Entry.comparingByKey())
+            .map(entry -> entry.getKey() + "=" + formatVariableValue(entry.getValue()))
+            .collect(Collectors.joining(", ", "{", "}"));
+  }
+
+  private String formatVariables(final Map<String, Object> metricValues) {
+    if (metricValues == null || metricValues.isEmpty()) {
+      return " (no metricValues)";
+    }
+    return " metricValues: "
+        + metricValues.entrySet().stream()
+            .sorted(Entry.comparingByKey())
+            .map(entry -> entry.getKey() + "=" + formatVariableValue(entry.getValue()))
+            .collect(Collectors.joining(", ", "{", "}"));
+  }
+
+  /**
+   * Combines metric values from counters or sets into a generic map.
+   *
+   * <p>If {@code counterValues} is not empty, its entries are added to the result map. Otherwise,
+   * {@code setValues} entries are added. Only one of the input maps is expected to be non-empty.
+   *
+   * @param counterValues a map of metric counters (String to Long)
+   * @param setValues a map of metric sets (String to Set<Long>)
+   * @return a generic map containing either counter or set values
+   */
+  public Map<String, Object> toMetricValueMap(
+      final Map<String, Long> counterValues, final Map<String, Set<Long>> setValues) {
+    final Map<String, Object> variables = new HashMap<>();
+    if (!counterValues.isEmpty()) {
+      variables.putAll(counterValues);
+    } else {
+      variables.putAll(setValues);
+    }
+    return variables;
+  }
+
+  /**
+   * Formats a variable value for logging.
+   *
+   * <ul>
+   *   <li>If the value is {@code null}, returns {@code "null"}.
+   *   <li>If the value is a {@code String}, it is wrapped in double quotes and shortened to a
+   *       maximum of 15 characters if necessary. The original string length is appended in the
+   *       format {@code "..(len)"}.
+   *   <li>All other types are converted to string without shortening or quotes.
+   * </ul>
+   *
+   * @param value the variable value to format
+   * @return a formatted string representation for logging
+   */
+  private String formatVariableValue(final Object value) {
+    if (value == null) {
+      return "null";
+    }
+
+    if (value instanceof String str) {
+      final int length = str.length();
+
+      // strip outer quotes, if present
+      if (length >= 2 && str.startsWith("\"") && str.endsWith("\"")) {
+        str = str.substring(1, length - 1);
+      }
+
+      final int maxLength = 15;
+      final var shortened =
+          length > maxLength ? str.substring(0, maxLength) + "..(" + length + ")" : str;
+
+      return "\"" + shortened + "\"";
+    }
+
+    return value.toString();
   }
 
   /**

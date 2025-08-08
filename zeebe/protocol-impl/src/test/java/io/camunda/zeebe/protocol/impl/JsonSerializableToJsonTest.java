@@ -3519,7 +3519,7 @@ final class JsonSerializableToJsonTest {
       //////////////////////////////////// UsageMetricRecord rPI //////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "UsageMetricRecord",
+        "UsageMetricRecord rPI",
         (Supplier<UsageMetricRecord>)
             () ->
                 new UsageMetricRecord()
