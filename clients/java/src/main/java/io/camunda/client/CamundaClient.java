@@ -57,6 +57,7 @@ import io.camunda.client.api.command.DeleteUserCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
+import io.camunda.client.api.command.GlobalVariableCreationRequestStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
@@ -1778,6 +1779,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the variable search request
    */
   VariableSearchRequest newVariableSearchRequest();
+
+  GlobalVariableCreationRequestStep1 newGlobalVariableCreationRequest();
 
   /**
    * Gets a variable by key.
