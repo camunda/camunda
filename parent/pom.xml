@@ -478,6 +478,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-feel-tagged-parameters</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-snapshots</artifactId>
         <version>${project.version}</version>
       </dependency>

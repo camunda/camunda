@@ -49,6 +49,7 @@
     <module>zb-db</module>
     <module>expression-language</module>
     <module>feel</module>
+    <module>feel-tagged-parameters</module>
     <module>dmn</module>
     <module>snapshot</module>
     <module>journal</module>
