@@ -267,28 +267,25 @@ public class RoleTest {
   }
 
   @Test
-  public void shouldRejectNonExistingGroupIfGroupsClaimDisabled() {
-    // given
-    final var roleId = UUID.randomUUID().toString();
-    final var roleRecord = engine.role().newRole(roleId).create();
-
-    // when
-    roleRecord.getValue();
-    final var entityId = "non-existing-entity";
-    final var notPresentUpdateRecord =
+  public void shouldAddNonExistingGroupIfGroupsClaimDisabled() {
+    final var groupId =
+        engine.group().newGroup("groupId").withName("Foo Bar").create().getValue().getGroupId();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create().getValue().getRoleKey();
+    final var updatedRole =
         engine
             .role()
             .addEntity(roleId)
-            .withEntityId(entityId)
+            .withEntityId(groupId)
             .withEntityType(EntityType.GROUP)
-            .expectRejection()
-            .add();
+            .add()
+            .getValue();
 
-    assertThat(notPresentUpdateRecord)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to add an entity with ID '%s' and type '%s' to role with ID '%s', but the entity doesn't exist."
-                .formatted(entityId, EntityType.GROUP, roleId));
+    assertThat(updatedRole)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasEntityId(groupId)
+        .hasEntityType(EntityType.GROUP);
   }
 
   @Test

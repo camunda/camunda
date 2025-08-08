@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -140,11 +139,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final EntityType entityType,
       final String entityId) {
     return switch (entityType) {
-      case USER, CLIENT ->
-          true; // With simple mapping rules, any username or client id can be assigned
-      case GROUP ->
-          authorizations.get(Authorization.USER_GROUPS_CLAIMS) != null
-              || groupState.get(entityId).isPresent();
+      case USER, CLIENT, GROUP ->
+          true; // With simple mapping rules, any username, client id or group can be assigned
       case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       case ROLE -> roleState.getRole(entityId).isPresent();
       default -> false;
