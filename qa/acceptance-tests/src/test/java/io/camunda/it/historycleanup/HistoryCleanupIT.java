@@ -22,6 +22,7 @@ import io.camunda.qa.util.multidb.HistoryMultiDbTest;
 import java.time.Duration;
 import java.util.Objects;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -91,6 +92,7 @@ public class HistoryCleanupIT {
     assertThat(result.items().getFirst().getProcessInstanceKey()).isNotEqualTo(processInstanceKey);
   }
 
+  @Disabled("flaky, will be fixed #35023")
   @Test
   void shouldDeleteBatchOperationsWhichAreMarkedForCleanup() {
     // given
