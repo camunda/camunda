@@ -20,6 +20,10 @@ import static io.camunda.client.annotation.AnnotationUtil.isJobWorker;
 import static org.springframework.util.ReflectionUtils.doWithMethods;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.bean.ClassInfo;
+import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;
+import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.annotation.value.JobWorkerValue;
@@ -48,13 +52,9 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   private final JobWorkerManager jobWorkerManager;
 
   private final List<JobWorkerValue> jobWorkerValues = new ArrayList<>();
-  private final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers;
 
-  public JobWorkerAnnotationProcessor(
-      final JobWorkerManager jobWorkerFactory,
-      final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers) {
+  public JobWorkerAnnotationProcessor(final JobWorkerManager jobWorkerFactory) {
     jobWorkerManager = jobWorkerFactory;
-    this.jobWorkerValueCustomizers = jobWorkerValueCustomizers;
   }
 
   @Override
@@ -82,20 +82,14 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
 
   @Override
   public void start(final CamundaClient client) {
-    jobWorkerValues.stream()
-        .peek(
-            jobWorkerValue ->
-                jobWorkerValueCustomizers.forEach(
-                    customizer -> customizer.customize(jobWorkerValue)))
-        .filter(JobWorkerValue::getEnabled)
-        .forEach(
-            jobWorkerValue -> {
-              jobWorkerManager.openWorker(client, jobWorkerValue);
-            });
+    jobWorkerValues.forEach(
+        jobWorkerValue -> {
+          jobWorkerManager.createJobWorker(client, jobWorkerValue);
+        });
   }
 
   @Override
   public void stop(final CamundaClient camundaClient) {
-    jobWorkerManager.closeAllOpenWorkers();
+    jobWorkerManager.closeAllJobWorkers();
   }
 }

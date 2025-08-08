@@ -36,6 +36,7 @@ import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClie
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.client.spring.properties.PropertyBasedJobWorkerValueCustomizer;
 import io.camunda.zeebe.client.ZeebeClient;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -114,14 +115,16 @@ public class CamundaClientAllAutoConfiguration {
       final ParameterResolverStrategy parameterResolverStrategy,
       final ResultProcessorStrategy resultProcessorStrategy,
       final BackoffSupplier backoffSupplier,
-      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier) {
+      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier,
+      final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers) {
     return new JobWorkerManager(
         commandExceptionHandlingStrategy,
         metricsRecorder,
         parameterResolverStrategy,
         resultProcessorStrategy,
         backoffSupplier,
-        jobExceptionHandlerSupplier);
+        jobExceptionHandlerSupplier,
+        jobWorkerValueCustomizers);
   }
 
   @Bean

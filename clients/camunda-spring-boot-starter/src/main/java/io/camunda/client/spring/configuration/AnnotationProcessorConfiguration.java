@@ -15,6 +15,11 @@
  */
 package io.camunda.client.spring.configuration;
 
+import io.camunda.spring.client.annotation.processor.CamundaClientLifecycleAware;
+import io.camunda.spring.client.annotation.processor.DeploymentAnnotationProcessor;
+import io.camunda.spring.client.annotation.processor.JobWorkerAnnotationProcessor;
+import io.camunda.spring.client.event.CamundaClientEventListener;
+import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
@@ -44,8 +49,7 @@ public class AnnotationProcessorConfiguration {
 
   @Bean
   public JobWorkerAnnotationProcessor jobWorkerPostProcessor(
-      final JobWorkerManager jobWorkerManager,
-      final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers) {
-    return new JobWorkerAnnotationProcessor(jobWorkerManager, jobWorkerValueCustomizers);
+      final JobWorkerManager jobWorkerManager) {
+    return new JobWorkerAnnotationProcessor(jobWorkerManager);
   }
 }
