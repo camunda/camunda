@@ -170,11 +170,19 @@ public class BrokerAdminServiceEndpointTest {
     final var snapshotChecksumPattern = Pattern.compile("\\d+-\\d+-\\d+-\\d+-\\d+-\\w+");
     final var snapshotChecksumReplacement = "2-1-2-9223372036854775807-0-a06ff57d";
 
+    // processed positions are also not deterministic
+    final var processedPositionPattern = Pattern.compile("\"processedPosition\": *\\d+");
+    final var processedPositionInSnapshotPattern =
+        Pattern.compile("\"processedPositionInSnapshot\": *\\d+");
+
     return json
         // map timestamp into the same value
         .replaceAll(timestampPattern.pattern(), timestampReplacement)
         // map snapshot checksum into a constant value
         .replaceAll(snapshotChecksumPattern.pattern(), snapshotChecksumReplacement)
+        .replaceAll(processedPositionPattern.pattern(), "\"processedPosition\": 2")
+        .replaceAll(
+            processedPositionInSnapshotPattern.pattern(), "\"processedPositionInSnapshot\": 2")
         // remove all whitespaces from the pretty printing
         .replaceAll("\\s", "");
   }

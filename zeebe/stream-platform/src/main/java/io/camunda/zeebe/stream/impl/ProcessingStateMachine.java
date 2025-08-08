@@ -94,8 +94,13 @@ import org.slf4j.Logger;
  */
 public final class ProcessingStateMachine {
 
+  /**
+   * Warn message when the batch processing exceeded the maximum message size. If this message is
+   * ever changed, please also update the string in IdentitySetupOnStartupTest as it depends on it.
+   */
   public static final String WARN_MESSAGE_BATCH_PROCESSING_RETRY =
       "Expected to process commands in a batch, but exceeded the resulting batch size after processing {} commands (maxCommandsInBatch: {}).";
+
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_WRITE_RECORD_ABORTED =
       "Expected to write one or more follow-up records for record '{} {}' without errors, but exception was thrown.";
