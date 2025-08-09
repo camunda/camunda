@@ -17,8 +17,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -321,19 +323,25 @@ public class SchemaManagerIT {
   void shouldCreateLifeCyclePoliciesOnStartupIfEnabled(
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
+    // given
     config.schemaManager().setCreateSchema(true);
-    config.retention().setEnabled(true);
-    config.retention().setPolicyName("policy_name");
+    final var retention = config.retention();
+    retention.setEnabled(true);
+    retention.setPolicyName("default_policy");
+    retention.setMinimumAge("33d");
 
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config), Set.of(), Set.of(), config, objectMapper);
 
+    // when
     schemaManager.startup();
 
-    final var policy = searchClientAdapter.getPolicyAsNode("policy_name");
-
-    assertThat(policy.get("policy")).isNotNull();
+    // then
+    assertThat(searchClientAdapter.getPolicyAsNode("default_policy"))
+        .asInstanceOf(type(JsonNode.class)) // switch from IterableAssert -> ObjectAssert<JsonNode>
+        .extracting(this::retentionMinAge)
+        .isEqualTo("33d");
   }
 
   @TestTemplate
@@ -1108,7 +1116,7 @@ public class SchemaManagerIT {
   }
 
   @TestTemplate
-  void shoulUnsetIndexTemplatePriorityWhenSettingsIsRemoved(
+  void shouldUnsetIndexTemplatePriorityWhenSettingsIsRemoved(
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws Exception {
     // given - create template with initial priority
@@ -1175,5 +1183,36 @@ public class SchemaManagerIT {
                 retrievedTemplate.at("/index_template/template/mappings"),
                 "/mappings-added-property.json"))
         .isTrue();
+  }
+
+  private String retentionMinAge(final JsonNode policyNode) {
+    // Check if this is an Elasticsearch policy (has "phases" structure)
+    final var phases = policyNode.at("/policy/phases");
+    if (!phases.isMissingNode()) {
+      // Elasticsearch structure:
+      // - policy.phases.delete.min_age
+      return phases.at("/delete/min_age").asText();
+    }
+
+    // OpenSearch structure:
+    // - policy.states[archived].transitions[to deleted].conditions.min_index_age
+    final JsonNode archivedState =
+        policyNode
+            .at("/policy/states")
+            .valueStream()
+            .filter(state -> "archived".equals(state.get("name").asText()))
+            .findFirst()
+            .orElseThrow(
+                () -> new IllegalStateException("Could not find 'archived' state in policy"));
+    final JsonNode deletedTransition =
+        archivedState
+            .get("transitions")
+            .valueStream()
+            .filter(transition -> "deleted".equals(transition.get("state_name").asText()))
+            .findFirst()
+            .orElseThrow(
+                () -> new IllegalStateException("Could not find transition to 'deleted' state"));
+
+    return deletedTransition.at("/conditions/min_index_age").asText();
   }
 }
