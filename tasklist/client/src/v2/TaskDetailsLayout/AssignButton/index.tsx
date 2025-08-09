@@ -47,11 +47,10 @@ const AssignButton: React.FC<Props> = ({
   taskState,
   currentUser,
 }) => {
-  const isAssigned = typeof assignee === 'string';
+  const isAssigned = typeof assignee === 'string' && taskState !== 'ASSIGNING';
   const {t} = useTranslation();
-  const [assignmentStatus, setAssignmentStatus] = useState<AssignmentStatus>(
-    () => (taskState === 'ASSIGNING' ? 'assigning' : 'off'),
-  );
+  const [assignmentStatus, setAssignmentStatus] =
+    useState<AssignmentStatus>('off');
   const {mutateAsync: pollForAssignmentResult} = usePollForAssignmentResult();
   const {mutateAsync: assignTask, isPending: assignIsPending} = useAssignTask();
   const {mutateAsync: unassignTask, isPending: unassignIsPending} =
@@ -60,11 +59,14 @@ const AssignButton: React.FC<Props> = ({
     (assignIsPending || unassignIsPending || taskState === 'ASSIGNING') ??
     false;
 
+  const effectiveAssignmentStatus =
+    taskState === 'ASSIGNING' ? 'assigning' : assignmentStatus;
+
   function getAsyncActionButtonStatus() {
-    if (isLoading || assignmentStatus !== 'off') {
+    if (isLoading || effectiveAssignmentStatus !== 'off') {
       const ACTIVE_STATES: AssignmentStatus[] = ['assigning', 'unassigning'];
 
-      return ACTIVE_STATES.includes(assignmentStatus) ||
+      return ACTIVE_STATES.includes(effectiveAssignmentStatus) ||
         taskState === 'ASSIGNING'
         ? 'active'
         : 'finished';
@@ -76,29 +78,36 @@ const AssignButton: React.FC<Props> = ({
   const handleAssignmentClick = async () => {
     try {
       setAssignmentStatus('assigning');
-      await assignTask({
+      const result = await assignTask({
         userTaskKey: id,
         assignee: currentUser,
       });
-      await pollForAssignmentResult({
-        userTaskKey: id,
-        wasAssigned: false,
-      });
+
+      if (result === null) {
+        await pollForAssignmentResult({
+          userTaskKey: id,
+          wasAssigned: false,
+        });
+      }
+
       setAssignmentStatus('assignmentSuccessful');
       tracking.track({eventName: 'task-assigned'});
     } catch (error) {
       const {data: parsedError, success} = requestErrorSchema.safeParse(error);
 
       if (success && parsedError.variant === 'failed-response') {
+        const errorData = await parsedError.response.json();
+
         notificationsStore.displayNotification({
           kind: 'error',
           title: t('taskDetailsTaskAssignmentError'),
-          subtitle: parseDenialReason(
-            await parsedError?.response?.json(),
-            'assignment',
-          ),
+          subtitle: parseDenialReason(errorData, 'assignment'),
           isDismissable: true,
         });
+
+        if (errorData.title !== 'DEADLINE_EXCEEDED') {
+          setAssignmentStatus('off');
+        }
         return;
       }
 
@@ -107,7 +116,6 @@ const AssignButton: React.FC<Props> = ({
         title: t('taskDetailsTaskAssignmentError'),
         isDismissable: true,
       });
-
       setAssignmentStatus('off');
     }
   };
@@ -160,10 +168,12 @@ const AssignButton: React.FC<Props> = ({
     <AsyncActionButton
       inlineLoadingProps={{
         description:
-          assignmentStatus === 'off'
+          effectiveAssignmentStatus === 'off'
             ? undefined
-            : getAssignmentToggleLabels()[assignmentStatus],
-        'aria-live': ['assigning', 'unassigning'].includes(assignmentStatus)
+            : getAssignmentToggleLabels()[effectiveAssignmentStatus],
+        'aria-live': ['assigning', 'unassigning'].includes(
+          effectiveAssignmentStatus,
+        )
           ? 'assertive'
           : 'polite',
         onSuccess: () => {
