@@ -47,7 +47,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     implements ArchiverRepository {
   private static final String ALL_INDICES = "*";
   private static final String ALL_INDICES_PATTERN = ".*";
-  private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
+  // Matches versioned index names with suffixes: {name}-{major}.{minor}.{patch}_{suffix}
+  // e.g. "camunda-tenant-8.8.0_2025-02-23"
+  private static final String VERSIONED_INDEX_PATTERN = ".+-\\d+\\.\\d+\\.\\d+_.+$";
 
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
@@ -124,7 +126,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       return CompletableFuture.completedFuture(null);
     }
     final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
-    final var indexWildcard = "^" + formattedPrefix + INDEX_WILDCARD;
+    final var indexWildcard = "^" + formattedPrefix + VERSIONED_INDEX_PATTERN;
     return fetchMatchingIndexes(indexWildcard)
         .thenComposeAsync(this::setIndexLifeCycleToMatchingIndices, executor);
   }
