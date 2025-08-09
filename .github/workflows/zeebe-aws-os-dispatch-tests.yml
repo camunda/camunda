@@ -124,7 +124,7 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D test.integration.opensearch.aws.url="${{ env.OS_URL }}"
-          -D test.integration.camunda.database.type=AWS_OS
+          -D test.integration.camunda.data.secondary-storage.type=AWS_OS
           -D test.integration.opensearch.aws.timeout.seconds=180
           -P parallel-tests,extract-flaky-tests,multi-db-test
           -pl ${{ matrix.maven-modules }}

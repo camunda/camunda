@@ -15,8 +15,8 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation to mark controllers or methods that require secondary storage to be enabled. When
- * secondary storage is not configured (camunda.database.type=none), endpoints with this annotation
- * will return HTTP 403 Forbidden with a clear error message.
+ * secondary storage is not configured (camunda.data.secondary-storage.type=none), endpoints with
+ * this annotation will return HTTP 403 Forbidden with a clear error message.
  */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

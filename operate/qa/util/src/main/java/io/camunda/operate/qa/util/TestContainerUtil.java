@@ -9,6 +9,7 @@ package io.camunda.operate.qa.util;
 
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.testcontainers.images.PullPolicy.alwaysPull;
 
@@ -453,10 +454,7 @@ public class TestContainerUtil {
       final String zeebeContactPoint,
       final String zeebeIndexPrefix) {
     final Properties properties = new Properties();
-    properties.setProperty("camunda.data.secondary-storage.type", DB_TYPE_ELASTICSEARCH);
-    properties.setProperty("camunda.database.type", DB_TYPE_ELASTICSEARCH);
-    properties.setProperty("camunda.operate.database", DB_TYPE_ELASTICSEARCH);
-    properties.setProperty("camunda.tasklist.database", DB_TYPE_ELASTICSEARCH);
+    properties.setProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_ELASTICSEARCH);
 
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.host", elsHost);
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.port", String.valueOf(elsPort));

@@ -29,8 +29,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.data.secondary-storage.type",
+    matches = "rdbms")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.data.secondary-storage.type",
+    matches = "AWS_OS")
 public class BasicAuthenticationIT {
 
   public static final String PATH_V2_AUTHENTICATION_ME = "v2/authentication/me";

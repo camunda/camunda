@@ -8,7 +8,7 @@
 package io.camunda.spring.utils;
 
 import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -22,7 +22,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
  * Conditional annotation that activates beans only when secondary storage is disabled
- * (camunda.database.type=none).
+ * (camunda.data.secondary-storage.type=none).
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
@@ -34,7 +34,8 @@ public @interface ConditionalOnSecondaryStorageDisabled {
 
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-      final String dbType = context.getEnvironment().getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
+      final String dbType =
+          context.getEnvironment().getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE);
       return CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(dbType);
     }
   }
