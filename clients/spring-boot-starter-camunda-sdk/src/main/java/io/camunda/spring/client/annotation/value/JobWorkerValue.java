@@ -16,11 +16,14 @@
 package io.camunda.spring.client.annotation.value;
 
 import io.camunda.spring.client.bean.MethodInfo;
+import io.camunda.spring.client.jobhandling.JobHandlerFactory;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import org.springframework.util.function.ThrowingFunction;
 
-public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
+public class JobWorkerValue implements Cloneable {
   private String type;
   private String name;
   private Duration timeout;
@@ -30,12 +33,17 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
   private Boolean autoComplete;
   private List<String> fetchVariables;
   private Boolean enabled;
-  private MethodInfo methodInfo;
   private List<String> tenantIds;
   private Boolean forceFetchAllVariables;
   private Boolean streamEnabled;
   private Duration streamTimeout;
   private Integer maxRetries;
+  // cannot be changed from change set
+  private JobHandlerFactory jobHandlerFactory;
+  private ThrowingFunction<Object[], Object> method;
+
+  @Deprecated(forRemoval = true)
+  private MethodInfo methodInfo;
 
   public JobWorkerValue() {}
 
@@ -49,12 +57,13 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
       final Boolean autoComplete,
       final List<String> fetchVariables,
       final Boolean enabled,
-      final MethodInfo methodInfo,
+      final ThrowingFunction<Object[], Object> method,
       final List<String> tenantIds,
       final Boolean forceFetchAllVariables,
       final Boolean streamEnabled,
       final Duration streamTimeout,
-      final Integer maxRetries) {
+      final Integer maxRetries,
+      final JobHandlerFactory jobHandlerFactory) {
     this.type = type;
     this.name = name;
     this.timeout = timeout;
@@ -62,14 +71,15 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
     this.requestTimeout = requestTimeout;
     this.pollInterval = pollInterval;
     this.autoComplete = autoComplete;
-    this.fetchVariables = fetchVariables;
+    this.fetchVariables = Collections.unmodifiableList(fetchVariables);
     this.enabled = enabled;
-    this.methodInfo = methodInfo;
-    this.tenantIds = tenantIds;
+    this.method = method;
+    this.tenantIds = Collections.unmodifiableList(tenantIds);
     this.forceFetchAllVariables = forceFetchAllVariables;
     this.streamEnabled = streamEnabled;
     this.streamTimeout = streamTimeout;
     this.maxRetries = maxRetries;
+    this.jobHandlerFactory = jobHandlerFactory;
   }
 
   public String getType() {
@@ -133,7 +143,7 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
   }
 
   public void setFetchVariables(final List<String> fetchVariables) {
-    this.fetchVariables = fetchVariables;
+    this.fetchVariables = Collections.unmodifiableList(fetchVariables);
   }
 
   public Boolean getEnabled() {
@@ -144,12 +154,12 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
     this.enabled = enabled;
   }
 
-  public MethodInfo getMethodInfo() {
-    return methodInfo;
+  public ThrowingFunction<Object[], Object> getMethod() {
+    return method;
   }
 
-  public void setMethodInfo(final MethodInfo methodInfo) {
-    this.methodInfo = methodInfo;
+  public void setMethod(final ThrowingFunction<Object[], Object> method) {
+    this.method = method;
   }
 
   public List<String> getTenantIds() {
@@ -157,7 +167,7 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
   }
 
   public void setTenantIds(final List<String> tenantIds) {
-    this.tenantIds = tenantIds;
+    this.tenantIds = Collections.unmodifiableList(tenantIds);
   }
 
   public Boolean getForceFetchAllVariables() {
@@ -192,9 +202,22 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
     this.maxRetries = maxRetries;
   }
 
-  @Override
-  public MethodInfo getBeanInfo() {
+  public JobHandlerFactory getJobHandlerFactory() {
+    return jobHandlerFactory;
+  }
+
+  public void setJobHandlerFactory(final JobHandlerFactory jobHandlerFactory) {
+    this.jobHandlerFactory = jobHandlerFactory;
+  }
+
+  @Deprecated(forRemoval = true)
+  public MethodInfo getMethodInfo() {
     return methodInfo;
+  }
+
+  @Deprecated(forRemoval = true)
+  public void setMethodInfo(final MethodInfo methodInfo) {
+    this.methodInfo = methodInfo;
   }
 
   @Override
@@ -209,19 +232,17 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
         autoComplete,
         fetchVariables,
         enabled,
-        methodInfo,
+        method,
         tenantIds,
         forceFetchAllVariables,
         streamEnabled,
         streamTimeout,
-        maxRetries);
+        maxRetries,
+        jobHandlerFactory);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
@@ -235,12 +256,24 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
         && Objects.equals(autoComplete, that.autoComplete)
         && Objects.equals(fetchVariables, that.fetchVariables)
         && Objects.equals(enabled, that.enabled)
-        && Objects.equals(methodInfo, that.methodInfo)
+        && Objects.equals(method, that.method)
         && Objects.equals(tenantIds, that.tenantIds)
         && Objects.equals(forceFetchAllVariables, that.forceFetchAllVariables)
         && Objects.equals(streamEnabled, that.streamEnabled)
         && Objects.equals(streamTimeout, that.streamTimeout)
-        && Objects.equals(maxRetries, that.maxRetries);
+        && Objects.equals(maxRetries, that.maxRetries)
+        && Objects.equals(jobHandlerFactory, that.jobHandlerFactory);
+  }
+
+  @Override
+  public JobWorkerValue clone() {
+    try {
+      final JobWorkerValue clone = (JobWorkerValue) super.clone();
+      // TODO: copy mutable state here, so the clone can't change the internals of the original
+      return clone;
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError();
+    }
   }
 
   @Override
@@ -266,8 +299,8 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
         + fetchVariables
         + ", enabled="
         + enabled
-        + ", methodInfo="
-        + methodInfo
+        + ", method="
+        + method
         + ", tenantIds="
         + tenantIds
         + ", forceFetchAllVariables="
@@ -278,6 +311,8 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
         + streamTimeout
         + ", maxRetries="
         + maxRetries
+        + ", jobWorkerFactory="
+        + jobHandlerFactory
         + '}';
   }
 }

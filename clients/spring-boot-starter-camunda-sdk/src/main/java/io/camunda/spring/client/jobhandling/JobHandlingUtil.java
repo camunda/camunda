@@ -16,32 +16,14 @@
 package io.camunda.spring.client.jobhandling;
 
 import io.camunda.client.api.command.CommandWithVariables;
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.exception.JobError;
-import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
-import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
-import io.camunda.spring.client.jobhandling.result.ResultProcessor;
-import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public final class JobHandlingUtil {
 
   private JobHandlingUtil() {}
-
-  public static List<ParameterResolver> createParameterResolvers(
-      final ParameterResolverStrategy parameterResolverStrategy, final JobWorkerValue workerValue) {
-    return workerValue.getMethodInfo().getParameters().stream()
-        .map(parameterResolverStrategy::createResolver)
-        .toList();
-  }
-
-  public static ResultProcessor createResultProcessor(
-      final ResultProcessorStrategy resultProcessorStrategy, final JobWorkerValue workerValue) {
-    return resultProcessorStrategy.createProcessor(workerValue.getMethodInfo());
-  }
 
   public static <T extends CommandWithVariables<T>> T applyVariables(
       final Object variables, final T command) {

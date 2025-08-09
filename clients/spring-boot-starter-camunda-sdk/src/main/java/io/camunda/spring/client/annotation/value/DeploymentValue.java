@@ -19,7 +19,7 @@ import io.camunda.spring.client.bean.ClassInfo;
 import java.util.List;
 import java.util.Objects;
 
-public final class DeploymentValue implements CamundaAnnotationValue<ClassInfo> {
+public final class DeploymentValue {
 
   private final List<String> resources;
 
@@ -32,11 +32,6 @@ public final class DeploymentValue implements CamundaAnnotationValue<ClassInfo> 
 
   public List<String> getResources() {
     return resources;
-  }
-
-  @Override
-  public ClassInfo getBeanInfo() {
-    return beanInfo;
   }
 
   @Override

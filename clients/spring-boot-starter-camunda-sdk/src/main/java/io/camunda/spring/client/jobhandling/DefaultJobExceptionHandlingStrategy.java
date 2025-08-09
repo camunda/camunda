@@ -21,7 +21,6 @@ import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandSte
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.api.worker.JobClient;
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.exception.BpmnError;
 import io.camunda.spring.client.exception.JobError;
 import io.camunda.spring.client.metrics.MetricsRecorder;
@@ -43,13 +42,9 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
   }
 
   private CommandWrapper createCommandWrapper(
-      final FinalCommandStep<?> command, final ActivatedJob job, final JobWorkerValue workerValue) {
+      final FinalCommandStep<?> command, final ActivatedJob job, final int maxRetries) {
     return new CommandWrapper(
-        command,
-        job,
-        commandExceptionHandlingStrategy,
-        metricsRecorder,
-        workerValue.getMaxRetries());
+        command, job, commandExceptionHandlingStrategy, metricsRecorder, maxRetries);
   }
 
   @Override
@@ -61,7 +56,7 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
           createCommandWrapper(
               createFailJobCommand(context.jobClient(), context.job(), jobError),
               context.job(),
-              context.jobWorkerValue());
+              context.maxRetries());
       command.executeAsyncWithMetrics(
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, context.job().getType());
     } else if (exception instanceof final BpmnError bpmnError) {
@@ -70,7 +65,7 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
           createCommandWrapper(
               createThrowErrorCommand(context.jobClient(), context.job(), bpmnError),
               context.job(),
-              context.jobWorkerValue());
+              context.maxRetries());
       command.executeAsyncWithMetrics(
           MetricsRecorder.METRIC_NAME_JOB,
           MetricsRecorder.ACTION_BPMN_ERROR,
