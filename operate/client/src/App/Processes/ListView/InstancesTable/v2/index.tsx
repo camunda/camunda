@@ -94,10 +94,9 @@ const InstancesTable: React.FC = observer(() => {
 
   return (
     <Container aria-label="Process Instances Panel">
-      <PanelHeader
-        title="Process Instances"
-        count={filteredProcessInstancesCount}
-      />
+      <PanelHeader title="Process Instances">
+        <span>{filteredProcessInstancesCount}</span>
+      </PanelHeader>
 
       <Toolbar
         selectedInstancesCount={
