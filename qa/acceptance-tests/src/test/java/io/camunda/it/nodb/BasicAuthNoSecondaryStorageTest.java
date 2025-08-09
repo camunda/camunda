@@ -8,7 +8,7 @@
 package io.camunda.it.nodb;
 
 import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
@@ -33,7 +33,7 @@ public class BasicAuthNoSecondaryStorageTest {
         new TestStandaloneBroker()
             .withBasicAuth()
             .withAuthenticationMethod(AuthenticationMethod.BASIC)
-            .withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
+            .withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
 
     // when/then - application startup should fail with the expected exception
     assertThatThrownBy(broker::start)

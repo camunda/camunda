@@ -90,7 +90,7 @@ flowchart LR
 | User                | The user which uses Camunda.                                                                                                                                                                            |
 | Camunda             | The whole camunda platform, including broker, webapps, ...                                                                                                                                              |
 | RDBMS Exporter      | An additional exporter like the Camunda Exporter which listens for records from broker and exports them via RDBMS Service into a RDBMS. Only active if there is an configured exporter with id `rdbms`. |
-| RDBMS Search Client | Is used by the new v2 rest API in gateway for query data from the RDBMS. Only active if the camunda.database.type is set to rdbms.                                                                      |
+| RDBMS Search Client | Is used by the new v2 rest API in gateway for query data from the RDBMS. Only active if the camunda.data.secondary-storage.type is set to rdbms.                                                        |
 | RDBMS Service       | Entry Point to the database modul which provides readers for the search client as well as writers for the exporter.                                                                                     |
 | RDBMS               | A relational database like e.g. H2, Postgres, MariaDB or Oracle.                                                                                                                                        |
 
@@ -149,7 +149,7 @@ flowchart TD
 | Camunda Service     | A camunda service, e.g.: `io.camunda.service.ProcessInstanceServices`. It uses a either a SearchClient for query data, or the broker client to send commands to zeebe.                                  |
 | Search Client       | An interface which is either be implemented from `RdbmsSearchClient`or `SearchClients` which is ES/OS specific.                                                                                         |
 | Broker Client       | Is used to send commands to zeebe.                                                                                                                                                                      |
-| RDBMS Search Client | Is used by the new v2 rest API in gateway for query data from the RDBMS. Only active if the camunda.database.type is set to rdbms.                                                                      |
+| RDBMS Search Client | Is used by the new v2 rest API in gateway for query data from the RDBMS. Only active if the camunda.data.secondary-storage.type is set to rdbms.                                                        |
 | Engine              | The engine works on commands and produces the records which are processed later by the exporters.                                                                                                       |
 | RDBMS Exporter      | An additional exporter like the Camunda Exporter which listens for records from broker and exports them via RDBMS Service into a RDBMS. Only active if there is an configured exporter with id `rdbms`. |
 | RDBMS Service       | Entry Point to the database modul which provides readers for the search client as well as writers for the exporter.                                                                                     |

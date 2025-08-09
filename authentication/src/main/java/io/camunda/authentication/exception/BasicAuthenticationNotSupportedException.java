@@ -8,7 +8,7 @@
 package io.camunda.authentication.exception;
 
 import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 /** Exception thrown when Basic Authentication is configured but secondary storage is disabled. */
 public class BasicAuthenticationNotSupportedException extends RuntimeException {
@@ -20,8 +20,8 @@ public class BasicAuthenticationNotSupportedException extends RuntimeException {
           Please either enable secondary storage by configuring %s to a supported database type,
           or use another authentication method by updating the camunda.security.authentication.method configuration."""
             .formatted(
-                PROPERTY_CAMUNDA_DATABASE_TYPE,
+                UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE,
                 CAMUNDA_DATABASE_TYPE_NONE,
-                PROPERTY_CAMUNDA_DATABASE_TYPE));
+                UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE));
   }
 }

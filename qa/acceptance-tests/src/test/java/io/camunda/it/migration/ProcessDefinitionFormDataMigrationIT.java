@@ -32,8 +32,12 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 @Tag("multi-db-test")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.data.secondary-storage.type",
+    matches = "rdbms")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.data.secondary-storage.type",
+    matches = "AWS_OS")
 public class ProcessDefinitionFormDataMigrationIT {
 
   private static final Map<String, Long> PROCESS_DEFINITION_KEYS = new HashMap<>();

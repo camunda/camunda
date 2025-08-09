@@ -50,7 +50,9 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 // Operate API does not support RDBMS
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.data.secondary-storage.type",
+    matches = "rdbms")
 public class OperateProcessInstanceMigrationIT {
   @MultiDbTestApplication
   static final TestCamundaApplication CAMUNDA_APPLICATION =
