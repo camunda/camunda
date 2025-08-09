@@ -7,7 +7,7 @@
  */
 
 import {mockGetRequest} from '../../mockRequest';
-import {endpoints, type Variable} from '@vzeta/camunda-api-zod-schemas';
+import {endpoints, type Variable} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const mockGetVariable = () =>
   mockGetRequest<Variable>(

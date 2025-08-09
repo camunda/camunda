@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import type {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 import type {VariableEntity} from 'modules/types/operate';
 
 const mockVariables: VariableEntity[] = [

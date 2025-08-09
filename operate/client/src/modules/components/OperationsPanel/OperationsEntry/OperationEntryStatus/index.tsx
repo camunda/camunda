@@ -10,12 +10,12 @@ import {CheckmarkFilled, StatusContainer, Text, WarningFilled} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {type OperationLabelType} from '../';
 
-interface Props {
+type Props = {
   isTypeDeleteProcessOrDecision: boolean;
   label: OperationLabelType;
   failedOperationsCount?: number;
   completedOperationsCount?: number;
-}
+};
 
 const OperationEntryStatus: React.FC<Props> = ({
   label,
@@ -68,4 +68,4 @@ const OperationEntryStatus: React.FC<Props> = ({
   );
 };
 
-export default OperationEntryStatus;
+export {OperationEntryStatus};

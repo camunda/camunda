@@ -20,7 +20,7 @@ import {
   validateValueValid,
 } from './validators';
 import {variablesStore} from 'modules/stores/variables';
-import type {Variable} from '@vzeta/camunda-api-zod-schemas';
+import type {Variable} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {createVariableV2} from 'modules/testUtils';
 
 const MOCK_FIELD_META_STATE = {
