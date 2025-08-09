@@ -12,11 +12,21 @@ public class Data {
   /** This section allows to configure primary Zeebe's data storage. */
   private PrimaryStorage primaryStorage = new PrimaryStorage();
 
+  private SecondaryStorage secondaryStorage = new SecondaryStorage();
+
   public PrimaryStorage getPrimaryStorage() {
     return primaryStorage;
   }
 
   public void setPrimaryStorage(final PrimaryStorage primaryStorage) {
     this.primaryStorage = primaryStorage;
+  }
+
+  public SecondaryStorage getSecondaryStorage() {
+    return secondaryStorage;
+  }
+
+  public void setSecondaryStorage(final SecondaryStorage secondaryStorage) {
+    this.secondaryStorage = secondaryStorage;
   }
 }

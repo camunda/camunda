@@ -120,6 +120,17 @@ zeebe:
             maxCacheSize: 10000
 
 camunda:
+
+  # Unified Configuration
+  # TODO: Remove legacy properties once issue https://github.com/camunda/camunda/issues/34902 is
+  #  done
+  data:
+    secondary-storage:
+      type: 'elasticsearch'
+      elasticsearch:
+        url: 'http://localhost:9200'
+  # -----
+
   database:
     # Controls which database must be used, possible values: elasticsearch, opensearch
     # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE

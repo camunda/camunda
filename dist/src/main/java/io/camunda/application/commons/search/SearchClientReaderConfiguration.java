@@ -8,6 +8,7 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.reader.AuthorizationDocumentReader;
@@ -68,7 +69,6 @@ import io.camunda.search.clients.reader.VariableDocumentReader;
 import io.camunda.search.clients.reader.VariableReader;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
@@ -99,7 +99,10 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnRestGatewayEnabled
-@ConditionalOnSecondaryStorageType({DatabaseConfig.ELASTICSEARCH, DatabaseConfig.OPENSEARCH})
+@ConditionalOnSecondaryStorageType({
+  SecondaryStorageType.elasticsearch,
+  SecondaryStorageType.opensearch
+})
 public class SearchClientReaderConfiguration {
 
   @Bean
