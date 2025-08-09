@@ -32,7 +32,7 @@ public final class CancelProcessInstanceBatchExecutorTest extends AbstractBatchO
   public void shouldCancelProcessInstance() {
     // given
     final var user = createUser();
-    addProcessDefinitionPermissionsToUser(user, PermissionType.UPDATE_PROCESS_INSTANCE);
+    addProcessDefinitionPermissionsToUser(user, PermissionType.CANCEL_PROCESS_INSTANCE);
     final Map<String, Object> claims = Map.of(AUTHORIZED_USERNAME, user.getUsername());
 
     // create a process with a failed job
