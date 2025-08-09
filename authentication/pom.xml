@@ -61,6 +61,10 @@
       <artifactId>jackson-databind</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
@@ -227,6 +231,16 @@
       <artifactId>camunda-spring-utils</artifactId>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
@@ -238,6 +252,8 @@
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
             <dep>org.springframework:spring-webmvc</dep>
             <dep>org.eclipse.parsson:parsson</dep>
+            <dep>org.bouncycastle:bcpkix-jdk18on</dep>
+            <dep>org.bouncycastle:bcprov-jdk18on</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
