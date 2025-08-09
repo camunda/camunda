@@ -95,27 +95,21 @@ public class GroupController {
                 .deleteGroup(groupId));
   }
 
-  @CamundaPutMapping(
-      path = "/{groupId}/users/{username}",
-      consumes = {})
+  @CamundaPutMapping(path = "/{groupId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> assignUserToGroup(
       @PathVariable final String groupId, @PathVariable final String username) {
     return RequestMapper.toGroupMemberRequest(groupId, username, EntityType.USER)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
-  @CamundaPutMapping(
-      path = "/{groupId}/clients/{clientId}",
-      consumes = {})
+  @CamundaPutMapping(path = "/{groupId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> assignClientToGroup(
       @PathVariable final String groupId, @PathVariable final String clientId) {
     return RequestMapper.toGroupMemberRequest(groupId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
-  @CamundaPutMapping(
-      path = "/{groupId}/mapping-rules/{mappingRuleId}",
-      consumes = {})
+  @CamundaPutMapping(path = "/{groupId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingRuleToGroup(
       @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
     return RequestMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE)
@@ -136,9 +130,7 @@ public class GroupController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
-  @CamundaDeleteMapping(
-      path = "/{groupId}/mapping-rules/{mappingRuleId}",
-      consumes = {})
+  @CamundaDeleteMapping(path = "/{groupId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> unassignMappingRuleFromGroup(
       @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
     return RequestMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE)

@@ -526,7 +526,9 @@ paths:
         - Tenant
       operationId: assignUserToTenant
       summary: Assign a user to a tenant
-      description: Assign a single user to a specified tenant.
+      description: |
+        Assign a user to the specified tenant.
+        The user can then access tenant data and perform authorized actions.
       parameters:
         - name: tenantId
           in: path
@@ -560,9 +562,11 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeUserFromTenant
-      summary: Remove a user from a tenant
-      description: Removes a single user from a specified tenant without deleting the user.
+      operationId: unassignUserFromTenant
+      summary: Unassign a user from a tenant
+      description: |
+        Unassigns the user from the specified tenant.
+        The user can no longer access tenant data.
       parameters:
         - name: tenantId
           in: path
@@ -578,7 +582,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The user was successfully removed from the tenant.
+          description: The user was successfully unassigned from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -708,7 +712,9 @@ paths:
         - Tenant
       operationId: assignClientToTenant
       summary: Assign a client to a tenant
-      description: Assign a client to a specified tenant.
+      description: |
+        Assign the client to the specified tenant.
+        The client can then access tenant data and perform authorized actions.
       parameters:
         - name: tenantId
           in: path
@@ -742,9 +748,11 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeClientFromTenant
-      summary: Remove a client from a tenant
-      description: Removes a single client from a specified tenant.
+      operationId: unassignClientFromTenant
+      summary: Unassign a client from a tenant
+      description: |
+        Unassigns the client from the specified tenant.
+        The client can no longer access tenant data.
       parameters:
         - name: tenantId
           in: path
@@ -760,7 +768,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The client was successfully removed from the tenant.
+          description: The client was successfully unassigned from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -816,9 +824,9 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeMappingRuleFromTenant
-      summary: Remove a mapping rule from a tenant
-      description: Removes a single mapping rule from a specified tenant without deleting the rule.
+      operationId: unassignMappingRuleFromTenant
+      summary: Unassign a mapping rule from a tenant
+      description: Unassigns a single mapping rule from a specified tenant without deleting the rule.
       parameters:
         - name: tenantId
           in: path
@@ -834,7 +842,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The mapping rule was successfully removed from the tenant.
+          description: The mapping rule was successfully unassigned from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -883,7 +891,9 @@ paths:
         - Tenant
       operationId: assignGroupToTenant
       summary: Assign a group to a tenant
-      description: Assign a single group to a specified tenant.
+      description: |
+        Assigns a group to a specified tenant.
+        Group members (users, clients) can then access tenant data and perform authorized actions.
       parameters:
         - name: tenantId
           in: path
@@ -918,9 +928,11 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeGroupFromTenant
-      summary: Remove a group from a tenant
-      description: Removes a single group from a specified tenant without deleting the group.
+      operationId: unassignGroupFromTenant
+      summary: Unassign a group from a tenant
+      description: |
+        Unassigns a group from a specified tenant.
+        Members of the group (users, clients) will no longer have access to the tenant's data - except they are assigned directly to the tenant.
       parameters:
         - name: tenantId
           in: path
@@ -936,7 +948,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The group was successfully removed from the tenant.
+          description: The group was successfully unassigned from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -958,7 +970,9 @@ paths:
         - Tenant
       operationId: assignRoleToTenant
       summary: Assign a role to a tenant
-      description: Assign a single role to a specified tenant.
+      description: |
+        Assigns a role to a specified tenant.
+        Users, Clients or Groups, that have the role assigned, will get access to the tenant's data and can perform actions according to their authorizations.
       parameters:
         - name: tenantId
           in: path
@@ -992,9 +1006,11 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeRoleFromTenant
-      summary: Remove a role from a tenant
-      description: Removes a single role from a specified tenant without deleting the role.
+      operationId: unassignRoleFromTenant
+      summary: Unassign a role from a tenant
+      description: |
+        Unassigns a role from a specified tenant.
+        Users, Clients or Groups, that have the role assigned, will no longer have access to the tenant's data - except they are assigned directly to the tenant.
       parameters:
         - name: tenantId
           in: path
@@ -1010,7 +1026,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The role was successfully removed from the tenant.
+          description: The role was successfully unassigned from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3037,10 +3053,11 @@ paths:
     put:
       tags:
         - Role
-      operationId: addRoleToUser
+      operationId: assignRoleToUser
       summary: Assign a role to a user
       description: |
-        Assigns a role to a user.
+        Assigns the specified role to the user.
+        The user will inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3080,10 +3097,11 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeUserFromRole
-      summary: Unassign a user from a role
+      operationId: unassignRoleFromUser
+      summary: Unassign a role from a user
       description: |
-        Unassigns a user from a role.
+        Unassigns a role from a user.
+        The user will no longer inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3099,7 +3117,7 @@ paths:
             type: string
       responses:
         "204":
-          description: The user was unassigned successfully from the role.
+          description: The role was unassigned successfully from the user.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3118,10 +3136,11 @@ paths:
     put:
       tags:
         - Role
-      operationId: addRoleToClient
+      operationId: assignRoleToClient
       summary: Assign a role to a client
       description: |
-        Assigns a role to a client.
+        Assigns the specified role to the client.
+        The client will inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3161,10 +3180,11 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeRoleFromClient
+      operationId: unassignRoleFromClient
       summary: Unassign a role from a client
       description: |
-        Unassigns a role from a client.
+        Unassigns the specified role from the client.
+        The client will no longer inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3232,10 +3252,11 @@ paths:
     put:
       tags:
         - Role
-      operationId: addRoleToGroup
+      operationId: assignRoleToGroup
       summary: Assign a role to a group
       description: |
-        Assigns a role to a group.
+        Assigns the specified role to the group.
+        Every member of the group (user or client) will inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3275,10 +3296,11 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeRoleFromGroup
+      operationId: unassignRoleFromGroup
       summary: Unassign a role from a group
       description: |
-        Unassigns a role from a group.
+        Unassigns the specified role from the group.
+        All group members (user or client) no longer inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3355,7 +3377,7 @@ paths:
     put:
       tags:
         - Role
-      operationId: addRoleToMappingRule
+      operationId: assignRoleToMappingRule
       summary: Assign a role to a mapping rule
       description: |
         Assigns a role to a mapping rule.
@@ -3398,7 +3420,7 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeRoleFromMappingRule
+      operationId: unassignRoleFromMappingRule
       summary: Unassign a role from a mapping rule
       description: |
         Unassigns a role from a mapping rule.
@@ -3781,10 +3803,11 @@ paths:
     put:
       tags:
         - Group
-      operationId: addUserToGroup
+      operationId: assignUserToGroup
       summary: Assign a user to a group
       description: |
-        Assigns a user to a group.
+        Assigns a user to a group, making the user a member of the group.
+        Group members inherit the group authorizations, roles, and tenant assignments.
       parameters:
         - name: groupId
           in: path
@@ -3828,6 +3851,7 @@ paths:
       summary: Unassign a user from a group
       description: |
         Unassigns a user from a group.
+        The user is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
       parameters:
         - name: groupId
           in: path
@@ -3862,10 +3886,11 @@ paths:
     put:
       tags:
         - Group
-      operationId: addClientToGroup
+      operationId: assignClientToGroup
       summary: Assign a client to a group
       description: |
-        Assigns a client to a group.
+        Assigns a client to a group, making it a member of the group.
+        Members of the group inherit the group authorizations, roles, and tenant assignments.
       parameters:
         - name: groupId
           in: path
@@ -3909,6 +3934,7 @@ paths:
       summary: Unassign a client from a group
       description: |
         Unassigns a client from a group.
+        The client is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
       parameters:
         - name: groupId
           in: path
