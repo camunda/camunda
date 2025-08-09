@@ -122,16 +122,39 @@ public class SchemaManager {
     updateSchemaMappings(newIndexProperties);
     updateSchemaSettings();
 
-    final RetentionConfiguration retention = config.retention();
-    if (retention.isEnabled()) {
-      LOG.info(
-          "Retention is enabled. Create ILM policy [name: '{}', retention: '{}']",
-          retention.getPolicyName(),
-          retention.getMinimumAge());
-      searchEngineClient.putIndexLifeCyclePolicy(
-          retention.getPolicyName(), retention.getMinimumAge());
-    }
+    createLifecyclePolicies();
     LOG.info("Schema management completed.");
+  }
+
+  private void createLifecyclePolicies() {
+    final RetentionConfiguration retention = config.retention();
+    if (!retention.isEnabled()) {
+      return;
+    }
+
+    // Create default ILM policy
+    LOG.info(
+        "Retention is enabled. Creating default ILM policy [name: '{}', retention: '{}']",
+        retention.getPolicyName(),
+        retention.getMinimumAge());
+    searchEngineClient.putIndexLifeCyclePolicy(
+        retention.getPolicyName(), retention.getMinimumAge());
+
+    // Create index-specific ILM policies
+    final var indexPolicies = retention.getIndexPolicies();
+    if (!indexPolicies.isEmpty()) {
+      LOG.info("Creating {} index-specific ILM policies", indexPolicies.size());
+      for (final var entry : indexPolicies.entrySet()) {
+        final var index = entry.getKey();
+        final var policy = entry.getValue();
+        LOG.info(
+            "Creating index-specific ILM policy [name: '{}', retention: '{}'] for index '{}'",
+            policy.getPolicyName(),
+            policy.getMinimumAge(),
+            index);
+        searchEngineClient.putIndexLifeCyclePolicy(policy.getPolicyName(), policy.getMinimumAge());
+      }
+    }
   }
 
   private void updateSchemaSettings() {

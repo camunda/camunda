@@ -23,6 +23,7 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.schema.config.IndexConfiguration;
+import io.camunda.search.schema.config.IndexRetentionPolicy;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
@@ -329,6 +330,12 @@ public class SchemaManagerIT {
     retention.setEnabled(true);
     retention.setPolicyName("default_policy");
     retention.setMinimumAge("33d");
+    retention.setIndexPolicies(
+        Map.of(
+            "index_1",
+            new IndexRetentionPolicy("custom_policy_1", "44d"),
+            "index_2",
+            new IndexRetentionPolicy("custom_policy_2", "55d")));
 
     final var schemaManager =
         new SchemaManager(
@@ -337,11 +344,22 @@ public class SchemaManagerIT {
     // when
     schemaManager.startup();
 
-    // then
+    // then: verify that all configured retention policies were created
     assertThat(searchClientAdapter.getPolicyAsNode("default_policy"))
         .asInstanceOf(type(JsonNode.class)) // switch from IterableAssert -> ObjectAssert<JsonNode>
         .extracting(this::retentionMinAge)
         .isEqualTo("33d");
+
+    // Index-specific policies should be created with their respective min ages
+    assertThat(searchClientAdapter.getPolicyAsNode("custom_policy_1"))
+        .asInstanceOf(type(JsonNode.class))
+        .extracting(this::retentionMinAge)
+        .isEqualTo("44d");
+
+    assertThat(searchClientAdapter.getPolicyAsNode("custom_policy_2"))
+        .asInstanceOf(type(JsonNode.class))
+        .extracting(this::retentionMinAge)
+        .isEqualTo("55d");
   }
 
   @TestTemplate
