@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.atomix.cluster.MemberId;
@@ -325,7 +324,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
 
     // type
-    withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, dbType);
     withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, dbType);
 
     // url

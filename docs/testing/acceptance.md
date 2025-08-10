@@ -103,7 +103,7 @@ public class ProcessDefinitionQueryTest {
 
 ```java
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.data.secondary-storage.type", matches = "rdbms")
 class SomeIT {
 
   @MultiDbTestApplication
@@ -137,7 +137,7 @@ We want to highlight some special features for the authentication tests here.
 
 ```java
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.data.secondary-storage.type", matches = "rdbms")
 class ProcessAuthorizationIT {
 
   @MultiDbTestApplication
@@ -198,7 +198,7 @@ Sometimes, we need to validate different secondary storages locally, for example
 
 In Intellij, you can edit the `Run/Debug configuration` (see this [guide](https://www.jetbrains.com/help/idea/run-debug-configuration-junit.html)) and pass in additional properties and environment variables.
 
-To specify the database type, use the following property: `test.integration.camunda.database.type`. We also provide specific Maven profiles to make this easier.
+To specify the database type, use the following property: `test.integration.camunda.data.secondary-storage.type`. We also provide specific Maven profiles to make this easier.
 
 * For available maven profiles, take a look at the `qa/integration-test/pom.xml`.
 * For available database types, look at `io.camunda.qa.util.multidb.CamundaMultiDBExtension#DatabaseType`
@@ -224,7 +224,7 @@ docker run -d -p 9200:9200 \
 
 Define the following property in your run configuration
 
-`-Dtest.integration.camunda.database.type=os`
+`-Dtest.integration.camunda.data.secondary-storage.type=opensearch`
 
 Alternatively, you can also specify the respective maven profile `-Pe2e-opensearch-test`
 

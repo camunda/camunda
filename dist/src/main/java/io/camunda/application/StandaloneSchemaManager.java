@@ -34,7 +34,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
  * example:
  *
  * <pre>
- * camunda.database.type=elasticsearch
+ * camunda.data.secondary-storage.type=elasticsearch
  * camunda.database.url=
  * camunda.database.security.selfSigned=
  * camunda.database.security.enabled=

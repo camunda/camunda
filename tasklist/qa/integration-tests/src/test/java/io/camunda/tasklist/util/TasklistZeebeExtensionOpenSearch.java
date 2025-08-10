@@ -77,11 +77,8 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
         Map.entry(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
             "io.camunda.exporter.CamundaExporter"),
-        // Unified Config: db type + compatibility vars
-        Map.entry("CAMUNDA_DATABASE_TYPE", "opensearch"),
+        // Unified Config: db type
         Map.entry("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "opensearch"),
-        Map.entry("CAMUNDA_OPERATE_DATABASE", "opensearch"),
-        Map.entry("CAMUNDA_TASKLIST_DATABASE", "opensearch"),
         // ---
         Map.entry("CAMUNDA_DATABASE_URL", "http://host.testcontainers.internal:9200"),
         Map.entry("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix));

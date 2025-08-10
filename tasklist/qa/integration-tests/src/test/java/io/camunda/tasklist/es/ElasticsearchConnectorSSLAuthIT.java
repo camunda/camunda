@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -105,11 +106,7 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
               "camunda.tasklist.elasticsearch.url=" + elsUrl,
               "camunda.tasklist.zeebeElasticsearch.url=" + elsUrl,
               // DB type
-              "camunda.data.secondary-storage.type=elasticsearch",
-              "camunda.database.type=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
-              "camunda.operate.database=elasticsearch",
-              //
+              UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE + "=elasticsearch",
               "camunda.tasklist.elasticsearch.username=elastic",
               "camunda.tasklist.elasticsearch.password=elastic",
               "camunda.tasklist.elasticsearch.clusterName=docker-cluster",

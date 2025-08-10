@@ -203,7 +203,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 public class CamundaMultiDBExtension
     implements AfterAllCallback, BeforeAllCallback, ParameterResolver {
   public static final String PROP_CAMUNDA_IT_DATABASE_TYPE =
-      "test.integration.camunda.database.type";
+      "test.integration.camunda.data.secondary-storage.type";
   public static final String TEST_INTEGRATION_OPENSEARCH_AWS_URL =
       "test.integration.opensearch.aws.url";
   public static final String PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT =
@@ -276,13 +276,13 @@ public class CamundaMultiDBExtension
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
         setupHelper = new ElasticOpenSearchSetupHelper(elasticSearchUrl, expectedDescriptors);
       }
-      case ES -> {
+      case ELASTICSEARCH -> {
         multiDbConfigurator.configureElasticsearchSupport(
             DEFAULT_ES_URL, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_ES_URL, expectedDescriptors);
       }
-      case OS -> {
+      case OPENSEARCH -> {
         multiDbConfigurator.configureOpenSearchSupport(
             DEFAULT_OS_URL,
             testPrefix,
@@ -623,8 +623,8 @@ public class CamundaMultiDBExtension
 
   public enum DatabaseType {
     LOCAL,
-    ES,
-    OS,
+    ELASTICSEARCH,
+    OPENSEARCH,
     RDBMS,
     AWS_OS
   }

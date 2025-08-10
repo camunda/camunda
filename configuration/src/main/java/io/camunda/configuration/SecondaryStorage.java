@@ -26,6 +26,9 @@ public class SecondaryStorage {
   /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
   private Opensearch opensearch = new Opensearch();
 
+  /** Stores the Elasticsearch configuration, when type is set to 'rdbms'. */
+  private Rdbms rdbms = new Rdbms();
+
   public SecondaryStorageType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".type",

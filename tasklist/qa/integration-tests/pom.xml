@@ -101,6 +101,13 @@
     <!-- TEST -->
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-utils</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
@@ -502,8 +509,7 @@
           <failIfNoTests>true</failIfNoTests>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
-            <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
-            <camunda.database.type>${camunda.tasklist.database}</camunda.database.type>
+            <camunda.data.secondary-storage.type>${camunda.tasklist.database}</camunda.data.secondary-storage.type>
             <camunda.database.url>${camunda.database.url:http://localhost:9200}</camunda.database.url>
           </systemPropertyVariables>
         </configuration>
@@ -517,8 +523,7 @@
           <failIfNoTests>true</failIfNoTests>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
-            <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
-            <camunda.database.type>${camunda.tasklist.database}</camunda.database.type>
+            <camunda.data.secondary-storage.type>${camunda.tasklist.database}</camunda.data.secondary-storage.type>
             <camunda.database.url>${camunda.database.url:http://localhost:9200}</camunda.database.url>
           </systemPropertyVariables>
         </configuration>

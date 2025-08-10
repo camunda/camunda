@@ -790,8 +790,8 @@ public class WebSecurityConfig {
 
   /**
    * Configuration that provides fail-fast behavior when Basic Authentication is configured but
-   * secondary storage is disabled (camunda.database.type=none). This prevents misleading security
-   * flows and provides clear error messages.
+   * secondary storage is disabled (camunda.data.secondary-storage.type=none). This prevents
+   * misleading security flows and provides clear error messages.
    */
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)

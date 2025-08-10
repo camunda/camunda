@@ -12,19 +12,16 @@ import org.springframework.core.env.Environment;
 
 public final class DatabaseTypeUtils {
   public static final String CAMUNDA_DATABASE_TYPE_NONE = "none";
-  public static final String PROPERTY_CAMUNDA_DATABASE_TYPE = "camunda.database.type";
   public static final String UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE =
       "camunda.data.secondary-storage.type";
 
   private DatabaseTypeUtils() {}
 
   public static boolean isSecondaryStorageEnabled(final Environment env) {
-    String dbType = env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE);
-    if (dbType == null) {
-      dbType =
-          Optional.ofNullable(env.getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE))
-              .orElse("elasticsearch");
-    }
-    return !"none".equalsIgnoreCase(dbType);
+    final String dbType =
+        Optional.ofNullable(env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE))
+            .orElse("elasticsearch");
+
+    return !CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(dbType);
   }
 }

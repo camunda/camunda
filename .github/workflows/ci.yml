@@ -448,7 +448,7 @@ jobs:
       # Run specific integration tests with ES service container
       #
       # To communicate to the IT what database to expect and run against:
-      # -D test.integration.camunda.database.type=es
+      # -D test.integration.camunda.data.secondary-storage.type=elasticsearch
       #
       - name: Run integration test with externalized ES
         shell: bash
@@ -459,7 +459,7 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -D test.integration.camunda.database.type=es
+          -D test.integration.camunda.data.secondary-storage.type=elasticsearch
           -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -547,7 +547,7 @@ jobs:
       # Run specific integration tests with OS service container
       #
       # To communicate to the IT what database to expect and run against:
-      # -D test.integration.camunda.database.type=os
+      # -D test.integration.camunda.data.secondary-storage.type=opensearch
       #
       - name: Run integration test with externalized OS
         shell: bash
@@ -558,7 +558,7 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -D test.integration.camunda.database.type=os
+          -D test.integration.camunda.data.secondary-storage.type=opensearch
           -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -625,7 +625,7 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -D test.integration.camunda.database.type=rdbms
+          -D test.integration.camunda.data.secondary-storage.type=rdbms
           -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"

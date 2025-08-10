@@ -7,13 +7,13 @@
  */
 package io.camunda.search.exception;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 public class NoSecondaryStorageException extends CamundaSearchException {
 
   public static final String NO_SECONDARY_STORAGE_MESSAGE =
       "This endpoint requires a secondary storage, but none is set. Secondary storage can be configured using the"
-          + PROPERTY_CAMUNDA_DATABASE_TYPE
+          + UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE
           + " property.";
   private static final long serialVersionUID = 1L;
 

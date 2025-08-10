@@ -190,9 +190,6 @@ public class CamundaDockerIT {
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
         // Unified Configuration: db type
         .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DATABASE_TYPE)
-        .withEnv("CAMUNDA_DATABASE_TYPE", DATABASE_TYPE)
-        .withEnv("CAMUNDA_OPERATE_DATABASE", DATABASE_TYPE)
-        .withEnv("CAMUNDA_TASKLIST_DATABASE", DATABASE_TYPE)
         // ---
         .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", gatewayAddress())
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");

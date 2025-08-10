@@ -8,7 +8,7 @@
 package io.camunda.service.exception;
 
 import static io.camunda.service.exception.ServiceException.Status.*;
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException;
@@ -76,7 +76,7 @@ public class ErrorMapper {
       case SECONDARY_STORAGE_NOT_SET -> {
         final String detail =
             "The search client requires a secondary storage, but none is set. Secondary storage can be configured using the '"
-                + PROPERTY_CAMUNDA_DATABASE_TYPE
+                + UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE
                 + "' property";
         LOGGER.debug(detail, cse);
         yield new ServiceException(detail, FORBIDDEN);

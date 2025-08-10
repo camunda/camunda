@@ -80,11 +80,8 @@ final class SecuredClusteredMessagingIT {
               "/tmp/certificate.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.privateKey().toPath(), 0777), "/tmp/key.pem")
-          // unified configuration: type
+          // unified configuration: db type
           .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH)
           // unified configuration: url
           .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_DATABASE_URL", esUrl)
@@ -124,9 +121,6 @@ final class SecuredClusteredMessagingIT {
           .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX", testPrefix)
           // Unified Configuration: db type
           .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH)
           // Unified Configuration: db url
           .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_DATABASE_URL", esUrl)
@@ -167,9 +161,6 @@ final class SecuredClusteredMessagingIT {
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX", testPrefix)
           // Unified Configuration: db type
           .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH)
           // Unified Configuration: db url
           .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_DATABASE_URL", esUrl)

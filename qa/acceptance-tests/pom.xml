@@ -624,7 +624,7 @@
     <profile>
       <id>e2e-elasticsearch-test</id>
       <properties>
-        <test.integration.camunda.database.type>es</test.integration.camunda.database.type>
+        <test.integration.camunda.data.secondary-storage.type>elasticsearch</test.integration.camunda.data.secondary-storage.type>
       </properties>
     </profile>
 
@@ -632,7 +632,7 @@
     <profile>
       <id>e2e-opensearch-test</id>
       <properties>
-        <test.integration.camunda.database.type>es</test.integration.camunda.database.type>
+        <test.integration.camunda.data.secondary-storage.type>elasticsearch</test.integration.camunda.data.secondary-storage.type>
       </properties>
     </profile>
 
@@ -640,7 +640,7 @@
     <profile>
       <id>e2e-rdbms-test</id>
       <properties>
-        <test.integration.camunda.database.type>rdbms</test.integration.camunda.database.type>
+        <test.integration.camunda.data.secondary-storage.type>rdbms</test.integration.camunda.data.secondary-storage.type>
       </properties>
     </profile>
   </profiles>
