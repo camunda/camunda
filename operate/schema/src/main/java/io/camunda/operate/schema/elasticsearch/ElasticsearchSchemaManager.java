@@ -7,6 +7,8 @@
  */
 package io.camunda.operate.schema.elasticsearch;
 
+import static java.util.Optional.ofNullable;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -350,6 +352,10 @@ public class ElasticsearchSchemaManager implements SchemaManager {
             .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
             .template(template)
             .componentTemplates(List.of(settingsTemplateName()))
+            .priority(
+                ofNullable(operateProperties.getElasticsearch().getIndexTemplatePriority())
+                    .map(Long::valueOf)
+                    .orElse(null))
             .build();
     final PutComposableIndexTemplateRequest request =
         new PutComposableIndexTemplateRequest()

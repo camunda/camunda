@@ -10,7 +10,7 @@ package io.camunda.tasklist.schema.manager;
 import static io.camunda.tasklist.property.TasklistProperties.OPEN_SEARCH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +25,9 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -35,6 +38,7 @@ import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 
 @ExtendWith(MockitoExtension.class)
 class OpenSearchSchemaManagerTest {
@@ -42,6 +46,8 @@ class OpenSearchSchemaManagerTest {
   @InjectMocks private OpenSearchSchemaManager openSearchSchemaManager;
 
   @Mock private TasklistProperties tasklistProperties;
+
+  @Mock private TasklistOpenSearchProperties openSearchProperties;
 
   @Mock private RetryOpenSearchClient retryOpenSearchClient;
 
@@ -54,7 +60,7 @@ class OpenSearchSchemaManagerTest {
 
   @BeforeEach
   public void setUp() {
-    when(tasklistProperties.getOpenSearch()).thenReturn(mock(TasklistOpenSearchProperties.class));
+    when(tasklistProperties.getOpenSearch()).thenReturn(openSearchProperties);
     when(tasklistProperties.getDatabase()).thenReturn(OPEN_SEARCH);
     when(openSearchClient._transport().jsonpMapper()).thenReturn(new JacksonJsonpMapper());
   }
@@ -78,6 +84,23 @@ class OpenSearchSchemaManagerTest {
     assertThat(request.settings().numberOfReplicas()).isEqualTo("2");
     assertThat(request.aliases().keySet().iterator().next()).isEqualTo("prefix-task-8.5.0_alias");
     validateMappings(request.mappings(), taskTemplate.getSchemaClasspathFilename());
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {100})
+  @NullSource
+  void shouldSetIndexTemplatePriority(final Integer priority) {
+    // given
+    when(openSearchProperties.getIndexTemplatePriority()).thenReturn(priority);
+
+    // when
+    openSearchSchemaManager.createTemplate(taskTemplate);
+
+    // then
+    final var requestCaptor = ArgumentCaptor.forClass(PutIndexTemplateRequest.class);
+    verify(retryOpenSearchClient).createTemplate(requestCaptor.capture(), eq(false));
+    final var request = requestCaptor.getValue();
+    assertThat(request.priority()).isEqualTo(priority);
   }
 
   private void validateMappings(final TypeMapping mapping, final String fileName)
