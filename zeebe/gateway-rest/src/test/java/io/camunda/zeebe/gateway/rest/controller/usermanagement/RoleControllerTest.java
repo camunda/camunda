@@ -465,7 +465,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingMissingMappingToRole() {
+  void shouldReturnErrorForAssigningMissingMappingToRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -495,7 +495,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingMappingToMissingRole() {
+  void shouldReturnErrorForAssigningMappingToMissingRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -522,7 +522,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToRole() {
+  void shouldReturnErrorForProvidingInvalidMappingIdWhenAssigningToRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = "mappingRuleId!";
@@ -553,7 +553,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidRoleIdWhenAddingMappingToRole() {
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenAssigningMappingToRole() {
     // given
     final String roleId = "roleId!";
     final String mappingRuleId = Strings.newRandomValidIdentityId();
@@ -606,7 +606,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingMissingMappingFromRole() {
+  void shouldReturnErrorForUnassigningMissingMappingFromRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -636,7 +636,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingMappingFromMissingRole() {
+  void shouldReturnErrorForUnassigningMappingFromMissingRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -663,7 +663,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingMissingUserToRole() {
+  void shouldReturnErrorForAssigningMissingUserToRole() {
     // given
     final var roleId = "roleId";
     final var username = "username";
@@ -690,7 +690,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingUserToMissingRole() {
+  void shouldReturnErrorForAssigningUserToMissingRole() {
     // given
     final String roleId = "roleId";
     final String username = "username";
@@ -717,7 +717,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidUsernameWhenAddingToRole() {
+  void shouldReturnErrorForProvidingInvalidUsernameWhenAssigningToRole() {
     // given
     final String roleId = "roleId";
     final String username = "username!";
@@ -748,7 +748,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidRoleIdWhenAddingToRole() {
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenAssigningToRole() {
     // given
     final String roleId = "roleId!";
     final String username = "username";
@@ -801,7 +801,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingMissingUserFromRole() {
+  void shouldReturnErrorForUnassigningMissingUserFromRole() {
     // given
     final var roleId = "roleId";
     final var username = "username";
@@ -828,7 +828,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingUserFromMissingRole() {
+  void shouldReturnErrorForUnassigningUserFromMissingRole() {
     // given
     final String roleId = "roleId";
     final String username = "username";
@@ -855,7 +855,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidUsernameWhenRemovingFromRole() {
+  void shouldReturnErrorForProvidingInvalidUsernameWhenUnassigningFromRole() {
     // given
     final String roleId = "roleId";
     final String username = "username!";
@@ -885,7 +885,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidRoleIdWhenRemovingFromRole() {
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenUnassigningFromRole() {
     // given
     final String roleId = "roleId!";
     final String username = "username";
@@ -937,7 +937,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingMissingGroupToRole() {
+  void shouldReturnErrorForAssigningMissingGroupToRole() {
     // given
     final var roleId = "roleId";
     final var groupId = "groupId";
@@ -964,7 +964,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingGroupToMissingRole() {
+  void shouldReturnErrorForAssigningGroupToMissingRole() {
     // given
     final String roleId = "roleId";
     final String groupId = "groupId";
@@ -991,7 +991,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidGroupIdWhenAddingToRole() {
+  void shouldReturnErrorForProvidingInvalidGroupIdWhenAssigningToRole() {
     // given
     final String roleId = "roleId";
     final String groupId = "groupId!";
@@ -1022,7 +1022,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidRoleIdWhenAddingGroupToRole() {
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenAssigningGroupToRole() {
     // given
     final String roleId = "roleId!";
     final String groupId = "groupId";
@@ -1075,7 +1075,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingMissingGroupFromRole() {
+  void shouldReturnErrorForUnassigningMissingGroupFromRole() {
     // given
     final var roleId = "roleId";
     final var groupId = "groupId";
@@ -1105,7 +1105,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingGroupFromMissingRole() {
+  void shouldReturnErrorForUnassigningGroupFromMissingRole() {
     // given
     final String roleId = "roleId";
     final String groupId = "groupId";
@@ -1132,7 +1132,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidGroupIdWhenRemovingFromRole() {
+  void shouldReturnErrorForProvidingInvalidGroupIdWhenUnassigningFromRole() {
     // given
     final String roleId = "roleId";
     final String groupId = "groupId!";
@@ -1162,7 +1162,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidRoleIdWhenRemovingGroupFromRole() {
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenUnassigningGroupFromRole() {
     // given
     final String roleId = "roleId!";
     final String groupId = "groupId";
