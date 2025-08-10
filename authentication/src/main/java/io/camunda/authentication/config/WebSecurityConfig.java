@@ -557,8 +557,11 @@ public class WebSecurityConfig {
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
         final SecurityConfiguration securityConfiguration) {
-      return new InMemoryClientRegistrationRepository(
-          OidcClientRegistration.create(securityConfiguration.getAuthentication().getOidc()));
+      return new SafeInitClientRegistrationRepository(
+          () ->
+              new InMemoryClientRegistrationRepository(
+                  OidcClientRegistration.create(
+                      securityConfiguration.getAuthentication().getOidc())));
     }
 
     @Bean
@@ -581,27 +584,31 @@ public class WebSecurityConfig {
     public JwtDecoder jwtDecoder(
         final SecurityConfiguration securityConfiguration,
         final ClientRegistrationRepository clientRegistrationRepository) {
-      // Do not rely on the configured uri, the client registration can automatically discover it
-      // based on the issuer uri.
-      final var jwkSetUri =
-          clientRegistrationRepository
-              .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
-              .getProviderDetails()
-              .getJwkSetUri();
+      return new SafeInitJwtDecoder(
+          () -> {
+            // Do not rely on the configured uri, the client registration can automatically
+            // discover it based on the issuer uri.
+            final var jwkSetUri =
+                clientRegistrationRepository
+                    .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
+                    .getProviderDetails()
+                    .getJwkSetUri();
 
-      final var decoder =
-          NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
-              .jwsAlgorithms(
-                  algorithms ->
-                      algorithms.addAll(List.of(RS256, RS384, RS512, ES256, ES384, ES512)))
-              .jwtProcessorCustomizer(
-                  // the default implementation supports only JOSEObjectType.JWT and null
-                  processor ->
-                      processor.setJWSTypeVerifier(
-                          new DefaultJOSEObjectTypeVerifier<>(JWT, AT_JWT, null)))
-              .build();
-      decoder.setJwtValidator(getTokenValidator(securityConfiguration));
-      return decoder;
+            final var decoder =
+                NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
+                    .jwsAlgorithms(
+                        algorithms ->
+                            algorithms.addAll(List.of(RS256, RS384, RS512, ES256, ES384, ES512)))
+                    .jwtProcessorCustomizer(
+                        // the default implementation supports only JOSEObjectType.JWT and
+                        // null
+                        processor ->
+                            processor.setJWSTypeVerifier(
+                                new DefaultJOSEObjectTypeVerifier<>(JWT, AT_JWT, null)))
+                    .build();
+            decoder.setJwtValidator(getTokenValidator(securityConfiguration));
+            return decoder;
+          });
     }
 
     private static OAuth2TokenValidator<Jwt> getTokenValidator(
@@ -661,7 +668,10 @@ public class WebSecurityConfig {
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
               .oauth2ResourceServer(
-                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+                  oauth2 ->
+                      oauth2
+                          .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .authenticationEntryPoint(authFailureHandler))
               .oauth2Login(AbstractHttpConfigurer::disable)
               .oidcLogout(AbstractHttpConfigurer::disable)
               .logout(AbstractHttpConfigurer::disable);
@@ -705,7 +715,10 @@ public class WebSecurityConfig {
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
               .oauth2ResourceServer(
-                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+                  oauth2 ->
+                      oauth2
+                          .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .authenticationEntryPoint(authFailureHandler))
               .oauth2Login(
                   oauthLoginConfigurer -> {
                     oauthLoginConfigurer
