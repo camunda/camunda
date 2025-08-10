@@ -897,6 +897,8 @@ jobs:
           - runner: gcp-perf-core-8-default
           - runner: "aws-arm-core-4-longrunning"
             arch: arm64
+    env:
+      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
