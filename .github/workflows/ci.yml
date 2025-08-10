@@ -913,6 +913,7 @@ jobs:
           maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         with:
+          repository: 'camunda/camunda'
           version: current-test
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: linux/${{ matrix.arch }}
