@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import static java.util.stream.Collectors.groupingBy;
+
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -47,9 +49,12 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     implements ArchiverRepository {
   private static final String ALL_INDICES = "*";
   private static final String ALL_INDICES_PATTERN = ".*";
-  // Matches versioned index names with suffixes: {name}-{major}.{minor}.{patch}_{suffix}
+  // Matches version suffix pattern: -{major}.{minor}.{patch}_{suffix}
+  // e.g. "-8.8.0_2025-02-23"
+  private static final String VERSION_SUFFIX_PATTERN = "-\\d+\\.\\d+\\.\\d+_.+$";
+  // Matches versioned index names with version suffixes: {name}{version-suffix}
   // e.g. "camunda-tenant-8.8.0_2025-02-23"
-  private static final String VERSIONED_INDEX_PATTERN = ".+-\\d+\\.\\d+\\.\\d+_.+$";
+  private static final String VERSIONED_INDEX_PATTERN = ".+" + VERSION_SUFFIX_PATTERN;
 
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
@@ -232,20 +237,66 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
       final List<String> destinationIndexNames) {
     if (destinationIndexNames.isEmpty()) {
+      logger.debug("No indices to set lifecycle policies for");
       return CompletableFuture.completedFuture(null);
     }
 
-    final var settingsRequest =
-        new PutIndicesSettingsRequest.Builder()
-            .settings(
-                settings ->
-                    settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
-            .index(destinationIndexNames)
-            .allowNoIndices(true)
-            .ignoreUnavailable(true)
-            .build();
+    logger.debug("Setting lifecycle policies for {} indices", destinationIndexNames);
+    final var indexPolicies = retention.getIndexPolicies();
+    final var defaultPolicy = retention.getPolicyName();
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
 
-    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
+    // Group indices by their assigned policy
+    final var policiesMap =
+        destinationIndexNames.stream()
+            .collect(
+                groupingBy(
+                    indexName -> {
+                      // Then check for pattern matches
+                      for (final var entry : indexPolicies.entrySet()) {
+                        final var pattern = entry.getKey();
+                        final var indexWithNamePattern =
+                            "^" + formattedPrefix + pattern + VERSION_SUFFIX_PATTERN;
+                        if (Pattern.compile(indexWithNamePattern).matcher(indexName).matches()) {
+                          return entry.getValue().getPolicyName();
+                        }
+                      }
+
+                      // Fall back to default policy
+                      return defaultPolicy;
+                    }));
+
+    // Create separate requests for each policy group
+    final var requests =
+        policiesMap.entrySet().stream()
+            .map(
+                entry -> {
+                  final String policyName = entry.getKey();
+                  final List<String> indices = entry.getValue();
+
+                  logger.info(
+                      "Applying policy '{}' to {} indices: {}",
+                      policyName,
+                      indices.size(),
+                      indices);
+
+                  final var settingsRequest =
+                      new PutIndicesSettingsRequest.Builder()
+                          .settings(
+                              settings ->
+                                  settings.lifecycle(lifecycle -> lifecycle.name(policyName)))
+                          .index(indices)
+                          .allowNoIndices(true)
+                          .ignoreUnavailable(true)
+                          .build();
+
+                  return client.indices().putSettings(settingsRequest);
+                })
+            .toList();
+
+    // Execute all requests and combine results
+    return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]))
+        .thenApplyAsync(ignored -> null, executor);
   }
 
   private CompletableFuture<ArchiveBatch> createArchiveBatch(
