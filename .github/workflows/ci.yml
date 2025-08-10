@@ -917,6 +917,7 @@ jobs:
           version: current-test
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: linux/${{ matrix.arch }}
+          dockerfile: camunda.Dockerfile
           push: false
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
