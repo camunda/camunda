@@ -907,6 +907,8 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         with:
           version: current-test
