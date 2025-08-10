@@ -144,7 +144,7 @@ public class OpensearchConnectorIT {
 
     setPluginConfig(registry, TasklistProperties.PREFIX + ".openSearch", plugin);
     setPluginConfig(registry, TasklistProperties.PREFIX + ".zeebeOpenSearch", plugin);
-    registry.add(TasklistProperties.PREFIX + ".opensearch.url", WIRE_MOCK_SERVER::baseUrl);
+    registry.add("camunda.data.secondary-storage.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
     registry.add(TasklistProperties.PREFIX + ".zeebeopensearch.url", WIRE_MOCK_SERVER::baseUrl);
   }
 

@@ -93,11 +93,15 @@ zeebe:
       #    url: http://localhost:9200
 
 camunda:
+  # Unified Configuration
+  data:
+    secondary-storage:
+      type: 'rdbms'
+      rdbms:
+        url: 'jdbc:mariadb://localhost:3306/camunda'
+  # ---
+
   database:
-    # Controls which database must be used, possible values: elasticsearch, opensearch
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE
-    type: rdbms
-    url: jdbc:mariadb://localhost:3306/camunda
     username: camunda
     password: demo
   # Operate configuration properties

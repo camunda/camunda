@@ -46,8 +46,12 @@ import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.data.secondary-storage.type",
+    matches = "rdbms")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.data.secondary-storage.type",
+    matches = "AWS_OS")
 /**
  * How to run this test locally:
  *
@@ -92,9 +96,9 @@ public class PrefixMigrationIT {
             .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,tasklist,identity,consolidated-auth")
             .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC");
 
-    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
+    if (currentMultiDbDatabaseType() == DatabaseType.ELASTICSEARCH) {
       addElasticsearchProperties(container, OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX);
-    } else if (currentMultiDbDatabaseType() == DatabaseType.OS) {
+    } else if (currentMultiDbDatabaseType() == DatabaseType.OPENSEARCH) {
       addOpensearchProperties(container, OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX);
     }
 
@@ -106,10 +110,7 @@ public class PrefixMigrationIT {
       final String operatePrefix,
       final String tasklistPrefix) {
     container
-        // Unified Config for db type + compatibility vars
-        .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
-        .withEnv("CAMUNDA_OPERATE_DATABASE", "opensearch")
-        .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
+        // Unified Config for db type
         .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "opensearch")
         // Unified Config for db url + compatibility vars
         .withEnv("CAMUNDA_DATABASE_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
@@ -158,9 +159,9 @@ public class PrefixMigrationIT {
     tasklist.getOpenSearch().setIndexPrefix(oldTasklistPrefix);
 
     connect.setIndexPrefix(newPrefix);
-    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
+    if (currentMultiDbDatabaseType() == DatabaseType.ELASTICSEARCH) {
       connect.setType("elasticsearch");
-    } else if (currentMultiDbDatabaseType() == DatabaseType.OS) {
+    } else if (currentMultiDbDatabaseType() == DatabaseType.OPENSEARCH) {
       connect.setType("opensearch");
     }
 
@@ -192,10 +193,10 @@ public class PrefixMigrationIT {
     final var oldTasklistPrefix = shortUUID + "-old-tasklist-prefix";
     final var newPrefix = shortUUID + "-new-prefix";
 
-    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
+    if (currentMultiDbDatabaseType() == DatabaseType.ELASTICSEARCH) {
       addElasticsearchProperties(tasklistContainer, oldOperatePrefix, oldTasklistPrefix);
       addElasticsearchProperties(operateContainer, oldOperatePrefix, oldTasklistPrefix);
-    } else if (currentMultiDbDatabaseType() == DatabaseType.OS
+    } else if (currentMultiDbDatabaseType() == DatabaseType.OPENSEARCH
         || currentMultiDbDatabaseType() == DatabaseType.AWS_OS) {
       addOpensearchProperties(tasklistContainer, oldOperatePrefix, oldTasklistPrefix);
       addOpensearchProperties(operateContainer, oldOperatePrefix, oldTasklistPrefix);
@@ -224,14 +225,14 @@ public class PrefixMigrationIT {
 
     // then
     final var connectConfig = new ConnectConfiguration();
-    if (currentMultiDbDatabaseType() == DatabaseType.OS
+    if (currentMultiDbDatabaseType() == DatabaseType.OPENSEARCH
         || currentMultiDbDatabaseType() == DatabaseType.AWS_OS) {
       connectConfig.setType("opensearch");
     }
 
     final var searchEngineClient = ClientAdapter.of(connectConfig).getSearchEngineClient();
     final var expectedDescriptors =
-        new IndexDescriptors(newPrefix, currentMultiDbDatabaseType() == DatabaseType.ES);
+        new IndexDescriptors(newPrefix, currentMultiDbDatabaseType() == DatabaseType.ELASTICSEARCH);
 
     final var schemaManager =
         new SchemaManager(

@@ -52,9 +52,6 @@ class SchemaManagerStartupIT {
           .withEnv("SPRING_PROFILES_ACTIVE", "broker,dev")
           // Unified Configuration: DB type
           .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH)
           // Unified Configuration: DB URL
           .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", ELASTICSEARCH_URL)
           .withEnv("CAMUNDA_DATABASE_URL", ELASTICSEARCH_URL)

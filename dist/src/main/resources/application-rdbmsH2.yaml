@@ -82,11 +82,15 @@ zeebe:
       #    url: http://localhost:9200
 
 camunda:
+  # Unified Configuration
+  data:
+    secondary-storage:
+      type: 'rdbms'
+      rdbms:
+        url: 'jdbc:h2:mem:camunda'
+  # ---
+
   database:
-    # Controls which database must be used, possible values: elasticsearch, opensearch
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE
-    type: rdbms
-    url: jdbc:h2:mem:camunda
     username: sa
     password:
   # Operate configuration properties

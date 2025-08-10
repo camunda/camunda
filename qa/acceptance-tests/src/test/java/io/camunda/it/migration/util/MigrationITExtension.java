@@ -148,11 +148,11 @@ public class MigrationITExtension
         databaseUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
         expectedDescriptors = new IndexDescriptors(indexPrefix, true).all();
       }
-      case ES -> {
+      case ELASTICSEARCH -> {
         expectedDescriptors = new IndexDescriptors(indexPrefix, true).all();
         databaseUrl = DEFAULT_ES_URL;
       }
-      case OS -> {
+      case OPENSEARCH -> {
         expectedDescriptors = new IndexDescriptors(indexPrefix, false).all();
         databaseUrl = DEFAULT_OS_URL;
       }

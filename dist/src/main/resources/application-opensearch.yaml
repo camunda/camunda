@@ -125,18 +125,14 @@ camunda:
   data:
     secondary-storage:
       type: 'opensearch'
+      opensearch:
+        url: 'http://localhost:9200'
   # -----
 
   database:
-    # Controls which database must be used, possible values: elasticsearch, opensearch
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE
-    type: opensearch
     # Sets the name of the cluster, default name is "elasticsearch"
     # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_CLUSTERNAME
     clusterName: opensearch
-    # Sets the database url.
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_URL
-    url: http://localhost:9200
   # Operate configuration properties
   operate:
     # Set operate username and password.

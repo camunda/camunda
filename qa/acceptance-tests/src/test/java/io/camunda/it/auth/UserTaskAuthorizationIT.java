@@ -31,8 +31,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.data.secondary-storage.type",
+    matches = "rdbms")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.data.secondary-storage.type",
+    matches = "AWS_OS")
 class UserTaskAuthorizationIT {
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =

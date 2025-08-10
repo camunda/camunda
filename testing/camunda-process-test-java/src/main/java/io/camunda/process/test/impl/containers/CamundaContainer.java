@@ -19,7 +19,6 @@ import static io.camunda.process.test.impl.containers.CamundaContainer.H2Configu
 import static io.camunda.process.test.impl.containers.CamundaContainer.H2Configuration.DATABASE_TYPE;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_DATABASE_URL;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATABASE_PASSWORD;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATABASE_TYPE;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATABASE_USERNAME;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_LOGGING_LEVEL_ORG_MYBATIS;
@@ -81,8 +80,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   }
 
   public CamundaContainer withH2() {
-    withEnv(CAMUNDA_ENV_DATABASE_TYPE, DATABASE_TYPE)
-        .withEnv(UNIFIED_CONFIGURATION_CAMUNDA_ENV_DATABASE_TYPE, DATABASE_TYPE)
+    withEnv(UNIFIED_CONFIGURATION_CAMUNDA_ENV_DATABASE_TYPE, DATABASE_TYPE)
         .withEnv(CAMUNDA_ENV_CAMUNDA_DATABASE_URL, databaseUrL(UUID.randomUUID()))
         .withEnv(CAMUNDA_ENV_DATABASE_USERNAME, DATABASE_USERNAME)
         .withEnv(CAMUNDA_ENV_DATABASE_PASSWORD, DATABASE_PASSWORD)

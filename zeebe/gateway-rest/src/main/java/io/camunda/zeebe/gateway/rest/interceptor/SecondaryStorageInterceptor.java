@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.interceptor;
 
 import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
@@ -20,8 +21,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * Interceptor that validates secondary storage availability for endpoints requiring it. When
- * secondary storage is not configured (camunda.database.type=none), requests to endpoints marked
- * with {@link RequiresSecondaryStorage} will be rejected with HTTP 403 Forbidden.
+ * secondary storage is not configured (camunda.data.secondary-storage.type=none), requests to
+ * endpoints marked with {@link RequiresSecondaryStorage} will be rejected with HTTP 403 Forbidden.
  */
 @Component
 public class SecondaryStorageInterceptor implements HandlerInterceptor {
@@ -29,7 +30,8 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
   private final boolean secondaryStorageDisabled;
 
   public SecondaryStorageInterceptor(
-      @Value("${camunda.database.type:elasticsearch}") final String databaseType) {
+      @Value("${" + UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE + ":elasticsearch}")
+          final String databaseType) {
     secondaryStorageDisabled = CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(databaseType);
   }
 

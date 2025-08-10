@@ -80,7 +80,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     final String internalUrl =
         databaseUrl.replaceAll("elasticsearch|opensearch|localhost", "internal.host");
     final Map<String, String> env =
-        databaseType.equals(DatabaseType.ES) || databaseType.equals(DatabaseType.LOCAL)
+        databaseType.equals(DatabaseType.ELASTICSEARCH) || databaseType.equals(DatabaseType.LOCAL)
             ? elasticsearchConfiguration87(internalUrl)
             : opensearchConfiguration87(internalUrl);
     if (envOverrides != null) {
@@ -145,7 +145,8 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
             .withWorkingDirectory(zeebeDataPath.resolve("usr/local/zeebe"));
 
     final var multiDbConfigurator = new MultiDbConfigurator(camunda);
-    if (databaseType.equals(DatabaseType.ES) || databaseType.equals(DatabaseType.LOCAL)) {
+    if (databaseType.equals(DatabaseType.ELASTICSEARCH)
+        || databaseType.equals(DatabaseType.LOCAL)) {
       multiDbConfigurator.configureElasticsearchSupportIncludingOldExporter(
           databaseUrl, indexPrefix);
     } else {
@@ -171,7 +172,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     tasklistClient = new TestRestTasklistClient(uri);
     operateClient = new TestRestOperateClient(uri, "demo", "demo");
     searchClients =
-        databaseType.equals(DatabaseType.ES)
+        databaseType.equals(DatabaseType.ELASTICSEARCH)
             ? SearchClientsUtil.createLowLevelElasticsearchSearchClient(
                 getConnectConfiguration(databaseType))
             : SearchClientsUtil.createLowLevelOpensearchSearchClient(
@@ -290,7 +291,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     connectConfiguration.setClusterName("elasticsearch");
     connectConfiguration.setUrl(databaseUrl);
     connectConfiguration.setIndexPrefix(indexPrefix);
-    if (databaseType.equals(DatabaseType.OS)) {
+    if (databaseType.equals(DatabaseType.OPENSEARCH)) {
       connectConfiguration.setUsername(OS_USER);
       connectConfiguration.setPassword(OS_PASSWORD);
     }
