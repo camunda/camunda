@@ -385,7 +385,7 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: "linux/amd64,linux/arm64"
+      PLATFORMS: "linux/arm64,linux/amd64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
     steps:
@@ -464,7 +464,7 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: "linux/amd64,linux/arm64"
+      PLATFORMS: "linux/arm64,linux/amd64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
       DOCKER_IMAGE: camunda/operate
     steps:

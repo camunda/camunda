@@ -31,7 +31,7 @@ defaults:
     shell: bash
 
 env:
-  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+  DOCKER_PLATFORMS: "linux/arm64,linux/amd64"
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
@@ -899,7 +899,6 @@ jobs:
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
-      DOCKER_PLATFORMS: "linux/arm64,linux/amd64"
     steps:
       - uses: actions/checkout@v4
       - uses: hadolint/hadolint-action@v3.1.0

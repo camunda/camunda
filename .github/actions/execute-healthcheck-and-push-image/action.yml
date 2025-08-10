@@ -38,7 +38,7 @@ runs:
           --build-arg VERSION="${VERSION}" \
           --build-arg DATE="${DATE}" \
           --build-arg REVISION="${REVISION}" \
-          --platform linux/amd64,linux/arm64 \
+          --platform linux/arm64,linux/amd64 \
           --file optimize.Dockerfile \
           --provenance false \
           --push \

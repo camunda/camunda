@@ -44,7 +44,7 @@ env:
   BRANCH_NAME: ${{ inputs.branch }}
   IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
   IS_MAIN_OR_STABLE_BRANCH: ${{ inputs.branch == 'main' || startsWith(inputs.branch, 'stable/') }}
-  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+  DOCKER_PLATFORMS: "linux/arm64,linux/amd64"
 
 jobs:
   # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
