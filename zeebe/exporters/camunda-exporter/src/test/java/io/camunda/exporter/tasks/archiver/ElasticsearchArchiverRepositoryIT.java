@@ -20,6 +20,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.search.schema.config.IndexRetentionPolicy;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -65,7 +66,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final HistoryConfiguration config = new HistoryConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
-  private String indexPrefix = "testPrefix";
+  private String indexPrefix = "test-prefix";
   private final String zeebeIndexPrefix = "zeebe-record";
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
@@ -180,6 +181,150 @@ final class ElasticsearchArchiverRepositoryIT {
     }
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"", "test"})
+  void shouldApplyCustomIndexPoliciesWithExactMatching(final String prefix) throws IOException {
+    // given
+    indexPrefix = prefix;
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
+    final var expectedIndices =
+        List.of(
+            formattedPrefix + "camunda-user-task-8.8.0_2025-08-10",
+            formattedPrefix + "camunda-user-task-at-8.8.0_2025-08-10",
+            formattedPrefix + "operate-list-view-8.3.0_2024-01-02",
+            formattedPrefix + "tasklist-task-8.5.0_2024-01-02");
+
+    final var repository = createRepository();
+    retention.setEnabled(true);
+    retention.setPolicyName("default_policy");
+
+    // Configure exact index name matches
+
+    retention.setIndexPolicies(
+        Map.of(
+            "camunda-user-task", new IndexRetentionPolicy("user_task_policy", "7d"),
+            "camunda-user-task-at", new IndexRetentionPolicy("user_task_at_policy", "14d")));
+
+    putLifecyclePolicies();
+    for (final var index : expectedIndices) {
+      testClient.indices().create(r -> r.index(index));
+    }
+
+    // when
+    final var result = repository.setLifeCycleToAllIndexes();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    // Verify exact matches get their specific policies
+    assertThat(getLifeCycle(formattedPrefix + "camunda-user-task-8.8.0_2025-08-10").name())
+        .isEqualTo("user_task_policy");
+    assertThat(getLifeCycle(formattedPrefix + "camunda-user-task-at-8.8.0_2025-08-10").name())
+        .isEqualTo("user_task_at_policy");
+
+    // Verify indices without custom policies get default policy
+    assertThat(getLifeCycle(formattedPrefix + "operate-list-view-8.3.0_2024-01-02").name())
+        .isEqualTo("default_policy");
+    assertThat(getLifeCycle(formattedPrefix + "tasklist-task-8.5.0_2024-01-02").name())
+        .isEqualTo("default_policy");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "test"})
+  void shouldApplyCustomIndexPoliciesWithPatternMatching(final String prefix) throws IOException {
+    // given
+    indexPrefix = prefix;
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
+    final var expectedIndices =
+        List.of(
+            formattedPrefix + "camunda-user-task-8.8.0_2025-08-10",
+            formattedPrefix + "camunda-user-task-at-8.8.0_2025-08-10",
+            formattedPrefix + "camunda-authorization-8.8.0_2025-08-10",
+            formattedPrefix + "operate-list-view-8.3.0_2024-01-02",
+            formattedPrefix + "operate-process-8.3.0_2024-01-02",
+            formattedPrefix + "tasklist-task-8.5.0_2024-01-02",
+            formattedPrefix + "other-index-8.8.0_2025-08-10");
+
+    final var repository = createRepository();
+    retention.setEnabled(true);
+    retention.setPolicyName("default_policy");
+
+    // Configure pattern-based policies
+    retention.setIndexPolicies(
+        Map.of(
+            "camunda.*", new IndexRetentionPolicy("camunda_policy", "40d"),
+            "operate.*", new IndexRetentionPolicy("operate_policy", "60d"),
+            "tasklist.*", new IndexRetentionPolicy("tasklist_policy", "90d")));
+
+    putLifecyclePolicies();
+    for (final var index : expectedIndices) {
+      testClient.indices().create(r -> r.index(index));
+    }
+
+    // when
+    final var result = repository.setLifeCycleToAllIndexes();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    // Verify pattern matches get their specific policies
+    assertThat(getLifeCycle(formattedPrefix + "camunda-user-task-8.8.0_2025-08-10").name())
+        .isEqualTo("camunda_policy");
+    assertThat(getLifeCycle(formattedPrefix + "camunda-user-task-at-8.8.0_2025-08-10").name())
+        .isEqualTo("camunda_policy");
+    assertThat(getLifeCycle(formattedPrefix + "camunda-authorization-8.8.0_2025-08-10").name())
+        .isEqualTo("camunda_policy");
+
+    assertThat(getLifeCycle(formattedPrefix + "operate-list-view-8.3.0_2024-01-02").name())
+        .isEqualTo("operate_policy");
+    assertThat(getLifeCycle(formattedPrefix + "operate-process-8.3.0_2024-01-02").name())
+        .isEqualTo("operate_policy");
+
+    assertThat(getLifeCycle(formattedPrefix + "tasklist-task-8.5.0_2024-01-02").name())
+        .isEqualTo("tasklist_policy");
+
+    // Verify indices without matching patterns get default policy
+    assertThat(getLifeCycle(formattedPrefix + "other-index-8.8.0_2025-08-10").name())
+        .isEqualTo("default_policy");
+  }
+
+  @Test
+  void shouldHandleEmptyIndexPoliciesGracefully() throws IOException {
+    // given
+    indexPrefix = "empty";
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
+    final var testIndices =
+        List.of(
+            formattedPrefix + "test-index-1-8.8.0_2025-08-10",
+            formattedPrefix + "test-index-2-8.8.0_2025-08-10");
+
+    final var repository = createRepository();
+    retention.setEnabled(true);
+    retention.setPolicyName("default_only_policy");
+    // Explicitly set empty index policies
+    retention.setIndexPolicies(Map.of());
+
+    putLifecyclePolicies();
+    for (final var index : testIndices) {
+      testClient.indices().create(r -> r.index(index));
+    }
+
+    // when
+    final var result = repository.setLifeCycleToAllIndexes();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    // Verify all indices get the default policy when no index policies are configured
+    testIndices.forEach(
+        index ->
+            assertThat(getLifeCycle(index).name())
+                .as(
+                    "Index %s should have default_only_policy when no index policies are configured",
+                    index)
+                .isEqualTo("default_only_policy"));
+  }
+
   @Test
   void shouldNotFailSettingILMOnMissingIndex() throws IOException {
     // given
@@ -196,14 +341,111 @@ final class ElasticsearchArchiverRepositoryIT {
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
   }
 
-  private IndexSettingsLifecycle getLifeCycle(final String indexName) throws IOException {
-    return testClient
-        .indices()
-        .getSettings(r -> r.index(indexName))
-        .get(indexName)
-        .settings()
-        .index()
-        .lifecycle();
+  @Test
+  void shouldApplyDifferentPoliciesForDifferentIndices() throws IOException {
+    // given
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
+    final var userTaskIndex = formattedPrefix + "camunda-user-task-8.8.0_2025-08-10";
+    final var operateIndex = formattedPrefix + "operate-list-view-8.3.0_2024-01-02";
+    final var tasklistIndex = formattedPrefix + "tasklist-task-8.5.0_2024-01-02";
+    final var repository = createRepository();
+
+    testClient.indices().create(r -> r.index(userTaskIndex));
+    testClient.indices().create(r -> r.index(operateIndex));
+    testClient.indices().create(r -> r.index(tasklistIndex));
+
+    retention.setEnabled(true);
+    retention.setPolicyName("default_policy");
+    retention.setIndexPolicies(
+        Map.of(
+            "camunda-user-task", new IndexRetentionPolicy("user_task_policy", "7d"),
+            "operate.*", new IndexRetentionPolicy("operate_policy", "30d"),
+            "tasklist.*", new IndexRetentionPolicy("tasklist_policy", "90d")));
+
+    putLifecyclePolicies();
+
+    // when
+    final var result = repository.setIndexLifeCycle(userTaskIndex, operateIndex, tasklistIndex);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    assertThat(getLifeCycle(userTaskIndex))
+        .isNotNull()
+        .extracting(IndexSettingsLifecycle::name)
+        .isEqualTo("user_task_policy");
+
+    assertThat(getLifeCycle(operateIndex))
+        .isNotNull()
+        .extracting(IndexSettingsLifecycle::name)
+        .isEqualTo("operate_policy");
+
+    assertThat(getLifeCycle(tasklistIndex))
+        .isNotNull()
+        .extracting(IndexSettingsLifecycle::name)
+        .isEqualTo("tasklist_policy");
+  }
+
+  @Test
+  void shouldApplyDefaultPolicyWhenNoCustomPolicyMatches() throws IOException {
+    // given
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
+    final var indexName = formattedPrefix + "some-other-index-8.8.0_2025-08-10";
+    final var repository = createRepository();
+    testClient.indices().create(r -> r.index(indexName));
+
+    retention.setEnabled(true);
+    retention.setPolicyName("default_policy");
+    retention.setIndexPolicies(
+        Map.of(
+            "camunda-user-task", new IndexRetentionPolicy("custom_policy", "14d"),
+            "operate.*", new IndexRetentionPolicy("operate_policy", "60d")));
+
+    putLifecyclePolicies();
+
+    // when
+    final var result = repository.setIndexLifeCycle(indexName);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var actualLifecycle = getLifeCycle(indexName);
+    assertThat(actualLifecycle)
+        .isNotNull()
+        .extracting(IndexSettingsLifecycle::name)
+        .isEqualTo("default_policy");
+  }
+
+  @Test
+  void shouldReturnCompletedFutureWhenRetentionDisabled() throws IOException {
+    // given
+    final var indexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    testClient.indices().create(r -> r.index(indexName));
+
+    retention.setEnabled(false); // Retention disabled
+    retention.setPolicyName("some_policy");
+
+    // when
+    final var result = repository.setIndexLifeCycle(indexName);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+    final var actualLifecycle = getLifeCycle(indexName);
+    assertThat(actualLifecycle).isNull(); // No policy should be applied
+  }
+
+  private IndexSettingsLifecycle getLifeCycle(final String indexName) {
+    try {
+      return testClient
+          .indices()
+          .getSettings(r -> r.index(indexName))
+          .get(indexName)
+          .settings()
+          .index()
+          .lifecycle();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Test
@@ -508,6 +750,21 @@ final class ElasticsearchArchiverRepositoryIT {
         Phase.of(d -> d.minAge(t -> t.time("30d")).actions(a -> a.delete(del -> del)));
     ilmClient.putLifecycle(
         l -> l.name(retention.getPolicyName()).policy(p -> p.phases(h -> h.delete(phase))));
+  }
+
+  private void putLifecyclePolicies() throws IOException {
+    putLifecyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
+
+    for (var indexPolicy : retention.getIndexPolicies().values()) {
+      putLifecyclePolicy(indexPolicy.getPolicyName(), indexPolicy.getMinimumAge());
+    }
+  }
+
+  private void putLifecyclePolicy(final String policyName, final String minAge) throws IOException {
+    final var ilmClient = testClient.ilm();
+    final var phase =
+        Phase.of(d -> d.minAge(t -> t.time(minAge)).actions(a -> a.delete(del -> del)));
+    ilmClient.putLifecycle(l -> l.name(policyName).policy(p -> p.phases(h -> h.delete(phase))));
   }
 
   // no need to close resource returned here, since the transport is closed above anyway
