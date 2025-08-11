@@ -80,7 +80,7 @@ public class OidcAuthOverRestStartupIT {
                 c.getAuthorizations().setEnabled(true);
 
                 final var oidcConfig = c.getAuthentication().getOidc();
-                String issuerUri =
+                final String issuerUri =
                     "http://localhost:"
                         + keycloakProxy.getLocalPort()
                         + "/realms/"
