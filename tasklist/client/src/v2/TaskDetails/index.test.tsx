@@ -241,15 +241,12 @@ describe('<Task />', () => {
   });
 
   it('should complete task without variables', async () => {
-    let taskState: 'CREATED' | 'COMPLETED' = 'CREATED';
-
     nodeMockServer.use(
       http.get('/v2/user-tasks/:userTaskKey', () => {
         return HttpResponse.json(
           taskMocks.assignedTask({
             userTaskKey: MOCK_USER_TASK_KEY,
             formKey: undefined,
-            state: taskState,
           }),
         );
       }),
@@ -263,7 +260,6 @@ describe('<Task />', () => {
       http.post(
         '/v2/user-tasks/:userTaskKey/completion',
         () => {
-          taskState = 'COMPLETED';
           return HttpResponse.json();
         },
         {once: true},
@@ -295,19 +291,28 @@ describe('<Task />', () => {
         '/v2/process-definitions/:processDefinitionKey/xml',
         async () => new HttpResponse(undefined, {status: 404}),
       ),
-      http.get(
-        '/v2/user-tasks/:userTaskKey',
-        () => {
-          return HttpResponse.json(
-            taskMocks.completedTask({
-              userTaskKey: MOCK_USER_TASK_KEY,
-              formKey: undefined,
+    );
+
+    let swapped = false;
+    nodeMockServer.events.on('response:mocked', ({request}) => {
+      if (swapped) return;
+      if (request.method === 'POST') {
+        const url = new URL(request.url);
+        if (url.pathname.endsWith('/completion')) {
+          swapped = true;
+          nodeMockServer.use(
+            http.get('/v2/user-tasks/:userTaskKey', () => {
+              return HttpResponse.json(
+                taskMocks.completedTask({
+                  userTaskKey: MOCK_USER_TASK_KEY,
+                  formKey: undefined,
+                }),
+              );
             }),
           );
-        },
-        {once: true},
-      ),
-    );
+        }
+      }
+    });
 
     const {user} = render(<Component />, {
       wrapper: getWrapper(),
