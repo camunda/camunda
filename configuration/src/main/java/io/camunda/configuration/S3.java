@@ -12,7 +12,7 @@ import java.time.Duration;
 import java.util.Set;
 
 public class S3 {
-  private static final String PREFIX = "camunda.data.backup.s3.";
+  private static final String PREFIX = "camunda.data.backup.s3";
   private static final Set<String> LEGACY_BUCKETNAME_PROPERTIES =
       Set.of("zeebe.broker.data.backup.s3.bucketName");
   private static final Set<String> LEGACY_ENDPOINT_PROPERTIES =
@@ -119,7 +119,7 @@ public class S3 {
 
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "bucket-name",
+        PREFIX + ".bucket-name",
         bucketName,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -132,7 +132,7 @@ public class S3 {
 
   public String getEndpoint() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "endpoint",
+        PREFIX + ".endpoint",
         endpoint,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -145,7 +145,7 @@ public class S3 {
 
   public String getRegion() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "region",
+        PREFIX + ".region",
         region,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -158,7 +158,7 @@ public class S3 {
 
   public String getAccessKey() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "access-key",
+        PREFIX + ".access-key",
         accessKey,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -171,7 +171,7 @@ public class S3 {
 
   public String getSecretKey() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "secret-key",
+        PREFIX + ".secret-key",
         secretKey,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -184,7 +184,7 @@ public class S3 {
 
   public Duration getApiCallTimeout() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "api-call-timeout",
+        PREFIX + ".api-call-timeout",
         apiCallTimeout,
         Duration.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -197,7 +197,7 @@ public class S3 {
 
   public boolean isForcePathStyleAccess() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "force-path-style-access",
+        PREFIX + ".force-path-style-access",
         forcePathStyleAccess,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -210,7 +210,7 @@ public class S3 {
 
   public String getCompression() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "compression",
+        PREFIX + ".compression",
         compression,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -223,7 +223,7 @@ public class S3 {
 
   public int getMaxConcurrentConnections() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "max-concurrent-connections",
+        PREFIX + ".max-concurrent-connections",
         maxConcurrentConnections,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -236,7 +236,7 @@ public class S3 {
 
   public Duration getConnectionAcquisitionTimeout() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "connection-acquisition-timeout",
+        PREFIX + ".connection-acquisition-timeout",
         connectionAcquisitionTimeout,
         Duration.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -249,7 +249,7 @@ public class S3 {
 
   public boolean isSupportLegacyMd5() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "support-legacy-md5",
+        PREFIX + ".support-legacy-md5",
         supportLegacyMd5,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -262,7 +262,7 @@ public class S3 {
 
   public String getBasePath() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "base-path",
+        PREFIX + ".base-path",
         basePath,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
