@@ -119,7 +119,10 @@ public class BackupRestoreTest {
                 INDEX_PREFIX)
             .withEnv("CAMUNDA_TASKLIST_CSRF_PREVENTION_ENABLED", "false")
             .withEnv("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED", "true")
-            .withEnv("CAMUNDA_TASKLIST_IMPORTERENABLED", "false");
+            .withEnv("CAMUNDA_TASKLIST_IMPORTERENABLED", "false")
+            .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
+            .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
+            .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
 
     startTasklist();
   }
