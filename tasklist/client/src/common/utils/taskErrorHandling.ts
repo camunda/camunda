@@ -6,24 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-interface ErrorData {
-  title?: string;
-  message?: string;
-}
+import {z} from 'zod';
 
-const isErrorData = (data: unknown): data is ErrorData => {
-  return typeof data === 'object' && data !== null;
-};
+const ErrorDataSchema = z.object({
+  title: z.string().optional(),
+  message: z.string().optional(),
+});
+
+export type ErrorData = z.infer<typeof ErrorDataSchema>;
 
 export const isTaskTimeoutError = (errorData: unknown): boolean => {
-  if (!isErrorData(errorData)) {
+  const parsed = ErrorDataSchema.safeParse(errorData);
+  if (!parsed.success) {
     return false;
   }
 
+  const {title, message} = parsed.data;
   return (
-    errorData.title === 'DEADLINE_EXCEEDED' ||
-    errorData.title === 'TASK_PROCESSING_TIMEOUT' ||
-    !!errorData.message?.includes('TASK_PROCESSING_TIMEOUT') ||
-    !!errorData.message?.includes('DEADLINE_EXCEEDED')
+    title === 'DEADLINE_EXCEEDED' ||
+    title === 'TASK_PROCESSING_TIMEOUT' ||
+    !!message?.includes('TASK_PROCESSING_TIMEOUT') ||
+    !!message?.includes('DEADLINE_EXCEEDED')
   );
 };
+
+export {ErrorDataSchema};
