@@ -252,4 +252,39 @@ class AdHocSubProcessBuilderTest {
                     .containsExactly(
                         tuple("headerKey1", "headerValue1"), tuple("headerKey2", "headerValue2")));
   }
+
+  @Test
+  void shouldSetOutputCollectionAndElement() {
+    // given
+    final String outputExpression = "result";
+    final String outputCollection = "results";
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess("ad-hoc", adHocSubProcess -> adHocSubProcess.task("A"))
+            .zeebeOutputCollection(outputCollection)
+            .zeebeOutputElementExpression(outputExpression)
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    final ExtensionElements extensionElements =
+        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements).isNotNull();
+
+    assertThat(extensionElements.getChildElementsByType(ZeebeAdHoc.class))
+        .hasSize(1)
+        .first()
+        .extracting(ZeebeAdHoc::getOutputElement)
+        .isEqualTo("=" + outputExpression);
+
+    assertThat(extensionElements.getChildElementsByType(ZeebeAdHoc.class))
+        .hasSize(1)
+        .first()
+        .extracting(ZeebeAdHoc::getOutputCollection)
+        .isEqualTo(outputCollection);
+  }
 }
