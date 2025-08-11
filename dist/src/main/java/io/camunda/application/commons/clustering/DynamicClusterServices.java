@@ -10,14 +10,15 @@ package io.camunda.application.commons.clustering;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,26 +48,45 @@ public class DynamicClusterServices {
   }
 
   @Bean
-  @Profile({"!broker & !identity-migration"})
+  public ClusterConfigurationGossiperConfig configManagerCfg(
+      final UnifiedConfiguration unifiedConfiguration) {
+    final var gossiperConfig = unifiedConfiguration.getCamunda().getCluster().getMetadata();
+    return new ClusterConfigurationGossiperConfig(
+        gossiperConfig.getSyncDelay(),
+        gossiperConfig.getSyncRequestTimeout(),
+        gossiperConfig.getGossipFanout());
+  }
+
+  @Bean
+  @Profile("!broker")
   public GatewayClusterConfigurationService gatewayClusterTopologyService(
-      final BrokerTopologyManager brokerTopologyManager, final GatewayCfg gatewayCfg) {
+      final ClusterConfigurationGossiperConfig configManagerCfg) {
     final var service =
         new GatewayClusterConfigurationService(
-            clusterCommunicationService,
-            clusterMembershipService,
-            gatewayCfg.getCluster().getConfigManager().gossip(),
-            meterRegistry);
+            clusterCommunicationService, clusterMembershipService, configManagerCfg, meterRegistry);
     scheduler.submitActor(service).join();
-    service.addUpdateListener(brokerTopologyManager);
     return service;
   }
 
   @Bean
-  public BrokerTopologyManager brokerTopologyManager() {
+  @Profile("broker")
+  public BrokerTopologyManager brokerTopologyManagerForEmbeddedBrokerClient() {
     final var brokerTopologyManager =
         new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
     scheduler.submitActor(brokerTopologyManager).join();
     clusterMembershipService.addListener(brokerTopologyManager);
+    return brokerTopologyManager;
+  }
+
+  @Bean
+  @Profile("!broker")
+  public BrokerTopologyManager brokerTopologyManager(
+      final GatewayClusterConfigurationService gatewayClusterConfigurationService) {
+    final var brokerTopologyManager =
+        new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
+    scheduler.submitActor(brokerTopologyManager).join();
+    clusterMembershipService.addListener(brokerTopologyManager);
+    gatewayClusterConfigurationService.addUpdateListener(brokerTopologyManager);
     return brokerTopologyManager;
   }
 
