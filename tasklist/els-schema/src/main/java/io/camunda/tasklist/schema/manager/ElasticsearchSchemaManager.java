@@ -7,6 +7,11 @@
  */
 package io.camunda.tasklist.schema.manager;
 
+import static io.camunda.tasklist.es.RetryElasticsearchClient.DEFAULT_SHARDS;
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REPLICA;
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_SHARDS;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -29,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.client.indexlifecycle.DeleteAction;
 import org.elasticsearch.client.indexlifecycle.LifecycleAction;
@@ -162,28 +168,81 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   @Override
+  public void updateIndexSettings() {
+    updateIndicesNumberOfReplicas();
+    updateComponentTemplateSettings();
+  }
+
   public String getComponentTemplateName() {
     return String.format("%s_template", tasklistProperties.getElasticsearch().getIndexPrefix());
   }
 
+  private void updateComponentTemplateSettings() {
+    final var settings =
+        retryElasticsearchClient.getComponentTemplateSettings(getComponentTemplateName());
+
+    final var expectedShards =
+        String.valueOf(tasklistProperties.getElasticsearch().getNumberOfShards());
+    final var expectedReplicas =
+        String.valueOf(tasklistProperties.getElasticsearch().getNumberOfReplicas());
+    final var actualShards = settings.get(NUMBERS_OF_SHARDS, DEFAULT_SHARDS);
+    final var actualReplicas = settings.get(NUMBERS_OF_REPLICA, NO_REPLICA);
+
+    if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
+      LOGGER.debug(
+          "Updating component template settings to shards={}, replicas={}",
+          expectedShards,
+          expectedReplicas);
+      createComponentTemplate(true);
+    }
+  }
+
+  private void updateIndicesNumberOfReplicas() {
+    Stream.concat(indexDescriptors.stream(), templateDescriptors.stream())
+        .forEach(
+            indexDescriptor -> {
+              final var expectedReplicas =
+                  String.valueOf(
+                      tasklistProperties
+                          .getElasticsearch()
+                          .getNumberOfReplicas(indexDescriptor.getIndexName()));
+              final var settings =
+                  retryElasticsearchClient.getIndexSettingsForIndexPattern(
+                      indexDescriptor.getAlias());
+              if (!settings.values().stream()
+                  .map(s -> s.get(NUMBERS_OF_REPLICA, NO_REPLICA))
+                  .allMatch(expectedReplicas::equals)) {
+                LOGGER.debug(
+                    "Updating number of replicas of {} to {}",
+                    indexDescriptor.getAlias(),
+                    expectedReplicas);
+                retryElasticsearchClient.setIndexSettingsFor(
+                    Settings.builder().put(NUMBERS_OF_REPLICA, expectedReplicas).build(),
+                    indexDescriptor.getAlias());
+              }
+            });
+  }
+
   public void createDefaults() {
     final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
-    final String settingsTemplate = getComponentTemplateName();
     LOGGER.info(
         "Create default settings from '{}' with {} shards and {} replicas per index.",
-        settingsTemplate,
+        getComponentTemplateName(),
         elsConfig.getNumberOfShards(),
         elsConfig.getNumberOfReplicas());
 
-    final Settings settings = getDefaultIndexSettings();
+    createComponentTemplate(false);
+  }
 
+  private void createComponentTemplate(final boolean overwrite) {
+    final Settings settings = getDefaultIndexSettings();
     final Template template = new Template(settings, null, null);
     final ComponentTemplate componentTemplate = new ComponentTemplate(template, null, null);
     final PutComponentTemplateRequest request =
         new PutComponentTemplateRequest()
-            .name(settingsTemplate)
+            .name(getComponentTemplateName())
             .componentTemplate(componentTemplate);
-    retryElasticsearchClient.createComponentTemplate(request);
+    retryElasticsearchClient.createComponentTemplate(request, overwrite);
   }
 
   public void createIndexLifeCycles() {

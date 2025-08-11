@@ -13,13 +13,16 @@ import static io.camunda.tasklist.util.apps.schema.TestIndexDescriptorConfigurat
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.ElasticsearchHelper;
 import io.camunda.tasklist.util.ElasticsearchTestExtension;
@@ -36,8 +39,13 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 @SpringBootTest(
     classes = {
@@ -53,7 +61,11 @@ import org.springframework.boot.test.context.SpringBootTest;
       "camunda.webapps.default-app = tasklist",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)
 public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ElasticSearchSchemaManagementIT.class);
 
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private List<IndexDescriptor> indexDescriptors;
@@ -61,13 +73,19 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
   @Autowired private IndexSchemaValidatorElasticSearch indexSchemaValidator;
   @Autowired private ElasticsearchHelper noSqlHelper;
-  @Autowired private SchemaManager schemaManager;
+  @Autowired private ElasticsearchSchemaManager schemaManager;
   @Autowired private TestIndexDescriptor testIndexDescriptor;
   @Autowired private TestTemplateDescriptor testTemplateDescriptor;
 
   @BeforeAll
   public static void beforeClass() {
     assumeTrue(TestUtil.isElasticSearch());
+  }
+
+  @DynamicPropertySource
+  static void setProperties(final DynamicPropertyRegistry registry) {
+    // Disable schema creation for the test, as we want to manage it manually
+    registry.add("camunda.tasklist.elasticsearch.createSchema", () -> false);
   }
 
   @Test
@@ -92,9 +110,7 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
 
     tasklistProperties.getElasticsearch().setNumberOfReplicas(modifiedNumberOfReplicas);
 
-    assertThat(indexSchemaValidator.validateIndexConfiguration()).isFalse();
-
-    schemaManager.createSchema();
+    schemaManager.updateIndexSettings();
 
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertThat(
@@ -133,6 +149,7 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
   @Test
   public void shouldAddFieldToIndex() throws Exception {
     // given
+    schemaManager.createSchema();
     testIndexDescriptor.setSchemaClasspathFilename(getSchemaFilePath("tasklist-test-after.json"));
     final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
         indexSchemaValidator.validateIndexMappings();
@@ -167,6 +184,7 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
   @Test
   public void shouldAddFieldToIndexTemplate() throws Exception {
     // given
+    schemaManager.createSchema();
     testTemplateDescriptor.setSchemaClasspathFilename(
         TestTemplateDescriptorConfiguration.getSchemaFilePath("tasklist-test-template-after.json"));
     final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
@@ -230,28 +248,24 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
     // Verify initial component template replica settings
     final String componentTemplateName = schemaManager.getComponentTemplateName();
     final var initialSettings =
-        retryElasticsearchClient.getComponentTemplateProperties(
-            componentTemplateName, NUMBERS_OF_REPLICA);
+        retryElasticsearchClient.getComponentTemplateSettings(componentTemplateName);
     assertThat(initialSettings.get(NUMBERS_OF_REPLICA))
         .isEqualTo(String.valueOf(initialNumberOfReplicas));
 
     tasklistProperties.getElasticsearch().setNumberOfReplicas(modifiedNumberOfReplicas);
 
-    assertThat(indexSchemaValidator.validateIndexConfiguration()).isFalse();
+    schemaManager.updateIndexSettings();
 
-    schemaManager.createSchema();
-
-    // Verify modified component template replica settings
-    final var modifiedSettings =
-        retryElasticsearchClient.getComponentTemplateProperties(
-            componentTemplateName, NUMBERS_OF_REPLICA);
-    assertThat(modifiedSettings.get(NUMBERS_OF_REPLICA))
+    // Verify updated component template replica settings
+    final var updatedSettings =
+        retryElasticsearchClient.getComponentTemplateSettings(componentTemplateName);
+    assertThat(updatedSettings.get(NUMBERS_OF_REPLICA))
         .isEqualTo(String.valueOf(modifiedNumberOfReplicas));
   }
 
   @Test
   public void shouldChangeNumberOfShardsForComponentTemplate() {
-    final int initialNumberOfShards = 2;
+    final int initialNumberOfShards = 1;
     final int modifiedNumberOfShards = 3;
 
     tasklistProperties.getElasticsearch().setNumberOfShards(initialNumberOfShards);
@@ -260,22 +274,87 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
     // Verify initial component template shard settings
     final String componentTemplateName = schemaManager.getComponentTemplateName();
     final var initialSettings =
-        retryElasticsearchClient.getComponentTemplateProperties(
-            componentTemplateName, NUMBERS_OF_SHARDS);
+        retryElasticsearchClient.getComponentTemplateSettings(componentTemplateName);
     assertThat(initialSettings.get(NUMBERS_OF_SHARDS))
         .isEqualTo(String.valueOf(initialNumberOfShards));
 
     tasklistProperties.getElasticsearch().setNumberOfShards(modifiedNumberOfShards);
 
-    assertThat(indexSchemaValidator.validateIndexConfiguration()).isFalse();
+    schemaManager.updateIndexSettings();
 
+    // Verify updated component template shard settings
+    final var updatedSettings =
+        retryElasticsearchClient.getComponentTemplateSettings(componentTemplateName);
+    assertThat(updatedSettings.get(NUMBERS_OF_SHARDS))
+        .isEqualTo(String.valueOf(modifiedNumberOfShards));
+  }
+
+  @Test
+  public void shouldUpdateReplicasForAllTaskIndicesCreatedFromTemplate() throws IOException {
+    final Integer initialNumberOfReplicas = 0;
+    final Integer modifiedNumberOfReplicas = 2;
+
+    tasklistProperties.getElasticsearch().setNumberOfReplicas(initialNumberOfReplicas);
     schemaManager.createSchema();
 
-    // Verify modified component template shard settings
-    final Map<String, String> modifiedSettings =
-        retryElasticsearchClient.getComponentTemplateProperties(
-            componentTemplateName, NUMBERS_OF_SHARDS);
-    assertThat(modifiedSettings.get(NUMBERS_OF_SHARDS))
-        .isEqualTo(String.valueOf(modifiedNumberOfShards));
+    // Find the TaskTemplate from the template descriptors
+    final TemplateDescriptor taskTemplate =
+        templateDescriptors.stream()
+            .filter(template -> "task".equals(template.getIndexName()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("TaskTemplate not found"));
+
+    // Create multiple task indices from the template by indexing TaskEntity objects
+    final String taskIndex1 = taskTemplate.getFullQualifiedName() + "-2025-01-01";
+    final String taskIndex2 = taskTemplate.getFullQualifiedName() + "-2025-01-02";
+    final String taskIndex3 = taskTemplate.getFullQualifiedName() + "-2025-01-03";
+    final TaskEntity task1 = createSampleTaskEntity(1L);
+    final TaskEntity task2 = createSampleTaskEntity(2L);
+    final TaskEntity task3 = createSampleTaskEntity(3L);
+
+    final ObjectMapper mapper = new ObjectMapper();
+
+    retryElasticsearchClient.createOrUpdateDocument(
+        taskIndex1, task1.getId(), mapper.convertValue(task1, Map.class));
+    retryElasticsearchClient.createOrUpdateDocument(
+        taskIndex2, task2.getId(), mapper.convertValue(task2, Map.class));
+    retryElasticsearchClient.createOrUpdateDocument(
+        taskIndex3, task3.getId(), mapper.convertValue(task3, Map.class));
+
+    // Verify all task indices have the initial replica settings
+    validateTaskIndicesReplicaSettings(taskTemplate.getAlias(), initialNumberOfReplicas);
+
+    // Update replica settings
+    tasklistProperties.getElasticsearch().setNumberOfReplicas(modifiedNumberOfReplicas);
+    schemaManager.updateIndexSettings();
+
+    // Verify all task indices (created from template) have updated replica settings
+    validateTaskIndicesReplicaSettings(taskTemplate.getAlias(), modifiedNumberOfReplicas);
+  }
+
+  private TaskEntity createSampleTaskEntity(final long taskKey) {
+    return new TaskEntity().setId(String.valueOf(taskKey)).setKey(taskKey);
+  }
+
+  private void validateTaskIndicesReplicaSettings(
+      final String taskAlias, final Integer expectedReplicas) throws IOException {
+    final Set<String> taskIndices = retryElasticsearchClient.getIndexNames(taskAlias);
+    assertThat(taskIndices).isNotEmpty();
+
+    for (final String indexName : taskIndices) {
+      assertThat(
+              retryElasticsearchClient
+                  .getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA)
+                  .get(NUMBERS_OF_REPLICA))
+          .as("Task index %s should have %d replicas", indexName, expectedReplicas)
+          .isEqualTo(String.valueOf(expectedReplicas));
+    }
+
+    LOGGER.info(
+        "Validated replica settings for {} task indices under alias {}: expected={}, indices={}",
+        taskIndices.size(),
+        taskAlias,
+        expectedReplicas,
+        taskIndices);
   }
 }

@@ -28,5 +28,5 @@ public interface SchemaManager {
 
   void createIndex(IndexDescriptor testIndex);
 
-  String getComponentTemplateName();
+  void updateIndexSettings();
 }
