@@ -25,14 +25,12 @@ import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class AdHocSubProcessBuilderTest {
@@ -162,32 +160,6 @@ class AdHocSubProcessBuilderTest {
     assertThat(((AdHocSubProcess) adHocSubProcess).isCancelRemainingInstances()).isTrue();
   }
 
-  @ParameterizedTest
-  @EnumSource(ZeebeAdHocImplementationType.class)
-  void shouldSetImplementationType(final ZeebeAdHocImplementationType implementationType) {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .adHocSubProcess("ad-hoc", adHocSubProcess -> adHocSubProcess.task("A"))
-            .zeebeImplementation(implementationType)
-            .endEvent()
-            .done();
-
-    // when/then
-    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
-
-    final ExtensionElements extensionElements =
-        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
-    assertThat(extensionElements).isNotNull();
-
-    assertThat(extensionElements.getChildElementsByType(ZeebeAdHoc.class))
-        .hasSize(1)
-        .first()
-        .extracting(ZeebeAdHoc::getImplementationType)
-        .isEqualTo(implementationType);
-  }
-
   @Test
   void shouldSetTaskDefinition() {
     // given
@@ -197,11 +169,7 @@ class AdHocSubProcessBuilderTest {
             .adHocSubProcess(
                 "ad-hoc",
                 adHocSubProcess ->
-                    adHocSubProcess
-                        .zeebeImplementation(ZeebeAdHocImplementationType.JOB_WORKER)
-                        .zeebeJobType("jobType")
-                        .zeebeJobRetries("3")
-                        .task("A"))
+                    adHocSubProcess.zeebeJobType("jobType").zeebeJobRetries("3").task("A"))
             .endEvent()
             .done();
 
@@ -229,7 +197,6 @@ class AdHocSubProcessBuilderTest {
                 "ad-hoc",
                 adHocSubProcess ->
                     adHocSubProcess
-                        .zeebeImplementation(ZeebeAdHocImplementationType.JOB_WORKER)
                         .zeebeJobTypeExpression("jobType")
                         .zeebeJobRetriesExpression("3")
                         .task("A"))
@@ -260,7 +227,6 @@ class AdHocSubProcessBuilderTest {
                 "ad-hoc",
                 adHocSubProcess ->
                     adHocSubProcess
-                        .zeebeImplementation(ZeebeAdHocImplementationType.JOB_WORKER)
                         .zeebeJobType("jobType")
                         .zeebeTaskHeader("headerKey1", "headerValue1")
                         .zeebeTaskHeader("headerKey2", "headerValue2")

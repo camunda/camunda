@@ -17,7 +17,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
@@ -63,7 +62,6 @@ public class JobBasedAdHocSubProcessTest {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .adHocSubProcess(AHSP_ELEMENT_ID, modifier)
-        .zeebeImplementation(ZeebeAdHocImplementationType.JOB_WORKER)
         .zeebeJobType(jobType)
         .endEvent()
         .done();
