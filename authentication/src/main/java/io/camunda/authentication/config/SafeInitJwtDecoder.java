@@ -28,7 +28,7 @@ public class SafeInitJwtDecoder implements JwtDecoder {
     // Try to create a decoder. In case of failure - schedule async retries of creation.
     proxy =
         new SafeInitProxy<>(
-            decoderSupplier, e -> LOG.error("Failed to initialize JWT Decoder. Retrying.", e));
+            decoderSupplier, e -> LOG.debug("Failed to initialize JWT Decoder. Retrying.", e));
   }
 
   @Override

@@ -34,7 +34,7 @@ public class SafeInitClientRegistrationRepository implements ClientRegistrationR
     proxy =
         new SafeInitProxy<>(
             repositoryFactory,
-            e -> LOG.error("Failed to initialize ClientRegistrationRepository. Retrying.", e));
+            e -> LOG.warn("Failed to initialize ClientRegistrationRepository. Retrying.", e));
   }
 
   @Override
