@@ -14,9 +14,11 @@ import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import java.util.concurrent.ForkJoinPool;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,18 +49,23 @@ public class WebSecurityConfigTestContext {
   }
 
   @Bean
-  public RoleServices createRoleServices() {
-    return new RoleServices(null, null, null, null, null);
+  public ApiServicesExecutorProvider apiServicesExecutorProvider() {
+    return ApiServicesExecutorProvider.of(ForkJoinPool.commonPool());
   }
 
   @Bean
-  public GroupServices createGroupServices() {
-    return new GroupServices(null, null, null, null, null);
+  public RoleServices createRoleServices(final ApiServicesExecutorProvider executorProvider) {
+    return new RoleServices(null, null, null, null, executorProvider);
   }
 
   @Bean
-  public TenantServices createTenantServices() {
-    return new TenantServices(null, null, null, null, null);
+  public GroupServices createGroupServices(final ApiServicesExecutorProvider executorProvider) {
+    return new GroupServices(null, null, null, null, executorProvider);
+  }
+
+  @Bean
+  public TenantServices createTenantServices(final ApiServicesExecutorProvider executorProvider) {
+    return new TenantServices(null, null, null, null, executorProvider);
   }
 
   @Bean
