@@ -1,4 +1,4 @@
-name: Inherit Project & Team from Parent Sub-Issue
+name: Inherit Project & Team from Parent Sub-Issue (Project 173 only)
 
 on:
   issues:
@@ -8,7 +8,7 @@ jobs:
   inherit-from-parent:
     runs-on: ubuntu-latest
     steps:
-      - name: Inherit fields from parent sub-issue
+      - name: Inherit fields from parent sub-issue if parent is in project 173
         uses: actions/github-script@v7
         with:
           script: |
@@ -17,10 +17,11 @@ jobs:
             const ghql = graphql.defaults({ headers: { authorization: `token ${token}` } });
             const octokit = github;
 
-            const issueNumber = context.payload.issue.number;
-            const isNew = context.payload.action === 'opened';
+            const TARGET_PROJECT_ID = "PVT_kwDOACVKPs4A1Kno";
 
-            // 1. Get timeline events for this issue
+            const issueNumber = context.payload.issue.number;
+
+            // 1. Get timeline events for this issue (child)
             const events = await octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}/timeline', {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -43,7 +44,7 @@ jobs:
 
             const parentNumber = subLink.source.issue.number;
 
-            // 3. Get parent & child details
+            // 3. Fetch parent & child info including project items and fields
             async function getIssueInfo(number) {
               const data = await ghql(`
                 query($owner:String!, $repo:String!, $number:Int!) {
@@ -92,9 +93,16 @@ jobs:
               return;
             }
 
-            const parentItem = parentIssue.projectItems.nodes[0];
+            // 4. Check if parent is in the target project
+            const parentItem = parentIssue.projectItems.nodes.find(item => item.project.id === TARGET_PROJECT_ID);
+            if (!parentItem) {
+              console.log(`Parent is not in the target project (${TARGET_PROJECT_ID}). Skipping.`);
+              return;
+            }
+
             const projectId = parentItem.project.id;
 
+            // 5. Helper to get field and option IDs for given field name
             function getFieldOptionId(fieldName) {
               const fieldDef = parentItem.project.fields.nodes.find(f => f.name === fieldName);
               const fieldValue = parentItem.fieldValues.nodes.find(v => v.field?.name === fieldName);
@@ -105,7 +113,8 @@ jobs:
             const projectNameData = getFieldOptionId("Project Name");
             const teamData = getFieldOptionId("Team");
 
-            // 4. Add child to same project (if not already in it)
+            // 6. Add child to same project if not already added
+            let childItemId;
             if (childIssue.projectItems.nodes.length === 0) {
               const addChildItemRes = await ghql(`
                 mutation($projectId:ID!, $contentId:ID!) {
@@ -116,10 +125,24 @@ jobs:
               `, { projectId, contentId: childIssue.id });
               childItemId = addChildItemRes.addProjectV2ItemById.item.id;
             } else {
-              childItemId = childIssue.projectItems.nodes[0].id;
+              // If already in project, pick the matching project item id
+              const existingItem = childIssue.projectItems.nodes.find(item => item.project.id === TARGET_PROJECT_ID);
+              if (!existingItem) {
+                console.log("Child is not in the target project but is in others — adding now.");
+                const addChildItemRes = await ghql(`
+                  mutation($projectId:ID!, $contentId:ID!) {
+                    addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
+                      item { id }
+                    }
+                  }
+                `, { projectId, contentId: childIssue.id });
+                childItemId = addChildItemRes.addProjectV2ItemById.item.id;
+              } else {
+                childItemId = existingItem.id;
+              }
             }
 
-            // 5. Update fields on child
+            // 7. Update child project item fields with parent's values
             const updates = [];
             if (projectNameData) {
               updates.push(ghql(`
@@ -147,6 +170,7 @@ jobs:
             }
 
             await Promise.all(updates);
-            console.log(`Inherited Project Name & Team fields from parent issue #${parentNumber}`);
+
+            console.log(`Inherited Project Name & Team from parent #${parentNumber} in project ${projectId}`);
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
