@@ -57,6 +57,7 @@ message ActivatedJob {
     BPMN_ELEMENT = 0;
     EXECUTION_LISTENER = 1;
     TASK_LISTENER = 2;
+    AD_HOC_SUB_PROCESS = 3;
   }
 
   // Describes the listener event type of the job.
