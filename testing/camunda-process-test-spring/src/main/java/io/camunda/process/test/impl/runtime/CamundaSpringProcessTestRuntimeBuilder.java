@@ -53,7 +53,8 @@ public class CamundaSpringProcessTestRuntimeBuilder {
     runtimeBuilder
         .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaDockerImageVersion())
         .withCamundaDockerImageName(runtimeConfiguration.getCamundaDockerImageName())
-        .withCamundaEnv(runtimeConfiguration.getCamundaEnvVars());
+        .withCamundaEnv(runtimeConfiguration.getCamundaEnvVars())
+        .withCamundaLogger(runtimeConfiguration.getCamundaLoggerName());
 
     runtimeConfiguration.getCamundaExposedPorts().forEach(runtimeBuilder::withCamundaExposedPort);
 
@@ -62,7 +63,12 @@ public class CamundaSpringProcessTestRuntimeBuilder {
         .withConnectorsDockerImageName(runtimeConfiguration.getConnectorsDockerImageName())
         .withConnectorsDockerImageVersion(runtimeConfiguration.getConnectorsDockerImageVersion())
         .withConnectorsEnv(runtimeConfiguration.getConnectorsEnvVars())
-        .withConnectorsSecrets(runtimeConfiguration.getConnectorsSecrets());
+        .withConnectorsSecrets(runtimeConfiguration.getConnectorsSecrets())
+        .withConnectorsLogger(runtimeConfiguration.getCamundaLoggerName());
+
+    runtimeConfiguration
+        .getConnectorsExposedPorts()
+        .forEach(runtimeBuilder::withConnectorsExposedPort);
   }
 
   private static void configureRemoteRuntime(

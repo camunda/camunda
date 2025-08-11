@@ -84,6 +84,9 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     final List<Integer> camundaExposedPorts = List.of(100, 200);
     runtimeConfiguration.setCamundaExposedPorts(camundaExposedPorts);
 
+    runtimeConfiguration.setCamundaLoggerName("io.camunda.custom.logger.name");
+    runtimeConfiguration.setConnectorsLoggerName("io.camunda.custom.logger.name");
+
     // when
     CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
 
@@ -92,6 +95,8 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(runtimeBuilder.getCamundaDockerImageVersion()).isEqualTo("8.6.0-custom");
     assertThat(runtimeBuilder.getCamundaEnvVars()).isEqualTo(camundaEnvVars);
     assertThat(runtimeBuilder.getCamundaExposedPorts()).isEqualTo(camundaExposedPorts);
+    assertThat(runtimeBuilder.getCamundaLoggerName()).isEqualTo("io.camunda.custom.logger.name");
+    assertThat(runtimeBuilder.getConnectorsLoggerName()).isEqualTo("io.camunda.custom.logger.name");
   }
 
   @Test
@@ -112,6 +117,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.setConnectorsDockerImageVersion("8.6.0-custom");
     runtimeConfiguration.setConnectorsEnvVars(connectorsEnvVars);
     runtimeConfiguration.setConnectorsSecrets(connectorsSecrets);
+    runtimeConfiguration.setConnectorsExposedPorts(List.of(9090));
 
     // when
     CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
@@ -122,6 +128,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(runtimeBuilder.getConnectorsDockerImageVersion()).isEqualTo("8.6.0-custom");
     assertThat(runtimeBuilder.getConnectorsEnvVars()).isEqualTo(connectorsEnvVars);
     assertThat(runtimeBuilder.getConnectorsSecrets()).isEqualTo(connectorsSecrets);
+    assertThat(runtimeBuilder.getConnectorsExposedPorts()).isEqualTo(List.of(9090));
   }
 
   @Test

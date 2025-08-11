@@ -15,11 +15,13 @@
  */
 package io.camunda.process.test.impl.runtime.properties;
 
+import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyListOrEmpty;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyMapOrEmpty;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 import static io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil.getLatestReleasedVersion;
 
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -31,12 +33,15 @@ public class ConnectorsContainerRuntimeProperties {
   public static final String PROPERTY_NAME_CONNECTORS_ENABLED = "connectorsEnabled";
   public static final String PROPERTY_NAME_CONNECTORS_ENV_VARS_PREFIX = "connectorsEnvVars";
   public static final String PROPERTY_NAME_CONNECTORS_SECRETS_PREFIX = "connectorsSecrets";
+  public static final String PROPERTY_NAME_CONNECTORS_EXPOSED_PORTS_PREFIX =
+      "connectorsExposedPorts";
 
   private final boolean isConnectorsEnabled;
   private final String connectorsDockerImageName;
   private final String connectorsDockerImageVersion;
   private final Map<String, String> connectorsEnvVars;
   private final Map<String, String> connectorsSecrets;
+  private final List<Integer> connectorsExposedPorts;
 
   public ConnectorsContainerRuntimeProperties(final Properties properties) {
     // connectors are disabled by default
@@ -56,6 +61,9 @@ public class ConnectorsContainerRuntimeProperties {
             CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION);
     connectorsEnvVars = getPropertyMapOrEmpty(properties, PROPERTY_NAME_CONNECTORS_ENV_VARS_PREFIX);
     connectorsSecrets = getPropertyMapOrEmpty(properties, PROPERTY_NAME_CONNECTORS_SECRETS_PREFIX);
+    connectorsExposedPorts =
+        getPropertyListOrEmpty(
+            properties, PROPERTY_NAME_CONNECTORS_EXPOSED_PORTS_PREFIX, Integer::parseInt);
   }
 
   public boolean isConnectorsEnabled() {
@@ -76,5 +84,9 @@ public class ConnectorsContainerRuntimeProperties {
 
   public Map<String, String> getConnectorsSecrets() {
     return connectorsSecrets;
+  }
+
+  public List<Integer> getConnectorsExposedPorts() {
+    return connectorsExposedPorts;
   }
 }

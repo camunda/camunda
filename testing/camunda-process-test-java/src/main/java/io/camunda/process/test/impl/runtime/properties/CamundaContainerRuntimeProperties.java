@@ -32,12 +32,17 @@ public class CamundaContainerRuntimeProperties {
       "camundaDockerImageVersion";
   public static final String PROPERTY_NAME_CAMUNDA_ENV_VARS_PREFIX = "camundaEnvVars";
   public static final String PROPERTY_NAME_CAMUNDA_EXPOSED_PORTS_PREFIX = "camundaExposedPorts";
+  public static final String PROPERTY_NAME_CAMUNDA_LOGGER_NAME = "camundaLoggerName";
+  public static final String PROPERTY_NAME_CONNECTORS_LOGGER_NAME = "connectorsLoggerName";
 
   private final String camundaVersion;
   private final String camundaDockerImageName;
   private final String camundaDockerImageVersion;
   private final Map<String, String> camundaEnvVars;
   private final List<Integer> camundaExposedPorts;
+
+  private final String camundaLoggerName;
+  private final String connectorsLoggerName;
 
   public CamundaContainerRuntimeProperties(final Properties properties) {
     camundaVersion =
@@ -59,6 +64,16 @@ public class CamundaContainerRuntimeProperties {
     camundaExposedPorts =
         getPropertyListOrEmpty(
             properties, PROPERTY_NAME_CAMUNDA_EXPOSED_PORTS_PREFIX, Integer::parseInt);
+    camundaLoggerName =
+        getPropertyOrDefault(
+            properties,
+            PROPERTY_NAME_CAMUNDA_LOGGER_NAME,
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_LOGGER_NAME);
+    connectorsLoggerName =
+        getPropertyOrDefault(
+            properties,
+            PROPERTY_NAME_CONNECTORS_LOGGER_NAME,
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_LOGGER_NAME);
   }
 
   public String getCamundaVersion() {
@@ -79,5 +94,13 @@ public class CamundaContainerRuntimeProperties {
 
   public List<Integer> getCamundaExposedPorts() {
     return camundaExposedPorts;
+  }
+
+  public String getCamundaLoggerName() {
+    return camundaLoggerName;
+  }
+
+  public String getConnectorsLoggerName() {
+    return connectorsLoggerName;
   }
 }

@@ -44,6 +44,11 @@ public class CamundaProcessTestRuntimeConfiguration {
       CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION;
   private Map<String, String> connectorsEnvVars = Collections.emptyMap();
   private Map<String, String> connectorsSecrets = Collections.emptyMap();
+  private List<Integer> connectorsExposedPorts = Collections.emptyList();
+
+  private String camundaLoggerName = CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_LOGGER_NAME;
+  private String connectorsLoggerName =
+      CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_LOGGER_NAME;
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
@@ -153,6 +158,30 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setConnectorsSecrets(final Map<String, String> connectorsSecrets) {
     this.connectorsSecrets = connectorsSecrets;
+  }
+
+  public List<Integer> getConnectorsExposedPorts() {
+    return connectorsExposedPorts;
+  }
+
+  public void setConnectorsExposedPorts(final List<Integer> connectorsExposedPorts) {
+    this.connectorsExposedPorts = connectorsExposedPorts;
+  }
+
+  public String getCamundaLoggerName() {
+    return camundaLoggerName;
+  }
+
+  public void setCamundaLoggerName(final String camundaLoggerName) {
+    this.camundaLoggerName = camundaLoggerName;
+  }
+
+  public String getConnectorsLoggerName() {
+    return connectorsLoggerName;
+  }
+
+  public void setConnectorsLoggerName(final String connectorsLoggerName) {
+    this.connectorsLoggerName = connectorsLoggerName;
   }
 
   public CamundaProcessTestRuntimeMode getRuntimeMode() {

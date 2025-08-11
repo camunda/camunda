@@ -145,6 +145,14 @@ public final class ContainerRuntimePropertiesUtil {
     return camundaContainerRuntimeProperties.getCamundaExposedPorts();
   }
 
+  public String getCamundaLoggerName() {
+    return camundaContainerRuntimeProperties.getCamundaLoggerName();
+  }
+
+  public String getConnectorsLoggerName() {
+    return camundaContainerRuntimeProperties.getConnectorsLoggerName();
+  }
+
   public String getConnectorsDockerImageName() {
     return connectorsContainerRuntimeProperties.getConnectorsDockerImageName();
   }
@@ -163,6 +171,10 @@ public final class ContainerRuntimePropertiesUtil {
 
   public Map<String, String> getConnectorsSecrets() {
     return connectorsContainerRuntimeProperties.getConnectorsSecrets();
+  }
+
+  public List<Integer> getConnectorsExposedPorts() {
+    return connectorsContainerRuntimeProperties.getConnectorsExposedPorts();
   }
 
   public URI getRemoteCamundaMonitoringApiAddress() {
