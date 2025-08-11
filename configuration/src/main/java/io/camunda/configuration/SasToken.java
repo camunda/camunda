@@ -12,7 +12,7 @@ import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import java.util.Set;
 
 public class SasToken {
-  private static final String PREFIX = "camunda.data.backup.azure.sas-token.";
+  private static final String PREFIX = "camunda.data.backup.azure.sas-token";
   private static final Set<String> LEGACY_SASTOKEN_TYPE_PROPERTIES =
       Set.of("zeebe.broker.data.backup.azure.sasToken.type");
   private static final Set<String> LEGACY_SASTOKEN_VALUE_PROPERTIES =
@@ -33,7 +33,7 @@ public class SasToken {
 
   public SasTokenType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "type",
+        PREFIX + ".type",
         type,
         SasTokenType.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -46,7 +46,7 @@ public class SasToken {
 
   public String getValue() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "value",
+        PREFIX + ".value",
         value,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,

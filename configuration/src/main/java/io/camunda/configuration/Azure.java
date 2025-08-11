@@ -11,7 +11,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import java.util.Set;
 
 public class Azure {
-  private static final String PREFIX = "camunda.data.backup.azure.";
+  private static final String PREFIX = "camunda.data.backup.azure";
   private static final Set<String> LEGACY_ENDPOINT_PROPERTIES =
       Set.of("zeebe.broker.data.backup.azure.endpoint");
   private static final Set<String> LEGACY_ACCOUNTNAME_PROPERTIES =
@@ -70,7 +70,7 @@ public class Azure {
 
   public String getEndpoint() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "endpoint",
+        PREFIX + ".endpoint",
         endpoint,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -83,7 +83,7 @@ public class Azure {
 
   public String getAccountName() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "account-name",
+        PREFIX + ".account-name",
         accountName,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -96,7 +96,7 @@ public class Azure {
 
   public String getAccountKey() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "account-key",
+        PREFIX + ".account-key",
         accountKey,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -109,7 +109,7 @@ public class Azure {
 
   public String getConnectionString() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "connection-string",
+        PREFIX + ".connection-string",
         connectionString,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -122,7 +122,7 @@ public class Azure {
 
   public String getBasePath() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "base-path",
+        PREFIX + ".base-path",
         basePath,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -135,7 +135,7 @@ public class Azure {
 
   public boolean isCreateContainer() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "create-container",
+        PREFIX + ".create-container",
         createContainer,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
