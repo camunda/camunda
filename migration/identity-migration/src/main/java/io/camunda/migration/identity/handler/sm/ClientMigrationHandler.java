@@ -19,6 +19,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClientMigrationHandler extends MigrationHandler<Client> {
@@ -94,7 +95,7 @@ public class ClientMigrationHandler extends MigrationHandler<Client> {
                                   permission,
                                   clientId,
                                   AuthorizationOwnerType.CLIENT))
-                      .flatMap(List::stream)
+                      .flatMap(Set::stream)
                       .toList();
 
               final var combinedPermissions = extractCombinedPermissions(authorizations);
