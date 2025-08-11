@@ -867,6 +867,22 @@ public final class TestHelper {
             });
   }
 
+  public static void waitUntilJobExistsForProcessInstance(
+      final CamundaClient camundaClient, final long processInstanceKey) {
+    await("should wait until the process instance has an active job.")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newJobSearchRequest()
+                      .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .send()
+                      .join();
+              assertThat(result.items()).hasSize(1);
+            });
+  }
+
   public static void waitUntilExactUsersExist(
       final CamundaClient camundaClient, final String... usernames) {
     await("should wait until the expected users are in the secondary storage.")
