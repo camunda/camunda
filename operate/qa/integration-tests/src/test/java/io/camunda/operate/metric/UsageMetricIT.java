@@ -63,7 +63,7 @@ public class UsageMetricIT {
 
   @Test
   public void validateProcessInstanceActuatorEndpointRegistered() {
-    when(metricsStore.retrieveProcessInstanceCount(any(), any())).thenReturn(3L);
+    when(metricsStore.retrieveProcessInstanceCount(any(), any(), any())).thenReturn(3L);
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", "1970-11-14T10:50:26.963-0100");
@@ -80,7 +80,7 @@ public class UsageMetricIT {
 
   @Test
   public void validateDecisionInstanceActuatorEndpointRegistered() {
-    when(metricsStore.retrieveDecisionInstanceCount(any(), any())).thenReturn(4L);
+    when(metricsStore.retrieveDecisionInstanceCount(any(), any(), any())).thenReturn(4L);
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", "1970-11-14T10:50:26.963-0100");

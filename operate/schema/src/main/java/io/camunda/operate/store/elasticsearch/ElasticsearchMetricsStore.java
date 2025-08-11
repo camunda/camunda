@@ -9,8 +9,11 @@ package io.camunda.operate.store.elasticsearch;
 
 import static io.camunda.operate.store.elasticsearch.dao.Query.range;
 import static io.camunda.operate.store.elasticsearch.dao.Query.whereEquals;
-import static io.camunda.webapps.schema.descriptors.index.MetricIndex.*;
-import static io.camunda.webapps.schema.descriptors.index.MetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TYPE;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_VALUE;
+import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.EDI;
+import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -20,8 +23,8 @@ import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.elasticsearch.dao.Query;
 import io.camunda.operate.store.elasticsearch.dao.UsageMetricDAO;
 import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
-import io.camunda.webapps.schema.entities.MetricEntity;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import java.time.OffsetDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,20 +36,24 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchMetricsStore implements MetricsStore {
 
+  public static final String ID_PATTERN = "%s_%s";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchMetricsStore.class);
-  @Autowired private MetricIndex metricIndex;
+
+  @Autowired private UsageMetricIndex metricIndex;
 
   @Autowired private UsageMetricDAO dao;
 
   @Override
   public Long retrieveProcessInstanceCount(
-      final OffsetDateTime startTime, final OffsetDateTime endTime) {
+      final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
     final int limit = 1; // limiting to one, as we just care about the total documents number
-    final Query query =
-        Query.whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_FINISHED)
-            .or(whereEquals(EVENT, EVENT_PROCESS_INSTANCE_STARTED))
-            .and(range(EVENT_TIME, startTime, endTime))
-            .aggregate(PROCESS_INSTANCES_AGG_NAME, VALUE, limit);
+    Query query =
+        Query.whereEquals(EVENT_TYPE, RPI.name()).and(range(EVENT_TIME, startTime, endTime));
+
+    if (tenantId != null) {
+      query = query.and(whereEquals(UsageMetricIndex.TENANT_ID, tenantId));
+    }
+    query = query.aggregate(PROCESS_INSTANCES_AGG_NAME, EVENT_VALUE, limit);
 
     final AggregationResponse response = dao.searchWithAggregation(query);
     if (response.hasError()) {
@@ -60,12 +67,14 @@ public class ElasticsearchMetricsStore implements MetricsStore {
 
   @Override
   public Long retrieveDecisionInstanceCount(
-      final OffsetDateTime startTime, final OffsetDateTime endTime) {
+      final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
     final int limit = 1; // limiting to one, as we just care about the total documents number
-    final Query query =
-        Query.whereEquals(EVENT, MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED)
-            .and(range(EVENT_TIME, startTime, endTime))
-            .aggregate(DECISION_INSTANCES_AGG_NAME, VALUE, limit);
+    Query query =
+        Query.whereEquals(EVENT_TYPE, EDI.name()).and(range(EVENT_TIME, startTime, endTime));
+    if (tenantId != null) {
+      query = query.and(whereEquals(UsageMetricIndex.TENANT_ID, tenantId));
+    }
+    query = query.aggregate(DECISION_INSTANCES_AGG_NAME, EVENT_VALUE, limit);
 
     final AggregationResponse response = dao.searchWithAggregation(query);
     if (response.hasError()) {
@@ -79,43 +88,55 @@ public class ElasticsearchMetricsStore implements MetricsStore {
 
   @Override
   public void registerProcessInstanceStartEvent(
-      final String processInstanceKey,
+      final long key,
       final String tenantId,
+      final int partitionId,
       final OffsetDateTime timestamp,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    final MetricEntity metric =
-        createProcessInstanceStartedKey(processInstanceKey, tenantId, timestamp);
+    final UsageMetricsEntity metric =
+        createProcessInstanceStartedKey(key, tenantId, partitionId, timestamp);
     batchRequest.add(metricIndex.getFullQualifiedName(), metric);
   }
 
   @Override
   public void registerDecisionInstanceCompleteEvent(
-      final String decisionInstanceKey,
+      final long key,
       final String tenantId,
+      final int partitionId,
       final OffsetDateTime timestamp,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    final MetricEntity metric =
-        createDecisionsInstanceEvaluatedKey(decisionInstanceKey, tenantId, timestamp);
+    final UsageMetricsEntity metric =
+        createDecisionsInstanceEvaluatedKey(key, tenantId, partitionId, timestamp);
     batchRequest.add(metricIndex.getFullQualifiedName(), metric);
   }
 
-  private MetricEntity createProcessInstanceStartedKey(
-      final String processInstanceKey, final String tenantId, final OffsetDateTime timestamp) {
-    return new MetricEntity()
-        .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
-        .setValue(processInstanceKey)
+  private UsageMetricsEntity createProcessInstanceStartedKey(
+      final long key,
+      final String tenantId,
+      final int partitionId,
+      final OffsetDateTime timestamp) {
+    return new UsageMetricsEntity()
+        .setId(String.format(ID_PATTERN, key, tenantId))
+        .setEventType(RPI)
+        .setEventValue(1L)
         .setEventTime(timestamp)
-        .setTenantId(tenantId);
+        .setTenantId(tenantId)
+        .setPartitionId(partitionId);
   }
 
-  private MetricEntity createDecisionsInstanceEvaluatedKey(
-      final String decisionInstanceKey, final String tenantId, final OffsetDateTime timestamp) {
-    return new MetricEntity()
-        .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
-        .setValue(decisionInstanceKey)
+  private UsageMetricsEntity createDecisionsInstanceEvaluatedKey(
+      final long key,
+      final String tenantId,
+      final int partitionId,
+      final OffsetDateTime timestamp) {
+    return new UsageMetricsEntity()
+        .setId(String.format(ID_PATTERN, key, tenantId))
+        .setEventType(EDI)
+        .setEventValue(1L)
         .setEventTime(timestamp)
-        .setTenantId(tenantId);
+        .setTenantId(tenantId)
+        .setPartitionId(partitionId);
   }
 }

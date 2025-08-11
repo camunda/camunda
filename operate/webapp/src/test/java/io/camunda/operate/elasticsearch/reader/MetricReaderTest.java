@@ -48,10 +48,10 @@ public class MetricReaderTest {
     // When
     when(dao.searchWithAggregation(any()))
         .thenReturn(new AggregationResponse(false, List.of(), 99L));
-    final Long result = subject.retrieveProcessInstanceCount(oneHourBefore, now);
+    final Long result = subject.retrieveProcessInstanceCount(oneHourBefore, now, null);
 
     // Then
-    assertThat(99L).isEqualTo(result);
+    assertThat(result).isEqualTo(99L);
   }
 
   @Test
@@ -63,7 +63,7 @@ public class MetricReaderTest {
     // When
     when(dao.searchWithAggregation(any()))
         .thenReturn(new AggregationResponse(false, List.of(), 99L));
-    subject.retrieveProcessInstanceCount(oneHourBefore, now);
+    subject.retrieveProcessInstanceCount(oneHourBefore, now, null);
 
     // Then
     final ArgumentCaptor<Query> entityCaptor = ArgumentCaptor.forClass(Query.class);
@@ -86,7 +86,9 @@ public class MetricReaderTest {
     // Then
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(
-            () -> subject.retrieveProcessInstanceCount(OffsetDateTime.now(), OffsetDateTime.now()));
+            () ->
+                subject.retrieveProcessInstanceCount(
+                    OffsetDateTime.now(), OffsetDateTime.now(), null));
   }
 
   @Test
@@ -98,10 +100,10 @@ public class MetricReaderTest {
     // When
     when(dao.searchWithAggregation(any()))
         .thenReturn(new AggregationResponse(false, List.of(), 99L));
-    final Long result = subject.retrieveDecisionInstanceCount(oneHourBefore, now);
+    final Long result = subject.retrieveDecisionInstanceCount(oneHourBefore, now, null);
 
     // Then
-    assertThat(99L).isEqualTo(result);
+    assertThat(result).isEqualTo(99L);
   }
 
   @Test
@@ -113,7 +115,7 @@ public class MetricReaderTest {
     // When
     when(dao.searchWithAggregation(any()))
         .thenReturn(new AggregationResponse(false, List.of(), 99L));
-    subject.retrieveDecisionInstanceCount(oneHourBefore, now);
+    subject.retrieveDecisionInstanceCount(oneHourBefore, now, null);
 
     // Then
     final ArgumentCaptor<Query> entityCaptor = ArgumentCaptor.forClass(Query.class);
@@ -136,6 +138,7 @@ public class MetricReaderTest {
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(
             () ->
-                subject.retrieveDecisionInstanceCount(OffsetDateTime.now(), OffsetDateTime.now()));
+                subject.retrieveDecisionInstanceCount(
+                    OffsetDateTime.now(), OffsetDateTime.now(), null));
   }
 }
