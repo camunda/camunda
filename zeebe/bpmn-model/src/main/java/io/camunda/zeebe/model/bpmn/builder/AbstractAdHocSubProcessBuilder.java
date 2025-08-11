@@ -73,6 +73,18 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
     return myself;
   }
 
+  public B zeebeOutputCollection(final String outputCollection) {
+    final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
+    adHoc.setOutputCollection(outputCollection);
+    return myself;
+  }
+
+  public B zeebeOutputElementExpression(final String outputElementExpression) {
+    final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
+    adHoc.setOutputElement(asZeebeExpression(outputElementExpression));
+    return myself;
+  }
+
   @Override
   public B zeebeJobType(final String type) {
     return jobWorkerPropertiesBuilder.zeebeJobType(type);
