@@ -32,6 +32,7 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -198,5 +199,10 @@ public class IdentityMigrationModuleConfiguration {
     final var metricsEnabled = false;
     final var nodeId = properties.getCluster().getMemberId();
     return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Migration", nodeId);
+  }
+
+  @Bean
+  public ClusterConfigurationGossiperConfig configManager() {
+    return properties.getCluster().getConfigManager().gossip();
   }
 }
