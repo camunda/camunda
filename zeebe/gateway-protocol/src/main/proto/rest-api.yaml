@@ -2537,9 +2537,9 @@ paths:
       tags:
         - Decision instance
       operationId: searchDecisionInstances
-      summary: Search decision instances
+      summary: Search evaluated decision instances
       description: |
-        Search for decision instances based on given criteria.
+        Search for evaluated decision instances based on given criteria.
       requestBody:
         required: false
         content:
@@ -2637,7 +2637,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EvaluateDecisionResult"
+                $ref: "#/components/schemas/DecisionEvaluationResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "404":
@@ -9452,7 +9452,7 @@ components:
             The unique key identifying the decision to be evaluated.
             Cannot be used together with decisionDefinitionId.
           type: string
-    EvaluateDecisionResult:
+    DecisionEvaluationResult:
       type: object
       properties:
         decisionDefinitionId:
@@ -9488,17 +9488,24 @@ components:
           description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
           type: string
         decisionInstanceKey:
+          x-internal: true
+          description: Deprecated and for backward-compatibility only. Use decisionEvaluationKey.
+          type: string
+        decisionEvaluationKey:
           description: The unique key identifying this decision evaluation.
           type: string
         evaluatedDecisions:
           description: Decisions that were evaluated within the requested decision evaluation.
           type: array
           items:
-            $ref: "#/components/schemas/EvaluatedDecisionResult"
-    EvaluatedDecisionResult:
+            $ref: "#/components/schemas/DecisionEvaluationInstance"
+    DecisionEvaluationInstance:
       type: object
       description: A decision that was evaluated.
       properties:
+        decisionEvaluationInstanceKey:
+          description: The unique ID of this evaluated decision instance.
+          type: string
         decisionDefinitionId:
           description: The ID of the decision which was evaluated.
           type: string
@@ -9528,7 +9535,7 @@ components:
           description: The decision inputs that were evaluated within this decision evaluation.
           type: array
           items:
-            $ref: "#/components/schemas/EvaluatedDecisionInputItem"
+            $ref: "#/components/schemas/DecisionEvaluationInputItem"
         decisionDefinitionKey:
           description: The unique key identifying the decision which was evaluate.
           type: string
@@ -9547,8 +9554,8 @@ components:
           description: The evaluated decision outputs.
           type: array
           items:
-            $ref: "#/components/schemas/EvaluatedDecisionOutputItem"
-    EvaluatedDecisionInputItem:
+            $ref: "#/components/schemas/DecisionEvaluationOutputItem"
+    DecisionEvaluationInputItem:
       type: object
       description: A decision input that was evaluated within this decision evaluation.
       properties:
@@ -9561,7 +9568,7 @@ components:
         inputValue:
           description: The value of the evaluated decision input.
           type: string
-    EvaluatedDecisionOutputItem:
+    DecisionEvaluationOutputItem:
       type: object
       description: The evaluated decision outputs.
       properties:
@@ -9574,7 +9581,7 @@ components:
         outputValue:
           description: The value of the evaluated decision output.
           type: string
-    DecisionInstanceSearchQuerySortRequest:
+    DecisionEvaluationInstanceSearchQuerySortRequest:
       type: object
       properties:
         field:
@@ -9586,8 +9593,8 @@ components:
             - decisionDefinitionName
             - decisionDefinitionType
             - decisionDefinitionVersion
-            - decisionInstanceId
-            - decisionInstanceKey
+            - decisionEvaluationInstanceKey
+            - decisionEvaluationKey
             - elementInstanceKey
             - evaluationDate
             - evaluationFailure
@@ -9608,18 +9615,18 @@ components:
           description: Sort field criteria.
           type: array
           items:
-            $ref: "#/components/schemas/DecisionInstanceSearchQuerySortRequest"
+            $ref: "#/components/schemas/DecisionEvaluationInstanceSearchQuerySortRequest"
         filter:
           description: The decision instance search filters.
           allOf:
-            - $ref: "#/components/schemas/DecisionInstanceFilter"
-    DecisionInstanceFilter:
+            - $ref: "#/components/schemas/DecisionEvaluationInstanceFilter"
+    DecisionEvaluationInstanceFilter:
       description: Decision instance search filter.
       type: object
       properties:
-        decisionInstanceId:
+        decisionEvalutionInstanceKey:
           type: string
-          description: The ID of the decision instance.
+          description: The unique ID of this decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationFailure:
@@ -9644,10 +9651,10 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
-        decisionInstanceKey:
+        decisionEvaluationKey:
           type: string
           description: |
-            The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+            The key of the decision evaluation that created this decision instance.
         processDefinitionKey:
           type: string
           description: The key of the process definition.
@@ -9671,14 +9678,14 @@ components:
           description: The matching decision instances.
           type: array
           items:
-            $ref: "#/components/schemas/DecisionInstanceResult"
+            $ref: "#/components/schemas/DecisionEvaluationInstanceResult"
 
-    DecisionInstanceResult:
+    DecisionEvaluationInstanceResult:
       type: object
       properties:
-        decisionInstanceId:
+        decisionEvaluationInstanceKey:
           type: string
-          description: The ID of the decision instance.
+          description: The ID of this decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationDate:
@@ -9706,9 +9713,9 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
-        decisionInstanceKey:
+        decisionEvaluationKey:
           type: string
-          description: The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+          description: The key of the decision evalution that created this decision instance.
         processDefinitionKey:
           type: string
           description: The key of the process definition.
@@ -9724,13 +9731,13 @@ components:
 
     DecisionInstanceGetQueryResult:
       allOf:
-        - $ref: "#/components/schemas/DecisionInstanceResult"
+        - $ref: "#/components/schemas/DecisionEvaluationInstanceResult"
         - type: object
           properties:
             evaluatedInputs:
               type: array
               items:
-                $ref: "#/components/schemas/EvaluatedDecisionInputItem"
+                $ref: "#/components/schemas/DecisionEvaluationInputItem"
               description: |
                 The evaluated inputs of the decision instance.
             matchedRules:
