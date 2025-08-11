@@ -8,12 +8,38 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 
 public class Backup {
-  private static final String PREFIX = "camunda.data.backup.";
-  private static final Set<String> LEGACY_STORE_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.store");
+  private static final String PREFIX = "camunda.data.backup";
+
+  private static final Map<String, String> LEGACY_OPERATE_BACKUP_PROPERTIES =
+      Map.of(
+          "repositoryName",
+          "camunda.operate.backup.repositoryName",
+          "snapshotTimeout",
+          "camunda.operate.backup.snapshotTimeout",
+          "incompleteCheckTimeoutInSeconds",
+          "camunda.operate.backup.incompleteCheckTimeoutInSeconds");
+
+  private static final Map<String, String> LEGACY_TASKLIST_BACKUP_PROPERTIES =
+      Map.of("repositoryName", "camunda.tasklist.backup.repositoryName");
+
+  private static final Map<String, String> LEGACY_BROKER_BACKUP_PROPERTIES =
+      Map.of("store", "zeebe.broker.data.backup.store");
+
+  private Map<String, String> legacyPropertyMap = LEGACY_OPERATE_BACKUP_PROPERTIES;
+
+  /** Set the ES / OS snapshot repository name */
+  private String repositoryName;
+
+  /** TBD. Not available */
+  private int snapshotTimeout = 0;
+
+  /** TBD. Not available */
+  private Duration incompleteCheckTimeout = Duration.ofMinutes(5);
 
   /**
    * Set the backup store type. Supported values are [NONE, S3, GCS, AZURE, FILESYSTEM]. Default
@@ -39,6 +65,48 @@ public class Backup {
 
   /** Configuration for backup store Azure */
   private Azure azure = new Azure();
+
+  public String getRepositoryName() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".repository-name",
+        repositoryName,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertyMap.get("repositoryName")));
+  }
+
+  public void setRepositoryName(final String repositoryName) {
+    this.repositoryName = repositoryName;
+  }
+
+  public int getSnapshotTimeout() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".snapshot-timeout",
+        snapshotTimeout,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertyMap.get("snapshotTimeout")));
+  }
+
+  public void setSnapshotTimeout(final int snapshotTimeout) {
+    this.snapshotTimeout = snapshotTimeout;
+  }
+
+  public Duration getIncompleteCheckTimeout() {
+    final long incompleteCheckTimeoutInSeconds =
+        UnifiedConfigurationHelper.validateLegacyConfiguration(
+            PREFIX + ".incomplete-check-timeout",
+            incompleteCheckTimeout.getSeconds(),
+            Long.class,
+            BackwardsCompatibilityMode.SUPPORTED,
+            Set.of(legacyPropertyMap.get("incompleteCheckTimeoutInSeconds")));
+
+    return Duration.ofSeconds(incompleteCheckTimeoutInSeconds);
+  }
+
+  public void setIncompleteCheckTimeout(final Duration incompleteCheckTimeout) {
+    this.incompleteCheckTimeout = incompleteCheckTimeout;
+  }
 
   public S3 getS3() {
     return s3;
@@ -66,15 +134,46 @@ public class Backup {
 
   public BackupStoreType getStore() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "store",
+        PREFIX + ".store",
         store,
         BackupStoreType.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_STORE_PROPERTIES);
+        Set.of(legacyPropertyMap.get("store")));
   }
 
   public void setStore(final BackupStoreType store) {
     this.store = store;
+  }
+
+  @Override
+  public Backup clone() {
+    final Backup copy = new Backup();
+    copy.repositoryName = repositoryName;
+    copy.snapshotTimeout = snapshotTimeout;
+    copy.incompleteCheckTimeout = incompleteCheckTimeout;
+    copy.store = store;
+    copy.s3 = s3;
+    copy.gcs = gcs;
+
+    return copy;
+  }
+
+  public Backup withOperateBackupProperties() {
+    final Backup copy = clone();
+    copy.legacyPropertyMap = LEGACY_OPERATE_BACKUP_PROPERTIES;
+    return copy;
+  }
+
+  public Backup withTasklistBackupProperties() {
+    final Backup copy = clone();
+    copy.legacyPropertyMap = LEGACY_TASKLIST_BACKUP_PROPERTIES;
+    return copy;
+  }
+
+  public Backup withBrokerBackupProperties() {
+    final Backup copy = clone();
+    copy.legacyPropertyMap = LEGACY_BROKER_BACKUP_PROPERTIES;
+    return copy;
   }
 
   public enum BackupStoreType {

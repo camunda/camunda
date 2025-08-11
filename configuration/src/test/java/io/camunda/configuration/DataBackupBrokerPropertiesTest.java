@@ -25,12 +25,9 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   UnifiedConfigurationHelper.class
 })
 @ActiveProfiles("broker")
-public class DataBackupPropertiesTest {
+public class DataBackupBrokerPropertiesTest {
   @Nested
-  @TestPropertySource(
-      properties = {
-        "camunda.data.backup.store=azure",
-      })
+  @TestPropertySource(properties = {"camunda.data.backup.store=azure"})
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
 
@@ -45,10 +42,7 @@ public class DataBackupPropertiesTest {
   }
 
   @Nested
-  @TestPropertySource(
-      properties = {
-        "zeebe.broker.data.backup.store=azure",
-      })
+  @TestPropertySource(properties = {"zeebe.broker.data.backup.store=azure"})
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
 
