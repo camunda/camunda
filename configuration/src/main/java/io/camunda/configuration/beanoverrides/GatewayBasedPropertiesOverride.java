@@ -18,7 +18,8 @@ import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg;
 import java.util.List;
-import java.util.stream.IntStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +33,9 @@ import org.springframework.context.annotation.Profile;
 @Profile("!broker")
 @DependsOn("unifiedConfigurationHelper")
 public class GatewayBasedPropertiesOverride {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(GatewayBasedPropertiesOverride.class);
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyGatewayBasedProperties legacyGatewayBasedProperties;
@@ -80,56 +84,23 @@ public class GatewayBasedPropertiesOverride {
   }
 
   private void populateFromGrpcInterceptors(final GatewayBasedProperties override) {
+    // Order between legacy and new interceptor props is not guaranteed.
+    // Log common interceptors warning instead of using UnifiedConfigurationHelper logging.
+    if (!override.getInterceptors().isEmpty()) {
+      final String warningMessage =
+          String.format(
+              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+              "camunda.api.grpc.interceptors", "zeebe.gateway.interceptors");
+      LOGGER.warn(warningMessage);
+    }
+
     final List<Interceptor> interceptors =
         unifiedConfiguration.getCamunda().getApi().getGrpc().getInterceptors();
-
-    final List<InterceptorCfg> interceptorCfgList =
-        interceptors.isEmpty()
-            ? populateFromLegacyInterceptors(override.getInterceptors())
-            : populateFromInterceptors(interceptors);
-
-    override.setInterceptors(interceptorCfgList);
-  }
-
-  private List<InterceptorCfg> populateFromInterceptors(final List<Interceptor> interceptors) {
-    return IntStream.range(0, interceptors.size())
-        .mapToObj(
-            i -> {
-              final Interceptor interceptor = interceptors.get(i);
-              return toInterceptorCfg(interceptor, i);
-            })
-        .toList();
-  }
-
-  private InterceptorCfg toInterceptorCfg(final Interceptor interceptor, final int idx) {
-    final var interceptorCfg = new InterceptorCfg();
-    interceptorCfg.setId(interceptor.getId(idx));
-    interceptorCfg.setJarPath(interceptor.getJarPath(idx));
-    interceptorCfg.setClassName(interceptor.getClassName(idx));
-    return interceptorCfg;
-  }
-
-  private List<InterceptorCfg> populateFromLegacyInterceptors(
-      final List<InterceptorCfg> legacyInterceptors) {
-    return IntStream.range(0, legacyInterceptors.size())
-        .mapToObj(
-            i -> {
-              final InterceptorCfg interceptorCfg = legacyInterceptors.get(i);
-              patchInterceptorCfg(interceptorCfg, i);
-              return interceptorCfg;
-            })
-        .toList();
-  }
-
-  private void patchInterceptorCfg(final InterceptorCfg interceptorCfg, final int index) {
-    final var interceptor = new Interceptor();
-    interceptor.setId(interceptorCfg.getId());
-    interceptor.setJarPath(interceptorCfg.getJarPath());
-    interceptor.setClassName(interceptorCfg.getClassName());
-
-    interceptorCfg.setId(interceptor.getId(index));
-    interceptorCfg.setJarPath(interceptor.getJarPath(index));
-    interceptorCfg.setClassName(interceptor.getClassName(index));
+    if (!interceptors.isEmpty()) {
+      final List<InterceptorCfg> interceptorCfgList =
+          interceptors.stream().map(Interceptor::toInterceptorCfg).toList();
+      override.setInterceptors(interceptorCfgList);
+    }
   }
 
   private void populateFromLongPolling(final GatewayBasedProperties override) {

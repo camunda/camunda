@@ -10,35 +10,41 @@ package io.camunda.configuration;
 public abstract class BaseExternalCodeConfiguration {
 
   /** Sets the identifier of the implementation. */
-  protected String id;
+  private String id;
 
   /**
    * Sets the path to the class JAR. Can be null if the implementation class can be found on the
    * class path.
    */
-  protected String jarPath;
+  private String jarPath;
 
   /**
    * Sets a new class name. Note that this must be a fully qualified class name to avoid any
    * collisions.
    */
-  protected String className;
+  private String className;
+
+  public String getId() {
+    return id;
+  }
 
   public void setId(final String id) {
     this.id = id;
   }
 
-  public abstract String getId(final int index);
+  public String getJarPath() {
+    return jarPath;
+  }
 
   public void setJarPath(final String jarPath) {
     this.jarPath = jarPath;
   }
 
-  public abstract String getJarPath(final int index);
+  public String getClassName() {
+    return className;
+  }
 
   public void setClassName(final String className) {
     this.className = className;
   }
-
-  public abstract String getClassName(final int index);
 }

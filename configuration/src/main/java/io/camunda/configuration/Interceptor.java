@@ -7,40 +7,15 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.util.Set;
+import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 
 public class Interceptor extends BaseExternalCodeConfiguration {
-  private static final String PREFIX = "camunda.api.grpc.interceptors.";
-  private static final String LEGACY_INTERCEPTOR_PROPERTY = "zeebe.gateway.interceptors.";
 
-  @Override
-  public String getId(final int index) {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + index + ".id",
-        id,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_INTERCEPTOR_PROPERTY + index + ".id"));
-  }
-
-  @Override
-  public String getJarPath(final int index) {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + index + ".jar-path",
-        jarPath,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_INTERCEPTOR_PROPERTY + index + ".jarPath"));
-  }
-
-  @Override
-  public String getClassName(final int index) {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + index + ".class-name",
-        className,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_INTERCEPTOR_PROPERTY + index + ".className"));
+  public InterceptorCfg toInterceptorCfg() {
+    final var interceptorCfg = new InterceptorCfg();
+    interceptorCfg.setId(getId());
+    interceptorCfg.setJarPath(getJarPath());
+    interceptorCfg.setClassName(getClassName());
+    return interceptorCfg;
   }
 }
