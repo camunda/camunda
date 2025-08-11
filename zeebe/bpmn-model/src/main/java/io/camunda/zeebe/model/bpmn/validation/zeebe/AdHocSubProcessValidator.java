@@ -15,14 +15,12 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
-import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -66,31 +64,37 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
       return;
     }
 
-    final ZeebeAdHocImplementationType implementationType =
-        extensionElements.getChildElementsByType(ZeebeAdHoc.class).stream()
+    final ZeebeTaskDefinition taskDefinition =
+        extensionElements.getChildElementsByType(ZeebeTaskDefinition.class).stream()
             .findFirst()
-            .map(ZeebeAdHoc::getImplementationType)
-            .orElse(ZeebeAdHocImplementationType.BPMN);
+            .orElse(null);
 
-    final Collection<ZeebeTaskDefinition> taskDefinitions =
-        extensionElements.getChildElementsByType(ZeebeTaskDefinition.class);
-
-    if (implementationType == ZeebeAdHocImplementationType.BPMN && !taskDefinitions.isEmpty()) {
-      validationResultCollector.addError(
-          0,
-          String.format(
-              "Must not have a zeebe:%s extension element with implementation type %s.",
-              ZeebeConstants.ELEMENT_TASK_DEFINITION, ZeebeAdHocImplementationType.BPMN));
+    if (taskDefinition == null) {
+      return;
     }
 
-    if (implementationType == ZeebeAdHocImplementationType.JOB_WORKER
-        && taskDefinitions.size() != 1) {
+    if (!adHocSubProcess.isCancelRemainingInstances()) {
       validationResultCollector.addError(
           0,
-          String.format(
-              "Must have exactly one zeebe:%s extension element with implementation type %s.",
-              ZeebeConstants.ELEMENT_TASK_DEFINITION, ZeebeAdHocImplementationType.JOB_WORKER));
+          "Must not set cancelRemainingInstances to false in combination with zeebe:taskDefinition");
     }
+
+    if (adHocSubProcess.getCompletionCondition() != null) {
+      validationResultCollector.addError(
+          0, "Must not set completionCondition in combination with zeebe:taskDefinition");
+    }
+
+    extensionElements.getChildElementsByType(ZeebeAdHoc.class).stream()
+        .findFirst()
+        .ifPresent(
+            adHoc -> {
+              if (adHoc.getActiveElementsCollection() != null
+                  && !adHoc.getActiveElementsCollection().isEmpty()) {
+                validationResultCollector.addError(
+                    0,
+                    "Must not set activeElementsCollection in combination with zeebe:taskDefinition");
+              }
+            });
   }
 
   private static boolean hasStartEvent(final Collection<FlowElement> flowElements) {
