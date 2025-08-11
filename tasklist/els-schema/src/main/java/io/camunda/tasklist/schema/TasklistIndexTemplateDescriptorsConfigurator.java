@@ -14,6 +14,7 @@ import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
@@ -44,6 +45,12 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
   @Bean
   public TasklistMetricIndex tasklistMetricIndex() {
     return new TasklistMetricIndex(
+        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+  }
+
+  @Bean
+  public UsageMetricTUIndex usageMetricTUIndex() {
+    return new UsageMetricTUIndex(
         getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
   }
 

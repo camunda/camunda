@@ -8,10 +8,11 @@
 package io.camunda.operate.elasticsearch.reader;
 
 import static io.camunda.operate.store.elasticsearch.dao.Query.range;
-import static io.camunda.operate.store.elasticsearch.dao.Query.whereEquals;
-import static io.camunda.webapps.schema.descriptors.index.MetricIndex.EVENT;
-import static io.camunda.webapps.schema.descriptors.index.MetricIndex.EVENT_TIME;
-import static io.camunda.webapps.schema.descriptors.index.MetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TYPE;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_VALUE;
+import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.EDI;
+import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,10 +71,9 @@ public class MetricReaderTest {
     verify(dao).searchWithAggregation(entityCaptor.capture());
 
     final Query expected =
-        Query.whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_FINISHED)
-            .or(whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_STARTED))
+        Query.whereEquals(EVENT_TYPE, RPI.name())
             .and(range(EVENT_TIME, oneHourBefore, now))
-            .aggregate(MetricsStore.PROCESS_INSTANCES_AGG_NAME, VALUE, 1);
+            .aggregate(MetricsStore.PROCESS_INSTANCES_AGG_NAME, EVENT_VALUE, 1);
     final Query calledValue = entityCaptor.getValue();
     assertThat(calledValue).isEqualTo(expected);
   }
@@ -122,9 +122,9 @@ public class MetricReaderTest {
     verify(dao).searchWithAggregation(entityCaptor.capture());
 
     final Query expected =
-        Query.whereEquals(EVENT, MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED)
+        Query.whereEquals(EVENT_TYPE, EDI.name())
             .and(range(EVENT_TIME, oneHourBefore, now))
-            .aggregate(MetricsStore.DECISION_INSTANCES_AGG_NAME, VALUE, 1);
+            .aggregate(MetricsStore.DECISION_INSTANCES_AGG_NAME, EVENT_VALUE, 1);
     final Query calledValue = entityCaptor.getValue();
     assertThat(calledValue).isEqualTo(expected);
   }
