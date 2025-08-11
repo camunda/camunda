@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints} from '@vzeta/camunda-api-zod-schemas';
+import {endpoints} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockPostRequest} from '../../mockRequest';
 
 const mockCreateIncidentResolutionBatchOperation = () =>

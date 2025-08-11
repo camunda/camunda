@@ -209,7 +209,9 @@ test.describe('processes page', () => {
     await filtersPanel.displayOptionalFilter('Error Message');
     await filtersPanel.displayOptionalFilter('Operation Id');
     await filtersPanel.operationIdFilter.type('aaa');
-    await expect(page.getByText('Id has to be a UUID')).toBeVisible();
+    await expect(
+      page.getByText('Id has to be a 16 to 19 digit number or a UUID'),
+    ).toBeVisible();
     await expect(page).toHaveScreenshot();
   });
 

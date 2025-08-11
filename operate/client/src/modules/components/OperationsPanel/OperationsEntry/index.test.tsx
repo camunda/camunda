@@ -15,7 +15,7 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {OPERATIONS, mockProps} from './index.setup';
-import OperationsEntry from './index';
+import {OperationsEntry} from './index';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Filters} from 'App/Processes/ListView/Filters';

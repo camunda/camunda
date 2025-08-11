@@ -7,12 +7,12 @@
  */
 
 import {render, screen} from '@testing-library/react';
-import OperationsEntryStatus from './index';
+import {OperationEntryStatus} from './index';
 
 describe('OperationsEntryStatus', () => {
   it('should render instance status count when there is one instance with success status', () => {
     render(
-      <OperationsEntryStatus
+      <OperationEntryStatus
         isTypeDeleteProcessOrDecision={false}
         label={'Edit'}
         failedOperationsCount={0}
@@ -26,7 +26,7 @@ describe('OperationsEntryStatus', () => {
 
   it('should render instance status count when there is one instance with fail status', () => {
     render(
-      <OperationsEntryStatus
+      <OperationEntryStatus
         isTypeDeleteProcessOrDecision={false}
         label={'Edit'}
         failedOperationsCount={1}
@@ -40,7 +40,7 @@ describe('OperationsEntryStatus', () => {
 
   it('should render only success instance status count when all operations have been successful', () => {
     render(
-      <OperationsEntryStatus
+      <OperationEntryStatus
         isTypeDeleteProcessOrDecision={false}
         label={'Edit'}
         failedOperationsCount={0}
@@ -54,7 +54,7 @@ describe('OperationsEntryStatus', () => {
 
   it('should render only failed instance status count when all operations have failed', () => {
     render(
-      <OperationsEntryStatus
+      <OperationEntryStatus
         isTypeDeleteProcessOrDecision={false}
         label={'Edit'}
         failedOperationsCount={3}
@@ -68,7 +68,7 @@ describe('OperationsEntryStatus', () => {
 
   it('should render success and fail instance status count when there is a mix of failed and successful operations', () => {
     render(
-      <OperationsEntryStatus
+      <OperationEntryStatus
         isTypeDeleteProcessOrDecision={false}
         label={'Edit'}
         failedOperationsCount={3}
@@ -82,7 +82,7 @@ describe('OperationsEntryStatus', () => {
 
   it('should render delete process or decision definition instance status count when all operations have been successful', () => {
     render(
-      <OperationsEntryStatus
+      <OperationEntryStatus
         isTypeDeleteProcessOrDecision={true}
         label={'Delete'}
         failedOperationsCount={0}
@@ -96,7 +96,7 @@ describe('OperationsEntryStatus', () => {
 
   it('should render delete process or decision definition instance status count when all operations have failed', () => {
     render(
-      <OperationsEntryStatus
+      <OperationEntryStatus
         isTypeDeleteProcessOrDecision={true}
         label={'Delete'}
         failedOperationsCount={3}
@@ -112,7 +112,7 @@ describe('OperationsEntryStatus', () => {
 
   it('should render delete process or decision definition instance status count when there is a mix of failed and successful operations', () => {
     render(
-      <OperationsEntryStatus
+      <OperationEntryStatus
         isTypeDeleteProcessOrDecision={true}
         label={'Delete'}
         failedOperationsCount={3}
@@ -126,7 +126,7 @@ describe('OperationsEntryStatus', () => {
 
   it('should not render instances status count for delete instance operation success', () => {
     render(
-      <OperationsEntryStatus
+      <OperationEntryStatus
         isTypeDeleteProcessOrDecision={false}
         label={'Delete'}
         failedOperationsCount={0}
@@ -143,7 +143,7 @@ describe('OperationsEntryStatus', () => {
 
   it('should render instances status count for delete instance operation fail', () => {
     render(
-      <OperationsEntryStatus
+      <OperationEntryStatus
         isTypeDeleteProcessOrDecision={false}
         label={'Delete'}
         failedOperationsCount={1}

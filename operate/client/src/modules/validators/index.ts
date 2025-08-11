@@ -18,6 +18,7 @@ import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';
 import {parseDate} from '../utils/date/formatDate';
 import {validateMultipleVariableValues} from './validateMultipleVariableValues';
+import z from 'zod';
 
 const ERRORS = {
   decisionsIds:
@@ -26,7 +27,7 @@ const ERRORS = {
   parentInstanceId: 'Key has to be a 16 to 19 digit number',
   time: 'Time has to be in the format hh:mm:ss',
   timeRange: '"From time" is after "To time"',
-  operationId: 'Id has to be a UUID',
+  operationId: 'Id has to be a 16 to 19 digit number or a UUID',
   variables: {
     nameUnfilled: 'Name has to be filled',
     valueUnfilled: 'Value has to be filled',
@@ -248,23 +249,36 @@ const validateMultipleVariableValuesValid: FieldValidator<
   return ERRORS.variables.multipleValueInvalid;
 }, VALIDATION_TIMEOUT);
 
+/**
+ * Validates if value contains only characters from a key or UUID
+ */
 const validateOperationIdCharacters: FieldValidator<
   ProcessInstanceFilters['operationId']
 > = (value = '') => {
-  if (value !== '' && !/^[a-f0-9-]{1,36}/.test(value)) {
+  const schema = z.union([
+    z.string().length(0),
+    z.string().regex(/^[0-9]+$/),
+    z.string().regex(/^[a-f0-9-]{1,36}/),
+  ]);
+
+  if (!schema.safeParse(value).success) {
     return ERRORS.operationId;
   }
 };
 
+/**
+ * Validates if value is a complete key (16-19 characters) or a complete UUID
+ */
 const validateOperationIdComplete: FieldValidator<
   ProcessInstanceFilters['operationId']
 > = promisifyValidator((value = '') => {
-  if (
-    value !== '' &&
-    !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$/.test(
-      value,
-    )
-  ) {
+  const schema = z.union([
+    z.string().length(0),
+    z.string().regex(/^[0-9]{16,19}$/),
+    z.uuid(),
+  ]);
+
+  if (!schema.safeParse(value).success) {
     return ERRORS.operationId;
   }
 }, VALIDATION_TIMEOUT);
