@@ -110,7 +110,7 @@ jobs:
               return { fieldId: fieldDef.id, optionId: fieldValue.option.id };
             }
 
-            const projectNameData = getFieldOptionId("Project Name");
+            const projectNameData = getFieldOptionId("PH Project name");
             const teamData = getFieldOptionId("Team");
 
             // 6. Add child to same project if not already added
