@@ -11,7 +11,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import java.util.Set;
 
 public class Gcs {
-  private static final String PREFIX = "camunda.data.backup.gcs.";
+  private static final String PREFIX = "camunda.data.backup.gcs";
   private static final Set<String> LEGACY_BUCKETNAME_PROPERTIES =
       Set.of("zeebe.broker.data.backup.gcs.bucketName");
   private static final Set<String> LEGACY_BASEPATH_PROPERTIES =
@@ -52,7 +52,7 @@ public class Gcs {
 
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "bucket-name",
+        PREFIX + ".bucket-name",
         bucketName,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -65,7 +65,7 @@ public class Gcs {
 
   public String getBasePath() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "base-path",
+        PREFIX + ".base-path",
         basePath,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -78,7 +78,7 @@ public class Gcs {
 
   public String getHost() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "host",
+        PREFIX + ".host",
         host,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -91,7 +91,7 @@ public class Gcs {
 
   public GcsBackupStoreAuth getAuth() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "auth",
+        PREFIX + ".auth",
         auth,
         GcsBackupStoreAuth.class,
         BackwardsCompatibilityMode.SUPPORTED,
