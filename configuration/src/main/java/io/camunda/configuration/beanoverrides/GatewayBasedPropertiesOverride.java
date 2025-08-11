@@ -23,7 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import java.util.List;
-import java.util.stream.IntStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -111,54 +112,21 @@ public class GatewayBasedPropertiesOverride {
   }
 
   private void populateFromRestFilters(final GatewayBasedProperties override) {
+    // Order between legacy and new filters props is not guaranteed.
+    // Log common filters warning instead of using UnifiedConfigurationHelper logging.
+    if (!override.getFilters().isEmpty()) {
+      final String warningMessage =
+          String.format(
+              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+              "camunda.api.rest.filters", "zeebe.gateway.filters");
+      LOGGER.warn(warningMessage);
+    }
+
     final List<Filter> filters = unifiedConfiguration.getCamunda().getApi().getRest().getFilters();
-
-    final List<FilterCfg> filterCfgList =
-        filters.isEmpty()
-            ? populateFromLegacyFilters(override.getFilters())
-            : populateFromFilters(filters);
-
-    override.setFilters(filterCfgList);
-  }
-
-  private List<FilterCfg> populateFromFilters(final List<Filter> filters) {
-    return IntStream.range(0, filters.size())
-        .mapToObj(
-            i -> {
-              final Filter filter = filters.get(i);
-              return toFilterCfg(filter, i);
-            })
-        .toList();
-  }
-
-  private FilterCfg toFilterCfg(final Filter filter, final int idx) {
-    final var filterCfg = new FilterCfg();
-    filterCfg.setId(filter.getId(idx));
-    filterCfg.setJarPath(filter.getJarPath(idx));
-    filterCfg.setClassName(filter.getClassName(idx));
-    return filterCfg;
-  }
-
-  private List<FilterCfg> populateFromLegacyFilters(final List<FilterCfg> legacyFilters) {
-    return IntStream.range(0, legacyFilters.size())
-        .mapToObj(
-            i -> {
-              final FilterCfg filterCfg = legacyFilters.get(i);
-              patchFilterCfg(filterCfg, i);
-              return filterCfg;
-            })
-        .toList();
-  }
-
-  private void patchFilterCfg(final FilterCfg filterCfg, final int index) {
-    final var filter = new Filter();
-    filter.setId(filterCfg.getId());
-    filter.setJarPath(filterCfg.getJarPath());
-    filter.setClassName(filterCfg.getClassName());
-
-    filterCfg.setId(filter.getId(index));
-    filterCfg.setJarPath(filter.getJarPath(index));
-    filterCfg.setClassName(filter.getClassName(index));
+    if (!filters.isEmpty()) {
+      final List<FilterCfg> filterCfgList = filters.stream().map(Filter::toFilterCfg).toList();
+      override.setFilters(filterCfgList);
+    }
   }
 
   private void populateFromLongPolling(final GatewayBasedProperties override) {
