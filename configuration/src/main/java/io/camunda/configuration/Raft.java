@@ -16,7 +16,7 @@ import java.util.Set;
  * Raft algorithm parameters including timing, elections, and log flushing.
  */
 public class Raft {
-  private static final String PREFIX = "camunda.cluster.raft.";
+  private static final String PREFIX = "camunda.cluster.raft";
 
   private static final String LEGACY_HEARTBEAT_INTERVAL = "zeebe.broker.cluster.heartbeatInterval";
   private static final String LEGACY_ELECTION_TIMEOUT = "zeebe.broker.cluster.electionTimeout";
@@ -75,7 +75,7 @@ public class Raft {
 
   public Duration getHeartbeatInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "heartbeat-interval",
+        PREFIX + ".heartbeat-interval",
         heartbeatInterval,
         Duration.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
@@ -88,7 +88,7 @@ public class Raft {
 
   public Duration getElectionTimeout() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "election-timeout",
+        PREFIX + ".election-timeout",
         electionTimeout,
         Duration.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
@@ -101,7 +101,7 @@ public class Raft {
 
   public boolean isPriorityElectionEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "priority-election-enabled",
+        PREFIX + ".priority-election-enabled",
         priorityElectionEnabled,
         Boolean.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
@@ -114,7 +114,7 @@ public class Raft {
 
   public boolean isFlushEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "flush-enabled",
+        PREFIX + ".flush-enabled",
         flushEnabled,
         Boolean.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
@@ -127,7 +127,7 @@ public class Raft {
 
   public Duration getFlushDelay() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "flush-delay",
+        PREFIX + ".flush-delay",
         flushDelay,
         Duration.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
