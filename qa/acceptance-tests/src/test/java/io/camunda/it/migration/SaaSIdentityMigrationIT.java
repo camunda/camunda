@@ -65,6 +65,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -174,6 +175,16 @@ public class SaaSIdentityMigrationIT {
   @AfterAll
   static void cleanup() {
     IDENTITY.stop();
+  }
+
+  @AfterEach
+  public void afterEach() {
+    if (migration != null) {
+      migration.close();
+    }
+    if (client != null) {
+      client.close();
+    }
   }
 
   @Test

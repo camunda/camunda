@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -148,6 +149,13 @@ public class OidcIdentityMigrationIT {
     migration = new TestStandaloneIdentityMigration(migrationProperties);
 
     client = BROKER.newClientBuilder().build();
+  }
+
+  @AfterEach
+  public void cleanup() {
+    if (migration != null) {
+      migration.close();
+    }
   }
 
   @Test
