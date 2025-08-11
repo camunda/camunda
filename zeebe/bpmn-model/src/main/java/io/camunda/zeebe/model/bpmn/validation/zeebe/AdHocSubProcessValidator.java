@@ -39,6 +39,7 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
       final ValidationResultCollector validationResultCollector) {
     IdentifiableBpmnElementValidator.validate(adHocSubProcess, validationResultCollector);
     validateTaskDefinition(adHocSubProcess, validationResultCollector);
+    validationOutputCollectionAndOutputElement(adHocSubProcess, validationResultCollector);
 
     final Collection<FlowElement> flowElements = adHocSubProcess.getFlowElements();
 
@@ -94,6 +95,36 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
                     "Must not define activeElementsCollection in combination with zeebe:taskDefinition.");
               }
             });
+  }
+
+  private static void validationOutputCollectionAndOutputElement(
+      final AdHocSubProcess adHocSubProcess,
+      final ValidationResultCollector validationResultCollector) {
+
+    final ExtensionElements extensionElements = adHocSubProcess.getExtensionElements();
+    if (extensionElements == null) {
+      return;
+    }
+
+    extensionElements
+        .getChildElementsByType(ZeebeAdHoc.class)
+        .forEach(
+            adhoc -> {
+              final boolean outputElementEmpty = nullOrEmpty(adhoc.getOutputElement());
+              final boolean outputCollectionEmpty = nullOrEmpty(adhoc.getOutputCollection());
+
+              if (outputElementEmpty != outputCollectionEmpty) {
+                validationResultCollector.addError(
+                    0,
+                    String.format(
+                        "OutputElement and OutputCollection must both be set, or neither of them set. outputElement:%s and outputCollection:%s.",
+                        adhoc.getOutputElement(), adhoc.getOutputCollection()));
+              }
+            });
+  }
+
+  private static boolean nullOrEmpty(final String str) {
+    return str == null || str.isEmpty();
   }
 
   private static boolean hasStartEvent(final Collection<FlowElement> flowElements) {
