@@ -233,4 +233,58 @@ class AdHocSubProcessValidatorTest {
         .endEvent()
         .done();
   }
+
+  @Test
+  void withMissingOutputElement() {
+    // when
+    final BpmnModelInstance outputElementDoesntExist =
+        process(adHocSubProcess -> adHocSubProcess.zeebeOutputCollection("collection").task("A"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        outputElementDoesntExist,
+        expect(
+            AdHocSubProcess.class,
+            "OutputElement and OutputCollection must both be set, or neither of them set. outputElement:null and outputCollection:collection."));
+  }
+
+  @Test
+  void withMissingOutputCollection() {
+    // when
+    final BpmnModelInstance outputCollectionDoesntExist =
+        process(
+            adHocSubProcess -> adHocSubProcess.zeebeOutputElementExpression("element").task("A"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        outputCollectionDoesntExist,
+        expect(
+            AdHocSubProcess.class,
+            "OutputElement and OutputCollection must both be set, or neither of them set. outputElement:=element and outputCollection:null."));
+  }
+
+  @Test
+  void withOutputElementAndCollection() {
+    // when
+    final BpmnModelInstance bothOutputElementOrOutputCollectionExist =
+        process(
+            adHocSubProcess ->
+                adHocSubProcess
+                    .zeebeOutputElementExpression("element")
+                    .zeebeOutputCollection("collection")
+                    .task("A"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessIsValid(bothOutputElementOrOutputCollectionExist);
+  }
+
+  @Test
+  void withNeitherOutputElementOrCollection() {
+    // when
+    final BpmnModelInstance neitherOutputElementOrOutputCollectionExist =
+        process(adHocSubProcess -> adHocSubProcess.task("A"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessIsValid(neitherOutputElementOrOutputCollectionExist);
+  }
 }
