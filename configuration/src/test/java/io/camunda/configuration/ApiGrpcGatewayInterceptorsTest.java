@@ -23,7 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   GatewayBasedPropertiesOverride.class,
   UnifiedConfigurationHelper.class
 })
-public class ApiGrpcInterceptors {
+public class ApiGrpcGatewayInterceptorsTest {
 
   private InterceptorCfg createInterceptorCfg(
       final String id, final String jarPath, final String className) {
@@ -68,26 +68,51 @@ public class ApiGrpcInterceptors {
   @Nested
   @TestPropertySource(
       properties = {
-        "zeebe.gateway.interceptors.0.id=0IdLegacy",
-        "zeebe.gateway.interceptors.0.jarPath=0JarPathLegacy",
-        "zeebe.gateway.interceptors.0.className=0ClassNameLegacy",
-        "zeebe.gateway.interceptors.1.id=1IdLegacy",
-        "zeebe.gateway.interceptors.1.jarPath=1JarPathLegacy",
-        "zeebe.gateway.interceptors.1.className=1ClassNameLegacy"
+        "zeebe.broker.gateway.interceptors.0.id=0IdLegacyBroker",
+        "zeebe.broker.gateway.interceptors.0.jarPath=0JarPathLegacyBroker",
+        "zeebe.broker.gateway.interceptors.0.className=0ClassNameLegacyBroker",
+        "zeebe.broker.gateway.interceptors.1.id=1IdLegacyBroker",
+        "zeebe.broker.gateway.interceptors.1.jarPath=1JarPathLegacyBroker",
+        "zeebe.broker.gateway.interceptors.1.className=1ClassNameLegacyBroker"
       })
-  class WithOnlyLegacySet {
+  class WithOnlyLegacyBrokerInterceptorsSet {
     final GatewayBasedProperties gatewayCfg;
 
-    WithOnlyLegacySet(@Autowired final GatewayBasedProperties gatewayCfg) {
+    WithOnlyLegacyBrokerInterceptorsSet(@Autowired final GatewayBasedProperties gatewayCfg) {
       this.gatewayCfg = gatewayCfg;
     }
 
     @Test
-    void shouldSetInterceptors() {
+    void shouldNotSetInterceptorsFromLegacyBrokerInterceptors() {
+      assertThat(gatewayCfg.getInterceptors()).isEmpty();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "zeebe.gateway.interceptors.0.id=0IdLegacyGateway",
+        "zeebe.gateway.interceptors.0.jarPath=0JarPathLegacyGateway",
+        "zeebe.gateway.interceptors.0.className=0ClassNameLegacyGateway",
+        "zeebe.gateway.interceptors.1.id=1IdLegacyGateway",
+        "zeebe.gateway.interceptors.1.jarPath=1JarPathLegacyGateway",
+        "zeebe.gateway.interceptors.1.className=1ClassNameLegacyGateway"
+      })
+  class WithOnlyLegacyGatewayInterceptorsSet {
+    final GatewayBasedProperties gatewayCfg;
+
+    WithOnlyLegacyGatewayInterceptorsSet(@Autowired final GatewayBasedProperties gatewayCfg) {
+      this.gatewayCfg = gatewayCfg;
+    }
+
+    @Test
+    void shouldSetInterceptorsFromLegacyGatewayInterceptors() {
       final var expectedInterceptorCfg0 =
-          createInterceptorCfg("0IdLegacy", "0JarPathLegacy", "0ClassNameLegacy");
+          createInterceptorCfg(
+              "0IdLegacyGateway", "0JarPathLegacyGateway", "0ClassNameLegacyGateway");
       final var expectedInterceptorCfg1 =
-          createInterceptorCfg("1IdLegacy", "1JarPathLegacy", "1ClassNameLegacy");
+          createInterceptorCfg(
+              "1IdLegacyGateway", "1JarPathLegacyGateway", "1ClassNameLegacyGateway");
 
       assertThat(gatewayCfg.getInterceptors())
           .hasSize(2)
@@ -106,13 +131,20 @@ public class ApiGrpcInterceptors {
         "camunda.api.grpc.interceptors.1.id=1IdNew",
         "camunda.api.grpc.interceptors.1.jar-path=1JarPathNew",
         "camunda.api.grpc.interceptors.1.class-name=1ClassNameNew",
-        // legacy
-        "zeebe.gateway.interceptors.0.id=0IdLegacy",
-        "zeebe.gateway.interceptors.0.jarPath=0JarPathLegacy",
-        "zeebe.gateway.interceptors.0.className=0ClassNameLegacy",
-        "zeebe.gateway.interceptors.1.id=1IdLegacy",
-        "zeebe.gateway.interceptors.1.jarPath=1JarPathLegacy",
-        "zeebe.gateway.interceptors.1.className=1ClassNameLegacy"
+        // legacy broker interceptors
+        "zeebe.broker.gateway.interceptors.0.id=0IdLegacyBroker",
+        "zeebe.broker.gateway.interceptors.0.jarPath=0JarPathLegacyBroker",
+        "zeebe.broker.gateway.interceptors.0.className=0ClassNameLegacyBroker",
+        "zeebe.broker.gateway.interceptors.1.id=1IdLegacyBroker",
+        "zeebe.broker.gateway.interceptors.1.jarPath=1JarPathLegacyBroker",
+        "zeebe.broker.gateway.interceptors.1.className=1ClassNameLegacyBroker",
+        // legacy gateway interceptors
+        "zeebe.gateway.interceptors.0.id=0IdLegacyGateway",
+        "zeebe.gateway.interceptors.0.jarPath=0JarPathLegacyGateway",
+        "zeebe.gateway.interceptors.0.className=0ClassNameLegacyGateway",
+        "zeebe.gateway.interceptors.1.id=1IdLegacyGateway",
+        "zeebe.gateway.interceptors.1.jarPath=1JarPathLegacyGateway",
+        "zeebe.gateway.interceptors.1.className=1ClassNameLegacyGateway"
       })
   class WithNewAndLegacySet {
     final GatewayBasedProperties gatewayCfg;

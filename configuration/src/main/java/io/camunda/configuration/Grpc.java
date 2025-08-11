@@ -13,14 +13,23 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Grpc {
   private static final String PREFIX = "camunda.api.grpc.";
-  private static final Set<String> LEGACY_ADDRESS_PROPERTIES = Set.of("zeebe.gateway.network.host");
-  private static final Set<String> LEGACY_PORT_PROPERTIES = Set.of("zeebe.gateway.network.port");
-  private static final Set<String> LEGACY_MANAGEMENTTHREADS_PROPERTIES =
-      Set.of("zeebe.gateway.threads.managementThreads");
+  private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
+      Map.of(
+          "host", "zeebe.gateway.network.host",
+          "port", "zeebe.gateway.network.port",
+          "managementThreads", "zeebe.gateway.threads.managementThreads");
+  private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
+      Map.of(
+          "host", "zeebe.broker.gateway.network.host",
+          "port", "zeebe.broker.gateway.network.port",
+          "managementThreads", "zeebe.broker.gateway.threads.managementThreads");
+
+  private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
   /** Sets the address the gateway binds to */
   private String address;
@@ -43,7 +52,7 @@ public class Grpc {
         address,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ADDRESS_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("host")));
   }
 
   public void setAddress(final String address) {
@@ -56,7 +65,7 @@ public class Grpc {
         port,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_PORT_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("port")));
   }
 
   public void setPort(final int port) {
@@ -77,7 +86,7 @@ public class Grpc {
         managementThreads,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MANAGEMENTTHREADS_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("managementThreads")));
   }
 
   public void setManagementThreads(final int managementThreads) {
@@ -90,5 +99,29 @@ public class Grpc {
 
   public void setInterceptors(final List<Interceptor> interceptors) {
     this.interceptors = interceptors;
+  }
+
+  @Override
+  public Grpc clone() {
+    final Grpc copy = new Grpc();
+    copy.address = address;
+    copy.port = port;
+    copy.ssl = ssl.clone();
+    copy.interceptors = interceptors.stream().map(Interceptor::clone).toList();
+    copy.managementThreads = managementThreads;
+
+    return copy;
+  }
+
+  public Grpc withBrokerNetworkProperties() {
+    final var copy = clone();
+    copy.legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
+    return copy;
+  }
+
+  public Grpc withGatewayNetworkProperties() {
+    final var copy = clone();
+    copy.legacyPropertiesMap = LEGACY_GATEWAY_PROPERTIES;
+    return copy;
   }
 }

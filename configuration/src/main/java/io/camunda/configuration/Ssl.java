@@ -11,16 +11,23 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.io.File;
+import java.util.Map;
 import java.util.Set;
 
 public class Ssl {
   private static final String PREFIX = "camunda.api.grpc.ssl.";
-  private static final Set<String> LEGACY_ENABLED_PROPERTIES =
-      Set.of("zeebe.gateway.security.enabled");
-  private static final Set<String> LEGACY_CERTIFICATECHAINPATH_PROPERTIES =
-      Set.of("zeebe.gateway.security.certificatechainpath");
-  private static final Set<String> LEGACY_PRIVATEKEYPATH_PROPERTIES =
-      Set.of("zeebe.gateway.security.privatekeypath");
+  private static final Map<String, String> LEGACY_GATEWAY_SSL_PROPERTIES =
+      Map.of(
+          "enabled", "zeebe.gateway.security.enabled",
+          "certificateChainPath", "zeebe.gateway.security.certificateChainPath",
+          "privateKeyPath", "zeebe.gateway.security.privateKeyPath");
+  private static final Map<String, String> LEGACY_BROKER_SSL_PROPERTIES =
+      Map.of(
+          "enabled", "zeebe.broker.gateway.security.enabled",
+          "certificateChainPath", "zeebe.broker.gateway.security.certificateChainPath",
+          "privateKeyPath", "zeebe.broker.gateway.security.privateKeyPath");
+
+  private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_SSL_PROPERTIES;
 
   /** Enables TLS authentication between clients and the gateway */
   private boolean enabled = DEFAULT_TLS_ENABLED;
@@ -37,7 +44,7 @@ public class Ssl {
         enabled,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ENABLED_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("enabled")));
   }
 
   public void setEnabled(final boolean enabled) {
@@ -50,7 +57,7 @@ public class Ssl {
         certificate,
         File.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_CERTIFICATECHAINPATH_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("certificateChainPath")));
   }
 
   public void setCertificate(final File certificate) {
@@ -63,10 +70,32 @@ public class Ssl {
         certificatePrivateKey,
         File.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_PRIVATEKEYPATH_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("privateKeyPath")));
   }
 
   public void setCertificatePrivateKey(final File certificatePrivateKey) {
     this.certificatePrivateKey = certificatePrivateKey;
+  }
+
+  @Override
+  public Ssl clone() {
+    final Ssl copy = new Ssl();
+    copy.enabled = enabled;
+    copy.certificate = certificate;
+    copy.certificatePrivateKey = certificatePrivateKey;
+
+    return copy;
+  }
+
+  public Ssl withBrokerSslProperties() {
+    final var copy = clone();
+    copy.legacyPropertiesMap = LEGACY_BROKER_SSL_PROPERTIES;
+    return copy;
+  }
+
+  public Ssl withGatewaySslProperties() {
+    final var copy = clone();
+    copy.legacyPropertiesMap = LEGACY_GATEWAY_SSL_PROPERTIES;
+    return copy;
   }
 }

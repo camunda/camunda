@@ -62,28 +62,30 @@ public class GatewayBasedPropertiesOverride {
   }
 
   private void populateFromGrpc(final GatewayBasedProperties override) {
-    final Grpc grpc = unifiedConfiguration.getCamunda().getApi().getGrpc();
+    final Grpc grpc =
+        unifiedConfiguration.getCamunda().getApi().getGrpc().withGatewayNetworkProperties();
 
     final NetworkCfg networkCfg = override.getNetwork();
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
 
     populateFromSsl(override);
-    populateFromGrpcInterceptors(override);
+    populateFromInterceptors(override);
 
     final ThreadsCfg threadsCfg = override.getThreads();
     threadsCfg.setManagementThreads(grpc.getManagementThreads());
   }
 
   private void populateFromSsl(final GatewayBasedProperties override) {
-    final Ssl ssl = unifiedConfiguration.getCamunda().getApi().getGrpc().getSsl();
+    final Ssl ssl =
+        unifiedConfiguration.getCamunda().getApi().getGrpc().getSsl().withGatewaySslProperties();
     final SecurityCfg securityCfg = override.getSecurity();
     securityCfg.setEnabled(ssl.isEnabled());
     securityCfg.setCertificateChainPath(ssl.getCertificate());
     securityCfg.setPrivateKeyPath(ssl.getCertificatePrivateKey());
   }
 
-  private void populateFromGrpcInterceptors(final GatewayBasedProperties override) {
+  private void populateFromInterceptors(final GatewayBasedProperties override) {
     // Order between legacy and new interceptor props is not guaranteed.
     // Log common interceptors warning instead of using UnifiedConfigurationHelper logging.
     if (!override.getInterceptors().isEmpty()) {

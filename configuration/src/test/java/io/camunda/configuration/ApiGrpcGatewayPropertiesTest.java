@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MANAGEMENT_THREADS;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
@@ -22,7 +24,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   GatewayBasedPropertiesOverride.class,
   UnifiedConfigurationHelper.class
 })
-public class ApiGrpcPropertiesTest {
+public class ApiGrpcGatewayPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
@@ -56,29 +58,60 @@ public class ApiGrpcPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "zeebe.gateway.network.host=192.0.0.1",
-        "zeebe.gateway.network.port=28900",
-        "zeebe.gateway.threads.managementThreads=6",
+        "zeebe.broker.gateway.network.host=198.0.0.1",
+        "zeebe.broker.gateway.network.port=38900",
+        "zeebe.broker.gateway.threads.managementThreads=10",
       })
-  class WithOnlyLegacySet {
+  class WithOnlyLegacyBrokerPropertiesSet {
     final GatewayBasedProperties gatewayCfg;
 
-    WithOnlyLegacySet(@Autowired final GatewayBasedProperties gatewayCfg) {
+    WithOnlyLegacyBrokerPropertiesSet(@Autowired final GatewayBasedProperties gatewayCfg) {
       this.gatewayCfg = gatewayCfg;
     }
 
     @Test
-    void shouldSetAddress() {
+    void shouldNotSetAddressFromLegacyBrokerNetwork() {
+      assertThat(gatewayCfg.getNetwork().getHost()).isNull();
+    }
+
+    @Test
+    void shouldNotSetPortFromLegacyBrokerNetwork() {
+      assertThat(gatewayCfg.getNetwork().getPort()).isEqualTo(DEFAULT_PORT);
+    }
+
+    @Test
+    void shouldNotSetManagementThreadsFromLegacyBrokerThreads() {
+      assertThat(gatewayCfg.getThreads().getManagementThreads())
+          .isEqualTo(DEFAULT_MANAGEMENT_THREADS);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "zeebe.gateway.network.host=192.0.0.1",
+        "zeebe.gateway.network.port=28900",
+        "zeebe.gateway.threads.managementThreads=6",
+      })
+  class WithOnlyLegacyGatewayPropertiesSet {
+    final GatewayBasedProperties gatewayCfg;
+
+    WithOnlyLegacyGatewayPropertiesSet(@Autowired final GatewayBasedProperties gatewayCfg) {
+      this.gatewayCfg = gatewayCfg;
+    }
+
+    @Test
+    void shouldSetAddressFromLegacyGatewayNetwork() {
       assertThat(gatewayCfg.getNetwork().getHost()).isEqualTo("192.0.0.1");
     }
 
     @Test
-    void shouldSetPort() {
+    void shouldSetPortFromLegacyGatewayNetwork() {
       assertThat(gatewayCfg.getNetwork().getPort()).isEqualTo(28900);
     }
 
     @Test
-    void shouldSetManagementThreads() {
+    void shouldSetManagementThreadsFromLegacyGatewayThreads() {
       assertThat(gatewayCfg.getThreads().getManagementThreads()).isEqualTo(6);
     }
   }
@@ -86,11 +119,15 @@ public class ApiGrpcPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
-        // new
+        // new unified configuration
         "camunda.api.grpc.address=10.0.0.7",
         "camunda.api.grpc.port=27900",
         "camunda.api.grpc.management-threads=5",
-        // legacy
+        // legacy broker configuration
+        "zeebe.broker.gateway.network.host=198.0.0.1",
+        "zeebe.broker.gateway.network.port=38900",
+        "zeebe.broker.gateway.threads.managementThreads=10",
+        // legacy gateway configuration
         "zeebe.gateway.network.host=192.0.0.1",
         "zeebe.gateway.network.port=28900",
         "zeebe.gateway.threads.managementThreads=6",
