@@ -7,9 +7,6 @@
  */
 package io.camunda.tasklist.es;
 
-import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REPLICA;
-import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
-import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_SHARDS;
 import static io.camunda.tasklist.util.CollectionUtil.map;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -144,32 +141,6 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
     return olderVersionsForIndex(indexDescriptor, versions);
   }
 
-  @Override
-  public Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor) {
-    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
-    return newerVersionsForIndex(indexDescriptor, versions);
-  }
-
-  @Override
-  public boolean validateIndexConfiguration() {
-    return validateIndicesNumberOfReplicas() && validateComponentTemplateSettings();
-  }
-
-  private boolean validateComponentTemplateSettings() {
-    final var settings =
-        retryElasticsearchClient.getComponentTemplateProperties(
-            schemaManager.getComponentTemplateName(), NUMBERS_OF_SHARDS, NUMBERS_OF_REPLICA);
-
-    final var expectedShards =
-        String.valueOf(tasklistProperties.getElasticsearch().getNumberOfShards());
-    final var expectedReplicas =
-        String.valueOf(tasklistProperties.getElasticsearch().getNumberOfReplicas());
-    final var actualShards = settings.get(NUMBERS_OF_SHARDS);
-    final var actualReplicas = settings.get(NUMBERS_OF_REPLICA);
-
-    return expectedShards.equals(actualShards) && expectedReplicas.equals(actualReplicas);
-  }
-
   private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
     final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
     return allIndexNames.stream()
@@ -177,23 +148,5 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
         .filter(Optional::isPresent)
         .map(Optional::get)
         .collect(Collectors.toSet());
-  }
-
-  private boolean validateIndicesNumberOfReplicas() {
-    for (final var index : indexDescriptors) {
-      final Map<String, String> response =
-          retryElasticsearchClient.getIndexSettingsFor(
-              index.getFullQualifiedName(), NUMBERS_OF_REPLICA);
-      if (!response
-          .getOrDefault(NUMBERS_OF_REPLICA, NO_REPLICA)
-          .equals(
-              String.valueOf(
-                  tasklistProperties
-                      .getElasticsearch()
-                      .getNumberOfReplicas(index.getIndexName())))) {
-        return false;
-      }
-    }
-    return true;
   }
 }

@@ -10,7 +10,6 @@ package io.camunda.tasklist.es;
 import static io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty.createIndexMappingProperty;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultForNullValue;
 import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED;
-import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -69,6 +68,7 @@ import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -100,11 +100,6 @@ public class RetryElasticsearchClient {
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryElasticsearchClient.class);
-  private static final Map<String, String> DEFAULT_INDEX_SETTINGS =
-      Map.of(
-          REFRESH_INTERVAL, NO_REFRESH,
-          NUMBERS_OF_SHARDS, DEFAULT_SHARDS,
-          NUMBERS_OF_REPLICA, NO_REPLICA);
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -244,19 +239,6 @@ public class RetryElasticsearchClient {
         () -> {
           if (!indicesExist(createIndexRequest.index())) {
             return esClient.indices().create(createIndexRequest, requestOptions).isAcknowledged();
-          }
-
-          final String replicas =
-              getOrDefaultNumbersOfReplica(createIndexRequest.index(), NO_REPLICA);
-          final String requestedReplicas =
-              String.valueOf(createIndexRequest.settings().get(NUMBERS_OF_REPLICA));
-          if (!replicas.equals(requestedReplicas)) {
-            final UpdateSettingsRequest updateSettingsRequest =
-                new UpdateSettingsRequest(createIndexRequest.index());
-            final Settings settings =
-                Settings.builder().put(NUMBERS_OF_REPLICA, requestedReplicas).build();
-            updateSettingsRequest.settings(settings);
-            esClient.indices().putSettings(updateSettingsRequest, requestOptions).isAcknowledged();
           }
 
           try {
@@ -431,6 +413,17 @@ public class RetryElasticsearchClient {
         });
   }
 
+  public ImmutableOpenMap<String, Settings> getIndexSettingsForIndexPattern(
+      final String indexPattern) {
+    return executeWithRetries(
+        "GetIndexSettings for indexPattern" + indexPattern,
+        () ->
+            esClient
+                .indices()
+                .getSettings(new GetSettingsRequest().indices(indexPattern), requestOptions)
+                .getIndexToSettings());
+  }
+
   protected Map<String, String> getIndexSettingsFor(
       final String indexName, final String... fields) {
     return executeWithRetries(
@@ -448,31 +441,15 @@ public class RetryElasticsearchClient {
         });
   }
 
-  protected Map<String, String> getComponentTemplateProperties(
-      final String templatePattern, final String... fields) {
+  public Settings getComponentTemplateSettings(final String componentTemplateName) {
     return executeWithRetries(
-        "GetComponentTemplateSettings " + templatePattern,
+        "GetComponentTemplateSettings " + componentTemplateName,
         () -> {
-          final Map<String, String> settings = new HashMap<>();
           final GetComponentTemplatesRequest request =
-              new GetComponentTemplatesRequest(templatePattern);
+              new GetComponentTemplatesRequest(componentTemplateName);
           final GetComponentTemplatesResponse response =
               esClient.cluster().getComponentTemplate(request, requestOptions);
-          if (response.getComponentTemplates().get(templatePattern) != null) {
-            for (final String field : fields) {
-              settings.put(
-                  field,
-                  ofNullable(
-                          response
-                              .getComponentTemplates()
-                              .get(templatePattern)
-                              .template()
-                              .settings()
-                              .get(field))
-                      .orElse(DEFAULT_INDEX_SETTINGS.get(field)));
-            }
-          }
-          return settings;
+          return response.getComponentTemplates().get(componentTemplateName).template().settings();
         });
   }
 
@@ -781,10 +758,23 @@ public class RetryElasticsearchClient {
     }
   }
 
-  public boolean createComponentTemplate(final PutComponentTemplateRequest request) {
+  public boolean createComponentTemplate(
+      final PutComponentTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateComponentTemplate " + request.name(),
-        () -> esClient.cluster().putComponentTemplate(request, requestOptions).isAcknowledged());
+        () -> {
+          if (overwrite
+              || !esClient
+                  .cluster()
+                  .existsComponentTemplate(
+                      new ComponentTemplatesExistRequest(request.name()), requestOptions)) {
+            return esClient
+                .cluster()
+                .putComponentTemplate(request, requestOptions)
+                .isAcknowledged();
+          }
+          return true;
+        });
   }
 
   public boolean putLifeCyclePolicy(final PutLifecyclePolicyRequest putLifecyclePolicyRequest) {
