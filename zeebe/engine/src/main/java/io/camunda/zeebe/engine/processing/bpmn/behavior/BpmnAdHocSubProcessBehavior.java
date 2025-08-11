@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -17,11 +18,13 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -63,6 +66,15 @@ public final class BpmnAdHocSubProcessBehavior {
       final DirectBuffer variablesBuffer) {
 
     final long adHocSubProcessInnerInstanceKey = createInnerInstance(context, adHocSubProcess);
+
+    adHocSubProcess
+        .getOutputElement()
+        .flatMap(Expression::getVariableName)
+        .map(BufferUtil::wrapString)
+        .ifPresent(
+            variableName ->
+                stateBehavior.setLocalVariable(
+                    context, variableName, new UnsafeBuffer(MsgPackHelper.NIL)));
 
     if (variablesBuffer != NO_VARIABLES && variablesBuffer.capacity() > 0) {
       // set local variable in the scope of the inner instance
