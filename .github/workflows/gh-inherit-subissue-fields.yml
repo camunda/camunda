@@ -1,0 +1,152 @@
+name: Inherit Project & Team from Parent Sub-Issue
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  inherit-from-parent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inherit fields from parent sub-issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { graphql } = require('@octokit/graphql');
+            const token = process.env.GITHUB_TOKEN;
+            const ghql = graphql.defaults({ headers: { authorization: `token ${token}` } });
+            const octokit = github;
+
+            const issueNumber = context.payload.issue.number;
+            const isNew = context.payload.action === 'opened';
+
+            // 1. Get timeline events for this issue
+            const events = await octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}/timeline', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              mediaType: { previews: ['mockingbird'] }
+            });
+
+            // 2. Find parent from sub-issue relationship
+            const subLink = events.data.find(e =>
+              e.event === 'connected' &&
+              e.sub_issue &&
+              e.source &&
+              e.source.issue
+            );
+
+            if (!subLink) {
+              console.log("No parent sub-issue link found. Skipping.");
+              return;
+            }
+
+            const parentNumber = subLink.source.issue.number;
+
+            // 3. Get parent & child details
+            async function getIssueInfo(number) {
+              const data = await ghql(`
+                query($owner:String!, $repo:String!, $number:Int!) {
+                  repository(owner:$owner, name:$repo) {
+                    issue(number:$number) {
+                      id
+                      projectItems(first:5) {
+                        nodes {
+                          id
+                          project {
+                            id
+                            title
+                            fields(first:20) {
+                              nodes {
+                                id
+                                name
+                                dataType
+                                ... on ProjectV2SingleSelectField {
+                                  options { id name }
+                                }
+                              }
+                            }
+                          }
+                          fieldValues(first:20) {
+                            nodes {
+                              ... on ProjectV2ItemFieldSingleSelectValue {
+                                field { ... on ProjectV2SingleSelectField { id name } }
+                                option { id name }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `, { owner: context.repo.owner, repo: context.repo.repo, number });
+              return data.repository.issue;
+            }
+
+            const parentIssue = await getIssueInfo(parentNumber);
+            const childIssue = await getIssueInfo(issueNumber);
+
+            if (parentIssue.projectItems.nodes.length === 0) {
+              console.log("Parent has no project item. Skipping.");
+              return;
+            }
+
+            const parentItem = parentIssue.projectItems.nodes[0];
+            const projectId = parentItem.project.id;
+
+            function getFieldOptionId(fieldName) {
+              const fieldDef = parentItem.project.fields.nodes.find(f => f.name === fieldName);
+              const fieldValue = parentItem.fieldValues.nodes.find(v => v.field?.name === fieldName);
+              if (!fieldDef || !fieldValue) return null;
+              return { fieldId: fieldDef.id, optionId: fieldValue.option.id };
+            }
+
+            const projectNameData = getFieldOptionId("Project Name");
+            const teamData = getFieldOptionId("Team");
+
+            // 4. Add child to same project (if not already in it)
+            if (childIssue.projectItems.nodes.length === 0) {
+              const addChildItemRes = await ghql(`
+                mutation($projectId:ID!, $contentId:ID!) {
+                  addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
+                    item { id }
+                  }
+                }
+              `, { projectId, contentId: childIssue.id });
+              childItemId = addChildItemRes.addProjectV2ItemById.item.id;
+            } else {
+              childItemId = childIssue.projectItems.nodes[0].id;
+            }
+
+            // 5. Update fields on child
+            const updates = [];
+            if (projectNameData) {
+              updates.push(ghql(`
+                mutation($itemId:ID!, $fieldId:ID!, $optionId:ID!) {
+                  updateProjectV2ItemFieldValue(input:{
+                    projectId: "${projectId}",
+                    itemId: $itemId,
+                    fieldId: $fieldId,
+                    value: { singleSelectOptionId: $optionId }
+                  }) { projectV2Item { id } }
+                }
+              `, { itemId: childItemId, fieldId: projectNameData.fieldId, optionId: projectNameData.optionId }));
+            }
+            if (teamData) {
+              updates.push(ghql(`
+                mutation($itemId:ID!, $fieldId:ID!, $optionId:ID!) {
+                  updateProjectV2ItemFieldValue(input:{
+                    projectId: "${projectId}",
+                    itemId: $itemId,
+                    fieldId: $fieldId,
+                    value: { singleSelectOptionId: $optionId }
+                  }) { projectV2Item { id } }
+                }
+              `, { itemId: childItemId, fieldId: teamData.fieldId, optionId: teamData.optionId }));
+            }
+
+            await Promise.all(updates);
+            console.log(`Inherited Project Name & Team fields from parent issue #${parentNumber}`);
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
