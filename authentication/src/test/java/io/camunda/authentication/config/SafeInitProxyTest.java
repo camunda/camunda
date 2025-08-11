@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.config;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,9 +47,9 @@ class SafeInitProxyTest {
             () -> {
               final String result =
                   proxy.orElseThrow(() -> new IllegalStateException("Object must be initialized"));
-              assertEquals("created object", result);
-              assertEquals(
-                  List.of("Startup failure", "Retry failure 1", "Retry failure 2"), receivedErrors);
+              assertThat("created object").isEqualTo(result);
+              assertThat(List.of("Startup failure", "Retry failure 1", "Retry failure 2"))
+                  .isEqualTo(receivedErrors);
             });
   }
 
@@ -72,8 +72,8 @@ class SafeInitProxyTest {
             () -> {
               final String result =
                   proxy.orElseThrow(() -> new IllegalStateException("Object must be initialized"));
-              assertEquals("created object", result);
-              assertEquals(List.of(), receivedErrors);
+              assertThat("created object").isEqualTo(result);
+              assertThat(List.of()).isEqualTo(receivedErrors);
             });
   }
 }
