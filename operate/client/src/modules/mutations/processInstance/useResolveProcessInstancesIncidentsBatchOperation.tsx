@@ -18,7 +18,7 @@ import type {
 import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOperations';
 import {resolveProcessInstancesIncidentsBatchOperation} from 'modules/api/v2/processInstances/resolveProcessInstancesIncidentsBatchOperation';
 
-function useCancelProcessInstancesBatchOperation(
+function useResolveProcessInstancesIncidentsBatchOperation(
   options?: Partial<
     UseMutationOptions<
       CreateIncidentResolutionBatchOperationRequestBody,
@@ -75,4 +75,4 @@ function useCancelProcessInstancesBatchOperation(
   });
 }
 
-export {useCancelProcessInstancesBatchOperation};
+export {useResolveProcessInstancesIncidentsBatchOperation};
