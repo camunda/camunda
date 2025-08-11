@@ -144,14 +144,12 @@ public class SchemaManager {
     final var indexPolicies = retention.getIndexPolicies();
     if (!indexPolicies.isEmpty()) {
       LOG.info("Creating {} index-specific ILM policies", indexPolicies.size());
-      for (final var entry : indexPolicies.entrySet()) {
-        final var index = entry.getKey();
-        final var policy = entry.getValue();
+      for (final var policy : indexPolicies) {
         LOG.info(
             "Creating index-specific ILM policy [name: '{}', retention: '{}'] for index '{}'",
             policy.getPolicyName(),
             policy.getMinimumAge(),
-            index);
+            policy.getIndex());
         searchEngineClient.putIndexLifeCyclePolicy(policy.getPolicyName(), policy.getMinimumAge());
       }
     }

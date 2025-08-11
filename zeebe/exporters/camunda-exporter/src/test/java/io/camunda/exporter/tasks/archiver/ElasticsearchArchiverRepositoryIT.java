@@ -201,9 +201,9 @@ final class ElasticsearchArchiverRepositoryIT {
     // Configure exact index name matches
 
     retention.setIndexPolicies(
-        Map.of(
-            "camunda-user-task", new IndexRetentionPolicy("user_task_policy", "7d"),
-            "camunda-user-task-at", new IndexRetentionPolicy("user_task_at_policy", "14d")));
+        List.of(
+            new IndexRetentionPolicy("camunda-user-task", "user_task_policy", "7d"),
+            new IndexRetentionPolicy("camunda-user-task-at", "user_task_at_policy", "14d")));
 
     putLifecyclePolicies();
     for (final var index : expectedIndices) {
@@ -251,10 +251,10 @@ final class ElasticsearchArchiverRepositoryIT {
 
     // Configure pattern-based policies
     retention.setIndexPolicies(
-        Map.of(
-            "camunda.*", new IndexRetentionPolicy("camunda_policy", "40d"),
-            "operate.*", new IndexRetentionPolicy("operate_policy", "60d"),
-            "tasklist.*", new IndexRetentionPolicy("tasklist_policy", "90d")));
+        List.of(
+            new IndexRetentionPolicy("camunda.*", "camunda_policy", "40d"),
+            new IndexRetentionPolicy("operate.*", "operate_policy", "60d"),
+            new IndexRetentionPolicy("tasklist.*", "tasklist_policy", "90d")));
 
     putLifecyclePolicies();
     for (final var index : expectedIndices) {
@@ -289,6 +289,39 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldApplyLastMatchingPatternWhenMultiplePatternsMatch() throws IOException {
+    // given
+    indexPrefix = "test";
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
+    final var testIndex = formattedPrefix + "user-activity-logs-8.8.0_2025-08-10";
+
+    final var repository = createRepository();
+    retention.setEnabled(true);
+    retention.setPolicyName("default_policy");
+
+    // Configure overlapping patterns, the implementation should apply the last one that matches
+    retention.setIndexPolicies(
+        List.of(
+            new IndexRetentionPolicy("user.*", "user_general_policy", "1d"),
+            new IndexRetentionPolicy("user-activity.*", "user_activity_policy", "2d"),
+            new IndexRetentionPolicy(".*logs", "logs_policy", "3d")));
+
+    putLifecyclePolicies();
+    testClient.indices().create(r -> r.index(testIndex));
+
+    // when
+    final var result = repository.setLifeCycleToAllIndexes();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    final var appliedPolicy = getLifeCycle(testIndex).name();
+    assertThat(appliedPolicy)
+        .as("Index should have the last policy that matched its name")
+        .isEqualTo("logs_policy");
+  }
+
+  @Test
   void shouldHandleEmptyIndexPoliciesGracefully() throws IOException {
     // given
     indexPrefix = "empty";
@@ -302,7 +335,7 @@ final class ElasticsearchArchiverRepositoryIT {
     retention.setEnabled(true);
     retention.setPolicyName("default_only_policy");
     // Explicitly set empty index policies
-    retention.setIndexPolicies(Map.of());
+    retention.setIndexPolicies(List.of());
 
     putLifecyclePolicies();
     for (final var index : testIndices) {
@@ -357,10 +390,10 @@ final class ElasticsearchArchiverRepositoryIT {
     retention.setEnabled(true);
     retention.setPolicyName("default_policy");
     retention.setIndexPolicies(
-        Map.of(
-            "camunda-user-task", new IndexRetentionPolicy("user_task_policy", "7d"),
-            "operate.*", new IndexRetentionPolicy("operate_policy", "30d"),
-            "tasklist.*", new IndexRetentionPolicy("tasklist_policy", "90d")));
+        List.of(
+            new IndexRetentionPolicy("camunda-user-task", "user_task_policy", "7d"),
+            new IndexRetentionPolicy("operate.*", "operate_policy", "30d"),
+            new IndexRetentionPolicy("tasklist.*", "tasklist_policy", "90d")));
 
     putLifecyclePolicies();
 
@@ -397,9 +430,9 @@ final class ElasticsearchArchiverRepositoryIT {
     retention.setEnabled(true);
     retention.setPolicyName("default_policy");
     retention.setIndexPolicies(
-        Map.of(
-            "camunda-user-task", new IndexRetentionPolicy("custom_policy", "14d"),
-            "operate.*", new IndexRetentionPolicy("operate_policy", "60d")));
+        List.of(
+            new IndexRetentionPolicy("camunda-user-task", "custom_policy", "14d"),
+            new IndexRetentionPolicy("operate.*", "operate_policy", "60d")));
 
     putLifecyclePolicies();
 
@@ -755,7 +788,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private void putLifecyclePolicies() throws IOException {
     putLifecyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
 
-    for (var indexPolicy : retention.getIndexPolicies().values()) {
+    for (var indexPolicy : retention.getIndexPolicies()) {
       putLifecyclePolicy(indexPolicy.getPolicyName(), indexPolicy.getMinimumAge());
     }
   }

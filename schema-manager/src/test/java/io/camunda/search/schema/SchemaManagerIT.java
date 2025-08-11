@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -331,11 +332,9 @@ public class SchemaManagerIT {
     retention.setPolicyName("default_policy");
     retention.setMinimumAge("33d");
     retention.setIndexPolicies(
-        Map.of(
-            "index_1",
-            new IndexRetentionPolicy("custom_policy_1", "44d"),
-            "index_2",
-            new IndexRetentionPolicy("custom_policy_2", "55d")));
+        List.of(
+            new IndexRetentionPolicy("index_1", "custom_policy_1", "44d"),
+            new IndexRetentionPolicy("index_2", "custom_policy_2", "55d")));
 
     final var schemaManager =
         new SchemaManager(

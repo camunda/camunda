@@ -242,7 +242,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     }
 
     logger.debug("Setting lifecycle policies for {} indices", destinationIndexNames);
-    final var indexPolicies = retention.getIndexPolicies();
     final var defaultPolicy = retention.getPolicyName();
     final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
 
@@ -253,17 +252,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                 groupingBy(
                     indexName -> {
                       // Then check for pattern matches
-                      for (final var entry : indexPolicies.entrySet()) {
-                        final var pattern = entry.getKey();
+                      String lastMatchingPolicy = defaultPolicy;
+                      for (final var policy : retention.getIndexPolicies()) {
                         final var indexWithNamePattern =
-                            "^" + formattedPrefix + pattern + VERSION_SUFFIX_PATTERN;
+                            "^" + formattedPrefix + policy.getIndex() + VERSION_SUFFIX_PATTERN;
                         if (Pattern.compile(indexWithNamePattern).matcher(indexName).matches()) {
-                          return entry.getValue().getPolicyName();
+                          lastMatchingPolicy = policy.getPolicyName();
                         }
                       }
 
-                      // Fall back to default policy
-                      return defaultPolicy;
+                      return lastMatchingPolicy;
                     }));
 
     // Create separate requests for each policy group
