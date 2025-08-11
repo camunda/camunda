@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import static java.util.stream.Collectors.groupingBy;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -19,7 +21,6 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -52,7 +53,12 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     implements ArchiverRepository {
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
-  private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
+  // Matches version suffix pattern: -{major}.{minor}.{patch}_{suffix}
+  // e.g. "-8.8.0_2025-02-23"
+  private static final String VERSION_SUFFIX_PATTERN = "-\\d+\\.\\d+\\.\\d+_.+$";
+  // Matches versioned index names with version suffixes: {name}{version-suffix}
+  // e.g. "camunda-tenant-8.8.0_2025-02-23"
+  private static final String VERSIONED_INDEX_PATTERN = ".+" + VERSION_SUFFIX_PATTERN;
   private static final String ALL_INDICES_PATTERN = ".*";
 
   private final int partitionId;
@@ -119,10 +125,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       return CompletableFuture.completedFuture(null);
     }
 
-    return CompletableFuture.allOf(
-        Arrays.stream(destinationIndexName)
-            .map(this::applyPolicyToIndex)
-            .toArray(CompletableFuture[]::new));
+    return setIndexLifeCycleToMatchingIndices(List.of(destinationIndexName));
   }
 
   @Override
@@ -132,11 +135,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     }
 
     final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
-    final var indexWildCard = "^" + formattedPrefix + INDEX_WILDCARD;
+    final var indexWildCard = "^" + formattedPrefix + VERSIONED_INDEX_PATTERN;
 
     try {
       return fetchIndexMatchingIndexes(indexWildCard)
-          .thenComposeAsync(indices -> setIndexLifeCycle(indices.toArray(String[]::new)), executor);
+          .thenComposeAsync(this::setIndexLifeCycleToMatchingIndices, executor);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
     }
@@ -246,8 +249,72 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                     .toList());
   }
 
-  private CompletableFuture<Void> applyPolicyToIndex(final String index) {
-    final AddPolicyRequestBody value = new AddPolicyRequestBody(retention.getPolicyName());
+  private CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
+      final List<String> destinationIndexNames) {
+    if (destinationIndexNames.isEmpty()) {
+      logger.debug("No indices to set lifecycle policies for");
+      return CompletableFuture.completedFuture(null);
+    }
+
+    logger.debug("Setting lifecycle policies for {} indices", destinationIndexNames);
+    final var defaultPolicy = retention.getPolicyName();
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
+
+    // Group indices by their assigned policy
+    final var policiesMap =
+        destinationIndexNames.stream()
+            .collect(
+                groupingBy(
+                    indexName -> {
+                      // Start with default policy
+                      String lastMatchingPolicy = defaultPolicy;
+                      // Check for pattern matches - last match wins
+                      for (final var policy : retention.getIndexPolicies()) {
+                        final var indexWithNamePattern =
+                            "^" + formattedPrefix + policy.getIndex() + VERSION_SUFFIX_PATTERN;
+                        if (Pattern.compile(indexWithNamePattern).matcher(indexName).matches()) {
+                          lastMatchingPolicy = policy.getPolicyName();
+                        }
+                      }
+
+                      return lastMatchingPolicy;
+                    }));
+
+    // Create separate requests for each policy group
+    final var requests =
+        policiesMap.entrySet().stream()
+            .map(
+                entry -> {
+                  final String policyName = entry.getKey();
+                  final List<String> indices = entry.getValue();
+
+                  logger.info(
+                      "Applying policy '{}' to {} indices: {}",
+                      policyName,
+                      indices.size(),
+                      indices);
+
+                  return applyPolicyToIndices(indices, policyName);
+                })
+            .toList();
+
+    // Execute all requests and combine results
+    return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]))
+        .thenApplyAsync(ignored -> null, executor);
+  }
+
+  private CompletableFuture<Void> applyPolicyToIndices(
+      final List<String> indices, final String policyName) {
+    final var requests =
+        indices.stream()
+            .map(index -> applyPolicyToIndex(index, policyName))
+            .toArray(CompletableFuture[]::new);
+
+    return CompletableFuture.allOf(requests);
+  }
+
+  private CompletableFuture<Void> applyPolicyToIndex(final String index, final String policyName) {
+    final AddPolicyRequestBody value = new AddPolicyRequestBody(policyName);
     final var request = Requests.builder().method("POST").endpoint("_plugins/_ism/add/" + index);
     return sendRequestAsync(
             () ->
@@ -258,7 +325,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
               if (response.getStatus() >= 400) {
                 return CompletableFuture.failedFuture(
                     new ExporterException(
-                        "Failed to set index lifecycle policy for index: "
+                        "Failed to set index lifecycle policy '"
+                            + policyName
+                            + "' for index: "
                             + index
                             + ".\n"
                             + "Status: "

@@ -7,13 +7,16 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import static io.camunda.search.test.utils.SearchDBExtension.*;
+import static io.camunda.search.test.utils.SearchDBExtension.ARCHIVER_IDX_PREFIX;
+import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static io.camunda.search.test.utils.SearchDBExtension.create;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.schema.config.IndexRetentionPolicy;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchDBExtension;
@@ -84,9 +87,11 @@ final class OpenSearchArchiverRepositoryIT {
 
   @AfterEach
   void afterEach() throws IOException {
-    final DeleteIndexRequest deleteRequest =
-        new Builder().index(zeebeIndex + "*", batchOperationIndex + "*").build();
+    final DeleteIndexRequest deleteRequest = new Builder().index("*").build();
     testClient.indices().delete(deleteRequest);
+
+    // delete all policies created during the tests
+    deleteAllTestPolicies();
   }
 
   @Test
@@ -128,7 +133,7 @@ final class OpenSearchArchiverRepositoryIT {
     retention.setPolicyName("operate_delete_archived_indices");
 
     // when
-    createLifeCyclePolicy();
+    createLifeCyclePolicies();
     final var result = repository.setIndexLifeCycle(indexName);
 
     // then
@@ -138,6 +143,49 @@ final class OpenSearchArchiverRepositoryIT {
     Awaitility.await("until the policy has been visibly applied")
         .untilAsserted(
             () -> assertThat(fetchPolicyForIndex(indexName)).isEqualTo(retention.getPolicyName()));
+  }
+
+  @Test
+  void shouldApplyCustomPoliciesToIndices() throws IOException {
+    // given
+    final var formattedPrefix =
+        AbstractIndexDescriptor.formatIndexPrefix(connectConfiguration.getIndexPrefix());
+    final var indices =
+        List.of(
+            formattedPrefix + "camunda-user-task-8.8.0_2025-06-10",
+            formattedPrefix + "camunda-user-task-at-8.8.0_2025-06-10",
+            formattedPrefix + "operate-list-view-8.3.0_2024-06-02",
+            formattedPrefix + "tasklist-task-8.5.0_2024-06-02");
+
+    final var repository = createRepository();
+    retention.setEnabled(true);
+    retention.setPolicyName("default_policy");
+    retention.setIndexPolicies(
+        List.of(
+            new IndexRetentionPolicy("camunda-user-task", "user_task_policy", "7d"),
+            new IndexRetentionPolicy("camunda-user-task-at", "user_task_at_policy", "14d"),
+            new IndexRetentionPolicy("operate.*", "operate_policy", "30d")));
+
+    createLifeCyclePolicies();
+    for (final var index : indices) {
+      testClient.indices().create(r -> r.index(index));
+    }
+
+    // when
+    final var result = repository.setIndexLifeCycle(indices.toArray(String[]::new));
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "camunda-user-task-8.8.0_2025-06-10"))
+        .isEqualTo("user_task_policy");
+    assertThat(
+            fetchPolicyForIndexWithAwait(formattedPrefix + "camunda-user-task-at-8.8.0_2025-06-10"))
+        .isEqualTo("user_task_at_policy");
+    assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "operate-list-view-8.3.0_2024-06-02"))
+        .isEqualTo("operate_policy");
+    assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "tasklist-task-8.5.0_2024-06-02"))
+        .isEqualTo("default_policy");
   }
 
   @ParameterizedTest
@@ -173,7 +221,7 @@ final class OpenSearchArchiverRepositoryIT {
     retention.setEnabled(true);
     retention.setPolicyName(prefix + "operate_delete_archived_indices");
 
-    createLifeCyclePolicy();
+    createLifeCyclePolicies();
     for (final var index : indices) {
       testClient.indices().create(r -> r.index(index));
     }
@@ -198,6 +246,161 @@ final class OpenSearchArchiverRepositoryIT {
     for (final var index : untouchedIndices) {
       assertThat(fetchPolicyForIndex(index)).as("no policy applied to %s", index).isEqualTo("null");
     }
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "test"})
+  @DisabledIfSystemProperty(
+      named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
+  void shouldApplyCustomIndexPoliciesWithExactMatching(final String prefix) throws IOException {
+    // given
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(prefix);
+    final var expectedIndices =
+        List.of(
+            formattedPrefix + "camunda-user-task-8.8.0_2025-01-10",
+            formattedPrefix + "camunda-user-task-at-8.8.0_2025-01-10",
+            formattedPrefix + "operate-list-view-8.3.0_2024-01-02",
+            formattedPrefix + "tasklist-task-8.5.0_2024-01-02");
+
+    connectConfiguration.setIndexPrefix(prefix);
+    final var repository = createRepository();
+    retention.setEnabled(true);
+    retention.setPolicyName("default_policy");
+
+    // Configure exact index name matches
+    retention.setIndexPolicies(
+        List.of(
+            new IndexRetentionPolicy("camunda-user-task", "user_task_policy", "7d"),
+            new IndexRetentionPolicy("camunda-user-task-at", "user_task_at_policy", "14d")));
+
+    createLifeCyclePolicies();
+    for (final var index : expectedIndices) {
+      testClient.indices().create(r -> r.index(index));
+    }
+
+    // when
+    final var result = repository.setLifeCycleToAllIndexes();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    // Verify exact matches get their specific policies
+    assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "camunda-user-task-8.8.0_2025-01-10"))
+        .isEqualTo("user_task_policy");
+    assertThat(
+            fetchPolicyForIndexWithAwait(formattedPrefix + "camunda-user-task-at-8.8.0_2025-01-10"))
+        .isEqualTo("user_task_at_policy");
+
+    // Verify indices without custom policies get default policy
+    assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "operate-list-view-8.3.0_2024-01-02"))
+        .isEqualTo("default_policy");
+    assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "tasklist-task-8.5.0_2024-01-02"))
+        .isEqualTo("default_policy");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "test"})
+  @DisabledIfSystemProperty(
+      named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
+  void shouldApplyCustomIndexPoliciesWithPatternMatching(final String prefix) throws IOException {
+    // given
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(prefix);
+    final var expectedIndices =
+        List.of(
+            formattedPrefix + "camunda-user-task-8.8.0_2025-03-10",
+            formattedPrefix + "camunda-user-task-at-8.8.0_2025-03-10",
+            formattedPrefix + "camunda-authorization-8.8.0_2025-03-10",
+            formattedPrefix + "operate-list-view-8.3.0_2024-03-02",
+            formattedPrefix + "operate-process-8.3.0_2024-03-02",
+            formattedPrefix + "tasklist-task-8.5.0_2024-03-02",
+            formattedPrefix + "other-index-8.8.0_2025-03-10");
+
+    connectConfiguration.setIndexPrefix(prefix);
+    final var repository = createRepository();
+    retention.setEnabled(true);
+    retention.setPolicyName("default_policy");
+
+    // Configure pattern-based policies
+    retention.setIndexPolicies(
+        List.of(
+            new IndexRetentionPolicy("camunda.*", "camunda_policy", "40d"),
+            new IndexRetentionPolicy("operate.*", "operate_policy", "60d"),
+            new IndexRetentionPolicy("tasklist.*", "tasklist_policy", "90d")));
+
+    createLifeCyclePolicies();
+    for (final var index : expectedIndices) {
+      testClient.indices().create(r -> r.index(index));
+    }
+
+    // when
+    final var result = repository.setLifeCycleToAllIndexes();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    // Verify pattern matches get their specific policies
+    assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "camunda-user-task-8.8.0_2025-03-10"))
+        .isEqualTo("camunda_policy");
+    assertThat(
+            fetchPolicyForIndexWithAwait(formattedPrefix + "camunda-user-task-at-8.8.0_2025-03-10"))
+        .isEqualTo("camunda_policy");
+    assertThat(
+            fetchPolicyForIndexWithAwait(
+                formattedPrefix + "camunda-authorization-8.8.0_2025-03-10"))
+        .isEqualTo("camunda_policy");
+
+    assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "operate-list-view-8.3.0_2024-03-02"))
+        .isEqualTo("operate_policy");
+    assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "operate-process-8.3.0_2024-03-02"))
+        .isEqualTo("operate_policy");
+
+    assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "tasklist-task-8.5.0_2024-03-02"))
+        .isEqualTo("tasklist_policy");
+
+    // Verify indices without matching patterns get default policy
+    assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "other-index-8.8.0_2025-03-10"))
+        .isEqualTo("default_policy");
+  }
+
+  @Test
+  @DisabledIfSystemProperty(
+      named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
+  void shouldApplyLastMatchingPatternWhenMultiplePatternsMatch() throws IOException {
+    // given
+    connectConfiguration.setIndexPrefix("test");
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix("test");
+    final var testIndex = formattedPrefix + "user-activity-logs-8.8.0_2025-08-10";
+
+    final var repository = createRepository();
+    retention.setEnabled(true);
+    retention.setPolicyName("default_policy");
+
+    // Configure overlapping patterns, the implementation should apply the last one that matches
+    retention.setIndexPolicies(
+        List.of(
+            new IndexRetentionPolicy("user.*", "user_general_policy", "1d"),
+            new IndexRetentionPolicy("user-activity.*", "user_activity_policy", "2d"),
+            new IndexRetentionPolicy(".*logs", "logs_policy", "3d")));
+
+    createLifeCyclePolicies();
+    testClient.indices().create(r -> r.index(testIndex));
+
+    // when
+    final var result = repository.setLifeCycleToAllIndexes();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    final var appliedPolicy = fetchPolicyForIndexWithAwait(testIndex);
+    assertThat(appliedPolicy)
+        .as("Index should have the last policy that matched its name")
+        .isEqualTo("logs_policy");
   }
 
   @Test
@@ -522,12 +725,20 @@ final class OpenSearchArchiverRepositoryIT {
     }
   }
 
-  private void createLifeCyclePolicy() {
+  private void createLifeCyclePolicies() {
+    createLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
+
+    retention
+        .getIndexPolicies()
+        .forEach(policy -> createLifeCyclePolicy(policy.getPolicyName(), policy.getMinimumAge()));
+  }
+
+  private void createLifeCyclePolicy(final String policyName, final String minAge) {
     final var engineClient = new OpensearchEngineClient(testClient, MAPPER);
     try {
-      engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
+      engineClient.putIndexLifeCyclePolicy(policyName, minAge);
     } catch (final Exception e) {
-      // policy was already created
+      LOGGER.warn("Could not create life cycle policy", e);
     }
   }
 
@@ -550,6 +761,48 @@ final class OpenSearchArchiverRepositoryIT {
       return index.findPath("index.plugins.index_state_management.policy_id").asText();
     } catch (final IOException e) {
       throw new AssertionError("Failed to fetch policy for index " + indexName, e);
+    }
+  }
+
+  private String fetchPolicyForIndexWithAwait(final String indexName) {
+    return Awaitility.await("until the policy has been visibly applied")
+        .until(() -> fetchPolicyForIndex(indexName), policy -> !policy.equals("null"));
+  }
+
+  private void deleteAllTestPolicies() {
+    final var genericClient =
+        new OpenSearchGenericClient(testClient._transport(), testClient._transportOptions());
+    try {
+      // Get all policies
+      final var listRequest =
+          Requests.builder().method("GET").endpoint("_plugins/_ism/policies").build();
+      final var listResponse = genericClient.execute(listRequest);
+      final var jsonString = listResponse.getBody().orElseThrow().bodyAsString();
+      final var json = MAPPER.readTree(jsonString);
+
+      // Extract policy names and delete each one
+      final var policies = json.get("policies");
+      if (policies != null && policies.isArray()) {
+        for (final var policy : policies) {
+          final var policyId = policy.get("_id");
+          if (policyId != null) {
+            final var policyName = policyId.asText();
+            try {
+              final var deleteRequest =
+                  Requests.builder()
+                      .method("DELETE")
+                      .endpoint("_plugins/_ism/policies/" + policyName)
+                      .build();
+              genericClient.execute(deleteRequest);
+              LOGGER.debug("Deleted ISM policy: {}", policyName);
+            } catch (final Exception e) {
+              LOGGER.warn("Could not delete ISM policy '{}': {}", policyName, e.getMessage());
+            }
+          }
+        }
+      }
+    } catch (final Exception e) {
+      LOGGER.warn("Could not delete test ISM policies", e);
     }
   }
 
