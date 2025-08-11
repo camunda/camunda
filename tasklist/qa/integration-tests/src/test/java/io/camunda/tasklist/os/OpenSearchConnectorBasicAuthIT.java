@@ -98,9 +98,19 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
       final String osUrl =
           String.format("http://%s:%s", opensearch.getHost(), opensearch.getMappedPort(9200));
       TestPropertyValues.of(
+              // Unified Config compatibility: DB type
+              "camunda.data.secondary-storage.type=opensearch",
+              "camunda.database.type=opensearch",
+              "camunda.operate.database=opensearch",
+              "camunda.tasklist.database=opensearch",
+              // Unified Config compatibility: DB URL
+              "camunda.data.secondary-storage.opensearch.url=" + osUrl,
+              "camunda.database.url=" + osUrl,
+              "camunda.tasklist.opensearch.url=" + osUrl,
+              "camunda.operate.opensearch.url=" + osUrl,
+              // ---
               "camunda.tasklist.opensearch.username=opensearch",
               "camunda.tasklist.opensearch.password=changeme",
-              "camunda.tasklist.opensearch.url=" + osUrl,
               "camunda.tasklist.opensearch.clusterName=docker-cluster",
               "camunda.tasklist.zeebeOpensearch.url=" + osUrl,
               "camunda.tasklist.zeebeOpensearch.username=opensearch",

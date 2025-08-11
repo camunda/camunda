@@ -436,14 +436,17 @@ public class TestContainerUtil {
       final Integer osPort = testContext.getInternalOsPort();
       final String osUrl = String.format("http://%s:%s", osHost, osPort);
       tasklistContainer
+          // Unified config for db url + compatibility
+          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_URL", osUrl)
           .withEnv("CAMUNDA_DATABASE_URL", osUrl)
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", osUrl)
+          .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", osUrl)
           // Unified config for db type + compatibility vars
           .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
           .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "opensearch")
           .withEnv("CAMUNDA_OPERATE_DATABASE", "opensearch")
           .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
           // ---
-          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", osUrl)
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_HOST", osHost)
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort))
           .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", osUrl)
@@ -458,24 +461,22 @@ public class TestContainerUtil {
       final Integer elsPort = testContext.getInternalElsPort();
       final String esUrl = String.format("http://%s:%s", elsHost, elsPort);
       tasklistContainer
+          // Unified config for db type + compatibility vars
           .withEnv("CAMUNDA_DATABASE_URL", esUrl)
           .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
           // Unified config for db type + compatibility vars
           .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
           .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "elasticsearch")
           .withEnv("CAMUNDA_OPERATE_DATABASE", "elasticsearch")
           .withEnv("CAMUNDA_TASKLIST_DATABASE", "elasticsearch")
           // ---
-          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", elsHost)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", String.valueOf(elsPort))
           .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_HOST", elsHost)
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort))
-
-          /* these need to match the URL value even if they're not used */
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", esUrl);
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
       if (testContext.getZeebeIndexPrefix() != null) {
         tasklistContainer.withEnv(
             "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
