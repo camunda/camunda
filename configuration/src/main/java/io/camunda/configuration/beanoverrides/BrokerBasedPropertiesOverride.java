@@ -12,6 +12,7 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
@@ -70,9 +71,21 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setReplicationFactor(cluster.getReplicationFactor());
     override.getCluster().setClusterSize(cluster.getSize());
 
+    populateFromRaftProperties(override);
     populateFromClusterMetadata(override);
     populateFromClusterNetwork(override);
     // Rest of camunda.cluster.* sections
+  }
+
+  private void populateFromRaftProperties(final BrokerBasedProperties override) {
+    final var raft = unifiedConfiguration.getCamunda().getCluster().getRaft();
+    override.getCluster().setHeartbeatInterval(raft.getHeartbeatInterval());
+    override.getCluster().setElectionTimeout(raft.getElectionTimeout());
+    override.getCluster().getRaft().setEnablePriorityElection(raft.isPriorityElectionEnabled());
+
+    // Set flush configuration
+    final var flushConfig = new FlushConfig(raft.isFlushEnabled(), raft.getFlushDelay());
+    override.getCluster().getRaft().setFlush(flushConfig);
   }
 
   private void populateFromClusterMetadata(final BrokerBasedProperties override) {
