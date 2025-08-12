@@ -23,8 +23,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -376,15 +376,16 @@ public class ActivateAdHocSubProcessActivityTest {
 
     Assertions.assertThat(
             RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(6))
-        .extracting(Record::getValue)
         .extracting(
-            VariableRecordValue::getName,
-            VariableRecordValue::getValue,
-            VariableRecordValue::getScopeKey)
+            r -> r.getValue().getName(),
+            r -> r.getValue().getValue(),
+            r -> r.getValue().getScopeKey(),
+            r -> r.getIntent())
         .contains(
-            Assertions.tuple("a", "2", processInstanceKey),
-            Assertions.tuple("b", "2", adHocSubProcessInstanceKey),
-            Assertions.tuple("c", "2", processInstanceKey));
+            Assertions.tuple("a", "2", processInstanceKey, VariableIntent.UPDATED), // updated
+            Assertions.tuple(
+                "b", "2", adHocSubProcessInstanceKey, VariableIntent.UPDATED), // updated
+            Assertions.tuple("c", "2", processInstanceKey, VariableIntent.CREATED)); // created
   }
 
   private ProcessInstanceRecordStream recordsUntilSignal(final String signalName) {
