@@ -27,8 +27,9 @@ public record FlowNodeInstanceDbModel(
     FlowNodeState state,
     Long incidentKey,
     Long numSubprocessIncidents,
+    Boolean hasIncident,
     String tenantId,
-    int partitionId,
+    Integer partitionId,
     OffsetDateTime historyCleanupDate)
     implements Copyable<FlowNodeInstanceDbModel> {
 
@@ -52,6 +53,7 @@ public record FlowNodeInstanceDbModel(
                 .state(state)
                 .incidentKey(incidentKey)
                 .numSubprocessIncidents(numSubprocessIncidents)
+                .hasIncident(hasIncident)
                 .tenantId(tenantId)
                 .partitionId(partitionId)
                 .historyCleanupDate(historyCleanupDate))
@@ -74,6 +76,7 @@ public record FlowNodeInstanceDbModel(
     private FlowNodeState state;
     private Long incidentKey;
     private Long numSubprocessIncidents = 0L;
+    private Boolean hasIncident;
     private String tenantId;
     private int partitionId;
     private OffsetDateTime historyCleanupDate;
@@ -147,6 +150,11 @@ public record FlowNodeInstanceDbModel(
       return this;
     }
 
+    public FlowNodeInstanceDbModelBuilder hasIncident(final Boolean hasIncident) {
+      this.hasIncident = hasIncident;
+      return this;
+    }
+
     public FlowNodeInstanceDbModelBuilder processDefinitionId(final String bpmnProcessId) {
       processDefinitionId = bpmnProcessId;
       return this;
@@ -183,6 +191,7 @@ public record FlowNodeInstanceDbModel(
           state,
           incidentKey,
           numSubprocessIncidents,
+          hasIncident,
           tenantId,
           partitionId,
           historyCleanupDate);

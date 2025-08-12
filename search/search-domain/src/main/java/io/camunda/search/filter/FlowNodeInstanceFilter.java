@@ -34,7 +34,15 @@ public record FlowNodeInstanceFilter(
     List<Long> incidentKeys,
     List<String> tenantIds,
     List<Operation<OffsetDateTime>> startDateOperations,
-    List<Operation<OffsetDateTime>> endDateOperations)
+    List<Operation<OffsetDateTime>> endDateOperations,
+    List<Long> elementInstanceScopeKeys,
+    List<Integer> levels,
+    // Flag used to control whether treePath filtering should use a prefix query.
+    // This is necessary while the elementInstanceScopeKey field is not universally populated
+    // (pre-8.8 data).
+    // Once all data has consistent elementInstanceScopeKey population, this flag and related logic
+    // can be removed.
+    Boolean useTreePathPrefix)
     implements FilterBase {
 
   public static FlowNodeInstanceFilter of(
@@ -58,6 +66,30 @@ public record FlowNodeInstanceFilter(
     private List<String> tenantIds;
     private List<Operation<OffsetDateTime>> startDateOperations;
     private List<Operation<OffsetDateTime>> endDateOperations;
+    private List<Long> elementInstanceScopeKeys;
+    private List<Integer> levels;
+    private Boolean useTreePathPrefix;
+
+    public Builder copyFrom(final FlowNodeInstanceFilter filter) {
+      flowNodeInstanceKeys(filter.flowNodeInstanceKeys());
+      processInstanceKeys(filter.processInstanceKeys());
+      processDefinitionKeys(filter.processDefinitionKeys());
+      processDefinitionIds(filter.processDefinitionIds());
+      stateOperations(filter.stateOperations());
+      types(filter.types());
+      flowNodeIds(filter.flowNodeIds());
+      flowNodeNames(filter.flowNodeNames());
+      treePaths(filter.treePaths());
+      hasIncident(filter.hasIncident());
+      incidentKeys(filter.incidentKeys());
+      tenantIds(filter.tenantIds());
+      startDateOperations(filter.startDateOperations());
+      endDateOperations(filter.endDateOperations());
+      elementInstanceScopeKeys(filter.elementInstanceScopeKeys());
+      levels(filter.levels());
+      useTreePathPrefix(filter.useTreePathPrefix());
+      return this;
+    }
 
     public FlowNodeInstanceFilter.Builder flowNodeInstanceKeys(final List<Long> values) {
       flowNodeInstanceKeys = addValuesToList(flowNodeInstanceKeys, values);
@@ -194,6 +226,29 @@ public record FlowNodeInstanceFilter(
       return endDateOperations(collectValues(operation, operations));
     }
 
+    public FlowNodeInstanceFilter.Builder elementInstanceScopeKeys(final List<Long> values) {
+      elementInstanceScopeKeys = addValuesToList(elementInstanceScopeKeys, values);
+      return this;
+    }
+
+    public FlowNodeInstanceFilter.Builder elementInstanceScopeKeys(final Long... values) {
+      return elementInstanceScopeKeys(collectValuesAsList(values));
+    }
+
+    public FlowNodeInstanceFilter.Builder levels(final List<Integer> values) {
+      levels = addValuesToList(levels, values);
+      return this;
+    }
+
+    public FlowNodeInstanceFilter.Builder levels(final Integer... values) {
+      return levels(collectValuesAsList(values));
+    }
+
+    public FlowNodeInstanceFilter.Builder useTreePathPrefix(final Boolean value) {
+      useTreePathPrefix = value;
+      return this;
+    }
+
     @Override
     public FlowNodeInstanceFilter build() {
       return new FlowNodeInstanceFilter(
@@ -210,7 +265,10 @@ public record FlowNodeInstanceFilter(
           Objects.requireNonNullElse(incidentKeys, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
           Objects.requireNonNullElse(startDateOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(endDateOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(endDateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(elementInstanceScopeKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(levels, Collections.emptyList()),
+          useTreePathPrefix);
     }
   }
 }

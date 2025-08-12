@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
+import io.camunda.search.clients.query.SearchPrefixQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
@@ -194,6 +195,24 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByTreePathWithPrefix() {
+    final var filter =
+        FilterBuilders.flowNodeInstance(f -> f.treePaths("12345/6789").useTreePathPrefix(true));
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchPrefixQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("treePath");
+              assertThat(t.value()).isEqualTo("12345/6789");
+            });
+  }
+
+  @Test
   public void shouldQueryByIncidentKey() {
     final var filter = FilterBuilders.flowNodeInstance(f -> f.incidentKeys(5L));
     // when
@@ -263,6 +282,23 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
               assertThat(searchRangeQuery.gte()).isEqualTo("2024-03-12T10:30:15.000+0000");
               assertThat(searchRangeQuery.lt()).isEqualTo("2024-07-15T10:30:15.000+0000");
               assertThat(searchRangeQuery.format()).isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+            });
+  }
+
+  @Test
+  public void shouldQueryByLevel() {
+    final var filter = FilterBuilders.flowNodeInstance(f -> f.levels(1));
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("level");
+              assertThat(t.value().intValue()).isEqualTo(1);
             });
   }
 

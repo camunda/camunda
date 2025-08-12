@@ -91,7 +91,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                       false,
                       null,
                       "bpmnProcessId",
-                      "<default>")))
+                      "<default>",
+                      null)))
           .startCursor("f")
           .endCursor("v")
           .build();
@@ -130,7 +131,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
           true,
           1234L,
           "complexProcess",
-          "tenantId");
+          "tenantId",
+          null);
 
   static final String ELEMENT_INSTANCES_URL = "/v2/element-instances/";
   static final String ELEMENT_INSTANCES_SEARCH_URL = ELEMENT_INSTANCES_URL + "search";
@@ -213,7 +215,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                 "incidentKey": "2251799813685320",
                 "tenantId": "default",
                 "startDate": "2023-05-17T10:10:10Z",
-                "endDate": "2023-05-23T10:10:10.000Z"
+                "endDate": "2023-05-23T10:10:10.000Z",
+                "elementInstanceScopeKey": "2251799813685979"
               }
             }
             """;
@@ -251,6 +254,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                             Operation.eq(OffsetDateTime.parse("2023-05-17T10:10:10Z")))
                         .endDateOperations(
                             Operation.eq(OffsetDateTime.parse("2023-05-23T10:10:10.000Z")))
+                        .elementInstanceScopeKeys(2251799813685979L)
                         .build())
                 .build());
   }

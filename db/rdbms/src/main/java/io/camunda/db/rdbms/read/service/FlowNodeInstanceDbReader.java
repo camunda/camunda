@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
+import io.camunda.db.rdbms.read.mapper.FlowNodeInstanceEntityMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.columns.FlowNodeInstanceSearchColumn;
 import io.camunda.search.clients.reader.FlowNodeInstanceReader;
@@ -48,7 +49,10 @@ public class FlowNodeInstanceDbReader extends AbstractEntityReader<FlowNodeInsta
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = flowNodeInstanceMapper.count(dbQuery);
-    final var hits = flowNodeInstanceMapper.search(dbQuery);
+    final var hits =
+        flowNodeInstanceMapper.search(dbQuery).stream()
+            .map(FlowNodeInstanceEntityMapper::toEntity)
+            .toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 

@@ -82,6 +82,7 @@ public final class ElementInstanceServices
 
   private SearchQueryResult<FlowNodeInstanceEntity> search(
       final FlowNodeInstanceQuery query, final SecurityContext securityContext) {
+
     final var result =
         executeSearchRequest(
             () ->
