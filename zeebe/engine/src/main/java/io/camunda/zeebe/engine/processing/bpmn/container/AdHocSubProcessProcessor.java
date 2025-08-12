@@ -62,7 +62,8 @@ public class AdHocSubProcessProcessor
               Map.ofEntries(
                   Map.entry(ZeebeAdHocImplementationType.BPMN, new BpmnBehavior()),
                   Map.entry(ZeebeAdHocImplementationType.JOB_WORKER, new JobWorkerBehavior())));
-  private final AdHocSubProcessOutputCollectionBehavior adHocSubProcessOutputCollectionBehavior = new AdHocSubProcessOutputCollectionBehavior();
+  private final AdHocSubProcessOutputCollectionBehavior adHocSubProcessOutputCollectionBehavior =
+      new AdHocSubProcessOutputCollectionBehavior();
 
   public AdHocSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -288,7 +289,15 @@ public class AdHocSubProcessProcessor
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext) {
 
-    final Expression outputElementExpression = adHocSubProcess.getOutputElement().orElseThrow();
+    final var outputElementOptional = adHocSubProcess.getOutputElement();
+    if (outputElementOptional.isEmpty()) {
+      return Either.left(
+          new Failure(
+              "Expected an expression for the output element of the ad-hoc sub-process, but none was provided.",
+              ErrorType.EXTRACT_VALUE_ERROR));
+    }
+
+    final Expression outputElementExpression = outputElementOptional.get();
     return expressionProcessor
         .evaluateAnyExpression(outputElementExpression, childContext.getElementInstanceKey())
         .flatMap(
