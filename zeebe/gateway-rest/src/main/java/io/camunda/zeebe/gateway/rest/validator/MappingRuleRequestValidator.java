@@ -8,11 +8,6 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_REGEX;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.MAX_LENGTH;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
@@ -20,11 +15,24 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.springframework.http.ProblemDetail;
 
-public class MappingRuleValidator {
+public final class MappingRuleRequestValidator {
 
-  public static Optional<ProblemDetail> validateMappingRuleRequest(
+  private MappingRuleRequestValidator() {}
+
+  public static Optional<ProblemDetail> validateCreateRequest(
+      final MappingRuleCreateRequest request, final Pattern identifierPattern) {
+    return validate(
+        violations -> {
+          violations.addAll(validateClaims(request.getClaimName(), request.getClaimValue()));
+          violations.addAll(validateName(request.getName()));
+          violations.addAll(validateId(request.getMappingRuleId(), identifierPattern));
+        });
+  }
+
+  public static Optional<ProblemDetail> validateUpdateRequest(
       final MappingRuleUpdateRequest request) {
     return validate(
         violations -> {
@@ -33,25 +41,10 @@ public class MappingRuleValidator {
         });
   }
 
-  public static Optional<ProblemDetail> validateMappingRuleRequest(
-      final MappingRuleCreateRequest request) {
-    return validate(
-        violations -> {
-          violations.addAll(validateClaims(request.getClaimName(), request.getClaimValue()));
-          violations.addAll(validateName(request.getName()));
-          violations.addAll(validateId(request.getMappingRuleId()));
-        });
-  }
-
-  private static List<String> validateId(final String mappingRuleId) {
+  private static List<String> validateId(
+      final String mappingRuleId, final Pattern identifierPattern) {
     final List<String> violations = new ArrayList<>();
-    if (mappingRuleId == null || mappingRuleId.isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingRuleId"));
-    } else if (mappingRuleId.length() > MAX_LENGTH) {
-      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("mappingRuleId", MAX_LENGTH));
-    } else if (!ID_PATTERN.matcher(mappingRuleId).matches()) {
-      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("mappingRuleId", ID_REGEX));
-    }
+    IdentifierValidator.validateId(mappingRuleId, "mappingRuleId", violations, identifierPattern);
     return violations;
   }
 

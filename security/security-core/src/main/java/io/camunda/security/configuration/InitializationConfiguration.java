@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class InitializationConfiguration {
 
@@ -20,9 +21,14 @@ public class InitializationConfiguration {
   public static final String DEFAULT_USER_NAME = "Demo";
   public static final String DEFAULT_USER_EMAIL = "demo@example.com";
 
+  /** 1 or more alphanumeric characters, '_', '@', '.', '+', or '-'. */
+  public static final String DEFAULT_ID_REGEX = "^[a-zA-Z0-9_@.+-]+$";
+
   private List<ConfiguredUser> users = new ArrayList<>();
   private List<ConfiguredMappingRule> mappingRules = new ArrayList<>();
   private Map<String, Map<String, Collection<String>>> defaultRoles = new HashMap<>();
+  private String identifierRegex = DEFAULT_ID_REGEX;
+  private Pattern identifierPattern;
 
   public List<ConfiguredUser> getUsers() {
     return users;
@@ -46,5 +52,20 @@ public class InitializationConfiguration {
 
   public void setDefaultRoles(final Map<String, Map<String, Collection<String>>> defaultRoles) {
     this.defaultRoles = defaultRoles;
+  }
+
+  public String getIdentifierRegex() {
+    return identifierRegex;
+  }
+
+  public void setIdentifierRegex(final String identifierRegex) {
+    this.identifierRegex = identifierRegex;
+  }
+
+  public Pattern getIdentifierPattern() {
+    if (identifierPattern == null) {
+      identifierPattern = Pattern.compile(identifierRegex);
+    }
+    return identifierPattern;
   }
 }

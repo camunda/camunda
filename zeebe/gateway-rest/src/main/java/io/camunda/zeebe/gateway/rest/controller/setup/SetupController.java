@@ -47,7 +47,8 @@ public class SetupController {
       final UserServices userServices,
       final RoleServices roleServices,
       final SecurityConfiguration securityConfiguration,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final SecurityConfiguration securityConfig) {
     this.userServices = userServices;
     this.roleServices = roleServices;
     this.securityConfiguration = securityConfiguration;
@@ -72,7 +73,8 @@ public class SetupController {
           RestErrorMapper.mapErrorToProblem(exception));
     }
 
-    return RequestMapper.toUserDTO(request)
+    return RequestMapper.toUserRequest(
+            request, securityConfiguration.getInitialization().getIdentifierPattern())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             dto ->
