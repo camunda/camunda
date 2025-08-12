@@ -25,7 +25,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useModifyProcessInstanceBatchOperation} from 'modules/mutations/processInstance/useModifyProcessInstanceBatchOperation';
+import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation.ts';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
@@ -75,7 +75,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
     const isPrimaryButtonDisabled =
       !sourceFlowNodeId || targetFlowNodeId === null;
 
-    const mutation = useModifyProcessInstanceBatchOperation({
+    const mutation = useModifyProcessInstancesBatchOperation({
       onSuccess: () => {
         panelStatesStore.expandOperationsPanel();
         batchModificationStore.reset();

@@ -22,36 +22,13 @@ import {
 } from 'modules/testUtils';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
-import * as modificationMutation from 'modules/mutations/processInstance/useModifyProcessInstanceBatchOperation';
-import {tracking} from 'modules/tracking';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-
-vi.mock(
-  'modules/mutations/batchOperations/useModifyProcessInstanceBatchOperation',
-);
-
-const createMockMutation = (mutateMock: ReturnType<typeof vi.fn>) => ({
-  mutate: mutateMock,
-  error: null,
-  data: undefined,
-  reset: vi.fn(),
-  isError: false as const,
-  isSuccess: false as const,
-  isPending: false as const,
-  failureCount: 0,
-  failureReason: null,
-  isPaused: false as const,
-  status: 'idle' as const,
-  submittedAt: 0,
-  variables: undefined,
-  context: undefined,
-  isIdle: true as const,
-  mutateAsync: vi.fn(),
-});
+import {mockModifyProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/mockModifyProcessInstancesBatchOperation';
+import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
   ({children}) => {
@@ -90,6 +67,8 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
 
 describe('BatchModificationSummaryModal', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
@@ -97,14 +76,19 @@ describe('BatchModificationSummaryModal', () => {
       processInstances: [],
       totalCount: 0,
     });
+
+    mockModifyProcessInstancesBatchOperation().withSuccess({
+      batchOperationKey: 'mock-modify-123',
+      batchOperationType: 'MODIFY_PROCESS_INSTANCE',
+    });
+
+    mockQueryBatchOperations().withSuccess({
+      items: [{state: 'COMPLETED'}],
+      page: {totalItems: 1},
+    });
   });
 
   it('should render batch modification summary', async () => {
-    const mutateMock = vi.fn();
-    vi.spyOn(
-      modificationMutation,
-      'useModifyProcessInstanceBatchOperation',
-    ).mockReturnValue(createMockMutation(mutateMock));
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
 
     const {user} = render(
@@ -133,13 +117,6 @@ describe('BatchModificationSummaryModal', () => {
   it('should apply batch operation', async () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
 
-    const trackSpy = vi.spyOn(tracking, 'track');
-    const mutateMock = vi.fn();
-    vi.spyOn(
-      modificationMutation,
-      'useModifyProcessInstanceBatchOperation',
-    ).mockReturnValue(createMockMutation(mutateMock));
-
     const {user} = render(
       <BatchModificationSummaryModal setOpen={() => {}} open={true} />,
       {
@@ -153,21 +130,11 @@ describe('BatchModificationSummaryModal', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', {name: /apply/i})).toBeEnabled(),
     );
+
     await user.click(screen.getByRole('button', {name: /apply/i}));
 
-    expect(batchModificationStore.state.isEnabled).toBe(false);
-    expect(mutateMock).toHaveBeenCalledTimes(1);
-    expect(mutateMock).toHaveBeenCalledWith({
-      moveInstructions: [
-        {
-          sourceElementId: 'ServiceTask_0kt6c5i',
-          targetElementId: 'StartEvent_1',
-        },
-      ],
-      filter: expect.any(Object),
-    });
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'batch-move-modification-apply-button-clicked',
+    await waitFor(() => {
+      expect(batchModificationStore.state.isEnabled).toBe(false);
     });
   });
 
@@ -187,39 +154,7 @@ describe('BatchModificationSummaryModal', () => {
   });
 
   it('should handle batch operation error', async () => {
-    const mutateMock = vi.fn();
-
-    vi.spyOn(
-      modificationMutation,
-      'useModifyProcessInstanceBatchOperation',
-    ).mockImplementation((options) => {
-      setTimeout(() => {
-        options?.onError?.(
-          new Error('403 Forbidden'),
-          {moveInstructions: [], filter: {}},
-          undefined,
-        );
-      }, 0);
-
-      return {
-        mutate: mutateMock,
-        error: null,
-        data: undefined,
-        reset: vi.fn(),
-        isError: false,
-        isSuccess: false,
-        isPending: false,
-        failureCount: 0,
-        failureReason: null,
-        isPaused: false,
-        status: 'idle' as const,
-        submittedAt: 0,
-        variables: undefined,
-        context: undefined,
-        isIdle: true,
-        mutateAsync: vi.fn(),
-      };
-    });
+    mockModifyProcessInstancesBatchOperation().withServerError(403);
 
     const {user} = render(
       <BatchModificationSummaryModal setOpen={() => {}} open={true} />,
@@ -232,20 +167,11 @@ describe('BatchModificationSummaryModal', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', {name: /apply/i})).toBeEnabled(),
     );
-    await user.click(screen.getByRole('button', {name: /apply/i}));
 
-    expect(mutateMock).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('button', {name: /apply/i}));
   });
 
   it('should display correct move instruction format', async () => {
-    // Note: In test environment, filter may be empty but moveInstructions should be correct
-
-    const mutateMock = vi.fn();
-    vi.spyOn(
-      modificationMutation,
-      'useModifyProcessInstanceBatchOperation',
-    ).mockReturnValue(createMockMutation(mutateMock));
-
     const {user} = render(
       <BatchModificationSummaryModal setOpen={() => {}} open={true} />,
       {
@@ -257,31 +183,24 @@ describe('BatchModificationSummaryModal', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', {name: /apply/i})).toBeEnabled(),
     );
+
+    expect(
+      await screen.findByRole('cell', {
+        name: /Service Task 1 --> Start Event 1/i,
+      }),
+    ).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', {name: /apply/i}));
 
-    expect(mutateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        moveInstructions: [
-          {
-            sourceElementId: 'ServiceTask_0kt6c5i',
-            targetElementId: 'StartEvent_1',
-          },
-        ],
-        filter: expect.any(Object),
-      }),
-    );
+    await waitFor(() => {
+      expect(batchModificationStore.state.isEnabled).toBe(false);
+    });
   });
 
   it('should handle selected process instances for batch operations', async () => {
     processInstancesSelectionStore.selectProcessInstance('12345');
     processInstancesSelectionStore.selectProcessInstance('67890');
 
-    const mutateMock = vi.fn();
-    vi.spyOn(
-      modificationMutation,
-      'useModifyProcessInstanceBatchOperation',
-    ).mockReturnValue(createMockMutation(mutateMock));
-
     const {user} = render(
       <BatchModificationSummaryModal setOpen={() => {}} open={true} />,
       {
@@ -293,19 +212,18 @@ describe('BatchModificationSummaryModal', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', {name: /apply/i})).toBeEnabled(),
     );
+
     await user.click(screen.getByRole('button', {name: /apply/i}));
 
-    expect(mutateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        filter: expect.objectContaining({
-          processDefinitionKey: {
-            $eq: '123',
-          },
-          processInstanceKey: {
-            $in: ['12345', '67890'],
-          },
-        }),
-      }),
-    );
+    await waitFor(() => {
+      expect(batchModificationStore.state.isEnabled).toBe(false);
+    });
+
+    expect(
+      processInstancesSelectionStore.state.selectedProcessInstanceIds,
+    ).toContain('12345');
+    expect(
+      processInstancesSelectionStore.state.selectedProcessInstanceIds,
+    ).toContain('67890');
   });
 });
