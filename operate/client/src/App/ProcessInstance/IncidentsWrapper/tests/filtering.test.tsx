@@ -36,15 +36,9 @@ describe('Filtering', () => {
   });
 
   it('should not have active filters by default', () => {
-    render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
-      {
-        wrapper: Wrapper,
-      },
-    );
+    render(<IncidentsWrapper processInstance={mockProcessInstance} />, {
+      wrapper: Wrapper,
+    });
 
     expect(
       screen.queryByRole('button', {
@@ -55,10 +49,7 @@ describe('Filtering', () => {
 
   it('should filter the incidents when errorTypes are selected', async () => {
     const {user} = render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
+      <IncidentsWrapper processInstance={mockProcessInstance} />,
       {
         wrapper: Wrapper,
       },
@@ -89,10 +80,7 @@ describe('Filtering', () => {
 
   it('should filter the incidents when flowNodes are selected', async () => {
     const {user} = render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
+      <IncidentsWrapper processInstance={mockProcessInstance} />,
       {
         wrapper: Wrapper,
       },
@@ -123,10 +111,7 @@ describe('Filtering', () => {
 
   it('should filter the incidents when both errorTypes & flowNodes are selected', async () => {
     const {user} = render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
+      <IncidentsWrapper processInstance={mockProcessInstance} />,
       {
         wrapper: Wrapper,
       },
@@ -165,10 +150,7 @@ describe('Filtering', () => {
 
   it('should remove filter when only related incident gets resolved', async () => {
     const {user, rerender} = render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
+      <IncidentsWrapper processInstance={mockProcessInstance} />,
       {
         wrapper: Wrapper,
       },
@@ -199,12 +181,7 @@ describe('Filtering', () => {
 
     await act(() => incidentsStore.fetchIncidents('1'));
 
-    rerender(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
-    );
+    rerender(<IncidentsWrapper processInstance={mockProcessInstance} />);
 
     expect(
       screen.queryByRole('option', {
@@ -223,10 +200,7 @@ describe('Filtering', () => {
 
   it('should drop all filters when clicking the clear all button', async () => {
     const {user} = render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
+      <IncidentsWrapper processInstance={mockProcessInstance} />,
       {
         wrapper: Wrapper,
       },

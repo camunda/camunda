@@ -17,6 +17,9 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
+import {Button} from '@carbon/react';
+import {WarningFilled} from '@carbon/react/icons';
+import {incidentsStore} from 'modules/stores/incidents';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
 import {notificationsStore} from 'modules/stores/notifications';
 import {VersionTag} from './styled';
@@ -34,6 +37,7 @@ import {ProcessInstanceOperationsContext} from './processInstanceOperationsConte
 import {IS_BATCH_OPERATIONS_V2} from 'modules/feature-flags';
 import {useHasActiveBatchOperationMutation} from 'modules/mutations/processInstance/useHasActiveBatchOperationMutation';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
+import styled from 'styled-components';
 
 const headerColumns = [
   'Process Name',
@@ -128,6 +132,17 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   }`;
   const hasVersionTag = !isNil(processDefinitionVersionTag);
   const processInstanceState = hasIncident ? 'INCIDENT' : state;
+  const {
+    incidentsCount,
+    setIncidentBarOpen,
+    state: incidentsState,
+  } = incidentsStore;
+
+  const HeaderActions = styled.div`
+    display: flex;
+    align-items: center;
+    gap: var(--cds-spacing-03);
+  `;
 
   return (
     <InstanceHeader
@@ -266,82 +281,95 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
         },
       ]}
       additionalContent={
-        <Restricted
-          resourceBasedRestrictions={{
-            scopes: ['UPDATE_PROCESS_INSTANCE', 'DELETE_PROCESS_INSTANCE'],
-            permissions: permissions,
-          }}
-        >
-          <ProcessInstanceOperationsContext.Provider
-            value={{
-              cancellation: {
-                isPending: cancellation.isPending,
-                onError: () => cancellation.setIsPending(false),
-                onMutate: () => cancellation.setIsPending(true),
-              },
+        <HeaderActions>
+          {hasIncident && (
+            <Button
+              size="sm"
+              kind="danger--ghost"
+              onClick={() =>
+                setIncidentBarOpen(!incidentsState.isIncidentBarOpen)
+              }
+              renderIcon={WarningFilled}
+              data-testid="incidents-cta"
+            >
+              {incidentsCount > 0
+                ? `${incidentsCount} Incident${incidentsCount > 1 ? 's' : ''}`
+                : 'Incidents'}
+            </Button>
+          )}
+          <Restricted
+            resourceBasedRestrictions={{
+              scopes: ['UPDATE_PROCESS_INSTANCE', 'DELETE_PROCESS_INSTANCE'],
+              permissions: permissions,
             }}
           >
-            <Operations
-              instance={processInstance}
-              onOperation={() => {
-                queryClient.invalidateQueries({
-                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
-                });
+            <ProcessInstanceOperationsContext.Provider
+              value={{
+                cancellation: {
+                  isPending: cancellation.isPending,
+                  onError: () => cancellation.setIsPending(false),
+                  onMutate: () => cancellation.setIsPending(true),
+                },
               }}
-              onError={({statusCode}) => {
-                queryClient.invalidateQueries({
-                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
-                });
-
-                notificationsStore.displayNotification({
-                  kind: 'error',
-                  title: 'Operation could not be created',
-                  subtitle:
-                    statusCode === 403
-                      ? 'You do not have permission'
-                      : undefined,
-                  isDismissable: true,
-                });
-              }}
-              onSuccess={(operationType) => {
-                queryClient.invalidateQueries({
-                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
-                });
-
-                tracking.track({
-                  eventName: 'single-operation',
-                  operationType,
-                  source: 'instance-header',
-                });
-
-                if (operationType === 'DELETE_PROCESS_INSTANCE') {
-                  navigate(
-                    Locations.processes({
-                      active: true,
-                      incidents: true,
-                    }),
-                    {replace: true},
-                  );
-
+            >
+              <Operations
+                instance={processInstance}
+                onOperation={() => {
+                  queryClient.invalidateQueries({
+                    queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
+                  });
+                }}
+                onError={({statusCode}) => {
+                  queryClient.invalidateQueries({
+                    queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
+                  });
                   notificationsStore.displayNotification({
-                    kind: 'success',
-                    title: 'Instance deleted',
+                    kind: 'error',
+                    title: 'Operation could not be created',
+                    subtitle:
+                      statusCode === 403
+                        ? 'You do not have permission'
+                        : undefined,
                     isDismissable: true,
                   });
+                }}
+                onSuccess={(operationType) => {
+                  queryClient.invalidateQueries({
+                    queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
+                  });
+                  tracking.track({
+                    eventName: 'single-operation',
+                    operationType,
+                    source: 'instance-header',
+                  });
+                  if (operationType === 'DELETE_PROCESS_INSTANCE') {
+                    navigate(
+                      Locations.processes({
+                        active: true,
+                        incidents: true,
+                      }),
+                      {replace: true},
+                    );
+                    notificationsStore.displayNotification({
+                      kind: 'success',
+                      title: 'Instance deleted',
+                      isDismissable: true,
+                    });
+                  }
+                }}
+                forceSpinner={
+                  cancellation.isPending ||
+                  hasActiveOperationLegacy ||
+                  (IS_BATCH_OPERATIONS_V2 && hasActiveBatchOperationMutation)
                 }
-              }}
-              forceSpinner={
-                cancellation.isPending ||
-                hasActiveOperationLegacy ||
-                (IS_BATCH_OPERATIONS_V2 && hasActiveBatchOperationMutation)
-              }
-              isInstanceModificationVisible={
-                !modificationsStore.isModificationModeEnabled
-              }
-              permissions={permissions}
-            />
-          </ProcessInstanceOperationsContext.Provider>
-        </Restricted>
+                isInstanceModificationVisible={
+                  !modificationsStore.isModificationModeEnabled
+                }
+                permissions={permissions}
+              />
+            </ProcessInstanceOperationsContext.Provider>
+          </Restricted>
+        </HeaderActions>
       }
     />
   );
