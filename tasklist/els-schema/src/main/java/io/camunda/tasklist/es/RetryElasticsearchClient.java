@@ -68,6 +68,7 @@ import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -90,8 +91,10 @@ public class RetryElasticsearchClient {
 
   public static final String REFRESH_INTERVAL = "index.refresh_interval";
   public static final String NO_REFRESH = "-1";
+  public static final String NUMBERS_OF_SHARDS = "index.number_of_shards";
   public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
   public static final String NO_REPLICA = "0";
+  public static final String DEFAULT_SHARDS = "1";
   public static final int SCROLL_KEEP_ALIVE_MS = 60_000;
   public static final int DEFAULT_NUMBER_OF_RETRIES =
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
@@ -238,22 +241,6 @@ public class RetryElasticsearchClient {
             return esClient.indices().create(createIndexRequest, requestOptions).isAcknowledged();
           }
 
-          final String replicas =
-              getOrDefaultNumbersOfReplica(createIndexRequest.index(), NO_REPLICA);
-          if (!replicas.equals(
-              String.valueOf(tasklistProperties.getElasticsearch().getNumberOfReplicas()))) {
-            final UpdateSettingsRequest updateSettingsRequest =
-                new UpdateSettingsRequest(createIndexRequest.index());
-            final Settings settings =
-                Settings.builder()
-                    .put(
-                        NUMBERS_OF_REPLICA,
-                        tasklistProperties.getElasticsearch().getNumberOfReplicas())
-                    .build();
-            updateSettingsRequest.settings(settings);
-            esClient.indices().putSettings(updateSettingsRequest, requestOptions).isAcknowledged();
-          }
-
           try {
             if (createIndexRequest.aliases() != null
                 && !createIndexRequest.aliases().isEmpty()
@@ -369,10 +356,6 @@ public class RetryElasticsearchClient {
             new ComposableIndexTemplateExistRequest(templatePattern), requestOptions);
   }
 
-  public boolean createTemplate(final PutComposableIndexTemplateRequest request) {
-    return createTemplate(request, false);
-  }
-
   public boolean createTemplate(
       final PutComposableIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
@@ -430,6 +413,17 @@ public class RetryElasticsearchClient {
         });
   }
 
+  public ImmutableOpenMap<String, Settings> getIndexSettingsForIndexPattern(
+      final String indexPattern) {
+    return executeWithRetries(
+        "GetIndexSettings for indexPattern" + indexPattern,
+        () ->
+            esClient
+                .indices()
+                .getSettings(new GetSettingsRequest().indices(indexPattern), requestOptions)
+                .getIndexToSettings());
+  }
+
   protected Map<String, String> getIndexSettingsFor(
       final String indexName, final String... fields) {
     return executeWithRetries(
@@ -447,29 +441,15 @@ public class RetryElasticsearchClient {
         });
   }
 
-  protected Map<String, String> getComponentTemplateProperties(
-      final String templatePattern, final String... fields) {
+  public Settings getComponentTemplateSettings(final String componentTemplateName) {
     return executeWithRetries(
-        "GetComponentTemplateSettings " + templatePattern,
+        "GetComponentTemplateSettings " + componentTemplateName,
         () -> {
-          final Map<String, String> settings = new HashMap<>();
           final GetComponentTemplatesRequest request =
-              new GetComponentTemplatesRequest(templatePattern);
+              new GetComponentTemplatesRequest(componentTemplateName);
           final GetComponentTemplatesResponse response =
               esClient.cluster().getComponentTemplate(request, requestOptions);
-          if (response.getComponentTemplates().get(templatePattern) != null) {
-            for (final String field : fields) {
-              settings.put(
-                  field,
-                  response
-                      .getComponentTemplates()
-                      .get(templatePattern)
-                      .template()
-                      .settings()
-                      .get(field));
-            }
-          }
-          return settings;
+          return response.getComponentTemplates().get(componentTemplateName).template().settings();
         });
   }
 
@@ -484,17 +464,6 @@ public class RetryElasticsearchClient {
 
   public String getOrDefaultNumbersOfReplica(final String indexName, final String defaultValue) {
     final Map<String, String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
-    String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
-    if (numbersOfReplica.trim().equals(NO_REPLICA)) {
-      numbersOfReplica = defaultValue;
-    }
-    return numbersOfReplica;
-  }
-
-  public String getOrDefaultComponentTemplateNumbersOfReplica(
-      final String templatePattern, final String defaultValue) {
-    final Map<String, String> settings =
-        getComponentTemplateProperties(templatePattern, NUMBERS_OF_REPLICA);
     String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
     if (numbersOfReplica.trim().equals(NO_REPLICA)) {
       numbersOfReplica = defaultValue;
@@ -789,21 +758,22 @@ public class RetryElasticsearchClient {
     }
   }
 
-  public boolean createComponentTemplate(final PutComponentTemplateRequest request) {
+  public boolean createComponentTemplate(
+      final PutComponentTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateComponentTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())
-              || !getOrDefaultComponentTemplateNumbersOfReplica(request.name(), NO_REPLICA)
-                  .equals(
-                      String.valueOf(
-                          tasklistProperties.getElasticsearch().getNumberOfReplicas()))) {
+          if (overwrite
+              || !esClient
+                  .cluster()
+                  .existsComponentTemplate(
+                      new ComponentTemplatesExistRequest(request.name()), requestOptions)) {
             return esClient
                 .cluster()
                 .putComponentTemplate(request, requestOptions)
                 .isAcknowledged();
           }
-          return false;
+          return true;
         });
   }
 

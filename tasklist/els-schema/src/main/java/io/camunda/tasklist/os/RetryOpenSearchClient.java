@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.os;
 
-import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultForNullValue;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -26,7 +24,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -34,6 +37,7 @@ import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
+import org.elasticsearch.rest.RestStatus;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.ResponseException;
@@ -48,9 +52,28 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
-import org.opensearch.client.opensearch.core.*;
+import org.opensearch.client.opensearch.core.CountResponse;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
+import org.opensearch.client.opensearch.core.DeleteRequest;
+import org.opensearch.client.opensearch.core.DeleteResponse;
+import org.opensearch.client.opensearch.core.GetRequest;
+import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.core.IndexResponse;
+import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ScrollRequest;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.indices.*;
+import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.ExistsAliasRequest;
+import org.opensearch.client.opensearch.indices.GetAliasResponse;
+import org.opensearch.client.opensearch.indices.GetIndexResponse;
+import org.opensearch.client.opensearch.indices.GetIndicesSettingsResponse;
+import org.opensearch.client.opensearch.indices.IndexSettings;
+import org.opensearch.client.opensearch.indices.IndexState;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.ingest.Processor;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.slf4j.Logger;
@@ -67,7 +90,7 @@ public class RetryOpenSearchClient {
 
   public static final String REFRESH_INTERVAL = "index.refresh_interval";
   public static final String NO_REFRESH = "-1";
-  public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
+  public static final String DEFAULT_SHARDS = "1";
   public static final String NO_REPLICA = "0";
   public static final String SCROLL_KEEP_ALIVE_MS = "60000ms";
   public static final int DEFAULT_NUMBER_OF_RETRIES =
@@ -169,24 +192,32 @@ public class RetryOpenSearchClient {
           if (!indicesExist(createIndexRequest.index())) {
             return openSearchClient.indices().create(createIndexRequest).acknowledged();
           }
-
-          final String replicas =
-              getOrDefaultNumbersOfReplica(createIndexRequest.index(), NO_REPLICA);
-          if (!replicas.equals(
-              String.valueOf(tasklistProperties.getOpenSearch().getNumberOfReplicas()))) {
-            final IndexSettings indexSettings =
-                new IndexSettings.Builder()
-                    .settings(
-                        IndexSettings.of(
-                            s ->
-                                s.numberOfReplicas(
-                                    String.valueOf(
-                                        tasklistProperties.getOpenSearch().getNumberOfReplicas()))))
-                    .build();
-            setIndexSettingsFor(indexSettings, createIndexRequest.index());
+          if (createIndexRequest.aliases() != null && !createIndexRequest.aliases().isEmpty()) {
+            final String aliasName = createIndexRequest.aliases().keySet().iterator().next();
+            if (!aliasExists(aliasName)) {
+              openSearchClient
+                  .indices()
+                  .updateAliases(
+                      r ->
+                          r.actions(
+                              a ->
+                                  a.add(
+                                      aa ->
+                                          aa.alias(aliasName)
+                                              .index(createIndexRequest.index())
+                                              .isWriteIndex(false))));
+              LOGGER.info(
+                  "Alias is created. Index: {}, alias: {} ", createIndexRequest.index(), aliasName);
+            }
           }
           return true;
         });
+  }
+
+  private boolean aliasExists(final String aliasName) throws IOException {
+    final ExistsAliasRequest aliasExistsReq =
+        new ExistsAliasRequest.Builder().name(List.of(aliasName)).build();
+    return openSearchClient.indices().existsAlias(aliasExistsReq).value();
   }
 
   public boolean createOrUpdateDocument(final String name, final String id, final Map source) {
@@ -248,10 +279,6 @@ public class RetryOpenSearchClient {
     return openSearchClient.indices().existsIndexTemplate(it -> it.name(templatePattern)).value();
   }
 
-  public boolean createTemplate(final PutIndexTemplateRequest request) {
-    return createTemplate(request, false);
-  }
-
   public boolean createTemplate(final PutIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
@@ -299,7 +326,7 @@ public class RetryOpenSearchClient {
         });
   }
 
-  public IndexSettings getIndexSettingsFor(final String indexName, final String... fields) {
+  public IndexSettings getIndexSettingsFor(final String indexName) {
     return executeWithRetries(
         "GetIndexSettings " + indexName,
         () -> {
@@ -310,8 +337,19 @@ public class RetryOpenSearchClient {
         });
   }
 
+  public Map<String, IndexState> getIndexSettingsForIndexPattern(final String indexPattern) {
+    return executeWithRetries(
+        "GetIndexSettings " + indexPattern,
+        () -> {
+          final GetIndicesSettingsResponse response =
+              openSearchClient.indices().getSettings(s -> s.index(indexPattern).flatSettings(true));
+
+          return response.result();
+        });
+  }
+
   public String getOrDefaultRefreshInterval(final String indexName, final String defaultValue) {
-    final IndexSettings settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
+    final IndexSettings settings = getIndexSettingsFor(indexName);
     String refreshInterval;
     if (settings.refreshInterval() == null) {
       refreshInterval = defaultValue;
@@ -325,7 +363,7 @@ public class RetryOpenSearchClient {
   }
 
   public String getOrDefaultNumbersOfReplica(final String indexName, final String defaultValue) {
-    final IndexSettings settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+    final IndexSettings settings = getIndexSettingsFor(indexName);
 
     String numbersOfReplica;
     if (settings.numberOfReplicas() == null) {
@@ -555,55 +593,36 @@ public class RetryOpenSearchClient {
     }
   }
 
-  public boolean createComponentTemplate(final PutComponentTemplateRequest request) {
+  public boolean createComponentTemplate(
+      final PutComponentTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateComponentTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())
-              || !getOrDefaultComponentTemplateNumbersOfReplica(request.name(), NO_REPLICA)
-                  .equals(
-                      String.valueOf(tasklistProperties.getOpenSearch().getNumberOfReplicas()))) {
+          if (overwrite
+              || !openSearchClient
+                  .cluster()
+                  .existsComponentTemplate(r -> r.name(request.name()))
+                  .value()) {
             return openSearchClient.cluster().putComponentTemplate(request).acknowledged();
           }
-          return false;
+          return true;
         });
   }
 
-  protected Map<String, String> getComponentTemplateProperties(
-      final String templatePattern, final String... fields) {
+  public IndexSettings getComponentTemplateSettings(final String componentTemplateName) {
     return executeWithRetries(
-        "GetComponentTemplateSettings " + templatePattern,
+        "GetComponentTemplateSettings " + componentTemplateName,
         () -> {
-          final Map<String, String> settings = new HashMap<>();
           final GetComponentTemplateResponse response =
-              openSearchClient.cluster().getComponentTemplate(ct -> ct.name(templatePattern));
-          if (response.componentTemplates().size() > 0) {
-            for (final String field : fields) {
-              settings.put(
-                  field,
-                  response
-                      .componentTemplates()
-                      .get(0)
-                      .componentTemplate()
-                      .template()
-                      .settings()
-                      .get(templatePattern)
-                      .numberOfReplicas());
-            }
-          }
-          return settings;
+              openSearchClient.cluster().getComponentTemplate(ct -> ct.name(componentTemplateName));
+          return response
+              .componentTemplates()
+              .get(0)
+              .componentTemplate()
+              .template()
+              .settings()
+              .get("index");
         });
-  }
-
-  public String getOrDefaultComponentTemplateNumbersOfReplica(
-      final String templatePattern, final String defaultValue) {
-    final Map<String, String> settings =
-        getComponentTemplateProperties(templatePattern, NUMBERS_OF_REPLICA);
-    String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
-    if (numbersOfReplica.trim().equals(NO_REPLICA)) {
-      numbersOfReplica = defaultValue;
-    }
-    return numbersOfReplica;
   }
 
   public int doWithEachSearchResult(
@@ -769,6 +788,28 @@ public class RetryOpenSearchClient {
             return true;
           } catch (final IOException e) {
             throw new RuntimeException("Failed to apply ISM policy to index: " + indexName, e);
+          }
+        });
+  }
+
+  public Set<String> getAliasesNames(final String namePattern) {
+    return executeWithRetries(
+        "Get aliases for " + namePattern,
+        () -> {
+          try {
+            final GetAliasResponse response =
+                openSearchClient.indices().getAlias(i -> i.index(namePattern));
+            return response.result().values().stream()
+                .map(a -> a.aliases())
+                .map(a -> a.keySet())
+                .flatMap(Set::stream)
+                .collect(Collectors.toSet());
+          } catch (final OpenSearchException e) {
+            // NOT_FOUND response means that no aliases were found
+            if (e.status() == RestStatus.NOT_FOUND.getStatus()) {
+              return Set.of();
+            }
+            throw e;
           }
         });
   }

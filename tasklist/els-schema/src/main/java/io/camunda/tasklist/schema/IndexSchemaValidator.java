@@ -26,6 +26,4 @@ public interface IndexSchemaValidator {
   Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() throws IOException;
 
   Set<String> olderVersionsForIndex(final IndexDescriptor indexDescriptor);
-
-  Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor);
 }
