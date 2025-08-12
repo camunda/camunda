@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PORT;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,11 +23,13 @@ public class Grpc {
       Map.of(
           "host", "zeebe.gateway.network.host",
           "port", "zeebe.gateway.network.port",
+          "minKeepAliveInterval", "zeebe.gateway.network.minKeepAliveInterval",
           "managementThreads", "zeebe.gateway.threads.managementThreads");
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
           "host", "zeebe.broker.gateway.network.host",
           "port", "zeebe.broker.gateway.network.port",
+          "minKeepAliveInterval", "zeebe.broker.gateway.network.minKeepAliveInterval",
           "managementThreads", "zeebe.broker.gateway.threads.managementThreads");
 
   private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
@@ -36,6 +39,13 @@ public class Grpc {
 
   /** Sets the port the gateway binds to */
   private int port = DEFAULT_PORT;
+
+  /**
+   * Sets the minimum keep alive interval. This setting specifies the minimum accepted interval
+   * between keep alive pings. This value must be specified as a positive integer followed by 's'
+   * for seconds, 'm' for minutes or 'h' for hours.
+   */
+  private Duration minKeepAliveInterval = Duration.ofSeconds(30);
 
   /** Sets the ssl configuration for the gateway */
   private Ssl ssl = new Ssl();
@@ -72,6 +82,19 @@ public class Grpc {
     this.port = port;
   }
 
+  public Duration getMinKeepAliveInterval() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".min-keep-alive-interval",
+        minKeepAliveInterval,
+        Duration.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("minKeepAliveInterval")));
+  }
+
+  public void setMinKeepAliveInterval(final Duration minKeepAliveInterval) {
+    this.minKeepAliveInterval = minKeepAliveInterval;
+  }
+
   public Ssl getSsl() {
     return ssl;
   }
@@ -106,6 +129,7 @@ public class Grpc {
     final Grpc copy = new Grpc();
     copy.address = address;
     copy.port = port;
+    copy.minKeepAliveInterval = minKeepAliveInterval;
     copy.ssl = ssl;
     copy.interceptors = interceptors;
     copy.managementThreads = managementThreads;
