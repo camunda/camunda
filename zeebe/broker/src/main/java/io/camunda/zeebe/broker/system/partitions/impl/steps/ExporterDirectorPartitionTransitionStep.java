@@ -151,19 +151,24 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             }
 
             // The config might have changed after ExporterDirector has created
-            disableOrEnableExportersIfConfigChanged(exporterDescriptors, context);
+            deleteOrDisableOrEnableExportersIfConfigChanged(exporterDescriptors, context);
           }
         });
     return startFuture;
   }
 
-  private void disableOrEnableExportersIfConfigChanged(
+  private void deleteOrDisableOrEnableExportersIfConfigChanged(
       final Map<ExporterDescriptor, ExporterInitializationInfo> startedExporters,
       final PartitionTransitionContext context) {
     final var currentEnabledExporters = getEnabledExporterDescriptors(context);
+    final var currentAllExporters = getAllExporterDescriptors(context);
 
     for (final var exporter : startedExporters.keySet()) {
-      if (!currentEnabledExporters.containsKey(exporter)) {
+      if (!currentAllExporters.containsKey(exporter)) {
+        // Exporter removed from config → delete it
+        context.getExporterDirector().deleteExporter(exporter.getId());
+      } else if (!currentEnabledExporters.containsKey(exporter)) {
+        // Exporter present but disabled → disable it
         context.getExporterDirector().disableExporter(exporter.getId());
       }
     }
@@ -176,6 +181,17 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .enableExporterWithRetry(exporter.getId(), exporterEntry.getValue(), exporter);
       }
     }
+  }
+
+  private static Map<ExporterDescriptor, ExporterInitializationInfo> getAllExporterDescriptors(
+      final PartitionTransitionContext context) {
+    final Collection<ExporterDescriptor> exporterDescriptors = context.getExportedDescriptors();
+    final var exporterConfig = context.getDynamicPartitionConfig().exporting().exporters();
+
+    return exporterConfig.entrySet().stream()
+        // no filtering by state, get all exporters
+        .map(entry -> getExporterDescriptor(entry.getKey(), entry.getValue(), exporterDescriptors))
+        .collect(Collectors.toMap(Tuple::getLeft, Tuple::getRight));
   }
 
   private static Map<ExporterDescriptor, ExporterInitializationInfo> getEnabledExporterDescriptors(

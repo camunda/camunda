@@ -215,6 +215,39 @@ class ExporterDirectorPartitionTransitionStepTest {
   }
 
   @Test
+  void shouldDeleteExporterIfConfigChangedConcurrently() {
+    // given
+    final String enabledExporterId = "expA";
+    final String toBeDeletedExporterId = "expB";
+    final var exporterConfig =
+        getExporterConfig(enabledExporterId, State.ENABLED, toBeDeletedExporterId, State.ENABLED);
+
+    setExportersInContext(enabledExporterId, toBeDeletedExporterId, exporterConfig);
+
+    final var mockedExporterDirector = mock(ExporterDirector.class);
+    final var startingFuture = new TestActorFuture<Void>();
+    when(mockedExporterDirector.startAsync(any())).thenReturn(startingFuture);
+    final var exporterDirectorStep =
+        new ExporterDirectorPartitionTransitionStep((ctx, phase) -> mockedExporterDirector);
+
+    // when
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER);
+
+    // new config removes expB entirely
+    final var updatedConfig =
+        new DynamicPartitionConfig(
+            new ExportersConfig(
+                Map.of(enabledExporterId, new ExporterState(0, State.ENABLED, Optional.empty()))));
+    transitionContext.setDynamicPartitionConfig(updatedConfig);
+    startingFuture.complete(null);
+
+    // then
+    verify(mockedExporterDirector, timeout(1000)).deleteExporter(toBeDeletedExporterId);
+    verify(mockedExporterDirector, never()).deleteExporter(enabledExporterId);
+  }
+
+  @Test
   void shouldEnableExporterIfConfigChangedConcurrently() {
     // given
     final String enabledExporterId = "expA";

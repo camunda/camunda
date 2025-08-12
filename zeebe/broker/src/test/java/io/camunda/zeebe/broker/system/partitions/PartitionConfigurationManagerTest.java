@@ -175,26 +175,16 @@ final class PartitionConfigurationManagerTest {
     void shouldRemoveExporterFromConfigWhenExporterDirectorIsNotAvailable() {
       // given
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
-      assertThat(
-              partitionTransitionContext
-                  .getDynamicPartitionConfig()
-                  .exporting()
-                  .exporters()
-                  .containsKey(exporterId))
-          .isTrue();
+      assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().exporters())
+          .containsKey(exporterId);
 
       // when
       partitionConfigurationManager.deleteExporter(exporterId).join();
 
       // then
-      assertThat(
-              partitionTransitionContext
-                  .getDynamicPartitionConfig()
-                  .exporting()
-                  .exporters()
-                  .containsKey(exporterId))
+      assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().exporters())
           .describedAs("Exporter should be removed from the context config")
-          .isFalse();
+          .doesNotContainKey(exporterId);
     }
 
     @Test

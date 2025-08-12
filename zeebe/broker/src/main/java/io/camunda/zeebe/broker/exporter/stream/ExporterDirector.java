@@ -218,17 +218,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   /**
-   * Disables an already configured exporter. No records will be exported to this exporter anymore.
-   * We will not wait for acknowledgments for this exporter, allowing the log to be compacted.
-   *
-   * @param exporterId id of the exporter to disabled
-   * @return future which will be completed after the exporter is disabled.
-   */
-  public ActorFuture<Void> disableExporter(final String exporterId) {
-    return callRemoveExporter(exporterId);
-  }
-
-  /**
    * Deletes an already configured exporter. No records will be exported to this exporter anymore.
    * We will not wait for acknowledgments for this exporter, allowing the log to be compacted.
    *
@@ -236,10 +225,17 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
    * @return future which will be completed after the exporter is deleted.
    */
   public ActorFuture<Void> deleteExporter(final String exporterId) {
-    return callRemoveExporter(exporterId);
+    return disableExporter(exporterId);
   }
 
-  private ActorFuture<Void> callRemoveExporter(final String exporterId) {
+  /**
+   * Disables an already configured exporter. No records will be exported to this exporter anymore.
+   * We will not wait for acknowledgments for this exporter, allowing the log to be compacted.
+   *
+   * @param exporterId id of the exporter to disabled
+   * @return future which will be completed after the exporter is disabled.
+   */
+  public ActorFuture<Void> disableExporter(final String exporterId) {
     if (actor.isClosed()) {
       return CompletableActorFuture.completed(null);
     }
