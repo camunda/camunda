@@ -23,6 +23,7 @@
     <module>migration-api</module>
     <module>process-migration</module>
     <module>identity-migration</module>
+    <module>task-migration</module>
   </modules>
 
   <properties>
