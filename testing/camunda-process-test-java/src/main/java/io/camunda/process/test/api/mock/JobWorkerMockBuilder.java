@@ -15,11 +15,13 @@
  */
 package io.camunda.process.test.api.mock;
 
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Use this interface to mock job workers in your process tests.
+ * Use this interface to build mock job workers in your process tests.
  *
  * <p>Example usage:
  *
@@ -27,24 +29,24 @@ import java.util.Map;
  *   processTestContext.mockJobWorker("myworker").thenComplete();
  * </pre>
  */
-public interface JobWorkerMock {
+public interface JobWorkerMockBuilder {
 
   /** Configures the mock worker to complete jobs without any variables. */
-  void thenComplete();
+  JobWorkerMock thenComplete();
 
   /**
    * Configures the mock worker to complete jobs with the specified variables.
    *
    * @param variables the variables to include when completing the job.
    */
-  void thenComplete(Map<String, Object> variables);
+  JobWorkerMock thenComplete(Map<String, Object> variables);
 
   /**
    * Configures the mock worker to throw a BPMN error with the specified error code.
    *
    * @param errorCode the error code to throw.
    */
-  void thenThrowBpmnError(String errorCode);
+  JobWorkerMock thenThrowBpmnError(String errorCode);
 
   /**
    * Configures the mock worker to throw a BPMN error with the specified error code and variables.
@@ -52,12 +54,46 @@ public interface JobWorkerMock {
    * @param errorCode the error code to throw.
    * @param variables the variables to include when throwing the error.
    */
-  void thenThrowBpmnError(String errorCode, Map<String, Object> variables);
+  JobWorkerMock thenThrowBpmnError(String errorCode, Map<String, Object> variables);
 
   /**
    * Configures the mock worker with a custom job handler.
    *
    * @param jobHandler the custom job handler to use for processing jobs.
    */
-  void withHandler(JobHandler jobHandler);
+  JobWorkerMock withHandler(JobHandler jobHandler);
+
+  /**
+   * A JobWorkerMock is used in place of real job workers during camunda process tests. After the
+   * mock worker has been invoked, you can verify the state of the activated jobs and the number of
+   * invocations.
+   *
+   * <p>Example Usage:
+   *
+   * <pre>
+   *   final JobWorkerMock mock = processTestContext.mockJobWorker("myworker").thenComplete();
+   *
+   *   // start the process
+   *
+   *   // Assert that the worker has been invoked and verify its state
+   *   assert(mock.getInvocations()).isEqualTo(1);
+   *   assertThat(mock.getActivatedJobs().get(0).getVariablesAsMap())
+   *         .contains(entry("error_code", "404"));
+   * </pre>
+   */
+  interface JobWorkerMock {
+    /**
+     * Gets the number of times the Job Worker was invoked.
+     *
+     * @return number of Job Worker invocations.
+     */
+    int getInvocations();
+
+    /**
+     * Gets all activated jobs every time the Job Worker was invoked.
+     *
+     * @return the activated jobs, or empty if there are none.
+     */
+    List<ActivatedJob> getActivatedJobs();
+  }
 }

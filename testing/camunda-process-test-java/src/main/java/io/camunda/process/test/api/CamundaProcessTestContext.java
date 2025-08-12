@@ -18,7 +18,7 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
-import io.camunda.process.test.api.mock.JobWorkerMock;
+import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
@@ -117,7 +117,7 @@ public interface CamundaProcessTestContext {
    * @param jobType the job type to mock, matching the `zeebeJobType` in the BPMN model.
    * @return a {@see JobWorkerMock} instance for configuring the mock behavior.
    */
-  JobWorkerMock mockJobWorker(final String jobType);
+  JobWorkerMockBuilder mockJobWorker(final String jobType);
 
   /**
    * Mocks a child process with the specified ID.
