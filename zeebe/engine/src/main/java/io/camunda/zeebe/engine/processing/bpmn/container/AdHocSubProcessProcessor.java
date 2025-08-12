@@ -62,7 +62,7 @@ public class AdHocSubProcessProcessor
               Map.ofEntries(
                   Map.entry(ZeebeAdHocImplementationType.BPMN, new BpmnBehavior()),
                   Map.entry(ZeebeAdHocImplementationType.JOB_WORKER, new JobWorkerBehavior())));
-  private final OutputCollectionUpdater outputCollectionUpdater = new OutputCollectionUpdater();
+  private final AdHocSubProcessOutputCollectionBehavior adHocSubProcessOutputCollectionBehavior = new AdHocSubProcessOutputCollectionBehavior();
 
   public AdHocSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -297,7 +297,7 @@ public class AdHocSubProcessProcessor
                   stateBehavior.getLocalVariable(
                       adHocSubProcessContext, outputCollectionVariableName);
 
-              return outputCollectionUpdater.appendToOutputCollection(
+              return adHocSubProcessOutputCollectionBehavior.appendToOutputCollection(
                   outputCollectionValue, outputElementValue);
             })
         .thenDo(
@@ -306,7 +306,7 @@ public class AdHocSubProcessProcessor
                     adHocSubProcessContext, outputCollectionVariableName, updatedCollection));
   }
 
-  private static final class OutputCollectionUpdater {
+  private static final class AdHocSubProcessOutputCollectionBehavior {
 
     private final MsgPackReader outputCollectionReader = new MsgPackReader();
     private final MsgPackWriter outputCollectionWriter = new MsgPackWriter();
