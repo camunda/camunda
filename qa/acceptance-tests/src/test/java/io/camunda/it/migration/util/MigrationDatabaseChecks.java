@@ -99,6 +99,26 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
     return totalDocs > 0;
   }
 
+  public boolean checkIfTasksHaveBeenReindexed() throws IOException, InterruptedException {
+    final int sourceIndexCount =
+        getCount(String.format("%s/%s-tasklist-task-8.5.0_/_count", endpoint, indexPrefix));
+    final int targetIndexCount =
+        getCount(String.format("%s/%s-task-8.8.0_/_count", endpoint, indexPrefix));
+    return targetIndexCount >= sourceIndexCount;
+  }
+
+  private int getCount(final String targetUrl) throws IOException, InterruptedException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(targetUrl))
+            .header("Content-Type", "application/json")
+            .GET()
+            .build();
+    final var response = httpClient.send(request, BodyHandlers.ofString());
+    final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
+    return jsonResponse.at("/count").asInt();
+  }
+
   @Override
   public void close() {
     cleanup(indexPrefix);

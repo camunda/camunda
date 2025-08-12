@@ -488,6 +488,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>task-migration</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-atomix-utils</artifactId>
       <scope>test</scope>
