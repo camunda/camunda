@@ -37,7 +37,7 @@ public class FlowNodeInstanceDocumentReader extends DocumentBasedReader
       final FlowNodeInstanceQuery query, final ResourceAccessChecks resourceAccessChecks) {
 
     final var filter = query.filter();
-    if (filter.scopeKeys() != null && !filter.scopeKeys().isEmpty()) {
+    if (filter.elementInstanceScopeKeys() != null && !filter.elementInstanceScopeKeys().isEmpty()) {
       return searchWithScopeKeyFallback(query, resourceAccessChecks);
     }
 
@@ -49,7 +49,7 @@ public class FlowNodeInstanceDocumentReader extends DocumentBasedReader
   }
 
   /**
-   * Executes a two-step fallback search when the filter includes scopeKeys.
+   * Executes a two-step fallback search when the filter includes elementInstanceScopeKeys.
    *
    * <p>This approach is necessary because the {@code scopeKey} field is not guaranteed to be
    * populated for all data, particularly in datasets created before version 8.8. Therefore, we
@@ -67,7 +67,7 @@ public class FlowNodeInstanceDocumentReader extends DocumentBasedReader
     final var firstResult =
         search(
             FlowNodeInstanceQuery.of(
-                b -> b.filter(f -> f.flowNodeInstanceKeys(filter.scopeKeys()))),
+                b -> b.filter(f -> f.flowNodeInstanceKeys(filter.elementInstanceScopeKeys()))),
             resourceAccessChecks);
 
     if (firstResult == null || firstResult.items().isEmpty()) {
@@ -75,7 +75,10 @@ public class FlowNodeInstanceDocumentReader extends DocumentBasedReader
           FlowNodeInstanceQuery.of(
               b ->
                   b.filter(
-                          f -> f.copyFrom(filter).processInstanceKeys(filter.scopeKeys()).levels(1))
+                          f ->
+                              f.copyFrom(filter)
+                                  .processInstanceKeys(filter.elementInstanceScopeKeys())
+                                  .levels(1))
                       .sort(query.sort())
                       .page(query.page()));
 

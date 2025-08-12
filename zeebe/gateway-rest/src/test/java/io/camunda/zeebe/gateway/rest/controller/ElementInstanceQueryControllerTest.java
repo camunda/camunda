@@ -254,7 +254,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                             Operation.eq(OffsetDateTime.parse("2023-05-17T10:10:10Z")))
                         .endDateOperations(
                             Operation.eq(OffsetDateTime.parse("2023-05-23T10:10:10.000Z")))
-                        .scopeKeys(2251799813685979L)
+                        .elementInstanceScopeKeys(2251799813685979L)
                         .build())
                 .build());
   }

@@ -35,11 +35,13 @@ public record FlowNodeInstanceFilter(
     List<String> tenantIds,
     List<Operation<OffsetDateTime>> startDateOperations,
     List<Operation<OffsetDateTime>> endDateOperations,
-    List<Long> scopeKeys,
+    List<Long> elementInstanceScopeKeys,
     List<Integer> levels,
     // Flag used to control whether treePath filtering should use a prefix query.
-    // This is necessary while the scopeKey field is not universally populated (pre-8.8 data).
-    // Once all data has consistent scopeKey population, this flag and related logic can be removed.
+    // This is necessary while the elementInstanceScopeKey field is not universally populated
+    // (pre-8.8 data).
+    // Once all data has consistent elementInstanceScopeKey population, this flag and related logic
+    // can be removed.
     Boolean useTreePathPrefix)
     implements FilterBase {
 
@@ -64,7 +66,7 @@ public record FlowNodeInstanceFilter(
     private List<String> tenantIds;
     private List<Operation<OffsetDateTime>> startDateOperations;
     private List<Operation<OffsetDateTime>> endDateOperations;
-    private List<Long> scopeKeys;
+    private List<Long> elementInstanceScopeKeys;
     private List<Integer> levels;
     private Boolean useTreePathPrefix;
 
@@ -83,8 +85,9 @@ public record FlowNodeInstanceFilter(
       tenantIds(filter.tenantIds());
       startDateOperations(filter.startDateOperations());
       endDateOperations(filter.endDateOperations());
-      scopeKeys(filter.scopeKeys());
+      elementInstanceScopeKeys(filter.elementInstanceScopeKeys());
       levels(filter.levels());
+      useTreePathPrefix(filter.useTreePathPrefix());
       return this;
     }
 
@@ -223,13 +226,13 @@ public record FlowNodeInstanceFilter(
       return endDateOperations(collectValues(operation, operations));
     }
 
-    public FlowNodeInstanceFilter.Builder scopeKeys(final List<Long> values) {
-      scopeKeys = addValuesToList(scopeKeys, values);
+    public FlowNodeInstanceFilter.Builder elementInstanceScopeKeys(final List<Long> values) {
+      elementInstanceScopeKeys = addValuesToList(elementInstanceScopeKeys, values);
       return this;
     }
 
-    public FlowNodeInstanceFilter.Builder scopeKeys(final Long... values) {
-      return scopeKeys(collectValuesAsList(values));
+    public FlowNodeInstanceFilter.Builder elementInstanceScopeKeys(final Long... values) {
+      return elementInstanceScopeKeys(collectValuesAsList(values));
     }
 
     public FlowNodeInstanceFilter.Builder levels(final List<Integer> values) {
@@ -263,7 +266,7 @@ public record FlowNodeInstanceFilter(
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
           Objects.requireNonNullElse(startDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(endDateOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(scopeKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(elementInstanceScopeKeys, Collections.emptyList()),
           Objects.requireNonNullElse(levels, Collections.emptyList()),
           useTreePathPrefix);
     }
