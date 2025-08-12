@@ -6,10 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {DecisionInstancesDto} from 'modules/api/decisionInstances/fetchDecisionInstances';
-import {DecisionDto} from 'modules/api/decisions/fetchGroupedDecisions';
-import {Route} from '@playwright/test';
-import {BatchOperationDto} from 'modules/api/sharedTypes';
+import type {Route} from '@playwright/test';
+import type {
+  OperationEntity,
+  DecisionDto,
+  DecisionInstancesDto,
+  BatchOperationDto,
+} from '@/types';
 
 function mockResponses({
   batchOperations,

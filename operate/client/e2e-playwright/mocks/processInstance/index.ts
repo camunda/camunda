@@ -6,21 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Route} from '@playwright/test';
-import {
+import type {Route} from '@playwright/test';
+import type {
   Variable,
-  type GetProcessDefinitionStatisticsResponseBody,
-  type GetProcessInstanceCallHierarchyResponseBody,
-  type GetProcessInstanceSequenceFlowsResponseBody,
-  type ProcessInstance,
+  GetProcessDefinitionStatisticsResponseBody,
+  GetProcessInstanceCallHierarchyResponseBody,
+  GetProcessInstanceSequenceFlowsResponseBody,
+  ProcessInstance,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {
+import type {
+  ProcessInstanceEntity,
+  VariableEntity,
   FlowNodeInstanceDto,
   FlowNodeInstancesDto,
-} from 'modules/api/fetchFlowNodeInstances';
-import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
-import {ProcessInstanceIncidentsDto} from 'modules/api/processInstances/fetchProcessInstanceIncidents';
-import {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
+  MetaDataDto,
+  ProcessInstanceIncidentsDto,
+  SequenceFlowsDto,
+} from '@/types';
 
 type InstanceMock = {
   xml: string;
