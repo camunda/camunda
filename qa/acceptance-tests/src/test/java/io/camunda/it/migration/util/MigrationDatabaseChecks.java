@@ -114,6 +114,17 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
     return response.statusCode() == 200;
   }
 
+  private int getCount(final String targetUrl) throws IOException, InterruptedException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(targetUrl))
+            .header("Content-Type", "application/json")
+            .GET()
+            .build();
+    final var response = httpClient.send(request, BodyHandlers.ofString());
+    final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
+    return jsonResponse.at("/count").asInt();
+    }
   @Override
   public void close() {
     cleanup(indexPrefix);
