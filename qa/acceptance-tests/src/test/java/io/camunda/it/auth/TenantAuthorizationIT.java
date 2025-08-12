@@ -34,16 +34,10 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -233,8 +227,12 @@ class TenantAuthorizationIT {
       throws URISyntaxException, IOException, InterruptedException {
     // given
     final String clientId = Strings.newRandomValidIdentityId();
-    assignClientToTenant(
-        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, TENANT_ID_1, clientId);
+    adminClient
+        .newAssignClientToTenantCommand()
+        .clientId(clientId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
 
     // when/then
     Awaitility.await("Search returns clients by tenant")
@@ -256,26 +254,43 @@ class TenantAuthorizationIT {
     Assertions.assertThat(response.items()).isEmpty();
   }
 
-  // TODO once available in #35767, this test should use the client to make the request
-  private static void assignClientToTenant(
-      final String restAddress, final String username, final String tenantId, final String clientId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder().encodeToString("%s:%s".formatted(username, PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(
-                new URI(
-                    "%s%s%s%s%s"
-                        .formatted(restAddress, "v2/tenants/", tenantId, "/clients/", clientId)))
-            .PUT(BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
+  @Test
+  void assignClientToTenantShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignClientToTenantCommand()
+                    .clientId("clientId")
+                    .tenantId(TENANT_ID_1)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
 
-    // Send the request and get the response
-    final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+  @Test
+  void assignClientToTenantShouldAssignClientIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // when
+    final String clientId = "clientId";
+    camundaClient
+        .newAssignClientToTenantCommand()
+        .clientId(clientId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
 
-    assertThat(response.statusCode()).isEqualTo(204);
+    // then
+    Awaitility.await("Client is assigned to the tenant")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var clients =
+                  camundaClient.newClientsByTenantSearchRequest(TENANT_ID_1).send().join();
+              Assertions.assertThat(clients.items())
+                  .anyMatch(r -> clientId.equals(r.getClientId()));
+            });
   }
 
   private static void createTenant(final CamundaClient adminClient, final String tenantId) {
