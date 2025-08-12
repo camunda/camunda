@@ -139,7 +139,7 @@ public class ClientMigrationHandlerTest {
                 "client-id",
                 AuthorizationOwnerType.CLIENT,
                 AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.UPDATE, PermissionType.DELETE, PermissionType.READ)),
+                Set.of(PermissionType.READ)),
             tuple(
                 "client-id",
                 AuthorizationOwnerType.CLIENT,
