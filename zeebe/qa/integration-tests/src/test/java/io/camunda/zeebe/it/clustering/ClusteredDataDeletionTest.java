@@ -63,7 +63,6 @@ public final class ClusteredDataDeletionTest {
     data.setLogSegmentSize(DataSize.ofKilobytes(32));
     data.setLogIndexDensity(50);
     brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(32));
-    brokerCfg.getExperimental().getFeatures().setEnableIdentitySetup(false);
 
     brokerCfg.setExporters(Collections.emptyMap());
   }
@@ -74,7 +73,6 @@ public final class ClusteredDataDeletionTest {
     data.setLogSegmentSize(DataSize.ofKilobytes(32));
     data.setLogIndexDensity(50);
     brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(32));
-    brokerCfg.getExperimental().getFeatures().setEnableIdentitySetup(false);
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(TestExporter.class.getName());
