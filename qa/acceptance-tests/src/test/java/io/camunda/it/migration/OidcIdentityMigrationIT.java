@@ -238,10 +238,6 @@ public class OidcIdentityMigrationIT {
                     PermissionType.DELETE_RESOURCE)),
             tuple("zeebe", ResourceType.SYSTEM, Set.of(PermissionType.READ, PermissionType.UPDATE)),
             tuple(
-                "zeebe",
-                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.UPDATE, PermissionType.DELETE)),
-            tuple(
                 "tasklist",
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(

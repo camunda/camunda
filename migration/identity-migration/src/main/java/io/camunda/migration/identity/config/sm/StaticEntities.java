@@ -323,13 +323,7 @@ public class StaticEntities {
                         AuthorizationResourceType.DECISION_DEFINITION,
                         Set.of(
                             PermissionType.CREATE_DECISION_INSTANCE,
-                            PermissionType.DELETE_DECISION_INSTANCE)),
-                    new CreateAuthorizationRequest(
-                        ownerId,
-                        ownerType,
-                        "*",
-                        AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                        Set.of(PermissionType.UPDATE, PermissionType.DELETE)))));
+                            PermissionType.DELETE_DECISION_INSTANCE)))));
 
     return authorizations.stream()
         .filter(a -> a.key().equals(permission))

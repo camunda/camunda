@@ -212,13 +212,7 @@ public class StaticEntities {
             "*",
             AuthorizationResourceType.DECISION_DEFINITION,
             Set.of(
-                PermissionType.CREATE_DECISION_INSTANCE, PermissionType.DELETE_DECISION_INSTANCE)),
-        new CreateAuthorizationRequest(
-            clientId,
-            AuthorizationOwnerType.CLIENT,
-            "*",
-            AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
-            Set.of(PermissionType.UPDATE, PermissionType.DELETE)));
+                PermissionType.CREATE_DECISION_INSTANCE, PermissionType.DELETE_DECISION_INSTANCE)));
   }
 
   public static List<CreateAuthorizationRequest> getOperateClientPermissions(
