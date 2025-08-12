@@ -427,8 +427,8 @@ public class CamundaServicesConfiguration {
   public ApiServicesExecutorProvider apiServicesExecutor(
       final GatewayRestConfiguration configuration) {
     return new ApiServicesExecutorProvider(
-        configuration.getApiExecutor().getCorePoolSize(),
-        configuration.getApiExecutor().getThreadCountMultiplier(),
+        configuration.getApiExecutor().getCorePoolSizeMultiplier(),
+        configuration.getApiExecutor().getMaxPoolSizeMultiplier(),
         configuration.getApiExecutor().getKeepAliveSeconds());
   }
 }

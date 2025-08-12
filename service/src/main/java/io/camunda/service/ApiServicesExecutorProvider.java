@@ -7,17 +7,26 @@
  */
 package io.camunda.service;
 
+import java.util.Objects;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ApiServicesExecutorProvider {
 
-  public static final String API_SERVICE_THREAD_NAME = "api-service-thread-";
+  private static final String API_SERVICE_THREAD_NAME = "api-service-thread-";
   private final ExecutorService executor;
 
   public ApiServicesExecutorProvider(
-      final int corePoolSize, final int threadCountMultiplier, final long keepAliveSeconds) {
-    executor = create(corePoolSize, threadCountMultiplier, keepAliveSeconds);
+      final int corePoolSizeMultiplier,
+      final int maxPoolSizeMultiplier,
+      final long keepAliveSeconds) {
+    executor =
+        Objects.requireNonNull(
+            create(corePoolSizeMultiplier, maxPoolSizeMultiplier, keepAliveSeconds),
+            "REST API Executor Service must not be null");
+  }
+
+  public ApiServicesExecutorProvider(final ExecutorService executor) {
+    this.executor = Objects.requireNonNull(executor, "REST API Executor Service must not be null");
   }
 
   public ExecutorService getExecutor() {
@@ -27,24 +36,21 @@ public final class ApiServicesExecutorProvider {
   /**
    * Create a customizable dynamic ThreadPoolExecutor.
    *
-   * @param corePoolSize min threads to keep alive
-   * @param threadCountMultiplier multiplier for the number of threads based on available processors
+   * @param corePoolSizeMultiplier multiplier for the number of core threads based on available
+   *     processors
+   * @param maxPoolSizeMultiplier multiplier for the maximum number of threads based on available
+   *     processors
    * @param keepAliveSeconds how long to keep idle threads above core alive
    */
   private static ExecutorService create(
-      final int corePoolSize, final int threadCountMultiplier, final long keepAliveSeconds) {
-    final int maxPoolSize = Runtime.getRuntime().availableProcessors() * threadCountMultiplier;
+      final int corePoolSizeMultiplier,
+      final int maxPoolSizeMultiplier,
+      final long keepAliveSeconds) {
+    final int availableProcessors = Runtime.getRuntime().availableProcessors();
+    final int corePoolSize = availableProcessors * corePoolSizeMultiplier;
+    final int maxPoolSize = availableProcessors * maxPoolSizeMultiplier;
     final ThreadFactory threadFactory =
-        new ThreadFactory() {
-          private final AtomicInteger counter = new AtomicInteger(0);
-
-          @Override
-          public Thread newThread(final Runnable r) {
-            final Thread t = new Thread(r, API_SERVICE_THREAD_NAME + counter.incrementAndGet());
-            t.setDaemon(true);
-            return t;
-          }
-        };
+        Thread.ofPlatform().name(API_SERVICE_THREAD_NAME, 0).daemon(true).factory();
 
     final ThreadPoolExecutor executor =
         new ThreadPoolExecutor(
