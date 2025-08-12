@@ -36,6 +36,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -116,6 +117,11 @@ public class IdentityMigrationModuleConfiguration {
       final ApiServicesExecutorProvider executorProvider) {
     return new TenantServices(
         brokerClient, securityContextProvider, tenantSearchClient, null, executorProvider);
+  }
+
+  @Bean
+  public ApiServicesExecutorProvider apiServicesExecutorProvider() {
+    return new ApiServicesExecutorProvider(ForkJoinPool.commonPool());
   }
 
   @Bean
