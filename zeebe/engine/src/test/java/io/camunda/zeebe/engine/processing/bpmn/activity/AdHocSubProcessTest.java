@@ -1051,6 +1051,44 @@ public final class AdHocSubProcessTest {
             .withVariable("activateElements", List.of("A", "B"))
             .create();
 
+    final var ahsp =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst();
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("results")
+                .getFirst()
+                .getValue())
+        .describedAs("Should create output collection in scope of ad-hoc sub-process")
+        .hasName("results")
+        .hasValue("[]")
+        .hasScopeKey(ahsp.getKey());
+
+    final var innerInstanceKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .limit(2)
+            .map(Record::getKey)
+            .toList();
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("result")
+                .limit(2))
+        .describedAs("Should create output elements in scope of inner instances")
+        .map(Record::getValue)
+        .extracting(
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue,
+            VariableRecordValue::getScopeKey)
+        .containsExactlyInAnyOrder(
+            tuple("result", "null", innerInstanceKeys.get(0)),
+            tuple("result", "null", innerInstanceKeys.get(1)));
+
     // when
     ENGINE
         .job()
@@ -1068,14 +1106,34 @@ public final class AdHocSubProcessTest {
 
     // then
     assertThat(
-            RecordingExporter.variableRecords()
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("result")
+                .limit(2))
+        .describedAs("Should update output elements in scope of inner instances")
+        .map(Record::getValue)
+        .extracting(
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue,
+            VariableRecordValue::getScopeKey)
+        .containsExactlyInAnyOrder(
+            tuple("result", "\"a\"", innerInstanceKeys.get(0)),
+            tuple("result", "\"b\"", innerInstanceKeys.get(1)));
+
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withName("results")
-                .limit(3))
+                .limit(2))
+        .describedAs("Should have updated the output collection twice")
         .extracting(Record::getValue)
-        .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
+        .extracting(
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue,
+            VariableRecordValue::getScopeKey)
         .containsSequence(
-            tuple("results", "[]"), tuple("results", "[\"a\"]"), tuple("results", "[\"a\",\"b\"]"));
+            tuple("results", "[\"a\"]", ahsp.getKey()),
+            tuple("results", "[\"a\",\"b\"]", ahsp.getKey()));
   }
 
   private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {
