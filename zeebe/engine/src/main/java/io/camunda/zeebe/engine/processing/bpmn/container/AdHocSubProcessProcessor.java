@@ -332,7 +332,7 @@ public class AdHocSubProcessProcessor
       if (token.getType() != MsgPackType.ARRAY) {
         return Either.left(
             new Failure(
-                "The output collection has the wrong type. Expect %s but was %s."
+                "The output collection has the wrong type. Expected %s but was %s."
                     .formatted(MsgPackType.ARRAY, token.getType())));
       }
       final int currentSize = token.getSize();

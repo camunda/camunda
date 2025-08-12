@@ -256,7 +256,7 @@ class AdHocSubProcessBuilderTest {
   @Test
   void shouldSetOutputCollectionAndElement() {
     // given
-    final String outputExpression = "result";
+    final String outputElementExpression = "result";
     final String outputCollection = "results";
 
     final BpmnModelInstance process =
@@ -264,7 +264,7 @@ class AdHocSubProcessBuilderTest {
             .startEvent()
             .adHocSubProcess("ad-hoc", adHocSubProcess -> adHocSubProcess.task("A"))
             .zeebeOutputCollection(outputCollection)
-            .zeebeOutputElementExpression(outputExpression)
+            .zeebeOutputElementExpression(outputElementExpression)
             .endEvent()
             .done();
 
@@ -278,13 +278,7 @@ class AdHocSubProcessBuilderTest {
     assertThat(extensionElements.getChildElementsByType(ZeebeAdHoc.class))
         .hasSize(1)
         .first()
-        .extracting(ZeebeAdHoc::getOutputElement)
-        .isEqualTo("=" + outputExpression);
-
-    assertThat(extensionElements.getChildElementsByType(ZeebeAdHoc.class))
-        .hasSize(1)
-        .first()
-        .extracting(ZeebeAdHoc::getOutputCollection)
-        .isEqualTo(outputCollection);
+        .extracting(ZeebeAdHoc::getOutputElement, ZeebeAdHoc::getOutputCollection)
+        .containsExactly("=" + outputElementExpression, outputCollection);
   }
 }
