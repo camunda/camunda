@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class Ssl {
-  private static final String PREFIX = "camunda.api.grpc.ssl.";
+  private static final String PREFIX = "camunda.api.grpc.ssl";
   private static final Map<String, String> LEGACY_GATEWAY_SSL_PROPERTIES =
       Map.of(
           "enabled", "zeebe.gateway.security.enabled",
@@ -40,7 +40,7 @@ public class Ssl {
 
   public boolean isEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "enabled",
+        PREFIX + ".enabled",
         enabled,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -53,7 +53,7 @@ public class Ssl {
 
   public File getCertificate() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "certificate",
+        PREFIX + ".certificate",
         certificate,
         File.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -66,7 +66,7 @@ public class Ssl {
 
   public File getCertificatePrivateKey() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "certificate-private-key",
+        PREFIX + ".certificate-private-key",
         certificatePrivateKey,
         File.class,
         BackwardsCompatibilityMode.SUPPORTED,

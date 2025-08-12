@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class Grpc {
-  private static final String PREFIX = "camunda.api.grpc.";
+  private static final String PREFIX = "camunda.api.grpc";
   private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
       Map.of(
           "host", "zeebe.gateway.network.host",
@@ -48,7 +48,7 @@ public class Grpc {
 
   public String getAddress() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "address",
+        PREFIX + ".address",
         address,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -61,7 +61,7 @@ public class Grpc {
 
   public int getPort() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "port",
+        PREFIX + ".port",
         port,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -82,7 +82,7 @@ public class Grpc {
 
   public int getManagementThreads() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "management-threads",
+        PREFIX + ".management-threads",
         managementThreads,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
