@@ -143,10 +143,9 @@ public class SchemaManager {
     // Create index-specific ILM policies
     final var indexPolicies = retention.getIndexPolicies();
     if (!indexPolicies.isEmpty()) {
-      LOG.info("Creating {} index-specific ILM policies", indexPolicies.size());
       for (final var policy : indexPolicies) {
         LOG.info(
-            "Creating index-specific ILM policy [name: '{}', retention: '{}'] for indices '{}'",
+            "Creating index-specific ILM policy [name: '{}', retention: '{}'] for indices {}",
             policy.getPolicyName(),
             policy.getMinimumAge(),
             policy.getIndices());

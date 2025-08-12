@@ -256,12 +256,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       return CompletableFuture.completedFuture(null);
     }
 
-    logger.debug("Setting lifecycle policies for {} indices", destinationIndexNames);
     final var defaultPolicy = retention.getPolicyName();
     final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
 
-    // Group indices by their assigned policy
-    final var policiesMap =
+    final var policyToIndicesMap =
         destinationIndexNames.stream()
             .collect(
                 groupingBy(
@@ -284,13 +282,13 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     // Create separate requests for each policy group
     final var requests =
-        policiesMap.entrySet().stream()
+        policyToIndicesMap.entrySet().stream()
             .map(
                 entry -> {
                   final String policyName = entry.getKey();
                   final List<String> indices = entry.getValue();
 
-                  logger.info(
+                  logger.debug(
                       "Applying policy '{}' to {} indices: {}",
                       policyName,
                       indices.size(),
