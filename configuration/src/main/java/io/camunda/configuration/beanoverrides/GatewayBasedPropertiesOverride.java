@@ -72,6 +72,7 @@ public class GatewayBasedPropertiesOverride {
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
     networkCfg.setMinKeepAliveInterval(grpc.getMinKeepAliveInterval());
+    networkCfg.setMaxMessageSize(grpc.getMaxMessageSize());
 
     populateFromSsl(override);
     populateFromInterceptors(override);
