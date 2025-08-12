@@ -66,7 +66,8 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         authentication,
         registry,
         authorizationChecker,
-        securityConfig);
+        securityConfig,
+        executorProvider);
   }
 
   /** Will return a failed future for any error returned by the store */
