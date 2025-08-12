@@ -146,22 +146,22 @@ camunda:
     # - OIDC:
     #     OpenID Connect with any compatible Identity Provider (for example, Keycloak, Microsoft EntraID, Okta).
     authentication:
-      # Controls which authentication mode is active, supported modes are 'basic' and 'oidc'.
+      # Controls which authentication method is active, supported methods are 'basic' and 'oidc'.
       # If 'basic' is set, authentication will be done using basic authentication. Users need to be created.
       # See https://docs.camunda.io/docs/next/components/identity/user/ for instructions on how to do this.
       # If 'oidc' is set, authentication will be done using an external IdP.
       # See https://docs.camunda.io/docs/next/self-managed/components/management-identity/what-is-identity/ for instructions on hwo to set this up.
       # Note! This setting should be combined with the 'camunda.security.unprotectedApi' setting to fully manage authentications.
-      # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_AUTHENTICATION_MODE.
-      mode: basic
+      # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_AUTHENTICATION_METHOD.
+      method: basic
       # Sets the API to protected or unprotected. If the API is unprotected, no authentication is required to access it.
-      # Note! This setting should be combined with the 'camunda.security.mode' setting to fully manage authentications.
+      # Note! This setting should be combined with the 'camunda.security.method' setting to fully manage authentications.
       # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI.
       unprotectedApi: false
-    authorization:
+    authorizations:
       # Controls whether authorization checks are enabled or not.
       # See https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/ for more information on how to set up authorizations.
-      # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_AUTHORIZATION_ENABLED.
+      # This setting can also be overridden using the environment variable CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED.
       enabled: true
     multiTenancy:
         # Controls whether multi-tenancy checks are enforced or not.
