@@ -34,7 +34,6 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,7 +83,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   /** Marks if this scheduler is currently executing or not. */
   private final AtomicBoolean executing = new AtomicBoolean(false);
 
-  private final AtomicReference<Tuple<Long, String>> initializing = new AtomicReference<>();
+  private final AtomicReference<ExecutionLoopState> initializing = new AtomicReference<>();
 
   public BatchOperationExecutionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
@@ -206,9 +205,9 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private boolean validateNoReInitialization(final PersistedBatchOperation batchOperation) {
     final var initializingBO = initializing.get();
     if (initializingBO != null
-        && initializingBO.getLeft() == batchOperation.getKey()
+        && initializingBO.batchOperationKey == batchOperation.getKey()
         && !Objects.equals(
-            initializingBO.getRight(), batchOperation.getInitializationSearchCursor())) {
+            initializingBO.searchResultCursor, batchOperation.getInitializationSearchCursor())) {
       // If the batch operation is already being initialized, we do not re-initialize it.
       LOG.trace(
           "Batch operation {} is already being executed, skipping re-initialization.",
@@ -216,7 +215,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       return false;
     }
     initializing.set(
-        new Tuple<>(batchOperation.getKey(), batchOperation.getInitializationSearchCursor()));
+        new ExecutionLoopState(
+            batchOperation.getKey(), batchOperation.getInitializationSearchCursor(), 0));
 
     return true;
   }
@@ -249,7 +249,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
             command,
             FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
     if (appended) {
-      initializing.set(new Tuple<>(batchOperation.getKey(), "finished"));
+      initializing.set(new ExecutionLoopState(batchOperation.getKey(), "finished", 0));
       metrics.recordInitialized(batchOperation.getBatchOperationType());
     }
     return appended;
@@ -351,7 +351,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
                     : state.lastSearchResultCursor)
             .setSearchQueryPageSize(state.searchResultPageSize);
     LOG.trace("Appending batch operation {} initializing command", batchOperation.getKey());
-    initializing.set(new Tuple<>(batchOperation.getKey(), command.getSearchResultCursor()));
+    initializing.set(
+        new ExecutionLoopState(batchOperation.getKey(), command.getSearchResultCursor(), 0));
     taskResultBuilder.appendCommandRecord(
         batchOperation.getKey(),
         BatchOperationIntent.INITIALIZE,
@@ -394,6 +395,9 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         command,
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
+
+  private record ExecutionLoopState(
+      long batchOperationKey, String searchResultCursor, int numRetries) {}
 
   /**
    * This is a mutable state class that is used to track the state of the initialization loop. Using
