@@ -46,7 +46,16 @@ const useCreateIncidentResolutionBatchOperation = (
           const {response, error} = await getBatchOperation({
             batchOperationKey,
           });
-          if (error) {
+
+          if (
+            error !== null &&
+            error.variant === 'failed-response' &&
+            error.response.status === 403
+          ) {
+            return null;
+          }
+
+          if (error !== null) {
             throw new Error(error.response?.statusText);
           }
 
