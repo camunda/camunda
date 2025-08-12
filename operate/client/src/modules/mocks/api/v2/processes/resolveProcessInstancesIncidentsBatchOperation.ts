@@ -6,15 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockPostRequest} from '../../mockRequest';
+import {mockPostRequest} from '../../mockRequest.ts';
 import {
   endpoints,
-  type CreateCancellationBatchOperationResponseBody,
+  type CreateIncidentResolutionBatchOperationResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 
-const mockCancelProcessInstancesBatchOperation = () =>
-  mockPostRequest<CreateCancellationBatchOperationResponseBody>(
-    endpoints.createCancellationBatchOperation.getUrl(),
+const mockResolveProcessInstancesIncidentsBatchOperation = () =>
+  mockPostRequest<CreateIncidentResolutionBatchOperationResponseBody>(
+    endpoints.createIncidentResolutionBatchOperation.getUrl(),
   );
 
-export {mockCancelProcessInstancesBatchOperation};
+export {mockResolveProcessInstancesIncidentsBatchOperation};
