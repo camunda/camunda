@@ -216,7 +216,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                 "tenantId": "default",
                 "startDate": "2023-05-17T10:10:10Z",
                 "endDate": "2023-05-23T10:10:10.000Z",
-                "scopeKey": "2251799813685979"
+                "elementInstanceScopeKey": "2251799813685979"
               }
             }
             """;
