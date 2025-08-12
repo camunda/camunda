@@ -9,6 +9,8 @@ package io.camunda.search.schema.config;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class RetentionConfiguration {
 
@@ -49,7 +51,55 @@ public class RetentionConfiguration {
   }
 
   public void setIndexPolicies(final List<IndexRetentionPolicy> indexPolicies) {
-    this.indexPolicies = indexPolicies != null ? indexPolicies : new ArrayList<>();
+    final List<IndexRetentionPolicy> policies =
+        indexPolicies != null ? indexPolicies : new ArrayList<>();
+    validateNoDuplicatePolicyNames(policies);
+    this.indexPolicies = policies;
+  }
+
+  /**
+   * Validates that there are no duplicate policy names in the provided list of index retention
+   * policies.
+   *
+   * @param policies the list of index retention policies to validate
+   * @throws IllegalArgumentException if duplicate policy names are found
+   */
+  private void validateNoDuplicatePolicyNames(final List<IndexRetentionPolicy> policies) {
+    final Map<String, List<IndexRetentionPolicy>> policiesByName =
+        policies.stream()
+            .filter(policy -> policy.getPolicyName() != null)
+            .collect(Collectors.groupingBy(IndexRetentionPolicy::getPolicyName));
+
+    final List<String> duplicatePolicyNames =
+        policiesByName.entrySet().stream()
+            .filter(entry -> entry.getValue().size() > 1)
+            .map(Map.Entry::getKey)
+            .toList();
+
+    if (!duplicatePolicyNames.isEmpty()) {
+      final StringBuilder errorMessage = new StringBuilder();
+      errorMessage.append("Duplicate policy names found in retention policies configuration. ");
+      errorMessage.append("Each policy name must be unique.\n");
+      errorMessage.append("Consider using a single policy with multiple indices instead.\n\n");
+      errorMessage.append("Duplicate policy details:\n");
+
+      for (final String duplicatePolicyName : duplicatePolicyNames) {
+        final List<IndexRetentionPolicy> duplicates = policiesByName.get(duplicatePolicyName);
+        errorMessage.append(
+            String.format(
+                "Policy name '%s' appears %d times:\n", duplicatePolicyName, duplicates.size()));
+
+        for (int i = 0; i < duplicates.size(); i++) {
+          final IndexRetentionPolicy policy = duplicates.get(i);
+          errorMessage.append(
+              String.format(
+                  "  %d. minimumAge: '%s', indices: %s\n",
+                  i + 1, policy.getMinimumAge(), policy.getIndices()));
+        }
+      }
+
+      throw new IllegalArgumentException(errorMessage.toString());
+    }
   }
 
   @Override
