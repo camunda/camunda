@@ -83,8 +83,8 @@ describe('BatchModificationSummaryModal', () => {
     });
 
     mockQueryBatchOperations().withSuccess({
-      items: [{state: 'COMPLETED'}],
-      page: {totalItems: 1},
+      items: [],
+      page: {totalItems: 0},
     });
   });
 
