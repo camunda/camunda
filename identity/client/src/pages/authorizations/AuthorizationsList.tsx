@@ -14,7 +14,7 @@ import { SearchResponse, usePagination } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal/useModal";
-import AddModal from "./modals/AddModal";
+import { AddModal } from "./modals/add-modal";
 import DeleteModal from "./modals/DeleteModal";
 
 type AuthorizationListProps = {
