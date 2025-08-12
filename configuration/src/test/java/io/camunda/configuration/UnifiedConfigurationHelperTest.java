@@ -13,12 +13,12 @@ import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompa
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.core.env.Environment;
 
 class UnifiedConfigurationHelperTest {
@@ -36,14 +36,14 @@ class UnifiedConfigurationHelperTest {
     UnifiedConfigurationHelper.setCustomEnvironment(mockEnvironment);
   }
 
-  private void setPropertyValues(String key, String value) {
-    Mockito.when(mockEnvironment.getProperty(key)).thenReturn(value);
-    Mockito.when(mockEnvironment.containsProperty(key)).thenReturn(true);
+  private void setPropertyValues(final String key, final String value) {
+    when(mockEnvironment.getProperty(key)).thenReturn(value);
+    when(mockEnvironment.containsProperty(key)).thenReturn(true);
   }
 
   // single legacy property and new property coexist with same value -> ok + warning
   @Test
-  void testNewDefinedLegacySingleLLegacyMatchAllowed() {
+  void testNewDefinedLegacySingleLegacyMatchAllowed() {
     // given
     final String newValue = "matchingValue";
     final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;

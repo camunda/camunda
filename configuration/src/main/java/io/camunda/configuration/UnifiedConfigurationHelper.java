@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
+import io.camunda.configuration.RocksDb.AccessMetricsKind;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Objects;
@@ -69,6 +70,7 @@ public class UnifiedConfigurationHelper {
     for (final String legacyProperty : legacyProperties) {
       final String strValue = environment.getProperty(legacyProperty);
       final T legacyValue = parseLegacyValue(strValue, expectedType);
+
       legacyValues.add(legacyValue);
     }
 
@@ -219,6 +221,7 @@ public class UnifiedConfigurationHelper {
       case "GcsBackupStoreAuth" -> (T) GcsBackupStoreAuth.valueOf(strValue.toUpperCase());
       case "File" -> (T) new File(strValue);
       case "SasTokenType" -> (T) SasToken.SasTokenType.valueOf(strValue.toUpperCase());
+      case "AccessMetricsKind" -> (T) AccessMetricsKind.valueOf(strValue.toUpperCase());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }
