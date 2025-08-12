@@ -11,35 +11,56 @@ import {BottomPanel} from '../';
 import {open} from 'modules/mocks/diagrams';
 import {SOURCE_PROCESS_DEFINITION_KEY, Wrapper} from './mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {processesStore} from 'modules/stores/processes/processes.migration';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 
 const TARGET_PROCESS_DEFINITION_KEY = '2';
-
-vi.mock('modules/stores/processes/processes.migration', () => {
-  return {
-    processesStore: {
-      migrationState: {
-        selectedTargetProcess: {bpmnProcessId: 'SequenceFlowMigration'},
-      },
-      getSelectedProcessDetails: () => ({
-        bpmnProcessId: 'SequenceFlowMigration',
-      }),
-      selectedTargetProcessId: '2',
-    },
-  };
-});
-
 const HEADER_ROW_COUNT = 1;
 const MAPPABLE_ITEMS_ROW_COUNT = 13;
 const AUTO_MAPPABLE_ITEMS_ROW_COUNT = 3;
 
 describe('BottomPanel - sequence flow mappings', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    mockFetchGroupedProcesses().withSuccess([
+      {
+        bpmnProcessId: 'SequenceFlowMigration',
+        name: '',
+        tenantId: '<default>',
+        processes: [
+          {
+            bpmnProcessId: 'SequenceFlowMigration',
+            id: SOURCE_PROCESS_DEFINITION_KEY,
+            version: 1,
+            name: 'SequenceFlowMigration',
+            versionTag: '',
+          },
+          {
+            bpmnProcessId: 'SequenceFlowMigration',
+            id: TARGET_PROCESS_DEFINITION_KEY,
+            version: 2,
+            name: 'SequenceFlowMigration',
+            versionTag: '',
+          },
+        ],
+      },
+    ]);
     mockFetchProcessDefinitionXml({
       processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
     }).withSuccess(open('SequenceFlowMigration_v1.bpmn'));
     mockFetchProcessDefinitionXml({
       processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
     }).withSuccess(open('SequenceFlowMigration_v2.bpmn'));
+
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?process=SequenceFlowMigration&version=1',
+    });
+
+    await processesStore.fetchProcesses();
+    processesStore.setSelectedTargetProcess(
+      '{SequenceFlowMigration}-{<default>}',
+    );
+    processesStore.setSelectedTargetVersion(2);
   });
 
   it('should show mappable sequence flows', async () => {
