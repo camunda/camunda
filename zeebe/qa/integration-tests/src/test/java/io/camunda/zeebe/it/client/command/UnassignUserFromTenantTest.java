@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-class RemoveUserFromTenantTest {
+class UnassignUserFromTenantTest {
 
   private static final String TENANT_ID = "tenantId";
   private static final String USERNAME = "username";
@@ -57,7 +57,7 @@ class RemoveUserFromTenantTest {
   }
 
   @Test
-  void shouldRemoveUserFromTenant() {
+  void shouldUnassignUserFromTenant() {
     // When
     client.newUnassignUserFromTenantCommand().username(USERNAME).tenantId(TENANT_ID).send().join();
 

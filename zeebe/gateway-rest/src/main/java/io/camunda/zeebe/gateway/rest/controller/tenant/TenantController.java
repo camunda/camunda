@@ -119,7 +119,7 @@ public class TenantController {
   }
 
   @CamundaPutMapping(path = "/{tenantId}/users/{username}")
-  public CompletableFuture<ResponseEntity<Object>> assignUsersToTenant(
+  public CompletableFuture<ResponseEntity<Object>> assignUserToTenant(
       @PathVariable final String tenantId, @PathVariable final String username) {
     return RequestMapper.toTenantMemberRequest(tenantId, username, EntityType.USER)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
@@ -175,14 +175,14 @@ public class TenantController {
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/users/{username}")
-  public CompletableFuture<ResponseEntity<Object>> removeUserFromTenant(
+  public CompletableFuture<ResponseEntity<Object>> unassignUserFromTenant(
       @PathVariable final String tenantId, @PathVariable final String username) {
     return RequestMapper.toTenantMemberRequest(tenantId, username, EntityType.USER)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/clients/{clientId}")
-  public CompletableFuture<ResponseEntity<Object>> removeClientFromTenant(
+  public CompletableFuture<ResponseEntity<Object>> unassignClientFromTenant(
       @PathVariable final String tenantId, @PathVariable final String clientId) {
     return RequestMapper.toTenantMemberRequest(tenantId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
@@ -200,21 +200,21 @@ public class TenantController {
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
-  public CompletableFuture<ResponseEntity<Object>> removeMappingRuleFromTenant(
+  public CompletableFuture<ResponseEntity<Object>> unassignMappingRuleFromTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingRuleId) {
     return RequestMapper.toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupId}")
-  public CompletableFuture<ResponseEntity<Object>> removeGroupFromTenant(
+  public CompletableFuture<ResponseEntity<Object>> unassignGroupFromTenant(
       @PathVariable final String tenantId, @PathVariable final String groupId) {
     return RequestMapper.toTenantMemberRequest(tenantId, groupId, EntityType.GROUP)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/roles/{roleId}")
-  public CompletableFuture<ResponseEntity<Object>> removeRoleFromTenant(
+  public CompletableFuture<ResponseEntity<Object>> unassignRoleFromTenant(
       @PathVariable final String tenantId, @PathVariable final String roleId) {
     return RequestMapper.toTenantMemberRequest(tenantId, roleId, EntityType.ROLE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
