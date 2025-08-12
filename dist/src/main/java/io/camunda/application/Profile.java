@@ -37,6 +37,7 @@ public enum Profile {
   IDENTITY_MIGRATION("identity-migration"),
   PROCESS_MIGRATION("process-migration"),
   USAGE_METRIC_MIGRATION("usage-metric-migration"),
+  TASK_MIGRATION("task-migration"),
   // indicating legacy standalone application
   STANDALONE("standalone");
 
