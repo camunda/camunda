@@ -270,10 +270,12 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                       String lastMatchingPolicy = defaultPolicy;
                       // Check for pattern matches - last match wins
                       for (final var policy : retention.getIndexPolicies()) {
-                        final var indexWithNamePattern =
-                            "^" + formattedPrefix + policy.getIndex() + VERSION_SUFFIX_PATTERN;
-                        if (Pattern.compile(indexWithNamePattern).matcher(indexName).matches()) {
-                          lastMatchingPolicy = policy.getPolicyName();
+                        for (final var indexPattern : policy.getIndices()) {
+                          final var indexWithNamePattern =
+                              "^" + formattedPrefix + indexPattern + VERSION_SUFFIX_PATTERN;
+                          if (Pattern.compile(indexWithNamePattern).matcher(indexName).matches()) {
+                            lastMatchingPolicy = policy.getPolicyName();
+                          }
                         }
                       }
 

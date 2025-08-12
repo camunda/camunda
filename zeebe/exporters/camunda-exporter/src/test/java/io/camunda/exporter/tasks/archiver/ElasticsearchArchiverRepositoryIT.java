@@ -202,8 +202,9 @@ final class ElasticsearchArchiverRepositoryIT {
 
     retention.setIndexPolicies(
         List.of(
-            new IndexRetentionPolicy("camunda-user-task", "user_task_policy", "7d"),
-            new IndexRetentionPolicy("camunda-user-task-at", "user_task_at_policy", "14d")));
+            new IndexRetentionPolicy("user_task_policy", "7d", List.of("camunda-user-task")),
+            new IndexRetentionPolicy(
+                "user_task_at_policy", "14d", List.of("camunda-user-task-at"))));
 
     putLifecyclePolicies();
     for (final var index : expectedIndices) {
@@ -252,9 +253,10 @@ final class ElasticsearchArchiverRepositoryIT {
     // Configure pattern-based policies
     retention.setIndexPolicies(
         List.of(
-            new IndexRetentionPolicy("camunda.*", "camunda_policy", "40d"),
-            new IndexRetentionPolicy("operate.*", "operate_policy", "60d"),
-            new IndexRetentionPolicy("tasklist.*", "tasklist_policy", "90d")));
+            new IndexRetentionPolicy("camunda_policy", "40d", List.of("camunda.*")),
+            new IndexRetentionPolicy("operate_policy", "60d", List.of("operate.*")),
+            new IndexRetentionPolicy("tasklist_policy", "90d", List.of("tasklist.*")),
+            new IndexRetentionPolicy("auth_policy", "5d", List.of(".*authorization.*"))));
 
     putLifecyclePolicies();
     for (final var index : expectedIndices) {
@@ -273,7 +275,7 @@ final class ElasticsearchArchiverRepositoryIT {
     assertThat(getLifeCycle(formattedPrefix + "camunda-user-task-at-8.8.0_2025-08-10").name())
         .isEqualTo("camunda_policy");
     assertThat(getLifeCycle(formattedPrefix + "camunda-authorization-8.8.0_2025-08-10").name())
-        .isEqualTo("camunda_policy");
+        .isEqualTo("auth_policy");
 
     assertThat(getLifeCycle(formattedPrefix + "operate-list-view-8.3.0_2024-01-02").name())
         .isEqualTo("operate_policy");
@@ -302,9 +304,9 @@ final class ElasticsearchArchiverRepositoryIT {
     // Configure overlapping patterns, the implementation should apply the last one that matches
     retention.setIndexPolicies(
         List.of(
-            new IndexRetentionPolicy("user.*", "user_general_policy", "1d"),
-            new IndexRetentionPolicy("user-activity.*", "user_activity_policy", "2d"),
-            new IndexRetentionPolicy(".*logs", "logs_policy", "3d")));
+            new IndexRetentionPolicy("user_general_policy", "1d", List.of("user.*")),
+            new IndexRetentionPolicy("user_activity_policy", "2d", List.of("user-activity.*")),
+            new IndexRetentionPolicy("logs_policy", "3d", List.of(".*logs"))));
 
     putLifecyclePolicies();
     testClient.indices().create(r -> r.index(testIndex));
@@ -391,9 +393,9 @@ final class ElasticsearchArchiverRepositoryIT {
     retention.setPolicyName("default_policy");
     retention.setIndexPolicies(
         List.of(
-            new IndexRetentionPolicy("camunda-user-task", "user_task_policy", "7d"),
-            new IndexRetentionPolicy("operate.*", "operate_policy", "30d"),
-            new IndexRetentionPolicy("tasklist.*", "tasklist_policy", "90d")));
+            new IndexRetentionPolicy("user_task_policy", "7d", List.of("camunda-user-task")),
+            new IndexRetentionPolicy("operate_policy", "30d", List.of("operate.*")),
+            new IndexRetentionPolicy("tasklist_policy", "90d", List.of("tasklist.*"))));
 
     putLifecyclePolicies();
 
@@ -431,8 +433,8 @@ final class ElasticsearchArchiverRepositoryIT {
     retention.setPolicyName("default_policy");
     retention.setIndexPolicies(
         List.of(
-            new IndexRetentionPolicy("camunda-user-task", "custom_policy", "14d"),
-            new IndexRetentionPolicy("operate.*", "operate_policy", "60d")));
+            new IndexRetentionPolicy("custom_policy", "14d", List.of("camunda-user-task")),
+            new IndexRetentionPolicy("operate_policy", "60d", List.of("operate.*"))));
 
     putLifecyclePolicies();
 

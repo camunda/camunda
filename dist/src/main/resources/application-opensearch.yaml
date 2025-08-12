@@ -112,9 +112,10 @@ zeebe:
               policyName: camunda-retention-policy
               indexPolicies:
                 # Applies retention policy to 'camunda-usage-metric' and 'camunda-usage-metric-at' indices
-                - index: "camunda-usage-metric.*"
-                  policyName: "camunda-usage-metric-retention-policy"
+                - policyName: "camunda-usage-metric-retention-policy"
                   minimumAge: "730d"
+                  indices:
+                    - "camunda-usage-metric.*"
 
           createSchema: true
 

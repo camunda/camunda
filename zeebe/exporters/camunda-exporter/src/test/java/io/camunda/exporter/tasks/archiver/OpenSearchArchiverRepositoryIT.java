@@ -153,7 +153,7 @@ final class OpenSearchArchiverRepositoryIT {
     final var indices =
         List.of(
             formattedPrefix + "camunda-user-task-8.8.0_2025-06-10",
-            formattedPrefix + "camunda-user-task-at-8.8.0_2025-06-10",
+            formattedPrefix + "tasklist-user-task-8.8.0_2025-06-10",
             formattedPrefix + "operate-list-view-8.3.0_2024-06-02",
             formattedPrefix + "tasklist-task-8.5.0_2024-06-02");
 
@@ -162,9 +162,9 @@ final class OpenSearchArchiverRepositoryIT {
     retention.setPolicyName("default_policy");
     retention.setIndexPolicies(
         List.of(
-            new IndexRetentionPolicy("camunda-user-task", "user_task_policy", "7d"),
-            new IndexRetentionPolicy("camunda-user-task-at", "user_task_at_policy", "14d"),
-            new IndexRetentionPolicy("operate.*", "operate_policy", "30d")));
+            new IndexRetentionPolicy(
+                "user_task_policy", "7d", List.of("camunda-user-task", "tasklist-user-task")),
+            new IndexRetentionPolicy("operate_policy", "30d", List.of("operate.*"))));
 
     createLifeCyclePolicies();
     for (final var index : indices) {
@@ -180,8 +180,8 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "camunda-user-task-8.8.0_2025-06-10"))
         .isEqualTo("user_task_policy");
     assertThat(
-            fetchPolicyForIndexWithAwait(formattedPrefix + "camunda-user-task-at-8.8.0_2025-06-10"))
-        .isEqualTo("user_task_at_policy");
+            fetchPolicyForIndexWithAwait(formattedPrefix + "tasklist-user-task-8.8.0_2025-06-10"))
+        .isEqualTo("user_task_policy");
     assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "operate-list-view-8.3.0_2024-06-02"))
         .isEqualTo("operate_policy");
     assertThat(fetchPolicyForIndexWithAwait(formattedPrefix + "tasklist-task-8.5.0_2024-06-02"))
@@ -272,8 +272,9 @@ final class OpenSearchArchiverRepositoryIT {
     // Configure exact index name matches
     retention.setIndexPolicies(
         List.of(
-            new IndexRetentionPolicy("camunda-user-task", "user_task_policy", "7d"),
-            new IndexRetentionPolicy("camunda-user-task-at", "user_task_at_policy", "14d")));
+            new IndexRetentionPolicy("user_task_policy", "7d", List.of("camunda-user-task")),
+            new IndexRetentionPolicy(
+                "user_task_at_policy", "14d", List.of("camunda-user-task-at"))));
 
     createLifeCyclePolicies();
     for (final var index : expectedIndices) {
@@ -327,9 +328,10 @@ final class OpenSearchArchiverRepositoryIT {
     // Configure pattern-based policies
     retention.setIndexPolicies(
         List.of(
-            new IndexRetentionPolicy("camunda.*", "camunda_policy", "40d"),
-            new IndexRetentionPolicy("operate.*", "operate_policy", "60d"),
-            new IndexRetentionPolicy("tasklist.*", "tasklist_policy", "90d")));
+            new IndexRetentionPolicy("camunda_policy", "40d", List.of("camunda.*")),
+            new IndexRetentionPolicy(
+                "operate_policy", "60d", List.of("operate-list-view", "operate-process")),
+            new IndexRetentionPolicy("tasklist_policy", "90d", List.of("tasklist.*"))));
 
     createLifeCyclePolicies();
     for (final var index : expectedIndices) {
@@ -384,9 +386,9 @@ final class OpenSearchArchiverRepositoryIT {
     // Configure overlapping patterns, the implementation should apply the last one that matches
     retention.setIndexPolicies(
         List.of(
-            new IndexRetentionPolicy("user.*", "user_general_policy", "1d"),
-            new IndexRetentionPolicy("user-activity.*", "user_activity_policy", "2d"),
-            new IndexRetentionPolicy(".*logs", "logs_policy", "3d")));
+            new IndexRetentionPolicy("user_general_policy", "1d", List.of("user.*")),
+            new IndexRetentionPolicy("user_activity_policy", "2d", List.of("user-activity.*")),
+            new IndexRetentionPolicy("logs_policy", "3d", List.of(".*logs"))));
 
     createLifeCyclePolicies();
     testClient.indices().create(r -> r.index(testIndex));

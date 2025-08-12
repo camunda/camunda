@@ -333,8 +333,8 @@ public class SchemaManagerIT {
     retention.setMinimumAge("33d");
     retention.setIndexPolicies(
         List.of(
-            new IndexRetentionPolicy("index_1", "custom_policy_1", "44d"),
-            new IndexRetentionPolicy("index_2", "custom_policy_2", "55d")));
+            new IndexRetentionPolicy("custom_policy_1", "44d", List.of("index_1")),
+            new IndexRetentionPolicy("custom_policy_2", "55d", List.of("index_2"))));
 
     final var schemaManager =
         new SchemaManager(

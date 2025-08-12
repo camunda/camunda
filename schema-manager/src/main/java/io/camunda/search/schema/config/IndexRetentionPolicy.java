@@ -7,11 +7,14 @@
  */
 package io.camunda.search.schema.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Represents a retention policy for a specific index or set of indices. Contains the policy name
- * and minimum age for retention.
+ * Represents a retention policy that can be applied to multiple indices. Contains the policy name,
+ * minimum age for retention, and a list of indices this policy applies to.
  *
- * <p>The `index` field can be:
+ * <p>The `indices` field can contain:
  *
  * <ul>
  *   <li>Exact index names as defined in IndexDescriptor implementations including component name
@@ -22,27 +25,19 @@ package io.camunda.search.schema.config;
  */
 public class IndexRetentionPolicy {
 
-  private String index;
   private String policyName;
   private String minimumAge;
+  private List<String> indices = new ArrayList<>();
 
   public IndexRetentionPolicy() {
     // Default constructor for configuration binding
   }
 
   public IndexRetentionPolicy(
-      final String index, final String policyName, final String minimumAge) {
-    this.index = index;
+      final String policyName, final String minimumAge, final List<String> indices) {
     this.policyName = policyName;
     this.minimumAge = minimumAge;
-  }
-
-  public String getIndex() {
-    return index;
-  }
-
-  public void setIndex(final String index) {
-    this.index = index;
+    this.indices = indices != null ? new ArrayList<>(indices) : new ArrayList<>();
   }
 
   public String getPolicyName() {
@@ -61,18 +56,25 @@ public class IndexRetentionPolicy {
     this.minimumAge = minimumAge;
   }
 
+  public List<String> getIndices() {
+    return indices;
+  }
+
+  public void setIndices(final List<String> indices) {
+    this.indices = indices != null ? new ArrayList<>(indices) : new ArrayList<>();
+  }
+
   @Override
   public String toString() {
     return "IndexRetentionPolicy{"
-        + "index='"
-        + index
-        + '\''
-        + ", policyName='"
+        + "policyName='"
         + policyName
         + '\''
         + ", minimumAge='"
         + minimumAge
         + '\''
+        + ", indices="
+        + indices
         + '}';
   }
 }

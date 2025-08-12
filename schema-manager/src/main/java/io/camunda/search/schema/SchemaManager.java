@@ -146,10 +146,10 @@ public class SchemaManager {
       LOG.info("Creating {} index-specific ILM policies", indexPolicies.size());
       for (final var policy : indexPolicies) {
         LOG.info(
-            "Creating index-specific ILM policy [name: '{}', retention: '{}'] for index '{}'",
+            "Creating index-specific ILM policy [name: '{}', retention: '{}'] for indices '{}'",
             policy.getPolicyName(),
             policy.getMinimumAge(),
-            policy.getIndex());
+            policy.getIndices());
         searchEngineClient.putIndexLifeCyclePolicy(policy.getPolicyName(), policy.getMinimumAge());
       }
     }
