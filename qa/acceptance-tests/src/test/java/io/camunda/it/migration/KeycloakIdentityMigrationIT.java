@@ -496,11 +496,6 @@ public class KeycloakIdentityMigrationIT {
             tuple(
                 "migration-app",
                 OwnerType.CLIENT,
-                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.DELETE, PermissionType.UPDATE)),
-            tuple(
-                "migration-app",
-                OwnerType.CLIENT,
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(
                     PermissionType.UPDATE_PROCESS_INSTANCE,
