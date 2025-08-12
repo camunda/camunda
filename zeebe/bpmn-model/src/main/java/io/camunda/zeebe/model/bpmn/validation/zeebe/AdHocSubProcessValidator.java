@@ -75,13 +75,12 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
 
     if (!adHocSubProcess.isCancelRemainingInstances()) {
       validationResultCollector.addError(
-          0,
-          "Must not set cancelRemainingInstances to false in combination with zeebe:taskDefinition");
+          0, "Must not define cancelRemainingInstances in combination with zeebe:taskDefinition.");
     }
 
     if (adHocSubProcess.getCompletionCondition() != null) {
       validationResultCollector.addError(
-          0, "Must not set completionCondition in combination with zeebe:taskDefinition");
+          0, "Must not define completionCondition in combination with zeebe:taskDefinition.");
     }
 
     extensionElements.getChildElementsByType(ZeebeAdHoc.class).stream()
@@ -92,7 +91,7 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
                   && !adHoc.getActiveElementsCollection().isEmpty()) {
                 validationResultCollector.addError(
                     0,
-                    "Must not set activeElementsCollection in combination with zeebe:taskDefinition");
+                    "Must not define activeElementsCollection in combination with zeebe:taskDefinition.");
               }
             });
   }

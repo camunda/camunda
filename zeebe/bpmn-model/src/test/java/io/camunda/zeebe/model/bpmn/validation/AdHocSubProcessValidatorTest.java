@@ -176,7 +176,7 @@ class AdHocSubProcessValidatorTest {
         process,
         expect(
             AdHocSubProcess.class,
-            "Must not set cancelRemainingInstances to false in combination with zeebe:taskDefinition"));
+            "Must not define cancelRemainingInstances in combination with zeebe:taskDefinition."));
   }
 
   @Test
@@ -192,7 +192,7 @@ class AdHocSubProcessValidatorTest {
         process,
         expect(
             AdHocSubProcess.class,
-            "Must not set completionCondition in combination with zeebe:taskDefinition"));
+            "Must not define completionCondition in combination with zeebe:taskDefinition."));
   }
 
   @Test
@@ -211,7 +211,7 @@ class AdHocSubProcessValidatorTest {
         process,
         expect(
             AdHocSubProcess.class,
-            "Must not set activeElementsCollection in combination with zeebe:taskDefinition"));
+            "Must not define activeElementsCollection in combination with zeebe:taskDefinition."));
   }
 
   @Test
