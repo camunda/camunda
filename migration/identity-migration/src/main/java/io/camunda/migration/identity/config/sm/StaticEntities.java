@@ -206,7 +206,10 @@ public class StaticEntities {
                         ownerType,
                         "*",
                         AuthorizationResourceType.RESOURCE,
-                        Set.of(PermissionType.READ)),
+                        Set.of(
+                            PermissionType.READ,
+                            PermissionType.DELETE_PROCESS,
+                            PermissionType.DELETE_DRD)),
                     new CreateAuthorizationRequest(
                         ownerId,
                         ownerType,
@@ -222,7 +225,7 @@ public class StaticEntities {
                         ownerType,
                         "*",
                         AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                        Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
+                        Set.of(PermissionType.READ)),
                     new CreateAuthorizationRequest(
                         ownerId,
                         ownerType,
