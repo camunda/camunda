@@ -24,6 +24,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.AssignClientToGroupCommandStep1;
+import io.camunda.client.api.command.AssignClientToTenantCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToGroupStep1;
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
@@ -160,6 +161,7 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandImpl;
 import io.camunda.client.impl.command.AssignClientToGroupCommandImpl;
+import io.camunda.client.impl.command.AssignClientToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingRuleToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignMappingRuleToTenantCommandImpl;
@@ -1178,6 +1180,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UnassignClientFromGroupCommandStep1 newUnassignClientFromGroupCommand() {
     return new UnassignClientFromGroupCommandImpl(httpClient);
+  }
+
+  @Override
+  public AssignClientToTenantCommandStep1 newAssignClientToTenantCommand() {
+    return new AssignClientToTenantCommandImpl(httpClient);
   }
 
   @Override
