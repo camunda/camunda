@@ -164,13 +164,13 @@ test.describe('process instance migration', () => {
     });
 
     await commonPage.addRightArrow(
-      page.getByLabel(`Target item for Check payment`),
+      page.getByLabel(`Target element for Check payment`),
     );
     await commonPage.addRightArrow(
-      page.getByLabel(`Target item for Ship Articles`),
+      page.getByLabel(`Target element for Ship Articles`),
     );
     await commonPage.addRightArrow(
-      page.getByLabel(`Target item for Request for payment`),
+      page.getByLabel(`Target element for Request for payment`),
     );
 
     await page.screenshot({
