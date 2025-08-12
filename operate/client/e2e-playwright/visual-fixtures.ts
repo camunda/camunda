@@ -43,6 +43,7 @@ const loginTest = base.extend<LoginFixture>({
     await use(new Login(page));
   },
   makeAxeBuilder: async ({page}, use) => {
+    // @ts-expect-error - the AxeBuilder types are not correct
     const makeAxeBuilder = () => new AxeBuilder({page});
     await use(makeAxeBuilder);
   },
@@ -50,6 +51,7 @@ const loginTest = base.extend<LoginFixture>({
 
 const test = base.extend<VisualFixture>({
   makeAxeBuilder: async ({page}, use) => {
+    // @ts-expect-error - the AxeBuilder types are not correct
     const makeAxeBuilder = () => new AxeBuilder({page});
     await use(makeAxeBuilder);
   },

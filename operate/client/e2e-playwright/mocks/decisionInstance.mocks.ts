@@ -7,7 +7,7 @@
  */
 
 import {openFile} from '@/utils/openFile';
-import {Route} from '@playwright/test';
+import type {Route} from '@playwright/test';
 
 interface DecisionInstanceEntity {
   id: string;

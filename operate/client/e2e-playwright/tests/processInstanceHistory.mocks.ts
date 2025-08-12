@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ZBWorkerTaskHandler} from '@camunda8/sdk/dist/zeebe/types';
+import type {ZBWorkerTaskHandler} from '@camunda8/sdk/dist/zeebe/types';
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
 const {deployProcesses, createSingleInstance, createWorker} = zeebeGrpcApi;

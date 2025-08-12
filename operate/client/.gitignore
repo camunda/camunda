@@ -28,3 +28,5 @@ yarn-error.log*
 /playwright/.cache/
 /playwright/.auth/
 /e2e-playwright/docs-screenshots/**/*.png
+
+*.tsbuildinfo

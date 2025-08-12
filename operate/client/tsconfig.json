@@ -4,6 +4,7 @@
     {"path": "./tsconfig.app.json"},
     {"path": "./tsconfig.node.json"},
     {"path": "./tsconfig.vitest.json"},
-    {"path": "./tsconfig.vitest.browser.json"}
+    {"path": "./tsconfig.vitest.browser.json"},
+    {"path": "./e2e-playwright/tsconfig.json"}
   ]
 }

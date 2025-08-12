@@ -6,13 +6,36 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator, ElementHandle, BrowserContext} from '@playwright/test';
-import {generateUniqueID} from 'modules/utils/generateUniqueID';
+import type {
+  Page,
+  Locator,
+  ElementHandle,
+  BrowserContext,
+} from '@playwright/test';
 import {
   ARROW_HEAD_LENGTH,
   ARROW_BODY_LENGTH,
   getArrowStyles,
 } from '../utils/arrowStyles';
+
+const generateUniqueID = () => {
+  return (Date.now() + Math.floor(Math.random() * 100)).toString();
+};
+
+type ClientConfig = {
+  isEnterprise?: boolean;
+  contextPath?: string;
+  baseName?: string;
+  organizationId?: null | string;
+  clusterId?: null | string;
+  canLogout?: null | boolean;
+  isLoginDelegated?: null | boolean;
+  mixpanelToken?: null | string;
+  mixpanelAPIHost?: null | string;
+  tasklistUrl?: null | string;
+  resourcePermissionsEnabled?: boolean;
+  multiTenancyEnabled?: boolean;
+};
 
 export class Common {
   private page: Page;
@@ -218,10 +241,7 @@ export class Common {
     });
   }
 
-  mockClientConfig(
-    context: BrowserContext,
-    config?: (typeof window)['clientConfig'],
-  ) {
+  mockClientConfig(context: BrowserContext, config?: ClientConfig) {
     const defaultConfig = {
       isEnterprise: true,
       canLogout: true,

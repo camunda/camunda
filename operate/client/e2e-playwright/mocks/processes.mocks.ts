@@ -6,11 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Route} from '@playwright/test';
+import type {Route} from '@playwright/test';
 import {type GetProcessDefinitionStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
-import {ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
-import {BatchOperationDto} from 'modules/api/sharedTypes';
+import type {
+  BatchOperationDto,
+  ProcessDto,
+  ProcessInstancesDto,
+  OperationEntity,
+  InstanceEntityState,
+} from '@/types';
 
 function mockResponses({
   batchOperations,

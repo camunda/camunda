@@ -1,19 +1,13 @@
 {
-  "extends": "../tsconfig.json",
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ES2020",
-    "moduleResolution": "node",
-    "lib": ["ES2020"],
-    "esModuleInterop": true,
-    "declaration": false,
-    "resolveJsonModule": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     },
-    "types": ["@types/node", "playwright"]
+    "types": ["@types/node", "playwright"],
+    "composite": true
   },
-  "include": ["./**/*"],
-  "exclude": ["node_modules"]
+  "include": ["./**/*"]
 }
