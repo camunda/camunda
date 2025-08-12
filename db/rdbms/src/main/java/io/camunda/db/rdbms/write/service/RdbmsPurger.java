@@ -33,6 +33,7 @@ public class RdbmsPurger {
           "USERS",
           "FORM",
           "MAPPING_RULES",
+          "MESSAGE_SUBSCRIPTION",
           "TENANT_MEMBER",
           "TENANT",
           "ROLE_MEMBER",
