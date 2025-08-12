@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -113,12 +114,14 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private final JobProcessingMetrics jobMetrics;
   private final EventHandle eventHandle;
   private final ProcessingState processState;
+  private final VariableBehavior variableBehavior;
 
   public JobCompleteProcessor(
       final ProcessingState state,
       final JobProcessingMetrics jobMetrics,
       final EventHandle eventHandle,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final VariableBehavior variableBehavior) {
     processState = state;
     userTaskState = state.getUserTaskState();
     elementInstanceState = state.getElementInstanceState();
@@ -138,6 +141,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
                 this::checkTaskListenerJobForUnknownPropertyCorrections));
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
+    this.variableBehavior = variableBehavior;
   }
 
   @Override
@@ -200,7 +204,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
               userTask.getUserTaskKey(), UserTaskIntent.COMPLETE_TASK_LISTENER, userTask);
         }
       }
-      case AD_HOC_SUB_PROCESS -> handleAdHocSubProcessJob(commandWriter, value);
+      case AD_HOC_SUB_PROCESS -> handleAdHocSubProcessJob(commandWriter, value, elementInstance);
       default -> {
         final long scopeKey = elementInstance.getValue().getFlowScopeKey();
         final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
@@ -217,7 +221,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   }
 
   private void handleAdHocSubProcessJob(
-      final TypedCommandWriter commandWriter, final JobRecord jobRecord) {
+      final TypedCommandWriter commandWriter,
+      final JobRecord jobRecord,
+      final ElementInstance adHocSubProcessInstance) {
 
     final var jobResult = jobRecord.getResult();
 
@@ -249,6 +255,23 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           AdHocSubProcessInstructionIntent.COMPLETE,
           instructionRecord);
     }
+
+    if (jobRecord.getVariablesBuffer().capacity() > 0) {
+      propagateJobVariablesToAdHocSubProcess(jobRecord, adHocSubProcessInstance);
+    }
+  }
+
+  private void propagateJobVariablesToAdHocSubProcess(
+      final JobRecord completingJobRecord, final ElementInstance targetAdHocSubProcess) {
+    final var targetAdHocSubProcessInstanceValue = targetAdHocSubProcess.getValue();
+
+    variableBehavior.mergeDocument(
+        targetAdHocSubProcess.getKey(),
+        targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
+        targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),
+        targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
+        targetAdHocSubProcessInstanceValue.getTenantId(),
+        completingJobRecord.getVariablesBuffer());
   }
 
   private Either<Rejection, JobRecord> checkAdHocSubprocessActivationTargetsAreValid(
