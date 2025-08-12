@@ -34,18 +34,6 @@ public interface ZeebeAdHoc extends BpmnModelElementInstance {
   void setActiveElementsCollection(final String activateElements);
 
   /**
-   * @return the implementation type of the ad-hoc sub-process
-   */
-  ZeebeAdHocImplementationType getImplementationType();
-
-  /**
-   * Sets the implementation type of the ad-hoc sub-process.
-   *
-   * @param implementationType the implementation type
-   */
-  void setImplementationType(ZeebeAdHocImplementationType implementationType);
-
-  /**
    * @return the variable name of the output collection
    */
   String getOutputCollection();
