@@ -65,8 +65,7 @@ public final class BpmnAdHocSubProcessBehavior {
       final String elementIdToActivate,
       final DirectBuffer variablesBuffer) {
 
-    final long adHocSubProcessInnerInstanceKey =
-        createInnerInstance(context, adHocSubProcess, variablesBuffer.capacity());
+    final long adHocSubProcessInnerInstanceKey = createInnerInstance(context, adHocSubProcess);
 
     if (variablesBuffer != NO_VARIABLES && variablesBuffer.capacity() > 0) {
       // set local variable in the scope of the inner instance
@@ -87,8 +86,7 @@ public final class BpmnAdHocSubProcessBehavior {
 
   private long createInnerInstance(
       final BpmnElementContext adHocSubProcessContext,
-      final ExecutableAdHocSubProcess adHocSubProcess,
-      final int variablesBufferSize) {
+      final ExecutableAdHocSubProcess adHocSubProcess) {
     final var adHocSubProcessElementInstanceKey = adHocSubProcessContext.getElementInstanceKey();
 
     final var innerInstanceKey = keyGenerator.nextKey();
@@ -127,7 +125,7 @@ public final class BpmnAdHocSubProcessBehavior {
                     variableName,
                     new UnsafeBuffer(MsgPackHelper.NIL),
                     0,
-                    variablesBufferSize));
+                    MsgPackHelper.NIL.length));
 
     return innerInstanceKey;
   }
