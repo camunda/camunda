@@ -2,6 +2,7 @@
   "APPLICATION": "Application",
   "AUTHORIZATION": "Authorization",
   "BATCH": "Batch",
+  "COMPONENT": "Component",
   "DECISION_DEFINITION": "Decision definition",
   "DECISION_REQUIREMENTS_DEFINITION": "Decision requirements definition",
   "DOCUMENT": "Document",

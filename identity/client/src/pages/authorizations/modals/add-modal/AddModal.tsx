@@ -37,7 +37,6 @@ type ResourcePermissionsType = {
 };
 
 const resourcePermissions: ResourcePermissionsType = {
-  APPLICATION: [PermissionType.ACCESS],
   AUTHORIZATION: [
     PermissionType.CREATE,
     PermissionType.DELETE,
@@ -57,6 +56,7 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.READ,
     PermissionType.UPDATE,
   ],
+  COMPONENT: [PermissionType.ACCESS],
   DECISION_DEFINITION: [
     PermissionType.CREATE_DECISION_INSTANCE,
     PermissionType.DELETE_DECISION_INSTANCE,
