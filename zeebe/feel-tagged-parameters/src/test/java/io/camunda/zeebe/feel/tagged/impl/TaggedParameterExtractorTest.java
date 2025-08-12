@@ -46,15 +46,16 @@ class TaggedParameterExtractorTest {
   @CsvSource({
     "\"toolCall.myVariable\",string 'toolCall.myVariable'",
     "10,10",
-    "[],ConstList(List())"
+    "[],ConstList(List())",
+    "fromAi(toolCall.myVariable),FunctionInvocation(fromAi"
   })
   void throwsExceptionWhenValueIsNotAReference(
-      final String parameter, final String exceptionMessage) {
+      final String parameter, final String exceptionMessageValuePart) {
     assertThatThrownBy(() -> extractParameters("fromAi(%s)".formatted(parameter)))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageStartingWith(
             "Expected fromAi() parameter 'value' to be a reference (e.g. 'toolCall.customParameter'), but received "
-                + exceptionMessage);
+                + exceptionMessageValuePart);
   }
 
   @ParameterizedTest
