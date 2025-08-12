@@ -291,24 +291,14 @@ public class AdHocSubProcessProcessor
     final Expression outputElementExpression = adHocSubProcess.getOutputElement().orElseThrow();
     return expressionProcessor
         .evaluateAnyExpression(outputElementExpression, childContext.getElementInstanceKey())
-        .mapLeft(
-            failure -> {
-              incidentBehavior.createIncident(failure, adHocSubProcessContext);
-              return new Failure(failure.getMessage(), ErrorType.EXTRACT_VALUE_ERROR);
-            })
         .flatMap(
             outputElementValue -> {
               final DirectBuffer outputCollectionValue =
                   stateBehavior.getLocalVariable(
                       adHocSubProcessContext, outputCollectionVariableName);
 
-              return outputCollectionUpdater
-                  .appendToOutputCollection(outputCollectionValue, outputElementValue)
-                  .mapLeft(
-                      failure -> {
-                        incidentBehavior.createIncident(failure, adHocSubProcessContext);
-                        return new Failure(failure.getMessage(), ErrorType.EXTRACT_VALUE_ERROR);
-                      });
+              return outputCollectionUpdater.appendToOutputCollection(
+                  outputCollectionValue, outputElementValue);
             })
         .thenDo(
             updatedCollection ->
