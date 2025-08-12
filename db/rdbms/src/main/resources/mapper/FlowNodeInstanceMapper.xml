@@ -86,9 +86,9 @@
       AND FLOW_NODE_NAME IN
       <foreach collection="filter.flowNodeNames" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
-    <if test="filter.flowNodeScopeKeys != null and !filter.flowNodeScopeKeys.isEmpty()">
+    <if test="filter.elementInstanceScopeKeys != null and !filter.elementInstanceScopeKeys.isEmpty()">
       AND FLOW_NODE_SCOPE_KEY IN
-      <foreach collection="filter.flowNodeScopeKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.elementInstanceScopeKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.incidentKeys != null and !filter.incidentKeys.isEmpty()">
       AND INCIDENT_KEY IN
