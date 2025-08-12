@@ -16,6 +16,7 @@ import type {
   CreateCancellationBatchOperationResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 import {cancelProcessInstancesBatchOperation} from 'modules/api/v2/processes/cancelProcessInstancesBatchOperation';
+import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations';
 
 const useCancelProcessInstancesBatchOperation = (
   options?: Partial<
@@ -35,7 +36,7 @@ const useCancelProcessInstancesBatchOperation = (
         await cancelProcessInstancesBatchOperation(payload);
       if (response !== null) {
         await queryClient.invalidateQueries({
-          queryKey: ['queryBatchOperations'],
+          queryKey: [BATCH_OPERATIONS_QUERY_KEY],
         });
         return response;
       }
