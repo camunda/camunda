@@ -38,6 +38,7 @@ public class OpenSearchProperties {
   private Integer connectTimeout;
 
   private boolean createSchema = true;
+  private boolean updateSchemaSettings = true;
 
   private String url;
   private String username;
@@ -194,5 +195,13 @@ public class OpenSearchProperties {
 
   public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
     this.healthCheckEnabled = healthCheckEnabled;
+  }
+
+  public boolean isUpdateSchemaSettings() {
+    return updateSchemaSettings;
+  }
+
+  public void setUpdateSchemaSettings(final boolean updateSchemaSettings) {
+    this.updateSchemaSettings = updateSchemaSettings;
   }
 }

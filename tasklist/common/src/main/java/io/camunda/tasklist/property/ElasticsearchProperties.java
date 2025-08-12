@@ -38,6 +38,7 @@ public class ElasticsearchProperties {
   private Integer connectTimeout;
 
   private boolean createSchema = true;
+  private boolean updateSchemaSettings = true;
 
   private String url;
   private String username;
@@ -118,6 +119,14 @@ public class ElasticsearchProperties {
 
   public void setCreateSchema(final boolean createSchema) {
     this.createSchema = createSchema;
+  }
+
+  public boolean isUpdateSchemaSettings() {
+    return updateSchemaSettings;
+  }
+
+  public void setUpdateSchemaSettings(final boolean updateSchemaSettings) {
+    this.updateSchemaSettings = updateSchemaSettings;
   }
 
   public String getPassword() {

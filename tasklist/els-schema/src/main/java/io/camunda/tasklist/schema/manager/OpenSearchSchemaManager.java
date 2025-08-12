@@ -268,7 +268,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
     final var actualReplicas = ofNullable(settings.numberOfReplicas()).orElse(NO_REPLICA);
 
     if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
-      LOGGER.debug(
+      LOGGER.info(
           "Updating component template settings to shards={}, replicas={}",
           expectedShards,
           expectedReplicas);
@@ -290,7 +290,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
               if (!settings.values().stream()
                   .map(s -> ofNullable(s.settings().numberOfReplicas()).orElse(NO_REPLICA))
                   .allMatch(expectedReplicas::equals)) {
-                LOGGER.debug(
+                LOGGER.info(
                     "Updating number of replicas of {} to {}",
                     indexDescriptor.getAlias(),
                     expectedReplicas);
