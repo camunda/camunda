@@ -333,7 +333,19 @@ public class SaaSIdentityMigrationIT {
                 OwnerType.ROLE,
                 "*",
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
+                Set.of(PermissionType.READ)),
+            tuple(
+                DEVELOPER_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.DELETE_FORM,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_RESOURCE,
+                    PermissionType.READ)),
             tuple(
                 DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
@@ -372,7 +384,18 @@ public class SaaSIdentityMigrationIT {
                 OwnerType.ROLE,
                 "*",
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
+                Set.of(PermissionType.READ)),
+            tuple(
+                OPERATIONS_ENGINEER_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.DELETE_RESOURCE,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_FORM)),
             tuple(
                 OPERATIONS_ENGINEER_ROLE_ID,
                 OwnerType.ROLE,
@@ -570,7 +593,7 @@ public class SaaSIdentityMigrationIT {
                 "client123",
                 OwnerType.CLIENT,
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.UPDATE, PermissionType.DELETE, PermissionType.READ)),
+                Set.of(PermissionType.READ)),
             tuple(
                 "client123",
                 OwnerType.CLIENT,

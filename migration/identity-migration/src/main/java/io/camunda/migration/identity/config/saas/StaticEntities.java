@@ -73,6 +73,12 @@ public class StaticEntities {
               DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
+              AuthorizationResourceType.RESOURCE,
+              AuthorizationResourceType.RESOURCE.getSupportedPermissionTypes()),
+          new CreateAuthorizationRequest(
+              DEVELOPER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
               AuthorizationResourceType.BATCH,
               Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
           // OPERATIONS ENGINEER
@@ -106,6 +112,17 @@ public class StaticEntities {
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION
                   .getSupportedPermissionTypes()),
+          new CreateAuthorizationRequest(
+              OPERATIONS_ENGINEER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.RESOURCE,
+              Set.of(
+                  PermissionType.READ,
+                  PermissionType.DELETE_RESOURCE,
+                  PermissionType.DELETE_PROCESS,
+                  PermissionType.DELETE_DRD,
+                  PermissionType.DELETE_FORM)),
           new CreateAuthorizationRequest(
               OPERATIONS_ENGINEER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
