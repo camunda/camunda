@@ -8,8 +8,8 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Gcs;
-import io.camunda.configuration.S3;
 import io.camunda.configuration.Interceptor;
+import io.camunda.configuration.S3;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
