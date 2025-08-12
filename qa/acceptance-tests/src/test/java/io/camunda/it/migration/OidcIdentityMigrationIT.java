@@ -195,7 +195,7 @@ public class OidcIdentityMigrationIT {
                     PermissionType.READ_DECISION_INSTANCE,
                     PermissionType.READ_DECISION_DEFINITION,
                     PermissionType.DELETE_DECISION_INSTANCE)),
-            tuple("operate", ResourceType.APPLICATION, Set.of(PermissionType.ACCESS)),
+            tuple("operate", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)),
             tuple(
                 "operate",
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
@@ -248,7 +248,7 @@ public class OidcIdentityMigrationIT {
                     PermissionType.READ_USER_TASK,
                     PermissionType.UPDATE_USER_TASK,
                     PermissionType.READ_PROCESS_DEFINITION)),
-            tuple("tasklist", ResourceType.APPLICATION, Set.of(PermissionType.ACCESS)),
+            tuple("tasklist", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)),
             tuple("tasklist", ResourceType.RESOURCE, Set.of(PermissionType.READ)),
             tuple("tasklist", ResourceType.RESOURCE, Set.of(PermissionType.READ)),
             tuple(
@@ -284,7 +284,7 @@ public class OidcIdentityMigrationIT {
                     PermissionType.DELETE,
                     PermissionType.CREATE)),
             tuple("identity", ResourceType.USER, Set.of(PermissionType.READ)),
-            tuple("identity", ResourceType.APPLICATION, Set.of(PermissionType.ACCESS)));
+            tuple("identity", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)));
   }
 
   @Test

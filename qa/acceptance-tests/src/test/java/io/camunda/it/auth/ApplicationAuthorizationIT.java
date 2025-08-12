@@ -8,7 +8,7 @@
 package io.camunda.it.auth;
 
 import static io.camunda.client.api.search.enums.PermissionType.ACCESS;
-import static io.camunda.client.api.search.enums.ResourceType.APPLICATION;
+import static io.camunda.client.api.search.enums.ResourceType.COMPONENT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -60,14 +60,14 @@ class ApplicationAuthorizationIT {
   @UserDefinition
   private static final TestUser ADMIN_USER =
       new TestUser(
-          ADMIN, DEFAULT_PASSWORD, List.of(new Permissions(APPLICATION, ACCESS, List.of("*"))));
+          ADMIN, DEFAULT_PASSWORD, List.of(new Permissions(COMPONENT, ACCESS, List.of("*"))));
 
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
       new TestUser(
           RESTRICTED,
           DEFAULT_PASSWORD,
-          List.of(new Permissions(APPLICATION, ACCESS, List.of("tasklist"))));
+          List.of(new Permissions(COMPONENT, ACCESS, List.of("tasklist"))));
 
   @AutoClose
   private static final HttpClient HTTP_CLIENT =
@@ -75,7 +75,7 @@ class ApplicationAuthorizationIT {
 
   @ParameterizedTest
   @ValueSource(strings = {"operate", "identity"})
-  void accessAppUserWithoutAppAccessNotAllowed(
+  void accessComponentUserWithoutComponentAccessNotAllowed(
       final String appName, @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
       throws IOException, URISyntaxException, InterruptedException {
     // given
@@ -96,12 +96,14 @@ class ApplicationAuthorizationIT {
 
   @ParameterizedTest
   @ValueSource(strings = {"operate", "identity", "tasklist"})
-  void accessAppNoUserAllowed(
-      final String appName, @Authenticated(ADMIN) final CamundaClient client)
+  void accessComponentNoUserAllowed(
+      final String componentName, @Authenticated(ADMIN) final CamundaClient client)
       throws IOException, URISyntaxException, InterruptedException {
     // when
     final HttpRequest request =
-        HttpRequest.newBuilder().uri(createUri(client, appName + PATH_OPERATE_WEBAPP_USER)).build();
+        HttpRequest.newBuilder()
+            .uri(createUri(client, componentName + PATH_OPERATE_WEBAPP_USER))
+            .build();
     final HttpResponse<String> response =
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -110,7 +112,7 @@ class ApplicationAuthorizationIT {
   }
 
   @Test
-  void accessApiUserWithoutAppAccessAllowed(
+  void accessApiUserWithoutComponentAccessAllowed(
       @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
       throws IOException, URISyntaxException, InterruptedException {
     // when
@@ -127,7 +129,7 @@ class ApplicationAuthorizationIT {
   }
 
   @Test
-  void accessStaticUserWithoutAppAccessAllowed(
+  void accessStaticUserWithoutComponentAccessAllowed(
       @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
       throws IOException, URISyntaxException, InterruptedException {
     // given
@@ -147,7 +149,7 @@ class ApplicationAuthorizationIT {
   }
 
   @Test
-  void accessAppUserWithSpecificAppAccessAllowed(
+  void accessComponentUserWithSpecificComponentAccessAllowed(
       @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
       throws IOException, URISyntaxException, InterruptedException {
     // given
@@ -167,8 +169,8 @@ class ApplicationAuthorizationIT {
 
   @ParameterizedTest
   @ValueSource(strings = {"operate", "identity", "tasklist"})
-  void accessAppUserWithAppWildcardAccessAllowed(
-      final String appName, @Authenticated(ADMIN) final CamundaClient adminClient)
+  void accessComponentUserWithComponentWildcardAccessAllowed(
+      final String componentName, @Authenticated(ADMIN) final CamundaClient adminClient)
       throws IOException, URISyntaxException, InterruptedException {
     // given
     final var webappClient = STANDALONE_CAMUNDA.newWebappClient();
@@ -176,7 +178,7 @@ class ApplicationAuthorizationIT {
     try (final var loggedInClient = webappClient.logIn(ADMIN, DEFAULT_PASSWORD)) {
       // when
       final Either<Exception, HttpResponse<String>> result =
-          loggedInClient.send(appName + PATH_OPERATE_WEBAPP_USER);
+          loggedInClient.send(componentName + PATH_OPERATE_WEBAPP_USER);
 
       // then
       assertThat(result.isLeft()).isFalse();
@@ -187,7 +189,7 @@ class ApplicationAuthorizationIT {
   }
 
   @Test
-  void meContainsAppUserSpecificAuthorizations(
+  void meContainsComponentUserSpecificAuthorizations(
       @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
       throws IOException, URISyntaxException, InterruptedException {
     // when
@@ -205,12 +207,12 @@ class ApplicationAuthorizationIT {
   }
 
   private static void assertRedirectToForbidden(
-      final String appName, final HttpResponse<String> response) {
+      final String componentName, final HttpResponse<String> response) {
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_MOVED_TEMP);
     assertThat(response.headers().firstValue("Location"))
         .isPresent()
         .get()
-        .satisfies(location -> assertThat(location).endsWith(appName + "/forbidden"));
+        .satisfies(location -> assertThat(location).endsWith(componentName + "/forbidden"));
   }
 
   private static String basicAuthentication(final String user) {

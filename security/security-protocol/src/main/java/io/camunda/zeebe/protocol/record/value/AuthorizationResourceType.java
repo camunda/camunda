@@ -18,7 +18,7 @@ public enum AuthorizationResourceType {
   MAPPING_RULE(
       PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   MESSAGE(PermissionType.CREATE, PermissionType.READ),
-  APPLICATION(PermissionType.ACCESS),
+  COMPONENT(PermissionType.ACCESS),
   SYSTEM(PermissionType.READ, PermissionType.UPDATE),
   TENANT(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   RESOURCE(

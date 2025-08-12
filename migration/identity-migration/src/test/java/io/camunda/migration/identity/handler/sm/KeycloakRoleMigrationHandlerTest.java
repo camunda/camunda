@@ -151,7 +151,7 @@ public class KeycloakRoleMigrationHandlerTest {
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 "role_1",
@@ -184,7 +184,7 @@ public class KeycloakRoleMigrationHandlerTest {
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 "role_1",
@@ -226,7 +226,7 @@ public class KeycloakRoleMigrationHandlerTest {
             tuple(
                 "role@name_with_special_chars",
                 AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 "role@name_with_special_chars",

@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.filters;
 
-import static io.camunda.service.authorization.Authorizations.APPLICATION_ACCESS_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -24,11 +24,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.UrlPathHelper;
 
-public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter {
+public class WebComponentAuthorizationCheckFilter extends OncePerRequestFilter {
 
   private static final Logger LOG =
-      LoggerFactory.getLogger(WebApplicationAuthorizationCheckFilter.class);
-  private static final List<String> WEB_APPLICATIONS = List.of("identity", "operate", "tasklist");
+      LoggerFactory.getLogger(WebComponentAuthorizationCheckFilter.class);
+  private static final List<String> WEB_COMPONENTS = List.of("identity", "operate", "tasklist");
   private static final List<String> STATIC_RESOURCES =
       List.of(".css", ".js", ".js.map", ".jpg", ".png", "woff2", ".ico", ".svg");
   final UrlPathHelper urlPathHelper = new UrlPathHelper();
@@ -36,7 +36,7 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ResourceAccessProvider resourceAccessProvider;
 
-  public WebApplicationAuthorizationCheckFilter(
+  public WebComponentAuthorizationCheckFilter(
       final SecurityConfiguration securityConfig,
       final CamundaAuthenticationProvider authenticationProvider,
       final ResourceAccessProvider resourceAccessProvider) {
@@ -55,7 +55,7 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
     if (!isAllowed(request)) {
       LOG.warn("Access denied for request: {}", request.getRequestURI());
       response.sendRedirect(
-          String.format("%s/%s/forbidden", request.getContextPath(), findWebApplication(request)));
+          String.format("%s/%s/forbidden", request.getContextPath(), findWebComponent(request)));
       return;
     }
     filterChain.doFilter(request, response);
@@ -75,19 +75,18 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
       return true;
     }
 
-    final String application = findWebApplication(request);
-    if (application == null) {
+    final String component = findWebComponent(request);
+    if (component == null) {
       return true;
     }
 
-    return hasAccessToApplication(application);
+    return hasAccessToComponent(component);
   }
 
-  private boolean hasAccessToApplication(final String application) {
+  private boolean hasAccessToComponent(final String component) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return resourceAccessProvider
-        .hasResourceAccessByResourceId(
-            authentication, APPLICATION_ACCESS_AUTHORIZATION, application)
+        .hasResourceAccessByResourceId(authentication, COMPONENT_ACCESS_AUTHORIZATION, component)
         .allowed();
   }
 
@@ -96,10 +95,10 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
     return STATIC_RESOURCES.stream().anyMatch(requestUri::endsWith);
   }
 
-  private String findWebApplication(final HttpServletRequest request) {
-    final String applicationPath =
+  private String findWebComponent(final HttpServletRequest request) {
+    final String componentPath =
         urlPathHelper.getPathWithinApplication(request).substring(1).split("/")[0];
-    return WEB_APPLICATIONS.stream().filter(applicationPath::equals).findFirst().orElse(null);
+    return WEB_COMPONENTS.stream().filter(componentPath::equals).findFirst().orElse(null);
   }
 
   private boolean isAuthenticated() {
