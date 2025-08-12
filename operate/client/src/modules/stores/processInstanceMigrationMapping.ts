@@ -40,11 +40,11 @@ class ProcessInstanceMigrationMappingStore {
 
     return selectableSourceSequenceFlows?.map((sourceSequenceFlow) => {
       return {
-        sourceItem: {
+        sourceElement: {
           id: sourceSequenceFlow.id,
           name: sourceSequenceFlow.name,
         },
-        selectableTargetItem: selectableTargetSequenceFlows.map(
+        selectableTargetElement: selectableTargetSequenceFlows.map(
           ({id, name}) => ({
             id,
             name,
@@ -68,8 +68,8 @@ class ProcessInstanceMigrationMappingStore {
     const sourceFlowNodeMappings = selectableSourceFlowNodes?.map(
       (sourceFlowNode) => {
         return {
-          sourceItem: {id: sourceFlowNode.id, name: sourceFlowNode.name},
-          selectableTargetItem: selectableTargetFlowNodes
+          sourceElement: {id: sourceFlowNode.id, name: sourceFlowNode.name},
+          selectableTargetElement: selectableTargetFlowNodes
             .filter((targetFlowNode) => {
               /**
                * For events allow only target flow nodes with the same event type

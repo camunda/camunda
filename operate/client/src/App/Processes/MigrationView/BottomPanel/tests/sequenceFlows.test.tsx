@@ -48,102 +48,102 @@ describe('BottomPanel - sequence flow mappings', () => {
     // Expect all sequence flows leading to merging parallel or inclusive gateways to be visible
     expect(
       await screen.findByRole('combobox', {
-        name: /target item for Gateway_0bcfno8/i,
+        name: /target element for Gateway_0bcfno8/i,
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: /target item for Gateway_0etv923/i,
+        name: /target element for Gateway_0etv923/i,
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: /target item for Gateway_1sxij6y/i,
+        name: /target element for Gateway_1sxij6y/i,
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: /target item for Activity_1mkmfoa/i,
+        name: /target element for Activity_1mkmfoa/i,
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: /target item for Gateway_0h6a6k2/i,
+        name: /target element for Gateway_0h6a6k2/i,
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: /target item for Gateway_07izaz5/i,
+        name: /target element for Gateway_07izaz5/i,
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: /target item for Flow R/i,
+        name: /target element for Flow R/i,
       }),
     ).toBeVisible();
 
     expect(
       screen.getByRole('combobox', {
-        name: /target item for Flow H/i,
+        name: /target element for Flow H/i,
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: /target item for Flow D/i,
+        name: /target element for Flow D/i,
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: /target item for Flow K/i,
+        name: /target element for Flow K/i,
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: /target item for Flow L/i,
+        name: /target element for Flow L/i,
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: /target item for Flow N/i,
+        name: /target element for Flow N/i,
       }),
     ).toBeVisible();
 
     // Expect no sequence flows leading to exclusive gateway
     expect(
       screen.queryByRole('combobox', {
-        name: new RegExp(`target item for Flow Q`, 'i'),
+        name: new RegExp(`target element for Flow Q`, 'i'),
       }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('combobox', {
-        name: new RegExp(`target item for Flow T`, 'i'),
+        name: new RegExp(`target element for Flow T`, 'i'),
       }),
     ).not.toBeInTheDocument();
 
     // Expect no sequence flows leading to splitting gateways
     expect(
       screen.queryByRole('combobox', {
-        name: new RegExp(`target item for Flow A`, 'i'),
+        name: new RegExp(`target element for Flow A`, 'i'),
       }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('combobox', {
-        name: new RegExp(`target item for Flow B`, 'i'),
+        name: new RegExp(`target element for Flow B`, 'i'),
       }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('combobox', {
-        name: new RegExp(`target item for Flow G`, 'i'),
+        name: new RegExp(`target element for Flow G`, 'i'),
       }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('combobox', {
-        name: new RegExp(`target item for Flow I`, 'i'),
+        name: new RegExp(`target element for Flow I`, 'i'),
       }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('combobox', {
-        name: new RegExp(`target item for Flow O`, 'i'),
+        name: new RegExp(`target element for Flow O`, 'i'),
       }),
     ).not.toBeInTheDocument();
 
@@ -159,7 +159,7 @@ describe('BottomPanel - sequence flow mappings', () => {
     // Wait until rows are rendered
     expect(
       await screen.findByRole('combobox', {
-        name: new RegExp(`target item for Flow D`, 'i'),
+        name: new RegExp(`target element for Flow D`, 'i'),
       }),
     ).toBeVisible();
 
@@ -169,34 +169,34 @@ describe('BottomPanel - sequence flow mappings', () => {
     // Expect not mapped items to be visible
     expect(
       screen.getByRole('combobox', {
-        name: new RegExp(`target item for Flow H`, 'i'),
+        name: new RegExp(`target element for Flow H`, 'i'),
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: new RegExp(`target item for Flow D`, 'i'),
+        name: new RegExp(`target element for Flow D`, 'i'),
       }),
     ).toBeVisible();
     expect(
       screen.getByRole('combobox', {
-        name: new RegExp(`target item for Flow K`, 'i'),
+        name: new RegExp(`target element for Flow K`, 'i'),
       }),
     ).toBeVisible();
 
     // Expect auto-mappable items to be hidden
     expect(
       screen.queryByRole('combobox', {
-        name: new RegExp(`target item for Flow L`, 'i'),
+        name: new RegExp(`target element for Flow L`, 'i'),
       }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('combobox', {
-        name: new RegExp(`target item for Flow N`, 'i'),
+        name: new RegExp(`target element for Flow N`, 'i'),
       }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('combobox', {
-        name: new RegExp(`target item for Flow R`, 'i'),
+        name: new RegExp(`target element for Flow R`, 'i'),
       }),
     ).not.toBeInTheDocument();
 
@@ -205,24 +205,24 @@ describe('BottomPanel - sequence flow mappings', () => {
     );
   });
 
-  it('should show correct target items', async () => {
+  it('should show correct target elements', async () => {
     const {user} = render(<BottomPanel />, {wrapper: Wrapper});
 
     // Wait until rows are rendered
     expect(
       await screen.findByRole('combobox', {
-        name: /target item for Flow D/i,
+        name: /target element for Flow D/i,
       }),
     ).toBeVisible();
 
     await user.click(
       screen.getByRole('combobox', {
-        name: /target item for Flow H/i,
+        name: /target element for Flow H/i,
       }),
     );
 
     const options = screen.getByRole('combobox', {
-      name: /target item for Flow H/i,
+      name: /target element for Flow H/i,
     }).children;
 
     expect(options).toHaveLength(6);

@@ -63,7 +63,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
         </button>
         <button
           onClick={() => {
-            batchModificationStore.selectTargetItem('startEvent');
+            batchModificationStore.selectTargetElement('startEvent');
           }}
         >
           select target flow node

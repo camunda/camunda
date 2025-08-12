@@ -45,83 +45,83 @@ describe('processInstanceMigration', () => {
   it('should update flow node mapping', () => {
     processInstanceMigrationStore.enable();
 
-    expect(processInstanceMigrationStore.hasItemMapping).toBe(false);
-    expect(processInstanceMigrationStore.state.itemMapping).toEqual({});
+    expect(processInstanceMigrationStore.hasElementMapping).toBe(false);
+    expect(processInstanceMigrationStore.state.elementMapping).toEqual({});
 
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: 'startEvent',
       targetId: 'endEvent',
     });
 
-    expect(processInstanceMigrationStore.hasItemMapping).toBe(true);
-    expect(processInstanceMigrationStore.state.itemMapping).toEqual({
+    expect(processInstanceMigrationStore.hasElementMapping).toBe(true);
+    expect(processInstanceMigrationStore.state.elementMapping).toEqual({
       startEvent: 'endEvent',
     });
 
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: 'taskA',
       targetId: 'taskB',
     });
 
-    expect(processInstanceMigrationStore.state.itemMapping).toEqual({
+    expect(processInstanceMigrationStore.state.elementMapping).toEqual({
       startEvent: 'endEvent',
       taskA: 'taskB',
     });
 
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: 'startEvent',
       targetId: '',
     });
 
-    expect(processInstanceMigrationStore.state.itemMapping).toEqual({
+    expect(processInstanceMigrationStore.state.elementMapping).toEqual({
       taskA: 'taskB',
     });
 
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: 'taskA',
       targetId: '',
     });
 
-    expect(processInstanceMigrationStore.hasItemMapping).toBe(false);
-    expect(processInstanceMigrationStore.state.itemMapping).toEqual({});
+    expect(processInstanceMigrationStore.hasElementMapping).toBe(false);
+    expect(processInstanceMigrationStore.state.elementMapping).toEqual({});
 
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: 'taskA',
       targetId: 'taskB',
     });
 
-    expect(processInstanceMigrationStore.state.itemMapping).toEqual({
+    expect(processInstanceMigrationStore.state.elementMapping).toEqual({
       taskA: 'taskB',
     });
 
-    processInstanceMigrationStore.resetItemMapping();
+    processInstanceMigrationStore.resetElementMapping();
 
-    expect(processInstanceMigrationStore.hasItemMapping).toBe(false);
-    expect(processInstanceMigrationStore.state.itemMapping).toEqual({});
+    expect(processInstanceMigrationStore.hasElementMapping).toBe(false);
+    expect(processInstanceMigrationStore.state.elementMapping).toEqual({});
   });
 
   it('should clear flow node mapping', () => {
     processInstanceMigrationStore.enable();
 
-    expect(processInstanceMigrationStore.state.itemMapping).toEqual({});
+    expect(processInstanceMigrationStore.state.elementMapping).toEqual({});
 
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: 'startEvent',
       targetId: 'endEvent',
     });
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: 'taskA',
       targetId: 'taskB',
     });
 
-    expect(processInstanceMigrationStore.state.itemMapping).toEqual({
+    expect(processInstanceMigrationStore.state.elementMapping).toEqual({
       startEvent: 'endEvent',
       taskA: 'taskB',
     });
 
-    processInstanceMigrationStore.clearItemMapping();
+    processInstanceMigrationStore.clearElementMapping();
 
-    expect(processInstanceMigrationStore.state.itemMapping).toEqual({});
+    expect(processInstanceMigrationStore.state.elementMapping).toEqual({});
   });
 
   it('should request batch process after confirm migration', async () => {
@@ -131,7 +131,7 @@ describe('processInstanceMigration', () => {
 
     processInstanceMigrationStore.enable();
 
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: 'startEvent',
       targetId: 'endEvent',
     });
@@ -166,70 +166,78 @@ describe('processInstanceMigration', () => {
   });
 
   it('should select flow nodes on source flow node selection', () => {
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: SOURCE_TASK_A,
       targetId: TARGET_TASK_A,
     });
 
     processInstanceMigrationStore.selectSourceFlowNode(SOURCE_TASK_A);
 
-    expect(processInstanceMigrationStore.selectedSourceItemIds).toEqual([
+    expect(processInstanceMigrationStore.selectedSourceElementIds).toEqual([
       SOURCE_TASK_A,
     ]);
-    expect(processInstanceMigrationStore.selectedTargetItemId).toBe(
+    expect(processInstanceMigrationStore.selectedTargetElementId).toBe(
       TARGET_TASK_A,
     );
 
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: SOURCE_TASK_B,
       targetId: TARGET_TASK_A,
     });
 
-    expect(processInstanceMigrationStore.selectedSourceItemIds).toEqual([
+    expect(processInstanceMigrationStore.selectedSourceElementIds).toEqual([
       SOURCE_TASK_A,
       SOURCE_TASK_B,
     ]);
-    expect(processInstanceMigrationStore.selectedTargetItemId).toBe(
+    expect(processInstanceMigrationStore.selectedTargetElementId).toBe(
       TARGET_TASK_A,
     );
 
     processInstanceMigrationStore.selectSourceFlowNode();
 
-    expect(processInstanceMigrationStore.selectedSourceItemIds).toBeUndefined();
-    expect(processInstanceMigrationStore.selectedTargetItemId).toBeUndefined();
+    expect(
+      processInstanceMigrationStore.selectedSourceElementIds,
+    ).toBeUndefined();
+    expect(
+      processInstanceMigrationStore.selectedTargetElementId,
+    ).toBeUndefined();
   });
 
   it('should select flow nodes on target flow node selection', () => {
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: SOURCE_TASK_A,
       targetId: TARGET_TASK_A,
     });
 
-    processInstanceMigrationStore.selectTargetItem(TARGET_TASK_A);
+    processInstanceMigrationStore.selectTargetElement(TARGET_TASK_A);
 
-    expect(processInstanceMigrationStore.selectedSourceItemIds).toEqual([
+    expect(processInstanceMigrationStore.selectedSourceElementIds).toEqual([
       SOURCE_TASK_A,
     ]);
-    expect(processInstanceMigrationStore.selectedTargetItemId).toBe(
+    expect(processInstanceMigrationStore.selectedTargetElementId).toBe(
       TARGET_TASK_A,
     );
 
-    processInstanceMigrationStore.updateItemMapping({
+    processInstanceMigrationStore.updateElementMapping({
       sourceId: SOURCE_TASK_B,
       targetId: TARGET_TASK_A,
     });
 
-    expect(processInstanceMigrationStore.selectedSourceItemIds).toEqual([
+    expect(processInstanceMigrationStore.selectedSourceElementIds).toEqual([
       SOURCE_TASK_A,
       SOURCE_TASK_B,
     ]);
-    expect(processInstanceMigrationStore.selectedTargetItemId).toBe(
+    expect(processInstanceMigrationStore.selectedTargetElementId).toBe(
       TARGET_TASK_A,
     );
 
-    processInstanceMigrationStore.selectTargetItem();
+    processInstanceMigrationStore.selectTargetElement();
 
-    expect(processInstanceMigrationStore.selectedSourceItemIds).toBeUndefined();
-    expect(processInstanceMigrationStore.selectedTargetItemId).toBeUndefined();
+    expect(
+      processInstanceMigrationStore.selectedSourceElementIds,
+    ).toBeUndefined();
+    expect(
+      processInstanceMigrationStore.selectedTargetElementId,
+    ).toBeUndefined();
   });
 });

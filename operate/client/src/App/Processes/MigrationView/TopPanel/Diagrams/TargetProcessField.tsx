@@ -36,7 +36,7 @@ const TargetProcessField: React.FC = observer(() => {
           };
         })}
         onChange={({selectedItem}) => {
-          processInstanceMigrationStore.resetItemMapping();
+          processInstanceMigrationStore.resetElementMapping();
 
           if (isNil(selectedItem)) {
             processInstanceMigrationStore.setTargetProcessDefinitionKey(null);

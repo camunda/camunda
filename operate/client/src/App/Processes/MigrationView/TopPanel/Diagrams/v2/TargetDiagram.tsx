@@ -78,7 +78,7 @@ const TargetDiagram: React.FC = observer(() => {
 
   const getFlowNodeCountByTargetId = () => {
     return Object.entries(
-      processInstanceMigrationStore.state.itemMapping,
+      processInstanceMigrationStore.state.elementMapping,
     ).reduce<{
       [targetElementId: string]: number;
     }>((mappingByTarget, [sourceElementId, targetElementId]) => {
@@ -127,11 +127,13 @@ const TargetDiagram: React.FC = observer(() => {
               ...data.selectableSequenceFlows,
             ].map((flowNode) => flowNode.id)}
             selectedFlowNodeIds={
-              processInstanceMigrationStore.selectedTargetItemId
-                ? [processInstanceMigrationStore.selectedTargetItemId]
+              processInstanceMigrationStore.selectedTargetElementId
+                ? [processInstanceMigrationStore.selectedTargetElementId]
                 : undefined
             }
-            onFlowNodeSelection={processInstanceMigrationStore.selectTargetItem}
+            onFlowNodeSelection={
+              processInstanceMigrationStore.selectTargetElement
+            }
             overlaysData={
               isSummaryStep
                 ? Object.entries(getFlowNodeCountByTargetId()).map(

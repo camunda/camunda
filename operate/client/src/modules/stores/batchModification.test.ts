@@ -18,22 +18,22 @@ describe('batchModificationStore', () => {
   });
 
   it('should select target flow node', () => {
-    expect(batchModificationStore.state.selectedTargetItemId).toBeNull();
+    expect(batchModificationStore.state.selectedTargetElementId).toBeNull();
 
     batchModificationStore.enable();
-    expect(batchModificationStore.state.selectedTargetItemId).toBeNull();
+    expect(batchModificationStore.state.selectedTargetElementId).toBeNull();
 
-    batchModificationStore.selectTargetItem('123');
-    expect(batchModificationStore.state.selectedTargetItemId).toBe('123');
+    batchModificationStore.selectTargetElement('123');
+    expect(batchModificationStore.state.selectedTargetElementId).toBe('123');
 
-    batchModificationStore.selectTargetItem('456');
-    expect(batchModificationStore.state.selectedTargetItemId).toBe('456');
+    batchModificationStore.selectTargetElement('456');
+    expect(batchModificationStore.state.selectedTargetElementId).toBe('456');
 
-    batchModificationStore.selectTargetItem(null);
-    expect(batchModificationStore.state.selectedTargetItemId).toBeNull();
+    batchModificationStore.selectTargetElement(null);
+    expect(batchModificationStore.state.selectedTargetElementId).toBeNull();
 
-    batchModificationStore.selectTargetItem('123');
+    batchModificationStore.selectTargetElement('123');
     batchModificationStore.reset();
-    expect(batchModificationStore.state.selectedTargetItemId).toBeNull();
+    expect(batchModificationStore.state.selectedTargetElementId).toBeNull();
   });
 });

@@ -45,7 +45,7 @@ const Wrapper = ({children}: Props) => {
         </button>
         <button
           onClick={() => {
-            processInstanceMigrationStore.updateItemMapping({
+            processInstanceMigrationStore.updateElementMapping({
               sourceId: 'ServiceTask_0kt6c5i',
               targetId: 'ServiceTask_0kt6c5i',
             });

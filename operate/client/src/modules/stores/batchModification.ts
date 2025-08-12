@@ -10,12 +10,12 @@ import {makeAutoObservable} from 'mobx';
 
 type State = {
   isEnabled: boolean;
-  selectedTargetItemId: string | null;
+  selectedTargetElementId: string | null;
 };
 
 const DEFAULT_STATE: State = {
   isEnabled: false,
-  selectedTargetItemId: null,
+  selectedTargetElementId: null,
 };
 
 class BatchModification {
@@ -29,8 +29,8 @@ class BatchModification {
     this.state.isEnabled = true;
   };
 
-  selectTargetItem = (itemId: State['selectedTargetItemId']) => {
-    this.state.selectedTargetItemId = itemId;
+  selectTargetElement = (itemId: State['selectedTargetElementId']) => {
+    this.state.selectedTargetElementId = itemId;
   };
 
   reset = () => {

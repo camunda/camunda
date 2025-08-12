@@ -247,7 +247,7 @@ describe('MigrationView/BottomPanel', () => {
       const {user} = render(<BottomPanel />, {wrapper: Wrapper});
 
       const combobox = await screen.findByRole('combobox', {
-        name: new RegExp(`target item for ${source.name}`, 'i'),
+        name: new RegExp(`target element for ${source.name}`, 'i'),
       });
 
       await user.selectOptions(combobox, target.name);
@@ -298,7 +298,7 @@ describe('MigrationView/BottomPanel', () => {
       render(<BottomPanel />, {wrapper: Wrapper});
 
       const combobox = await screen.findByRole('combobox', {
-        name: new RegExp(`target item for ${source.name}`, 'i'),
+        name: new RegExp(`target element for ${source.name}`, 'i'),
       });
 
       expect(
@@ -323,94 +323,94 @@ describe('MigrationView/BottomPanel', () => {
     render(<BottomPanel />, {wrapper: Wrapper});
 
     const comboboxCheckPayment = await screen.findByLabelText(
-      new RegExp(`target item for ${checkPayment.name}`, 'i'),
+      new RegExp(`target element for ${checkPayment.name}`, 'i'),
     );
     const comboboxShippingSubProcess = await screen.findByLabelText(
-      new RegExp(`target item for ${shippingSubProcess.name}`, 'i'),
+      new RegExp(`target element for ${shippingSubProcess.name}`, 'i'),
     );
     const comboboxShipArticles = await screen.findByLabelText(
-      new RegExp(`target item for ${shipArticles.name}`, 'i'),
+      new RegExp(`target element for ${shipArticles.name}`, 'i'),
     );
     const comboboxRequestForPayment = await screen.findByLabelText(
-      new RegExp(`target item for ${requestForPayment.name}`, 'i'),
+      new RegExp(`target element for ${requestForPayment.name}`, 'i'),
     );
     const comboboxMessageInterrupting = await screen.findByLabelText(
-      new RegExp(`target item for ${MessageInterrupting.name}`, 'i'),
+      new RegExp(`target element for ${MessageInterrupting.name}`, 'i'),
     );
     const comboboxTimerInterrupting = await screen.findByLabelText(
-      new RegExp(`target item for ${TimerInterrupting.name}`, 'i'),
+      new RegExp(`target element for ${TimerInterrupting.name}`, 'i'),
     );
     const comboboxMessageNonInterrupting = await screen.findByLabelText(
-      new RegExp(`target item for ${MessageNonInterrupting.name}`, 'i'),
+      new RegExp(`target element for ${MessageNonInterrupting.name}`, 'i'),
     );
     const comboboxTimerNonInterrupting = await screen.findByLabelText(
-      new RegExp(`target item for ${TimerNonInterrupting.name}`, 'i'),
+      new RegExp(`target element for ${TimerNonInterrupting.name}`, 'i'),
     );
     const comboboxTimerIntermediateCatch = await screen.findByLabelText(
-      new RegExp(`target item for ${TimerIntermediateCatch.name}`, 'i'),
+      new RegExp(`target element for ${TimerIntermediateCatch.name}`, 'i'),
     );
     const comboboxMessageIntermediateCatch = await screen.findByLabelText(
-      new RegExp(`target item for ${MessageIntermediateCatch.name}`, 'i'),
+      new RegExp(`target element for ${MessageIntermediateCatch.name}`, 'i'),
     );
     const comboboxMessageEventSubProcess = await screen.findByLabelText(
-      new RegExp(`target item for ${MessageEventSubProcess.name}`, 'i'),
+      new RegExp(`target element for ${MessageEventSubProcess.name}`, 'i'),
     );
     const comboboxTimerEventSubProcess = await screen.findByLabelText(
-      new RegExp(`target item for ${TimerEventSubProcess.name}`, 'i'),
+      new RegExp(`target element for ${TimerEventSubProcess.name}`, 'i'),
     );
     const comboboxTimerStartEvent = await screen.findByLabelText(
-      new RegExp(`target item for ${TimerStartEvent.name}`, 'i'),
+      new RegExp(`target element for ${TimerStartEvent.name}`, 'i'),
     );
     const comboboxTaskX = await screen.findByLabelText(
-      new RegExp(`target item for ${TaskX.name}`, 'i'),
+      new RegExp(`target element for ${TaskX.name}`, 'i'),
     );
     const comboboxTaskY = await screen.findByLabelText(
-      new RegExp(`target item for ${TaskY.name}`, 'i'),
+      new RegExp(`target element for ${TaskY.name}`, 'i'),
     );
     const comboboxMessageReceiveTask = await screen.findByLabelText(
-      new RegExp(`target item for ${MessageReceiveTask.name}`, 'i'),
+      new RegExp(`target element for ${MessageReceiveTask.name}`, 'i'),
     );
     const comboboxBusinessRuleTask = await screen.findByLabelText(
-      new RegExp(`target item for ${BusinessRuleTask.name}`, 'i'),
+      new RegExp(`target element for ${BusinessRuleTask.name}`, 'i'),
     );
     const comboboxScriptTaskTask = await screen.findByLabelText(
-      new RegExp(`target item for ${ScriptTask.name}`, 'i'),
+      new RegExp(`target element for ${ScriptTask.name}`, 'i'),
     );
     const comboboxSendTask = await screen.findByLabelText(
-      new RegExp(`target item for ${SendTask.name}`, 'i'),
+      new RegExp(`target element for ${SendTask.name}`, 'i'),
     );
     const comboboxSignalIntermediateCatch = await screen.findByLabelText(
-      new RegExp(`target item for ${SignalIntermediateCatch.name}`, 'i'),
+      new RegExp(`target element for ${SignalIntermediateCatch.name}`, 'i'),
     );
     const comboboxSignalBoundaryEvent = await screen.findByLabelText(
-      new RegExp(`target item for ${SignalBoundaryEvent.name}`, 'i'),
+      new RegExp(`target element for ${SignalBoundaryEvent.name}`, 'i'),
     );
     const comboboxSignalEventSubProcess = await screen.findByLabelText(
-      new RegExp(`target item for ${SignalEventSubProcess.name}`, 'i'),
+      new RegExp(`target element for ${SignalEventSubProcess.name}`, 'i'),
     );
     const comboboxSignalStartEvent = await screen.findByLabelText(
-      new RegExp(`target item for ${SignalStartEvent.name}`, 'i'),
+      new RegExp(`target element for ${SignalStartEvent.name}`, 'i'),
     );
     const comboboxErrorEventSubProcess = await screen.findByLabelText(
-      new RegExp(`target item for ${ErrorEventSubProcess.name}`, 'i'),
+      new RegExp(`target element for ${ErrorEventSubProcess.name}`, 'i'),
     );
     const comboboxErrorStartEvent = await screen.findByLabelText(
-      new RegExp(`target item for ${ErrorStartEvent.name}`, 'i'),
+      new RegExp(`target element for ${ErrorStartEvent.name}`, 'i'),
     );
     const comboboxMultiInstanceSubProcess = await screen.findByLabelText(
-      new RegExp(`target item for ${MultiInstanceSubProcess.name}`, 'i'),
+      new RegExp(`target element for ${MultiInstanceSubProcess.name}`, 'i'),
     );
     const comboboxEscalationEventSubProcess = await screen.findByLabelText(
-      new RegExp(`target item for ${EscalationEventSubProcess.name}`, 'i'),
+      new RegExp(`target element for ${EscalationEventSubProcess.name}`, 'i'),
     );
     const comboboxEscalationStartEvent = await screen.findByLabelText(
-      new RegExp(`target item for ${EscalationStartEvent.name}`, 'i'),
+      new RegExp(`target element for ${EscalationStartEvent.name}`, 'i'),
     );
     const comboboxCompensationBoundaryEvent = await screen.findByLabelText(
-      new RegExp(`target item for ${CompensationBoundaryEvent.name}`, 'i'),
+      new RegExp(`target element for ${CompensationBoundaryEvent.name}`, 'i'),
     );
     const comboboxMessageStartEvent = await screen.findByLabelText(
-      new RegExp(`target item for ${MessageStartEvent.name}`, 'i'),
+      new RegExp(`target element for ${MessageStartEvent.name}`, 'i'),
     );
 
     await waitFor(() => {
@@ -501,23 +501,23 @@ describe('MigrationView/BottomPanel', () => {
     const {user} = render(<BottomPanel />, {wrapper: Wrapper});
 
     const comboboxRequestForPayment = await screen.findByRole('combobox', {
-      name: new RegExp(`target item for ${requestForPayment.name}`, 'i'),
+      name: new RegExp(`target element for ${requestForPayment.name}`, 'i'),
     });
 
     const rowCheckPayment = screen.getByRole('row', {
-      name: new RegExp(`${checkPayment.name} target item`, 'i'),
+      name: new RegExp(`${checkPayment.name} target element`, 'i'),
     });
     const rowShippingSubProcess = screen.getByRole('row', {
       name: new RegExp(`${shippingSubProcess.name} not mapped`, 'i'),
     });
     const rowShipArticles = screen.getByRole('row', {
-      name: new RegExp(`${shipArticles.name} target item`, 'i'),
+      name: new RegExp(`${shipArticles.name} target element`, 'i'),
     });
     const rowRequestForPayment = screen.getByRole('row', {
       name: new RegExp(`${requestForPayment.name} not mapped`, 'i'),
     });
     const rowMessageInterrupting = screen.getByRole('row', {
-      name: new RegExp(`${MessageInterrupting.name} target item`, 'i'),
+      name: new RegExp(`${MessageInterrupting.name} target element`, 'i'),
     });
     const rowTimerInterrupting = screen.getByRole('row', {
       name: new RegExp(`${TimerInterrupting.name} not mapped`, 'i'),
@@ -526,52 +526,52 @@ describe('MigrationView/BottomPanel', () => {
       name: new RegExp(`${MessageNonInterrupting.name} not mapped`, 'i'),
     });
     const rowTimerNonInterrupting = screen.getByRole('row', {
-      name: new RegExp(`${TimerNonInterrupting.name} target item`, 'i'),
+      name: new RegExp(`${TimerNonInterrupting.name} target element`, 'i'),
     });
     const rowTaskY = screen.getByRole('row', {
       name: new RegExp(`${TaskY.name} not mapped`, 'i'),
     });
     const rowMessageEventSubProcess = screen.getByRole('row', {
-      name: new RegExp(`${MessageEventSubProcess.name} target item`, 'i'),
+      name: new RegExp(`${MessageEventSubProcess.name} target element`, 'i'),
     });
     const rowTimerEventSubProcess = screen.getByRole('row', {
-      name: new RegExp(`${TimerEventSubProcess.name} target item`, 'i'),
+      name: new RegExp(`${TimerEventSubProcess.name} target element`, 'i'),
     });
     const rowTimerStartEvent = screen.getByRole('row', {
-      name: new RegExp(`${TimerStartEvent.name} target item`, 'i'),
+      name: new RegExp(`${TimerStartEvent.name} target element`, 'i'),
     });
     const rowTaskX = screen.getByRole('row', {
-      name: new RegExp(`${TaskX.name} target item`, 'i'),
+      name: new RegExp(`${TaskX.name} target element`, 'i'),
     });
     const rowMessageReceiveTask = screen.getByRole('row', {
-      name: new RegExp(`${MessageReceiveTask.name} target item`, 'i'),
+      name: new RegExp(`${MessageReceiveTask.name} target element`, 'i'),
     });
     const rowBusinessRuleTask = screen.getByRole('row', {
-      name: new RegExp(`${BusinessRuleTask.name} target item`, 'i'),
+      name: new RegExp(`${BusinessRuleTask.name} target element`, 'i'),
     });
     const rowScriptTask = screen.getByRole('row', {
-      name: new RegExp(`${ScriptTask.name} target item`, 'i'),
+      name: new RegExp(`${ScriptTask.name} target element`, 'i'),
     });
     const rowSendTask = screen.getByRole('row', {
-      name: new RegExp(`${SendTask.name} target item`, 'i'),
+      name: new RegExp(`${SendTask.name} target element`, 'i'),
     });
     const rowSignalIntermediateCatch = screen.getByRole('row', {
-      name: new RegExp(`${SignalIntermediateCatch.name} target item`, 'i'),
+      name: new RegExp(`${SignalIntermediateCatch.name} target element`, 'i'),
     });
     const rowSignalBoundaryEvent = screen.getByRole('row', {
-      name: new RegExp(`${SignalBoundaryEvent.name} target item`, 'i'),
+      name: new RegExp(`${SignalBoundaryEvent.name} target element`, 'i'),
     });
     const rowSignalEventSubProcess = screen.getByRole('row', {
-      name: new RegExp(`${SignalEventSubProcess.name} target item`, 'i'),
+      name: new RegExp(`${SignalEventSubProcess.name} target element`, 'i'),
     });
     const rowSignalStartEvent = screen.getByRole('row', {
-      name: new RegExp(`${SignalStartEvent.name} target item`, 'i'),
+      name: new RegExp(`${SignalStartEvent.name} target element`, 'i'),
     });
     const rowErrorEventSubProcess = screen.getByRole('row', {
-      name: new RegExp(`${ErrorEventSubProcess.name} target item`, 'i'),
+      name: new RegExp(`${ErrorEventSubProcess.name} target element`, 'i'),
     });
     const rowErrorStartEvent = screen.getByRole('row', {
-      name: new RegExp(`${ErrorStartEvent.name} target item`, 'i'),
+      name: new RegExp(`${ErrorStartEvent.name} target element`, 'i'),
     });
 
     await waitFor(() => {
@@ -649,13 +649,13 @@ describe('MigrationView/BottomPanel', () => {
     ).toBeInTheDocument();
     expect(within(rowTaskY).getByText(/not mapped/i)).toBeInTheDocument();
 
-    // expect tag not to be visible after selecting a target item
+    // expect tag not to be visible after selecting a target element
     await user.selectOptions(comboboxRequestForPayment, checkPayment.name);
     expect(
       within(rowRequestForPayment!).queryByText(/not mapped/i),
     ).not.toBeInTheDocument();
 
-    // expect tag not to be visible after selecting a target item
+    // expect tag not to be visible after selecting a target element
     await user.selectOptions(comboboxRequestForPayment, '');
     expect(
       within(rowRequestForPayment!).getByText(/not mapped/i),
@@ -675,7 +675,7 @@ describe('MigrationView/BottomPanel', () => {
     // wait for target combobox to be visible
     expect(
       await screen.findByRole('combobox', {
-        name: new RegExp(`target item for ${requestForPayment.name}`, 'i'),
+        name: new RegExp(`target element for ${requestForPayment.name}`, 'i'),
       }),
     ).toBeVisible();
 

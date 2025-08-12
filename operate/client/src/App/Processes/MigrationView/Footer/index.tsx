@@ -64,9 +64,9 @@ const Footer: React.FC = observer(() => {
           onClick={() =>
             processInstanceMigrationStore.setCurrentStep('summary')
           }
-          disabled={!processInstanceMigrationStore.hasItemMapping}
+          disabled={!processInstanceMigrationStore.hasElementMapping}
           title={
-            !processInstanceMigrationStore.hasItemMapping
+            !processInstanceMigrationStore.hasElementMapping
               ? 'Please map at least one element to continue'
               : undefined
           }

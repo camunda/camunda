@@ -60,7 +60,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
         </button>
         <button
           onClick={() => {
-            processInstanceMigrationStore.updateItemMapping({
+            processInstanceMigrationStore.updateElementMapping({
               sourceId: 'ServiceTask_0kt6c5i',
               targetId: 'ServiceTask_0kt6c5i',
             });
