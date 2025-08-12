@@ -15,7 +15,6 @@ import static io.camunda.webapps.schema.descriptors.template.EventTemplate.EVENT
 import static io.camunda.webapps.schema.descriptors.template.EventTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.template.EventTemplate.FLOW_NODE_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.EventTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.PROCESS_KEY;
 
 public class MessageSubscriptionFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -24,7 +23,6 @@ public class MessageSubscriptionFieldSortingTransformer implements FieldSortingT
     return switch (domainField) {
       case "messageSubscriptionKey" -> KEY;
       case "processDefinitionId" -> BPMN_PROCESS_ID;
-      case "processDefinitionKey" -> PROCESS_KEY;
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;
       case "flowNodeId" -> FLOW_NODE_ID;
       case "flowNodeInstanceKey" -> FLOW_NODE_INSTANCE_KEY;

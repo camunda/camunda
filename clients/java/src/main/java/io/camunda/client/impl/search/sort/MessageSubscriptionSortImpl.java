@@ -32,11 +32,6 @@ public class MessageSubscriptionSortImpl extends SearchRequestSortBase<MessageSu
   }
 
   @Override
-  public MessageSubscriptionSort processDefinitionKey() {
-    return field("processDefinitionKey");
-  }
-
-  @Override
   public MessageSubscriptionSort processInstanceKey() {
     return field("processInstanceKey");
   }
