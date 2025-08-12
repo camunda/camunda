@@ -106,8 +106,8 @@ public class Grpc {
     final Grpc copy = new Grpc();
     copy.address = address;
     copy.port = port;
-    copy.ssl = ssl.clone();
-    copy.interceptors = interceptors.stream().map(Interceptor::clone).toList();
+    copy.ssl = ssl;
+    copy.interceptors = interceptors;
     copy.managementThreads = managementThreads;
 
     return copy;

@@ -23,7 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   GatewayBasedPropertiesOverride.class,
   UnifiedConfigurationHelper.class
 })
-public class ApiRestTest {
+public class ApiRestGatewayFiltersTest {
 
   private FilterCfg createFilterCfg(final String id, final String jarPath, final String className) {
     final var filterCfg = new FilterCfg();
@@ -51,7 +51,7 @@ public class ApiRestTest {
     }
 
     @Test
-    void shouldContainFilters() {
+    void shouldSetFilters() {
       final var expectedFilterCfg0 = createFilterCfg("0IdNew", "0JarPathNew", "0ClassNameNew");
       final var expectedFilterCfg1 = createFilterCfg("1IdNew", "1JarPathNew", "1ClassNameNew");
 
@@ -65,26 +65,49 @@ public class ApiRestTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "zeebe.gateway.filters.0.id=0IdLegacy",
-        "zeebe.gateway.filters.0.jarPath=0JarPathLegacy",
-        "zeebe.gateway.filters.0.className=0ClassNameLegacy",
-        "zeebe.gateway.filters.1.id=1IdLegacy",
-        "zeebe.gateway.filters.1.jarPath=1JarPathLegacy",
-        "zeebe.gateway.filters.1.className=1ClassNameLegacy"
+        "zeebe.broker.gateway.filters.0.id=0IdLegacyBroker",
+        "zeebe.broker.gateway.filters.0.jarPath=0JarPathLegacyBroker",
+        "zeebe.broker.gateway.filters.0.className=0ClassNameLegacyBroker",
+        "zeebe.broker.gateway.filters.1.id=1IdLegacyBroker",
+        "zeebe.broker.gateway.filters.1.jarPath=1JarPathLegacyBroker",
+        "zeebe.broker.gateway.filters.1.className=1ClassNameLegacyBroker"
       })
-  class WithOnlyLegacySet {
+  class WithOnlyLegacyBrokerFiltersSet {
     final GatewayBasedProperties gatewayCfg;
 
-    WithOnlyLegacySet(@Autowired final GatewayBasedProperties gatewayCfg) {
+    WithOnlyLegacyBrokerFiltersSet(@Autowired final GatewayBasedProperties gatewayCfg) {
       this.gatewayCfg = gatewayCfg;
     }
 
     @Test
-    void shouldContainFilters() {
+    void shouldNotSetFiltersFromLegacyBrokerFilters() {
+      assertThat(gatewayCfg.getInterceptors()).isEmpty();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "zeebe.gateway.filters.0.id=0IdLegacyGateway",
+        "zeebe.gateway.filters.0.jarPath=0JarPathLegacyGateway",
+        "zeebe.gateway.filters.0.className=0ClassNameLegacyGateway",
+        "zeebe.gateway.filters.1.id=1IdLegacyGateway",
+        "zeebe.gateway.filters.1.jarPath=1JarPathLegacyGateway",
+        "zeebe.gateway.filters.1.className=1ClassNameLegacyGateway"
+      })
+  class WithOnlyLegacyGatewayFiltersSet {
+    final GatewayBasedProperties gatewayCfg;
+
+    WithOnlyLegacyGatewayFiltersSet(@Autowired final GatewayBasedProperties gatewayCfg) {
+      this.gatewayCfg = gatewayCfg;
+    }
+
+    @Test
+    void shouldSetFiltersFromLegacyGatewayFilters() {
       final var expectedFilterCfg0 =
-          createFilterCfg("0IdLegacy", "0JarPathLegacy", "0ClassNameLegacy");
+          createFilterCfg("0IdLegacyGateway", "0JarPathLegacyGateway", "0ClassNameLegacyGateway");
       final var expectedFilterCfg1 =
-          createFilterCfg("1IdLegacy", "1JarPathLegacy", "1ClassNameLegacy");
+          createFilterCfg("1IdLegacyGateway", "1JarPathLegacyGateway", "1ClassNameLegacyGateway");
 
       assertThat(gatewayCfg.getFilters())
           .hasSize(2)
@@ -103,13 +126,20 @@ public class ApiRestTest {
         "camunda.api.rest.filters.1.id=1IdNew",
         "camunda.api.rest.filters.1.jar-path=1JarPathNew",
         "camunda.api.rest.filters.1.class-name=1ClassNameNew",
-        // legacy
-        "zeebe.gateway.filters.0.id=0IdLegacy",
-        "zeebe.gateway.filters.0.jarPath=0JarPathLegacy",
-        "zeebe.gateway.filters.0.className=0ClassNameLegacy",
-        "zeebe.gateway.filters.1.id=1IdLegacy",
-        "zeebe.gateway.filters.1.jarPath=1JarPathLegacy",
-        "zeebe.gateway.filters.1.className=1ClassNameLegacy"
+        // legacy broker filters
+        "zeebe.broker.gateway.filters.0.id=0IdLegacyBroker",
+        "zeebe.broker.gateway.filters.0.jarPath=0JarPathLegacyBroker",
+        "zeebe.broker.gateway.filters.0.className=0ClassNameLegacyBroker",
+        "zeebe.broker.gateway.filters.1.id=1IdLegacyBroker",
+        "zeebe.broker.gateway.filters.1.jarPath=1JarPathLegacyBroker",
+        "zeebe.broker.gateway.filters.1.className=1ClassNameLegacyBroker",
+        // legacy gateway filters
+        "zeebe.gateway.filters.0.id=0IdLegacyGateway",
+        "zeebe.gateway.filters.0.jarPath=0JarPathLegacyGateway",
+        "zeebe.gateway.filters.0.className=0ClassNameLegacyGateway",
+        "zeebe.gateway.filters.1.id=1IdLegacyGateway",
+        "zeebe.gateway.filters.1.jarPath=1JarPathLegacyGateway",
+        "zeebe.gateway.filters.1.className=1ClassNameLegacyGateway"
       })
   class WithNewAndLegacySet {
     final GatewayBasedProperties gatewayCfg;
@@ -119,7 +149,7 @@ public class ApiRestTest {
     }
 
     @Test
-    void shouldContainFiltersFromNew() {
+    void shouldSetFiltersFromNew() {
       final var expectedFilterCfg0 = createFilterCfg("0IdNew", "0JarPathNew", "0ClassNameNew");
       final var expectedFilterCfg1 = createFilterCfg("1IdNew", "1JarPathNew", "1ClassNameNew");
 

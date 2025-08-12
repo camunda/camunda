@@ -18,14 +18,4 @@ public class Interceptor extends BaseExternalCodeConfiguration {
     interceptorCfg.setClassName(getClassName());
     return interceptorCfg;
   }
-
-  @Override
-  public Interceptor clone() {
-    final Interceptor copy = new Interceptor();
-    copy.setId(getId());
-    copy.setJarPath(getJarPath());
-    copy.setClassName(getClassName());
-
-    return copy;
-  }
 }

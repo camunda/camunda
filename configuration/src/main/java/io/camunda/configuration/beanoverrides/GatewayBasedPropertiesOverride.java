@@ -7,21 +7,18 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Filter;
 import io.camunda.configuration.Grpc;
 import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.Ssl;
-import io.camunda.configuration.Filter;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.configuration.beans.LegacyGatewayBasedProperties;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg;
-import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
