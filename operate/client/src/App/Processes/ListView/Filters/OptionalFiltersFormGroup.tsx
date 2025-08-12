@@ -131,10 +131,11 @@ type LocationType = Omit<Location, 'state'> & {
 type Props = {
   visibleFilters: OptionalFilter[];
   onVisibleFilterChange: React.Dispatch<React.SetStateAction<OptionalFilter[]>>;
+  onOpenAdvanced?: () => void;
 };
 
 const OptionalFiltersFormGroup: React.FC<Props> = observer(
-  ({visibleFilters, onVisibleFilterChange}) => {
+  ({visibleFilters, onVisibleFilterChange, onOpenAdvanced}) => {
     const location = useLocation() as LocationType;
     const form = useForm();
 
@@ -174,6 +175,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
             id,
             label: OPTIONAL_FILTER_FIELDS[id].label,
           }))}
+          onOpenAdvanced={onOpenAdvanced}
           onFilterSelect={(filter) => {
             onVisibleFilterChange(
               Array.from(new Set([...visibleFilters, ...[filter]])),

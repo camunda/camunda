@@ -8,7 +8,7 @@
 
 import {useState} from 'react';
 import {observer} from 'mobx-react';
-import {Stack} from '@carbon/react';
+import {Button, ComposedModal, ModalBody, ModalFooter, ModalHeader, Stack} from '@carbon/react';
 import {Error} from '@carbon/react/icons';
 import {Form} from 'react-final-form';
 import isEqual from 'lodash/isEqual';
@@ -35,6 +35,7 @@ import {
   OptionalFiltersFormGroup,
 } from './OptionalFiltersFormGroup';
 import {TenantField} from 'modules/components/TenantField';
+import {C3AdvancedSearchFilters} from 'modules/components/C3AdvancedSearchFilters';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 
@@ -46,10 +47,12 @@ const initialValues: ProcessInstanceFilters = {
 const Filters: React.FC = observer(() => {
   const filters = useFilters();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const filtersFromUrl = filters.getFilters();
   const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
 
   return (
+    <>
     <Form<ProcessInstanceFilters>
       onSubmit={(values) => {
         filters.setFilters({
@@ -165,13 +168,40 @@ const Filters: React.FC = observer(() => {
                 <OptionalFiltersFormGroup
                   visibleFilters={visibleFilters}
                   onVisibleFilterChange={setVisibleFilters}
+           onOpenAdvanced={() => setIsAdvancedFiltersOpen(true)}
                 />
               </Stack>
             </Container>
           </FiltersPanel>
         </StyledForm>
       )}
-    </Form>
+  </Form>
+  <ComposedModal
+      open={isAdvancedFiltersOpen}
+      onClose={() => setIsAdvancedFiltersOpen(false)}
+      size="lg"
+      preventCloseOnClickOutside
+    >
+      <ModalHeader label="Filters" title="Advanced Filters" closeModal={() => setIsAdvancedFiltersOpen(false)} />
+      <ModalBody hasForm>
+        <C3AdvancedSearchFilters
+          onApply={() => {
+            // Hook up real apply behavior when the concrete component is integrated
+            setIsAdvancedFiltersOpen(false);
+          }}
+          onReset={() => {
+            // Hook up real reset behavior when the concrete component is integrated
+          }}
+        />
+      </ModalBody>
+      <ModalFooter
+        primaryButtonText="Apply"
+        secondaryButtonText="Cancel"
+        onRequestClose={() => setIsAdvancedFiltersOpen(false)}
+        onRequestSubmit={() => setIsAdvancedFiltersOpen(false)}
+      />
+  </ComposedModal>
+  </>
   );
 });
 
