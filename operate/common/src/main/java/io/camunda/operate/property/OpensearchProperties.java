@@ -38,6 +38,7 @@ public class OpensearchProperties {
   private Integer connectTimeout;
 
   private boolean createSchema = true;
+  private boolean updateSchemaSettings = true;
 
   /** Indicates whether operate does a proper health check for ES/OS clusters. */
   private boolean healthCheckEnabled = true;
@@ -123,6 +124,14 @@ public class OpensearchProperties {
 
   public void setCreateSchema(final boolean createSchema) {
     this.createSchema = createSchema;
+  }
+
+  public boolean isUpdateSchemaSettings() {
+    return updateSchemaSettings;
+  }
+
+  public void setUpdateSchemaSettings(final boolean updateSchemaSettings) {
+    this.updateSchemaSettings = updateSchemaSettings;
   }
 
   public boolean isHealthCheckEnabled() {

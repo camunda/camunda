@@ -21,6 +21,7 @@ import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
+import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.OpenSearchTestExtension;
@@ -43,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
@@ -60,6 +62,7 @@ import org.springframework.test.context.DynamicPropertySource;
       "camunda.webapps.default-app = tasklist",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchSchemaManagementIT.class);
@@ -238,7 +241,7 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
     // Verify initial component template replica settings
     final String componentTemplateName = schemaManager.getComponentTemplateName();
     final var initialSettings =
-        retryOpenSearchClient.getComponentTemplateSettings(componentTemplateName);
+        retryOpenSearchClient.getComponentTemplateIndexSettings(componentTemplateName);
     assertThat(initialSettings.numberOfReplicas())
         .isEqualTo(String.valueOf(initialNumberOfReplicas));
 
@@ -248,7 +251,7 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
     // Verify updated component template replica settings
     final var updatedSettings =
-        retryOpenSearchClient.getComponentTemplateSettings(componentTemplateName);
+        retryOpenSearchClient.getComponentTemplateIndexSettings(componentTemplateName);
     assertThat(updatedSettings.numberOfReplicas())
         .isEqualTo(String.valueOf(modifiedNumberOfReplicas));
   }
@@ -264,7 +267,7 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
     // Verify initial component template shard settings
     final String componentTemplateName = schemaManager.getComponentTemplateName();
     final var initialSettings =
-        retryOpenSearchClient.getComponentTemplateSettings(componentTemplateName);
+        retryOpenSearchClient.getComponentTemplateIndexSettings(componentTemplateName);
     assertThat(initialSettings.numberOfShards()).isEqualTo(String.valueOf(initialNumberOfShards));
 
     tasklistProperties.getOpenSearch().setNumberOfShards(modifiedNumberOfShards);
@@ -273,7 +276,7 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
     // Verify updated component template shard settings
     final var updatedSettings =
-        retryOpenSearchClient.getComponentTemplateSettings(componentTemplateName);
+        retryOpenSearchClient.getComponentTemplateIndexSettings(componentTemplateName);
     assertThat(updatedSettings.numberOfShards()).isEqualTo(String.valueOf(modifiedNumberOfShards));
   }
 
@@ -318,6 +321,104 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
     // Verify all task indices (created from template) have updated replica settings
     validateTaskIndicesReplicaSettings(taskTemplate.getAlias(), modifiedNumberOfReplicas);
+  }
+
+  @Test
+  public void shouldSetShardsAndReplicasInIndexTemplateFromPerIndexConfiguration() {
+    final int numberOfReplicas = 2;
+    final int numberOfShards = 3;
+
+    tasklistProperties
+        .getOpenSearch()
+        .setNumberOfReplicasPerIndex(Map.of(TaskTemplate.INDEX_NAME, numberOfReplicas));
+    tasklistProperties
+        .getOpenSearch()
+        .setNumberOfShardsPerIndex(Map.of(TaskTemplate.INDEX_NAME, numberOfShards));
+
+    schemaManager.createSchema();
+
+    // Find the TaskTemplate from the template descriptors
+    final TemplateDescriptor taskTemplate =
+        templateDescriptors.stream()
+            .filter(template -> TaskTemplate.INDEX_NAME.equals(template.getIndexName()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("TaskTemplate not found"));
+
+    // Verify that the index template has the correct shard and replica settings
+    final var indexTemplate =
+        retryOpenSearchClient.getIndexTemplate(taskTemplate.getTemplateName());
+    final var templateSettings = indexTemplate.template().settings();
+
+    assertThat(templateSettings.get("index").toJson().asJsonObject().getString("number_of_shards"))
+        .as("Task template should have %d shards", numberOfShards)
+        .isEqualTo(String.valueOf(numberOfShards));
+
+    assertThat(
+            templateSettings.get("index").toJson().asJsonObject().getString("number_of_replicas"))
+        .as("Task template should have %d replicas", numberOfReplicas)
+        .isEqualTo(String.valueOf(numberOfReplicas));
+  }
+
+  @Test
+  public void shouldUpdateShardsAndReplicasInIndexTemplateFromPerIndexConfiguration() {
+    schemaManager.createSchema();
+
+    // Find the TaskTemplate from the template descriptors
+    final TemplateDescriptor taskTemplate =
+        templateDescriptors.stream()
+            .filter(template -> TaskTemplate.INDEX_NAME.equals(template.getIndexName()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("TaskTemplate not found"));
+
+    // Verify initial template settings before update
+    final var initialIndexTemplate =
+        retryOpenSearchClient.getIndexTemplate(taskTemplate.getTemplateName());
+    final var initialTemplateSettings = initialIndexTemplate.template().settings();
+
+    // Assert initial settings are using default values (1 shard, 0 replicas by default)
+    assertThat(
+            initialTemplateSettings
+                .get("index")
+                .toJson()
+                .asJsonObject()
+                .getString("number_of_shards"))
+        .as("Task template should initially have default number of shards")
+        .isEqualTo("1");
+
+    assertThat(
+            initialTemplateSettings
+                .get("index")
+                .toJson()
+                .asJsonObject()
+                .getString("number_of_replicas"))
+        .as("Task template should initially have default number of replicas")
+        .isEqualTo("0");
+
+    final int updatedNumberOfReplicas = 2;
+    final int updateNumberOfShards = 3;
+
+    tasklistProperties
+        .getOpenSearch()
+        .setNumberOfReplicasPerIndex(Map.of(TaskTemplate.INDEX_NAME, updatedNumberOfReplicas));
+    tasklistProperties
+        .getOpenSearch()
+        .setNumberOfShardsPerIndex(Map.of(TaskTemplate.INDEX_NAME, updateNumberOfShards));
+
+    schemaManager.updateIndexSettings();
+
+    // Verify that the index template has been updated with the correct shard and replica settings
+    final var indexTemplate =
+        retryOpenSearchClient.getIndexTemplate(taskTemplate.getTemplateName());
+    final var templateSettings = indexTemplate.template().settings();
+
+    assertThat(templateSettings.get("index").toJson().asJsonObject().getString("number_of_shards"))
+        .as("Task template should have updated shards to %d", updateNumberOfShards)
+        .isEqualTo(String.valueOf(updateNumberOfShards));
+
+    assertThat(
+            templateSettings.get("index").toJson().asJsonObject().getString("number_of_replicas"))
+        .as("Task template should have updated replicas to %d", updatedNumberOfReplicas)
+        .isEqualTo(String.valueOf(updatedNumberOfReplicas));
   }
 
   private TaskEntity createSampleTaskEntity(final long taskKey) {

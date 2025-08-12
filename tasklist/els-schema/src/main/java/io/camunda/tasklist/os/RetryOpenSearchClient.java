@@ -74,6 +74,7 @@ import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.IndexState;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplate;
 import org.opensearch.client.opensearch.ingest.Processor;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.slf4j.Logger;
@@ -88,7 +89,6 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class RetryOpenSearchClient {
 
-  public static final String REFRESH_INTERVAL = "index.refresh_interval";
   public static final String NO_REFRESH = "-1";
   public static final String DEFAULT_SHARDS = "1";
   public static final String NO_REPLICA = "0";
@@ -609,7 +609,7 @@ public class RetryOpenSearchClient {
         });
   }
 
-  public IndexSettings getComponentTemplateSettings(final String componentTemplateName) {
+  public IndexSettings getComponentTemplateIndexSettings(final String componentTemplateName) {
     return executeWithRetries(
         "GetComponentTemplateSettings " + componentTemplateName,
         () -> {
@@ -617,7 +617,7 @@ public class RetryOpenSearchClient {
               openSearchClient.cluster().getComponentTemplate(ct -> ct.name(componentTemplateName));
           return response
               .componentTemplates()
-              .get(0)
+              .getFirst()
               .componentTemplate()
               .template()
               .settings()
@@ -812,5 +812,17 @@ public class RetryOpenSearchClient {
             throw e;
           }
         });
+  }
+
+  public IndexTemplate getIndexTemplate(final String templateName) {
+    return executeWithRetries(
+        "GetIndexTemplate " + templateName,
+        () ->
+            openSearchClient
+                .indices()
+                .getIndexTemplate(it -> it.name(templateName))
+                .indexTemplates()
+                .getFirst()
+                .indexTemplate());
   }
 }

@@ -7,6 +7,9 @@
  */
 package io.camunda.operate.schema.util.opensearch;
 
+import static io.camunda.operate.schema.SchemaManager.NUMBERS_OF_REPLICA;
+import static io.camunda.operate.schema.SchemaManager.NUMBER_OF_SHARDS;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -129,6 +132,36 @@ public class OpenSearchSchemaTestHelper implements SchemaTestHelper {
     } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
+  }
+
+  @Override
+  public Map<String, String> getComponentTemplateSettings(final String componentTemplateName) {
+    final var settings =
+        openSearchClient.template().getComponentTemplateIndexSettings(componentTemplateName);
+    return Map.of(
+        NUMBER_OF_SHARDS,
+        settings.numberOfShards(),
+        NUMBERS_OF_REPLICA,
+        settings.numberOfReplicas());
+  }
+
+  @Override
+  public Map<String, String> getIndexTemplateSettings(final String indexTemplateName) {
+    final var indexSettings =
+        openSearchClient
+            .template()
+            .getIndexTemplate(indexTemplateName)
+            .template()
+            .settings()
+            .get("index")
+            .toJson()
+            .asJsonObject();
+
+    return Map.of(
+        NUMBER_OF_SHARDS,
+        indexSettings.getString("number_of_shards"),
+        NUMBERS_OF_REPLICA,
+        indexSettings.getString("number_of_replicas"));
   }
 
   protected IndexMappingProperty mapProperty(final Entry<String, Property> property)

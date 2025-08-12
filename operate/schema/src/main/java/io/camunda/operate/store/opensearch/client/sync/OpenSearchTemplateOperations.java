@@ -14,11 +14,14 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cluster.ComponentTemplate;
 import org.opensearch.client.opensearch.cluster.ComponentTemplateNode;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
+import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplate;
 import org.slf4j.Logger;
 
 public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
-  public OpenSearchTemplateOperations(Logger logger, OpenSearchClient openSearchClient) {
+  public OpenSearchTemplateOperations(
+      final Logger logger, final OpenSearchClient openSearchClient) {
     super(logger, openSearchClient);
   }
 
@@ -26,7 +29,8 @@ public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
     return openSearchClient.indices().existsIndexTemplate(it -> it.name(templatePattern)).value();
   }
 
-  public boolean createTemplateWithRetries(PutIndexTemplateRequest request, boolean overwrite) {
+  public boolean createTemplateWithRetries(
+      final PutIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
@@ -51,14 +55,19 @@ public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
         });
   }
 
-  public boolean createComponentTemplateWithRetries(final PutComponentTemplateRequest request) {
+  public boolean createComponentTemplateWithRetries(
+      final PutComponentTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateComponentTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())) {
+          if (overwrite
+              || !openSearchClient
+                  .cluster()
+                  .existsComponentTemplate(r -> r.name(request.name()))
+                  .value()) {
             return openSearchClient.cluster().putComponentTemplate(request).acknowledged();
           }
-          return false;
+          return true;
         });
   }
 
@@ -70,5 +79,32 @@ public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
                     Collectors.toMap(
                         ComponentTemplate::name, ComponentTemplate::componentTemplate)),
         e -> "Failed to get component template from opensearch!");
+  }
+
+  public IndexTemplate getIndexTemplate(final String templateName) {
+    return executeWithRetries(
+        "GetIndexTemplate " + templateName,
+        () ->
+            openSearchClient
+                .indices()
+                .getIndexTemplate(it -> it.name(templateName))
+                .indexTemplates()
+                .getFirst()
+                .indexTemplate());
+  }
+
+  public IndexSettings getComponentTemplateIndexSettings(final String componentTemplateName) {
+    return executeWithRetries(
+        "GetComponentTemplateSettings",
+        () ->
+            openSearchClient
+                .cluster()
+                .getComponentTemplate(r -> r.name(componentTemplateName))
+                .componentTemplates()
+                .getFirst()
+                .componentTemplate()
+                .template()
+                .settings()
+                .get("index"));
   }
 }

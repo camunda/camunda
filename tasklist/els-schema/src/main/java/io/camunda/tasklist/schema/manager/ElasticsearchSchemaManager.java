@@ -170,7 +170,36 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @Override
   public void updateIndexSettings() {
     updateIndicesNumberOfReplicas();
+    updateIndexTemplateSettings();
     updateComponentTemplateSettings();
+  }
+
+  private void updateIndexTemplateSettings() {
+    for (final var templateDescriptor : templateDescriptors) {
+      final var expectedShards =
+          String.valueOf(
+              tasklistProperties
+                  .getElasticsearch()
+                  .getNumberOfShards(templateDescriptor.getIndexName()));
+      final var expectedReplicas =
+          String.valueOf(
+              tasklistProperties
+                  .getElasticsearch()
+                  .getNumberOfReplicas(templateDescriptor.getIndexName()));
+      final var indexTemplate =
+          retryElasticsearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      final var actualShards = indexTemplate.template().settings().get(NUMBERS_OF_SHARDS);
+      final var actualReplicas = indexTemplate.template().settings().get(NUMBERS_OF_REPLICA);
+
+      if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
+        LOGGER.info(
+            "Updating index template {} to shards={}, replicas={}",
+            templateDescriptor.getTemplateName(),
+            expectedShards,
+            expectedReplicas);
+        putIndexTemplate(prepareComposableTemplateRequest(templateDescriptor, null), true);
+      }
+    }
   }
 
   public String getComponentTemplateName() {
