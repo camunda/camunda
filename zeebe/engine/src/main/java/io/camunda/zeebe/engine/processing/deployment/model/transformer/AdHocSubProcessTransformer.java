@@ -93,10 +93,16 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
 
   private static void setImplementationType(
       final ExecutableAdHocSubProcess executableAdHocSubProcess, final AdHocSubProcess element) {
+
     final var implementationType =
-        Optional.ofNullable(element.getSingleExtensionElement(ZeebeAdHoc.class))
-            .map(ZeebeAdHoc::getImplementationType)
+        Optional.ofNullable(element.getExtensionElements())
+            .map(
+                extensionElements ->
+                    extensionElements.getChildElementsByType(ZeebeTaskDefinition.class))
+            .filter(taskDefinitions -> !taskDefinitions.isEmpty())
+            .map(taskDefinitions -> ZeebeAdHocImplementationType.JOB_WORKER)
             .orElse(ZeebeAdHocImplementationType.BPMN);
+
     executableAdHocSubProcess.setImplementationType(implementationType);
   }
 
