@@ -9,19 +9,27 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults;
+import java.util.Map;
 import java.util.Set;
 
 public class LongPolling {
   private static final String PREFIX = "camunda.api.long-polling";
 
-  private static final Set<String> LEGACY_ENABLED_PROPERTIES =
-      Set.of("zeebe.gateway.longPolling.enabled");
-  private static final Set<String> LEGACY_TIMEOUT_PROPERTIES =
-      Set.of("zeebe.gateway.longPolling.timeout");
-  private static final Set<String> LEGACY_PROBE_TIMEOUT_PROPERTIES =
-      Set.of("zeebe.gateway.longPolling.probeTimeout");
-  private static final Set<String> LEGACY_MIN_EMPTY_RESPONSES_PROPERTIES =
-      Set.of("zeebe.gateway.longPolling.minEmptyResponses");
+  private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
+      Map.of(
+          "enabled", "zeebe.gateway.longPolling.enabled",
+          "timeout", "zeebe.gateway.longPolling.timeout",
+          "probeTimeout", "zeebe.gateway.longPolling.probeTimeout",
+          "minEmptyResponses", "zeebe.gateway.longPolling.minEmptyResponses");
+
+  private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
+      Map.of(
+          "enabled", "zeebe.broker.gateway.longPolling.enabled",
+          "timeout", "zeebe.broker.gateway.longPolling.timeout",
+          "probeTimeout", "zeebe.broker.gateway.longPolling.probeTimeout",
+          "minEmptyResponses", "zeebe.broker.gateway.longPolling.minEmptyResponses");
+
+  private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
   /** Enables long polling for available jobs */
   private boolean enabled = ConfigurationDefaults.DEFAULT_LONG_POLLING_ENABLED;
@@ -45,7 +53,7 @@ public class LongPolling {
         enabled,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ENABLED_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("enabled")));
   }
 
   public void setEnabled(final boolean enabled) {
@@ -58,7 +66,7 @@ public class LongPolling {
         timeout,
         Long.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_TIMEOUT_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("timeout")));
   }
 
   public void setTimeout(final long timeout) {
@@ -71,7 +79,7 @@ public class LongPolling {
         probeTimeout,
         Long.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_PROBE_TIMEOUT_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("probeTimeout")));
   }
 
   public void setProbeTimeout(final long probeTimeout) {
@@ -84,10 +92,33 @@ public class LongPolling {
         minEmptyResponses,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MIN_EMPTY_RESPONSES_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("minEmptyResponses")));
   }
 
   public void setMinEmptyResponses(final int minEmptyResponses) {
     this.minEmptyResponses = minEmptyResponses;
+  }
+
+  @Override
+  public LongPolling clone() {
+    final LongPolling copy = new LongPolling();
+    copy.enabled = enabled;
+    copy.timeout = timeout;
+    copy.probeTimeout = probeTimeout;
+    copy.minEmptyResponses = minEmptyResponses;
+
+    return copy;
+  }
+
+  public LongPolling withBrokerLongPollingProperties() {
+    final var copy = clone();
+    copy.legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
+    return copy;
+  }
+
+  public LongPolling withGatewayLongPollingProperties() {
+    final var copy = clone();
+    copy.legacyPropertiesMap = LEGACY_GATEWAY_PROPERTIES;
+    return copy;
   }
 }

@@ -62,6 +62,8 @@ public class BrokerBasedPropertiesOverride {
     // from camunda.cluster.* sections
     populateFromCluster(override);
 
+    populateFromLongPolling(override);
+
     // from camunda.system.* sections in relation
     // with zeebe.broker.*
     populateFromSystem(override);
@@ -135,6 +137,20 @@ public class BrokerBasedPropertiesOverride {
     populateFromClusterMetadata(override);
     populateFromClusterNetwork(override);
     // Rest of camunda.cluster.* sections
+  }
+
+  private void populateFromLongPolling(final BrokerBasedProperties override) {
+    final var longPolling =
+        unifiedConfiguration
+            .getCamunda()
+            .getApi()
+            .getLongPolling()
+            .withBrokerLongPollingProperties();
+    final var longPollingCfg = override.getGateway().getLongPolling();
+    longPollingCfg.setEnabled(longPolling.isEnabled());
+    longPollingCfg.setTimeout(longPolling.getTimeout());
+    longPollingCfg.setProbeTimeout(longPolling.getProbeTimeout());
+    longPollingCfg.setMinEmptyResponses(longPolling.getMinEmptyResponses());
   }
 
   private void populateFromRaftProperties(final BrokerBasedProperties override) {

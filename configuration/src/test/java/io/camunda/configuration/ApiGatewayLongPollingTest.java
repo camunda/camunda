@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beans.GatewayBasedProperties;
+import io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   GatewayBasedPropertiesOverride.class,
   UnifiedConfigurationHelper.class
 })
-public class ApiLongPollingTest {
+public class ApiGatewayLongPollingTest {
   @Nested
   @TestPropertySource(
       properties = {
@@ -62,35 +63,75 @@ public class ApiLongPollingTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "zeebe.gateway.longPolling.enabled=false",
-        "zeebe.gateway.longPolling.timeout=2",
-        "zeebe.gateway.longPolling.probeTimeout=3",
-        "zeebe.gateway.longPolling.minEmptyResponses=4"
+        "zeebe.broker.gateway.longPolling.enabled=false",
+        "zeebe.broker.gateway.longPolling.timeout=2",
+        "zeebe.broker.gateway.longPolling.probeTimeout=3",
+        "zeebe.broker.gateway.longPolling.minEmptyResponses=4"
       })
-  class WithOnlyLegacySet {
+  class WithOnlyLegacyBrokerLongPollingSet {
     final GatewayBasedProperties gatewayCfg;
 
-    WithOnlyLegacySet(@Autowired final GatewayBasedProperties gatewayCfg) {
+    WithOnlyLegacyBrokerLongPollingSet(@Autowired final GatewayBasedProperties gatewayCfg) {
       this.gatewayCfg = gatewayCfg;
     }
 
     @Test
-    void shouldSetEnabled() {
-      assertThat(gatewayCfg.getLongPolling().isEnabled()).isFalse();
+    void shouldNoSetEnabledFromLegacyBroker() {
+      assertThat(gatewayCfg.getLongPolling().isEnabled())
+          .isEqualTo(ConfigurationDefaults.DEFAULT_LONG_POLLING_ENABLED);
     }
 
     @Test
-    void shouldSetTimeout() {
+    void shouldNotSetTimeoutFromLegacyBroker() {
+      assertThat(gatewayCfg.getLongPolling().getTimeout())
+          .isEqualTo(ConfigurationDefaults.DEFAULT_LONG_POLLING_TIMEOUT);
+    }
+
+    @Test
+    void shouldNotSetProbeTimeoutFromLegacyBroker() {
+      assertThat(gatewayCfg.getLongPolling().getProbeTimeout())
+          .isEqualTo(ConfigurationDefaults.DEFAULT_PROBE_TIMEOUT);
+    }
+
+    @Test
+    void shouldNotSetMinEmptyResponsesFromLegacyBroker() {
+      assertThat(gatewayCfg.getLongPolling().getMinEmptyResponses())
+          .isEqualTo(ConfigurationDefaults.DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "zeebe.gateway.longPolling.enabled=true",
+        "zeebe.gateway.longPolling.timeout=2",
+        "zeebe.gateway.longPolling.probeTimeout=3",
+        "zeebe.gateway.longPolling.minEmptyResponses=4"
+      })
+  class WithOnlyLegacyGatewayLongPollingSet {
+    final GatewayBasedProperties gatewayCfg;
+
+    WithOnlyLegacyGatewayLongPollingSet(@Autowired final GatewayBasedProperties gatewayCfg) {
+      this.gatewayCfg = gatewayCfg;
+    }
+
+    @Test
+    void shouldSetEnabledFromLegacyGateway() {
+      assertThat(gatewayCfg.getLongPolling().isEnabled()).isTrue();
+    }
+
+    @Test
+    void shouldSetTimeoutFromLegacyGateway() {
       assertThat(gatewayCfg.getLongPolling().getTimeout()).isEqualTo(2);
     }
 
     @Test
-    void shouldSetProbeTimeout() {
+    void shouldSetProbeTimeoutFromLegacyGateway() {
       assertThat(gatewayCfg.getLongPolling().getProbeTimeout()).isEqualTo(3);
     }
 
     @Test
-    void shouldSetMinEmptyResponses() {
+    void shouldSetMinEmptyResponsesFromLegacyGateway() {
       assertThat(gatewayCfg.getLongPolling().getMinEmptyResponses()).isEqualTo(4);
     }
   }
@@ -103,7 +144,12 @@ public class ApiLongPollingTest {
         "camunda.api.long-polling.timeout=20000",
         "camunda.api.long-polling.probe-timeout=30000",
         "camunda.api.long-polling.min-empty-responses=5",
-        // legacy
+        // legacy broker configuration
+        "zeebe.broker.gateway.longPolling.enabled=false",
+        "zeebe.broker.gateway.longPolling.timeout=2",
+        "zeebe.broker.gateway.longPolling.probeTimeout=3",
+        "zeebe.broker.gateway.longPolling.minEmptyResponses=4",
+        // legacy gateway configuration
         "zeebe.gateway.longPolling.enabled=false",
         "zeebe.gateway.longPolling.timeout=2",
         "zeebe.gateway.longPolling.probeTimeout=3",
