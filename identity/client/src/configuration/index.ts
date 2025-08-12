@@ -23,6 +23,8 @@ export const isTenantsApiEnabled = getEnvBoolean("TENANTS_API_ENABLED", false);
 
 export const docsUrl = "https://docs.camunda.io";
 
+export const isSaaS = Boolean(window.clientConfig?.organizationId);
+
 export function getApiBaseUrl() {
   return getBasePathBeforeIdentity() + apiBaseUrl;
 }
