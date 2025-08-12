@@ -14,6 +14,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
@@ -23,12 +24,14 @@ import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -329,6 +332,59 @@ public class ActivateAdHocSubProcessActivityTest {
             tuple(RecordType.COMMAND, AdHocSubProcessInstructionIntent.ACTIVATE),
             tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessInstructionIntent.ACTIVATE))
         .doesNotContain(tuple(RecordType.EVENT, AdHocSubProcessInstructionIntent.ACTIVATED));
+  }
+
+  @Test
+  public void shouldSetVariableOnCompletingAdHocSubProcess() {
+    // given
+    final var jobType = "routing-agent";
+    final String processId = "process";
+
+    deployProcess(
+        processId,
+        adHocSubProcess -> {
+          adHocSubProcess.zeebeInputExpression("1", "b");
+
+          adHocSubProcess.task("A");
+          adHocSubProcess.task("B");
+          adHocSubProcess.task("C");
+          adHocSubProcess.zeebeJobType(jobType);
+        });
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("a", 1).create();
+
+    // when
+    final JobResult jobResult = new JobResult();
+    jobResult.setCompletionConditionFulfilled(true);
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(jobType)
+        .withVariables(Map.of("a", 2, "b", 2, "c", 2))
+        .withResult(jobResult)
+        .complete();
+
+    // then
+    final long adHocSubProcessInstanceKey =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(6))
+        .extracting(Record::getValue)
+        .extracting(
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue,
+            VariableRecordValue::getScopeKey)
+        .contains(
+            Assertions.tuple("a", "2", processInstanceKey),
+            Assertions.tuple("b", "2", adHocSubProcessInstanceKey),
+            Assertions.tuple("c", "2", processInstanceKey));
   }
 
   private ProcessInstanceRecordStream recordsUntilSignal(final String signalName) {
