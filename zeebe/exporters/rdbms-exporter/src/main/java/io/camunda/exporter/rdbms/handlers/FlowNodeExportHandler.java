@@ -93,6 +93,7 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
                     processCache, processDefinitionKey, value.getElementId())
                 .orElse(null))
         .processInstanceKey(value.getProcessInstanceKey())
+        .flowNodeScopeKey(value.getFlowScopeKey())
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processDefinitionId(value.getBpmnProcessId())
         .tenantId(value.getTenantId())

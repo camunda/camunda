@@ -18,6 +18,7 @@ public record FlowNodeInstanceDbModel(
     Long processInstanceKey,
     Long processDefinitionKey,
     String processDefinitionId,
+    Long flowNodeScopeKey,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
     String flowNodeId,
@@ -44,6 +45,7 @@ public record FlowNodeInstanceDbModel(
                 .processInstanceKey(processInstanceKey())
                 .processDefinitionKey(processDefinitionKey)
                 .processDefinitionId(processDefinitionId)
+                .flowNodeScopeKey(flowNodeScopeKey)
                 .startDate(startDate)
                 .endDate(endDate)
                 .flowNodeId(flowNodeId)
@@ -67,6 +69,7 @@ public record FlowNodeInstanceDbModel(
     private Long processInstanceKey;
     private Long processDefinitionKey;
     private String processDefinitionId;
+    private Long flowNodeScopeKey;
     private OffsetDateTime startDate;
     private OffsetDateTime endDate;
     private String flowNodeId;
@@ -97,6 +100,11 @@ public record FlowNodeInstanceDbModel(
 
     public FlowNodeInstanceDbModelBuilder processDefinitionKey(final Long processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
+      return this;
+    }
+
+    public FlowNodeInstanceDbModelBuilder flowNodeScopeKey(final Long flowNodeScopeKey) {
+      this.flowNodeScopeKey = flowNodeScopeKey;
       return this;
     }
 
@@ -182,6 +190,7 @@ public record FlowNodeInstanceDbModel(
           processInstanceKey,
           processDefinitionKey,
           processDefinitionId,
+          flowNodeScopeKey,
           startDate,
           endDate,
           flowNodeId,
