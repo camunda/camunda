@@ -46,7 +46,7 @@ public class TenantEntityAddedHandler
     final var tenantRecord = record.getValue();
     return List.of(
         TenantIndex.JOIN_RELATION_FACTORY.createChildId(
-            tenantRecord.getTenantId(), tenantRecord.getEntityId()));
+            tenantRecord.getTenantId(), tenantRecord.getEntityId(), tenantRecord.getEntityType()));
   }
 
   @Override
