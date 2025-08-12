@@ -53,6 +53,10 @@ public class SchemaStartup {
           TasklistProperties.OPEN_SEARCH.equalsIgnoreCase(tasklistProperties.getDatabase())
               ? tasklistProperties.getOpenSearch().isCreateSchema()
               : tasklistProperties.getElasticsearch().isCreateSchema();
+      final boolean isUpdateSchemaSettings =
+          TasklistProperties.OPEN_SEARCH.equalsIgnoreCase(tasklistProperties.getDatabase())
+              ? tasklistProperties.getOpenSearch().isUpdateSchemaSettings()
+              : tasklistProperties.getElasticsearch().isUpdateSchemaSettings();
       if (createSchema && !schemaValidator.schemaExists()) {
         LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
         schemaManager.createSchema();
@@ -70,7 +74,7 @@ public class SchemaStartup {
               "SchemaStartup: schema won't be updated as schema creation is disabled in configuration.");
         }
       }
-      if (createSchema) {
+      if (createSchema && isUpdateSchemaSettings) {
         schemaManager.updateIndexSettings();
       }
       LOGGER.info("SchemaStartup finished.");

@@ -189,7 +189,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     final var actualReplicas = settings.get(NUMBERS_OF_REPLICA, NO_REPLICA);
 
     if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
-      LOGGER.debug(
+      LOGGER.info(
           "Updating component template settings to shards={}, replicas={}",
           expectedShards,
           expectedReplicas);
@@ -212,7 +212,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
               if (!settings.values().stream()
                   .map(s -> s.get(NUMBERS_OF_REPLICA, NO_REPLICA))
                   .allMatch(expectedReplicas::equals)) {
-                LOGGER.debug(
+                LOGGER.info(
                     "Updating number of replicas of {} to {}",
                     indexDescriptor.getAlias(),
                     expectedReplicas);
