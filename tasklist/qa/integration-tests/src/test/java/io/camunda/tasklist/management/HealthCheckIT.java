@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.connect.ElasticsearchConnector;
@@ -43,6 +44,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       ElasticsearchConnector.class,
       JacksonConfig.class,
       TasklistPropertiesOverride.class,
+      SearchEngineConnectPropertiesOverride.class,
       UnifiedConfiguration.class,
       UnifiedConfigurationHelper.class
     },

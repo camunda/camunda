@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -41,6 +42,7 @@ import org.springframework.web.context.WebApplicationContext;
       ClientConfigRestService.class,
       SecurityConfiguration.class,
       TasklistPropertiesOverride.class,
+      SearchEngineConnectPropertiesOverride.class,
       UnifiedConfiguration.class,
       UnifiedConfigurationHelper.class
     },

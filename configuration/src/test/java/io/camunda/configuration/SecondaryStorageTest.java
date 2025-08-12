@@ -10,7 +10,9 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
+import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -25,6 +27,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   UnifiedConfigurationHelper.class,
   TasklistPropertiesOverride.class,
   OperatePropertiesOverride.class,
+  SearchEngineConnectPropertiesOverride.class
 })
 public class SecondaryStorageTest {
 
@@ -37,15 +40,18 @@ public class SecondaryStorageTest {
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
     final TasklistProperties tasklistProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithOnlyUnifiedConfigSet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties) {
+        @Autowired final TasklistProperties tasklistProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
 
-    // @Test
+    @Test
     void testCamundaDataSecondaryStorageType() {
       final DatabaseType expectedOperateDatabaseType = DatabaseType.Elasticsearch;
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
@@ -59,6 +65,7 @@ public class SecondaryStorageTest {
       final String expectedUrl = "http://expected-url:4321";
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(searchEngineConnectProperties.getUrl()).isEqualTo(expectedUrl);
     }
   }
 
@@ -79,21 +86,27 @@ public class SecondaryStorageTest {
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
     final TasklistProperties tasklistProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithNewAndLegacySet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties) {
+        @Autowired final TasklistProperties tasklistProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
 
-    // @Test
+    @Test
     void testCamundaDataSecondaryStorageType() {
       final DatabaseType expectedOperateDatabaseType = DatabaseType.Elasticsearch;
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
 
       final String expectedTasklistDatabaseType = "elasticsearch";
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
+
+      assertThat(searchEngineConnectProperties.getType())
+          .isEqualTo(io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH.toString());
     }
 
     @Test
@@ -101,6 +114,7 @@ public class SecondaryStorageTest {
       final String expectedUrl = "http://matching-url:4321";
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(searchEngineConnectProperties.getUrl()).isEqualTo(expectedUrl);
     }
   }
 }

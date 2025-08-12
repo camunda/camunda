@@ -13,6 +13,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -30,6 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       TestApplicationWithNoBeans.class,
       DatabaseInfo.class,
       OperatePropertiesOverride.class,
+      SearchEngineConnectPropertiesOverride.class,
       CamundaSecurityProperties.class,
       UnifiedConfiguration.class,
       UnifiedConfigurationHelper.class

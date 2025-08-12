@@ -14,6 +14,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.property.OperateProperties;
@@ -46,6 +47,7 @@ import org.testcontainers.utility.DockerImageName;
       ElasticsearchConnector.class,
       DatabaseInfo.class,
       OperatePropertiesOverride.class,
+      SearchEngineConnectPropertiesOverride.class,
       UnifiedConfigurationHelper.class,
       UnifiedConfiguration.class
     },

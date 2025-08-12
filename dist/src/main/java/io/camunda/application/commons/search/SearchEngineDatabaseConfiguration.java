@@ -8,12 +8,11 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineIndexProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.config.IndexConfiguration;
@@ -75,9 +74,6 @@ public class SearchEngineDatabaseConfiguration {
                 .retention(searchEngineRetentionProperties)
                 .schemaManager(searchEngineSchemaManagerProperties));
   }
-
-  @ConfigurationProperties("camunda.database")
-  public static final class SearchEngineConnectProperties extends ConnectConfiguration {}
 
   @ConfigurationProperties("camunda.database.index")
   public static final class SearchEngineIndexProperties extends IndexConfiguration {}

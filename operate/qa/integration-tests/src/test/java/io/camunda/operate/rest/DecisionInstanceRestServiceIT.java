@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -37,6 +38,7 @@ import org.springframework.test.web.servlet.MvcResult;
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
       OperatePropertiesOverride.class,
+      SearchEngineConnectPropertiesOverride.class,
       UnifiedConfigurationHelper.class,
       UnifiedConfiguration.class
     })

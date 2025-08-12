@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -21,7 +22,8 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
           .withUserConfiguration(
               UnifiedConfiguration.class,
               UnifiedConfigurationHelper.class,
-              OperatePropertiesOverride.class)
+              OperatePropertiesOverride.class,
+              SearchEngineConnectPropertiesOverride.class)
           .withPropertyValues(
               "camunda.database.type=elasticsearch",
               "camunda.operate.database=elasticsearch",
@@ -33,7 +35,8 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
           .withUserConfiguration(
               UnifiedConfiguration.class,
               UnifiedConfigurationHelper.class,
-              TasklistPropertiesOverride.class)
+              TasklistPropertiesOverride.class,
+              SearchEngineConnectPropertiesOverride.class)
           .withPropertyValues(
               "camunda.database.type=elasticsearch",
               "camunda.operate.database=elasticsearch",
@@ -45,7 +48,8 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
           .withUserConfiguration(
               UnifiedConfiguration.class,
               UnifiedConfigurationHelper.class,
-              TasklistPropertiesOverride.class)
+              TasklistPropertiesOverride.class,
+              SearchEngineConnectPropertiesOverride.class)
           .withPropertyValues(
               // type
               "camunda.data.secondary-storage.type=elasticsearch",

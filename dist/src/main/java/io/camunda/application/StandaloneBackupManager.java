@@ -13,7 +13,7 @@ import static java.util.Optional.ofNullable;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration.BackupWebappsProperties;
 import io.camunda.application.commons.backup.BackupPriorityConfiguration;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
+import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.backup.BackupRepository;

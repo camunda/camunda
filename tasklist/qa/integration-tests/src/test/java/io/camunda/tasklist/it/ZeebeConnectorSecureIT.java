@@ -14,6 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.property.ZeebeProperties;
@@ -40,6 +41,7 @@ import org.testcontainers.utility.MountableFile;
     classes = {
       ZeebeConnector.class,
       TasklistPropertiesOverride.class,
+      SearchEngineConnectPropertiesOverride.class,
       UnifiedConfiguration.class,
       UnifiedConfigurationHelper.class
     },

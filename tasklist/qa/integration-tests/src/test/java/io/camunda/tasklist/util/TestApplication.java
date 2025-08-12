@@ -11,6 +11,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
@@ -43,6 +44,7 @@ import org.springframework.context.annotation.Profile;
   WebappsModuleConfiguration.class,
   CommonsModuleConfiguration.class,
   TasklistPropertiesOverride.class,
+  SearchEngineConnectPropertiesOverride.class,
   UnifiedConfiguration.class,
   UnifiedConfigurationHelper.class,
   GatewayBasedPropertiesOverride.class
