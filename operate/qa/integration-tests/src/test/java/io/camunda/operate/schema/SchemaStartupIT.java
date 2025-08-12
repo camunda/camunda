@@ -28,7 +28,6 @@ import io.camunda.operate.schema.opensearch.OpensearchStepsRepository;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
-import io.camunda.operate.schema.util.SchemaTestHelper;
 import io.camunda.operate.schema.util.TestIndex;
 import io.camunda.operate.schema.util.TestSchemaStartup;
 import io.camunda.operate.schema.util.TestTemplate;
@@ -76,7 +75,6 @@ import org.springframework.test.context.ContextConfiguration;
 public class SchemaStartupIT extends AbstractSchemaIT {
 
   @Autowired public SchemaManager schemaManager;
-  @Autowired public SchemaTestHelper schemaHelper;
 
   @Autowired public TestSchemaStartup schemaStartup;
   @Autowired public TestIndex testIndex;
@@ -107,6 +105,7 @@ public class SchemaStartupIT extends AbstractSchemaIT {
                 new IndexMapping()
                     .setIndexName(indexName)
                     .setDynamic("strict")
+                    .setMetaProperties(Map.of())
                     .setProperties(
                         Set.of(
                             new IndexMappingProperty()

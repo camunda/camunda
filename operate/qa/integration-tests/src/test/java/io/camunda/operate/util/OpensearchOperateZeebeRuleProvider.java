@@ -74,7 +74,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
     assertTrue(
         zeebeRichOpenSearchClient
             .template()
-            .createComponentTemplateWithRetries(requestBuilder.build()));
+            .createComponentTemplateWithRetries(requestBuilder.build(), true));
   }
 
   @Override
