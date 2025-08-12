@@ -7,6 +7,8 @@
  */
 package io.camunda.webapps.schema.entities.usermanagement;
 
+import io.camunda.zeebe.protocol.record.value.EntityType;
+
 public record EntityJoinRelation(String name, String parent) {
 
   public static class EntityJoinRelationFactory {
@@ -32,8 +34,15 @@ public record EntityJoinRelation(String name, String parent) {
       return parent.getType() + "-" + parentId;
     }
 
-    public String createChildId(final String parentId, final String childId) {
-      return child.getType() + "-" + parentId + "-" + childId;
+    public String createChildId(
+        final String parentId, final String childId, final EntityType childType) {
+      return child.getType()
+          + "-"
+          + parentId
+          + "-"
+          + childType.name().toLowerCase()
+          + "-"
+          + childId;
     }
   }
 
