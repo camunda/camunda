@@ -11,7 +11,6 @@ import {
   useQueryClient,
   type UseMutationOptions,
 } from '@tanstack/react-query';
-import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOperations';
 import {migrateProcessInstanceBatchOperation} from 'modules/api/v2/processInstances/migrateProcessInstanceBatchOperation';
 import type {
   CreateMigrationBatchOperationRequestBody,
@@ -31,38 +30,12 @@ const useMigrateProcessInstanceBatchOperation = (
 
   return useMutation({
     mutationKey: ['createProcessInstanceMigrationBatchOperation'],
-    mutationFn: async (payload: CreateMigrationBatchOperationRequestBody) => {
+    mutationFn: async (payload) => {
       const {response, error} =
         await migrateProcessInstanceBatchOperation(payload);
-
       if (response !== null) {
-        const queryPayload = {
-          filter: {batchOperationKey: response.batchOperationKey},
-        };
-        const OPERATION_PENDING = 'Batch operation is still pending';
-
-        await queryClient.fetchQuery({
-          queryKey: ['queryBatchOperations', queryPayload],
-          queryFn: async () => {
-            const {response: batchResponse, error} =
-              await queryBatchOperations(queryPayload);
-            if (error) {
-              throw new Error(error.response?.statusText);
-            }
-
-            const hasActiveOperation = batchResponse.items.some(
-              (item) => item.state === 'ACTIVE',
-            );
-
-            if (batchResponse.page.totalItems === 0 || hasActiveOperation) {
-              throw new Error(OPERATION_PENDING);
-            }
-            return batchResponse;
-          },
-          retry: (_, error) => {
-            return error.message === OPERATION_PENDING;
-          },
-          retryDelay: 5000,
+        await queryClient.invalidateQueries({
+          queryKey: ['queryBatchOperations'],
         });
 
         return response;
