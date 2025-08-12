@@ -155,5 +155,5 @@ public interface ElementInstanceFilter extends SearchRequestFilter {
    * @param value the scope key of the element instance
    * @return the updated filter
    */
-  ElementInstanceFilter scopeKey(final long value);
+  ElementInstanceFilter elementInstanceScopeKey(final long value);
 }

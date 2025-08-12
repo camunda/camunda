@@ -143,8 +143,8 @@ public class ElementInstanceFilterImpl
   }
 
   @Override
-  public ElementInstanceFilter scopeKey(final long value) {
-    filter.setScopeKey(ParseUtil.keyToString(value));
+  public ElementInstanceFilter elementInstanceScopeKey(final long value) {
+    filter.setElementInstanceScopeKey(ParseUtil.keyToString(value));
     return this;
   }
 

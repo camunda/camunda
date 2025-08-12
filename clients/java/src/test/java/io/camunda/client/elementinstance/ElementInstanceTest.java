@@ -62,7 +62,7 @@ public class ElementInstanceTest extends ClientRestTest {
                     .tenantId("<default>")
                     .startDate(b -> b.exists(true))
                     .endDate(b -> b.exists(true))
-                    .scopeKey(4L))
+                    .elementInstanceScopeKey(4L))
         .send()
         .join();
     // then
@@ -83,7 +83,7 @@ public class ElementInstanceTest extends ClientRestTest {
     assertThat(filter.getEndDate()).isNotNull();
     assertThat(filter.getStartDate().get$Exists()).isTrue();
     assertThat(filter.getEndDate().get$Exists()).isTrue();
-    assertThat(filter.getScopeKey()).isEqualTo("4");
+    assertThat(filter.getElementInstanceScopeKey()).isEqualTo("4");
   }
 
   @Test

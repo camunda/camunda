@@ -723,7 +723,7 @@ public class ElementInstanceSearchTest {
     final var result =
         camundaClient
             .newElementInstanceSearchRequest()
-            .filter(f -> f.scopeKey(parentProcessInstanceKey))
+            .filter(f -> f.elementInstanceScopeKey(parentProcessInstanceKey))
             .send()
             .join();
 
@@ -752,7 +752,7 @@ public class ElementInstanceSearchTest {
     final var result =
         camundaClient
             .newElementInstanceSearchRequest()
-            .filter(f -> f.scopeKey(subProcessInstanceKey))
+            .filter(f -> f.elementInstanceScopeKey(subProcessInstanceKey))
             .send()
             .join();
 
@@ -783,7 +783,7 @@ public class ElementInstanceSearchTest {
     final var result =
         camundaClient
             .newElementInstanceSearchRequest()
-            .filter(f -> f.scopeKey(multiInstanceElementInstanceKey))
+            .filter(f -> f.elementInstanceScopeKey(multiInstanceElementInstanceKey))
             .send()
             .join();
 
@@ -812,7 +812,7 @@ public class ElementInstanceSearchTest {
     final var result =
         camundaClient
             .newElementInstanceSearchRequest()
-            .filter(f -> f.scopeKey(leafElementInstanceKey))
+            .filter(f -> f.elementInstanceScopeKey(leafElementInstanceKey))
             .send()
             .join();
 
@@ -829,7 +829,7 @@ public class ElementInstanceSearchTest {
     final var result =
         camundaClient
             .newElementInstanceSearchRequest()
-            .filter(f -> f.scopeKey(invalidElementInstanceKey))
+            .filter(f -> f.elementInstanceScopeKey(invalidElementInstanceKey))
             .send()
             .join();
 
