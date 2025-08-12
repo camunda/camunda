@@ -16,7 +16,6 @@ import static io.camunda.client.api.search.enums.ResourceType.DECISION_DEFINITIO
 import static io.camunda.client.api.search.enums.ResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.it.util.TestHelper.deployResource;
-import static io.camunda.it.util.TestHelper.startDefaultTestDecisionProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilAuthorizationVisible;
 import static io.camunda.qa.util.cluster.TestRestOperateClient.toJsonString;
@@ -26,11 +25,14 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.it.util.TestHelper;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
+import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -62,6 +64,8 @@ public class OperateInternalApiPermissionsIT {
   private static final String PROCESS_DEFINITION_ID_2 = "incident_process_v1";
   private static Decision decisionToFind;
   private static Decision decisionNotToFind;
+  private static Process processToFind;
+  private static Process processNotToFind;
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
   @UserDefinition
@@ -98,9 +102,17 @@ public class OperateInternalApiPermissionsIT {
     waitForProcessesToBeDeployed(adminClient, DEPLOYED_PROCESSES.size());
 
     // DMN
-    decisionToFind = startDefaultTestDecisionProcessInstance(adminClient, "decision_model.dmn");
+    decisionToFind =
+        TestHelper.deployDefaultTestDecisionProcessInstance(adminClient, "decision_model.dmn");
     decisionNotToFind =
-        startDefaultTestDecisionProcessInstance(adminClient, "decision_model_1.dmn");
+        TestHelper.deployDefaultTestDecisionProcessInstance(adminClient, "decision_model_1.dmn");
+    processToFind =
+        TestHelper.startDefaultTestDecisionProcessInstance(
+            adminClient, decisionToFind.getDmnDecisionId(), "dmnProcess1");
+    processNotToFind =
+        TestHelper.startDefaultTestDecisionProcessInstance(
+            adminClient, decisionNotToFind.getDmnDecisionId(), "dmnProcess2");
+
     // give restricted user access to one of the decisions
     adminClient
         .newCreateAuthorizationCommand()
@@ -111,8 +123,19 @@ public class OperateInternalApiPermissionsIT {
         .permissionTypes(READ_DECISION_INSTANCE, READ_DECISION_DEFINITION)
         .send()
         .join();
+    adminClient
+        .newCreateAuthorizationCommand()
+        .ownerId(RESTRICTED_USER_USERNAME)
+        .ownerType(OwnerType.USER)
+        .resourceId(processToFind.getBpmnProcessId())
+        .resourceType(PROCESS_DEFINITION)
+        .permissionTypes(READ_PROCESS_INSTANCE)
+        .send()
+        .join();
     waitUntilAuthorizationVisible(
         adminClient, RESTRICTED_USER_USERNAME, decisionToFind.getDmnDecisionId());
+    waitUntilAuthorizationVisible(
+        adminClient, RESTRICTED_USER_USERNAME, processToFind.getBpmnProcessId());
   }
 
   @AfterAll
@@ -205,11 +228,31 @@ public class OperateInternalApiPermissionsIT {
       throws URISyntaxException, IOException, InterruptedException {
     // given
     final String decisionInstanceRequest = toJsonString(new DecisionRequestDto());
-
-    final var adminOperateClient =
-        STANDALONE_CAMUNDA.newOperateClient(SUPER_USER_USERNAME, SUPER_USER.password());
     final var restrictedOperateClient =
         STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER_USERNAME, RESTRICTED_USER.password());
+
+    // when
+    final var restrictedResponse =
+        restrictedOperateClient.sendInternalSearchRequest(
+            "api/decisions/grouped", decisionInstanceRequest);
+    final var restrictedResponseDto =
+        restrictedOperateClient.mapResult(restrictedResponse, DecisionGroupDto[].class);
+
+    // then
+    assertThat(restrictedResponseDto.isRight()).isTrue();
+    final DecisionGroupDto[] restrictedDto = (DecisionGroupDto[]) restrictedResponseDto.get();
+    assertThat(restrictedResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
+    assertThat(restrictedDto).hasSize(1);
+    assertThat(restrictedDto[0].getDecisionId()).isEqualTo(decisionToFind.getDmnDecisionId());
+  }
+
+  @Test
+  public void shouldReturnAllAuthorizedGroupedDecisionDefinitions(final CamundaClient adminClient)
+      throws URISyntaxException, IOException, InterruptedException {
+    // given
+    final String decisionInstanceRequest = toJsonString(new DecisionRequestDto());
+    final var adminOperateClient =
+        STANDALONE_CAMUNDA.newOperateClient(SUPER_USER_USERNAME, SUPER_USER.password());
 
     // when
     final var adminResponse =
@@ -218,21 +261,63 @@ public class OperateInternalApiPermissionsIT {
     final var adminResponseDto =
         adminOperateClient.mapResult(adminResponse, DecisionGroupDto[].class);
 
-    final var restrictedResponse =
-        restrictedOperateClient.sendInternalSearchRequest(
-            "api/decisions/grouped", decisionInstanceRequest);
-    final var restrictedResponseDto =
-        restrictedOperateClient.mapResult(restrictedResponse, DecisionGroupDto[].class);
-
     // then
     assertThat(adminResponseDto.isRight()).isTrue();
     assertThat(adminResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
     assertThat(((DecisionGroupDto[]) adminResponseDto.get())).hasSize(2);
+  }
 
-    assertThat(restrictedResponseDto.isRight()).isTrue();
-    final DecisionGroupDto[] restrictedDto = (DecisionGroupDto[]) restrictedResponseDto.get();
-    assertThat(restrictedResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
-    assertThat(restrictedDto).hasSize(1);
-    assertThat(restrictedDto[0].getDecisionId()).isEqualTo(decisionToFind.getDmnDecisionId());
+  @Test
+  public void shouldReturnAuthorizedFlowNodeStatistics(final CamundaClient adminClient)
+      throws URISyntaxException, IOException, InterruptedException {
+    // given
+    final String flowNodeStatisticsDto =
+        toJsonString(
+            new ListViewQueryDto()
+                .setActive(true)
+                .setCompleted(true)
+                .setRunning(true)
+                .setFinished(true)
+                .setProcessIds(List.of(String.valueOf(processToFind.getProcessDefinitionKey()))));
+    final var restrictedOperateClient =
+        STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER_USERNAME, RESTRICTED_USER.password());
+
+    // when
+    final var restrictedResponse =
+        restrictedOperateClient.sendInternalSearchRequest(
+            "api/process-instances/statistics", flowNodeStatisticsDto);
+    final var restrictedResponseMapping =
+        restrictedOperateClient.mapResult(restrictedResponse, FlowNodeStatisticsDto[].class);
+
+    // then
+    assertThat(restrictedResponseMapping.isRight()).isTrue();
+    final var restrictedResponseDto = (FlowNodeStatisticsDto[]) restrictedResponseMapping.get();
+    assertThat(restrictedResponseDto).hasSize(1);
+  }
+
+  @Test
+  public void shouldNotReturnUnauthorizedFlowNodeStatistics(final CamundaClient adminClient)
+      throws URISyntaxException, IOException, InterruptedException {
+    final String flowNodeStatisticsDto =
+        toJsonString(
+            new ListViewQueryDto()
+                .setActive(true)
+                .setCompleted(true)
+                .setRunning(true)
+                .setFinished(true)
+                .setProcessIds(
+                    List.of(String.valueOf(processNotToFind.getProcessDefinitionKey()))));
+
+    final var restrictedOperateClient =
+        STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER_USERNAME, RESTRICTED_USER.password());
+
+    final var restrictedResponse =
+        restrictedOperateClient.sendInternalSearchRequest(
+            "api/process-instances/statistics", flowNodeStatisticsDto);
+    final var restrictedResponseMapping =
+        restrictedOperateClient.mapResult(restrictedResponse, FlowNodeStatisticsDto[].class);
+    assertThat(restrictedResponseMapping.isRight()).isTrue();
+    final var restrictedResponseDto = (FlowNodeStatisticsDto[]) restrictedResponseMapping.get();
+    assertThat(restrictedResponseDto).isEmpty();
   }
 }

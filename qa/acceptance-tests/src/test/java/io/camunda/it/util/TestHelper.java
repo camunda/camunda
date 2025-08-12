@@ -623,7 +623,7 @@ public final class TestHelper {
             });
   }
 
-  public static Decision startDefaultTestDecisionProcessInstance(
+  public static Decision deployDefaultTestDecisionProcessInstance(
       final CamundaClient camundaClient, final String dmnResource) {
     final var decisionDeployment =
         camundaClient
@@ -639,22 +639,28 @@ public final class TestHelper {
         decisionDeployment.getDecisionRequirementsKey(),
         1,
         1);
-    deployResource(
-            camundaClient,
-            Bpmn.createExecutableProcess("dmn_process")
-                .startEvent()
-                .businessRuleTask("dmn_task")
-                .zeebeCalledDecisionId(decisionDeployment.getDmnDecisionId())
-                .zeebeResultVariable("{\"output1\": \"B\"}")
-                .endEvent()
-                .done(),
-            "dmn_process.bpmn")
-        .getProcesses()
-        .getFirst();
-    final long processInstanceKey =
-        startProcessInstance(camundaClient, "dmn_process").getProcessInstanceKey();
-    waitForDecisionToBeEvaluated(camundaClient, processInstanceKey, 1);
     return decisionDeployment;
+  }
+
+  public static Process startDefaultTestDecisionProcessInstance(
+      final CamundaClient camundaClient, final String dmnDecisionId, final String bpmnProcessId) {
+    final var deployment =
+        deployResource(
+                camundaClient,
+                Bpmn.createExecutableProcess(bpmnProcessId)
+                    .startEvent()
+                    .businessRuleTask("dmn_task")
+                    .zeebeCalledDecisionId(dmnDecisionId)
+                    .zeebeResultVariable("{\"output1\": \"B\"}")
+                    .endEvent()
+                    .done(),
+                "dmn_process.bpmn")
+            .getProcesses()
+            .getFirst();
+    final long processInstanceKey =
+        startProcessInstance(camundaClient, bpmnProcessId).getProcessInstanceKey();
+    waitForDecisionToBeEvaluated(camundaClient, processInstanceKey, 1);
+    return deployment;
   }
 
   public static void waitForDecisionsToBeDeployed(

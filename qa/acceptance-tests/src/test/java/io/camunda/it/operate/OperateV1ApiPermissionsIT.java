@@ -16,6 +16,7 @@ import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INS
 import static io.camunda.client.api.search.enums.ResourceType.DECISION_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
+import static io.camunda.it.util.TestHelper.deployDefaultTestDecisionProcessInstance;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startDefaultTestDecisionProcessInstance;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
@@ -29,6 +30,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.Decision;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
@@ -212,15 +214,12 @@ public class OperateV1ApiPermissionsIT {
         adminClient.newIncidentSearchRequest().send().join().items().getFirst().getIncidentKey();
 
     // DMN
-    startDefaultTestDecisionProcessInstance(adminClient, "decision_model.dmn");
-    decisionDefinitionKey =
-        adminClient
-            .newDecisionDefinitionSearchRequest()
-            .send()
-            .join()
-            .items()
-            .getFirst()
-            .getDecisionKey();
+    final Decision decision =
+        deployDefaultTestDecisionProcessInstance(adminClient, "decision_model.dmn");
+    startDefaultTestDecisionProcessInstance(
+        adminClient, decision.getDmnDecisionId(), "dmn_process");
+    decisionDefinitionKey = decision.getDecisionKey();
+    decisionRequirementsKey = decision.getDecisionRequirementsKey();
     decisionInstanceId =
         adminClient
             .newDecisionInstanceSearchRequest()
@@ -229,14 +228,6 @@ public class OperateV1ApiPermissionsIT {
             .items()
             .getFirst()
             .getDecisionInstanceId();
-    decisionRequirementsKey =
-        adminClient
-            .newDecisionRequirementsSearchRequest()
-            .send()
-            .join()
-            .items()
-            .getFirst()
-            .getDecisionRequirementsKey();
   }
 
   @ParameterizedTest
