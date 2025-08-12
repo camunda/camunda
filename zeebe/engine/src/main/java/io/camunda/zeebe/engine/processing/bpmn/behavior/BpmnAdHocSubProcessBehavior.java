@@ -65,16 +65,8 @@ public final class BpmnAdHocSubProcessBehavior {
       final String elementIdToActivate,
       final DirectBuffer variablesBuffer) {
 
-    final long adHocSubProcessInnerInstanceKey = createInnerInstance(context, adHocSubProcess);
-
-    adHocSubProcess
-        .getOutputElement()
-        .flatMap(Expression::getVariableName)
-        .map(BufferUtil::wrapString)
-        .ifPresent(
-            variableName ->
-                stateBehavior.setLocalVariable(
-                    context, variableName, new UnsafeBuffer(MsgPackHelper.NIL)));
+    final long adHocSubProcessInnerInstanceKey =
+        createInnerInstance(context, adHocSubProcess, variablesBuffer.capacity());
 
     if (variablesBuffer != NO_VARIABLES && variablesBuffer.capacity() > 0) {
       // set local variable in the scope of the inner instance
@@ -95,7 +87,8 @@ public final class BpmnAdHocSubProcessBehavior {
 
   private long createInnerInstance(
       final BpmnElementContext adHocSubProcessContext,
-      final ExecutableAdHocSubProcess adHocSubProcess) {
+      final ExecutableAdHocSubProcess adHocSubProcess,
+      final int variablesBufferSize) {
     final var adHocSubProcessElementInstanceKey = adHocSubProcessContext.getElementInstanceKey();
 
     final var innerInstanceKey = keyGenerator.nextKey();
@@ -118,6 +111,24 @@ public final class BpmnAdHocSubProcessBehavior {
         innerInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, innerInstanceRecord);
     stateWriter.appendFollowUpEvent(
         innerInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, innerInstanceRecord);
+
+    adHocSubProcess
+        .getOutputElement()
+        .flatMap(Expression::getVariableName)
+        .map(BufferUtil::wrapString)
+        .ifPresent(
+            variableName ->
+                variableBehavior.setLocalVariable(
+                    innerInstanceKey,
+                    innerInstanceRecord.getProcessDefinitionKey(),
+                    innerInstanceRecord.getProcessInstanceKey(),
+                    BufferUtil.wrapString(innerInstanceRecord.getBpmnProcessId()),
+                    innerInstanceRecord.getTenantId(),
+                    variableName,
+                    new UnsafeBuffer(MsgPackHelper.NIL),
+                    0,
+                    variablesBufferSize));
+
     return innerInstanceKey;
   }
 
