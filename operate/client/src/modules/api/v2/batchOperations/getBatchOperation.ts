@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints, type BatchOperation} from '@vzeta/camunda-api-zod-schemas';
+import {
+  endpoints,
+  type BatchOperation,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {type RequestResult, requestWithThrow} from 'modules/request';
 
 const getBatchOperation = async (
