@@ -185,7 +185,7 @@ class ExporterDirectorPartitionTransitionStepTest {
   }
 
   @Test
-  void shouldDisableExporterIfConfigChangedConcurrently() {
+  void shouldRemoveExporterIfConfigChangedConcurrently() {
     // given
     final String enabledExporterId = "expA";
     final String disabledExporterId = "expB";
@@ -210,8 +210,8 @@ class ExporterDirectorPartitionTransitionStepTest {
     startingFuture.complete(null);
 
     // then
-    verify(mockedExporterDirector, timeout(1000)).disableExporter(disabledExporterId);
-    verify(mockedExporterDirector, never()).disableExporter(enabledExporterId);
+    verify(mockedExporterDirector, timeout(1000)).removeExporter(disabledExporterId);
+    verify(mockedExporterDirector, never()).removeExporter(enabledExporterId);
   }
 
   @Test
@@ -243,8 +243,8 @@ class ExporterDirectorPartitionTransitionStepTest {
     startingFuture.complete(null);
 
     // then
-    verify(mockedExporterDirector, timeout(1000)).deleteExporter(toBeDeletedExporterId);
-    verify(mockedExporterDirector, never()).deleteExporter(enabledExporterId);
+    verify(mockedExporterDirector, timeout(1000)).removeExporter(toBeDeletedExporterId);
+    verify(mockedExporterDirector, never()).removeExporter(enabledExporterId);
   }
 
   @Test

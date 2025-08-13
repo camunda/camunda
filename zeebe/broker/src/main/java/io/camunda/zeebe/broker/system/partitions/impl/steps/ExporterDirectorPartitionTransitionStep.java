@@ -166,10 +166,10 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     for (final var exporter : startedExporters.keySet()) {
       if (!currentAllExporters.containsKey(exporter)) {
         // Exporter removed from config → delete it
-        context.getExporterDirector().deleteExporter(exporter.getId());
+        context.getExporterDirector().removeExporter(exporter.getId());
       } else if (!currentEnabledExporters.containsKey(exporter)) {
         // Exporter present but disabled → disable it
-        context.getExporterDirector().disableExporter(exporter.getId());
+        context.getExporterDirector().removeExporter(exporter.getId());
       }
     }
 

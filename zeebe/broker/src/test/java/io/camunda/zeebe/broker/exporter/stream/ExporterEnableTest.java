@@ -137,7 +137,7 @@ public class ExporterEnableTest {
     rule.writeEvent(JobIntent.COMPLETED, new JobRecord());
 
     // when
-    rule.getDirector().disableExporter(EXPORTER_ID_2).join();
+    rule.getDirector().removeExporter(EXPORTER_ID_2).join();
     rule.writeEvent(JobIntent.COMPLETED, new JobRecord());
     Awaitility.await()
         .untilAsserted(
@@ -171,8 +171,8 @@ public class ExporterEnableTest {
   public void shouldReStartExportingAfterNewExporterIsEnabledWhenNoExporterIsConfigured() {
     // given
     rule.startExporterDirector(exporterDescriptors);
-    rule.getDirector().disableExporter(EXPORTER_ID_1).join();
-    rule.getDirector().disableExporter(EXPORTER_ID_2).join();
+    rule.getDirector().removeExporter(EXPORTER_ID_1).join();
+    rule.getDirector().removeExporter(EXPORTER_ID_2).join();
 
     // when
     final var newExporterId = "new-exporter";
@@ -192,7 +192,7 @@ public class ExporterEnableTest {
   public void shouldRetryExporterEnableIfCalledWithRetry() {
     // given
     rule.startExporterDirector(exporterDescriptors);
-    rule.getDirector().disableExporter(EXPORTER_ID_2).join();
+    rule.getDirector().removeExporter(EXPORTER_ID_2).join();
 
     final var descriptor = createExporter(EXPORTER_ID_2, Collections.singletonMap("x", 1));
     final var exporter = exporters.get(EXPORTER_ID_2);

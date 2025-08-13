@@ -55,7 +55,7 @@ final class PartitionConfigurationManager {
 
     final var exporterDirector = context.getExporterDirector();
     if (exporterDirector != null) {
-      exporterDirector.disableExporter(exporterId).onComplete(exportedDisabled);
+      exporterDirector.removeExporter(exporterId).onComplete(exportedDisabled);
     } else {
       // The operation succeeds even if the ExporterDirector is not available because during the
       // next role transition, the transition step can access the latest state from the
@@ -97,7 +97,7 @@ final class PartitionConfigurationManager {
 
     final var exporterDirector = context.getExporterDirector();
     if (exporterDirector != null) {
-      exporterDirector.deleteExporter(exporterId).onComplete(exportedDeleted);
+      exporterDirector.removeExporter(exporterId).onComplete(exportedDeleted);
     } else {
       // The operation succeeds even if the ExporterDirector is not available because during the
       // next role transition, the transition step can access the latest state from the

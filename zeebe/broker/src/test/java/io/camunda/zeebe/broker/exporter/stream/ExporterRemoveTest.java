@@ -27,7 +27,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ExporterDisableTest {
+public class ExporterRemoveTest {
   private static final String EXPORTER_ID_1 = "exporter-1";
   private static final String EXPORTER_ID_2 = "exporter-2";
 
@@ -62,13 +62,13 @@ public class ExporterDisableTest {
   }
 
   @Test
-  public void shouldDisableExporter() {
+  public void shouldRemoveExporter() {
     // given
     rule.startExporterDirector(exporterDescriptors);
     rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
 
     // when
-    rule.getDirector().disableExporter(EXPORTER_ID_1).join();
+    rule.getDirector().removeExporter(EXPORTER_ID_1).join();
 
     rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
     final long expectedLastExportedPosition =
@@ -81,7 +81,7 @@ public class ExporterDisableTest {
             () -> assertThat(exporters.get(EXPORTER_ID_2).getExportedRecords()).hasSize(3));
 
     assertThat(rule.getDirector().getLowestPosition().join())
-        .describedAs("The lowest position should be updated when one exporter is disabled")
+        .describedAs("The lowest position should be updated when one exporter is removed")
         .isEqualTo(expectedLastExportedPosition);
 
     assertThat(exporters.get(EXPORTER_ID_1).getExportedRecords())
@@ -90,13 +90,13 @@ public class ExporterDisableTest {
   }
 
   @Test
-  public void shouldSucceedWhenDisablingAlreadyDisabledExporter() {
+  public void shouldSucceedWhenDisablingAlreadyRemovedExporter() {
     // given
     rule.startExporterDirector(exporterDescriptors);
-    rule.getDirector().disableExporter(EXPORTER_ID_1).join();
+    rule.getDirector().removeExporter(EXPORTER_ID_1).join();
 
     // when - then
-    assertThat(rule.getDirector().disableExporter(EXPORTER_ID_1))
+    assertThat(rule.getDirector().removeExporter(EXPORTER_ID_1))
         .succeedsWithin(Duration.ofSeconds(5));
   }
 
@@ -106,7 +106,7 @@ public class ExporterDisableTest {
     rule.startExporterDirector(exporterDescriptors);
 
     // when - then
-    assertThat(rule.getDirector().disableExporter("non-existing-exporter"))
+    assertThat(rule.getDirector().removeExporter("non-existing-exporter"))
         .succeedsWithin(Duration.ofSeconds(5));
   }
 
@@ -119,7 +119,7 @@ public class ExporterDisableTest {
     rule.getDirector().close();
 
     // then
-    assertThat(rule.getDirector().disableExporter(EXPORTER_ID_1))
+    assertThat(rule.getDirector().removeExporter(EXPORTER_ID_1))
         .succeedsWithin(Duration.ofSeconds(5));
   }
 }

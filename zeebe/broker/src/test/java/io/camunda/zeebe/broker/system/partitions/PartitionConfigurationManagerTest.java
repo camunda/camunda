@@ -70,7 +70,7 @@ final class PartitionConfigurationManagerTest {
       // given
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
       final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
-      when(mockExporterDirector.disableExporter(exporterId))
+      when(mockExporterDirector.removeExporter(exporterId))
           .thenReturn(testConcurrencyControl.createCompletedFuture());
       partitionTransitionContext.setExporterDirector(mockExporterDirector);
 
@@ -87,7 +87,7 @@ final class PartitionConfigurationManagerTest {
                   .state())
           .describedAs("Exporter state should be updated in the context")
           .isEqualTo(State.DISABLED);
-      verify(mockExporterDirector).disableExporter(exporterId);
+      verify(mockExporterDirector).removeExporter(exporterId);
     }
 
     @Test
@@ -115,7 +115,7 @@ final class PartitionConfigurationManagerTest {
       // given
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
       final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
-      when(mockExporterDirector.disableExporter(exporterId))
+      when(mockExporterDirector.removeExporter(exporterId))
           .thenReturn(testConcurrencyControl.failedFuture(new RuntimeException("force fail")));
       partitionTransitionContext.setExporterDirector(mockExporterDirector);
 
@@ -153,7 +153,7 @@ final class PartitionConfigurationManagerTest {
       // given
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
       final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
-      when(mockExporterDirector.deleteExporter(exporterId))
+      when(mockExporterDirector.removeExporter(exporterId))
           .thenReturn(testConcurrencyControl.createCompletedFuture());
       partitionTransitionContext.setExporterDirector(mockExporterDirector);
 
@@ -168,7 +168,7 @@ final class PartitionConfigurationManagerTest {
                   .exporters()
                   .get(exporterId))
           .isNull();
-      verify(mockExporterDirector).deleteExporter(exporterId);
+      verify(mockExporterDirector).removeExporter(exporterId);
     }
 
     @Test
@@ -192,7 +192,7 @@ final class PartitionConfigurationManagerTest {
       // given
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
       final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
-      when(mockExporterDirector.deleteExporter(exporterId))
+      when(mockExporterDirector.removeExporter(exporterId))
           .thenReturn(testConcurrencyControl.failedFuture(new RuntimeException("force fail")));
       partitionTransitionContext.setExporterDirector(mockExporterDirector);
 
