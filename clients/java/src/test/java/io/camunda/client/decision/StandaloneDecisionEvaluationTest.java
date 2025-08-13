@@ -319,6 +319,8 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
     assertThat(response.getTenantId()).isEqualTo(evaluateDecisionResponse.getTenantId());
     assertThat(response.getDecisionInstanceKey())
         .isEqualTo(evaluateDecisionResponse.getDecisionInstanceKey());
+    assertThat(response.getDecisionEvaluationKey())
+        .isEqualTo(evaluateDecisionResponse.getDecisionEvaluationKey());
 
     // assert EvaluatedDecision
     assertThat(response.getEvaluatedDecisions()).hasSize(1);
