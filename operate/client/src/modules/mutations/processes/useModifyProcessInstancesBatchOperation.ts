@@ -11,11 +11,12 @@ import {
   useQueryClient,
   type UseMutationOptions,
 } from '@tanstack/react-query';
-import {modifyProcessInstancesBatchOperation} from 'modules/api/v2/processInstances/modifyProcessInstancesBatchOperation.ts';
+import {modifyProcessInstancesBatchOperation} from 'modules/api/v2/processInstances/modifyProcessInstancesBatchOperation';
 import type {
   CreateModificationBatchOperationRequestBody,
   CreateModificationBatchOperationResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
+import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations';
 
 const useModifyProcessInstancesBatchOperation = (
   options?: Partial<
@@ -38,7 +39,7 @@ const useModifyProcessInstancesBatchOperation = (
 
       if (response !== null) {
         await queryClient.invalidateQueries({
-          queryKey: ['queryBatchOperations'],
+          queryKey: [BATCH_OPERATIONS_QUERY_KEY],
         });
 
         return response;
