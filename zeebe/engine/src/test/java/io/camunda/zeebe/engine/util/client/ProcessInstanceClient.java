@@ -132,6 +132,11 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceCreationClient withTags(final String... tags) {
+      processInstanceCreationRecord.setTags(Set.of(tags));
+      return this;
+    }
+
     public ProcessInstanceCreationClient withRuntimeTerminateInstruction(
         final String afterElementId) {
       final var instruction =
