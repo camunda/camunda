@@ -90,7 +90,7 @@ const List: FC = () => {
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title="The list of roles could not be loaded."
+          title={t("rolesCouldNotLoad")}
           actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}

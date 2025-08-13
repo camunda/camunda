@@ -16,9 +16,10 @@ import { useEntityModal } from "src/components/modal";
 import AssignMembersModal from "src/pages/groups/detail/members/AssignMembersModal";
 import AssignMemberModal from "src/pages/groups/detail/members/AssignMemberModal";
 import DeleteModal from "src/pages/groups/detail/members/DeleteModal";
-import { docsUrl, isOIDC } from "src/configuration";
+import { isOIDC } from "src/configuration";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 import { UserKeys } from "src/utility/api/users";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type MembersProps = {
   groupId: string;
@@ -26,6 +27,9 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
+  const CHILD_RESOURCE_TYPE_STRING = t("user").toLowerCase();
+  const PARENT_RESOURCE_TYPE_STRING = t("group").toLowerCase();
+
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
     searchMembersByGroup,
     {
@@ -51,7 +55,9 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadMembers")}
+        description={t("unableToLoadResource", {
+          resourceType: CHILD_RESOURCE_TYPE_STRING,
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -59,17 +65,11 @@ const Members: FC<MembersProps> = ({ groupId }) => {
   if (success && isUsersListEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignUsersToGroup")}
-          description={t("membersAccessDisclaimer")}
-          button={{
-            label: t("assignUser"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutGroups"),
-            href: docsUrl,
-          }}
+        <TabEmptyState
+          childResourceType={CHILD_RESOURCE_TYPE_STRING}
+          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          handleClick={openAssignModal}
+          docsLinkPath=""
         />
         {assignUsersModal}
       </>

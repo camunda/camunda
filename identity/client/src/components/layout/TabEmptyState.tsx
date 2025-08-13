@@ -6,21 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { Add } from "@carbon/react/icons";
-import { FC } from "react";
-import { documentationHref } from "src/components/documentation";
 import { docsUrl } from "src/configuration";
+import { documentationHref } from "src/components/documentation";
 import useTranslate from "src/utility/localization";
 
-type PageEmptyStateProps = {
-  resourceType: string;
+type TabEmptyStateProps = {
+  childResourceType: string;
+  parentResourceType: string;
   docsLinkPath?: string;
   handleClick: () => void;
 };
 
-const PageEmptyState: FC<PageEmptyStateProps> = ({
-  resourceType,
+const TabEmptyState: FC<TabEmptyStateProps> = ({
+  childResourceType,
+  parentResourceType,
   docsLinkPath = "",
   handleClick,
 }) => {
@@ -28,15 +30,20 @@ const PageEmptyState: FC<PageEmptyStateProps> = ({
 
   return (
     <C3EmptyState
-      heading={t("emptyStateTitleCreate", {
-        resourceType,
+      heading={t("emptyStateTitleAssign", {
+        childResourceType,
+        parentResourceType,
       })}
-      description={t("emptyStateSubtitleCreate", {
-        resourceType,
-      })}
+      description={
+        parentResourceType === t("tenant").toLowerCase()
+          ? t("emptyStateTenantAccessDisclaimer")
+          : t("emptyStateSubtitleAssign", {
+              childResourceType,
+            })
+      }
       button={{
-        label: t("emptyStateButtonCreate", {
-          resourceType,
+        label: t("emptyStateButtonAssign", {
+          childResourceType,
         }),
         onClick: handleClick,
         icon: Add,
@@ -44,11 +51,11 @@ const PageEmptyState: FC<PageEmptyStateProps> = ({
       link={{
         href: documentationHref(docsUrl, docsLinkPath),
         label: t("emptyStateLearnText", {
-          resourceType,
+          resourceType: childResourceType,
         }),
       }}
     />
   );
 };
 
-export default PageEmptyState;
+export default TabEmptyState;

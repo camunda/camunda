@@ -16,9 +16,10 @@ import { TrashCan } from "@carbon/react/icons";
 import DeleteModal from "src/pages/tenants/detail/members/DeleteModal";
 import AssignMembersModal from "src/pages/tenants/detail/members/AssignMembersModal";
 import AssignMemberModal from "src/pages/tenants/detail/members/AssignMemberModal";
-import { docsUrl, isOIDC } from "src/configuration";
+import { isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type MembersProps = {
   tenantId: string;
@@ -26,6 +27,8 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
+  const CHILD_RESOURCE_TYPE_STRING = t("user").toLowerCase();
+  const PARENT_RESOURCE_TYPE_STRING = t("tenant").toLowerCase();
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
     getMembersByTenantId,
@@ -53,7 +56,9 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadMembers")}
+        description={t("unableToLoadResource", {
+          resourceType: CHILD_RESOURCE_TYPE_STRING,
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -61,17 +66,11 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
   if (success && isAssignedUsersListEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignUsersToTenant")}
-          description={t("tenantMemberAccessDisclaimer")}
-          button={{
-            label: t("assignUser"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutTenants"),
-            href: docsUrl,
-          }}
+        <TabEmptyState
+          childResourceType={CHILD_RESOURCE_TYPE_STRING}
+          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          handleClick={openAssignModal}
+          docsLinkPath=""
         />
         {assignUsersModal}
       </>

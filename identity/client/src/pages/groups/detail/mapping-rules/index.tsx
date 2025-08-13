@@ -16,7 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/mapping-rules/DeleteModal";
 import AssignMappingRulesModal from "src/pages/groups/detail/mapping-rules/AssignMappingRulesModal.tsx";
-import { docsUrl } from "src/configuration";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type MappingRulesProps = {
   groupId: string;
@@ -24,6 +24,8 @@ type MappingRulesProps = {
 
 const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
+  const CHILD_RESOURCE_TYPE_STRING = t("mappingRule").toLowerCase();
+  const PARENT_RESOURCE_TYPE_STRING = t("group").toLowerCase();
 
   const {
     data: mappingRules,
@@ -58,7 +60,9 @@ const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadMappingRules")}
+        description={t("unableToLoadResource", {
+          resourceType: CHILD_RESOURCE_TYPE_STRING,
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -66,17 +70,11 @@ const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
   if (success && isMappingRulesListEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignMappingRulesToGroup")}
-          description={t("membersAccessDisclaimer")}
-          button={{
-            label: t("assignMappingRule"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutGroups"),
-            href: docsUrl,
-          }}
+        <TabEmptyState
+          childResourceType={CHILD_RESOURCE_TYPE_STRING}
+          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          handleClick={openAssignModal}
+          docsLinkPath=""
         />
         {assignMappingRulesModal}
       </>

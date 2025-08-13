@@ -16,7 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/detail/clients/DeleteModal";
 import AssignClientsModal from "src/pages/roles/detail/clients/AssignClientsModal";
-import { docsUrl } from "src/configuration";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type ClientsProps = {
   roleId: Role["roleId"];
@@ -24,6 +24,8 @@ type ClientsProps = {
 
 const Clients: FC<ClientsProps> = ({ roleId }) => {
   const { t } = useTranslate("roles");
+  const CHILD_RESOURCE_TYPE_STRING = t("client").toLowerCase();
+  const PARENT_RESOURCE_TYPE_STRING = t("role").toLowerCase();
 
   const {
     data: clients,
@@ -53,7 +55,9 @@ const Clients: FC<ClientsProps> = ({ roleId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadClients")}
+        description={t("unableToLoadResource", {
+          resourceType: CHILD_RESOURCE_TYPE_STRING,
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -61,17 +65,11 @@ const Clients: FC<ClientsProps> = ({ roleId }) => {
   if (success && assignedClients.length === 0)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignClientsToRole")}
-          description={t("accessDisclaimer")}
-          button={{
-            label: t("assignClient"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutRoles"),
-            href: docsUrl,
-          }}
+        <TabEmptyState
+          childResourceType={CHILD_RESOURCE_TYPE_STRING}
+          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          handleClick={openAssignModal}
+          docsLinkPath=""
         />
         {assignClientModal}
       </>

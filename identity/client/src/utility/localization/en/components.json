@@ -54,7 +54,7 @@
   "removingClient": "Removing client",
   "enterClientId": "Enter client ID",
   "clientsCouldNotLoad": "Clients could not load",
-  "unableToLoadClients": "Unable to load clients",
+  "unableToLoadResource": "Unable to load {{resourceType}}s",
   "searchByClientId": "Search by client ID",
   "typeUsername": "Type a username",
   "typeGroup": "Type a group",
@@ -82,5 +82,9 @@
   "emptyStateTitleCreate": "No {{resourceType}}s created yet",
   "emptyStateSubtitleCreate": "Start by creating a new {{resourceType}}.",
   "emptyStateButtonCreate": "Create {{resourceType}}",
-  "emptyStateLearnTextCreate": "Learn more about {{resourceType}}s"
+  "emptyStateTitleAssign": "No {{childResourceType}}s assigned to this {{parentResourceType}} yet",
+  "emptyStateSubtitleAssign": "Start by assigning a {{childResourceType}}.",
+  "emptyStateButtonAssign": "Assign {{childResourceType}}",
+  "emptyStateLearnText": "Learn more about {{resourceType}}s",
+  "emptyStateTenantAccessDisclaimer": "Members of this Tenant will be given access to the data within the Tenant."
 }
