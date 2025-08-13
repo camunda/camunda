@@ -9,7 +9,7 @@
 import {
   getClientConfigBoolean,
   getClientConfigString,
-} from "src/configuration/env";
+} from "src/configuration/clientConfig";
 
 const identityPath = "/identity";
 
