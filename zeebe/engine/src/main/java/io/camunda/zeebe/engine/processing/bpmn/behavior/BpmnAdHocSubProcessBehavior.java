@@ -120,7 +120,7 @@ public final class BpmnAdHocSubProcessBehavior {
                     innerInstanceKey,
                     innerInstanceRecord.getProcessDefinitionKey(),
                     innerInstanceRecord.getProcessInstanceKey(),
-                    BufferUtil.wrapString(innerInstanceRecord.getBpmnProcessId()),
+                    innerInstanceRecord.getBpmnProcessIdBuffer(),
                     innerInstanceRecord.getTenantId(),
                     variableName,
                     new UnsafeBuffer(MsgPackHelper.NIL),
