@@ -22,10 +22,8 @@ import java.util.Comparator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class MessageSubscriptionSearchTest {
 
   private static final int NUMBER_OF_MESSAGE_SUBSCRIPTIONS = 3;

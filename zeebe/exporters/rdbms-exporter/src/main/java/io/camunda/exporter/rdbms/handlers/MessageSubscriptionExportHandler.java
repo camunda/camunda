@@ -23,7 +23,6 @@ import java.util.Set;
 public class MessageSubscriptionExportHandler
     implements RdbmsExportHandler<ProcessMessageSubscriptionRecordValue> {
 
-  // TODO: We could also export CORRELATED, but we don't do that for ES/OS.
   private static final Set<Intent> STATES =
       Set.of(ProcessMessageSubscriptionIntent.CREATED, ProcessMessageSubscriptionIntent.MIGRATED);
   private final MessageSubscriptionWriter messageSubscriptionWriter;
@@ -53,7 +52,6 @@ public class MessageSubscriptionExportHandler
     return new MessageSubscriptionDbModel.Builder()
         .messageSubscriptionKey(record.getKey())
         .processDefinitionId(value.getBpmnProcessId())
-        .processDefinitionKey(null) // TODO: Check if we need this
         .processInstanceKey(value.getProcessInstanceKey())
         .flowNodeId(value.getElementId())
         .flowNodeInstanceKey(value.getElementInstanceKey())

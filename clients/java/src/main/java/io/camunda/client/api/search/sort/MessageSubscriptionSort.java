@@ -23,8 +23,6 @@ public interface MessageSubscriptionSort extends SearchRequestSort<MessageSubscr
 
   MessageSubscriptionSort processDefinitionId();
 
-  MessageSubscriptionSort processDefinitionKey();
-
   MessageSubscriptionSort processInstanceKey();
 
   MessageSubscriptionSort elementId();

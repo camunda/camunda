@@ -37,7 +37,6 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                 {
                   "messageSubscriptionKey": "2251799813685854",
                   "processDefinitionId": "gg_msg_receive_id",
-                  "processDefinitionKey": "948",
                   "processInstanceKey": "2251799813685849",
                   "elementId": "Activity_1ludhs2",
                   "elementInstanceKey": "2251799813685853",
@@ -65,7 +64,6 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                   new MessageSubscriptionEntity.Builder()
                       .messageSubscriptionKey(2251799813685854L)
                       .processDefinitionId("gg_msg_receive_id")
-                      .processDefinitionKey(948L)
                       .processInstanceKey(2251799813685849L)
                       .flowNodeId("Activity_1ludhs2")
                       .flowNodeInstanceKey(2251799813685853L)
@@ -148,7 +146,6 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
               "filter": {
                 "messageSubscriptionKey": 123,
                 "processDefinitionId": "gg_msg_receive_id",
-                "processDefinitionKey": 948,
                 "processInstanceKey": 2251799813685849,
                 "elementId": "Activity_1ludhs2",
                 "elementInstanceKey": 2251799813685853,
@@ -174,7 +171,6 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                     f ->
                         f.messageSubscriptionKeys(123L)
                             .processDefinitionIds("gg_msg_receive_id")
-                            .processDefinitionKeys(948L)
                             .processInstanceKeys(2251799813685849L)
                             .flowNodeIds("Activity_1ludhs2")
                             .flowNodeInstanceKeys(2251799813685853L)
@@ -209,10 +205,6 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                 {
                   "field": "processDefinitionId",
                   "order": "desc"
-                },
-                {
-                  "field": "processDefinitionKey",
-                  "order": "asc"
                 },
                 {
                   "field": "processInstanceKey",
@@ -265,8 +257,6 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                             .asc()
                             .processDefinitionId()
                             .desc()
-                            .processDefinitionKey()
-                            .asc()
                             .processInstanceKey()
                             .desc()
                             .flowNodeId()

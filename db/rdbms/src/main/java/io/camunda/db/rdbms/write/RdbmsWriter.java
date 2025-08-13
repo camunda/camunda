@@ -134,7 +134,6 @@ public class RdbmsWriter {
     messageSubscriptionWriter =
         new MessageSubscriptionWriter(executionQueue, messageSubscriptionMapper);
 
-    // TODO: Do I need to update this?
     historyCleanupService =
         new HistoryCleanupService(
             config,

@@ -1310,9 +1310,6 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getProcessDefinitionId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionIdOperations);
-      ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToOperations(Long.class))
-          .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getProcessInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::processInstanceKeyOperations);
@@ -1748,7 +1745,6 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case MESSAGE_SUBSCRIPTION_KEY -> builder.messageSubscriptionKey();
         case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
-        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         case ELEMENT_ID -> builder.flowNodeId();
         case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();

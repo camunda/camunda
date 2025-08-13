@@ -7123,7 +7123,6 @@ components:
           enum:
             - messageSubscriptionKey
             - processDefinitionId
-            - processDefinitionKey
             - processInstanceKey
             - elementId
             - elementInstanceKey
@@ -7162,10 +7161,6 @@ components:
           description: The process definition ID associated with this message subscription.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionKey:
-          description: The process definition key associated with this message subscription.
-          allOf:
-            - $ref: "#/components/schemas/BasicStringFilterProperty"
         processInstanceKey:
           description: The process instance key associated with this message subscription.
           allOf:
