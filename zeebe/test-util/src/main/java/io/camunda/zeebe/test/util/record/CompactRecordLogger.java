@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
@@ -222,6 +223,8 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MULTI_INSTANCE, this::summarizeMultiInstance);
     valueLoggers.put(ValueType.RUNTIME_INSTRUCTION, this::summarizeRuntimeInstruction);
     valueLoggers.put(ValueType.BATCH_OPERATION_CREATION, this::summarizeBatchOperationCreation);
+    valueLoggers.put(
+        ValueType.BATCH_OPERATION_INITIALIZATION, this::summarizeBatchOperationInitialization);
     valueLoggers.put(ValueType.BATCH_OPERATION_CHUNK, this::summarizeBatchOperationChunk);
     valueLoggers.put(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, this::summarizeBatchOperationLifecycle);
@@ -1340,6 +1343,17 @@ public class CompactRecordLogger {
     final var value = (BatchOperationChunkRecordValue) record.getValue();
 
     return new StringBuilder().append("numItems=").append(value.getItems().size()).toString();
+  }
+
+  private String summarizeBatchOperationInitialization(final Record<?> record) {
+    final var value = (BatchOperationInitializationRecordValue) record.getValue();
+
+    return new StringBuilder()
+        .append("cursor=")
+        .append(value.getSearchResultCursor())
+        .append(", pageSize=")
+        .append(value.getSearchQueryPageSize())
+        .toString();
   }
 
   private String summarizeBatchOperationExecution(final Record<?> record) {

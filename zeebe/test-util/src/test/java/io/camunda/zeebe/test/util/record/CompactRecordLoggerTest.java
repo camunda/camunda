@@ -49,7 +49,6 @@ class CompactRecordLoggerTest {
         "FORM",
         "PROCESS_INSTANCE_MIGRATION",
         "CHECKPOINT",
-        "BATCH_OPERATION_INITIALIZATION"
       })
   public void shouldHaveCompactLoggerForValueType(final ValueType valueType) {
     assertThat(compactRecordLogger.getSupportedValueTypes())
