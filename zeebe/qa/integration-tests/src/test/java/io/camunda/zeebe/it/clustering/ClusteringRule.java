@@ -34,8 +34,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.Topology;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.GatewayBasedProperties;
-import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -133,7 +133,7 @@ public class ClusteringRule extends ExternalResource {
   private final Consumer<GatewayCfg> gatewayConfigurator;
   private final Consumer<CamundaClientBuilder> clientConfigurator;
   private final Map<Integer, Broker> brokers;
-  private final Map<Integer, LegacyBrokerBasedProperties> brokerCfgs;
+  private final Map<Integer, BrokerBasedProperties> brokerCfgs;
   private final List<Integer> partitionIds;
   private final String clusterName;
   private final Map<Integer, LogStream> logstreams;
@@ -404,12 +404,12 @@ public class ClusteringRule extends ExternalResource {
         .isBrokerHealthy();
   }
 
-  public LegacyBrokerBasedProperties getBrokerCfg(final int nodeId) {
+  public BrokerBasedProperties getBrokerCfg(final int nodeId) {
     return brokerCfgs.computeIfAbsent(nodeId, this::createBrokerCfg);
   }
 
-  private LegacyBrokerBasedProperties createBrokerCfg(final int nodeId) {
-    final LegacyBrokerBasedProperties brokerCfg = new LegacyBrokerBasedProperties();
+  private BrokerBasedProperties createBrokerCfg(final int nodeId) {
+    final BrokerBasedProperties brokerCfg = new BrokerBasedProperties();
 
     // build-in exporters
     if (ENABLE_DEBUG_EXPORTER) {
@@ -962,7 +962,7 @@ public class ClusteringRule extends ExternalResource {
   // to replicate all the wiring Spring is doing
   @Deprecated(forRemoval = true)
   private BrokerBasedConfiguration getBrokerConfiguration(
-      final File brokerBase, final LegacyBrokerBasedProperties cfg) {
+      final File brokerBase, final BrokerBasedProperties cfg) {
     final var workingDir =
         new WorkingDirectoryConfiguration.WorkingDirectory(brokerBase.toPath(), false);
 

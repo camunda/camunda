@@ -10,7 +10,6 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.configuration.beans.BrokerBasedProperties;
-import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -184,7 +183,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * @return itself for chaining
    */
   default T awaitCompleteTopology(
-      final LegacyBrokerBasedProperties brokerBasedProperties, final CamundaClient camundaClient) {
+      final BrokerBasedProperties brokerBasedProperties, final CamundaClient camundaClient) {
     final var clusterCfg = brokerBasedProperties.getCluster();
     return awaitCompleteTopology(
         clusterCfg.getClusterSize(),

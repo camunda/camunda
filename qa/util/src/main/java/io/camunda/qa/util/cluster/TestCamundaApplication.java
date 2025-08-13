@@ -21,7 +21,7 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
-import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.configuration.ConfiguredMappingRule;
@@ -62,7 +62,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         TestStandaloneApplication<TestCamundaApplication> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestCamundaApplication.class);
-  private final LegacyBrokerBasedProperties brokerProperties;
+  private final BrokerBasedProperties brokerProperties;
   private final CamundaSecurityProperties securityConfig;
 
   public TestCamundaApplication() {
@@ -81,7 +81,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         BrokerModuleConfiguration.class,
         IndexTemplateDescriptorsConfigurator.class);
 
-    brokerProperties = new LegacyBrokerBasedProperties();
+    brokerProperties = new BrokerBasedProperties();
 
     brokerProperties.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
     brokerProperties.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
@@ -128,7 +128,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
                 List.of(DEFAULT_MAPPING_RULE_ID)));
 
     //noinspection resource
-    withBean("config", brokerProperties, LegacyBrokerBasedProperties.class)
+    withBean("config", brokerProperties, BrokerBasedProperties.class)
         .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
         .withProperty(
             AuthenticationProperties.API_UNPROTECTED,
@@ -274,8 +274,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
    * started, but likely has no effect until it's restarted.
    */
   @Override
-  public TestCamundaApplication withBrokerConfig(
-      final Consumer<LegacyBrokerBasedProperties> modifier) {
+  public TestCamundaApplication withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
     modifier.accept(brokerProperties);
     return this;
   }
@@ -292,7 +291,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   }
 
   @Override
-  public LegacyBrokerBasedProperties brokerConfig() {
+  public BrokerBasedProperties brokerConfig() {
     return brokerProperties;
   }
 
