@@ -16,7 +16,7 @@ import { useEntityModal } from "src/components/modal";
 import AssignMembersModal from "src/pages/groups/detail/members/AssignMembersModal";
 import AssignMemberModal from "src/pages/groups/detail/members/AssignMemberModal";
 import DeleteModal from "src/pages/groups/detail/members/DeleteModal";
-import { isOIDC } from "src/configuration";
+import { docsUrl, isOIDC } from "src/configuration";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 import { UserKeys } from "src/utility/api/users";
 
@@ -68,7 +68,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
           }}
           link={{
             label: t("learnMoreAboutGroups"),
-            href: "https://docs.camunda.io/",
+            href: docsUrl,
           }}
         />
         {assignUsersModal}

@@ -16,7 +16,7 @@ import { useEntityModal } from "src/components/modal";
 import AssignGroupsModal from "src/pages/roles/detail/groups/AssignGroupsModal";
 import AssignGroupModal from "src/pages/roles/detail/groups/AssignGroupModal";
 import DeleteModal from "src/pages/roles/detail/groups/DeleteModal";
-import { isCamundaGroupsEnabled } from "src/configuration";
+import { docsUrl, isCamundaGroupsEnabled } from "src/configuration";
 import { GroupKeys } from "src/utility/api/groups";
 import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 
@@ -70,7 +70,7 @@ const Groups: FC<GroupsProps> = ({ roleId }) => {
           }}
           link={{
             label: t("learnMoreAboutRoles"),
-            href: "https://docs.camunda.io/",
+            href: docsUrl,
           }}
         />
         {assignGroupsModal}

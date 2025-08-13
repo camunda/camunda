@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/clients/DeleteModal";
 import AssignClientsModal from "src/pages/groups/detail/clients/AssignClientsModal";
+import { docsUrl } from "src/configuration";
 
 type ClientsProps = {
   groupId: Group["groupId"];
@@ -63,7 +64,7 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
           }}
           link={{
             label: t("learnMoreAboutGroups"),
-            href: "https://docs.camunda.io/",
+            href: docsUrl,
           }}
         />
         {assignClientModal}

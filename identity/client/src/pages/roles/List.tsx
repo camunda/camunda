@@ -8,21 +8,21 @@
 
 import { FC } from "react";
 import { TrashCan } from "@carbon/react/icons";
-import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { useNavigate } from "react-router";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import { documentationHref } from "src/components/documentation";
 import { searchRoles, Role } from "src/utility/api/roles";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/roles/modals/AddModal";
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
+import PageEmptyState from "src/components/layout/PageEmptyState";
 
 const List: FC = () => {
   const { t } = useTranslate("roles");
+  const RESOURCE_TYPE_STRING = t("role").toLowerCase();
   const navigate = useNavigate();
   const {
     data: roles,
@@ -43,8 +43,8 @@ const List: FC = () => {
   const pageHeader = (
     <PageHeader
       title={t("roles")}
-      linkText="roles"
-      linkUrl=""
+      linkText={t("roles").toLowerCase()}
+      docsLinkPath=""
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -53,17 +53,10 @@ const List: FC = () => {
     return (
       <Page>
         {pageHeader}
-        <C3EmptyState
-          heading={t("noRoles")}
-          description={t("createNewRoleToStart")}
-          button={{
-            label: t("createRole"),
-            onClick: addRole,
-          }}
-          link={{
-            href: documentationHref("https://docs.camunda.io/", ""),
-            label: t("learnMoreAboutRoles"),
-          }}
+        <PageEmptyState
+          resourceType={RESOURCE_TYPE_STRING}
+          docsLinkPath=""
+          handleClick={addRole}
         />
         {addRoleModal}
       </Page>

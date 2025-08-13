@@ -81,5 +81,6 @@
   "assignClientsToTenant": "Assign clients to this Tenant",
   "failedToCreateTenant": "Failed to create tenant",
   "pleaseEnterValidTenantId": "Please enter a valid Tenant ID. Allowed special characters: - _ . @",
-  "tenantNameRequired": "Tenant name is required"
+  "tenantNameRequired": "Tenant name is required",
+  "searchByTenantId": "Search by tenant ID"
 }

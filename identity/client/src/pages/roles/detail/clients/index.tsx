@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/detail/clients/DeleteModal";
 import AssignClientsModal from "src/pages/roles/detail/clients/AssignClientsModal";
+import { docsUrl } from "src/configuration";
 
 type ClientsProps = {
   roleId: Role["roleId"];
@@ -69,7 +70,7 @@ const Clients: FC<ClientsProps> = ({ roleId }) => {
           }}
           link={{
             label: t("learnMoreAboutRoles"),
-            href: "https://docs.camunda.io/",
+            href: docsUrl,
           }}
         />
         {assignClientModal}

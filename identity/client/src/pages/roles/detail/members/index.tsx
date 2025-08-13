@@ -16,7 +16,7 @@ import { useEntityModal } from "src/components/modal";
 import AssignMembersModal from "src/pages/roles/detail/members/AssignMembersModal";
 import AssignMemberModal from "src/pages/roles/detail/members/AssignMemberModal";
 import DeleteModal from "src/pages/roles/detail/members/DeleteModal";
-import { isOIDC } from "src/configuration";
+import { docsUrl, isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 
@@ -69,7 +69,7 @@ const Members: FC<MembersProps> = ({ roleId }) => {
           }}
           link={{
             label: t("learnMoreAboutRoles"),
-            href: "https://docs.camunda.io/",
+            href: docsUrl,
           }}
         />
         {assignUsersModal}

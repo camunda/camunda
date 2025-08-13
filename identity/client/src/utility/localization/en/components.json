@@ -1,11 +1,18 @@
 {
   "users": "Users",
+  "user": "User",
   "groups": "Groups",
+  "group": "Group",
   "roles": "Roles",
+  "role": "Role",
   "tenants": "Tenants",
+  "tenant": "Tenant",
   "mappingRules": "Mapping Rules",
+  "mappingRule": "Mapping Rule",
   "clients": "Clients",
+  "client": "Client",
   "authorizations": "Authorizations",
+  "authorization": "Authorization",
   "unauthorized": "Unauthorized",
   "sessionExpired": "Looks like your session has expired",
   "forbidden": "Forbidden",
@@ -71,5 +78,9 @@
   "setupEmailPlaceholder": "Enter email",
   "setupEmailInvalid": "Please enter a valid email",
   "setupCreateUser": "Create user",
-  "setupCreateAdminUserGenericError": "An error occurred while creating the admin user. Please try again."
+  "setupCreateAdminUserGenericError": "An error occurred while creating the admin user. Please try again.",
+  "emptyStateTitleCreate": "No {{resourceType}}s created yet",
+  "emptyStateSubtitleCreate": "Start by creating a new {{resourceType}}.",
+  "emptyStateButtonCreate": "Create {{resourceType}}",
+  "emptyStateLearnTextCreate": "Learn more about {{resourceType}}s"
 }

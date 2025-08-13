@@ -1,8 +1,9 @@
 {
-  "noMappingRules": "You don't have any mapping rules yet",
+  "noMappingRules": "No mapping rules created yet",
   "mappingRuleJWTToken": "Mapping rule of JWT token",
-  "createMappingRule": "Create a mapping rule",
-  "learnMoreMappingRule": "Learn more about mapping rule",
+  "startByCreatingAMappingRule": "Start by creating a new mapping rule.",
+  "createMappingRule": "Create mapping rule",
+  "learnMoreMappingRules": "Learn more about mapping rules",
   "mappingRuleId": "Mapping rule ID",
   "mappingRuleName": "Mapping rule name",
   "claimName": "Claim name",
@@ -34,5 +35,6 @@
   "mappingRuleIdRequired": "Mapping rule ID is required",
   "mappingRuleNameRequired": "Mapping rule name is required",
   "claimNameRequired": "Claim name is required",
-  "claimValueRequired": "Claim value is required"
+  "claimValueRequired": "Claim value is required",
+  "searchByMappingRuleId": "Search by mapping rule ID"
 }

@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/detail/mapping-rules/DeleteModal";
 import AssignMappingRulesModal from "src/pages/roles/detail/mapping-rules/AssignMappingRulesModal.tsx";
+import { docsUrl } from "src/configuration";
 
 type MappingRulesProps = {
   roleId: string;
@@ -74,7 +75,7 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
           }}
           link={{
             label: t("learnMoreAboutRoles"),
-            href: "https://docs.camunda.io/",
+            href: docsUrl,
           }}
         />
         {assignMappingRulesModal}

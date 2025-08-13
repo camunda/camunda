@@ -7,22 +7,22 @@
  */
 
 import { FC } from "react";
-import { Edit, TrashCan, Add } from "@carbon/react/icons";
-import { C3EmptyState } from "@camunda/camunda-composite-components";
+import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import { documentationHref } from "src/components/documentation";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import { AddModal } from "src/pages/mapping-rules/modals/add-modal";
 import { searchMappingRule } from "src/utility/api/mapping-rules";
 import DeleteModal from "src/pages/mapping-rules/modals/DeleteModal";
 import EditModal from "src/pages/mapping-rules/modals/EditModal";
+import PageEmptyState from "src/components/layout/PageEmptyState";
 
 const List: FC = () => {
   const { t } = useTranslate("mappingRules");
+  const RESOURCE_TYPE_STRING = t("mappingRule").toLowerCase();
   const {
     data: mappingRuleSearchResults,
     loading,
@@ -48,8 +48,8 @@ const List: FC = () => {
   const pageHeader = (
     <PageHeader
       title={t("mappingRules")}
-      linkText={t("mappingRules")}
-      linkUrl=""
+      linkText={t("mappingRules").toLowerCase()}
+      docsLinkPath=""
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -58,18 +58,10 @@ const List: FC = () => {
     return (
       <Page>
         {pageHeader}
-        <C3EmptyState
-          heading={t("noMappingRules")}
-          description={t("mappingRuleJWTToken")}
-          button={{
-            label: t("createMappingRule"),
-            onClick: addMappingRule,
-            icon: Add,
-          }}
-          link={{
-            href: documentationHref("https://docs.camunda.io/", ""),
-            label: t("learnMoreMappingRule"),
-          }}
+        <PageEmptyState
+          resourceType={RESOURCE_TYPE_STRING}
+          docsLinkPath=""
+          handleClick={addMappingRule}
         />
         {addMappingRuleModal}
       </Page>
@@ -109,6 +101,7 @@ const List: FC = () => {
             onClick: deleteMappingRule,
           },
         ]}
+        searchPlaceholder={t("searchByMappingRuleId")}
         searchKey="mappingRuleId"
         {...paginationProps}
       />

@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/mapping-rules/DeleteModal";
 import AssignMappingRulesModal from "src/pages/tenants/detail/mapping-rules/AssignMappingRulesModal.tsx";
+import { docsUrl } from "src/configuration";
 
 type MappingRulesProps = {
   tenantId: string;
@@ -74,7 +75,7 @@ const MappingRules: FC<MappingRulesProps> = ({ tenantId }) => {
           }}
           link={{
             label: t("learnMoreAboutTenants"),
-            href: "https://docs.camunda.io/",
+            href: docsUrl,
           }}
         />
         {assignMappingRulesModal}

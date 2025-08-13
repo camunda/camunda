@@ -16,7 +16,7 @@ import { TrashCan } from "@carbon/react/icons";
 import DeleteModal from "src/pages/tenants/detail/members/DeleteModal";
 import AssignMembersModal from "src/pages/tenants/detail/members/AssignMembersModal";
 import AssignMemberModal from "src/pages/tenants/detail/members/AssignMemberModal";
-import { isOIDC } from "src/configuration";
+import { docsUrl, isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 
@@ -70,7 +70,7 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
           }}
           link={{
             label: t("learnMoreAboutTenants"),
-            href: "https://docs.camunda.io/",
+            href: docsUrl,
           }}
         />
         {assignUsersModal}

@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/clients/DeleteModal";
 import AssignClientsModal from "src/pages/tenants/detail/clients/AssignClientsModal";
+import { docsUrl } from "src/configuration";
 
 type ClientsProps = {
   tenantId: Tenant["tenantId"];
@@ -69,7 +70,7 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
           }}
           link={{
             label: t("learnMoreAboutTenants"),
-            href: "https://docs.camunda.io/",
+            href: docsUrl,
           }}
         />
         {assignClientModal}

@@ -16,7 +16,7 @@ import { useEntityModal } from "src/components/modal";
 import AssignGroupsModal from "src/pages/tenants/detail/groups/AssignGroupsModal";
 import AssignGroupModal from "src/pages/tenants/detail/groups/AssignGroupModal";
 import DeleteModal from "src/pages/tenants/detail/groups/DeleteModal";
-import { isCamundaGroupsEnabled } from "src/configuration";
+import { docsUrl, isCamundaGroupsEnabled } from "src/configuration";
 import { GroupKeys } from "src/utility/api/groups";
 import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 
@@ -70,7 +70,7 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
           }}
           link={{
             label: t("learnMoreAboutTenants"),
-            href: "https://docs.camunda.io/",
+            href: docsUrl,
           }}
         />
         {assignGroupsModal}

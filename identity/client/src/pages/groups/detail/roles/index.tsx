@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/roles/DeleteModal";
 import AssignRolesModal from "src/pages/groups/detail/roles/AssignRolesModal";
+import { docsUrl } from "src/configuration";
 
 type RolesProps = {
   groupId: string;
@@ -73,7 +74,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
           }}
           link={{
             label: t("learnMoreAboutGroups"),
-            href: "https://docs.camunda.io/",
+            href: docsUrl,
           }}
         />
         {assignRolesModal}
