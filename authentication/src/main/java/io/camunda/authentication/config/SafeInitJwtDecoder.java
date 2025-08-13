@@ -38,6 +38,11 @@ public class SafeInitJwtDecoder implements JwtDecoder {
     return proxy
         .orElseThrow(
             () ->
+                // we have to throw AuthenticationCredentialsNotFoundException or any other
+                // Exception that extend AuthenticationException in order for Spring to pass it
+                // to our error handler.
+                // Please see `BearerTokenAuthenticationFilter` `authenticationFailureHandler`
+                // part and `doFilterInternal` method.
                 new AuthenticationCredentialsNotFoundException(
                     "Authentication service unavailable: Unable to connect to the configured Identity Provider (OIDC). "
                         + "Please try again later or contact your administrator."))

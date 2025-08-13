@@ -44,7 +44,7 @@ public class SafeInitClientRegistrationRepository implements ClientRegistrationR
     return proxy
         .orElseThrow(
             () ->
-                new RuntimeException(
+                new IllegalStateException(
                     "Authentication service unavailable: Unable to connect to the configured Identity Provider (OIDC). "
                         + "Please try again later or contact your administrator."))
         .findByRegistrationId(registrationId);
