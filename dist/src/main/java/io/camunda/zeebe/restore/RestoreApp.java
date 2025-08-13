@@ -54,6 +54,7 @@ public class RestoreApp implements ApplicationRunner {
   // Parsed from commandline Eg:-`--backupId=100`
   private long[] backupId;
 
+  // idea: required properties to simplify, like directory, node id, etc
   private final RestoreProperties restoreConfiguration;
   private final MeterRegistry meterRegistry;
 

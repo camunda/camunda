@@ -9,6 +9,7 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -28,12 +29,15 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
     this(new BrokerBasedProperties());
   }
 
-  public TestRestoreApp(final BrokerBasedProperties config) {
+  public TestRestoreApp(final UnifiedConfiguration config) {
     super(RestoreApp.class);
     this.config = config;
 
     //noinspection resource
-    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.RESTORE);
+//    withBean("config", config, BrokerBasedProperties.class)
+        withBean(
+            "config", config, UnifiedConfiguration.class) // for compatibility with legacy tests
+        .withAdditionalProfile(Profile.RESTORE);
   }
 
   @Override
@@ -71,7 +75,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
     return super.createSpringBuilder().web(WebApplicationType.NONE);
   }
 
-  public TestRestoreApp withBrokerConfig(final Consumer<BrokerCfg> modifier) {
+  public TestRestoreApp withBrokerConfig(final Consumer<UnifiedConfiguration> modifier) {
     modifier.accept(config);
     return this;
   }
