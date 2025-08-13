@@ -87,6 +87,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
@@ -732,6 +733,14 @@ public final class ResponseMapper {
                     .inputName(evaluatedInputValue.getInputName())
                     .inputValue(evaluatedInputValue.getInputValue()))
         .toList();
+  }
+
+  public static ResponseEntity<Object> toGlobalVariableCreateResponse(final VariableRecord $) {
+    return new ResponseEntity<>(HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toGlobalVariableUpdateResponse(final VariableRecord $) {
+    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
   static class RestJobActivationResult

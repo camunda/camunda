@@ -12,13 +12,22 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CreateVariableRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UpdateVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQuery;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,6 +65,63 @@ public class VariableController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
+  @CamundaPostMapping(path = "/create")
+  public CompletableFuture<ResponseEntity<Object>> createVariable(
+      @RequestBody final CreateVariableRequest createVariableRequest) {
+    return manageCreateRequest(createVariableRequest);
+  }
+
+  @CamundaPutMapping(path = "/update")
+  public CompletableFuture<ResponseEntity<Object>> updateVariable(
+      @RequestBody final UpdateVariableRequest updateVariableRequest) {
+    return manageUpdateRequest(updateVariableRequest);
+  }
+
+  @CamundaDeleteMapping(path = "/delete/cluster/{name}")
+  public CompletableFuture<ResponseEntity<Object>> deleteVariable(
+      @PathVariable("name") final String name) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            variableServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .deleteClusterVariable(name),
+        ResponseMapper::toGlobalVariableUpdateResponse);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> manageUpdateRequest(
+      final UpdateVariableRequest updateVariableRequest) {
+    return RequestMapper.executeServiceMethod(
+        () -> {
+          if (updateVariableRequest
+              instanceof final ClusterVariableUpdateRequest clusterVariableUpdateRequest) {
+            return variableServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .createVariable(
+                    clusterVariableUpdateRequest.getName(),
+                    clusterVariableUpdateRequest.getValue());
+          }
+          return null;
+        },
+        ResponseMapper::toGlobalVariableUpdateResponse);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> manageCreateRequest(
+      final CreateVariableRequest createVariableRequest) {
+    return RequestMapper.executeServiceMethod(
+        () -> {
+          if (createVariableRequest
+              instanceof final ClusterVariableCreateRequest clusterVariableCreateRequest) {
+            return variableServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .updateVariable(
+                    clusterVariableCreateRequest.getName(),
+                    clusterVariableCreateRequest.getValue());
+          }
+          return null;
+        },
+        ResponseMapper::toGlobalVariableCreateResponse);
   }
 
   @CamundaGetMapping(path = "/{variableKey}")
