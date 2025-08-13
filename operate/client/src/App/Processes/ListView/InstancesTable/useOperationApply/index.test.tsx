@@ -126,7 +126,7 @@ describe('useOperationApply', () => {
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
     mockedGetSearchString.mockImplementation(
-      () => '?active=true&running=true&incidents=true&ids=1',
+      () => '?active=true&running=true&incidents=true&ids=2251799813685594',
     );
 
     mockApplyBatchOperation().withSuccess(mockOperationCreated);
@@ -135,7 +135,7 @@ describe('useOperationApply', () => {
       expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
-    processInstancesSelectionStore.selectProcessInstance('1');
+    processInstancesSelectionStore.selectProcessInstance('2251799813685594');
 
     expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply();
@@ -146,6 +146,8 @@ describe('useOperationApply', () => {
     expect(applyBatchOperationSpy).toHaveBeenCalledWith({
       operationType: expectedBody.operationType,
       query: expectedBody.query,
+      migrationPlan: undefined,
+      modifications: undefined,
     });
   });
 
@@ -187,7 +189,7 @@ describe('useOperationApply', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
     mockedGetSearchString.mockImplementation(
       () =>
-        '?active=true&running=true&incidents=true&process=demoProcess&version=1&ids=1',
+        '?active=true&running=true&incidents=true&process=demoProcess&version=1&ids=2251799813685594',
     );
     await processesStore.fetchProcesses();
 
@@ -197,7 +199,7 @@ describe('useOperationApply', () => {
       expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
-    processInstancesSelectionStore.selectProcessInstance('1');
+    processInstancesSelectionStore.selectProcessInstance('2251799813685594');
 
     expect(operationsStore.state.operations).toEqual([]);
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 0 arguments, but got 1.
@@ -209,6 +211,8 @@ describe('useOperationApply', () => {
     expect(applyBatchOperationSpy).toHaveBeenCalledWith({
       operationType: expectedBody.operationType,
       query: expectedBody.query,
+      migrationPlan: undefined,
+      modifications: undefined,
     });
   });
 
@@ -276,7 +280,7 @@ describe('useOperationApply', () => {
   });
 
   it('should poll the selected instances', async () => {
-    const {expectedBody, ...context} = mockData.setProcessFilterSelectOne;
+    const {...context} = mockData.setProcessFilterSelectOne;
     processInstancesSelectionStore.selectProcessInstance('2251799813685594');
 
     jest.useFakeTimers();
