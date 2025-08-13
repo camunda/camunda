@@ -148,4 +148,12 @@ public interface ElementInstanceFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   ElementInstanceFilter endDate(final Consumer<DateTimeProperty> endDate);
+
+  /**
+   * Filters element instances by the specified scope key.
+   *
+   * @param value the scope key of the element instance
+   * @return the updated filter
+   */
+  ElementInstanceFilter elementInstanceScopeKey(final long value);
 }

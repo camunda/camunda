@@ -58,7 +58,8 @@ public class ElementInstanceSearchTest {
             "manual_process.bpmn",
             "parent_process_v1.bpmn",
             "child_process_v1.bpmn",
-            "ad_hoc_sub_process.bpmn");
+            "ad_hoc_sub_process.bpmn",
+            "subprocess_with_multi_instance.bpmn");
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
@@ -81,9 +82,10 @@ public class ElementInstanceSearchTest {
     PROCESS_INSTANCES.add(processInstanceWithIncident);
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "parent_process_v1"));
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "ad_hoc_sub_process"));
+    PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "subprocess_with_multi_instance"));
 
-    waitForProcessInstancesToStart(camundaClient, 9);
-    waitForElementInstances(camundaClient, 26);
+    waitForProcessInstancesToStart(camundaClient, 10);
+    waitForElementInstances(camundaClient, 34);
     waitUntilElementInstanceHasIncidents(camundaClient, 2);
     waitUntilProcessInstanceHasIncidents(camundaClient, 2);
     // store element instances for querying
@@ -207,7 +209,7 @@ public class ElementInstanceSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(24);
+    assertThat(resultAfter.items().size()).isEqualTo(32);
     final var keyAfter = resultAfter.items().getFirst().getElementInstanceKey();
     // apply searchBefore
     final var resultBefore =
@@ -518,7 +520,7 @@ public class ElementInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(20);
+    assertThat(result.items().size()).isEqualTo(28);
     assertThat(result.items().getFirst().getState()).isEqualTo(state);
   }
 
@@ -563,7 +565,7 @@ public class ElementInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().size()).isEqualTo(5);
     assertThat(result.items().getFirst().getType()).isEqualTo(type);
     assertThat(result.items().get(1).getType()).isEqualTo(type);
     assertThat(result.items().get(2).getType()).isEqualTo(type);
@@ -603,7 +605,7 @@ public class ElementInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.page().totalItems()).isEqualTo(26);
+    assertThat(result.page().totalItems()).isEqualTo(34);
     assertThat(result.items()).allMatch(f -> f.getTenantId().equals(tenantId));
   }
 
@@ -621,7 +623,7 @@ public class ElementInstanceSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(24);
+    assertThat(resultAfter.items().size()).isEqualTo(32);
     final var keyAfter = resultAfter.items().getFirst().getElementInstanceKey();
     // apply searchBefore
     final var resultBefore =
@@ -703,5 +705,135 @@ public class ElementInstanceSearchTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldQueryElementInstancesByScopeKeyAsParentProcessInstanceKey() {
+    // given
+    final var parentProcessInstanceKey =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.processDefinitionId("subprocess_with_multi_instance"))
+            .send()
+            .join()
+            .singleItem()
+            .getProcessInstanceKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementInstanceScopeKey(parentProcessInstanceKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).size().isEqualTo(3);
+    assertThat(result.items().stream().map(ElementInstance::getElementId))
+        .containsExactlyInAnyOrder("start_event", "sub_process", "end_event");
+  }
+
+  @Test
+  void shouldQueryElementInstancesByScopeKeyAsSubProcessInstanceKey() {
+    // given
+    final var subProcessInstanceKey =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.processDefinitionId("subprocess_with_multi_instance")
+                        .elementId("sub_process"))
+            .send()
+            .join()
+            .singleItem()
+            .getElementInstanceKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementInstanceScopeKey(subProcessInstanceKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).size().isEqualTo(3);
+    assertThat(result.items().stream().map(ElementInstance::getElementId))
+        .containsExactlyInAnyOrder("sub_start_event", "bar_mi_task", "sub_end_event");
+  }
+
+  @Test
+  void shouldQueryElementInstancesByScopeKeyAsMultiInstanceElementInstanceKey() {
+    // given
+    final var multiInstanceElementInstanceKey =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.processDefinitionId("subprocess_with_multi_instance")
+                        .elementId("bar_mi_task")
+                        .type(ElementInstanceType.MULTI_INSTANCE_BODY))
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getElementInstanceKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementInstanceScopeKey(multiInstanceElementInstanceKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).size().isEqualTo(2);
+    assertThat(result.items().stream().map(ElementInstance::getElementId))
+        .containsExactlyInAnyOrder("bar_mi_task", "bar_mi_task");
+  }
+
+  @Test
+  void shouldQueryElementInstancesByScopeKeyAsLeafElementInstanceKey() {
+    // given
+    final var leafElementInstanceKey =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.processDefinitionId("subprocess_with_multi_instance")
+                        .elementId("start_event"))
+            .send()
+            .join()
+            .singleItem()
+            .getElementInstanceKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementInstanceScopeKey(leafElementInstanceKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldQueryElementInstancesByScopeKeyAsNonExistingElementInstanceKey() {
+    // given
+    final var invalidElementInstanceKey = 123456789L;
+
+    // when
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementInstanceScopeKey(invalidElementInstanceKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
   }
 }
