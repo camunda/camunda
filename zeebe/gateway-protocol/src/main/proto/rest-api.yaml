@@ -1407,6 +1407,88 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /variable/create:
+    post:
+      tags:
+        - Variable
+      operationId: createVariable
+      summary: Create variable
+      description: |
+        Create cluster level variables
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVariableRequest"
+      responses:
+        "201":
+          description: >
+            The variable creation status.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /variable/update:
+    put:
+      tags:
+        - Variable
+      operationId: updateVariable
+      summary: Update variables
+      description: |
+        Update cluster level variables
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVariableRequest"
+      responses:
+        "204":
+          description: >
+            The variable update status.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /variable/delete/{name}:
+    delete:
+      tags:
+        - Variable
+      operationId: deleteVariable
+      summary: Delete variable
+      description: |
+        Delete cluster level variables
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: The variable name.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: >
+            The variable creation status.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /variables/{variableKey}:
     get:
       tags:
@@ -5844,6 +5926,71 @@ components:
           description: The variable search filters.
           allOf:
             - $ref: "#/components/schemas/VariableFilter"
+    VariableScope:
+      type: string
+      enum: [ cluster, tenant ]
+    CreateVariableRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The variable name to create
+        value:
+          type: object
+          description: The variable value; string or any JSON object
+        scope:
+          $ref: '#/components/schemas/VariableScope'
+      required: [name, value, scope]
+      discriminator:
+        propertyName: scope
+    ClusterVariableCreateRequest:
+      x-discriminator-value: cluster
+      allOf:
+        - $ref: '#/components/schemas/CreateVariableRequest'
+        - type: object
+      description: Create a cluster-scoped variable.
+    TenantVariableCreateRequest:
+      x-discriminator-value: tenant
+      allOf:
+        - $ref: '#/components/schemas/CreateVariableRequest'
+        - type: object
+          properties:
+            tenantId:
+              type: string
+              description: The tenant target for the variable
+          required: [tenantId]
+      description: Create a tenant-scoped variable.
+    UpdateVariableRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The variable name to create
+        value:
+          type: object
+          description: The variable value; string or any JSON object
+        scope:
+          $ref: '#/components/schemas/VariableScope'
+      required: [name, value, scope]
+      discriminator:
+        propertyName: scope
+    ClusterVariableUpdateRequest:
+      x-discriminator-value: cluster
+      allOf:
+        - $ref: '#/components/schemas/UpdateVariableRequest'
+        - type: object
+      description: Create a cluster-scoped variable.
+    TenantVariableUpdateRequest:
+      x-discriminator-value: tenant
+      allOf:
+        - $ref: '#/components/schemas/UpdateVariableRequest'
+        - type: object
+          properties:
+            tenantId:
+              type: string
+              description: The tenant target for the variable
+          required: [ tenantId ]
+      description: Create a tenant-scoped variable.
     VariableFilter:
       description: Variable filter request.
       type: object
@@ -5898,14 +6045,14 @@ components:
           description: Whether the value is truncated or not.
           type: boolean
     VariableResult:
-        description: Variable search response item.
-        type: object
-        allOf:
-          - "$ref": "#/components/schemas/VariableResultBase"
-        properties:
-          value:
-            description: Full value of this variable.
-            type: string
+      description: Variable search response item.
+      type: object
+      allOf:
+        - "$ref": "#/components/schemas/VariableResultBase"
+      properties:
+        value:
+          description: Full value of this variable.
+          type: string
     VariableResultBase:
       description: Variable response item.
       type: object
@@ -7384,7 +7531,6 @@ components:
         - USER
         - ROLE
         - USAGE_METRIC
-        - DOCUMENT
     OwnerTypeEnum:
       description: The type of the owner of permissions.
       enum:
@@ -8075,8 +8221,8 @@ components:
       type: "object"
       properties:
         groupId:
-            type: "string"
-            description: The ID of the new group.
+          type: "string"
+          description: The ID of the new group.
         name:
           type: "string"
           description: The display name of the new group.
@@ -8974,7 +9120,7 @@ components:
         order:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
-          - field
+        - field
     JobFilter:
       description: Job search filter.
       type: object
@@ -8988,28 +9134,28 @@ components:
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
         elementId:
-            description: The element ID associated with the job.
-            allOf:
-                - $ref: "#/components/schemas/StringFilterProperty"
+          description: The element ID associated with the job.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         elementInstanceKey:
-            description: The element instance key associated with the job.
-            allOf:
-                - $ref: "#/components/schemas/BasicStringFilterProperty"
+          description: The element instance key associated with the job.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         endTime:
-            description: When the job ended.
-            allOf:
-                - $ref: "#/components/schemas/DateTimeFilterProperty"
+          description: When the job ended.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         errorCode:
-            description: The error code provided for the failed job.
-            allOf:
-                - $ref: "#/components/schemas/StringFilterProperty"
+          description: The error code provided for the failed job.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         errorMessage:
-            description: The error message that provides additional context for a failed job.
-            allOf:
-                - $ref: "#/components/schemas/StringFilterProperty"
+          description: The error message that provides additional context for a failed job.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         hasFailedWithRetriesLeft:
-            description: Indicates whether the job has failed with retries left.
-            type: boolean
+          description: Indicates whether the job has failed with retries left.
+          type: boolean
         isDenied:
           description: Indicates whether the user task listener denies the work.
           type: boolean
@@ -10468,15 +10614,15 @@ components:
       description: The type of the batch operation.
       type: string
       enum:
-      - CANCEL_PROCESS_INSTANCE
-      - RESOLVE_INCIDENT
-      - MIGRATE_PROCESS_INSTANCE
-      - MODIFY_PROCESS_INSTANCE
-      - DELETE_PROCESS_INSTANCE
-      - ADD_VARIABLE
-      - UPDATE_VARIABLE
-      - DELETE_DECISION_DEFINITION
-      - DELETE_PROCESS_DEFINITION
+        - CANCEL_PROCESS_INSTANCE
+        - RESOLVE_INCIDENT
+        - MIGRATE_PROCESS_INSTANCE
+        - MODIFY_PROCESS_INSTANCE
+        - DELETE_PROCESS_INSTANCE
+        - ADD_VARIABLE
+        - UPDATE_VARIABLE
+        - DELETE_DECISION_DEFINITION
+        - DELETE_PROCESS_DEFINITION
     BatchOperationCreatedResult:
       type: object
       properties:
