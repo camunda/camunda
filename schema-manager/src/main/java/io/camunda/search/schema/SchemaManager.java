@@ -121,7 +121,12 @@ public class SchemaManager {
     LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
     updateSchemaMappings(newIndexProperties);
     updateSchemaSettings();
+    createLifecyclePolicies();
 
+    LOG.info("Schema management completed.");
+  }
+
+  private void createLifecyclePolicies() {
     final RetentionConfiguration retention = config.retention();
     if (retention.isEnabled()) {
       LOG.info(
@@ -130,8 +135,14 @@ public class SchemaManager {
           retention.getMinimumAge());
       searchEngineClient.putIndexLifeCyclePolicy(
           retention.getPolicyName(), retention.getMinimumAge());
+
+      LOG.info(
+          "Create usage metrics ILM policy [name: '{}', retention: '{}']",
+          retention.getUsageMetricsPolicyName(),
+          retention.getUsageMetricsMinimumAge());
+      searchEngineClient.putIndexLifeCyclePolicy(
+          retention.getUsageMetricsPolicyName(), retention.getUsageMetricsMinimumAge());
     }
-    LOG.info("Schema management completed.");
   }
 
   private void updateSchemaSettings() {
