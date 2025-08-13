@@ -66,7 +66,7 @@ public class SessionAuthenticationRefreshFilterTest {
   void shouldOnlyRefreshOnceWhenMultipleConcurrentRequests() throws Exception {
     // Setup session with refresh needed
     final MockHttpSession session = new MockHttpSession();
-    setSessionRefreshAttribute(session);
+    setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(createMockAuthentication());
 
     // Simulate concurrent requests
@@ -109,7 +109,7 @@ public class SessionAuthenticationRefreshFilterTest {
   @Test
   void shouldNotRefreshBeforeInterval() {
     final MockHttpSession session = new MockHttpSession();
-    setSessionRefreshAttribute(session);
+    setSessionRefreshAttribute(session, refreshInterval.minus(Duration.ofSeconds(5)));
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(createMockAuthentication());
 
     final MvcTestResult testResult =
@@ -162,7 +162,7 @@ public class SessionAuthenticationRefreshFilterTest {
   @Test
   void shouldRefreshAfterInterval() {
     final MockHttpSession session = new MockHttpSession();
-    setSessionRefreshAttribute(session);
+    setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(createMockAuthentication());
     final Instant oldRefresh = (Instant) session.getAttribute("AUTH_LAST_REFRESH");
 
@@ -190,8 +190,9 @@ public class SessionAuthenticationRefreshFilterTest {
         new HashMap<>());
   }
 
-  private void setSessionRefreshAttribute(final MockHttpSession session) {
-    final Instant lastRefreshRef = Instant.now().minus(refreshInterval.multipliedBy(2));
+  private void setSessionRefreshAttribute(
+      final MockHttpSession session, final Duration refreshInterval) {
+    final Instant lastRefreshRef = Instant.now().minus(refreshInterval);
     session.setAttribute("AUTH_LAST_REFRESH", lastRefreshRef);
     session.setAttribute("AUTH_LAST_REFRESH" + "_LOCK", new Object());
   }
