@@ -148,6 +148,8 @@ public final class ClusterConfigurationManagerService
             new RoutingStateInitializer(
                 staticConfiguration.enablePartitionScaling(),
                 staticConfiguration.partitionCount()));
+    // This initializer does not set the cluster ID, as it is not required for non-coordinators.
+    // Non-coordinators will receive the cluster ID from the coordinator via gossip.
   }
 
   private ClusterConfigurationInitializer getCoordinatorInitializer(
@@ -171,8 +173,8 @@ public final class ClusterConfigurationManagerService
                 managerActor))
         .andThen(
             new RoutingStateInitializer(
-                staticConfiguration.enablePartitionScaling(),
-                staticConfiguration.partitionCount()));
+                staticConfiguration.enablePartitionScaling(), staticConfiguration.partitionCount()))
+        .andThen(new ClusterIdInitializer(staticConfiguration.clusterId()));
   }
 
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
