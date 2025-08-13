@@ -65,6 +65,16 @@ warn[msg] {
         [concat(", ", get_jobs_with_usesbutnosecrets(input.jobs))])
 }
 
+deny[msg] {
+    # This rule prevents not having a default shell specified for GHA workflows
+    # which can lead to surprising behavior when implicitly using 'sh' instead of 'bash'
+
+    not input.defaults.run.shell
+
+    msg := "This GitHub Actions workflow does not specify a default shell (recommended: 'bash') for run steps which can lead to surprising behaviors and errors."
+}
+
+
 ###########################   RULE HELPERS   ##################################
 
 get_jobs_with_setupnodecaching(jobInput) = jobs_with_setupnodecaching {
