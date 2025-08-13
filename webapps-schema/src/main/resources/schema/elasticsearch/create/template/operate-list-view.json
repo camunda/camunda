@@ -139,6 +139,9 @@
       "positionJob": {
         "type": "long",
         "index": false
+      },
+      "tags": {
+        "type": "keyword"
       }
 		}
 	}

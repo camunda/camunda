@@ -110,6 +110,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
             getProcessName(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()))
         .setProcessVersionTag(getVersionTag(piEntity.getProcessDefinitionKey()));
 
+    if (recordValue.getTags() != null && recordValue.getTags().size() > 0) {
+      piEntity.setTags(recordValue.getTags());
+    }
+
     final OffsetDateTime timestamp =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
     final boolean isRootProcessInstance =
@@ -168,6 +172,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     updateFields.put(POSITION, entity.getPosition());
     if (entity.getState() != null) {
       updateFields.put(ListViewTemplate.STATE, entity.getState());
+    }
+    if (entity.getTags() != null && !entity.getTags().isEmpty()) {
+      updateFields.put(ListViewTemplate.TAGS, entity.getTags());
     }
 
     batchRequest.upsert(indexName, entity.getId(), entity, updateFields);

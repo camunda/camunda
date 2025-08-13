@@ -270,4 +270,63 @@ public class CreateProcessInstanceRejectionTest {
                 "Expected to find process definition with process ID '%s', but none found",
                 processId, fakeTenantId));
   }
+
+  @Test
+  public void shouldRejectCommandIfTagsAreInvalid() {
+    // given
+    final String processId = "process";
+    final String invalidTag = "this is not a valid tag";
+    engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withTags(invalidTag)
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            String.format(
+                "Expected to create instance of process with tags, but tag '%s' is invalid. Tag must start with a letter (a-z, A-Z), followed by alphanumerics, underscores, minuses, colons, or periods. It must not be blank and must be 100 characters or less.",
+                invalidTag));
+  }
+
+  @Test
+  public void shouldRejectCommandIfTooManyTagsProvided() {
+    // given
+    final String processId = "process";
+    engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withTags("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create instance of process with tags, but the number of tags exceeds the limit of 10.");
+  }
 }

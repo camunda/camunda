@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 /** Process instance-related data of the element that is executed. */
@@ -49,6 +50,8 @@ public interface BpmnElementContext {
   String getTenantId();
 
   BpmnEventType getBpmnEventType();
+
+  Set<String> getTags();
 
   BpmnElementContext copy(
       long elementInstanceKey, ProcessInstanceRecord recordValue, ProcessInstanceIntent intent);
