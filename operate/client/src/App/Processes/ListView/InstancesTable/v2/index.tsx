@@ -29,11 +29,13 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 
 import {getProcessName} from 'modules/utils/instance';
 import {Toolbar} from '../Toolbar';
+import {Toolbar as ToolbarV2} from '../Toolbar/v2';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation} from 'react-router-dom';
 import {Operations} from 'modules/components/Operations';
 import {BatchModificationFooter} from '../BatchModificationFooter';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
+import {IS_CANCEL_RESOLVE_BATCH_OPERATIONS_V2} from '../../../../../modules/feature-flags.ts';
 
 const ROW_HEIGHT = 34;
 
@@ -99,11 +101,20 @@ const InstancesTable: React.FC = observer(() => {
         count={filteredProcessInstancesCount}
       />
 
-      <Toolbar
-        selectedInstancesCount={
-          processInstancesSelectionStore.selectedProcessInstanceCount
-        }
-      />
+      {IS_CANCEL_RESOLVE_BATCH_OPERATIONS_V2 ? (
+        <ToolbarV2
+          selectedInstancesCount={
+            processInstancesSelectionStore.selectedProcessInstanceCount
+          }
+        />
+      ) : (
+        <Toolbar
+          selectedInstancesCount={
+            processInstancesSelectionStore.selectedProcessInstanceCount
+          }
+        />
+      )}
+
       <SortableTable
         state={getTableState()}
         columnsWithNoContentPadding={['operations']}
