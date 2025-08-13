@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.filters;
 
-import static io.camunda.authentication.filters.SessionAuthenticationRefreshFilter.LAST_REFRESH_ATTR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.Mockito.never;
@@ -64,9 +63,53 @@ public class SessionAuthenticationRefreshFilterTest {
   }
 
   @Test
+  void shouldOnlyRefreshOnceWhenMultipleConcurrentRequests() throws Exception {
+    // Setup session with refresh needed
+    final MockHttpSession session = new MockHttpSession();
+    setSessionRefreshAttribute(session);
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(createMockAuthentication());
+
+    // Simulate concurrent requests
+    final AtomicInteger successfulRequests = new AtomicInteger(0);
+    final Runnable requestTask =
+        () -> {
+          try {
+            final MvcTestResult testResult =
+                mockMvcTester
+                    .get()
+                    .session(session)
+                    .uri("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
+                    .exchange();
+            assertThat(testResult).hasStatusOk();
+            successfulRequests.incrementAndGet();
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
+          }
+        };
+
+    // Create multiple threads
+    final Thread[] threads = new Thread[10];
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread(requestTask);
+      threads[i].start();
+    }
+
+    // Wait for completion
+    for (final Thread thread : threads) {
+      thread.join();
+    }
+
+    // Verify results
+    assertThat(successfulRequests.get()).isEqualTo(threads.length);
+    verify(authenticationProvider, times(1)).refresh();
+    final Instant newRefreshTime = (Instant) session.getAttribute("AUTH_LAST_REFRESH");
+    assertThat(newRefreshTime).isAfter(Instant.now().minusMillis(refreshInterval.toMillis()));
+  }
+
+  @Test
   void shouldNotRefreshBeforeInterval() {
     final MockHttpSession session = new MockHttpSession();
-    setSessionRefreshAttribute(session, refreshInterval.minus(Duration.ofSeconds(5)));
+    setSessionRefreshAttribute(session);
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(createMockAuthentication());
 
     final MvcTestResult testResult =
@@ -93,7 +136,7 @@ public class SessionAuthenticationRefreshFilterTest {
             .exchange();
 
     assertThat(testResult).hasStatusOk();
-    final Instant lastRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+    final Instant lastRefreshTime = (Instant) session.getAttribute("AUTH_LAST_REFRESH");
     assertThat(lastRefreshTime).isNotNull();
     assertThat(lastRefreshTime)
         .isCloseTo(Instant.now(), within(refreshInterval.toMillis(), ChronoUnit.MILLIS));
@@ -112,16 +155,16 @@ public class SessionAuthenticationRefreshFilterTest {
             .exchange();
 
     assertThat(testResult).hasStatusOk();
-    final Instant lastRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+    final Instant lastRefreshTime = (Instant) session.getAttribute("AUTH_LAST_REFRESH");
     assertThat(lastRefreshTime).isNull();
   }
 
   @Test
   void shouldRefreshAfterInterval() {
     final MockHttpSession session = new MockHttpSession();
-    setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
+    setSessionRefreshAttribute(session);
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(createMockAuthentication());
-    final Instant oldRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+    final Instant oldRefresh = (Instant) session.getAttribute("AUTH_LAST_REFRESH");
 
     final MvcTestResult testResult =
         mockMvcTester
@@ -132,47 +175,8 @@ public class SessionAuthenticationRefreshFilterTest {
 
     assertThat(testResult).hasStatusOk();
     verify(authenticationProvider, times(1)).refresh();
-    final Instant lastRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+    final Instant lastRefreshTime = (Instant) session.getAttribute("AUTH_LAST_REFRESH");
     assertThat(lastRefreshTime).isAfter(oldRefresh);
-  }
-
-  @Test
-  void shouldOnlyRefreshOnceWhenMultipleConcurrentRequests() throws Exception {
-    final MockHttpSession session = new MockHttpSession();
-    setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
-    when(authenticationProvider.getCamundaAuthentication()).thenReturn(createMockAuthentication());
-
-    final AtomicInteger successfulRequests = new AtomicInteger(0);
-    final Runnable requestTask =
-        () -> {
-          try {
-            final MvcTestResult testResult =
-                mockMvcTester
-                    .get()
-                    .session(session)
-                    .uri("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
-                    .exchange();
-            assertThat(testResult).hasStatusOk();
-            successfulRequests.incrementAndGet();
-          } catch (final Exception e) {
-            throw new RuntimeException(e);
-          }
-        };
-
-    final Thread[] threads = new Thread[10];
-    for (int i = 0; i < threads.length; i++) {
-      threads[i] = new Thread(requestTask);
-      threads[i].start();
-    }
-
-    for (final Thread thread : threads) {
-      thread.join();
-    }
-
-    assertThat(successfulRequests.get()).isEqualTo(threads.length);
-    verify(authenticationProvider, times(1)).refresh();
-    final Instant newRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
-    assertThat(newRefreshTime).isAfter(Instant.now().minusMillis(refreshInterval.toMillis()));
   }
 
   private CamundaAuthentication createMockAuthentication() {
@@ -186,10 +190,9 @@ public class SessionAuthenticationRefreshFilterTest {
         new HashMap<>());
   }
 
-  private void setSessionRefreshAttribute(
-      final MockHttpSession session, final Duration refreshInterval) {
-    final Instant lastRefreshRef = Instant.now().minus(refreshInterval);
-    session.setAttribute(LAST_REFRESH_ATTR, lastRefreshRef);
-    session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", new Object());
+  private void setSessionRefreshAttribute(final MockHttpSession session) {
+    final Instant lastRefreshRef = Instant.now().minus(refreshInterval.multipliedBy(2));
+    session.setAttribute("AUTH_LAST_REFRESH", lastRefreshRef);
+    session.setAttribute("AUTH_LAST_REFRESH" + "_LOCK", new Object());
   }
 }
