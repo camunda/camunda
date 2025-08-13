@@ -313,7 +313,8 @@ class ClusterConfigurationManagementIntegrationTest {
                   cluster.getMembershipService().getLocalMember().id(),
                   List.of(),
                   3,
-                  DynamicPartitionConfig.init()));
+                  DynamicPartitionConfig.init(),
+                  "clusterId"));
       startFuture.onComplete(
           (ignore, error) -> {
             if (error == null) {
