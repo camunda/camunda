@@ -13,6 +13,7 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
 import io.camunda.service.ManagementServices;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VersionUtil;
@@ -41,12 +42,12 @@ import org.springframework.stereotype.Component;
 @Component
 @EnableConfigurationProperties({ConsolePingConfiguration.class})
 @ConditionalOnProperty(prefix = "camunda.console.ping", name = "enabled", havingValue = "true")
-public class PingConsoleRunner implements ApplicationRunner {
+public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListener {
   private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleRunner.class);
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
   private final ConsolePingConfiguration pingConfiguration;
   private final ManagementServices managementServices;
-  private final Either<Exception, String> licensePayload;
+  private Either<Exception, String> licensePayload;
   private final BrokerTopologyManager brokerTopologyManager;
   private final ApplicationContext applicationContext;
 
@@ -60,12 +61,14 @@ public class PingConsoleRunner implements ApplicationRunner {
     pingConfiguration = pingConfigurationProperties;
     this.managementServices = managementServices;
     this.applicationContext = applicationContext;
-    licensePayload = getLicensePayload();
     this.brokerTopologyManager = brokerTopologyManager;
   }
 
   @Override
   public void run(final ApplicationArguments args) {
+    waitForTopologyClusterId();
+    licensePayload = getLicensePayload();
+
     try {
       validateConfiguration();
       LOGGER.info(
@@ -172,8 +175,10 @@ public class PingConsoleRunner implements ApplicationRunner {
     final LicensePayload payload =
         new LicensePayload(
             license,
-            // cluster Id is of an option type but should never be null.
-            brokerTopologyManager.getClusterConfiguration().clusterId().orElse(null),
+            brokerTopologyManager
+                .getClusterConfiguration()
+                .clusterId()
+                .orElseThrow(() -> new IllegalStateException("Cluster ID is not set.")),
             pingConfiguration.clusterName(),
             VersionUtil.getVersion(),
             getActiveProfiles(),
@@ -182,6 +187,17 @@ public class PingConsoleRunner implements ApplicationRunner {
       return Either.right(objectMapper.writeValueAsString(payload));
     } catch (final JsonProcessingException exception) {
       return Either.left(exception);
+    }
+  }
+
+  private void waitForTopologyClusterId() {
+    while (brokerTopologyManager.getClusterConfiguration().clusterId() == null
+        || brokerTopologyManager.getClusterConfiguration().clusterId().isEmpty()) {
+      try {
+        Thread.sleep(500);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
   }
 
