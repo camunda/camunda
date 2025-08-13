@@ -28,12 +28,16 @@ import org.springframework.web.context.WebApplicationContext;
 
 public class ZeebeImportAdHocSubProcessIT extends TasklistZeebeIntegrationTest {
 
+  private static final String AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE =
+      """
+      [{"elementId":"task1","elementName":"Task 1"},\
+      {"elementId":"task2","elementName":"Task 2"},\
+      {"elementId":"task3","elementName":"Task 3"}]\
+      """;
+
   @Autowired private TaskStore taskStore;
-
   @Autowired private ObjectMapper objectMapper;
-
   @Autowired private WebApplicationContext context;
-
   private MockMvcHelper mockMvcHelper;
 
   @BeforeEach
@@ -84,7 +88,11 @@ public class ZeebeImportAdHocSubProcessIT extends TasklistZeebeIntegrationTest {
                     tuple(
                         "tasks",
                         "[\"task1\",\"task2\",\"task3\"]",
-                        "[\"task1\",\"task2\",\"task3\"]"));
+                        "[\"task1\",\"task2\",\"task3\"]"),
+                    tuple(
+                        "adHocSubProcessElements",
+                        AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE,
+                        AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE));
         case "task2" ->
             assertThat(result)
                 .hasOkHttpStatus()
@@ -99,7 +107,11 @@ public class ZeebeImportAdHocSubProcessIT extends TasklistZeebeIntegrationTest {
                     tuple(
                         "tasks",
                         "[\"task1\",\"task2\",\"task3\"]",
-                        "[\"task1\",\"task2\",\"task3\"]"));
+                        "[\"task1\",\"task2\",\"task3\"]"),
+                    tuple(
+                        "adHocSubProcessElements",
+                        AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE,
+                        AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE));
         case "task3" ->
             assertThat(result)
                 .hasOkHttpStatus()
@@ -113,7 +125,11 @@ public class ZeebeImportAdHocSubProcessIT extends TasklistZeebeIntegrationTest {
                     tuple(
                         "tasks",
                         "[\"task1\",\"task2\",\"task3\"]",
-                        "[\"task1\",\"task2\",\"task3\"]"));
+                        "[\"task1\",\"task2\",\"task3\"]"),
+                    tuple(
+                        "adHocSubProcessElements",
+                        AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE,
+                        AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE));
         default -> fail("Unexpected task id: " + taskId);
       }
     }
