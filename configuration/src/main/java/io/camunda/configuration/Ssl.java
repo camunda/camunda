@@ -38,6 +38,12 @@ public class Ssl {
   /** Sets the path to the private key file location */
   private File certificatePrivateKey;
 
+  /**
+   * Configures the keystore file containing both the certificate chain and the private key.
+   * Currently only supports PKCS12 format.
+   */
+  private KeyStore keyStore = new KeyStore();
+
   public boolean isEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".enabled",
@@ -77,12 +83,21 @@ public class Ssl {
     this.certificatePrivateKey = certificatePrivateKey;
   }
 
+  public KeyStore getKeyStore() {
+    return keyStore;
+  }
+
+  public void setKeyStore(final KeyStore keyStore) {
+    this.keyStore = keyStore;
+  }
+
   @Override
   public Ssl clone() {
     final Ssl copy = new Ssl();
     copy.enabled = enabled;
     copy.certificate = certificate;
     copy.certificatePrivateKey = certificatePrivateKey;
+    copy.keyStore = keyStore.clone();
 
     return copy;
   }
