@@ -12,11 +12,22 @@ public class Api {
   /** Configuration for long-polling behavior */
   private LongPolling longPolling = new LongPolling();
 
+  /** Configuration for grpc behavior */
+  private Grpc grpc = new Grpc();
+
   public LongPolling getLongPolling() {
     return longPolling;
   }
 
   public void setLongPolling(final LongPolling longPolling) {
     this.longPolling = longPolling;
+  }
+
+  public Grpc getGrpc() {
+    return grpc;
+  }
+
+  public void setGrpc(final Grpc grpc) {
+    this.grpc = grpc;
   }
 }

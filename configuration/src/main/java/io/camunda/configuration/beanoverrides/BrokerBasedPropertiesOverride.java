@@ -8,7 +8,9 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Gcs;
+import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.S3;
+import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
@@ -19,6 +21,12 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
+import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
+import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +40,8 @@ import org.springframework.context.annotation.Profile;
 @Profile(value = {"broker", "restore"})
 @DependsOn("unifiedConfigurationHelper")
 public class BrokerBasedPropertiesOverride {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(BrokerBasedPropertiesOverride.class);
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
@@ -58,12 +68,59 @@ public class BrokerBasedPropertiesOverride {
 
     populateFromPrimaryStorage(override);
 
+    populateFromGrpc(override);
+
     // TODO: Populate the bean from rest of camunda.* sections
     // populateFromData(override);
     // from camunda.data.* sections
     populateFromData(override);
 
     return override;
+  }
+
+  private void populateFromGrpc(final BrokerBasedProperties override) {
+    final var grpc =
+        unifiedConfiguration.getCamunda().getApi().getGrpc().withBrokerNetworkProperties();
+
+    final NetworkCfg networkCfg = override.getGateway().getNetwork();
+    networkCfg.setHost(grpc.getAddress());
+    networkCfg.setPort(grpc.getPort());
+
+    populateFromSsl(override);
+    populateFromInterceptors(override);
+
+    final io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg threadsCfg =
+        override.getGateway().getThreads();
+    threadsCfg.setManagementThreads(grpc.getManagementThreads());
+  }
+
+  private void populateFromSsl(final BrokerBasedProperties override) {
+    final Ssl ssl =
+        unifiedConfiguration.getCamunda().getApi().getGrpc().getSsl().withBrokerSslProperties();
+    final SecurityCfg securityCfg = override.getGateway().getSecurity();
+    securityCfg.setEnabled(ssl.isEnabled());
+    securityCfg.setCertificateChainPath(ssl.getCertificate());
+    securityCfg.setPrivateKeyPath(ssl.getCertificatePrivateKey());
+  }
+
+  private void populateFromInterceptors(final BrokerBasedProperties override) {
+    // Order between legacy and new interceptor props is not guaranteed.
+    // Log common interceptors warning instead of using UnifiedConfigurationHelper logging.
+    if (!override.getGateway().getInterceptors().isEmpty()) {
+      final String warningMessage =
+          String.format(
+              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+              "camunda.api.grpc.interceptors", "zeebe.broker.gateway.interceptors");
+      LOGGER.warn(warningMessage);
+    }
+
+    final List<Interceptor> interceptors =
+        unifiedConfiguration.getCamunda().getApi().getGrpc().getInterceptors();
+    if (!interceptors.isEmpty()) {
+      final List<InterceptorCfg> interceptorCfgList =
+          interceptors.stream().map(Interceptor::toInterceptorCfg).toList();
+      override.getGateway().setInterceptors(interceptorCfgList);
+    }
   }
 
   private void populateFromCluster(final BrokerBasedProperties override) {
