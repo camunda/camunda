@@ -148,4 +148,10 @@ public interface ProcessInstanceFilterBase extends SearchRequestFilter {
 
   /** Filter by incidentErrorHashCode using {@link IntegerProperty} */
   ProcessInstanceFilterBase incidentErrorHashCode(final Consumer<IntegerProperty> fn);
+
+  /** Filter by tags */
+  ProcessInstanceFilterBase tags(final String... tags);
+
+  /** Filter by tag using {@link StringProperty} */
+  ProcessInstanceFilterBase tag(final Consumer<StringProperty> fn);
 }

@@ -239,7 +239,8 @@ public class RequestMapper {
                 activationRequest.getTimeout(),
                 getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
                 getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
-                getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout)));
+                getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout),
+                activationRequest.getTags()));
   }
 
   public static FailJobRequest toJobFailRequest(
@@ -728,7 +729,8 @@ public class RequestMapper {
                               .setAfterElementId(instructionCasted.getAfterElementId());
                         })
                     .toList(),
-                request.getFetchVariables()));
+                request.getFetchVariables(),
+                request.getTags()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(

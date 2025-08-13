@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.WILDCARD_PERMISSION;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -44,6 +46,8 @@ import org.agrona.collections.ObjectHashSet;
  * and added to the given batch record.
  */
 final class JobBatchCollector {
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
   private final JobState jobState;
@@ -92,6 +96,7 @@ final class JobBatchCollector {
         value.getTenantIds().isEmpty()
             ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             : value.getTenantIds();
+    final var tags = value.getTags();
     final Map<JobKind, Integer> jobCountPerJobKind = new EnumMap<>(JobKind.class);
     // the tenant check is performed earlier in the JobBatchActivateProcessor, so we can skip it
     // here and only check if the requester has the correct permissions to access the jobs
@@ -109,6 +114,32 @@ final class JobBatchCollector {
           if (!isAuthorizedForJob(jobRecord, authorizedProcessIds)) {
             // Skip Jobs the user is not authorized for
             return true;
+          }
+
+          if (!tags.isEmpty()) {
+            // TODO all this parsing shouldn't be done every time we are probing here
+            // Thus we should better put the tags into the JobRecord directly
+            final var headers = jobRecord.getCustomHeaders();
+            final var tagsJson = headers.get(Protocol.TAGS_HEADER_NAME);
+
+            Set<String> jobTags = Set.of(); // Default to empty set
+            if (tagsJson != null && !tagsJson.isEmpty()) {
+              try {
+                // Convert tagsJson to Set of Strings using OBJECT_MAPPER with TypeReference
+                final var tagsList =
+                    OBJECT_MAPPER.readValue(
+                        tagsJson,
+                        new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
+                jobTags = Set.copyOf(tagsList);
+              } catch (final Exception e) {
+                // If JSON parsing fails, treat as empty set and continue
+                jobTags = Set.of();
+              }
+            }
+
+            if (!jobTags.containsAll(tags)) {
+              return true; // Skip Jobs that do not match the tags
+            }
           }
 
           // fill in the job record properties first in order to accurately estimate its size before

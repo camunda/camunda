@@ -427,7 +427,11 @@ public final class BpmnJobBehavior {
       final JobListenerEventType jobListenerEventType,
       final Map<String, String> taskHeaders) {
 
-    final var encodedHeaders = encodeHeaders(taskHeaders, props);
+    // TODO add null check, could there be a case where a job is not part of a process instance?
+    final var processInstance =
+        stateBehavior.getElementInstance(context.getProcessInstanceKey()).getValue();
+
+    final var encodedHeaders = encodeHeaders(taskHeaders, props, processInstance.getTags());
 
     jobRecord
         .setType(props.getType())
@@ -450,7 +454,7 @@ public final class BpmnJobBehavior {
   }
 
   private DirectBuffer encodeHeaders(
-      final Map<String, String> taskHeaders, final JobProperties props) {
+      final Map<String, String> taskHeaders, final JobProperties props, final Set<String> tags) {
     final var headers = new HashMap<>(taskHeaders);
     final String assignee = props.getAssignee();
     final String candidateGroups = props.getCandidateGroups();
@@ -487,6 +491,16 @@ public final class BpmnJobBehavior {
             "Failed to convert linked resource headers to json object", e);
       }
     }
+
+    if (tags != null && !tags.isEmpty()) {
+      try {
+        final String encodedTags = OBJECT_MAPPER.writeValueAsString(tags);
+        headers.put(Protocol.TAGS_HEADER_NAME, encodedTags);
+      } catch (final JsonProcessingException e) {
+        throw new IllegalArgumentException("Failed to convert tags headers to json object", e);
+      }
+    }
+
     return headerEncoder.encode(headers);
   }
 

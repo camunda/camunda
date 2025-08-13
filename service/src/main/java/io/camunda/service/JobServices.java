@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -67,7 +68,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setTenantIds(request.tenantIds())
             .setTimeout(request.timeout())
             .setWorker(request.worker())
-            .setVariables(request.fetchVariable());
+            .setVariables(request.fetchVariable())
+            .setTags(request.tags());
     brokerRequest.setAuthorization(authentication.claims());
     activateJobsHandler.activateJobs(
         brokerRequest, responseObserver, cancelationHandlerConsumer, request.requestTimeout());
@@ -132,7 +134,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       long timeout,
       String worker,
       List<String> fetchVariable,
-      long requestTimeout) {}
+      long requestTimeout,
+      Set<String> tags) {}
 
   public record UpdateJobChangeset(Integer retries, Long timeout) {}
 }

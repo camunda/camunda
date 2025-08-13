@@ -177,6 +177,8 @@ public final class ProcessInstanceCreationCreateProcessor
         process.getTenantId());
 
     final var processInstance = initProcessInstanceRecord(process, processInstanceKey);
+    processInstance.setTags(record.getTags());
+
     if (record.startInstructions().isEmpty()) {
       commandWriter.appendFollowUpCommand(
           processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);

@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -215,6 +216,57 @@ public final class CreateProcessInstanceTest {
         .allMatch(v -> v.getScopeKey() == processInstanceKey)
         .extracting(v -> tuple(v.getName(), v.getValue()))
         .contains(tuple("x", "1"), tuple("y", "2"));
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithTags() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("my-task", t -> t.zeebeJobType("my-job"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("process")
+            .withTags("businessKey: 1234", "priority: high")
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.PROCESS))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    final Record<ProcessInstanceRecordValue> process =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    final ProcessInstanceRecord value = (ProcessInstanceRecord) process.getValue();
+    Assertions.assertThat(value)
+        .hasElementId("process")
+        .hasBpmnElementType(BpmnElementType.PROCESS)
+        .hasFlowScopeKey(-1)
+        .hasBpmnProcessId("process")
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+    final var tags = value.getTags();
+    assertThat(tags).containsExactlyInAnyOrder("businessKey: 1234", "priority: high");
   }
 
   @Test

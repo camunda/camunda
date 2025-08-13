@@ -117,5 +117,7 @@ public interface ActivateJobsCommandStep1
      */
     @Override
     FinalCommandStep<ActivateJobsResponse> requestTimeout(Duration requestTimeout);
+
+    ActivateJobsCommandStep3 tags(String... tags);
   }
 }

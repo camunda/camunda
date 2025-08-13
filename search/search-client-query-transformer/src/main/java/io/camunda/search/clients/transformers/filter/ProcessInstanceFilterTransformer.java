@@ -30,6 +30,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PR
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.TAGS;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -73,6 +74,7 @@ public final class ProcessInstanceFilterTransformer
     queries.addAll(stringOperations(STATE, filter.stateOperations()));
     Optional.ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
     queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
+    queries.addAll(stringOperations(TAGS, filter.tagsOperations()));
 
     if (filter.variableFilters() != null && !filter.variableFilters().isEmpty()) {
       final var processVariableQuery = getProcessVariablesQuery(filter.variableFilters());
