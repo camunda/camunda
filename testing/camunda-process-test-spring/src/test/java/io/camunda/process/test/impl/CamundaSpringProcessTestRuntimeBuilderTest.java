@@ -31,8 +31,8 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestRemoteRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
-import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
+import io.camunda.process.test.impl.runtime.DefaultCamundaSpringProcessTestRuntimeBuilder;
 import io.camunda.spring.client.properties.CamundaClientAuthProperties;
 import io.camunda.spring.client.properties.CamundaClientCloudProperties;
 import io.camunda.spring.client.properties.CamundaClientProperties;
@@ -40,9 +40,17 @@ import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class CamundaSpringProcessTestRuntimeBuilderTest {
+
+  private DefaultCamundaSpringProcessTestRuntimeBuilder builder;
+
+  @BeforeEach
+  void setUp() {
+    builder = new DefaultCamundaSpringProcessTestRuntimeBuilder();
+  }
 
   @Test
   void shouldBuildManagedRuntimeByDefault() {
@@ -53,7 +61,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     // when
     final CamundaProcessTestRuntime camundaRuntime =
-        CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+        builder.buildRuntime(runtimeBuilder, runtimeConfiguration);
 
     // then
     assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestContainerRuntime.class);
@@ -85,7 +93,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.setCamundaExposedPorts(camundaExposedPorts);
 
     // when
-    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+    builder.buildRuntime(runtimeBuilder, runtimeConfiguration);
 
     // then
     assertThat(runtimeBuilder.getCamundaDockerImageName()).isEqualTo("custom-camunda");
@@ -114,7 +122,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.setConnectorsSecrets(connectorsSecrets);
 
     // when
-    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+    builder.buildRuntime(runtimeBuilder, runtimeConfiguration);
 
     // then
     assertThat(runtimeBuilder.isConnectorsEnabled()).isTrue();
@@ -135,7 +143,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     // when
     final CamundaProcessTestRuntime camundaRuntime =
-        CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+        builder.buildRuntime(runtimeBuilder, runtimeConfiguration);
 
     // then
     assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestRemoteRuntime.class);
@@ -185,7 +193,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     remoteClientProperties.setGrpcAddress(remoteCamundaGrpcApiAddress);
 
     // when
-    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+    builder.buildRuntime(runtimeBuilder, runtimeConfiguration);
 
     // then
     assertThat(runtimeBuilder.getRemoteCamundaMonitoringApiAddress())
@@ -227,7 +235,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     authProperties.setClientSecret("my-client-secret");
 
     // when
-    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+    builder.buildRuntime(runtimeBuilder, runtimeConfiguration);
 
     // then
     final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =

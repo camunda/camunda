@@ -242,8 +242,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
 
-    return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
-        containerRuntimeBuilder, runtimeConfiguration);
+    final CamundaSpringProcessTestRuntimeBuilder builder =
+        testContext.getApplicationContext().getBean(CamundaSpringProcessTestRuntimeBuilder.class);
+
+    return builder.buildRuntime(containerRuntimeBuilder, runtimeConfiguration);
   }
 
   private static CamundaClient createClient(

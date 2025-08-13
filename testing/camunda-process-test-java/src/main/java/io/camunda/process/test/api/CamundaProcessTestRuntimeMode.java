@@ -21,5 +21,7 @@ public enum CamundaProcessTestRuntimeMode {
   MANAGED,
 
   /** The runtime is managed remotely outside Camunda Process Test. */
-  REMOTE
+  REMOTE,
+
+  EMBEDDED
 }
