@@ -66,6 +66,9 @@ import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
+import io.camunda.client.api.command.GlobalVariableCreationRequestStep1;
+import io.camunda.client.api.command.GlobalVariableDeleteRequestStep1;
+import io.camunda.client.api.command.GlobalVariableUpdateRequestStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
@@ -183,6 +186,7 @@ import io.camunda.client.impl.command.CreateBatchOperationCommandImpl.CreateBatc
 import io.camunda.client.impl.command.CreateDocumentBatchCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
+import io.camunda.client.impl.command.CreateGlobalVariableImpl;
 import io.camunda.client.impl.command.CreateGroupCommandImpl;
 import io.camunda.client.impl.command.CreateMappingRuleCommandImpl;
 import io.camunda.client.impl.command.CreateProcessInstanceCommandImpl;
@@ -191,6 +195,7 @@ import io.camunda.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.client.impl.command.CreateUserCommandImpl;
 import io.camunda.client.impl.command.DeleteAuthorizationCommandImpl;
 import io.camunda.client.impl.command.DeleteDocumentCommandImpl;
+import io.camunda.client.impl.command.DeleteGlobalVariableImpl;
 import io.camunda.client.impl.command.DeleteGroupCommandImpl;
 import io.camunda.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.client.impl.command.DeleteRoleCommandImpl;
@@ -223,6 +228,7 @@ import io.camunda.client.impl.command.UnassignRoleFromUserCommandImpl;
 import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
+import io.camunda.client.impl.command.UpdateGlobalVariableImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
 import io.camunda.client.impl.command.UpdateRoleCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
@@ -1056,6 +1062,21 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public VariableGetRequest newVariableGetRequest(final long variableKey) {
     return new VariableGetRequestImpl(httpClient, variableKey);
+  }
+
+  @Override
+  public GlobalVariableCreationRequestStep1 newGlobalVariableCreationRequest() {
+    return new CreateGlobalVariableImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public GlobalVariableUpdateRequestStep1 newGlobalVariableUpdateRequest() {
+    return new UpdateGlobalVariableImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public GlobalVariableDeleteRequestStep1 newGlobalVariableDeleteRequest() {
+    return new DeleteGlobalVariableImpl(httpClient, jsonMapper);
   }
 
   @Override
