@@ -23,7 +23,6 @@ import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
-import io.camunda.operate.schema.IndexTemplateDescriptorsConfigurator;
 import io.camunda.process.test.impl.runtime.ContextOverrideInitializer.Bean;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
@@ -82,8 +81,7 @@ public class EmbeddedCamundaApplication {
         TasklistModuleConfiguration.class,
         IdentityModuleConfiguration.class,
         WebappsModuleConfiguration.class,
-        BrokerModuleConfiguration.class,
-        IndexTemplateDescriptorsConfigurator.class
+        BrokerModuleConfiguration.class
       };
 
   private final BrokerBasedProperties brokerProperties;
