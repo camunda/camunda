@@ -33,6 +33,8 @@ import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.ComponentNames;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
@@ -51,7 +53,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   // Matches versioned index names with version suffixes: {name}-{major}.{minor}.{patch}_{suffix}
   // e.g. "camunda-tenant-8.8.0_2025-02-23"
   private static final String VERSIONED_INDEX_PATTERN = ".+-\\d+\\.\\d+\\.\\d+_.+$";
-  private static final String USAGE_METRIC_INDEX_PREFIX = "camunda-usage-metric";
+  private static final String USAGE_METRIC_INDEX_PREFIX =
+      "%s-%s".formatted(ComponentNames.CAMUNDA, UsageMetricIndex.INDEX_NAME);
 
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =

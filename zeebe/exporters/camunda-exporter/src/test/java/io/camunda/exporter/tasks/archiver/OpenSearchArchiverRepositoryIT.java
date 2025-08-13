@@ -213,7 +213,7 @@ final class OpenSearchArchiverRepositoryIT {
     // verify that the default policy was applied to all other indices
     for (final var index : otherIndices) {
       assertThat(fetchPolicyForIndexWithAwait(index))
-          .as("Expected 'os-default-policy' policy to be applied for %s", index)
+          .as("Expected 'default-policy' policy to be applied for %s", index)
           .isNotNull()
           .isEqualTo("default-policy");
     }
