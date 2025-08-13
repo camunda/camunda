@@ -1073,38 +1073,6 @@ public final class AdHocSubProcessTest {
             tuple("result", "null", innerInstanceKeys.get(1)));
   }
 
-  private List<Long> getInnerInstanceKeysForOutputCollectionTest(final long processInstanceKey) {
-    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
-        .limit(2)
-        .map(Record::getKey)
-        .toList();
-  }
-
-  private long getProcessInstanceKeyForOutputCollectionTest() {
-    return ENGINE
-        .processInstance()
-        .ofBpmnProcessId(PROCESS_ID)
-        .withVariable("activateElements", List.of("A", "B"))
-        .create();
-  }
-
-  private void createOutputCollectionProcessAndDeploy() {
-    final var process =
-        process(
-            adHocSubProcess -> {
-              adHocSubProcess
-                  .zeebeActiveElementsCollectionExpression("activateElements")
-                  .zeebeOutputCollection("results")
-                  .zeebeOutputElementExpression("result");
-              adHocSubProcess.serviceTask("A", t -> t.zeebeJobType("A"));
-              adHocSubProcess.serviceTask("B", t -> t.zeebeJobType("B"));
-              adHocSubProcess.task("C");
-            });
-    ENGINE.deployment().withXmlResource(process).deploy();
-  }
-
   @Test
   public void shouldUpdateOutputElementsInInnerInstanceScope() {
     // given
@@ -1195,5 +1163,37 @@ public final class AdHocSubProcessTest {
     return r ->
         r.getIntent() == SignalIntent.BROADCASTED
             && ((SignalRecord) r.getValue()).getSignalName().equals(signalName);
+  }
+
+  private List<Long> getInnerInstanceKeysForOutputCollectionTest(final long processInstanceKey) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+        .limit(2)
+        .map(Record::getKey)
+        .toList();
+  }
+
+  private long getProcessInstanceKeyForOutputCollectionTest() {
+    return ENGINE
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVariable("activateElements", List.of("A", "B"))
+        .create();
+  }
+
+  private void createOutputCollectionProcessAndDeploy() {
+    final var process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess
+                  .zeebeActiveElementsCollectionExpression("activateElements")
+                  .zeebeOutputCollection("results")
+                  .zeebeOutputElementExpression("result");
+              adHocSubProcess.serviceTask("A", t -> t.zeebeJobType("A"));
+              adHocSubProcess.serviceTask("B", t -> t.zeebeJobType("B"));
+              adHocSubProcess.task("C");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
   }
 }
