@@ -214,6 +214,7 @@ public final class ResponseMapper {
 
     final EvaluateDecisionResponse.Builder responseBuilder =
         EvaluateDecisionResponse.newBuilder()
+            // deprecated in favor of decisionEvaluationKey
             .setDecisionInstanceKey(key)
             .setDecisionEvaluationKey(key)
             .setDecisionId(brokerResponse.getDecisionId())
