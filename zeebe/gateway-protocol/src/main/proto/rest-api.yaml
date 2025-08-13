@@ -9518,6 +9518,10 @@ components:
           description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
           type: string
         decisionInstanceKey:
+          description: Deprecated, please refer to `decisionEvaluationKey`.
+          type: string
+          deprecated: true
+        decisionEvaluationKey:
           description: The unique key identifying this decision evaluation.
           type: string
         evaluatedDecisions:
