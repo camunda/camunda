@@ -28,7 +28,11 @@ const OptionalFiltersMenu = <T extends string>({
     (filter) => !visibleFilters.includes(filter.id),
   );
 
-  return unselectedOptionalFilters.length > 0 ? (
+  if (unselectedOptionalFilters.length === 0) {
+    return null;
+  }
+
+  return (
     <Container>
       <OverflowMenu
         direction="top"
@@ -51,19 +55,22 @@ const OptionalFiltersMenu = <T extends string>({
           />
         ))}
       </OverflowMenu>
-      <TriggerButton
-        aria-label="advanced-filters-menu"
-        onClick={() => {
-          if (typeof onOpenAdvanced === 'function') onOpenAdvanced();
-        }}
-      >
-        <ButtonStack orientation="horizontal" gap={3}>
-          <span>Advanced filters</span>
-          <Filter />
-        </ButtonStack>
-      </TriggerButton>
+
+      {typeof onOpenAdvanced === 'function' && (
+        <TriggerButton
+          type="button"
+          onClick={onOpenAdvanced}
+          data-testid="open-advanced-filters"
+          aria-label="Advanced Filters"
+        >
+          <ButtonStack orientation="horizontal" gap={3}>
+            <span>Advanced filters</span>
+            <Filter />
+          </ButtonStack>
+        </TriggerButton>
+      )}
     </Container>
-  ) : null;
+  );
 };
 
 export {OptionalFiltersMenu};
