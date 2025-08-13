@@ -1,9 +1,6 @@
 {
-  "noMappingRules": "No mapping rules created yet",
-  "mappingRuleJWTToken": "Mapping rule of JWT token",
   "startByCreatingAMappingRule": "Start by creating a new mapping rule.",
   "createMappingRule": "Create mapping rule",
-  "learnMoreMappingRules": "Learn more about mapping rules",
   "mappingRuleId": "Mapping rule ID",
   "mappingRuleName": "Mapping rule name",
   "claimName": "Claim name",
