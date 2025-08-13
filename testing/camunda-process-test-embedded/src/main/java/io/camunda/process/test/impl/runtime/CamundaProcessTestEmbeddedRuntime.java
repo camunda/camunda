@@ -68,7 +68,7 @@ public class CamundaProcessTestEmbeddedRuntime implements CamundaProcessTestRunt
 
   @Override
   public URI getCamundaGrpcApiAddress() {
-    return URI.create("http://localhost:" + "26500");
+    return URI.create("http://localhost:" + application.grpcPort());
   }
 
   @Override

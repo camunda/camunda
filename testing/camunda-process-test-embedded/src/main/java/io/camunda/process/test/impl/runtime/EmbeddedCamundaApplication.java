@@ -224,6 +224,10 @@ public class EmbeddedCamundaApplication {
     return serverPort("management.server.port");
   }
 
+  public int grpcPort() {
+    return brokerProperties.getGateway().getNetwork().getPort();
+  }
+
   private int serverPort(final String property) {
     final Object portProperty;
     if (springContext != null) {
