@@ -651,12 +651,7 @@ public final class AdHocSubProcessTest {
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
-    final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("activateElements", List.of("A", "B"))
-            .create();
+    final long processInstanceKey = getProcessInstanceKeyForOutputCollectionTest();
 
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
@@ -1028,29 +1023,15 @@ public final class AdHocSubProcessTest {
   }
 
   @Test
-  public void shouldAppendOutputCollection() {
+  public void shouldCreateOutputCollectionInAHSPScope() {
     // given
-    final BpmnModelInstance process =
-        process(
-            adHocSubProcess -> {
-              adHocSubProcess
-                  .zeebeActiveElementsCollectionExpression("activateElements")
-                  .zeebeOutputCollection("results")
-                  .zeebeOutputElementExpression("result");
-              adHocSubProcess.serviceTask("A", t -> t.zeebeJobType("A"));
-              adHocSubProcess.serviceTask("B", t -> t.zeebeJobType("B"));
-              adHocSubProcess.task("C");
-            });
+    final BpmnModelInstance process = createOutputCollectionBPMN();
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
-    final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("activateElements", List.of("A", "B"))
-            .create();
+    final long processInstanceKey = getProcessInstanceKeyForOutputCollectionTest();
 
+    // then
     final var ahsp =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -1066,14 +1047,20 @@ public final class AdHocSubProcessTest {
         .hasName("results")
         .hasValue("[]")
         .hasScopeKey(ahsp.getKey());
+  }
 
-    final var innerInstanceKeys =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
-            .limit(2)
-            .map(Record::getKey)
-            .toList();
+  @Test
+  public void shouldCreateOutputElementsInInnerInstanceScope() {
+    // given
+    final BpmnModelInstance process = createOutputCollectionBPMN();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = getProcessInstanceKeyForOutputCollectionTest();
+
+    // then
+    final var innerInstanceKeys = getInnerInstanceKeysForOutputCollectionTest(processInstanceKey);
+
     assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -1088,6 +1075,48 @@ public final class AdHocSubProcessTest {
         .containsExactlyInAnyOrder(
             tuple("result", "null", innerInstanceKeys.get(0)),
             tuple("result", "null", innerInstanceKeys.get(1)));
+  }
+
+  private List<Long> getInnerInstanceKeysForOutputCollectionTest(final long processInstanceKey) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+        .limit(2)
+        .map(Record::getKey)
+        .toList();
+  }
+
+  private long getProcessInstanceKeyForOutputCollectionTest() {
+    return ENGINE
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVariable("activateElements", List.of("A", "B"))
+        .create();
+  }
+
+  private BpmnModelInstance createOutputCollectionBPMN() {
+    return process(
+        adHocSubProcess -> {
+          adHocSubProcess
+              .zeebeActiveElementsCollectionExpression("activateElements")
+              .zeebeOutputCollection("results")
+              .zeebeOutputElementExpression("result");
+          adHocSubProcess.serviceTask("A", t -> t.zeebeJobType("A"));
+          adHocSubProcess.serviceTask("B", t -> t.zeebeJobType("B"));
+          adHocSubProcess.task("C");
+        });
+  }
+
+  @Test
+  public void shouldUpdateOutputElementsInInnerInstanceScope() {
+    // given
+    final BpmnModelInstance process = createOutputCollectionBPMN();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = getProcessInstanceKeyForOutputCollectionTest();
+
+    final var innerInstanceKeys = getInnerInstanceKeysForOutputCollectionTest(processInstanceKey);
 
     // when
     ENGINE
@@ -1119,7 +1148,39 @@ public final class AdHocSubProcessTest {
         .containsExactlyInAnyOrder(
             tuple("result", "\"a\"", innerInstanceKeys.get(0)),
             tuple("result", "\"b\"", innerInstanceKeys.get(1)));
+  }
 
+  @Test
+  public void shouldAppendOutputCollection() {
+    // given
+    final BpmnModelInstance process = createOutputCollectionBPMN();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = getProcessInstanceKeyForOutputCollectionTest();
+
+    final var ahsp =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("A")
+        .withVariable("result", "a")
+        .complete();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("B")
+        .withVariable("result", "b")
+        .complete();
+
+    // then
     assertThat(
             RecordingExporter.variableRecords(VariableIntent.UPDATED)
                 .withProcessInstanceKey(processInstanceKey)
