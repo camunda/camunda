@@ -52,6 +52,31 @@ public class GatewayClusterConfigurationService extends Actor
             topologyMetrics);
   }
 
+  @Override
+  public String getName() {
+    return "GatewayClusterConfigurationService";
+  }
+
+  @Override
+  protected void onActorStarting() {
+    LOG.info("Starting Cluster Configuration Manager");
+    clusterConfigurationGossiper
+        .start()
+        .onComplete(
+            (ignore, error) -> {
+              if (error != null) {
+                LOG.error("Failed to start cluster configuration gossiper", error);
+              } else {
+                LOG.info("Started Cluster Configuration Manager");
+              }
+            });
+  }
+
+  @Override
+  protected void onActorClosing() {
+    clusterConfigurationGossiper.close();
+  }
+
   private void updateClusterTopology(final ClusterConfiguration clusterConfiguration) {
 
     actor.run(
@@ -78,16 +103,6 @@ public class GatewayClusterConfigurationService extends Actor
                 updateFailed);
           }
         });
-  }
-
-  @Override
-  protected void onActorStarting() {
-    clusterConfigurationGossiper.start();
-  }
-
-  @Override
-  protected void onActorClosing() {
-    clusterConfigurationGossiper.close();
   }
 
   @Override

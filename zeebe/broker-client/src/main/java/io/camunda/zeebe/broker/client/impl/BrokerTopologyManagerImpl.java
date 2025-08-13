@@ -158,7 +158,12 @@ public final class BrokerTopologyManagerImpl extends Actor
 
     switch (eventType) {
       case MEMBER_ADDED -> {
-        LOG.debug("Received new broker {}.", brokerInfo);
+        LOG.debug(
+            "Received new broker {} : partitions {}, terms {} and health {}",
+            brokerInfo,
+            brokerInfo.getPartitionRoles(),
+            brokerInfo.getPartitionLeaderTerms(),
+            brokerInfo.getPartitionHealthStatuses());
         addBroker(subject, brokerInfo);
       }
       case METADATA_CHANGED -> {
