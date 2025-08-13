@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -51,10 +52,12 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     implements ArchiverRepository {
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
+  private static final String ALL_INDICES_PATTERN = ".*";
+
   // Matches versioned index names with version suffixes: {name}-{major}.{minor}.{patch}_{suffix}
   // e.g. "camunda-tenant-8.8.0_2025-02-23"
   private static final String VERSIONED_INDEX_PATTERN = ".+-\\d+\\.\\d+\\.\\d+_.+$";
-  private static final String ALL_INDICES_PATTERN = ".*";
+  private static final String USAGE_METRIC_INDEX_PREFIX = "camunda-usage-metric";
 
   private final int partitionId;
   private final HistoryConfiguration config;
@@ -251,11 +254,30 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       return CompletableFuture.completedFuture(null);
     }
 
-    return applyPolicyToIndices(destinationIndexNames, retention.getPolicyName());
+    final var policyToIndicesMap =
+        destinationIndexNames.stream()
+            .collect(
+                Collectors.groupingBy(
+                    indexName ->
+                        isUsageMetricIndex(indexName)
+                            ? retention.getUsageMetricsPolicyName()
+                            : retention.getPolicyName()));
+
+    final var requests =
+        policyToIndicesMap.entrySet().stream()
+            .map(entry -> applyPolicyToIndices(entry.getKey(), entry.getValue()))
+            .toList();
+
+    return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]))
+        .thenApplyAsync(ignored -> null, executor);
+  }
+
+  private boolean isUsageMetricIndex(final String indexName) {
+    return indexName.contains(USAGE_METRIC_INDEX_PREFIX);
   }
 
   private CompletableFuture<Void> applyPolicyToIndices(
-      final List<String> indices, final String policyName) {
+      final String policyName, final List<String> indices) {
 
     logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
 
