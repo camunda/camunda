@@ -14,6 +14,7 @@ public class AuthenticationConfiguration {
   public static final boolean DEFAULT_UNPROTECTED_API = false;
 
   private AuthenticationMethod method = DEFAULT_METHOD;
+  private String authenticationRefreshInterval = "PT30S";
   private OidcAuthenticationConfiguration oidcAuthenticationConfiguration =
       new OidcAuthenticationConfiguration();
   private boolean unprotectedApi = DEFAULT_UNPROTECTED_API;
@@ -32,6 +33,14 @@ public class AuthenticationConfiguration {
 
   public void setMethod(final AuthenticationMethod method) {
     this.method = method;
+  }
+
+  public String getAuthenticationRefreshInterval() {
+    return authenticationRefreshInterval;
+  }
+
+  public void setAuthenticationRefreshInterval(final String authenticationRefreshInterval) {
+    this.authenticationRefreshInterval = authenticationRefreshInterval;
   }
 
   public OidcAuthenticationConfiguration getOidc() {
