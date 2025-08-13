@@ -43,6 +43,8 @@ import {
 } from 'modules/components/C3AdvancedSearchFilters';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
+import type {QueryProcessInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const initialValues: ProcessInstanceFilters = {
   active: true,
@@ -391,10 +393,34 @@ const Filters: React.FC = observer(() => {
       <ModalBody hasForm>
         <C3AdvancedSearchFilters
           fields={advancedFields}
-          onFilterChange={(payload) => {
+          onFilterChange={async (payload) => {
             advancedPayloadRef.current = payload;
             // eslint-disable-next-line no-console
             console.log('[Advanced Filters] payload changed:', payload);
+            
+            // Call the v2 API directly with the filter payload
+            try {
+              const v2ApiPayload = {
+                filter: payload,
+                page: { limit: 50 },
+                sort: [{ field: 'startDate', order: 'desc' }],
+              } as QueryProcessInstancesRequestBody;
+              
+              // eslint-disable-next-line no-console
+              console.log('[Advanced Filters] v2 API payload:', v2ApiPayload);
+              
+              const {response, error} = await searchProcessInstances(v2ApiPayload);
+              if (response) {
+                // eslint-disable-next-line no-console
+                console.log('[Advanced Filters] v2 API response:', response);
+              } else {
+                // eslint-disable-next-line no-console
+                console.error('[Advanced Filters] v2 API error:', error);
+              }
+            } catch (err) {
+              // eslint-disable-next-line no-console
+              console.error('[Advanced Filters] Failed to call v2 API:', err);
+            }
           }}
         />
       </ModalBody>

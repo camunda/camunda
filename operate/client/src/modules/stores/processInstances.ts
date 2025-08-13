@@ -20,6 +20,8 @@ import {
   fetchProcessInstancesByIds,
   type ProcessInstancesDto,
 } from 'modules/api/processInstances/fetchProcessInstances';
+import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
+import type {QueryProcessInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {logger} from 'modules/logger';
 import {
   getProcessInstancesRequestFilters,
@@ -261,6 +263,83 @@ class ProcessInstances extends NetworkReconnectionHandler {
       },
     });
   });
+
+  // New v2 API method for fetching process instances
+  fetchProcessInstancesFromFiltersV2 = this.retryOnConnectionLost(async () => {
+    this.startFetching();
+    
+    // Simple v2 API payload with basic structure
+    const v2ApiPayload: QueryProcessInstancesRequestBody = {
+      filter: getProcessInstancesRequestFilters(),
+      page: { limit: MAX_INSTANCES_PER_REQUEST },
+      sort: [{ field: 'startDate', order: 'desc' }],
+    };
+    
+    this.fetchInstancesV2({
+      fetchType: 'initial',
+      payload: v2ApiPayload,
+    });
+  });
+
+  // New v2 API fetch method
+  fetchInstancesV2 = async ({
+    fetchType,
+    payload,
+  }: {
+    fetchType: FetchType;
+    payload: QueryProcessInstancesRequestBody;
+  }) => {
+    console.log('[ProcessInstances] Calling v2 API with payload:', payload);
+    
+    const {response, error} = await searchProcessInstances(payload);
+
+    if (response) {
+      console.log('[ProcessInstances] v2 API response:', response);
+      
+      // Map v2 response to current format
+      const processInstances = response.items.map((item: any) => ({
+        id: item.processInstanceKey,
+        key: item.processInstanceKey,
+        processDefinitionId: item.processDefinitionId,
+        processDefinitionKey: item.processDefinitionKey,
+        processDefinitionName: item.processDefinitionName,
+        processDefinitionVersion: item.processDefinitionVersion,
+        processId: item.processDefinitionId, // Legacy field mapping
+        processName: item.processDefinitionName, // Legacy field mapping
+        processVersion: item.processDefinitionVersion, // Legacy field mapping
+        bpmnProcessId: item.processDefinitionId, // Legacy field mapping
+        state: item.state,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        hasIncident: item.hasIncident,
+        tenantId: item.tenantId,
+        parentInstanceId: item.parentProcessInstanceKey,
+        sortValues: [`${item.startDate}`], // For pagination
+        operations: [], // Default empty operations
+        hasActiveOperation: false, // Default value
+        rootInstanceId: item.rootProcessInstanceKey || item.processInstanceKey, // Use root or self
+        callHierarchy: [], // Default empty call hierarchy
+      }));
+
+      tracking.track({
+        eventName: 'instances-loaded',
+        filters: Object.keys(payload.filter || {}),
+        sortBy: payload.sort?.[0]?.field,
+        sortOrder: payload.sort?.[0]?.order,
+      });
+
+      this.setProcessInstances({
+        filteredProcessInstancesCount: response.items.length, // Use items length since totalCount may not exist
+        processInstances: this.getProcessInstances(fetchType, processInstances as ProcessInstanceEntity[]),
+      });
+
+      this.setLatestFetchDetails(fetchType, processInstances.length);
+      this.handleFetchSuccess();
+    } else {
+      console.error('[ProcessInstances] v2 API error:', error);
+      this.handleFetchError();
+    }
+  };
 
   fetchInstances = async ({
     fetchType,
