@@ -110,6 +110,10 @@ public class MultiDbConfiguratorTest {
                     "policyName",
                     EXPECTED_PREFIX + "-ilm",
                     "minimumAge",
+                    "0s",
+                    "usageMetricsPolicyName",
+                    EXPECTED_PREFIX + "-usage-metrics-ilm",
+                    "usageMetricsMinimumAge",
                     "0s")));
   }
 
@@ -148,6 +152,10 @@ public class MultiDbConfiguratorTest {
                     "policyName",
                     EXPECTED_PREFIX + "-ilm",
                     "minimumAge",
+                    "0s",
+                    "usageMetricsPolicyName",
+                    EXPECTED_PREFIX + "-usage-metrics-ilm",
+                    "usageMetricsMinimumAge",
                     "0s")));
   }
 
@@ -187,6 +195,10 @@ public class MultiDbConfiguratorTest {
                     "policyName",
                     EXPECTED_PREFIX + "-ilm",
                     "minimumAge",
+                    "0s",
+                    "usageMetricsPolicyName",
+                    EXPECTED_PREFIX + "-usage-metrics-ilm",
+                    "usageMetricsMinimumAge",
                     "0s")));
   }
 
@@ -374,6 +386,10 @@ public class MultiDbConfiguratorTest {
                     "policyName",
                     EXPECTED_PREFIX + "-ilm",
                     "minimumAge",
+                    "0s",
+                    "usageMetricsPolicyName",
+                    EXPECTED_PREFIX + "-usage-metrics-ilm",
+                    "usageMetricsMinimumAge",
                     "0s")));
   }
 

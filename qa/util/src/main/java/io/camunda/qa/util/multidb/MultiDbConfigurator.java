@@ -115,6 +115,10 @@ public class MultiDbConfigurator {
                           "minimumAge",
                           // 0s causes ILM to move data asap - it is normally the default
                           // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
+                          "0s",
+                          "usageMetricsPolicyName",
+                          indexPrefix + "-usage-metrics-ilm",
+                          "usageMetricsMinimumAge",
                           "0s")),
                   "bulk",
                   Map.of("size", 1)));
@@ -230,6 +234,10 @@ public class MultiDbConfigurator {
                           "minimumAge",
                           // 0s causes ILM to move data asap - it is normally the default
                           // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
+                          "0s",
+                          "usageMetricsPolicyName",
+                          indexPrefix + "-usage-metrics-ilm",
+                          "usageMetricsMinimumAge",
                           "0s")),
                   "bulk",
                   Map.of("size", 1)));
