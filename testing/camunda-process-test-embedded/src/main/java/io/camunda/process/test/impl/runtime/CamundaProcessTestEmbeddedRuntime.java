@@ -49,6 +49,10 @@ public class CamundaProcessTestEmbeddedRuntime implements CamundaProcessTestRunt
             "zeebe.broker.exporters.rdbms.args.maxHistoryCleanupInterval",
             ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL)
         .withExporter("rdbms", cfg -> cfg.setClassName("-"));
+
+    runtimeBuilder.getCamundaEnvVars().forEach(application::withProperty);
+
+    // runtimeBuilder.getCamundaLoggerName()
   }
 
   @Override

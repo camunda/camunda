@@ -20,4 +20,16 @@ public class EmbeddedRuntimeTest {
 
     runtime.close();
   }
+
+  @Test
+  void shouldConfigureRuntime() throws Exception {
+    final CamundaProcessTestEmbeddedRuntime runtime =
+        new CamundaProcessTestEmbeddedRuntime(
+            new CamundaProcessTestRuntimeBuilder()
+                .withCamundaEnv("logging.level.liquibase", "error"));
+
+    runtime.start();
+
+    runtime.close();
+  }
 }
