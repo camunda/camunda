@@ -17,6 +17,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.search.response.Form;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -26,6 +27,7 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.Future;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -153,7 +155,7 @@ class ProcessAuthorizationIT {
     assertThat(form.getFormId()).isEqualTo("test");
   }
 
-  private long getProcessDefinitionKey(
+  private static long getProcessDefinitionKey(
       final CamundaClient client, final String processDefinitionId) {
     return client
         .newProcessDefinitionSearchRequest()
@@ -176,13 +178,30 @@ class ProcessAuthorizationIT {
 
   private static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient, final int expectedCount) {
-    Awaitility.await("should deploy processes and import in Operate")
+    Awaitility.await("should deploy processes and make them searchable")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
+            });
+
+    // also wait for the start form to be searchable, as tests depend on that
+    final var startFormProcessDefinitionKey =
+        getProcessDefinitionKey(camundaClient, PROCESS_DEFINITION_ID_WITH_START_FORM);
+
+    Awaitility.await("should deploy start form and make it searchable")
+        .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final Future<Form> resultFuture =
+                  camundaClient
+                      .newProcessDefinitionGetFormRequest(startFormProcessDefinitionKey)
+                      .send();
+
+              assertThat(resultFuture).succeedsWithin(Duration.ofSeconds(10)).isNotNull();
             });
   }
 }
