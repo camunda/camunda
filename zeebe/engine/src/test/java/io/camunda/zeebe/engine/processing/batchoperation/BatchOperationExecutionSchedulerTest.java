@@ -61,9 +61,9 @@ public class BatchOperationExecutionSchedulerTest {
   public static final Duration SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   public static final int CHUNK_SIZE = 5;
   public static final int QUERY_PAGE_SIZE = 10;
-  public static final Duration QUERY_INITIAL_RETRY_DELAY = Duration.ofMillis(100);
-  public static final Duration QUERY_MAX_RETRY_DELAY = Duration.ofMillis(200);
-  public static final int QUERY_RETRY_MAX = 3;
+  public static final Duration QUERY_INITIAL_RETRY_DELAY = Duration.ofMillis(50);
+  public static final Duration QUERY_MAX_RETRY_DELAY = Duration.ofMillis(500);
+  public static final int QUERY_RETRY_MAX = 5;
   public static final int QUERY_RETRY_BACKOFF_FACTOR = 2;
   public static final long BATCH_OPERATION_KEY = 123456789L;
   private static final int PARTITION_ID = 1;
@@ -306,6 +306,8 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
     execute();
     execute();
+    execute();
+    execute();
 
     // then
     verify(taskResultBuilder)
@@ -332,7 +334,7 @@ public class BatchOperationExecutionSchedulerTest {
     // After the failure we are back at 1000ms
     assertThat(durationCaptor.getAllValues())
         .extracting(Duration::toMillis)
-        .containsSubsequence(1000L, 100L, 200L, 200L, 1000L);
+        .containsSubsequence(1000L, 50L, 100L, 200L, 400L, 500L, 1000L);
   }
 
   @Test
