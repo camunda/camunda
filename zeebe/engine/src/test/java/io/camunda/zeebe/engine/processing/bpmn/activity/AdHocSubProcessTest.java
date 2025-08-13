@@ -1025,9 +1025,7 @@ public final class AdHocSubProcessTest {
   @Test
   public void shouldCreateOutputCollectionInAHSPScope() {
     // given
-    final BpmnModelInstance process = createOutputCollectionBPMN();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
+    createOutputCollectionProcessAndDeploy();
 
     final long processInstanceKey = getProcessInstanceKeyForOutputCollectionTest();
 
@@ -1052,9 +1050,7 @@ public final class AdHocSubProcessTest {
   @Test
   public void shouldCreateOutputElementsInInnerInstanceScope() {
     // given
-    final BpmnModelInstance process = createOutputCollectionBPMN();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
+    createOutputCollectionProcessAndDeploy();
 
     final long processInstanceKey = getProcessInstanceKeyForOutputCollectionTest();
 
@@ -1094,25 +1090,25 @@ public final class AdHocSubProcessTest {
         .create();
   }
 
-  private BpmnModelInstance createOutputCollectionBPMN() {
-    return process(
-        adHocSubProcess -> {
-          adHocSubProcess
-              .zeebeActiveElementsCollectionExpression("activateElements")
-              .zeebeOutputCollection("results")
-              .zeebeOutputElementExpression("result");
-          adHocSubProcess.serviceTask("A", t -> t.zeebeJobType("A"));
-          adHocSubProcess.serviceTask("B", t -> t.zeebeJobType("B"));
-          adHocSubProcess.task("C");
-        });
+  private void createOutputCollectionProcessAndDeploy() {
+    final var process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess
+                  .zeebeActiveElementsCollectionExpression("activateElements")
+                  .zeebeOutputCollection("results")
+                  .zeebeOutputElementExpression("result");
+              adHocSubProcess.serviceTask("A", t -> t.zeebeJobType("A"));
+              adHocSubProcess.serviceTask("B", t -> t.zeebeJobType("B"));
+              adHocSubProcess.task("C");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
   }
 
   @Test
   public void shouldUpdateOutputElementsInInnerInstanceScope() {
     // given
-    final BpmnModelInstance process = createOutputCollectionBPMN();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
+    createOutputCollectionProcessAndDeploy();
 
     final long processInstanceKey = getProcessInstanceKeyForOutputCollectionTest();
 
@@ -1153,9 +1149,7 @@ public final class AdHocSubProcessTest {
   @Test
   public void shouldAppendOutputCollection() {
     // given
-    final BpmnModelInstance process = createOutputCollectionBPMN();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
+    createOutputCollectionProcessAndDeploy();
 
     final long processInstanceKey = getProcessInstanceKeyForOutputCollectionTest();
 
