@@ -106,7 +106,12 @@ public class GatewayBasedPropertiesOverride {
   }
 
   private void populateFromLongPolling(final GatewayBasedProperties override) {
-    final var longPolling = unifiedConfiguration.getCamunda().getApi().getLongPolling();
+    final var longPolling =
+        unifiedConfiguration
+            .getCamunda()
+            .getApi()
+            .getLongPolling()
+            .withGatewayLongPollingProperties();
     final var longPollingCfg = override.getLongPolling();
     longPollingCfg.setEnabled(longPolling.isEnabled());
     longPollingCfg.setTimeout(longPolling.getTimeout());
