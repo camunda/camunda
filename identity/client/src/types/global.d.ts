@@ -6,15 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-interface ClientConfig {
-  isOidc?: string;
-  isCamundaGroupsEnabled?: string;
-  isTenantsApiEnabled?: string;
-  organizationId?: string;
-  clusterId?: string;
-}
-
 export declare global {
+  interface ClientConfig {
+    isOidc?: string;
+    isCamundaGroupsEnabled?: string;
+    isTenantsApiEnabled?: string;
+    organizationId?: string;
+    clusterId?: string;
+  }
+
   interface Window {
     clientConfig?: ClientConfig;
   }

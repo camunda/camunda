@@ -7,18 +7,16 @@
  */
 
 export type GetClientConfig<R = string | undefined> = (
-  key: string,
+  key: keyof ClientConfig,
   defaultValue?: R,
 ) => R;
 
 const getClientConfigValue = <R>(
-  key: string,
+  key: keyof ClientConfig,
   defaultValue: R,
   parser: (value: string) => R,
 ): R => {
-  const clientValue = (
-    window.clientConfig as Record<string, string> | undefined
-  )?.[key];
+  const clientValue = window.clientConfig?.[key];
   if (clientValue !== undefined) {
     return parser(clientValue);
   }
