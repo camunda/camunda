@@ -20,7 +20,8 @@ import java.util.function.Consumer;
 public interface TypedFilterableRequest<F, SELF extends TypedFilterableRequest<F, SELF>> {
 
   /**
-   * Sets the filter to be included in the search request.
+   * Sets the filter to be included in the search request. Invoking the method overrides previously
+   * set filters.
    *
    * @param value the filter
    * @return the builder for the search request
@@ -28,7 +29,9 @@ public interface TypedFilterableRequest<F, SELF extends TypedFilterableRequest<F
   SELF filter(final F value);
 
   /**
-   * Provides a fluent builder to create a filter to be included in the search request.
+   * Provides a fluent builder to create a filter to be included in the search request. Invoking the
+   * method overrides previously set filters. You can chain multiple filter criteria inside the
+   * consumer you provide for such cases.
    *
    * @param fn consumer to create the filter
    * @return the builder for the search request
