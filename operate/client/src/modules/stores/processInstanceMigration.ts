@@ -26,9 +26,9 @@ const STEPS = {
 
 type State = {
   currentStep: 'elementMapping' | 'summary' | null;
-  flowNodeMapping: {[sourceId: string]: string};
-  selectedSourceFlowNodeId?: string;
-  selectedTargetFlowNodeId?: string;
+  elementMapping: {[sourceId: string]: string};
+  selectedSourceElementId?: string;
+  selectedTargetElementId?: string;
   selectedInstancesCount: number;
   batchOperationQuery: BatchOperationQuery | null;
   sourceProcessDefinitionKey?: string | null;
@@ -38,9 +38,9 @@ type State = {
 
 const DEFAULT_STATE: State = {
   currentStep: null,
-  flowNodeMapping: {},
-  selectedSourceFlowNodeId: undefined,
-  selectedTargetFlowNodeId: undefined,
+  elementMapping: {},
+  selectedSourceElementId: undefined,
+  selectedTargetElementId: undefined,
   selectedInstancesCount: 0,
   batchOperationQuery: null,
   targetProcessDefinitionKey: null,
@@ -68,58 +68,58 @@ class ProcessInstanceMigration {
     return STEPS[this.state.currentStep];
   }
 
-  selectSourceFlowNode = (flowNodeId?: string) => {
-    this.state.selectedTargetFlowNodeId = undefined;
+  selectSourceFlowNode = (elementId?: string) => {
+    this.state.selectedTargetElementId = undefined;
 
-    if (this.state.selectedSourceFlowNodeId === flowNodeId) {
-      this.state.selectedSourceFlowNodeId = undefined;
+    if (this.state.selectedSourceElementId === elementId) {
+      this.state.selectedSourceElementId = undefined;
     } else {
-      this.state.selectedSourceFlowNodeId = flowNodeId;
+      this.state.selectedSourceElementId = elementId;
     }
   };
 
-  selectTargetFlowNode = (flowNodeId?: string) => {
-    this.state.selectedSourceFlowNodeId = undefined;
+  selectTargetElement = (elementId?: string) => {
+    this.state.selectedSourceElementId = undefined;
 
-    if (this.state.selectedTargetFlowNodeId === flowNodeId) {
-      this.state.selectedTargetFlowNodeId = undefined;
+    if (this.state.selectedTargetElementId === elementId) {
+      this.state.selectedTargetElementId = undefined;
     } else {
-      this.state.selectedTargetFlowNodeId = flowNodeId;
+      this.state.selectedTargetElementId = elementId;
     }
   };
 
   getAllSourceElements = (targetFlowNodeId: string) => {
-    return Object.entries(this.state.flowNodeMapping)
+    return Object.entries(this.state.elementMapping)
       .filter(([_, t]) => t === targetFlowNodeId)
       .map(([s, _]) => {
         return s;
       });
   };
 
-  get selectedSourceFlowNodeIds() {
-    const {selectedSourceFlowNodeId, selectedTargetFlowNodeId} = this.state;
+  get selectedSourceElementIds() {
+    const {selectedSourceElementId, selectedTargetElementId} = this.state;
 
-    if (selectedSourceFlowNodeId !== undefined) {
+    if (selectedSourceElementId !== undefined) {
       const targetFlowNodeId =
-        this.state.flowNodeMapping[selectedSourceFlowNodeId];
+        this.state.elementMapping[selectedSourceElementId];
 
       if (targetFlowNodeId !== undefined) {
         return this.getAllSourceElements(targetFlowNodeId);
       }
 
-      return [selectedSourceFlowNodeId];
-    } else if (selectedTargetFlowNodeId !== undefined) {
-      return this.getAllSourceElements(selectedTargetFlowNodeId);
+      return [selectedSourceElementId];
+    } else if (selectedTargetElementId !== undefined) {
+      return this.getAllSourceElements(selectedTargetElementId);
     }
     return undefined;
   }
 
-  get selectedTargetFlowNodeId() {
-    const {selectedTargetFlowNodeId, selectedSourceFlowNodeId} = this.state;
-    if (selectedTargetFlowNodeId !== undefined) {
-      return selectedTargetFlowNodeId;
-    } else if (selectedSourceFlowNodeId !== undefined) {
-      return this.state.flowNodeMapping[selectedSourceFlowNodeId];
+  get selectedTargetElementId() {
+    const {selectedTargetElementId, selectedSourceElementId} = this.state;
+    if (selectedTargetElementId !== undefined) {
+      return selectedTargetElementId;
+    } else if (selectedSourceElementId !== undefined) {
+      return this.state.elementMapping[selectedSourceElementId];
     }
     return undefined;
   }
@@ -145,8 +145,8 @@ class ProcessInstanceMigration {
     return this.state.currentStep !== null;
   }
 
-  get hasFlowNodeMapping() {
-    return Object.keys(this.state.flowNodeMapping).length > 0;
+  get hasElementMapping() {
+    return Object.keys(this.state.elementMapping).length > 0;
   }
 
   setSelectedInstancesCount = (selectedInstancesCount: number) => {
@@ -157,7 +157,7 @@ class ProcessInstanceMigration {
     this.state.batchOperationQuery = query;
   };
 
-  updateFlowNodeMapping = ({
+  updateElementMapping = ({
     sourceId,
     targetId,
   }: {
@@ -165,14 +165,14 @@ class ProcessInstanceMigration {
     targetId?: string;
   }) => {
     if (targetId === undefined || targetId === '') {
-      delete this.state.flowNodeMapping[sourceId];
+      delete this.state.elementMapping[sourceId];
     } else {
-      this.state.flowNodeMapping[sourceId] = targetId;
+      this.state.elementMapping[sourceId] = targetId;
     }
   };
 
-  clearFlowNodeMapping = () => {
-    this.state.flowNodeMapping = {};
+  clearElementMapping = () => {
+    this.state.elementMapping = {};
   };
 
   setTargetProcessDefinitionKey = (
@@ -219,7 +219,7 @@ class ProcessInstanceMigration {
       migrationPlan: {
         targetProcessDefinitionKey,
         mappingInstructions: Object.entries(
-          processInstanceMigrationStore.state.flowNodeMapping,
+          processInstanceMigrationStore.state.elementMapping,
         ).map(([sourceElementId, targetElementId]) => ({
           sourceElementId,
           targetElementId,
@@ -242,8 +242,8 @@ class ProcessInstanceMigration {
     });
   };
 
-  resetFlowNodeMapping = () => {
-    this.state.flowNodeMapping = {...DEFAULT_STATE.flowNodeMapping};
+  resetElementMapping = () => {
+    this.state.elementMapping = {...DEFAULT_STATE.elementMapping};
   };
 }
 

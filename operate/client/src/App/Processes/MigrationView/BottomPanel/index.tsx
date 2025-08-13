@@ -21,7 +21,7 @@ import {
   LeftColumn,
   IconContainer,
   Select,
-  SourceFlowNodeName,
+  SourceElementName,
   ArrowRight,
   ToggleContainer,
 } from './styled';
@@ -32,21 +32,22 @@ import {processesStore} from 'modules/stores/processes/processes.migration';
 const TOGGLE_LABEL = 'Show only not mapped';
 
 const BottomPanel: React.FC = observer(() => {
-  const {selectedSourceFlowNodeIds} = processInstanceMigrationStore;
+  const {selectedSourceElementIds} = processInstanceMigrationStore;
 
   const handleCheckIsRowSelected = (selectedSourceFlowNodes?: string[]) => {
     return (rowId: string) => selectedSourceFlowNodes?.includes(rowId) ?? false;
   };
   const {
-    updateFlowNodeMapping,
-    clearFlowNodeMapping,
-    state: {flowNodeMapping, sourceProcessDefinitionKey},
+    updateElementMapping,
+    clearElementMapping,
+    state: {elementMapping, sourceProcessDefinitionKey},
   } = processInstanceMigrationStore;
 
   const {
     toggleMappedFilter,
     state: {isMappedFilterEnabled},
     getMappableFlowNodes,
+    getMappableSequenceFlows,
   } = processInstanceMigrationMappingStore;
 
   const {selectedTargetProcessId} = processesStore;
@@ -66,34 +67,44 @@ const BottomPanel: React.FC = observer(() => {
     targetData?.selectableFlowNodes,
   );
 
-  const filteredSourceFlowNodeMappings = mappableFlowNodes.filter(
-    ({sourceFlowNode}) => {
-      return (
-        !isMappedFilterEnabled ||
-        flowNodeMapping[sourceFlowNode.id] === undefined
-      );
-    },
-  );
+  const mappableSequenceFlows =
+    getMappableSequenceFlows(
+      sourceData?.selectableSequenceFlows,
+      targetData?.selectableSequenceFlows,
+    ) ?? [];
+
+  const filteredSourceFlowNodes = [
+    ...mappableFlowNodes,
+    ...mappableSequenceFlows,
+  ].filter(({sourceElement}) => {
+    return (
+      !isMappedFilterEnabled || elementMapping[sourceElement.id] === undefined
+    );
+  });
 
   /**
-   * Flow nodes which are contained in both source diagram and target diagram.
+   * Elements (elements and sequence flows) which are contained in both source diagram and target diagram.
    *
-   * A flow node is auto-mappable when
-   * - the flow node id is contained in source and target diagram
+   * An element is auto-mappable when
+   * - the element id is contained in source and target diagram
    * - the bpmn type is matching in source and target diagram
    */
-  const autoMappableFlowNodes = useMemo(() => {
+  const autoMappableElements = useMemo(() => {
     if (sourceData === undefined || targetData === undefined) return [];
 
-    return sourceData.selectableFlowNodes
-      .filter((sourceFlowNode) => {
-        const targetFlowNode = targetData.selectableFlowNodes.find(
-          (flowNode) => flowNode.id === sourceFlowNode.id,
-        );
+    return [
+      ...sourceData.selectableFlowNodes,
+      ...sourceData.selectableSequenceFlows,
+    ]
+      .filter((sourceElement) => {
+        const targetElement = [
+          ...targetData.selectableFlowNodes,
+          ...targetData.selectableSequenceFlows,
+        ].find((element) => element.id === sourceElement.id);
 
         return (
-          targetFlowNode !== undefined &&
-          sourceFlowNode.$type === targetFlowNode.$type
+          targetElement !== undefined &&
+          sourceElement.$type === targetElement.$type
         );
       })
       .map(({id, $type}) => {
@@ -102,11 +113,11 @@ const BottomPanel: React.FC = observer(() => {
   }, [sourceData, targetData]);
 
   /**
-   * Returns true if the flow node with flowNodeId is auto-mappable
+   * Returns true if an element with flowNodeId is auto-mappable
    */
   const isAutoMappable = (flowNodeId: string) => {
     return (
-      autoMappableFlowNodes.find(({id}) => {
+      autoMappableElements.find(({id}) => {
         return flowNodeId === id;
       }) !== undefined
     );
@@ -116,17 +127,20 @@ const BottomPanel: React.FC = observer(() => {
     sourceData?.selectableFlowNodes &&
     sourceData.selectableFlowNodes.length > 0;
 
-  // Automatically map flow nodes with same id and type in source and target diagrams
+  const hasSelectableSourceSequenceFlows =
+    sourceData?.selectableSequenceFlows &&
+    sourceData.selectableSequenceFlows.length > 0;
+
+  // Automatically map elements with same id and type in source and target diagrams
   useEffect(() => {
-    clearFlowNodeMapping();
-    autoMappableFlowNodes.forEach((sourceFlowNode) => {
-      updateFlowNodeMapping({
-        sourceId: sourceFlowNode.id,
-        targetId: sourceFlowNode.id,
+    clearElementMapping();
+    autoMappableElements.forEach((sourceElement) => {
+      updateElementMapping({
+        sourceId: sourceElement.id,
+        targetId: sourceElement.id,
       });
     });
-  }, [autoMappableFlowNodes, updateFlowNodeMapping, clearFlowNodeMapping]);
-
+  }, [autoMappableElements, updateElementMapping, clearElementMapping]);
   useEffect(() => {
     // reset store on unmount
     return processInstanceMigrationMappingStore.reset;
@@ -134,10 +148,10 @@ const BottomPanel: React.FC = observer(() => {
 
   return (
     <BottomSection>
-      {!hasSelectableSourceFlowNodes ? (
+      {!hasSelectableSourceFlowNodes && !hasSelectableSourceSequenceFlows ? (
         <ErrorMessageContainer>
           <ErrorMessage
-            message="There are no mappable flow nodes"
+            message="There are no mappable flow nodes or sequence flows."
             additionalInfo="Exit migration to select a different process"
           />
         </ErrorMessageContainer>
@@ -159,13 +173,13 @@ const BottomPanel: React.FC = observer(() => {
             size="md"
             headers={[
               {
-                header: 'Source flow nodes',
-                key: 'sourceFlowNode',
+                header: 'Source elements',
+                key: 'sourceElement',
                 width: '50%',
               },
               {
-                header: 'Target flow nodes',
-                key: 'targetFlowNode',
+                header: 'Target elements',
+                key: 'targetElement',
                 width: '50%',
               },
             ]}
@@ -173,65 +187,64 @@ const BottomPanel: React.FC = observer(() => {
               processInstanceMigrationStore.selectSourceFlowNode(rowId);
             }}
             checkIsRowSelected={handleCheckIsRowSelected(
-              selectedSourceFlowNodeIds,
+              selectedSourceElementIds,
             )}
-            rows={filteredSourceFlowNodeMappings.map(
-              ({sourceFlowNode, selectableTargetFlowNodes}) => {
-                const isMapped =
-                  flowNodeMapping[sourceFlowNode.id] !== undefined;
+            rows={filteredSourceFlowNodes.map(
+              ({sourceElement, selectableTargetElement}) => {
+                const isMapped = elementMapping[sourceElement.id] !== undefined;
 
                 return {
-                  id: sourceFlowNode.id,
-                  sourceFlowNode: (
+                  id: sourceElement.id,
+                  sourceElement: (
                     <LeftColumn>
-                      <SourceFlowNodeName>
-                        {sourceFlowNode.name}
-                      </SourceFlowNodeName>
+                      <SourceElementName>
+                        {sourceElement.name ?? sourceElement.id}
+                      </SourceElementName>
                       {isTargetSelected && !isMapped && (
                         <Tag type="blue">Not mapped</Tag>
                       )}
                       <ArrowRight />
                     </LeftColumn>
                   ),
-                  targetFlowNode: (() => {
-                    const targetFlowNodeId =
-                      flowNodeMapping[sourceFlowNode.id] ?? '';
+                  targetElement: (() => {
+                    const targetElementId =
+                      elementMapping[sourceElement.id] ?? '';
 
                     return (
                       <Stack orientation="horizontal" gap={4}>
                         <Select
                           disabled={
                             processInstanceMigrationStore.state.currentStep ===
-                              'summary' ||
-                            selectableTargetFlowNodes.length === 0
+                              'summary' || selectableTargetElement.length === 0
                           }
                           size="sm"
                           hideLabel
-                          labelText={`Target flow node for ${sourceFlowNode.name}`}
-                          id={sourceFlowNode.id}
-                          value={targetFlowNodeId}
+                          labelText={`Target element for ${sourceElement.name}`}
+                          id={sourceElement.id}
+                          value={targetElementId}
                           onChange={({target}) => {
-                            processInstanceMigrationStore.updateFlowNodeMapping(
-                              {
-                                sourceId: sourceFlowNode.id,
-                                targetId: target.value,
-                              },
-                            );
+                            processInstanceMigrationStore.updateElementMapping({
+                              sourceId: sourceElement.id,
+                              targetId: target.value,
+                            });
                           }}
                         >
-                          {[
-                            {id: '', name: ''},
-                            ...selectableTargetFlowNodes,
-                          ].map(({id, name}) => {
-                            return (
-                              <SelectItem key={id} value={id} text={name} />
-                            );
-                          })}
+                          {[{id: '', name: ''}, ...selectableTargetElement].map(
+                            ({id, name}) => {
+                              return (
+                                <SelectItem
+                                  key={id}
+                                  value={id}
+                                  text={name ?? id}
+                                />
+                              );
+                            },
+                          )}
                         </Select>
-                        {isAutoMappable(sourceFlowNode.id) &&
-                          // show icon only when target flow node is selected
-                          sourceFlowNode.id === targetFlowNodeId && (
-                            <IconContainer title="This flow node was automatically mapped">
+                        {isAutoMappable(sourceElement.id) &&
+                          // show icon only when target element is selected
+                          sourceElement.id === targetElementId && (
+                            <IconContainer title="This element was automatically mapped">
                               <CheckmarkFilled data-testid="select-icon" />
                             </IconContainer>
                           )}

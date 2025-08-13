@@ -10,6 +10,7 @@ import {useEffect} from 'react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
+import {processesStore} from 'modules/stores/processes/processes.migration';
 
 const elements = {
   checkPayment: {
@@ -229,6 +230,7 @@ const Wrapper = ({children}: Props) => {
   useEffect(() => {
     return () => {
       processInstanceMigrationStore.reset();
+      processesStore.reset();
     };
   }, []);
 
