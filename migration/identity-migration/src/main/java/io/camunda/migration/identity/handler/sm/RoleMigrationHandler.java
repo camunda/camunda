@@ -23,6 +23,7 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RoleMigrationHandler extends MigrationHandler<Role> {
@@ -109,7 +110,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
                 permission ->
                     getAuthorizationsByAudience(
                         audiences, permission, roleId, AuthorizationOwnerType.ROLE))
-            .flatMap(List::stream)
+            .flatMap(Set::stream)
             .toList();
 
     final var combinedPermissions = extractCombinedPermissions(authorizations);
