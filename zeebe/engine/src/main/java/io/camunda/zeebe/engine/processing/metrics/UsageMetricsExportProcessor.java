@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.metrics;
 
+import static java.util.Optional.*;
+
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -19,6 +21,8 @@ import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.ArrayList;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,20 +64,27 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
     final var isEDIMapEmpty = bucket.getTenantEDIMap().isEmpty();
     final var isTUMapEmpty = bucket.getTenantTUMap().isEmpty();
 
+    final var events = new ArrayList<UsageMetricRecord>();
     if (!isRPIMapEmpty || !isEDIMapEmpty || !isTUMapEmpty) {
       processMetricType(
-          bucket, eventRecord, EventType.RPI, isRPIMapEmpty, bucket.getTenantRPIMapValue());
+              bucket, eventRecord, EventType.RPI, isRPIMapEmpty, bucket.getTenantRPIMapValue())
+          .ifPresent(events::add);
       processMetricType(
-          bucket, eventRecord, EventType.EDI, isEDIMapEmpty, bucket.getTenantEDIMapValue());
+              bucket, eventRecord, EventType.EDI, isEDIMapEmpty, bucket.getTenantEDIMapValue())
+          .ifPresent(events::add);
       processMetricType(
-          bucket, eventRecord, EventType.TU, isTUMapEmpty, bucket.getTenantTUMapValue());
+              bucket, eventRecord, EventType.TU, isTUMapEmpty, bucket.getTenantTUMapValue())
+          .ifPresent(events::add);
     } else {
-      appendFollowUpEvent(eventRecord);
+      events.add(eventRecord);
     }
+
+    // append events at the end so bucket is not reset while processing
+    events.forEach(this::appendFollowUpEvent);
   }
 
   /** Processes a specific metric type and appends the resulting records. */
-  private void processMetricType(
+  private Optional<UsageMetricRecord> processMetricType(
       final PersistedUsageMetrics bucket,
       final UsageMetricRecord baseRecord,
       final EventType eventType,
@@ -82,8 +93,9 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
     if (!valuesMapIsEmpty) {
       final UsageMetricRecord clonedRecord = initializeEventRecord(baseRecord);
       enhanceEventRecord(clonedRecord, bucket, eventType, valuesBuffer);
-      appendFollowUpEvent(clonedRecord);
+      return of(clonedRecord);
     }
+    return empty();
   }
 
   /** Creates a UsageMetricRecord with original properties. */
