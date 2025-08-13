@@ -52,7 +52,7 @@ public class Backup {
    *   <li>Use GCS to use Google Cloud Storage (https://cloud.google.com/storage/)
    *   <li>Use AZURE to use Azure Storage
    *       (https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction)
-   *   <li>Use FILESYSTEM tbd
+   *   <li>Use FILESYSTEM to use filesystem storage
    * </ul>
    */
   private BackupStoreType store = BackupStoreType.NONE;
@@ -62,6 +62,9 @@ public class Backup {
 
   /** Configuration for backup store GCS */
   private Gcs gcs = new Gcs();
+
+  /** Configuration for backup store Filesystem */
+  private Filesystem filesystem = new Filesystem();
 
   /** Configuration for backup store Azure */
   private Azure azure = new Azure();
@@ -124,6 +127,14 @@ public class Backup {
     this.gcs = gcs;
   }
 
+  public Filesystem getFilesystem() {
+    return filesystem;
+  }
+
+  public void setFilesystem(final Filesystem filesystem) {
+    this.filesystem = filesystem;
+  }
+
   public Azure getAzure() {
     return azure;
   }
@@ -154,6 +165,8 @@ public class Backup {
     copy.store = store;
     copy.s3 = s3;
     copy.gcs = gcs;
+    copy.filesystem = filesystem;
+    copy.azure = azure;
 
     return copy;
   }
