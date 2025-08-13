@@ -16,15 +16,7 @@ import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,17 +38,24 @@ public class ClientsByTenantIntegrationTest {
   }
 
   @Test
-  void shouldSearchClientsByTenantAndSort()
-      throws URISyntaxException, IOException, InterruptedException {
+  void shouldSearchAssignedClientsByTenantAndSort() {
     // given
     final var firstClientId = "aClientId";
     final var secondClientId = "bClientId";
 
     // when
-    assignClientToTenant(
-        camundaClient.getConfiguration().getRestAddress().toString(), TENANT_ID, firstClientId);
-    assignClientToTenant(
-        camundaClient.getConfiguration().getRestAddress().toString(), TENANT_ID, secondClientId);
+    camundaClient
+        .newAssignClientToTenantCommand()
+        .clientId(firstClientId)
+        .tenantId(TENANT_ID)
+        .send()
+        .join();
+    camundaClient
+        .newAssignClientToTenantCommand()
+        .clientId(secondClientId)
+        .tenantId(TENANT_ID)
+        .send()
+        .join();
 
     // then
     Awaitility.await("Clients are assigned to the tenant and can be searched")
@@ -73,6 +72,22 @@ public class ClientsByTenantIntegrationTest {
                   .map(Client::getClientId)
                   .containsExactly(secondClientId, firstClientId);
             });
+  }
+
+  @Test
+  void shouldReturnNotFoundOnAssigningClientToTenantIfTenantDoesNotExist() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignClientToTenantCommand()
+                    .clientId(Strings.newRandomValidIdentityId())
+                    .tenantId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining("no tenant with this ID exists.");
   }
 
   @Test
@@ -96,24 +111,5 @@ public class ClientsByTenantIntegrationTest {
     assertThatThrownBy(() -> camundaClient.newClientsByTenantSearchRequest("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
-  }
-
-  // TODO once available in #35767, this test should use the client to make the request
-  private static void assignClientToTenant(
-      final String restAddress, final String tenantId, final String clientId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(
-                new URI(
-                    "%s%s%s%s%s"
-                        .formatted(restAddress, "v2/tenants/", tenantId, "/clients/", clientId)))
-            .PUT(BodyPublishers.ofString(""))
-            .build();
-
-    // Send the request and get the response
-    final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
-
-    AssertionsForClassTypes.assertThat(response.statusCode()).isEqualTo(204);
   }
 }
