@@ -8,7 +8,6 @@
 package io.camunda.zeebe.el;
 
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 /** The context for evaluating an expression. */
 public interface EvaluationContext {
@@ -19,7 +18,7 @@ public interface EvaluationContext {
    * @return the variable value as MessagePack encoded buffer, or {@code null} if the variable is
    *     not present
    */
-  DirectBuffer getVariable(String variableName);
+  Object getVariable(String variableName);
 
   /**
    * Combines two evaluation contexts. The combined evaluation context will first search for the
