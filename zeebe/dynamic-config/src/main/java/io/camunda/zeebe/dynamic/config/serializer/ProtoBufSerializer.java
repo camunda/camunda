@@ -153,8 +153,14 @@ public class ProtoBufSerializer
             ? decodeRoutingState(encodedClusterTopology.getRoutingState())
             : Optional.empty();
 
+    // TODO: implement decoding of cluster id.
     return new ClusterConfiguration(
-        encodedClusterTopology.getVersion(), members, completedChange, currentChange, routingState);
+        encodedClusterTopology.getVersion(),
+        members,
+        completedChange,
+        currentChange,
+        routingState,
+        Optional.empty());
   }
 
   private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(

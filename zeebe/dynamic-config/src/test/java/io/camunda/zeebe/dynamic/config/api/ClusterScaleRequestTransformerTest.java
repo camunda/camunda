@@ -135,7 +135,7 @@ final class ClusterScaleRequestTransformerTest {
                 getSortedPartitionIds(oldPartitionCount),
                 oldReplicationFactor);
     ClusterConfiguration oldClusterTopology =
-        ConfigurationUtil.getClusterConfigFrom(true, oldDistribution, partitionConfig);
+        ConfigurationUtil.getClusterConfigFrom(true, oldDistribution, partitionConfig, "clusterId");
     for (final MemberId member : getClusterMembers(oldClusterSize)) {
       if (!oldClusterTopology.hasMember(member)) {
         oldClusterTopology =
