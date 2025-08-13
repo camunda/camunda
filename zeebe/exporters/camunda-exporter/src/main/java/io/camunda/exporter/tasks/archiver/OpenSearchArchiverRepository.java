@@ -19,7 +19,6 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -52,7 +51,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     implements ArchiverRepository {
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
-  private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
+  // Matches versioned index names with version suffixes: {name}-{major}.{minor}.{patch}_{suffix}
+  // e.g. "camunda-tenant-8.8.0_2025-02-23"
+  private static final String VERSIONED_INDEX_PATTERN = ".+-\\d+\\.\\d+\\.\\d+_.+$";
   private static final String ALL_INDICES_PATTERN = ".*";
 
   private final int partitionId;
@@ -115,14 +116,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
   @Override
   public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
-    if (!retention.isEnabled() || destinationIndexName.length == 0) {
+    if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
 
-    return CompletableFuture.allOf(
-        Arrays.stream(destinationIndexName)
-            .map(this::applyPolicyToIndex)
-            .toArray(CompletableFuture[]::new));
+    return setIndexLifeCycleToMatchingIndices(List.of(destinationIndexName));
   }
 
   @Override
@@ -132,11 +130,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     }
 
     final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
-    final var indexWildCard = "^" + formattedPrefix + INDEX_WILDCARD;
+    final var indexWildCard = "^" + formattedPrefix + VERSIONED_INDEX_PATTERN;
 
     try {
       return fetchIndexMatchingIndexes(indexWildCard)
-          .thenComposeAsync(indices -> setIndexLifeCycle(indices.toArray(String[]::new)), executor);
+          .thenComposeAsync(this::setIndexLifeCycleToMatchingIndices, executor);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
     }
@@ -246,8 +244,31 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                     .toList());
   }
 
-  private CompletableFuture<Void> applyPolicyToIndex(final String index) {
-    final AddPolicyRequestBody value = new AddPolicyRequestBody(retention.getPolicyName());
+  private CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
+      final List<String> destinationIndexNames) {
+    if (destinationIndexNames.isEmpty()) {
+      logger.debug("No indices to set lifecycle policies for");
+      return CompletableFuture.completedFuture(null);
+    }
+
+    return applyPolicyToIndices(destinationIndexNames, retention.getPolicyName());
+  }
+
+  private CompletableFuture<Void> applyPolicyToIndices(
+      final List<String> indices, final String policyName) {
+
+    logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
+
+    final var requests =
+        indices.stream()
+            .map(index -> applyPolicyToIndex(index, policyName))
+            .toArray(CompletableFuture[]::new);
+
+    return CompletableFuture.allOf(requests);
+  }
+
+  private CompletableFuture<Void> applyPolicyToIndex(final String index, final String policyName) {
+    final AddPolicyRequestBody value = new AddPolicyRequestBody(policyName);
     final var request = Requests.builder().method("POST").endpoint("_plugins/_ism/add/" + index);
     return sendRequestAsync(
             () ->
@@ -258,7 +279,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
               if (response.getStatus() >= 400) {
                 return CompletableFuture.failedFuture(
                     new ExporterException(
-                        "Failed to set index lifecycle policy for index: "
+                        "Failed to set index lifecycle policy '"
+                            + policyName
+                            + "' for index: "
                             + index
                             + ".\n"
                             + "Status: "
