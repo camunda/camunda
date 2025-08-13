@@ -24,10 +24,14 @@ import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.ListenerEventType;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
+import io.camunda.client.protocol.rest.JobFilter;
 import io.camunda.client.protocol.rest.JobKindEnum;
+import io.camunda.client.protocol.rest.JobKindFilterProperty;
 import io.camunda.client.protocol.rest.JobListenerEventTypeEnum;
+import io.camunda.client.protocol.rest.JobListenerEventTypeFilterProperty;
 import io.camunda.client.protocol.rest.JobSearchQuery;
 import io.camunda.client.protocol.rest.JobStateEnum;
+import io.camunda.client.protocol.rest.JobStateFilterProperty;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
@@ -37,6 +41,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 public class SearchJobTest extends ClientRestTest {
 
@@ -133,6 +140,64 @@ public class SearchJobTest extends ClientRestTest {
     assertThat(request.getFilter().getIsDenied()).isEqualTo(false);
     assertThat(request.getFilter().getRetries()).isNotNull();
     assertThat(request.getFilter().getRetries().get$Eq()).isEqualTo(3);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = JobState.class,
+      names = {"UNKNOWN_ENUM_VALUE"},
+      mode = Mode.EXCLUDE)
+  void shouldSearchJobWithState(final JobState state) {
+    // when
+    client.newJobSearchRequest().filter(filter -> filter.state(f -> f.eq(state))).send().join();
+
+    // then
+    final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);
+    assertThat(request.getFilter()).isNotNull();
+    assertThat(request.getFilter())
+        .extracting(JobFilter::getState)
+        .extracting(JobStateFilterProperty::get$Eq)
+        .isEqualTo(JobStateEnum.valueOf(state.name()));
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = JobKind.class,
+      names = {"UNKNOWN_ENUM_VALUE"},
+      mode = Mode.EXCLUDE)
+  void shouldSearchJobWithKind(final JobKind jobKind) {
+    // when
+    client.newJobSearchRequest().filter(filter -> filter.kind(f -> f.eq(jobKind))).send().join();
+
+    // then
+    final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);
+    assertThat(request.getFilter()).isNotNull();
+    assertThat(request.getFilter())
+        .extracting(JobFilter::getKind)
+        .extracting(JobKindFilterProperty::get$Eq)
+        .isEqualTo(JobKindEnum.valueOf(jobKind.name()));
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ListenerEventType.class,
+      names = {"UNKNOWN_ENUM_VALUE"},
+      mode = Mode.EXCLUDE)
+  void shouldSearchJobWithListenerEventType(final ListenerEventType listenerEventType) {
+    // when
+    client
+        .newJobSearchRequest()
+        .filter(filter -> filter.listenerEventType(f -> f.eq(listenerEventType)))
+        .send()
+        .join();
+
+    // then
+    final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);
+    assertThat(request.getFilter()).isNotNull();
+    assertThat(request.getFilter())
+        .extracting(JobFilter::getListenerEventType)
+        .extracting(JobListenerEventTypeFilterProperty::get$Eq)
+        .isEqualTo(JobListenerEventTypeEnum.valueOf(listenerEventType.name()));
   }
 
   @Test
