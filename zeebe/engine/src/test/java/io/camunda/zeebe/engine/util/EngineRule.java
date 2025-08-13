@@ -49,6 +49,7 @@ import io.camunda.zeebe.engine.util.client.UsageMetricClient;
 import io.camunda.zeebe.engine.util.client.UserClient;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
+import io.camunda.zeebe.engine.util.client.VariableDocumentClient;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -470,7 +471,11 @@ public final class EngineRule extends ExternalResource {
     return new MessageCorrelationClient(environmentRule, partitionCount);
   }
 
-  public VariableClient variables() {
+  public VariableDocumentClient variables() {
+    return new VariableDocumentClient(environmentRule);
+  }
+
+  public VariableClient variable() {
     return new VariableClient(environmentRule);
   }
 
