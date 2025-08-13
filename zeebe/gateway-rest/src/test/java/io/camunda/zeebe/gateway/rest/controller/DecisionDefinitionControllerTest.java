@@ -51,6 +51,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
              "failureMessage":"",
              "tenantId":"tenantId",
              "decisionInstanceKey":"123",
+             "decisionEvaluationKey":"123",
              "evaluatedDecisions":[]
           }""";
 
