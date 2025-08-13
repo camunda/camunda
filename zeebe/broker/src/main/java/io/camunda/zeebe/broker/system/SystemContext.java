@@ -289,6 +289,42 @@ public final class SystemContext {
               config.getChunkSize()));
     }
 
+    if (config.getQueryRetryMax() < 0) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryRetryMax must be greater than or equal to 0, but was %s",
+              config.getQueryRetryMax()));
+    }
+
+    if (config.getQueryRetryInitialDelay().isNegative()
+        || config.getQueryRetryInitialDelay().isZero()) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryRetryInitialDelay must be positive, but was %s",
+              config.getQueryRetryInitialDelay()));
+    }
+
+    if (config.getQueryRetryMaxDelay().isNegative() || config.getQueryRetryMaxDelay().isZero()) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryRetryMaxDelay must be positive, but was %s",
+              config.getQueryRetryMaxDelay()));
+    }
+
+    if (config.getQueryRetryMaxDelay().compareTo(config.getQueryRetryInitialDelay()) < 0) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperation.queryRetryInitialDelay of %s, but was %s",
+              config.getQueryRetryInitialDelay(), config.getQueryRetryMaxDelay()));
+    }
+
+    if (config.getQueryRetryBackoffFactor() < 1) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryRetryBackoffFactor must be greater than or equal to 1, but was %s",
+              config.getQueryRetryBackoffFactor()));
+    }
+
     if (!errors.isEmpty()) {
       throw new InvalidConfigurationException(
           "Invalid BatchOperations configuration: " + String.join(", ", errors), null);

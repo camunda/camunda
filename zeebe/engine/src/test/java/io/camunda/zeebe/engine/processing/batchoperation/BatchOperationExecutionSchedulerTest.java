@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.value.BatchOperationType.MIGRATE_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
@@ -60,6 +61,10 @@ public class BatchOperationExecutionSchedulerTest {
   public static final Duration SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   public static final int CHUNK_SIZE = 5;
   public static final int QUERY_PAGE_SIZE = 10;
+  public static final Duration QUERY_INITIAL_RETRY_DELAY = Duration.ofMillis(50);
+  public static final Duration QUERY_MAX_RETRY_DELAY = Duration.ofMillis(500);
+  public static final int QUERY_RETRY_MAX = 5;
+  public static final int QUERY_RETRY_BACKOFF_FACTOR = 2;
   public static final long BATCH_OPERATION_KEY = 123456789L;
   private static final int PARTITION_ID = 1;
   @Mock private Supplier<ScheduledTaskState> scheduledTaskStateFactory;
@@ -90,6 +95,13 @@ public class BatchOperationExecutionSchedulerTest {
     when(engineConfiguration.getBatchOperationSchedulerInterval()).thenReturn(SCHEDULER_INTERVAL);
     when(engineConfiguration.getBatchOperationChunkSize()).thenReturn(CHUNK_SIZE);
     when(engineConfiguration.getBatchOperationQueryPageSize()).thenReturn(QUERY_PAGE_SIZE);
+    when(engineConfiguration.getBatchOperationQueryRetryInitialDelay())
+        .thenReturn(QUERY_INITIAL_RETRY_DELAY);
+    when(engineConfiguration.getBatchOperationQueryRetryMaxDelay())
+        .thenReturn(QUERY_MAX_RETRY_DELAY);
+    when(engineConfiguration.getBatchOperationQueryRetryMax()).thenReturn(QUERY_RETRY_MAX);
+    when(engineConfiguration.getBatchOperationQueryRetryBackoffFactor())
+        .thenReturn(QUERY_RETRY_BACKOFF_FACTOR);
 
     lenient().when(itemProviderFactory.fromBatchOperation(any())).thenReturn(itemProvider);
 
@@ -119,6 +131,21 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
+    verify(batchOperationState).getNextPendingBatchOperation();
+    verify(taskResultBuilder).build(); // is always called
+    verifyNoMoreInteractions(taskResultBuilder);
+  }
+
+  @Test
+  public void shouldDoNothingWhenNoBatchOperation() {
+    // given
+    when(batchOperationState.getNextPendingBatchOperation()).thenReturn(Optional.empty());
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
     verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder).build(); // is always called
     verifyNoMoreInteractions(taskResultBuilder);
@@ -274,11 +301,15 @@ public class BatchOperationExecutionSchedulerTest {
     when(itemProvider.fetchItemPage(any(), anyInt()))
         .thenThrow(new RuntimeException("errors", new RuntimeException()));
 
-    // when our scheduler fires
+    // when our scheduler fires three times (two retries)
+    execute();
+    execute();
+    execute();
+    execute();
+    execute();
     execute();
 
     // then
-    verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -295,6 +326,46 @@ public class BatchOperationExecutionSchedulerTest {
     assertThat(error.getPartitionId()).isEqualTo(PARTITION_ID);
     assertThat(error.getType()).isEqualTo(BatchOperationErrorType.QUERY_FAILED);
     assertThat(error.getMessage()).contains("errors");
+
+    final var durationCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(scheduleService, atLeastOnce()).runDelayedAsync(durationCaptor.capture(), any(), any());
+
+    // default scheduler delay is 1000ms, initial retry delay is 100ms.
+    // After the failure we are back at 1000ms
+    assertThat(durationCaptor.getAllValues())
+        .extracting(Duration::toMillis)
+        .containsSubsequence(1000L, 50L, 100L, 200L, 400L, 500L, 1000L);
+  }
+
+  @Test
+  public void shouldSaveCursorOnErrorEvent() {
+    // given
+    final var batchOperation = createBatchOperation();
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
+    when(itemProvider.fetchItemPage(any(), anyInt()))
+        .thenReturn(createItemPage(new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "10", false))
+        .thenThrow(new CamundaSearchException("errors"));
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    verify(batchOperationState).getNextPendingBatchOperation();
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.INITIALIZE),
+            initializeRecordArgumentCaptor.capture(),
+            any());
+
+    // and should NOT append an execute command
+    verifyNoExecuteCommandAppended();
+
+    // and should contain an errors
+    final var record = initializeRecordArgumentCaptor.getValue();
+    assertThat(record).isNotNull();
+    assertThat(record.getSearchResultCursor()).isEqualTo("10");
   }
 
   @Test
