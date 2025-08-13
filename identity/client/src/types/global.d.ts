@@ -6,18 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-/*****
- * Global ambient type declarations for the web client.
- * These declarations augment lib.dom.d.ts and are available project-wide.
- */
+interface ClientConfig {
+  VITE_IS_OIDC?: string;
+  VITE_CAMUNDA_GROUPS_ENABLED?: string;
+  VITE_TENANTS_API_ENABLED?: string;
+  organizationId?: string;
+  clusterId?: string;
+}
 
-export {};
-
-declare global {
+export declare global {
   interface Window {
-    clientConfig?: {
-      organizationId?: string;
-      clusterId?: string;
-    };
+    clientConfig?: ClientConfig;
   }
 }

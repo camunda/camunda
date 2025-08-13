@@ -6,12 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-interface AppWindow {
-  clientConfig: Record<string, string>;
-}
-
-const { clientConfig } = window as unknown as AppWindow;
-
 export type GetEnv<R = string | undefined> = (
   key: string,
   defaultValue?: R,
@@ -23,8 +17,11 @@ const getEnv = <R>(
   parser: (value: string) => R,
 ): R => {
   const viteKey = `VITE_${key}`;
-  if (clientConfig && clientConfig[viteKey] !== undefined) {
-    return parser(clientConfig[viteKey]);
+  const clientValue = (
+    window.clientConfig as Record<string, string> | undefined
+  )?.[viteKey];
+  if (clientValue !== undefined) {
+    return parser(clientValue);
   }
   if (import.meta.env[viteKey] !== undefined) {
     return parser(import.meta.env[viteKey] as string);
@@ -34,3 +31,6 @@ const getEnv = <R>(
 
 export const getEnvBoolean: GetEnv<boolean> = (key, defaultValue = false) =>
   getEnv(key, defaultValue, (value) => value === "true");
+
+export const getEnvString: GetEnv<string | undefined> = (key, defaultValue) =>
+  getEnv<string | undefined>(key, defaultValue, (value) => value);
