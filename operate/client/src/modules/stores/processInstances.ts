@@ -145,7 +145,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
     };
   };
 
-  getProcessInstances = (
+getProcessInstances = (
     fetchType: FetchType,
     processInstances: ProcessInstanceEntity[],
   ) => {
@@ -296,30 +296,31 @@ class ProcessInstances extends NetworkReconnectionHandler {
     if (response) {
       console.log('[ProcessInstances] v2 API response:', response);
       
-      // Map v2 response to current format
-      const processInstances = response.items.map((item: any) => ({
-        id: item.processInstanceKey,
-        key: item.processInstanceKey,
-        processDefinitionId: item.processDefinitionId,
-        processDefinitionKey: item.processDefinitionKey,
-        processDefinitionName: item.processDefinitionName,
-        processDefinitionVersion: item.processDefinitionVersion,
-        processId: item.processDefinitionId, // Legacy field mapping
-        processName: item.processDefinitionName, // Legacy field mapping
-        processVersion: item.processDefinitionVersion, // Legacy field mapping
-        bpmnProcessId: item.processDefinitionId, // Legacy field mapping
-        state: item.state,
-        startDate: item.startDate,
-        endDate: item.endDate,
-        hasIncident: item.hasIncident,
-        tenantId: item.tenantId,
-        parentInstanceId: item.parentProcessInstanceKey,
-        sortValues: [`${item.startDate}`], // For pagination
-        operations: [], // Default empty operations
-        hasActiveOperation: false, // Default value
-        rootInstanceId: item.rootProcessInstanceKey || item.processInstanceKey, // Use root or self
-        callHierarchy: [], // Default empty call hierarchy
+      // Map v2 response to ProcessInstanceEntity format
+      const processInstances: ProcessInstanceEntity[] = response.items.map((item: any) => ({
+        id: item.processInstanceKey?.toString() || '',
+        processId: item.processDefinitionId || '',
+        processName: item.processDefinitionName || '',
+        processVersion: item.processDefinitionVersion || 1,
+        startDate: item.startDate || '',
+        endDate: item.endDate || null,
+        state: item.state || 'ACTIVE',
+        bpmnProcessId: item.processDefinitionId || '',
+        hasActiveOperation: false, // Default to false, can be updated based on operations
+        operations: [], // Default empty operations array
+        sortValues: [item.startDate || ''], // For pagination
+        parentInstanceId: item.parentProcessInstanceKey || null,
+        rootInstanceId: item.rootProcessInstanceKey || item.processInstanceKey || null,
+        callHierarchy: [], // Not provided in v2 API, set to empty array
+        tenantId: item.tenantId || '',
+        permissions: null, // Not provided in v2 API
       }));
+
+      // Create ProcessInstancesDto format
+      const processInstancesDto: ProcessInstancesDto = {
+        processInstances,
+        totalCount: response.items.length, // Use items length as we don't have totalCount in v2 response
+      };
 
       tracking.track({
         eventName: 'instances-loaded',
@@ -329,11 +330,11 @@ class ProcessInstances extends NetworkReconnectionHandler {
       });
 
       this.setProcessInstances({
-        filteredProcessInstancesCount: response.items.length, // Use items length since totalCount may not exist
-        processInstances: this.getProcessInstances(fetchType, processInstances as ProcessInstanceEntity[]),
+        filteredProcessInstancesCount: processInstancesDto.totalCount,
+        processInstances: this.getProcessInstances(fetchType, processInstancesDto.processInstances),
       });
 
-      this.setLatestFetchDetails(fetchType, processInstances.length);
+      this.setLatestFetchDetails(fetchType, processInstancesDto.processInstances.length);
       this.handleFetchSuccess();
     } else {
       console.error('[ProcessInstances] v2 API error:', error);
