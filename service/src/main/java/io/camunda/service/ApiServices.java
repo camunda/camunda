@@ -72,4 +72,10 @@ public abstract class ApiServices<T extends ApiServices<T>> {
         ? DocumentValue.EMPTY_DOCUMENT
         : new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
   }
+
+  protected DirectBuffer getDocumentOrEmpty(final Object value) {
+    return value == null
+        ? DocumentValue.EMPTY_DOCUMENT
+        : new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
+  }
 }
