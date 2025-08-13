@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessUtils;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AdHocSubProcessOutputCollectionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -56,6 +58,8 @@ public class AdHocSubProcessProcessor
               Map.ofEntries(
                   Map.entry(ZeebeAdHocImplementationType.BPMN, new BpmnBehavior()),
                   Map.entry(ZeebeAdHocImplementationType.JOB_WORKER, new JobWorkerBehavior())));
+  private final AdHocSubProcessOutputCollectionBehavior adHocSubProcessOutputCollectionBehavior =
+      new AdHocSubProcessOutputCollectionBehavior();
 
   public AdHocSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -82,6 +86,14 @@ public class AdHocSubProcessProcessor
     stateBehavior.setLocalVariable(
         context, AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_NAME, element.getAdHocActivitiesMetadata());
 
+    element
+        .getOutputCollection()
+        .ifPresent(
+            outputCollectionVariableName ->
+                stateBehavior.setLocalVariable(
+                    context,
+                    outputCollectionVariableName,
+                    BufferUtil.wrapArray(MsgPackHelper.EMPTY_ARRAY)));
     return variableMappingBehavior.applyInputMappings(context, element);
   }
 
@@ -94,6 +106,10 @@ public class AdHocSubProcessProcessor
   @Override
   public Either<Failure, ?> onComplete(
       final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+    element
+        .getOutputCollection()
+        .ifPresent(variableName -> stateBehavior.propagateVariable(context, variableName));
+
     return variableMappingBehavior
         .applyOutputMappings(context, element)
         .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
@@ -217,8 +233,21 @@ public class AdHocSubProcessProcessor
       final ExecutableAdHocSubProcess adHocSubProcess,
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext) {
-    return behaviorFor(adHocSubProcess)
-        .beforeExecutionPathCompleted(adHocSubProcess, adHocSubProcessContext, childContext);
+    return adHocSubProcess
+        .getOutputCollection()
+        .map(
+            outputCollectionVariableName ->
+                updateOutputCollection(
+                    adHocSubProcess,
+                    outputCollectionVariableName,
+                    adHocSubProcessContext,
+                    childContext))
+        .orElse(Either.right(null))
+        .flatMap(
+            ok ->
+                behaviorFor(adHocSubProcess)
+                    .beforeExecutionPathCompleted(
+                        adHocSubProcess, adHocSubProcessContext, childContext));
   }
 
   @Override
@@ -248,6 +277,38 @@ public class AdHocSubProcessProcessor
       // all remaining child instances were terminated.
       stateTransitionBehavior.completeElement(adHocSubProcessContext);
     }
+  }
+
+  private Either<Failure, ?> updateOutputCollection(
+      final ExecutableAdHocSubProcess adHocSubProcess,
+      final DirectBuffer outputCollectionVariableName,
+      final BpmnElementContext adHocSubProcessContext,
+      final BpmnElementContext childContext) {
+
+    final var outputElementOptional = adHocSubProcess.getOutputElement();
+    if (outputElementOptional.isEmpty()) {
+      return Either.left(
+          new Failure(
+              "Expected an expression for the output element of the ad-hoc sub-process, but none was provided.",
+              ErrorType.EXTRACT_VALUE_ERROR));
+    }
+
+    final Expression outputElementExpression = outputElementOptional.get();
+    return expressionProcessor
+        .evaluateAnyExpression(outputElementExpression, childContext.getElementInstanceKey())
+        .flatMap(
+            outputElementValue -> {
+              final DirectBuffer outputCollectionValue =
+                  stateBehavior.getLocalVariable(
+                      adHocSubProcessContext, outputCollectionVariableName);
+
+              return adHocSubProcessOutputCollectionBehavior.appendToOutputCollection(
+                  outputCollectionValue, outputElementValue);
+            })
+        .thenDo(
+            updatedCollection ->
+                stateBehavior.setLocalVariable(
+                    adHocSubProcessContext, outputCollectionVariableName, updatedCollection));
   }
 
   private interface AdHocSubProcessBehavior {

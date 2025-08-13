@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -17,11 +18,13 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -106,6 +109,24 @@ public final class BpmnAdHocSubProcessBehavior {
         innerInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, innerInstanceRecord);
     stateWriter.appendFollowUpEvent(
         innerInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, innerInstanceRecord);
+
+    adHocSubProcess
+        .getOutputElement()
+        .flatMap(Expression::getVariableName)
+        .map(BufferUtil::wrapString)
+        .ifPresent(
+            variableName ->
+                variableBehavior.setLocalVariable(
+                    innerInstanceKey,
+                    innerInstanceRecord.getProcessDefinitionKey(),
+                    innerInstanceRecord.getProcessInstanceKey(),
+                    innerInstanceRecord.getBpmnProcessIdBuffer(),
+                    innerInstanceRecord.getTenantId(),
+                    variableName,
+                    new UnsafeBuffer(MsgPackHelper.NIL),
+                    0,
+                    MsgPackHelper.NIL.length));
+
     return innerInstanceKey;
   }
 
