@@ -7,16 +7,20 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Azure;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.S3;
+import io.camunda.configuration.SasToken;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
+import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
@@ -201,6 +205,7 @@ public class BrokerBasedPropertiesOverride {
   private void populateFromBackup(final BrokerBasedProperties override) {
     populateFromS3(override);
     populateFromGcs(override);
+    populateFromAzure(override);
   }
 
   private void populateFromS3(final BrokerBasedProperties override) {
@@ -248,5 +253,35 @@ public class BrokerBasedPropertiesOverride {
     gcsBackupStoreConfig.setAuth(GcsBackupStoreAuth.valueOf(gcs.getAuth().name()));
 
     override.getData().getBackup().setGcs(gcsBackupStoreConfig);
+  }
+
+  private void populateFromAzure(final BrokerBasedProperties override) {
+    final Azure azure = unifiedConfiguration.getCamunda().getData().getBackup().getAzure();
+    final AzureBackupStoreConfig azureBackupStoreConfig = override.getData().getBackup().getAzure();
+    azureBackupStoreConfig.setEndpoint(azure.getEndpoint());
+    azureBackupStoreConfig.setAccountName(azure.getAccountName());
+    azureBackupStoreConfig.setAccountKey(azure.getAccountKey());
+    azureBackupStoreConfig.setConnectionString(azure.getConnectionString());
+    azureBackupStoreConfig.setBasePath(azure.getBasePath());
+    azureBackupStoreConfig.setCreateContainer(azure.isCreateContainer());
+    populateFromSasToken(override);
+
+    override.getData().getBackup().setAzure(azureBackupStoreConfig);
+  }
+
+  private void populateFromSasToken(final BrokerBasedProperties override) {
+    final SasToken sasToken =
+        unifiedConfiguration.getCamunda().getData().getBackup().getAzure().getSasToken();
+    final SasTokenConfig sasTokenConfig = override.getData().getBackup().getAzure().getSasToken();
+
+    if (sasToken != null) {
+      override.getData().getBackup().getAzure().setSasToken(sasToken.toSasTokenConfig());
+    } else if (sasTokenConfig != null) {
+      override
+          .getData()
+          .getBackup()
+          .getAzure()
+          .setSasToken(SasToken.fromSasTokenConfig(sasTokenConfig).toSasTokenConfig());
+    }
   }
 }
