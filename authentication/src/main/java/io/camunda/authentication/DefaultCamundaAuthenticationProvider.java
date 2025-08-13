@@ -45,7 +45,7 @@ public class DefaultCamundaAuthenticationProvider implements CamundaAuthenticati
   }
 
   private CamundaAuthentication convertAndSetInHolder(final Authentication authentication) {
-    final var result = converter.convert(authentication);
+    final var result = authentication == null ? null : converter.convert(authentication);
     Optional.ofNullable(result).filter(a -> !a.isAnonymous()).ifPresent(p -> holder.set(result));
     return result;
   }
