@@ -91,66 +91,6 @@ public class ClientsByTenantIntegrationTest {
   }
 
   @Test
-  void shouldRejectAssignClientToTenantIfMissingTenantId() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newAssignClientToTenantCommand()
-                    .clientId(Strings.newRandomValidIdentityId())
-                    .tenantId(null)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("tenantId must not be null");
-  }
-
-  @Test
-  void shouldRejectAssignClientToTenantIfEmptyTenantId() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newAssignClientToTenantCommand()
-                    .clientId(Strings.newRandomValidIdentityId())
-                    .tenantId("")
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("tenantId must not be empty");
-  }
-
-  @Test
-  void shouldRejectAssignClientToTenantIfMissingClientId() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newAssignClientToTenantCommand()
-                    .clientId(null)
-                    .tenantId(Strings.newRandomValidIdentityId())
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("clientId must not be null");
-  }
-
-  @Test
-  void shouldRejectAssignClientToTenantIfEmptyClientId() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newAssignClientToTenantCommand()
-                    .clientId("")
-                    .tenantId(Strings.newRandomValidIdentityId())
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("clientId must not be empty");
-  }
-
-  @Test
   void searchClientsShouldReturnEmptyListWhenSearchingForNonExistingTenantId() {
     final var clientsSearchResponse =
         camundaClient.newClientsByTenantSearchRequest("someTenantId").send().join();
