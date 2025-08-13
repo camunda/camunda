@@ -9186,6 +9186,7 @@ components:
         - BPMN_ELEMENT
         - EXECUTION_LISTENER
         - TASK_LISTENER
+        - AD_HOC_SUB_PROCESS
     JobListenerEventTypeEnum:
       description: The listener event type of the job.
       enum:
