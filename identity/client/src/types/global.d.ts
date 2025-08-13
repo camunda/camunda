@@ -7,9 +7,9 @@
  */
 
 interface ClientConfig {
-  VITE_IS_OIDC?: string;
-  VITE_CAMUNDA_GROUPS_ENABLED?: string;
-  VITE_TENANTS_API_ENABLED?: string;
+  isOidc?: string;
+  isCamundaGroupsEnabled?: string;
+  isTenantsApiEnabled?: string;
   organizationId?: string;
   clusterId?: string;
 }

@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { getEnvBoolean, getEnvString } from "src/configuration/env";
+import {
+  getClientConfigBoolean,
+  getClientConfigString,
+} from "src/configuration/env";
 
 const identityPath = "/identity";
 
@@ -14,16 +17,19 @@ const apiBaseUrl = "/v2";
 
 const loginApiUrl = "/login";
 
-export const isOIDC = getEnvBoolean("IS_OIDC", false);
-export const isCamundaGroupsEnabled = getEnvBoolean(
-  "CAMUNDA_GROUPS_ENABLED",
+export const isOIDC = getClientConfigBoolean("isOidc", false);
+export const isCamundaGroupsEnabled = getClientConfigBoolean(
+  "isCamundaGroupsEnabled",
   true,
 );
-export const isTenantsApiEnabled = getEnvBoolean("TENANTS_API_ENABLED", false);
+export const isTenantsApiEnabled = getClientConfigBoolean(
+  "isTenantsApiEnabled",
+  false,
+);
 
 export const docsUrl = "https://docs.camunda.io";
 
-export const isSaaS = Boolean(getEnvString("organizationId"));
+export const isSaaS = Boolean(getClientConfigString("organizationId"));
 
 export function getApiBaseUrl() {
   return getBasePathBeforeIdentity() + apiBaseUrl;
