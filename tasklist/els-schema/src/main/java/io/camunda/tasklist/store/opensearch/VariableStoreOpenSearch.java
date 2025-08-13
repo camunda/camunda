@@ -286,6 +286,8 @@ public class VariableStoreOpenSearch implements VariableStore {
                         t.value(
                             Arrays.asList(
                                 FieldValue.of(FlowNodeType.AD_HOC_SUB_PROCESS.toString()),
+                                FieldValue.of(
+                                    FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE.toString()),
                                 FieldValue.of(FlowNodeType.USER_TASK.toString()),
                                 FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
                                 FieldValue.of(FlowNodeType.EVENT_SUB_PROCESS.toString()),
