@@ -20,6 +20,7 @@ import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstanc
 import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Fail.fail;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
@@ -179,6 +180,28 @@ public class CamundaProcessTestContextIT {
 
     assertThat(mockedJobWorker.getInvocations()).isEqualTo(1);
     assertThat(mockedJobWorker.getActivatedJobs().get(0).getType()).isEqualTo("test");
+  }
+
+  @Test
+  void shouldMockJobWorkerWithAssertionError() {
+    // Given
+    processTestContext
+        .mockJobWorker("test")
+        .withHandler(
+            (jobClient, job) -> {
+              fail("AssertionError in MockJobWorker");
+
+              // Should never reach this code
+              jobClient.newCompleteCommand(job).send().join();
+            });
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
+
+    // When
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // Then the process instance should still be active since the jobWorker failed
+    assertThatProcessInstance(processInstanceEvent).isActive();
   }
 
   @Test

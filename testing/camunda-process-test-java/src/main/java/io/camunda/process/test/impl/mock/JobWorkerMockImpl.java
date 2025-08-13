@@ -44,7 +44,23 @@ public class JobWorkerMockImpl implements JobWorkerMock {
           jobHandler.handle(jobClient, job);
         };
 
-    camundaClient.newWorker().jobType(jobType).handler(loggingJobHandler).open();
+    final JobHandler safeLoggingJobHandler =
+        (client, job) -> {
+          try {
+            loggingJobHandler.handle(client, job);
+          } catch (final AssertionError e) {
+            final String failureMessage =
+                String.format(
+                    "JobWorkerMock [job-type: %s, job-key: %s] has failed assertions and will be terminated.",
+                    jobType, job.getKey());
+            System.err.println(failureMessage);
+            e.printStackTrace();
+
+            client.newFailCommand(job.getKey()).retries(0).send().join();
+          }
+        };
+
+    camundaClient.newWorker().jobType(jobType).handler(safeLoggingJobHandler).open();
   }
 
   @Override
