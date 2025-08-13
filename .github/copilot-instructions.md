@@ -48,3 +48,34 @@ using BPMN (Business Process Model and Notation) for process definition and exec
 - Always verify current branch before force operations
 - Respect the commit guidelines in `CONTRIBUTING.md`
 
+## GitHub Actions CI
+
+- Always specify a comment with `# owner: TODO`
+- Do not hard code secrets
+- Do not use GitHub Secrets
+- Use the Hashicorp Vault action to retrieve credentials and secrets
+- For common set of steps, consider creating reusable workflows or composite actions to avoid duplication
+- Avoid introducing usage of new 3rd party GitHub Actions
+- For Maven jobs use the `setup-maven-cache` composite action
+- For NodeJS jobs relying on Yarn use the https://github.com/camunda/infra-global-github-actions/tree/main/setup-yarn-cache
+- Always specify `permissions: {}` on the GHA workflow job level of GHA workflows and use least permissions possible
+- Always specify `bash` as the default shell for GHA workflows to ensure proper pipefail behavior
+- Always specify `timeout-minutes` on GHA workflow jobs
+- Run `actionlint` on GHA workflow modifications to make sure there are no warnings or errors
+- Run `conftest test --rego-version v0 -o github --policy .github` on GHA workflow modifications to make sure there are no warnings or errors
+- The last step of each GHA workflow job must submit CI health metrics by using:
+
+  ```yaml
+  - name: Observe build status
+    if: always()
+    continue-on-error: true
+    uses: ./.github/actions/observe-build-status
+    with:
+      build_status: ${{ job.status }}
+      secret_vault_address: ${{ secrets.VAULT_ADDR }}
+      secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+  ```
+- Always create composite actions in `.github/actions` subdirectories named in kebab case
+- Always create a `README.md` for composite actions describing purpose, inputs, outputs and example usage
+
