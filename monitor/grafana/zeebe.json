@@ -14948,7 +14948,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum by (context, partition) (rate(zeebe_flow_control_outcome_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\", outcome=\"accepted\"}[$__rate_interval]))",
+              "expr": "sum by (context, partition) (rate(zeebe_flow_control_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\", outcome=\"accepted\"}[$__rate_interval]))",
               "instant": false,
               "legendFormat": "Partition {{partition}}: {{context}}",
               "range": true,
@@ -15040,7 +15040,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum by (context, partition, outcome) (rate(zeebe_flow_control_outcome_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\", outcome!=\"accepted\"}[$__rate_interval]))",
+              "expr": "sum by (context, partition, outcome) (rate(zeebe_flow_control_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\", outcome!=\"accepted\"}[$__rate_interval]))",
               "instant": false,
               "legendFormat": "Partition {{partition}} rejected {{context}}: {{outcome}}",
               "range": true,
