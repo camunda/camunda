@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.feel.impl;
 
+import io.camunda.zeebe.feel.tagged.impl.FromAiFunction;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,7 @@ public class FeelFunctionProvider extends JavaFunctionProvider {
       Map.of(
           "cycle",
           List.of(CycleFunction.INSTANCE, CycleInfiniteFunction.INSTANCE),
-          "fromAi",
+          FromAiFunction.FUNCTION_NAME,
           FromAiFunction.INSTANCES);
 
   @Override
