@@ -114,6 +114,11 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
     return this;
   }
 
+  public VariableRecord setName(final String name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
   public VariableRecord setValue(final DirectBuffer value, final int offset, final int length) {
     valueProp.setValue(value, offset, length);
     return this;
