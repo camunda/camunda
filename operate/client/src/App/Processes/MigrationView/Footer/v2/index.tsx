@@ -16,7 +16,7 @@ import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../../MigrationConfirmationModal';
-import {useMigrateProcessInstanceBatchOperation} from 'modules/mutations/processInstance/useMigrateProcessInstanceBatchOperation';
+import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation.ts';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
 import {getMigrationBatchOperationFilter} from './getMigrationBatchOperationFilter';
@@ -28,7 +28,7 @@ const Footer: React.FC = observer(() => {
 
   const navigate = useNavigate();
 
-  const mutation = useMigrateProcessInstanceBatchOperation({
+  const mutation = useMigrateProcessInstancesBatchOperation({
     onSuccess: () => {
       tracking.track({
         eventName: 'batch-operation',

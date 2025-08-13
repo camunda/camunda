@@ -13,7 +13,7 @@ import {
   type CreateMigrationBatchOperationResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 
-const migrateProcessInstanceBatchOperation = async (
+const migrateProcessInstancesBatchOperation = async (
   payload: CreateMigrationBatchOperationRequestBody,
 ): RequestResult<CreateMigrationBatchOperationResponseBody> => {
   return requestWithThrow<CreateMigrationBatchOperationResponseBody>({
@@ -23,4 +23,4 @@ const migrateProcessInstanceBatchOperation = async (
   });
 };
 
-export {migrateProcessInstanceBatchOperation};
+export {migrateProcessInstancesBatchOperation};

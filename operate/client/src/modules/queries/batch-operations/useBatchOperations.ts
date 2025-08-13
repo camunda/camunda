@@ -51,4 +51,4 @@ const useBatchOperations = (payload: QueryBatchOperationsRequestBody) => {
   });
 };
 
-export {useBatchOperations};
+export {useBatchOperations, BATCH_OPERATIONS_QUERY_KEY};

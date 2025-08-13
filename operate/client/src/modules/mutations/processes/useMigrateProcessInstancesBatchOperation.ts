@@ -11,13 +11,14 @@ import {
   useQueryClient,
   type UseMutationOptions,
 } from '@tanstack/react-query';
-import {migrateProcessInstanceBatchOperation} from 'modules/api/v2/processInstances/migrateProcessInstanceBatchOperation';
+import {migrateProcessInstancesBatchOperation} from 'modules/api/v2/processes/migrateProcessInstancesBatchOperation.ts';
 import type {
   CreateMigrationBatchOperationRequestBody,
   CreateMigrationBatchOperationResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
+import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations.ts';
 
-const useMigrateProcessInstanceBatchOperation = (
+const useMigrateProcessInstancesBatchOperation = (
   options?: Partial<
     UseMutationOptions<
       CreateMigrationBatchOperationResponseBody,
@@ -32,10 +33,10 @@ const useMigrateProcessInstanceBatchOperation = (
     mutationKey: ['createProcessInstanceMigrationBatchOperation'],
     mutationFn: async (payload) => {
       const {response, error} =
-        await migrateProcessInstanceBatchOperation(payload);
+        await migrateProcessInstancesBatchOperation(payload);
       if (response !== null) {
         await queryClient.invalidateQueries({
-          queryKey: ['queryBatchOperations'],
+          queryKey: [BATCH_OPERATIONS_QUERY_KEY],
         });
 
         return response;
@@ -46,4 +47,4 @@ const useMigrateProcessInstanceBatchOperation = (
   });
 };
 
-export {useMigrateProcessInstanceBatchOperation};
+export {useMigrateProcessInstancesBatchOperation};
