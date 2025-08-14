@@ -189,7 +189,7 @@ class RecordBatchTest {
   @Test
   void shouldOnlyReturnTrueUntilMaxBatchSizeIsReached() {
     // given
-    final var recordBatch = new RecordBatch((count, size) -> size < 417);
+    final var recordBatch = new RecordBatch((count, size) -> size < 423);
     final var processInstanceRecord = Records.processInstance(1);
 
     recordBatch.appendRecord(1, RECORD_METADATA, -1, processInstanceRecord);
