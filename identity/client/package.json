@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@camunda/camunda-composite-components": "0.17.0",
+    "@camunda/camunda-composite-components": "0.20.2",
     "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.78.2",
     "fuse.js": "7.1.0",

@@ -16,6 +16,7 @@ import sbom from "@vzeta/rollup-plugin-sbom";
 const outDir = "dist";
 const contextPath = process.env.CONTEXT_PATH ?? "";
 const proxyPath = `^${contextPath}/(v2|login|logout).*`;
+const configPath = `^${contextPath}/config.js`
 
 const plugins: PluginOption[] = [
   react(),
@@ -63,6 +64,10 @@ export default defineConfig(
           target: "http://localhost:8080",
           changeOrigin: true,
         },
+        [configPath]: {
+          target: "http://localhost:8080/identity",
+          changeOrigin: true,
+        }
       },
     },
   }),
