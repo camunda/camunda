@@ -22,7 +22,6 @@ import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.jobhandling.JobExceptionHandlingStrategy.ExceptionHandlingContext;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.spring.client.jobhandling.result.ResultProcessor;
@@ -30,12 +29,16 @@ import io.camunda.spring.client.jobhandling.result.ResultProcessorContext;
 import io.camunda.spring.client.metrics.MetricsRecorder;
 import java.util.List;
 import org.slf4j.Logger;
+import org.springframework.util.function.ThrowingFunction;
 
 /** Zeebe JobHandler that invokes a Spring bean */
 public class JobHandlerInvokingSpringBeans implements JobHandler {
 
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
-  private final JobWorkerValue workerValue;
+  private final String jobWorkerName;
+  private final ThrowingFunction<Object[], Object> method;
+  private final boolean autoComplete;
+  private final int maxRetries;
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
   private final List<ParameterResolver> parameterResolvers;
@@ -43,13 +46,19 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
   private final JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
 
   public JobHandlerInvokingSpringBeans(
-      final JobWorkerValue workerValue,
+      final String jobWorkerName,
+      final ThrowingFunction<Object[], Object> method,
+      final boolean autoComplete,
+      final int maxRetries,
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final List<ParameterResolver> parameterResolvers,
       final ResultProcessor resultProcessor,
       final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
-    this.workerValue = workerValue;
+    this.jobWorkerName = jobWorkerName;
+    this.method = method;
+    this.autoComplete = autoComplete;
+    this.maxRetries = maxRetries;
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolvers = parameterResolvers;
@@ -60,14 +69,14 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
   @Override
   public void handle(final JobClient jobClient, final ActivatedJob job) throws Exception {
     final List<Object> args = createParameters(jobClient, job);
-    LOG.trace("Handle {} and invoke worker {}", job, workerValue);
+    LOG.trace("Handle {} and invoke worker {}", job, jobWorkerName);
     metricsRecorder.increase(
         MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_ACTIVATED, job.getType());
     try {
-      final Object methodInvocationResult = workerValue.getMethodInfo().invoke(args.toArray());
+      final Object methodInvocationResult = method.apply(args.toArray());
       final Object result =
           resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
-      if (workerValue.getAutoComplete()) {
+      if (autoComplete) {
         LOG.trace("Auto completing {}", job);
         final CommandWrapper command =
             createCommandWrapper(createCompleteCommand(jobClient, job, result), job);
@@ -80,18 +89,14 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
       }
     } catch (final Exception e) {
       jobExceptionHandlingStrategy.handleException(
-          e, new ExceptionHandlingContext(jobClient, job, workerValue));
+          e, new ExceptionHandlingContext(jobClient, job, maxRetries));
     }
   }
 
   private CommandWrapper createCommandWrapper(
       final FinalCommandStep<?> command, final ActivatedJob job) {
     return new CommandWrapper(
-        command,
-        job,
-        commandExceptionHandlingStrategy,
-        metricsRecorder,
-        workerValue.getMaxRetries());
+        command, job, commandExceptionHandlingStrategy, metricsRecorder, maxRetries);
   }
 
   private List<Object> createParameters(final JobClient jobClient, final ActivatedJob job) {
