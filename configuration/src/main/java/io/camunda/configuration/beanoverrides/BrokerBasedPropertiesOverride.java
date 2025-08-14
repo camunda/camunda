@@ -11,6 +11,7 @@ import io.camunda.configuration.Azure;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
+import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
 import io.camunda.configuration.Ssl;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
+import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import java.util.List;
@@ -95,6 +97,8 @@ public class BrokerBasedPropertiesOverride {
     final NetworkCfg networkCfg = override.getGateway().getNetwork();
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
+    networkCfg.setMinKeepAliveInterval(grpc.getMinKeepAliveInterval());
+    networkCfg.setMaxMessageSize(grpc.getMaxMessageSize());
 
     populateFromSsl(override);
     populateFromInterceptors(override);
@@ -111,6 +115,22 @@ public class BrokerBasedPropertiesOverride {
     securityCfg.setEnabled(ssl.isEnabled());
     securityCfg.setCertificateChainPath(ssl.getCertificate());
     securityCfg.setPrivateKeyPath(ssl.getCertificatePrivateKey());
+
+    populateFromKeyStore(override);
+  }
+
+  private void populateFromKeyStore(final BrokerBasedProperties override) {
+    final KeyStore keyStore =
+        unifiedConfiguration
+            .getCamunda()
+            .getApi()
+            .getGrpc()
+            .getSsl()
+            .getKeyStore()
+            .withBrokerKeyStoreProperties();
+    final KeyStoreCfg keyStoreCfg = override.getGateway().getSecurity().getKeyStore();
+    keyStoreCfg.setFilePath(keyStore.getFilePath());
+    keyStoreCfg.setPassword(keyStore.getPassword());
   }
 
   private void populateFromInterceptors(final BrokerBasedProperties override) {

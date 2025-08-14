@@ -13,11 +13,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beans.GatewayBasedProperties;
+import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.util.unit.DataSize;
 
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
@@ -30,6 +32,8 @@ public class ApiGrpcGatewayPropertiesTest {
       properties = {
         "camunda.api.grpc.address=10.0.0.7",
         "camunda.api.grpc.port=27900",
+        "camunda.api.grpc.min-keep-alive-interval=40s",
+        "camunda.api.grpc.max-message-size=40MB",
         "camunda.api.grpc.management-threads=5",
       })
   class WithOnlyUnifiedConfigSet {
@@ -50,6 +54,17 @@ public class ApiGrpcGatewayPropertiesTest {
     }
 
     @Test
+    void shouldSetMinKeepAliveInterval() {
+      assertThat(gatewayCfg.getNetwork().getMinKeepAliveInterval())
+          .isEqualTo(Duration.ofSeconds(40));
+    }
+
+    @Test
+    void shouldSetMaxMessageSize() {
+      assertThat(gatewayCfg.getNetwork().getMaxMessageSize()).isEqualTo(DataSize.ofMegabytes(40));
+    }
+
+    @Test
     void shouldSetManagementThreads() {
       assertThat(gatewayCfg.getThreads().getManagementThreads()).isEqualTo(5);
     }
@@ -60,6 +75,8 @@ public class ApiGrpcGatewayPropertiesTest {
       properties = {
         "zeebe.broker.gateway.network.host=198.0.0.1",
         "zeebe.broker.gateway.network.port=38900",
+        "zeebe.broker.gateway.network.minKeepAliveInterval=50s",
+        "zeebe.broker.gateway.network.maxMessageSize=50MB",
         "zeebe.broker.gateway.threads.managementThreads=10",
       })
   class WithOnlyLegacyBrokerPropertiesSet {
@@ -80,6 +97,17 @@ public class ApiGrpcGatewayPropertiesTest {
     }
 
     @Test
+    void shouldNotSetMinKeepAliveIntervalFromLegacyBrokerNetwork() {
+      assertThat(gatewayCfg.getNetwork().getMinKeepAliveInterval())
+          .isEqualTo(Duration.ofSeconds(30));
+    }
+
+    @Test
+    void shouldNotSetMaxMessageSizeFromLegacyBrokerNetwork() {
+      assertThat(gatewayCfg.getNetwork().getMaxMessageSize()).isEqualTo(DataSize.ofMegabytes(4));
+    }
+
+    @Test
     void shouldNotSetManagementThreadsFromLegacyBrokerThreads() {
       assertThat(gatewayCfg.getThreads().getManagementThreads())
           .isEqualTo(DEFAULT_MANAGEMENT_THREADS);
@@ -91,6 +119,8 @@ public class ApiGrpcGatewayPropertiesTest {
       properties = {
         "zeebe.gateway.network.host=192.0.0.1",
         "zeebe.gateway.network.port=28900",
+        "zeebe.gateway.network.minKeepAliveInterval=60s",
+        "zeebe.gateway.network.maxMessageSize=60MB",
         "zeebe.gateway.threads.managementThreads=6",
       })
   class WithOnlyLegacyGatewayPropertiesSet {
@@ -111,6 +141,17 @@ public class ApiGrpcGatewayPropertiesTest {
     }
 
     @Test
+    void shouldSetMinKeepAliveIntervalFromLegacyGatewayNetwork() {
+      assertThat(gatewayCfg.getNetwork().getMinKeepAliveInterval())
+          .isEqualTo(Duration.ofSeconds(60));
+    }
+
+    @Test
+    void shouldSetMaxMessageSizeFromLegacyGatewayNetwork() {
+      assertThat(gatewayCfg.getNetwork().getMaxMessageSize()).isEqualTo(DataSize.ofMegabytes(60));
+    }
+
+    @Test
     void shouldSetManagementThreadsFromLegacyGatewayThreads() {
       assertThat(gatewayCfg.getThreads().getManagementThreads()).isEqualTo(6);
     }
@@ -122,14 +163,20 @@ public class ApiGrpcGatewayPropertiesTest {
         // new unified configuration
         "camunda.api.grpc.address=10.0.0.7",
         "camunda.api.grpc.port=27900",
+        "camunda.api.grpc.min-keep-alive-interval=40s",
+        "camunda.api.grpc.max-message-size=40MB",
         "camunda.api.grpc.management-threads=5",
         // legacy broker configuration
         "zeebe.broker.gateway.network.host=198.0.0.1",
         "zeebe.broker.gateway.network.port=38900",
+        "zeebe.broker.gateway.network.minKeepAliveInterval=60s",
+        "zeebe.broker.gateway.network.maxMessageSize=50MB",
         "zeebe.broker.gateway.threads.managementThreads=10",
         // legacy gateway configuration
         "zeebe.gateway.network.host=192.0.0.1",
         "zeebe.gateway.network.port=28900",
+        "zeebe.gateway.network.minKeepAliveInterval=50s",
+        "zeebe.gateway.network.maxMessageSize=60MB",
         "zeebe.gateway.threads.managementThreads=6",
       })
   class WithNewAndLegacySet {
@@ -147,6 +194,17 @@ public class ApiGrpcGatewayPropertiesTest {
     @Test
     void shouldSetPortFromNew() {
       assertThat(gatewayCfg.getNetwork().getPort()).isEqualTo(27900);
+    }
+
+    @Test
+    void shouldSetMinKeepAliveIntervalFromNew() {
+      assertThat(gatewayCfg.getNetwork().getMinKeepAliveInterval())
+          .isEqualTo(Duration.ofSeconds(40));
+    }
+
+    @Test
+    void shouldSetMaxMessageSizeFromNew() {
+      assertThat(gatewayCfg.getNetwork().getMaxMessageSize()).isEqualTo(DataSize.ofMegabytes(40));
     }
 
     @Test
