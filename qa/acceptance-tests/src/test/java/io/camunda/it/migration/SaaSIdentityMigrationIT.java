@@ -557,7 +557,8 @@ public class SaaSIdentityMigrationIT {
                 "client123",
                 OwnerType.CLIENT,
                 ResourceType.SYSTEM,
-                Set.of(PermissionType.UPDATE, PermissionType.READ)),
+                Set.of(
+                    PermissionType.UPDATE, PermissionType.READ, PermissionType.READ_USAGE_METRIC)),
             tuple(
                 "client123",
                 OwnerType.CLIENT,

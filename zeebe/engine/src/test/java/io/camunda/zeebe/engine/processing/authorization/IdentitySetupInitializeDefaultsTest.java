@@ -87,7 +87,10 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.SYSTEM)
-                    .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.UPDATE),
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ,
+                        PermissionType.READ_USAGE_METRIC,
+                        PermissionType.UPDATE),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.TENANT)
@@ -172,10 +175,6 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.READ),
             auth ->
                 Assertions.assertThat(auth)
-                    .hasResourceType(AuthorizationResourceType.USAGE_METRIC)
-                    .hasOnlyPermissionTypes(PermissionType.READ),
-            auth ->
-                Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.DOCUMENT)
                     .hasOnlyPermissionTypes(
                         PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE));
@@ -222,7 +221,7 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.SYSTEM)
-                    .hasOnlyPermissionTypes(PermissionType.READ),
+                    .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.READ_USAGE_METRIC),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.TENANT)
@@ -263,10 +262,6 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.BATCH)
-                    .hasOnlyPermissionTypes(PermissionType.READ),
-            auth ->
-                Assertions.assertThat(auth)
-                    .hasResourceType(AuthorizationResourceType.USAGE_METRIC)
                     .hasOnlyPermissionTypes(PermissionType.READ),
             auth ->
                 Assertions.assertThat(auth)

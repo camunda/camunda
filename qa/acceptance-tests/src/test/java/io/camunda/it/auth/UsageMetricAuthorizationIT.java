@@ -10,11 +10,12 @@ package io.camunda.it.auth;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.PermissionType.READ_USAGE_METRIC;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
+import static io.camunda.client.api.search.enums.ResourceType.SYSTEM;
 import static io.camunda.client.api.search.enums.ResourceType.TENANT;
-import static io.camunda.client.api.search.enums.ResourceType.USAGE_METRIC;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -82,7 +83,7 @@ public class UsageMetricAuthorizationIT {
           List.of(
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(USAGE_METRIC, READ, List.of("*")),
+              new Permissions(SYSTEM, READ_USAGE_METRIC, List.of("*")),
               new Permissions(TENANT, CREATE, List.of("*")),
               new Permissions(TENANT, UPDATE, List.of("*")),
               new Permissions(TENANT, READ, List.of("*"))));
@@ -90,7 +91,7 @@ public class UsageMetricAuthorizationIT {
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
       new TestUser(
-          RESTRICTED, PASSWORD, List.of(new Permissions(USAGE_METRIC, READ, List.of("*"))));
+          RESTRICTED, PASSWORD, List.of(new Permissions(SYSTEM, READ_USAGE_METRIC, List.of("*"))));
 
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER = new TestUser(UNAUTHORIZED, PASSWORD, List.of());

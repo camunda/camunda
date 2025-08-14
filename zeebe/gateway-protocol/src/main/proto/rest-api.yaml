@@ -7383,6 +7383,7 @@ components:
         - READ_DECISION_INSTANCE
         - READ_PROCESS_DEFINITION
         - READ_DECISION_DEFINITION
+        - READ_USAGE_METRIC
         - UPDATE
         - UPDATE_PROCESS_INSTANCE
         - UPDATE_USER_TASK
@@ -7412,7 +7413,6 @@ components:
         - GROUP
         - USER
         - ROLE
-        - USAGE_METRIC
         - DOCUMENT
     OwnerTypeEnum:
       description: The type of the owner of permissions.

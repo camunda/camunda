@@ -19,7 +19,7 @@ public enum AuthorizationResourceType {
       PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   MESSAGE(PermissionType.CREATE, PermissionType.READ),
   COMPONENT(PermissionType.ACCESS),
-  SYSTEM(PermissionType.READ, PermissionType.UPDATE),
+  SYSTEM(PermissionType.READ, PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE),
   TENANT(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   RESOURCE(
       PermissionType.READ,
@@ -59,7 +59,6 @@ public enum AuthorizationResourceType {
       PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
       PermissionType.UPDATE,
       PermissionType.READ),
-  USAGE_METRIC(PermissionType.READ),
   DOCUMENT(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE),
   UNSPECIFIED();
 
