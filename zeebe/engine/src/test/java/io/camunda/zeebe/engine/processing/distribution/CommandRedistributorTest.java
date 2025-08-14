@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import java.time.Duration;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -129,7 +130,12 @@ public class CommandRedistributorTest {
             mockCommandSender,
             mockDistributionMetrics);
 
-    return new CommandRedistributor(behavior, routingInfo, commandDistributionPaused);
+    return new CommandRedistributor(
+        behavior,
+        routingInfo,
+        commandDistributionPaused,
+        Duration.ofSeconds(10), // Use default interval for tests
+        Duration.ofMinutes(5)); // Use default max backoff for tests
   }
 
   @Nested
