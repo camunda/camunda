@@ -44,8 +44,6 @@ public record Authorization<T>(
     @JsonProperty("resource_ids") List<String> resourceIds,
     @JsonIgnore Function<T, String> resourceIdSupplier) {
 
-  public static final String WILDCARD = "*";
-
   public static <T> Authorization<T> withAuthorization(
       final Authorization<T> authorization, final String resourceId) {
     return of(

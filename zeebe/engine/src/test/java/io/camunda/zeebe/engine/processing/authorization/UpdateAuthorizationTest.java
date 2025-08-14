@@ -81,7 +81,12 @@ public class UpdateAuthorizationTest {
   @Test
   public void shouldRejectTheCommandIfAuthorizationDoesNotExist() {
     final var userNotFoundRejection =
-        engine.authorization().updateAuthorization(1L).expectRejection().update();
+        engine
+            .authorization()
+            .updateAuthorization(1L)
+            .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+            .expectRejection()
+            .update();
 
     Assertions.assertThat(userNotFoundRejection)
         .hasRejectionType(RejectionType.NOT_FOUND)

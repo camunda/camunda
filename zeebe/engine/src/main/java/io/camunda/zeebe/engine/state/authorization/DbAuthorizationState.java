@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
 import java.util.Optional;
@@ -96,7 +97,10 @@ public class DbAuthorizationState implements MutableAuthorizationState {
         .getPermissionTypes()
         .forEach(
             permissionType -> {
-              permissions.addResourceIdentifier(permissionType, authorization.getResourceId());
+              permissions.addAuthorizationScope(
+                  permissionType,
+                  new AuthorizationScope(
+                      authorization.getResourceMatcher(), authorization.getResourceId()));
             });
     permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, permissions);
 
@@ -133,7 +137,10 @@ public class DbAuthorizationState implements MutableAuthorizationState {
                   persistedAuthorization.getOwnerId(),
                   persistedAuthorization.getResourceType(),
                   permissionType,
-                  Set.of(persistedAuthorization.getResourceId()));
+                  Set.of(
+                      new AuthorizationScope(
+                          persistedAuthorization.getResourceMatcher(),
+                          persistedAuthorization.getResourceId())));
             });
 
     // delete the old authorization record
@@ -156,7 +163,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   }
 
   @Override
-  public Set<String> getResourceIdentifiers(
+  public Set<AuthorizationScope> getAuthorizationScopes(
       final AuthorizationOwnerType ownerType,
       final String ownerId,
       final AuthorizationResourceType resourceType,
@@ -188,13 +195,13 @@ public class DbAuthorizationState implements MutableAuthorizationState {
       final String ownerId,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
-      final Set<String> resourceIds) {
+      final Set<AuthorizationScope> resourceIds) {
     this.ownerType.wrapString(ownerType.name());
     this.ownerId.wrapString(ownerId);
     this.resourceType.wrapString(resourceType.name());
 
     final var permissions = permissionsColumnFamily.get(ownerTypeOwnerIdAndResourceType);
-    permissions.removeResourceIdentifiers(permissionType, resourceIds);
+    permissions.removeAuthorizationScopes(permissionType, resourceIds);
 
     if (permissions.isEmpty()) {
       permissionsColumnFamily.deleteExisting(ownerTypeOwnerIdAndResourceType);

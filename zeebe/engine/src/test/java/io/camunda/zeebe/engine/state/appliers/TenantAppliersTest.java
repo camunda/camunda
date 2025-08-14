@@ -143,7 +143,7 @@ public class TenantAppliersTest {
     // then
     assertThat(tenantState.getTenantById(tenantId)).isEmpty();
     final var resourceIdentifiers =
-        authorizationState.getResourceIdentifiers(
+        authorizationState.getAuthorizationScopes(
             AuthorizationOwnerType.TENANT,
             tenantId,
             AuthorizationResourceType.TENANT,

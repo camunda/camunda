@@ -14,7 +14,9 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -157,6 +159,10 @@ public class JobBatchActivateAuthorizationTest {
       final PermissionType permissionType,
       final String... resourceIds) {
     for (final String resourceId : resourceIds) {
+      final var resourceMatcher =
+          AuthorizationScope.WILDCARD_CHAR.equals(resourceId)
+              ? AuthorizationResourceMatcher.ANY
+              : AuthorizationResourceMatcher.ID;
       engine
           .authorization()
           .newAuthorization()
@@ -164,6 +170,7 @@ public class JobBatchActivateAuthorizationTest {
           .withOwnerId(user.getUsername())
           .withOwnerType(AuthorizationOwnerType.USER)
           .withResourceType(authorization)
+          .withResourceMatcher(resourceMatcher)
           .withResourceId(resourceId)
           .create(DEFAULT_USER.getUsername());
     }

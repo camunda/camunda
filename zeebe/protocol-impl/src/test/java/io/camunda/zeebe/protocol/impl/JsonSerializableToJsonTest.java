@@ -2882,7 +2882,10 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty AuthorizationRecord",
-        (Supplier<AuthorizationRecord>) AuthorizationRecord::new,
+        (Supplier<AuthorizationRecord>)
+            () ->
+                new AuthorizationRecord()
+                    .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED),
         """
         {
           "authorizationKey": -1,

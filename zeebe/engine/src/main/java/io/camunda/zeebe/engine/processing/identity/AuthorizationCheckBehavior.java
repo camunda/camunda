@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -48,7 +49,6 @@ public final class AuthorizationCheckBehavior {
       "Expected to %s with key '%s', but no %s was found";
   public static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
       "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
-  public static final String WILDCARD_PERMISSION = "*";
   private final AuthorizationState authorizationState;
   private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
@@ -171,13 +171,15 @@ public final class AuthorizationCheckBehavior {
         entityIds.stream()
             .flatMap(
                 entityId ->
-                    getAuthorizedResourceIdentifiers(
+                    getAuthorizedScopes(
                         request.command,
                         entityType,
                         entityId,
                         request.getResourceType(),
                         request.getPermissionType()))
-            .anyMatch(resourceId -> request.getResourceIds().contains(resourceId));
+            .anyMatch(
+                authorizationScope ->
+                    request.getAuthorizationScopes().contains(authorizationScope));
     if (isAuthorizedForResource) {
       return Either.right(null);
     }
@@ -301,67 +303,67 @@ public final class AuthorizationCheckBehavior {
                             .stream())));
   }
 
-  public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
+  public Set<AuthorizationScope> getAllAuthorizedScopes(final AuthorizationRequest request) {
     if (!authorizationsEnabled || isAuthorizedAnonymousUser(request.getCommand())) {
-      return Set.of(WILDCARD_PERMISSION);
+      return Set.of(AuthorizationScope.WILDCARD);
     }
 
-    final var authorizedResourceIds = new HashSet<String>();
+    final var authorizedScopes = new HashSet<AuthorizationScope>();
 
     final var optionalUsername = getUsername(request);
     if (optionalUsername.isPresent()) {
-      getAuthorizedResourceIdentifiers(
+      getAuthorizedScopes(
               request.command,
               EntityType.USER,
               optionalUsername.get(),
               request.getResourceType(),
               request.getPermissionType())
-          .forEach(authorizedResourceIds::add);
+          .forEach(authorizedScopes::add);
     }
     // If a username was present, don't use the client id
     else {
       getClientId(request)
           .map(
               clientId ->
-                  getAuthorizedResourceIdentifiers(
+                  getAuthorizedScopes(
                       request.command,
                       EntityType.CLIENT,
                       clientId,
                       request.getResourceType(),
                       request.getPermissionType()))
-          .ifPresent(idsForClientId -> idsForClientId.forEach(authorizedResourceIds::add));
+          .ifPresent(idsForClientId -> idsForClientId.forEach(authorizedScopes::add));
     }
 
     // mapping rules can layer on top of username/client id
     getPersistedMappingRules(request)
         .flatMap(
             mappingRule ->
-                getAuthorizedResourceIdentifiers(
+                getAuthorizedScopes(
                     request.command,
                     EntityType.MAPPING_RULE,
                     mappingRule.getMappingRuleId(),
                     request.getResourceType(),
                     request.getPermissionType()))
-        .forEach(authorizedResourceIds::add);
+        .forEach(authorizedScopes::add);
 
-    return authorizedResourceIds;
+    return authorizedScopes;
   }
 
   /**
-   * Get direct authorized resource identifiers for a given owner, resource type and permission
+   * Get direct authorized authorization scopes for a given owner, resource type and permission
    * type. This does not include inherited authorizations, for example authorizations for users from
    * assigned roles or groups.
    */
-  public Set<String> getDirectAuthorizedResourceIdentifiers(
+  public Set<AuthorizationScope> getDirectAuthorizedAuthorizationScopes(
       final AuthorizationOwnerType ownerType,
       final String ownerId,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    return authorizationState.getResourceIdentifiers(
+    return authorizationState.getAuthorizationScopes(
         ownerType, ownerId, resourceType, permissionType);
   }
 
-  private Stream<String> getAuthorizedResourceIdentifiers(
+  private Stream<AuthorizationScope> getAuthorizedScopes(
       final TypedRecord<?> command,
       final EntityType ownerType,
       final String ownerId,
@@ -378,21 +380,21 @@ public final class AuthorizationCheckBehavior {
         };
 
     final var direct =
-        getDirectAuthorizedResourceIdentifiers(
+        getDirectAuthorizedAuthorizationScopes(
             authorizationOwnerType, ownerId, resourceType, permissionType)
             .stream();
     final var viaRole =
         membershipState.getMemberships(ownerType, ownerId, RelationType.ROLE).stream()
             .flatMap(
                 roleId ->
-                    getDirectAuthorizedResourceIdentifiers(
+                    getDirectAuthorizedAuthorizationScopes(
                         AuthorizationOwnerType.ROLE, roleId, resourceType, permissionType)
                         .stream());
     final var viaGroups =
         fetchGroups(command, ownerType, ownerId).stream()
-            .<String>mapMulti(
+            .<AuthorizationScope>mapMulti(
                 (groupId, stream) -> {
-                  getDirectAuthorizedResourceIdentifiers(
+                  getDirectAuthorizedAuthorizationScopes(
                           AuthorizationOwnerType.GROUP, groupId, resourceType, permissionType)
                       .forEach(stream);
                   membershipState
@@ -400,7 +402,7 @@ public final class AuthorizationCheckBehavior {
                       .stream()
                       .flatMap(
                           roleId ->
-                              getDirectAuthorizedResourceIdentifiers(
+                              getDirectAuthorizedAuthorizationScopes(
                                   AuthorizationOwnerType.ROLE, roleId, resourceType, permissionType)
                                   .stream())
                       .forEach(stream);
@@ -490,7 +492,7 @@ public final class AuthorizationCheckBehavior {
     private final TypedRecord<?> command;
     private final AuthorizationResourceType resourceType;
     private final PermissionType permissionType;
-    private final Set<String> resourceIds;
+    private final Set<AuthorizationScope> authorizationScopes;
     private final String tenantId;
     private final boolean isNewResource;
     private final boolean isTenantOwnedResource;
@@ -505,8 +507,8 @@ public final class AuthorizationCheckBehavior {
       this.command = command;
       this.resourceType = resourceType;
       this.permissionType = permissionType;
-      resourceIds = new HashSet<>();
-      resourceIds.add(WILDCARD_PERMISSION);
+      authorizationScopes = new HashSet<>();
+      authorizationScopes.add(AuthorizationScope.WILDCARD);
       this.tenantId = tenantId;
       this.isNewResource = isNewResource;
       this.isTenantOwnedResource = isTenantOwnedResource;
@@ -556,13 +558,18 @@ public final class AuthorizationCheckBehavior {
       return isTenantOwnedResource;
     }
 
-    public AuthorizationRequest addResourceId(final String resourceId) {
-      resourceIds.add(resourceId);
+    public AuthorizationRequest addAuthorizationScope(final AuthorizationScope authorizationScope) {
+      authorizationScopes.add(authorizationScope);
       return this;
     }
 
-    public Set<String> getResourceIds() {
-      return resourceIds;
+    public AuthorizationRequest addResourceId(final String resourceId) {
+      authorizationScopes.add(AuthorizationScope.of(resourceId));
+      return this;
+    }
+
+    public Set<AuthorizationScope> getAuthorizationScopes() {
+      return authorizationScopes;
     }
 
     public String getTenantId() {
@@ -570,12 +577,20 @@ public final class AuthorizationCheckBehavior {
     }
 
     public String getForbiddenErrorMessage() {
-      final var resourceIdsContainsOnlyWildcard =
-          resourceIds.size() == 1 && resourceIds.contains(WILDCARD_PERMISSION);
-      return resourceIdsContainsOnlyWildcard
+      final var authorizationScopesContainsOnlyWildcard =
+          authorizationScopes.size() == 1
+              && authorizationScopes.contains(AuthorizationScope.WILDCARD);
+      return authorizationScopesContainsOnlyWildcard
           ? FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType)
           : FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              permissionType, resourceType, resourceIds.stream().sorted().toList());
+              permissionType,
+              resourceType,
+              authorizationScopes.stream()
+                  .filter(
+                      scope -> scope.getResourceId() != null && !scope.getResourceId().isEmpty())
+                  .map(AuthorizationScope::getResourceId)
+                  .sorted()
+                  .toList());
     }
 
     public String getTenantErrorMessage() {

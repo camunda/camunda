@@ -26,6 +26,7 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import java.io.InputStream;
@@ -263,7 +264,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
     return authorizationChecker
         .collectPermissionTypes(
-            Authorization.WILDCARD, AuthorizationResourceType.DOCUMENT, authentication)
+            AuthorizationScope.WILDCARD_CHAR, AuthorizationResourceType.DOCUMENT, authentication)
         .contains(permission);
   }
 
