@@ -51,7 +51,12 @@ public class Export {
   }
 
   public Set<Long> getSkipRecords() {
-    return skipRecords;
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".skip-records",
+        skipRecords,
+        new TypeReference<Set<Long>>() {},
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_SKIP_RECORDS_PROPERTIES);
   }
 
   public void setSkipRecords(final Set<Long> skipRecords) {
