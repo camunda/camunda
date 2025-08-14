@@ -45,7 +45,7 @@ public class StaticEntities {
                         ownerId,
                         ownerType,
                         IDENTITY_RESOURCE_ID,
-                        AuthorizationResourceType.APPLICATION,
+                        AuthorizationResourceType.COMPONENT,
                         Set.of(PermissionType.ACCESS)),
                     new CreateAuthorizationRequest(
                         ownerId,
@@ -78,7 +78,7 @@ public class StaticEntities {
                         ownerId,
                         ownerType,
                         IDENTITY_RESOURCE_ID,
-                        AuthorizationResourceType.APPLICATION,
+                        AuthorizationResourceType.COMPONENT,
                         Set.of(PermissionType.ACCESS)),
                     new CreateAuthorizationRequest(
                         ownerId,
@@ -105,7 +105,7 @@ public class StaticEntities {
                         ownerId,
                         ownerType,
                         IDENTITY_RESOURCE_ID,
-                        AuthorizationResourceType.APPLICATION,
+                        AuthorizationResourceType.COMPONENT,
                         Set.of(PermissionType.ACCESS)),
                     new CreateAuthorizationRequest(
                         ownerId,
@@ -150,7 +150,7 @@ public class StaticEntities {
                         ownerId,
                         ownerType,
                         OPERATE_RESOURCE_ID,
-                        AuthorizationResourceType.APPLICATION,
+                        AuthorizationResourceType.COMPONENT,
                         Set.of(PermissionType.ACCESS)),
                     new CreateAuthorizationRequest(
                         ownerId,
@@ -199,7 +199,7 @@ public class StaticEntities {
                         ownerId,
                         ownerType,
                         OPERATE_RESOURCE_ID,
-                        AuthorizationResourceType.APPLICATION,
+                        AuthorizationResourceType.COMPONENT,
                         Set.of(PermissionType.ACCESS)),
                     new CreateAuthorizationRequest(
                         ownerId,
@@ -240,7 +240,7 @@ public class StaticEntities {
                         ownerId,
                         ownerType,
                         TASKLIST_RESOURCE_ID,
-                        AuthorizationResourceType.APPLICATION,
+                        AuthorizationResourceType.COMPONENT,
                         Set.of(PermissionType.ACCESS)),
                     new CreateAuthorizationRequest(
                         ownerId,
@@ -263,7 +263,7 @@ public class StaticEntities {
                         ownerId,
                         ownerType,
                         TASKLIST_RESOURCE_ID,
-                        AuthorizationResourceType.APPLICATION,
+                        AuthorizationResourceType.COMPONENT,
                         Set.of(PermissionType.ACCESS)),
                     new CreateAuthorizationRequest(
                         ownerId,

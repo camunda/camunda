@@ -155,7 +155,7 @@ public class OidcRoleMigrationHandlerTest {
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 "role_1",
@@ -188,7 +188,7 @@ public class OidcRoleMigrationHandlerTest {
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 "role_1",
@@ -230,7 +230,7 @@ public class OidcRoleMigrationHandlerTest {
             tuple(
                 "role@name_with_special_chars",
                 AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 "role@name_with_special_chars",
@@ -477,7 +477,7 @@ public class OidcRoleMigrationHandlerTest {
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 "role_1",
@@ -510,7 +510,7 @@ public class OidcRoleMigrationHandlerTest {
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 "role_1",
@@ -552,7 +552,7 @@ public class OidcRoleMigrationHandlerTest {
             tuple(
                 "role@name_with_special_chars",
                 AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 "role@name_with_special_chars",

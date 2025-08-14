@@ -7,7 +7,7 @@
  */
 package io.camunda.security.impl;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.APPLICATION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.COMPONENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -53,7 +53,7 @@ public class AuthorizationCheckerTest {
 
     // when
     final var result =
-        authorizationChecker.collectPermissionTypes("foo", APPLICATION, authentication);
+        authorizationChecker.collectPermissionTypes("foo", COMPONENT, authentication);
 
     // then
     assertThat(result).isEmpty();

@@ -31,7 +31,7 @@ import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
-import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
+import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
@@ -514,7 +514,7 @@ public class WebSecurityConfig {
                           .authenticationEntryPoint(authFailureHandler)
                           .accessDeniedHandler(authFailureHandler))
               .addFilterAfter(
-                  new WebApplicationAuthorizationCheckFilter(
+                  new WebComponentAuthorizationCheckFilter(
                       securityConfiguration, authenticationProvider, resourceAccessProvider),
                   AuthorizationFilter.class)
               .addFilterBefore(
@@ -741,7 +741,7 @@ public class WebSecurityConfig {
                           .logoutSuccessHandler(new NoContentResponseHandler())
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
               .addFilterAfter(
-                  new WebApplicationAuthorizationCheckFilter(
+                  new WebComponentAuthorizationCheckFilter(
                       securityConfiguration, authenticationProvider, resourceAccessProvider),
                   AuthorizationFilter.class);
 

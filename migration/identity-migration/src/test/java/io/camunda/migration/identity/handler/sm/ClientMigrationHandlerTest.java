@@ -133,7 +133,7 @@ public class ClientMigrationHandlerTest {
                 "ClientOne",
                 AuthorizationOwnerType.CLIENT,
                 "operate",
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 "ClientOne",
@@ -203,7 +203,7 @@ public class ClientMigrationHandlerTest {
                 "ClientTwo",
                 AuthorizationOwnerType.CLIENT,
                 "operate",
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 "ClientTwo",
@@ -221,7 +221,7 @@ public class ClientMigrationHandlerTest {
                 "ClientTwo",
                 AuthorizationOwnerType.CLIENT,
                 "tasklist",
-                AuthorizationResourceType.APPLICATION,
+                AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)));
   }
 

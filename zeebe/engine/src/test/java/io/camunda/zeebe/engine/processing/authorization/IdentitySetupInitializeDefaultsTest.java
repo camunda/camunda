@@ -85,7 +85,7 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOnlyPermissionTypes(PermissionType.CREATE, PermissionType.READ),
             auth ->
                 Assertions.assertThat(auth)
-                    .hasResourceType(AuthorizationResourceType.APPLICATION)
+                    .hasResourceType(AuthorizationResourceType.COMPONENT)
                     .hasOnlyPermissionTypes(PermissionType.ACCESS),
             auth ->
                 Assertions.assertThat(auth)
@@ -224,7 +224,7 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOnlyPermissionTypes(PermissionType.READ),
             auth ->
                 Assertions.assertThat(auth)
-                    .hasResourceType(AuthorizationResourceType.APPLICATION)
+                    .hasResourceType(AuthorizationResourceType.COMPONENT)
                     .hasOnlyPermissionTypes(PermissionType.ACCESS),
             auth ->
                 Assertions.assertThat(auth)

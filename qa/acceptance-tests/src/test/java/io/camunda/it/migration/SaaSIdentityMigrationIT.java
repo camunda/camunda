@@ -295,13 +295,13 @@ public class SaaSIdentityMigrationIT {
                 DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
                 "operate",
-                ResourceType.APPLICATION,
+                ResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
                 "tasklist",
-                ResourceType.APPLICATION,
+                ResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 DEVELOPER_ROLE_ID,
@@ -344,7 +344,7 @@ public class SaaSIdentityMigrationIT {
                 OPERATIONS_ENGINEER_ROLE_ID,
                 OwnerType.ROLE,
                 "operate",
-                ResourceType.APPLICATION,
+                ResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 OPERATIONS_ENGINEER_ROLE_ID,
@@ -383,7 +383,7 @@ public class SaaSIdentityMigrationIT {
                 TASK_USER_ROLE_ID,
                 OwnerType.ROLE,
                 "tasklist",
-                ResourceType.APPLICATION,
+                ResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 TASK_USER_ROLE_ID,
@@ -399,13 +399,13 @@ public class SaaSIdentityMigrationIT {
                 VISITOR_ROLE_ID,
                 OwnerType.ROLE,
                 "operate",
-                ResourceType.APPLICATION,
+                ResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 VISITOR_ROLE_ID,
                 OwnerType.ROLE,
                 "tasklist",
-                ResourceType.APPLICATION,
+                ResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
                 VISITOR_ROLE_ID,
