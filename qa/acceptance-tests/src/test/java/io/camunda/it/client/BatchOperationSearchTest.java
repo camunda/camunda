@@ -358,6 +358,7 @@ public class BatchOperationSearchTest {
       final var item = items.stream().filter(i -> Objects.equals(i.getItemKey(), key)).findFirst();
       assertThat(item).isPresent();
       assertThat(item.get().getProcessInstanceKey()).isEqualTo(key);
+      assertThat(item.get().getOperationType()).isNotNull();
       assertThat(item.get().getStatus()).isEqualTo(BatchOperationItemState.COMPLETED);
     }
   }
