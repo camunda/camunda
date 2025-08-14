@@ -85,11 +85,12 @@ final class OpenSearchArchiverRepositoryIT {
 
   @AfterEach
   void afterEach() throws IOException {
-    final DeleteIndexRequest deleteRequest = new Builder().index("*").build();
+    final DeleteIndexRequest deleteRequest =
+        new Builder().index(zeebeIndex + "*", batchOperationIndex + "*").build();
     testClient.indices().delete(deleteRequest);
 
     // delete all policies created during the tests
-    deleteAllTestPolicies();
+    //    deleteAllTestPolicies();
   }
 
   @Test
