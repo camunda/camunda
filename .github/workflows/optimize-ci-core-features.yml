@@ -111,6 +111,16 @@ jobs:
           ELASTIC_JVM_MEMORY: 16
           ELASTIC_HTTP_PORT: 9200
 
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
       - name: Verify integration
         uses: ./.github/actions/run-maven
         env:
@@ -189,6 +199,11 @@ jobs:
           OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
           OPENSEARCH_JVM_MEMORY: 16
           OPENSEARCH_HTTP_PORT: 9200
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
 
       - name: Verify integration
         uses: ./.github/actions/run-maven
