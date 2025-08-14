@@ -24,9 +24,9 @@ public class IdentityClientConfigController {
 
   private static final Logger LOG = LoggerFactory.getLogger(IdentityClientConfigController.class);
 
-  private static final String VITE_IS_OIDC = "VITE_IS_OIDC";
-  private static final String VITE_CAMUNDA_GROUPS_ENABLED = "VITE_CAMUNDA_GROUPS_ENABLED";
-  private static final String VITE_TENANTS_API_ENABLED = "VITE_TENANTS_API_ENABLED";
+  private static final String IS_OIDC = "isOidc";
+  private static final String IS_CAMUNDA_GROUPS_ENABLED = "isCamundaGroupsEnabled";
+  private static final String IS_TENANTS_API_ENABLED = "isTenantsApiEnabled";
   private static final String FALLBACK_CONFIG_JS = "window.clientConfig = {};";
   private static final String CONFIG_JS_TEMPLATE = "window.clientConfig = %s;";
 
@@ -51,9 +51,9 @@ public class IdentityClientConfigController {
 
   private Map<String, String> createConfigMap(final SecurityConfiguration securityConfiguration) {
     return Map.of(
-        VITE_IS_OIDC, String.valueOf(isOidcAuthentication(securityConfiguration)),
-        VITE_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(securityConfiguration)),
-        VITE_TENANTS_API_ENABLED,
+        IS_OIDC, String.valueOf(isOidcAuthentication(securityConfiguration)),
+        IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(securityConfiguration)),
+        IS_TENANTS_API_ENABLED,
             String.valueOf(securityConfiguration.getMultiTenancy().isApiEnabled()));
   }
 

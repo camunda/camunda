@@ -90,9 +90,9 @@ class IdentityClientConfigControllerParameterizedTest {
 
     // Assert all configuration values
     assertThat(configResponse)
-        .containsEntry("VITE_IS_OIDC", expectedIsOidc)
-        .containsEntry("VITE_CAMUNDA_GROUPS_ENABLED", expectedCamundaGroups)
-        .containsEntry("VITE_TENANTS_API_ENABLED", expectedTenantsApi);
+        .containsEntry("isOidc", expectedIsOidc)
+        .containsEntry("isCamundaGroupsEnabled", expectedCamundaGroups)
+        .containsEntry("isTenantsApiEnabled", expectedTenantsApi);
   }
 
   private SecurityConfiguration createSecurityConfiguration(
