@@ -390,6 +390,13 @@ public final class OAuthCredentialsProviderTest {
     mockCredentialsWithResource(token, scope, null);
   }
 
+<<<<<<< HEAD
+=======
+  private void mockCredentials(final String token, final String scope) {
+    mockCredentialsWithResource(token, scope, null);
+  }
+
+>>>>>>> f5d4e621 (feat: add resource parameter to OAuth credentials provider)
   private void mockCredentialsWithResource(
       final String token, final String scope, final String resource) {
     final HashMap<String, String> map = new HashMap<>();
