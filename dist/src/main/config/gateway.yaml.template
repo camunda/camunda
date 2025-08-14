@@ -219,6 +219,21 @@
       # Sets the number of threads the gateway will use to communicate with the broker cluster
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS.
       # managementThreads: 1
+      #
+      # A separate thread pool is used to run the gRPC business logic. The thread pool is elastic
+      # (meaning it will start/stop threads dynamically), but will always keep a minimum number of
+      # threads, and only start up to a maximum number of threads. By default, this range is from
+      # 1 thread per core, up to 2 threads per core.
+      #
+      # Sets the minimum number of threads in the gRPC thread pool. Only accepts static values;
+      # defaults to the number of cores available.
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_THREADS_GRPCMINTHREADS.
+      # grpcMinThreads:
+      #
+      # Sets the maximum number of threads in the gRPC thread pool. Only accepts static values;
+      # defaults to twice the number of cores available.
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_THREADS_GRPCMAXTHREADS.
+      # grpcMaxThreads:
 
     # security:
       # Enables TLS authentication between clients and the gateway
