@@ -25,7 +25,7 @@ import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
-import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration.RemoteConfiguration;
+import io.camunda.process.test.impl.configuration.RemoteConfiguration;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRemoteRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
