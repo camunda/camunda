@@ -7,7 +7,10 @@
  */
 package io.camunda.authentication.filters;
 
+import static java.time.temporal.ChronoUnit.MILLIS;
+
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.AuthenticationConfiguration;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,29 +19,19 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.function.Supplier;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class SessionAuthenticationRefreshFilter extends OncePerRequestFilter {
-  // TODO move to a configuration class
-  private static final Duration SESSION_REFRESH_INTERVAL = Duration.ofSeconds(120L);
   private static final String LAST_REFRESH_ATTR = "AUTH_LAST_REFRESH";
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final Supplier<SecurityContext> securityContextSupplier;
-
-  public SessionAuthenticationRefreshFilter(
-      final CamundaAuthenticationProvider authenticationProvider) {
-    this(authenticationProvider, SecurityContextHolder::getContext);
-  }
+  private final Duration authenticationRefreshInterval;
 
   public SessionAuthenticationRefreshFilter(
       final CamundaAuthenticationProvider authenticationProvider,
-      final Supplier<SecurityContext> securityContextSupplier) {
+      final AuthenticationConfiguration authenticationConfiguration) {
     this.authenticationProvider = authenticationProvider;
-    this.securityContextSupplier = securityContextSupplier;
+    authenticationRefreshInterval =
+        Duration.parse(authenticationConfiguration.getAuthenticationRefreshInterval());
   }
 
   @Override
@@ -48,7 +41,7 @@ public class SessionAuthenticationRefreshFilter extends OncePerRequestFilter {
       final FilterChain filterChain)
       throws ServletException, IOException {
     final var session = request.getSession(false);
-    if (session != null && securityContextSupplier.get().getAuthentication() != null) {
+    if (session != null && authenticationProvider.getCamundaAuthentication() != null) {
       handleSessionRefresh(session);
     }
     filterChain.doFilter(request, response);
@@ -56,19 +49,29 @@ public class SessionAuthenticationRefreshFilter extends OncePerRequestFilter {
 
   private void handleSessionRefresh(final HttpSession session) {
     final Instant now = Instant.now();
-    final Instant lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+    Instant lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
 
     // Initialize if first access
     if (lastRefresh == null) {
       session.setAttribute(LAST_REFRESH_ATTR, now);
+      session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", new Object());
       return;
     }
 
     // Check if refresh needed
-    // TODO Lock or find another way to skip concurrent update
-    if (ChronoUnit.MILLIS.between(lastRefresh, now) >= SESSION_REFRESH_INTERVAL.toMillis()) {
-      authenticationProvider.refresh();
-      session.setAttribute(LAST_REFRESH_ATTR, now);
+    if (isRefreshRequired(lastRefresh, now)) {
+      synchronized (session.getAttribute(LAST_REFRESH_ATTR + "_LOCK")) {
+        lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+        // Double check if refresh still needed
+        if (isRefreshRequired(lastRefresh, now)) {
+          authenticationProvider.refresh();
+          session.setAttribute(LAST_REFRESH_ATTR, now);
+        }
+      }
     }
+  }
+
+  private boolean isRefreshRequired(final Instant lastRefresh, final Instant now) {
+    return MILLIS.between(lastRefresh, now) >= authenticationRefreshInterval.toMillis();
   }
 }
