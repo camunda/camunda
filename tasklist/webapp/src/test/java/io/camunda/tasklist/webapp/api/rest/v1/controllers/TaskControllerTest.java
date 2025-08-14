@@ -86,10 +86,44 @@ class TaskControllerTest {
     mockMvc = MockMvcBuilders.standaloneSetup(instance).build();
     final var authentication = mock(CamundaAuthentication.class);
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+    when(tasklistPermissionServices.hasPermissionToReadUserTask(any())).thenReturn(true);
   }
 
   @Nested
   class SearchTaskTests {
+    @Test
+    void returnsEmptyListWhenUserHasNoUserTaskPermission() throws Exception {
+      // Given
+      final var searchRequest =
+          new TaskSearchRequest()
+              .setPageSize(20)
+              .setState(TaskState.CREATED)
+              .setAssigned(true)
+              .setSearchAfter(new String[] {"123", "456"});
+      when(tasklistPermissionServices.hasPermissionToReadUserTask(any())).thenReturn(false);
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      final var result =
+          CommonUtils.OBJECT_MAPPER.readValue(
+              responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+
+      // Then
+      assertThat(result).isEmpty();
+    }
+
     @Test
     void searchTasks() throws Exception {
       // Given
@@ -359,6 +393,38 @@ class TaskControllerTest {
 
       // Then
       assertThat(result).singleElement().isEqualTo(taskResponse);
+    }
+
+    @Test
+    void returnsEmptyVariableListWhenUserHasNoUserTaskPermission() throws Exception {
+      // Given
+      when(tasklistPermissionServices.hasPermissionToReadUserTask(any())).thenReturn(false);
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  post(
+                          TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"),
+                          "untested-id")
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(
+                          CommonUtils.OBJECT_MAPPER.writeValueAsString(
+                              new VariablesSearchRequest()
+                                  .setVariableNames(new ArrayList<>(Set.of("tested")))))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      final var result =
+          CommonUtils.OBJECT_MAPPER.readValue(
+              responseAsString, new TypeReference<List<VariableSearchResponse>>() {});
+
+      // Then
+      assertThat(result).isEmpty();
     }
 
     @Test
