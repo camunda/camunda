@@ -8,16 +8,12 @@
 package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import com.google.common.base.Strings;
-import com.google.common.math.IntMath;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.CamundaSearchException.Reason;
-import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryResult.Failure;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryResult.Retry;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryResult.Success;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
-import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
@@ -25,61 +21,59 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The is class is a scheduler that periodically checks for newly created batch operations and
- * initializes them with the itemKeys to be executed.
+ * Scheduler responsible for executing batch operations in a distributed environment.
  *
- * <p>For this, it deserializes the filter object and queries the EntityKeyProvider for all matching
- * itemKeys for this partition. Then this collection of itemKeys will be split into smaller chunks
- * and appended to the TaskResultBuilder as BatchOperationChunkRecord.
+ * <p>This class implements the {@link StreamProcessorLifecycleAware} interface to manage the
+ * lifecycle of batch operation execution. It continuously polls for pending batch operations and
+ * executes them with retry logic and proper error handling.
+ *
+ * <p>Key responsibilities:
+ *
+ * <ul>
+ *   <li>Scheduling and executing pending batch operations
+ *   <li>Managing retry logic for failed operations
+ *   <li>Preventing concurrent execution of the same batch operation
+ *   <li>Handling initialization and re-initialization scenarios
+ * </ul>
+ *
+ * <p>The scheduler uses an atomic execution flag to ensure only one batch operation execution cycle
+ * runs at a time, and maintains state about currently initializing operations to prevent duplicate
+ * processing.
+ *
+ * @see StreamProcessorLifecycleAware
+ * @see BatchOperationInitializer
+ * @see BatchOperationRetryHandler
  */
 public class BatchOperationExecutionScheduler implements StreamProcessorLifecycleAware {
-
-  public static final String ERROR_MSG_FAILED_FIRST_CHUNK_APPEND =
-      "Unable to append first chunk of batch operation items. Number of items: %d";
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationExecutionScheduler.class);
-  private static final Set<Reason> FAIL_IMMEDIATELY_REASONS =
-      Set.of(
-          Reason.NOT_FOUND, Reason.NOT_UNIQUE, Reason.SECONDARY_STORAGE_NOT_SET, Reason.FORBIDDEN);
+
   private final Duration initialPollingInterval;
-  private final Duration initialRetryDelay;
-  private final Duration maxRetryDelay;
-  private final int maxRetries;
-  private final int backoffFactor;
-
   private final BatchOperationState batchOperationState;
-  private ReadonlyStreamProcessorContext processingContext;
   private final BatchOperationInitializer batchOperationInitializer;
-
-  /** Marks if this scheduler is currently executing or not. */
+  private final BatchOperationRetryHandler retryHandler;
   private final AtomicBoolean executing = new AtomicBoolean(false);
-
   private final AtomicReference<ExecutionLoopState> initializing = new AtomicReference<>();
+
+  private ReadonlyStreamProcessorContext processingContext;
 
   public BatchOperationExecutionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
-      final ItemProviderFactory itemProviderFactory,
-      final EngineConfiguration engineConfiguration,
-      final int partitionId,
-      final BatchOperationMetrics metrics) {
+      final BatchOperationInitializer batchOperationInitializer,
+      final BatchOperationRetryHandler retryHandler,
+      final Duration batchOperationSchedulerInterval) {
+
     batchOperationState = scheduledTaskStateFactory.get().getBatchOperationState();
-    initialPollingInterval = engineConfiguration.getBatchOperationSchedulerInterval();
-    initialRetryDelay = engineConfiguration.getBatchOperationQueryRetryInitialDelay();
-    maxRetryDelay = engineConfiguration.getBatchOperationQueryRetryMaxDelay();
-    maxRetries = engineConfiguration.getBatchOperationQueryRetryMax();
-    backoffFactor = engineConfiguration.getBatchOperationQueryRetryBackoffFactor();
-    batchOperationInitializer =
-        new BatchOperationInitializer(
-            itemProviderFactory, engineConfiguration, partitionId, metrics);
+    initialPollingInterval = batchOperationSchedulerInterval;
+
+    this.batchOperationInitializer = batchOperationInitializer;
+    this.retryHandler = retryHandler;
   }
 
   @Override
@@ -93,7 +87,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     scheduleExecution(initialPollingInterval);
   }
 
-  /** Schedules the next execution of the batch operation scheduler run. */
   private void scheduleExecution(final Duration nextDelay) {
     if (!executing.get()) {
       processingContext
@@ -104,20 +97,15 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     }
   }
 
-  /**
-   * Executes the next pending batch operation in the queue. If more than one batch operation is
-   * pending, the following one will be executed in the next scheduled run.
-   *
-   * @param taskResultBuilder the task result builder to append the commands to
-   * @return the task result containing the commands to be executed
-   */
   private TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     var nextDelay = initialPollingInterval;
     try {
       LOG.trace("Looking for the next pending batch operation to execute (scheduled).");
       executing.set(true);
-      nextDelay =
-          executeRetrying(batchOperationState.getNextPendingBatchOperation(), taskResultBuilder);
+      final var nextPendingOperation = batchOperationState.getNextPendingBatchOperation();
+      if (nextPendingOperation.isPresent()) {
+        nextDelay = executeRetrying(nextPendingOperation.get(), taskResultBuilder);
+      }
     } finally {
       executing.set(false);
       scheduleExecution(nextDelay);
@@ -125,56 +113,56 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     return taskResultBuilder.build();
   }
 
+  /**
+   * Executes the batch operation with retry logic.
+   *
+   * <p>This method checks if the batch operation is already being initialized or executed, and if
+   * not, it attempts to initialize the batch operation. If initialization fails, it appends a
+   * failure command to the task result builder. If initialization succeeds, it updates the state
+   * and returns the initial polling interval for the next execution. If a retry is needed, it
+   * returns the delay for the next execution based on the retry context.
+   *
+   * <p>This method is called by the scheduler to process batch operations in a controlled manner,
+   * ensuring that operations are not re-initialized unnecessarily and that retries are handled
+   * appropriately.
+   *
+   * @param batchOperation the batch operation to execute
+   * @param taskResultBuilder the task result builder to append results to
+   * @return the delay for the next execution
+   */
   private Duration executeRetrying(
-      final Optional<PersistedBatchOperation> batchOperation,
-      final TaskResultBuilder taskResultBuilder) {
-    if (batchOperation.isEmpty()) {
+      final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
+
+    if (!validateNoReInitialization(batchOperation)) {
       return initialPollingInterval;
     }
 
-    if (!validateNoReInitialization(batchOperation.get())) {
-      return initialPollingInterval;
-    }
+    final var retryResult =
+        retryHandler.executeWithRetry(
+            () ->
+                batchOperationInitializer.initializeBatchOperation(
+                    batchOperation, taskResultBuilder),
+            initializing.get().numAttempts);
 
-    final var result =
-        batchOperationInitializer.initializeBatchOperation(batchOperation.get(), taskResultBuilder);
-    if (!result.isSuccess()) {
-      if (shouldFailImmediately(result.exception())
-          || initializing.get().numAttempts >= maxRetries) {
-        batchOperationInitializer.appendFailedCommand(
-            taskResultBuilder,
-            batchOperation.get(),
-            ExceptionUtils.getStackTrace(result.exception()),
-            BatchOperationErrorType.QUERY_FAILED);
-        return initialPollingInterval;
+    return switch (retryResult) {
+      case Success(final var cursor) -> {
+        initializing.set(new ExecutionLoopState(batchOperation.getKey(), cursor, 0));
+        yield initialPollingInterval;
       }
-      final var calculatedRetryDelay =
-          initialRetryDelay.multipliedBy(
-              IntMath.pow(backoffFactor, initializing.get().numAttempts()));
-      final var nextRetryDelay =
-          maxRetryDelay.compareTo(calculatedRetryDelay) < 0 ? maxRetryDelay : calculatedRetryDelay;
-      LOG.warn(
-          "Retryable operation failed, retries left: {}, retrying in {} ms. Error: {}",
-          initializing.get().numAttempts(),
-          nextRetryDelay,
-          result.exception().getLocalizedMessage());
-      initializing.set(
-          new ExecutionLoopState(
-              initializing.get().batchOperationKey,
-              Strings.nullToEmpty(initializing.get().searchResultCursor),
-              initializing.get().numAttempts() + 1));
-      return nextRetryDelay;
-    } else {
-      initializing.set(
-          new ExecutionLoopState(result.batchOperationKey(), result.searchResultCursor(), 0));
-    }
-
-    return initialPollingInterval;
-  }
-
-  private boolean shouldFailImmediately(final Exception exception) {
-    return exception instanceof CamundaSearchException
-        && FAIL_IMMEDIATELY_REASONS.contains(((CamundaSearchException) exception).getReason());
+      case Failure(final var exception) -> {
+        batchOperationInitializer.appendFailedCommand(
+            taskResultBuilder, batchOperation.getKey(), exception);
+        yield initialPollingInterval;
+      }
+      case Retry(final var delay, final int numAttempts, final String endCursor) -> {
+        LOG.warn(
+            "Retryable operation failed, retries left: {}, retrying in {} ms",
+            retryHandler.getMaxRetries() - numAttempts,
+            delay.toMillis());
+        initializing.set(new ExecutionLoopState(batchOperation.getKey(), endCursor, numAttempts));
+        yield delay;
+      }
+    };
   }
 
   private boolean validateNoReInitialization(final PersistedBatchOperation batchOperation) {
@@ -184,7 +172,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         && !Objects.equals(
             initializingBO.searchResultCursor, batchOperation.getInitializationSearchCursor())
         && initializingBO.numAttempts == 0) {
-      // If the batch operation is already being initialized, we do not re-initialize it.
       LOG.trace(
           "Batch operation {} is already being executed, skipping re-initialization.",
           batchOperation.getKey());
@@ -192,13 +179,15 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     } else if (initializingBO == null) {
       initializing.set(new ExecutionLoopState(batchOperation));
     }
-
     return true;
   }
 
   record ExecutionLoopState(long batchOperationKey, String searchResultCursor, int numAttempts) {
     public ExecutionLoopState(final PersistedBatchOperation batchOperation) {
-      this(batchOperation.getKey(), batchOperation.getInitializationSearchCursor(), 0);
+      this(
+          batchOperation.getKey(),
+          Strings.nullToEmpty(batchOperation.getInitializationSearchCursor()),
+          0);
     }
   }
 }
