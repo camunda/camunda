@@ -12,9 +12,11 @@ import static org.assertj.core.api.Fail.fail;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.ClientDefinition;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.RoleDefinition;
+import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
@@ -376,6 +378,7 @@ public class CamundaMultiDBExtension
   private void createEntities(final Class<?> testClass, final Boolean shouldSetupKeycloak) {
     final var users = findUsers(testClass, null, ModifierSupport::isStatic);
     final var mappingRules = findMappingRules(testClass, null, ModifierSupport::isStatic);
+    final var clients = findClients(testClass, null, ModifierSupport::isStatic);
     final var groups = findGroups(testClass, null, ModifierSupport::isStatic);
     final var roles = findRoles(testClass, null, ModifierSupport::isStatic);
     entityManager
@@ -410,6 +413,22 @@ public class CamundaMultiDBExtension
 
           if (shouldSetupKeycloak) {
             setupUserInKeycloak(mappingRule.id(), mappingRule.claimValue());
+          }
+        });
+
+    clients.forEach(
+        client -> {
+          try {
+            final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
+            clientFactory.createClientForClient(applicationUnderTest.application, client);
+          } catch (final ClassCastException e) {
+            LOGGER.warn(
+                "Could not create client for client, as the application is not configured for OIDC authentication",
+                e);
+          }
+
+          if (shouldSetupKeycloak) {
+            setupUserInKeycloak(client.clientId(), client.clientId());
           }
         });
   }
@@ -513,6 +532,11 @@ public class CamundaMultiDBExtension
       final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
     return findFields(
         testClass, testInstance, predicate, TestMappingRule.class, MappingRuleDefinition.class);
+  }
+
+  private List<TestClient> findClients(
+      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
+    return findFields(testClass, testInstance, predicate, TestClient.class, ClientDefinition.class);
   }
 
   private <T> List<T> findFields(
