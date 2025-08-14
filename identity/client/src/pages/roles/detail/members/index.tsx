@@ -19,6 +19,7 @@ import DeleteModal from "src/pages/roles/detail/members/DeleteModal";
 import { isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type MembersProps = {
   roleId: string;
@@ -26,6 +27,9 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ roleId }) => {
   const { t } = useTranslate("roles");
+  const CHILD_RESOURCE_TYPE_STRING = t("user").toLowerCase();
+  const PARENT_RESOURCE_TYPE_STRING = t("role").toLowerCase();
+
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
     getMembersByRole,
     {
@@ -52,7 +56,9 @@ const Members: FC<MembersProps> = ({ roleId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadMembers")}
+        description={t("unableToLoadResource", {
+          resourceType: CHILD_RESOURCE_TYPE_STRING,
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -60,17 +66,11 @@ const Members: FC<MembersProps> = ({ roleId }) => {
   if (success && isUsersListEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignUsersToRole")}
-          description={t("accessDisclaimer")}
-          button={{
-            label: t("assignUser"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutRoles"),
-            href: "https://docs.camunda.io/",
-          }}
+        <TabEmptyState
+          childResourceType={CHILD_RESOURCE_TYPE_STRING}
+          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          handleClick={openAssignModal}
+          docsLinkPath=""
         />
         {assignUsersModal}
       </>

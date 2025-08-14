@@ -8,21 +8,21 @@
 
 import { FC } from "react";
 import { TrashCan } from "@carbon/react/icons";
-import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { useNavigate } from "react-router";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import { documentationHref } from "src/components/documentation";
 import { searchTenant, Tenant } from "src/utility/api/tenants";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/tenants/modals/AddModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
+import PageEmptyState from "src/components/layout/PageEmptyState";
 
 const List: FC = () => {
   const { t } = useTranslate("tenants");
+  const RESOURCE_TYPE_STRING = t("tenant").toLowerCase();
   const navigate = useNavigate();
   const {
     data: tenantSearchResults,
@@ -43,9 +43,9 @@ const List: FC = () => {
 
   const pageHeader = (
     <PageHeader
-      title="Tenants"
-      linkText="tenants"
-      linkUrl=""
+      title={t("tenants")}
+      linkText={t("tenants").toLowerCase()}
+      docsLinkPath=""
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -54,17 +54,10 @@ const List: FC = () => {
     return (
       <Page>
         {pageHeader}
-        <C3EmptyState
-          heading={t("noTenants")}
-          description={t("createIsolatedEnvironments")}
-          button={{
-            label: t("createATenant"),
-            onClick: addTenant,
-          }}
-          link={{
-            href: documentationHref("https://docs.camunda.io/", ""),
-            label: t("learnMoreAboutTenants"),
-          }}
+        <PageEmptyState
+          resourceType={RESOURCE_TYPE_STRING}
+          docsLinkPath=""
+          handleClick={addTenant}
         />
         {addTenantModal}
       </Page>
@@ -97,7 +90,7 @@ const List: FC = () => {
               }),
           },
         ]}
-        searchPlaceholder={t("Search by Tenant ID")}
+        searchPlaceholder={t("searchByTenantId")}
         searchKey="tenantId"
         {...paginationProps}
       />

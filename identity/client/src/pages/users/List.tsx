@@ -8,25 +8,22 @@
 
 import { FC } from "react";
 import { useNavigate } from "react-router";
-import { Add, Edit, TrashCan } from "@carbon/react/icons";
-import { C3EmptyState } from "@camunda/camunda-composite-components";
+import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import {
-  documentationHref,
-  DocumentationLink,
-} from "src/components/documentation";
 import { searchUser, User } from "src/utility/api/users";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/users/modals/AddModal";
 import EditModal from "src/pages/users/modals/EditModal";
 import DeleteModal from "src/pages/users/modals/DeleteModal";
+import PageEmptyState from "src/components/layout/PageEmptyState";
 
 const List: FC = () => {
   const { t } = useTranslate("users");
+  const RESOURCE_TYPE_STRING = t("user").toLowerCase();
   const navigate = useNavigate();
   const {
     data: userSearchResults,
@@ -42,34 +39,26 @@ const List: FC = () => {
 
   const showDetails = ({ username }: User) => navigate(`${username}`);
 
+  const shouldShowEmptyState =
+    success && !search && !userSearchResults?.items.length;
+
   const pageHeader = (
-    <PageHeader title={t("users")} linkText="users" linkUrl="" />
+    <PageHeader
+      title={t("users")}
+      linkText={t("users").toLowerCase()}
+      docsLinkPath=""
+      shouldShowDocumentationLink={!shouldShowEmptyState}
+    />
   );
 
-  if (success && !search && !userSearchResults?.items.length) {
+  if (shouldShowEmptyState) {
     return (
       <Page>
         {pageHeader}
-        <C3EmptyState
-          heading={t("noUsersCreatedYet")}
-          description={
-            <>
-              {t("startBy")}{" "}
-              <DocumentationLink path="">
-                {t("creatingANewUser")}
-              </DocumentationLink>{" "}
-              {t("toGetStarted")}
-            </>
-          }
-          button={{
-            label: t("createAUser"),
-            onClick: addUser,
-            icon: Add,
-          }}
-          link={{
-            href: documentationHref("https://docs.camunda.io/", ""),
-            label: t("learnMoreAboutUsers"),
-          }}
+        <PageEmptyState
+          resourceType={RESOURCE_TYPE_STRING}
+          docsLinkPath=""
+          handleClick={addUser}
         />
         {addUserModal}
       </Page>
