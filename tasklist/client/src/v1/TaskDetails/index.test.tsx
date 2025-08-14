@@ -396,14 +396,14 @@ describe('<Task />', () => {
   });
 
   it('should complete task without variables', async () => {
+    let isCompleted = false;
+
     nodeMockServer.use(
-      http.get(
-        '/v1/tasks/:taskId',
-        () => {
-          return HttpResponse.json(taskMocks.assignedTask());
-        },
-        {once: true},
-      ),
+      http.get('/v1/tasks/:taskId', () => {
+        return HttpResponse.json(
+          isCompleted ? taskMocks.completedTask() : taskMocks.assignedTask(),
+        );
+      }),
       http.get(
         '/v2/authentication/me',
         () => {
@@ -414,6 +414,7 @@ describe('<Task />', () => {
       http.patch(
         '/v1/tasks/:taskId/complete',
         () => {
+          isCompleted = true;
           return HttpResponse.json(taskMocks.completedTask());
         },
         {once: true},
