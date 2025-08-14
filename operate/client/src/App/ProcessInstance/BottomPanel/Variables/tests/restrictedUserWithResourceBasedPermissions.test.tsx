@@ -33,7 +33,7 @@ describe('Restricted user with resource based permissions', () => {
       resourcePermissionsEnabled: true,
     });
 
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstanceDeprecated().withSuccess(instanceMock);

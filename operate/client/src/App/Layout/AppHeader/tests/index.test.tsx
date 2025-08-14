@@ -14,7 +14,7 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('Header', () => {
   beforeEach(() => {
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
   });
 
   it('should go to the correct pages when clicking on header links', async () => {

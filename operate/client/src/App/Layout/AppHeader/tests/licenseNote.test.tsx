@@ -18,7 +18,7 @@ vi.unmock('modules/stores/licenseTag');
 
 describe('license note', () => {
   beforeEach(() => {
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
   });
 
   it('should show non production tag if license is invalid', async () => {
