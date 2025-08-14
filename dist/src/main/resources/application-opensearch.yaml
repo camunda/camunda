@@ -110,6 +110,8 @@ zeebe:
               enabled: false
               minimumAge: 30d
               policyName: camunda-retention-policy
+              usageMetricsMinimumAge: 730d
+              usageMetricsPolicyName: camunda-usage-metrics-retention-policy
 
           createSchema: true
 

@@ -7,7 +7,9 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import static io.camunda.search.test.utils.SearchDBExtension.*;
+import static io.camunda.search.test.utils.SearchDBExtension.ARCHIVER_IDX_PREFIX;
+import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static io.camunda.search.test.utils.SearchDBExtension.create;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -84,9 +86,11 @@ final class OpenSearchArchiverRepositoryIT {
 
   @AfterEach
   void afterEach() throws IOException {
-    final DeleteIndexRequest deleteRequest =
-        new Builder().index(zeebeIndex + "*", batchOperationIndex + "*").build();
+    final DeleteIndexRequest deleteRequest = new Builder().index("*").build();
     testClient.indices().delete(deleteRequest);
+
+    // delete all policies created during the tests
+    deleteAllTestPolicies();
   }
 
   @Test
@@ -120,24 +124,34 @@ final class OpenSearchArchiverRepositoryIT {
   @Test
   void shouldSetIndexLifeCycle() throws IOException {
     // given
-    final var indexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
+    final var tenantIndex = "camunda-tenant-" + UUID.randomUUID();
+    final var usageMetricIndex = "app-camunda-usage-metric-tu-" + UUID.randomUUID();
     final var repository = createRepository();
-    testClient.indices().create(r -> r.index(indexName));
+
+    testClient.indices().create(r -> r.index(tenantIndex));
+    testClient.indices().create(r -> r.index(usageMetricIndex));
 
     retention.setEnabled(true);
-    retention.setPolicyName("operate_delete_archived_indices");
 
     // when
-    createLifeCyclePolicy();
-    final var result = repository.setIndexLifeCycle(indexName);
+    createLifeCyclePolicies();
+    final var result = repository.setIndexLifeCycle(tenantIndex, usageMetricIndex);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
 
-    // Takes a while for the policy to be applied
-    Awaitility.await("until the policy has been visibly applied")
-        .untilAsserted(
-            () -> assertThat(fetchPolicyForIndex(indexName)).isEqualTo(retention.getPolicyName()));
+    assertThat(fetchPolicyForIndexWithAwait(tenantIndex))
+        .as(
+            "Expected '%s' policy to be applied for index: '%s'",
+            retention.getPolicyName(), tenantIndex)
+        .isNotNull()
+        .isEqualTo(retention.getPolicyName());
+    assertThat(fetchPolicyForIndexWithAwait(usageMetricIndex))
+        .as(
+            "Expected '%s' policy to be applied for index: '%s'",
+            retention.getUsageMetricsPolicyName(), usageMetricIndex)
+        .isNotNull()
+        .isEqualTo(retention.getUsageMetricsPolicyName());
   }
 
   @ParameterizedTest
@@ -149,7 +163,11 @@ final class OpenSearchArchiverRepositoryIT {
   void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
     // given
     final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(prefix);
-    final var expectedIndices =
+    final var usageMetricsIndices =
+        List.of(
+            formattedPrefix + "camunda-usage-metric-8.3.0_2024-01-02",
+            formattedPrefix + "camunda-usage-metric-tu-8.3.0_2024-01-02");
+    final var otherIndices =
         List.of(
             formattedPrefix + "operate-record-8.2.1_2024-01-02",
             formattedPrefix + "tasklist-record-8.3.0_2024-01");
@@ -167,13 +185,15 @@ final class OpenSearchArchiverRepositoryIT {
 
     connectConfiguration.setIndexPrefix(prefix);
     final var repository = createRepository();
-    final var indices = new ArrayList<>(expectedIndices);
+    final var indices = new ArrayList<>(otherIndices);
+    indices.addAll(usageMetricsIndices);
     indices.addAll(untouchedIndices);
 
     retention.setEnabled(true);
-    retention.setPolicyName(prefix + "operate_delete_archived_indices");
+    retention.setPolicyName("default-policy");
+    retention.setUsageMetricsPolicyName("custom-usage-metrics-policy");
 
-    createLifeCyclePolicy();
+    createLifeCyclePolicies();
     for (final var index : indices) {
       testClient.indices().create(r -> r.index(index));
     }
@@ -183,16 +203,19 @@ final class OpenSearchArchiverRepositoryIT {
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    for (final var index : expectedIndices) {
-      // In OS, it takes a little while for the policy to be visibly applied, and flushing seems to
-      // have no effect on that
-      Awaitility.await("until the policy has been visibly applied")
-          .untilAsserted(
-              () ->
-                  assertThat(fetchPolicyForIndex(index))
-                      .as("policy applied for %s", index)
-                      .isNotNull()
-                      .isEqualTo(prefix + "operate_delete_archived_indices"));
+    // verify that the usage metrics policy was applied to all usage metric indices
+    for (final var index : usageMetricsIndices) {
+      assertThat(fetchPolicyForIndexWithAwait(index))
+          .as("Expected 'custom-usage-metrics-policy' policy to be applied for %s", index)
+          .isNotNull()
+          .isEqualTo("custom-usage-metrics-policy");
+    }
+    // verify that the default policy was applied to all other indices
+    for (final var index : otherIndices) {
+      assertThat(fetchPolicyForIndexWithAwait(index))
+          .as("Expected 'default-policy' policy to be applied for %s", index)
+          .isNotNull()
+          .isEqualTo("default-policy");
     }
 
     for (final var index : untouchedIndices) {
@@ -522,12 +545,18 @@ final class OpenSearchArchiverRepositoryIT {
     }
   }
 
-  private void createLifeCyclePolicy() {
+  private void createLifeCyclePolicies() {
+    createLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
+    createLifeCyclePolicy(
+        retention.getUsageMetricsPolicyName(), retention.getUsageMetricsMinimumAge());
+  }
+
+  private void createLifeCyclePolicy(final String policyName, final String minAge) {
     final var engineClient = new OpensearchEngineClient(testClient, MAPPER);
     try {
-      engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
+      engineClient.putIndexLifeCyclePolicy(policyName, minAge);
     } catch (final Exception e) {
-      // policy was already created
+      LOGGER.warn("Could not create life cycle policy", e);
     }
   }
 
@@ -551,6 +580,13 @@ final class OpenSearchArchiverRepositoryIT {
     } catch (final IOException e) {
       throw new AssertionError("Failed to fetch policy for index " + indexName, e);
     }
+  }
+
+  private String fetchPolicyForIndexWithAwait(final String indexName) {
+    // In OS, it takes a little while for the policy to be visibly applied, and flushing seems to
+    // have no effect on that
+    return Awaitility.await("until the policy has been visibly applied")
+        .until(() -> fetchPolicyForIndex(indexName), policy -> !policy.equals("null"));
   }
 
   // no need to close resource returned here, since the transport is closed above anyway
@@ -631,6 +667,43 @@ final class OpenSearchArchiverRepositoryIT {
               AwsSdk2TransportOptions.builder()
                   .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
                   .build()));
+    }
+  }
+
+  private void deleteAllTestPolicies() {
+    final var genericClient =
+        new OpenSearchGenericClient(testClient._transport(), testClient._transportOptions());
+    try {
+      // Get all policies
+      final var listRequest =
+          Requests.builder().method("GET").endpoint("_plugins/_ism/policies").build();
+      final var listResponse = genericClient.execute(listRequest);
+      final var jsonString = listResponse.getBody().orElseThrow().bodyAsString();
+      final var json = MAPPER.readTree(jsonString);
+
+      // Extract policy names and delete each one
+      final var policies = json.get("policies");
+      if (policies != null && policies.isArray()) {
+        for (final var policy : policies) {
+          final var policyId = policy.get("_id");
+          if (policyId != null) {
+            final var policyName = policyId.asText();
+            try {
+              final var deleteRequest =
+                  Requests.builder()
+                      .method("DELETE")
+                      .endpoint("_plugins/_ism/policies/" + policyName)
+                      .build();
+              genericClient.execute(deleteRequest);
+              LOGGER.debug("Deleted ISM policy: {}", policyName);
+            } catch (final Exception e) {
+              LOGGER.warn("Could not delete ISM policy '{}': {}", policyName, e.getMessage());
+            }
+          }
+        }
+      }
+    } catch (final Exception e) {
+      LOGGER.warn("Could not delete test ISM policies", e);
     }
   }
 

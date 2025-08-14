@@ -33,6 +33,8 @@ import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.ComponentNames;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
@@ -40,6 +42,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -47,7 +50,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     implements ArchiverRepository {
   private static final String ALL_INDICES = "*";
   private static final String ALL_INDICES_PATTERN = ".*";
-  private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
+  // Matches versioned index names with version suffixes: {name}-{major}.{minor}.{patch}_{suffix}
+  // e.g. "camunda-tenant-8.8.0_2025-02-23"
+  private static final String VERSIONED_INDEX_PATTERN = ".+-\\d+\\.\\d+\\.\\d+_.+$";
+  private static final String USAGE_METRIC_INDEX_PREFIX =
+      "%s-%s".formatted(ComponentNames.CAMUNDA, UsageMetricIndex.INDEX_NAME);
 
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
@@ -124,7 +131,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       return CompletableFuture.completedFuture(null);
     }
     final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
-    final var indexWildcard = "^" + formattedPrefix + INDEX_WILDCARD;
+    final var indexWildcard = "^" + formattedPrefix + VERSIONED_INDEX_PATTERN;
     return fetchMatchingIndexes(indexWildcard)
         .thenComposeAsync(this::setIndexLifeCycleToMatchingIndices, executor);
   }
@@ -230,15 +237,41 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
       final List<String> destinationIndexNames) {
     if (destinationIndexNames.isEmpty()) {
+      logger.debug("No indices to set lifecycle policies for");
       return CompletableFuture.completedFuture(null);
     }
 
+    final var policyToIndicesMap =
+        destinationIndexNames.stream()
+            .collect(
+                Collectors.groupingBy(
+                    indexName ->
+                        isUsageMetricIndex(indexName)
+                            ? retention.getUsageMetricsPolicyName()
+                            : retention.getPolicyName()));
+
+    final var requests =
+        policyToIndicesMap.entrySet().stream()
+            .map(entry -> applyPolicyToIndices(entry.getKey(), entry.getValue()))
+            .toList();
+
+    return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]))
+        .thenApplyAsync(ignored -> null, executor);
+  }
+
+  private boolean isUsageMetricIndex(final String indexName) {
+    return indexName.contains(USAGE_METRIC_INDEX_PREFIX);
+  }
+
+  private CompletableFuture<Void> applyPolicyToIndices(
+      final String policyName, final List<String> indices) {
+
+    logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
+
     final var settingsRequest =
         new PutIndicesSettingsRequest.Builder()
-            .settings(
-                settings ->
-                    settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
-            .index(destinationIndexNames)
+            .settings(settings -> settings.lifecycle(lifecycle -> lifecycle.name(policyName)))
+            .index(indices)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .build();

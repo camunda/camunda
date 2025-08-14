@@ -110,25 +110,32 @@ final class ElasticsearchArchiverRepositoryIT {
   @Test
   void shouldSetIndexLifeCycle() throws IOException {
     // given
-    final var indexName = UUID.randomUUID().toString();
+    final var tenantIndex = "camunda-tenant-" + UUID.randomUUID();
+    final var usageMetricIndex = "app-camunda-usage-metric-" + UUID.randomUUID();
     final var repository = createRepository();
-    testClient.indices().create(r -> r.index(indexName));
-    final var initialLifecycle = getLifeCycle(indexName);
+
+    testClient.indices().create(r -> r.index(tenantIndex));
+    testClient.indices().create(r -> r.index(usageMetricIndex));
+
+    final var initialLifecycle = getLifeCycle(tenantIndex);
     assertThat(initialLifecycle).isNull();
+
     retention.setEnabled(true);
-    retention.setPolicyName("operate_delete_archived_indices");
-    putLifecyclePolicy();
+    putLifecyclePolicies();
 
     // when
-    final var result = repository.setIndexLifeCycle(indexName);
+    final var result = repository.setIndexLifeCycle(tenantIndex, usageMetricIndex);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    final var actualLifecycle = getLifeCycle(indexName);
-    assertThat(actualLifecycle)
+    assertThat(getLifeCycle(tenantIndex))
         .isNotNull()
         .extracting(IndexSettingsLifecycle::name)
-        .isEqualTo("operate_delete_archived_indices");
+        .isEqualTo("camunda-retention-policy");
+    assertThat(getLifeCycle(usageMetricIndex))
+        .isNotNull()
+        .extracting(IndexSettingsLifecycle::name)
+        .isEqualTo("camunda-usage-metrics-retention-policy");
   }
 
   @ParameterizedTest
@@ -137,7 +144,11 @@ final class ElasticsearchArchiverRepositoryIT {
     // given
     indexPrefix = prefix;
     final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(prefix);
-    final var expectedIndices =
+    final var usageMetricsIndices =
+        List.of(
+            formattedPrefix + "camunda-usage-metric-8.3.0_2024-01-02",
+            formattedPrefix + "camunda-usage-metric-tu-8.3.0_2024-01-02");
+    final var otherIndices =
         List.of(
             formattedPrefix + "operate-record-8.2.1_2024-01-02",
             formattedPrefix + "tasklist-record-8.3.0_2024-01");
@@ -153,13 +164,15 @@ final class ElasticsearchArchiverRepositoryIT {
     }
 
     final var repository = createRepository();
-    final var indices = new ArrayList<>(expectedIndices);
+    final var indices = new ArrayList<>(usageMetricsIndices);
+    indices.addAll(otherIndices);
     indices.addAll(untouchedIndices);
 
     retention.setEnabled(true);
-    retention.setPolicyName("operate_delete_archived_indices");
+    retention.setPolicyName("default-policy");
+    retention.setUsageMetricsPolicyName("custom-usage-metrics-policy");
 
-    putLifecyclePolicy();
+    putLifecyclePolicies();
     for (final var index : indices) {
       testClient.indices().create(r -> r.index(index));
     }
@@ -169,11 +182,20 @@ final class ElasticsearchArchiverRepositoryIT {
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    for (final var index : expectedIndices) {
+
+    // verify that the usage metrics policy was applied to all usage metric indices
+    for (final var index : usageMetricsIndices) {
       assertThat(getLifeCycle(index))
           .isNotNull()
           .extracting(IndexSettingsLifecycle::name)
-          .isEqualTo("operate_delete_archived_indices");
+          .isEqualTo("custom-usage-metrics-policy");
+    }
+    // verify that the default policy was applied to all other indices
+    for (final var index : otherIndices) {
+      assertThat(getLifeCycle(index))
+          .isNotNull()
+          .extracting(IndexSettingsLifecycle::name)
+          .isEqualTo("default-policy");
     }
     for (final var index : untouchedIndices) {
       assertThat(getLifeCycle(index)).as("no policy applied to %s", index).isNull();
@@ -187,7 +209,7 @@ final class ElasticsearchArchiverRepositoryIT {
     final var indexName = UUID.randomUUID().toString();
     retention.setEnabled(true);
     retention.setPolicyName("operate_delete_archived_indices");
-    putLifecyclePolicy();
+    putLifecyclePolicies();
 
     // when
     final var result = repository.setIndexLifeCycle(indexName);
@@ -502,12 +524,17 @@ final class ElasticsearchArchiverRepositoryIT {
     }
   }
 
-  private void putLifecyclePolicy() throws IOException {
+  private void putLifecyclePolicies() throws IOException {
+    putLifecyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
+    putLifecyclePolicy(
+        retention.getUsageMetricsPolicyName(), retention.getUsageMetricsMinimumAge());
+  }
+
+  private void putLifecyclePolicy(final String policyName, final String minAge) throws IOException {
     final var ilmClient = testClient.ilm();
     final var phase =
-        Phase.of(d -> d.minAge(t -> t.time("30d")).actions(a -> a.delete(del -> del)));
-    ilmClient.putLifecycle(
-        l -> l.name(retention.getPolicyName()).policy(p -> p.phases(h -> h.delete(phase))));
+        Phase.of(d -> d.minAge(t -> t.time(minAge)).actions(a -> a.delete(del -> del)));
+    ilmClient.putLifecycle(l -> l.name(policyName).policy(p -> p.phases(h -> h.delete(phase))));
   }
 
   // no need to close resource returned here, since the transport is closed above anyway
