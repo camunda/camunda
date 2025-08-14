@@ -8,6 +8,7 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Azure;
+import io.camunda.configuration.Export;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
@@ -21,6 +22,7 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
@@ -84,9 +86,6 @@ public class BrokerBasedPropertiesOverride {
 
     populateFromGrpc(override);
 
-    // TODO: Populate the bean from rest of camunda.* sections
-    // populateFromData(override);
-    // from camunda.data.* sections
     populateFromData(override);
 
     return override;
@@ -243,7 +242,15 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromData(final BrokerBasedProperties override) {
+    populateFromExport(override);
     populateFromBackup(override);
+  }
+
+  private void populateFromExport(final BrokerBasedProperties override) {
+    final Export export = unifiedConfiguration.getCamunda().getData().getExport();
+    final var exportingCfg =
+        new ExportingCfg(export.getSkipRecords(), export.getDistributionInterval());
+    override.setExporting(exportingCfg);
   }
 
   private void populateFromBackup(final BrokerBasedProperties override) {
