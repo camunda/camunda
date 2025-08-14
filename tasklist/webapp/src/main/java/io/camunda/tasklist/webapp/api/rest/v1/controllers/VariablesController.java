@@ -7,8 +7,12 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
+import static io.camunda.tasklist.webapp.permission.TasklistPermissionServices.WILDCARD_RESOURCE;
+
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.Error;
+import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class VariablesController extends ApiErrorController {
 
   @Autowired private VariableService variableService;
+  @Autowired private TasklistPermissionServices tasklistPermissionServices;
 
   @Operation(
       summary = "Get a variable",
@@ -52,7 +57,11 @@ public class VariablesController extends ApiErrorController {
   @GetMapping("{variableId}")
   public ResponseEntity<VariableResponse> getVariableById(
       @PathVariable @Parameter(description = "The ID of the variable.", required = true)
-          String variableId) {
+          final String variableId) {
+    if (!tasklistPermissionServices.hasPermissionToReadProcessDefinition(WILDCARD_RESOURCE)) {
+      throw new ForbiddenActionException(
+          "User does not have permission to read resource. Please check your permissions.");
+    }
     final var variable = variableService.getVariableResponse(variableId);
     return ResponseEntity.ok(variable);
   }
