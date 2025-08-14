@@ -35,6 +35,7 @@ public class PrimaryStorage {
 
   private Disk disk = new Disk();
   private LogStream logStream = new LogStream();
+  private RocksDb rocksDb = new RocksDb();
 
   public String getDirectory() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -76,5 +77,13 @@ public class PrimaryStorage {
 
   public void setLogStream(final LogStream logStream) {
     this.logStream = logStream;
+  }
+
+  public RocksDb getRocksDb() {
+    return rocksDb;
+  }
+
+  public void setRocksDb(final RocksDb rocksDb) {
+    this.rocksDb = rocksDb;
   }
 }

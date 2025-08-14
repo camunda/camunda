@@ -12,6 +12,7 @@ import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.KeyStore;
+import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
 import io.camunda.configuration.Ssl;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfi
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
@@ -276,6 +278,7 @@ public class BrokerBasedPropertiesOverride {
     data.setRuntimeDirectory(primaryStorage.getRuntimeDirectory());
     data.setLogIndexDensity(primaryStorage.getLogStream().getLogIndexDensity());
     data.setLogSegmentSize(primaryStorage.getLogStream().getLogSegmentSize());
+
     final var brokerDiskConfig = data.getDisk();
     final var unifiedDiskConfig = primaryStorage.getDisk();
     brokerDiskConfig.getFreeSpace().setProcessing(unifiedDiskConfig.getFreeSpace().getProcessing());
@@ -284,6 +287,37 @@ public class BrokerBasedPropertiesOverride {
         .setReplication(unifiedDiskConfig.getFreeSpace().getReplication());
     brokerDiskConfig.setEnableMonitoring(unifiedDiskConfig.isMonitoringEnabled());
     brokerDiskConfig.setMonitoringInterval(unifiedDiskConfig.getMonitoringInterval());
+
+    // Migrate RocksDB configuration from new unified config to old broker config structure
+    populateFromRocksDb(override, primaryStorage);
+  }
+
+  private void populateFromRocksDb(
+      final BrokerBasedProperties override, final PrimaryStorage primaryStorage) {
+    final var unifiedRocksDb = primaryStorage.getRocksDb();
+    final var brokerRocksDb = override.getExperimental().getRocksdb();
+
+    if (brokerRocksDb.getColumnFamilyOptions() != null
+        && !brokerRocksDb.getColumnFamilyOptions().isEmpty()) {
+      LOGGER.warn(
+          "Legacy column family options are deprecated! "
+              + "Please use camunda.data.primary-storage.rocks-db.column-family-options.* instead.");
+    }
+
+    if (!unifiedRocksDb.getColumnFamilyOptions().isEmpty()) {
+      brokerRocksDb.setColumnFamilyOptions(unifiedRocksDb.getColumnFamilyOptions());
+    }
+
+    brokerRocksDb.setEnableStatistics(unifiedRocksDb.isStatisticsEnabled());
+    brokerRocksDb.setAccessMetrics(
+        AccessMetricsConfiguration.Kind.valueOf(unifiedRocksDb.getAccessMetrics().name()));
+    brokerRocksDb.setMemoryLimit(unifiedRocksDb.getMemoryLimit());
+    brokerRocksDb.setMaxOpenFiles(unifiedRocksDb.getMaxOpenFiles());
+    brokerRocksDb.setMaxWriteBufferNumber(unifiedRocksDb.getMaxWriteBufferNumber());
+    brokerRocksDb.setMinWriteBufferNumberToMerge(unifiedRocksDb.getMinWriteBufferNumberToMerge());
+    brokerRocksDb.setIoRateBytesPerSecond(unifiedRocksDb.getIoRateBytesPerSecond());
+    brokerRocksDb.setDisableWal(unifiedRocksDb.isWalDisabled());
+    brokerRocksDb.setEnableSstPartitioning(unifiedRocksDb.isSstPartitioningEnabled());
   }
 
   private void populateFromGcs(final BrokerBasedProperties override) {
