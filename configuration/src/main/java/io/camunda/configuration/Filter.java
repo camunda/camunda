@@ -7,15 +7,15 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 
-public class Interceptor extends BaseExternalCodeConfiguration {
+public class Filter extends BaseExternalCodeConfiguration {
 
-  public InterceptorCfg toInterceptorCfg() {
-    final var interceptorCfg = new InterceptorCfg();
-    interceptorCfg.setId(getId());
-    interceptorCfg.setJarPath(getJarPath());
-    interceptorCfg.setClassName(getClassName());
-    return interceptorCfg;
+  public FilterCfg toFilterCfg() {
+    final var filterCfg = new FilterCfg();
+    filterCfg.setId(getId());
+    filterCfg.setJarPath(getJarPath());
+    filterCfg.setClassName(getClassName());
+    return filterCfg;
   }
 }

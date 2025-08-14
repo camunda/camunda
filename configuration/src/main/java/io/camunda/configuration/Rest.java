@@ -7,15 +7,19 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Interceptor extends BaseExternalCodeConfiguration {
+public class Rest {
 
-  public InterceptorCfg toInterceptorCfg() {
-    final var interceptorCfg = new InterceptorCfg();
-    interceptorCfg.setId(getId());
-    interceptorCfg.setJarPath(getJarPath());
-    interceptorCfg.setClassName(getClassName());
-    return interceptorCfg;
+  /** Sets the filters */
+  private List<Filter> filters = new ArrayList<>();
+
+  public List<Filter> getFilters() {
+    return filters;
+  }
+
+  public void setFilters(final List<Filter> filters) {
+    this.filters = filters;
   }
 }

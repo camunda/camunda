@@ -7,12 +7,14 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Filter;
 import io.camunda.configuration.Grpc;
 import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.configuration.beans.LegacyGatewayBasedProperties;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
@@ -57,6 +59,7 @@ public class GatewayBasedPropertiesOverride {
     populateFromCluster(override);
     populateFromGrpc(override);
     populateFromLongPolling(override);
+    populateFromRestFilters(override);
 
     return override;
   }
@@ -102,6 +105,24 @@ public class GatewayBasedPropertiesOverride {
       final List<InterceptorCfg> interceptorCfgList =
           interceptors.stream().map(Interceptor::toInterceptorCfg).toList();
       override.setInterceptors(interceptorCfgList);
+    }
+  }
+
+  private void populateFromRestFilters(final GatewayBasedProperties override) {
+    // Order between legacy and new filters props is not guaranteed.
+    // Log common filters warning instead of using UnifiedConfigurationHelper logging.
+    if (!override.getFilters().isEmpty()) {
+      final String warningMessage =
+          String.format(
+              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+              "camunda.api.rest.filters", "zeebe.gateway.filters");
+      LOGGER.warn(warningMessage);
+    }
+
+    final List<Filter> filters = unifiedConfiguration.getCamunda().getApi().getRest().getFilters();
+    if (!filters.isEmpty()) {
+      final List<FilterCfg> filterCfgList = filters.stream().map(Filter::toFilterCfg).toList();
+      override.setFilters(filterCfgList);
     }
   }
 

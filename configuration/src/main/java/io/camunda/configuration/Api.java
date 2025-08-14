@@ -15,6 +15,9 @@ public class Api {
   /** Configuration for grpc behavior */
   private Grpc grpc = new Grpc();
 
+  /** Configuration for rest behavior */
+  private Rest rest = new Rest();
+
   public LongPolling getLongPolling() {
     return longPolling;
   }
@@ -29,5 +32,13 @@ public class Api {
 
   public void setGrpc(final Grpc grpc) {
     this.grpc = grpc;
+  }
+
+  public Rest getRest() {
+    return rest;
+  }
+
+  public void setRest(final Rest rest) {
+    this.rest = rest;
   }
 }

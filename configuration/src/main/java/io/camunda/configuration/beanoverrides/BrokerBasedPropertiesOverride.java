@@ -8,6 +8,7 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Azure;
+import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.S3;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
@@ -67,6 +69,8 @@ public class BrokerBasedPropertiesOverride {
     populateFromCluster(override);
 
     populateFromLongPolling(override);
+
+    populateFromRestFilters(override);
 
     // from camunda.system.* sections in relation
     // with zeebe.broker.*
@@ -183,6 +187,24 @@ public class BrokerBasedPropertiesOverride {
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
 
     override.getNetwork().setHost(network.getHost());
+  }
+
+  private void populateFromRestFilters(final BrokerBasedProperties override) {
+    // Order between legacy and new filters props is not guaranteed.
+    // Log common filters warning instead of using UnifiedConfigurationHelper logging.
+    if (!override.getGateway().getFilters().isEmpty()) {
+      final String warningMessage =
+          String.format(
+              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+              "camunda.api.rest.filters", "zeebe.broker.gateway.filters");
+      LOGGER.warn(warningMessage);
+    }
+
+    final List<Filter> filters = unifiedConfiguration.getCamunda().getApi().getRest().getFilters();
+    if (!filters.isEmpty()) {
+      final List<FilterCfg> filterCfgList = filters.stream().map(Filter::toFilterCfg).toList();
+      override.getGateway().setFilters(filterCfgList);
+    }
   }
 
   private void populateFromSystem(final BrokerBasedProperties override) {
