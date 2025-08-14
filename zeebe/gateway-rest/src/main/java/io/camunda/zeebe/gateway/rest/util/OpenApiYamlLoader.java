@@ -34,8 +34,7 @@ public final class OpenApiYamlLoader {
    */
   public static OpenAPI loadOpenApiFromYaml(final String yamlPath) {
     try {
-      final Path path = new ClassPathResource(yamlPath).getFile().toPath();
-      final String yamlContent = Files.readString(path);
+      final String yamlContent = loadYamlContent(yamlPath);
       final SwaggerParseResult result = new OpenAPIV3Parser().readContents(yamlContent);
 
       if (result.getOpenAPI() == null) {
@@ -52,6 +51,18 @@ public final class OpenApiYamlLoader {
       final String errorMsg = "Failed to load OpenAPI YAML file: " + yamlPath;
       LOG.error(errorMsg, e);
       throw new OpenApiLoadingException(errorMsg, e);
+    }
+  }
+
+  private static String loadYamlContent(final String yamlPath) throws IOException {
+    final Path absolutePath = Path.of(yamlPath);
+    if (absolutePath.isAbsolute() && Files.exists(absolutePath)) {
+      LOG.debug("Loading YAML from absolute path: {}", yamlPath);
+      return Files.readString(absolutePath);
+    } else {
+      LOG.debug("Loading YAML from classpath: {}", yamlPath);
+      final Path path = new ClassPathResource(yamlPath).getFile().toPath();
+      return Files.readString(path);
     }
   }
 
