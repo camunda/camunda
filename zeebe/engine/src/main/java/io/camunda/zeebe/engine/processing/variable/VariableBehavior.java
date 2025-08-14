@@ -199,7 +199,52 @@ public final class VariableBehavior {
     }
   }
 
+  public boolean createGlobalVariable(final VariableRecord record) {
+    final VariableInstance variableInstance =
+        variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
+    if (variableInstance == null) {
+      final long key = keyGenerator.nextKey();
+      stateWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record);
+      return true;
+    } else if (!variableInstance.getValue().equals(record.getValueBuffer())) {
+      return false;
+    }
+    return false;
+  }
+
+  public boolean updateGlobalVariable(final VariableRecord record) {
+    final VariableInstance variableInstance =
+        variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
+    if (variableInstance == null) {
+      return false;
+    } else if (!variableInstance.getValue().equals(record.getValueBuffer())) {
+      final long key = keyGenerator.nextKey();
+      stateWriter.appendFollowUpEvent(key, VariableIntent.UPDATED, record);
+      return true;
+    }
+    return false;
+  }
+
   private void applyEntryToRecord(final DocumentEntry entry) {
     variableRecord.setName(entry.getName()).setValue(entry.getValue());
+  }
+
+  public boolean deleteGlobalVariable(final VariableRecord record) {
+    final VariableInstance variableInstance =
+        variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
+    if (variableInstance == null) {
+      return false;
+    } else if (!variableInstance.getValue().equals(record.getValueBuffer())) {
+      final long key = keyGenerator.nextKey();
+      stateWriter.appendFollowUpEvent(key, VariableIntent.DELETED, record);
+      return true;
+    }
+    return false;
+  }
+
+  public boolean exists(final VariableRecord record) {
+    final VariableInstance variableInstance =
+        variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
+    return variableInstance != null;
   }
 }

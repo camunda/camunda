@@ -18,6 +18,11 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateGlobalVariableRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteGlobalVariableRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateGlobalVariableRequest;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import java.util.concurrent.CompletableFuture;
 
 public final class VariableServices
     extends SearchQueryService<VariableServices, VariableQuery, VariableEntity> {
@@ -60,5 +65,19 @@ public final class VariableServices
                         withAuthorization(
                             VARIABLE_READ_AUTHORIZATION, VariableEntity::processDefinitionId)))
                 .getVariable(key));
+  }
+
+  public CompletableFuture<VariableRecord> createVariable(final String name, final Object value) {
+    return sendBrokerRequest(
+        new BrokerCreateGlobalVariableRequest().setVariables(name, getDocumentOrEmpty(value)));
+  }
+
+  public CompletableFuture<VariableRecord> updateVariable(final String name, final Object value) {
+    return sendBrokerRequest(
+        new BrokerUpdateGlobalVariableRequest().setVariables(name, getDocumentOrEmpty(value)));
+  }
+
+  public CompletableFuture<VariableRecord> deleteClusterVariable(final String name) {
+    return sendBrokerRequest(new BrokerDeleteGlobalVariableRequest().setName(name));
   }
 }
