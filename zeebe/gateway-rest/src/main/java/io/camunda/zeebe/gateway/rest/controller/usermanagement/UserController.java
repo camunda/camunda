@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.authentication.ConditionalOnInternalUserManagement;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CamundaRestController
 @RequiresSecondaryStorage
 @RequestMapping("/v2/users")
+@ConditionalOnInternalUserManagement()
 public class UserController {
   private final UserServices userServices;
   private final CamundaAuthenticationProvider authenticationProvider;
