@@ -625,6 +625,10 @@ public final class SearchQueryResponseMapper {
       final BatchOperationItemEntity entity) {
     return new BatchOperationItemResponse()
         .batchOperationKey(entity.batchOperationKey())
+        .operationType(
+            entity.operationType() != null
+                ? BatchOperationTypeEnum.fromValue(entity.operationType().name())
+                : null)
         .itemKey(entity.itemKey().toString())
         .processInstanceKey(entity.processInstanceKey().toString())
         .processedDate(formatDate(entity.processedDate()))
