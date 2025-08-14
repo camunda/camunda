@@ -625,7 +625,7 @@ public class JobBasedAdHocSubProcessTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    completeJobWithActivateElements(jobType, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     // then
     final var ahsp =
@@ -653,7 +653,7 @@ public class JobBasedAdHocSubProcessTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    completeJobWithActivateElements(jobType, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     // then
     final var innerInstanceKeys = getInnerInstanceKeysForOutputCollectionTest(processInstanceKey);
@@ -682,7 +682,7 @@ public class JobBasedAdHocSubProcessTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    completeJobWithActivateElements(jobType, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     final var innerInstanceKeys = getInnerInstanceKeysForOutputCollectionTest(processInstanceKey);
 
@@ -726,7 +726,7 @@ public class JobBasedAdHocSubProcessTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    completeJobWithActivateElements(jobType, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     final var ahsp =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
