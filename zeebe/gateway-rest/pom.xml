@@ -202,21 +202,27 @@
       <artifactId>swagger-annotations-jakarta</artifactId>
     </dependency>
 
-    <!-- Swagger Parser for reading OpenAPI YAML -->
+    <!-- Swagger dependencies for reading OpenAPI YAML -->
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-models-jakarta</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.swagger.parser.v3</groupId>
-      <artifactId>swagger-parser</artifactId>
-      <version>2.1.16</version>
+      <artifactId>swagger-parser-v3</artifactId>
+      <version>${version.swagger-parser}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.swagger.parser.v3</groupId>
+      <artifactId>swagger-parser-core</artifactId>
+      <version>${version.swagger-parser}</version>
     </dependency>
 
     <dependency>
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-common</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springdoc</groupId>
-      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
     </dependency>
 
     <dependency>
