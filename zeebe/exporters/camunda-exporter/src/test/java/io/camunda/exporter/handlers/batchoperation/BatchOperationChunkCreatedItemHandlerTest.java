@@ -12,11 +12,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -26,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecord
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -33,8 +39,12 @@ class BatchOperationChunkCreatedItemHandlerTest {
   private final String indexName = "test-" + OperationTemplate.INDEX_NAME;
 
   private final ProtocolFactory factory = new ProtocolFactory();
+
+  private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache =
+      mock(ExporterEntityCache.class);
+
   private final BatchOperationChunkCreatedItemHandler underTest =
-      new BatchOperationChunkCreatedItemHandler(indexName);
+      new BatchOperationChunkCreatedItemHandler(indexName, batchOperationCache);
 
   @Test
   void testGetHandledValueType() {
@@ -61,7 +71,8 @@ class BatchOperationChunkCreatedItemHandlerTest {
   void shouldGenerateIds() {
     // given
     final int numItems = 3;
-    final Record<BatchOperationChunkRecordValue> record = aChunkRecordWithMultipleItems(numItems);
+    final Record<BatchOperationChunkRecordValue> record =
+        aChunkRecordWithMultipleItems(42L, numItems);
 
     // when
     final var idList = underTest.generateIds(record);
@@ -93,8 +104,14 @@ class BatchOperationChunkCreatedItemHandlerTest {
   @Test
   void shouldUpdateEntityFromRecord() {
     // given
+    when(batchOperationCache.get("42"))
+        .thenReturn(
+            Optional.of(
+                new CachedBatchOperationEntity("42", BatchOperationType.CANCEL_PROCESS_INSTANCE)));
+
     final int numItems = 3;
-    final Record<BatchOperationChunkRecordValue> record = aChunkRecordWithMultipleItems(numItems);
+    final Record<BatchOperationChunkRecordValue> record =
+        aChunkRecordWithMultipleItems(42L, numItems);
     final var item = record.getValue().getItems().getFirst();
     final String expectedId =
         String.format(ID_PATTERN, record.getValue().getBatchOperationKey(), item.getItemKey());
@@ -105,6 +122,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
 
     // then
     assertThat(entity.getId()).isEqualTo(expectedId);
+    assertThat(entity.getType()).isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE);
     assertThat(entity.getBatchOperationId())
         .isEqualTo(String.valueOf(record.getValue().getBatchOperationKey()));
     assertThat(entity.getState()).isEqualTo(OperationState.SCHEDULED);
@@ -134,7 +152,8 @@ class BatchOperationChunkCreatedItemHandlerTest {
     assertThat(capturedEntity).isEqualTo(entity);
   }
 
-  private Record<BatchOperationChunkRecordValue> aChunkRecordWithMultipleItems(final int numItems) {
+  private Record<BatchOperationChunkRecordValue> aChunkRecordWithMultipleItems(
+      final long batchOperationKey, final int numItems) {
     final List<BatchOperationItemValue> items = new ArrayList<>();
     for (int i = 0; i < numItems; i++) {
       final BatchOperationItemValue item = factory.generateObject(BatchOperationItemValue.class);
@@ -143,6 +162,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
     final var value =
         ImmutableBatchOperationChunkRecordValue.builder()
             .from(factory.generateObject(BatchOperationChunkRecordValue.class))
+            .withBatchOperationKey(batchOperationKey)
             .withItems(items)
             .build();
     return factory.generateRecord(

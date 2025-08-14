@@ -10817,6 +10817,8 @@ components:
         batchOperationKey:
           description: The key (or operate legacy ID) of the batch operation.
           type: string
+        operationType:
+          $ref: "#/components/schemas/BatchOperationTypeEnum"
         itemKey:
           description: Key of the item, e.g. a process instance key.
           type: string

@@ -51,6 +51,7 @@ public record BatchOperationEntity(
       // Operate BatchOperation Key is a UUID
       // Engine BatchOperation Key is a Long
       String batchOperationKey,
+      BatchOperationType operationType,
       Long itemKey,
       Long processInstanceKey,
       BatchOperationItemState state,

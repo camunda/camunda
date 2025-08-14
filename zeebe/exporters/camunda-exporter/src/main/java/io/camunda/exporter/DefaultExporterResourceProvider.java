@@ -332,7 +332,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       // only add this handler when the items are exported on creation
       exportHandlers.add(
           new BatchOperationChunkCreatedItemHandler(
-              indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()));
+              indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+              batchOperationCache));
       exportHandlers.add(
           new ListViewFromChunkItemHandler(
               indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()));

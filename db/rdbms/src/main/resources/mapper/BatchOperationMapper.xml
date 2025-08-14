@@ -30,6 +30,7 @@
     type="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemEntity">
     <constructor>
       <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
+      <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"/>
       <arg column="ITEM_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="STATE"
@@ -269,7 +270,7 @@
 
   <select id="countItems" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM ${prefix}BATCH_OPERATION_ITEM
+    FROM ${prefix}BATCH_OPERATION_ITEM bi
     <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
   </select>
 
@@ -278,8 +279,16 @@
     resultMap="BatchOperationItemResultMap">
 
     SELECT * FROM (
-    SELECT BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, STATE, PROCESSED_DATE, ERROR_MESSAGE
-    FROM ${prefix}BATCH_OPERATION_ITEM
+    SELECT
+    bi.BATCH_OPERATION_KEY,
+    bo.OPERATION_TYPE,
+    bi.ITEM_KEY,
+    bi.PROCESS_INSTANCE_KEY,
+    bi.STATE,
+    bi.PROCESSED_DATE,
+    bi.ERROR_MESSAGE
+    FROM ${prefix}BATCH_OPERATION_ITEM bi
+    JOIN ${prefix}BATCH_OPERATION bo ON (bi.batch_operation_key = bo.batch_operation_key)
     <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
     ) filtered
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -293,27 +302,27 @@
     <if
       test="filter.batchOperationKeyOperations != null and !filter.batchOperationKeyOperations.isEmpty()">
       <foreach collection="filter.batchOperationKeyOperations" item="operation">
-        AND BATCH_OPERATION_KEY
+        AND bi.BATCH_OPERATION_KEY
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
     <if test="filter.itemKeyOperations != null and !filter.itemKeyOperations.isEmpty()">
       <foreach collection="filter.itemKeyOperations" item="operation">
-        AND ITEM_KEY
+        AND bi.ITEM_KEY
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
     <if
       test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
       <foreach collection="filter.processInstanceKeyOperations" item="operation">
-        AND PROCESS_INSTANCE_KEY
+        AND bi.PROCESS_INSTANCE_KEY
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
     <if
       test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
       <foreach collection="filter.stateOperations" item="operation">
-        AND STATE
+        AND bi.STATE
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
