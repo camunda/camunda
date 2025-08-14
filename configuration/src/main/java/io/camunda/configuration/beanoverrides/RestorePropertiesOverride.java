@@ -8,26 +8,29 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.beans.ActorClockControlledProperties;
+import io.camunda.configuration.beans.RestoreProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
+@Profile(value = {"broker", "restore"})
 @DependsOn("unifiedConfigurationHelper")
-public class ActorClockControlledPropertiesOverride {
+public class RestorePropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
 
-  public ActorClockControlledPropertiesOverride(final UnifiedConfiguration unifiedConfiguration) {
+  public RestorePropertiesOverride(final UnifiedConfiguration unifiedConfiguration) {
     this.unifiedConfiguration = unifiedConfiguration;
   }
 
   @Bean
   @Primary
-  public ActorClockControlledProperties actorClockControlledProperties() {
-    return new ActorClockControlledProperties(
-        unifiedConfiguration.getCamunda().getSystem().isClockControlled());
+  public RestoreProperties restoreProperties() {
+    final var restoreProps = unifiedConfiguration.getCamunda().getSystem().getRestore();
+    return new RestoreProperties(
+        restoreProps.isValidateConfig(), restoreProps.getIgnoreFilesInTarget());
   }
 }
