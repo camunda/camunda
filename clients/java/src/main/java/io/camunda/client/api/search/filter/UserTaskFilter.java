@@ -153,10 +153,18 @@ public interface UserTaskFilter extends SearchRequestFilter {
   /**
    * Filters user tasks by the specified tenant ID.
    *
-   * @param tenantId the tenant ID of the user task
+   * @param tenantId representing the tenant associated with this task
    * @return the updated filter
    */
   UserTaskFilter tenantId(final String tenantId);
+
+  /**
+   * Filters user tasks by the specified tenantId using {@link StringProperty} consumer.
+   *
+   * @param fn the {@link StringProperty} consumer of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter tenantId(final Consumer<StringProperty> fn);
 
   /**
    * Filters user tasks by the specified Process Definition Id.

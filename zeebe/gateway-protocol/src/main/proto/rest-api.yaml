@@ -5649,8 +5649,9 @@ components:
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
         tenantId:
-          type: string
           description: Tenant ID of this user task.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionId:
           type: string
           description: The ID of the process definition.
