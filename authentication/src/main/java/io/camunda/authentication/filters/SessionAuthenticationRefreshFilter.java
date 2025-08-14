@@ -22,7 +22,7 @@ import java.time.Instant;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class SessionAuthenticationRefreshFilter extends OncePerRequestFilter {
-  private static final String LAST_REFRESH_ATTR = "AUTH_LAST_REFRESH";
+  public static final String LAST_REFRESH_ATTR = "AUTH_LAST_REFRESH";
   private final CamundaAuthenticationProvider authenticationProvider;
   private final Duration authenticationRefreshInterval;
 
@@ -40,35 +40,44 @@ public class SessionAuthenticationRefreshFilter extends OncePerRequestFilter {
       final HttpServletResponse response,
       final FilterChain filterChain)
       throws ServletException, IOException {
-    final var session = request.getSession(false);
-    if (session != null && authenticationProvider.getCamundaAuthentication() != null) {
-      handleSessionRefresh(session);
+    try {
+      handleAuthenticationRefresh(request);
+    } catch (final Exception e) {
+      logger.debug("The session can't be refreshed.");
     }
     filterChain.doFilter(request, response);
   }
 
-  private void handleSessionRefresh(final HttpSession session) {
-    final Instant now = Instant.now();
-    Instant lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+  private void handleAuthenticationRefresh(final HttpServletRequest request) {
 
-    // Initialize if first access
-    if (lastRefresh == null) {
-      session.setAttribute(LAST_REFRESH_ATTR, now);
-      session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", new Object());
-      return;
-    }
-
-    // Check if refresh needed
-    if (isRefreshRequired(lastRefresh, now)) {
-      synchronized (session.getAttribute(LAST_REFRESH_ATTR + "_LOCK")) {
-        lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
-        // Double check if refresh still needed
-        if (isRefreshRequired(lastRefresh, now)) {
-          authenticationProvider.refresh();
-          session.setAttribute(LAST_REFRESH_ATTR, now);
-        }
+    final var session = request.getSession(false);
+    if (session != null && authenticationProvider.getCamundaAuthentication() != null) {
+      final Instant now = Instant.now();
+      final Instant lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+      if (lastRefresh == null) {
+        initializeRefreshAttributes(session, now);
+        return;
+      }
+      if (isRefreshRequired(lastRefresh, now)) {
+        lockAndRefresh(session, now);
       }
     }
+  }
+
+  private void lockAndRefresh(final HttpSession session, final Instant now) {
+    final Instant lastRefresh;
+    synchronized (session.getAttribute(LAST_REFRESH_ATTR + "_LOCK")) {
+      lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+      if (isRefreshRequired(lastRefresh, now)) {
+        authenticationProvider.refresh();
+        session.setAttribute(LAST_REFRESH_ATTR, now);
+      }
+    }
+  }
+
+  private static void initializeRefreshAttributes(final HttpSession session, final Instant now) {
+    session.setAttribute(LAST_REFRESH_ATTR, now);
+    session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", new Object());
   }
 
   private boolean isRefreshRequired(final Instant lastRefresh, final Instant now) {
