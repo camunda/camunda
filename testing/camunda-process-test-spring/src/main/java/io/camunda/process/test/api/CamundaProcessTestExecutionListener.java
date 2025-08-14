@@ -17,6 +17,8 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.process.test.api.coverage.ProcessCoverage;
+import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
@@ -74,11 +76,12 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private static final Logger LOG =
       LoggerFactory.getLogger(CamundaProcessTestExecutionListener.class);
-
   private final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
+  private final ProcessCoverageBuilder processCoverageBuilder;
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
+  private ProcessCoverage processCoverage;
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
@@ -87,13 +90,15 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private ZeebeClient zeebeClient;
 
   public CamundaProcessTestExecutionListener() {
-    this(CamundaProcessTestContainerRuntime.newBuilder(), System.err::println);
+    this(CamundaProcessTestContainerRuntime.newBuilder(), ProcessCoverage.newBuilder(), LOG::info);
   }
 
   CamundaProcessTestExecutionListener(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
+      final ProcessCoverageBuilder processCoverageBuilder,
       final Consumer<String> testResultPrintStream) {
     this.containerRuntimeBuilder = containerRuntimeBuilder;
+    this.processCoverageBuilder = processCoverageBuilder.printStream(testResultPrintStream);
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
   }
 
@@ -113,6 +118,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             createdClients::add,
             camundaManagementClient,
             CamundaAssert.getAwaitBehavior());
+
+    // create process coverage
+    processCoverage =
+        processCoverageBuilder
+            .testClass(testContext.getTestClass())
+            .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
+            .build();
   }
 
   @Override
@@ -148,7 +160,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       // Skip if the runtime is not created.
       return;
     }
-
+    try {
+      processCoverage.collectTestRunCoverage(testContext.getTestMethod().getName());
+    } catch (final Throwable t) {
+      LOG.warn("Failed to collect test process coverage, skipping.", t);
+    }
     if (isTestFailed(testContext)) {
       printTestResults();
     }
@@ -183,6 +199,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       // Skip if the runtime is not created.
       return;
     }
+
+    try {
+      processCoverage.reportCoverage();
+    } catch (final Throwable t) {
+      LOG.warn("Failed to report process coverage, skipping.", t);
+    }
+
     runtime.close();
   }
 
