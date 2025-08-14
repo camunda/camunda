@@ -8,6 +8,8 @@
 package io.camunda.zeebe.it.backup;
 
 import com.google.cloud.storage.BucketInfo;
+import io.camunda.configuration.Gcs;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -38,6 +40,18 @@ final class GcsRestoreAcceptanceIT implements RestoreAcceptance {
     try (final var client = GcsBackupStore.buildClient(config)) {
       client.create(BucketInfo.of(BUCKET_NAME));
     }
+  }
+
+  @Override
+  public void restoreAppWithUnifiedConfig(final UnifiedConfiguration uc) {
+    final var backup = uc.getCamunda().getData().getBackup();
+    final var gcs = new Gcs();
+
+    gcs.setAuth(Gcs.GcsBackupStoreAuth.NONE);
+    gcs.setBucketName(BUCKET_NAME);
+    gcs.setHost(GCS.externalEndpoint());
+
+    backup.setGcs(gcs);
   }
 
   @Override

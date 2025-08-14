@@ -18,6 +18,9 @@ public class UnifiedConfiguration {
   @Autowired private Camunda camunda;
 
   public Camunda getCamunda() {
+    if (camunda == null) { // FIXME: just for tests, remove when possible
+      camunda = new Camunda();
+    }
     return camunda;
   }
 }

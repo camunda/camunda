@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.configuration.S3;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
@@ -231,12 +233,31 @@ class BackupMultiPartitionTest {
   }
 
   private void deleteAndRestore(final TestStandaloneBroker broker, final int backupId) {
-    try (final var restore = new TestRestoreApp(broker.brokerConfig()).withBackupId(backupId)) {
+    try (final var restore =
+        new TestRestoreApp(configureUnifiedConfiguration()).withBackupId(backupId)) {
       FileUtil.deleteFolderIfExists(broker.bean(WorkingDirectory.class).path());
       restore.start();
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  private UnifiedConfiguration configureUnifiedConfiguration() {
+    final var uc = new UnifiedConfiguration();
+    final var backup = uc.getCamunda().getData().getBackup();
+    final var s3 = new S3();
+
+    generateBucketName();
+
+    s3.setBucketName(bucketName);
+    s3.setEndpoint(S3.externalEndpoint());
+    s3.setRegion(S3.region());
+    s3.setAccessKey(S3.accessKey());
+    s3.setSecretKey(S3.secretKey());
+    s3.setForcePathStyleAccess(true);
+    backup.setS3(s3);
+
+    return uc;
   }
 
   @Test
