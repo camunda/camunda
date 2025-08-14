@@ -253,7 +253,7 @@ public final class EngineProcessors {
         writers,
         processingState,
         partitionsCount,
-        config.isCommandDistributionPaused());
+        config);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -608,7 +608,7 @@ public final class EngineProcessors {
       final Writers writers,
       final ProcessingState processingState,
       final int staticPartitionsCount,
-      final boolean isCommandDistributionPaused) {
+      final EngineConfiguration config) {
 
     {
       final var scheduledTaskState = scheduledTaskStateSupplier.get();
@@ -623,7 +623,9 @@ public final class EngineProcessors {
               RoutingInfo.dynamic(
                   scheduledTaskState.getRoutingState(),
                   RoutingInfo.forStaticPartitions(staticPartitionsCount)),
-              isCommandDistributionPaused));
+              config.isCommandDistributionPaused(),
+              config.getCommandRedistributionInterval(),
+              config.getCommandRedistributionMaxBackoff()));
     }
 
     final var distributionState = processingState.getDistributionState();
