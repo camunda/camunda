@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 13,
   "links": [],
   "panels": [
     {
@@ -35,7 +35,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The time needed for the importer to read documents from the zeebe records index for a single import batch.",
           "fieldConfig": {
@@ -120,7 +120,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -135,7 +135,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
               "expr": "avg(rate(tasklist_import_index_query_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])/rate(tasklist_import_index_query_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])>0)",
@@ -179,7 +179,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Throughput of documents processed and imported.",
           "fieldConfig": {
@@ -297,7 +297,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the time (latency) between writing the command to the dispatcher, processing, exporting, and then importing the record.",
           "fieldConfig": {
@@ -423,7 +423,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The time it takes for the importer to read an record on average from ES",
           "fieldConfig": {
@@ -530,7 +530,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Time the import writer thread needs on average to process an ImportBatch (containing several Zeebe records).",
           "fieldConfig": {
@@ -637,7 +637,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The time it takes to write the bulk requests (during importing) to ES on average.",
           "fieldConfig": {
@@ -741,7 +741,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "There is a queue of import jobs where each job has to import a batch of records. This details how many such jobs are currently in the queue.",
           "fieldConfig": {
@@ -866,7 +866,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Each time a non empty bulk request if flushed, this is how long the flush takes.",
           "fieldConfig": {
@@ -951,7 +951,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The rate of failure of flush operations, averaged over 15s intervals",
           "fieldConfig": {
@@ -1020,7 +1020,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "When bulk request flushes fail, the type of error returned is counted.",
           "fieldConfig": {
@@ -1113,7 +1113,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The time in seconds since the last flush.",
           "fieldConfig": {
@@ -1206,7 +1206,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "How far behind each exporter is from exporting the records which have been committed.",
           "fieldConfig": {
@@ -1299,7 +1299,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "For every non empty flush of a bulk request, this is the number of entities flushed.",
           "fieldConfig": {
@@ -1384,7 +1384,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "How long an export request is open and collecting new records before flushing.",
           "fieldConfig": {
@@ -1486,7 +1486,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the rate of evictions of the process cache",
           "fieldConfig": {
@@ -1584,7 +1584,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the rate of access to the process cache per partition",
           "fieldConfig": {
@@ -1698,7 +1698,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The time the cache spent computing or retrieving the new value",
           "fieldConfig": {
@@ -1802,7 +1802,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Historgram, to show the distribution of the duration of search requests to find completed entities, which should be archived.",
           "fieldConfig": {
@@ -1901,7 +1901,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Historgram, to show the distribution of durations reindex requests take, to copy data from runtime to dated indices.",
           "fieldConfig": {
@@ -1984,7 +1984,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Historgram, to show the distribution of durations delete requests take, to delete data from runtime indices.",
           "fieldConfig": {
@@ -2067,7 +2067,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The rate of the loading data into the cache",
           "fieldConfig": {
@@ -2180,7 +2180,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Process instances which can be archived but are waiting to do so.",
           "fieldConfig": {
@@ -2273,7 +2273,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Histogram to show the distribution of the overall archiving duration, which includes searching, reindexing, and deletion.",
           "fieldConfig": {
@@ -2357,7 +2357,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the rate of archiving (in-progress) and archived process instance and batch operations. Batch operations or process instances need to be completed before being able to be archived. The rate is aggregated by partition.",
           "fieldConfig": {
@@ -2486,7 +2486,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Each time a non empty bulk request if flushed, this is how long the flush takes.",
           "fieldConfig": {
@@ -2569,7 +2569,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The rate of failure of flush operations, averaged over 15s intervals",
           "fieldConfig": {
@@ -2667,7 +2667,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "For every non empty flush of a bulk request, this is the number of entities flushed.",
           "fieldConfig": {
@@ -2750,7 +2750,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Each bulk request has a number of records, the memory usage to flush this bulk request is crudely measured through content length and tracked here. ",
           "fieldConfig": {
@@ -2863,7 +2863,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "fieldConfig": {
             "defaults": {
@@ -3463,6 +3463,19 @@
         "refresh": 1,
         "regex": "",
         "type": "query"
+      },
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "PBFA97CFB590B2093"
+        },
+        "label": "datasource",
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
       }
     ]
   },
