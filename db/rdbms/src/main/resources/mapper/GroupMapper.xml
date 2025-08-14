@@ -20,6 +20,14 @@
     <if test="filter.tenantId != null">
       JOIN ${prefix}TENANT_MEMBER tm ON g.GROUP_ID = tm.ENTITY_ID AND tm.ENTITY_TYPE = 'GROUP'
     </if>
+    <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+      JOIN ${prefix}GROUP_MEMBER gmt ON g.GROUP_ID = gmt.GROUP_ID
+      AND gmt.ENTITY_TYPE IN (
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" separator=", ">
+        #{memberType}
+      </foreach>
+      )
+    </if>
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
   </select>
 
@@ -38,6 +46,14 @@
     LEFT JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_ID = gm.GROUP_ID
     <if test="filter.tenantId != null">
       JOIN ${prefix}TENANT_MEMBER tm ON g.GROUP_ID = tm.ENTITY_ID AND tm.ENTITY_TYPE = 'GROUP'
+    </if>
+    <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+      JOIN ${prefix}GROUP_MEMBER gmt ON g.GROUP_ID = gmt.GROUP_ID
+      AND gmt.ENTITY_TYPE IN (
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" separator=", ">
+        #{memberType}
+      </foreach>
+      )
     </if>
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
     ) t
@@ -64,6 +80,16 @@
       AND gm.ENTITY_TYPE = #{filter.childMemberType}
     </if>
     <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
+    <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" open="AND (" separator=" OR " close=")">
+        <if test="values != null and !values.isEmpty()">
+          gmt.ENTITY_TYPE = #{memberType} AND gmt.ENTITY_ID IN
+          <foreach collection="values" item="value" open="(" separator=" , " close=")">
+            #{value}
+          </foreach>
+        </if>
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="groupResultMap" type="io.camunda.db.rdbms.write.domain.GroupDbModel">
