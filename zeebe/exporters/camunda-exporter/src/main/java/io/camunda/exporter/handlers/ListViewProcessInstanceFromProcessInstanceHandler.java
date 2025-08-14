@@ -170,6 +170,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     if (entity.getState() != null) {
       updateFields.put(ListViewTemplate.STATE, entity.getState());
     }
+    if (entity.getTags() != null) {
+      updateFields.put(ListViewTemplate.TAGS, entity.getTags());
+    }
 
     batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
