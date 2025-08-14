@@ -93,6 +93,22 @@ public final class EngineCfg implements ConfigurationEntry {
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
         .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
+<<<<<<< HEAD:broker/src/main/java/io/camunda/zeebe/broker/system/configuration/engine/EngineCfg.java
+=======
+        .setBatchOperationSchedulerInterval(batchOperations.getSchedulerInterval())
+        .setBatchOperationChunkSize(batchOperations.getChunkSize())
+        .setBatchOperationDbChunkSize(batchOperations.getDbChunkSize())
+        .setBatchOperationQueryPageSize(batchOperations.getQueryPageSize())
+        .setBatchOperationQueryInClauseSize(batchOperations.getQueryInClauseSize())
+        .setBatchOperationQueryRetryMax(batchOperations.getQueryRetryMax())
+        .setBatchOperationQueryRetryInitialDelay(batchOperations.getQueryRetryInitialDelay())
+        .setBatchOperationQueryRetryMaxDelay(batchOperations.getQueryRetryMaxDelay())
+        .setBatchOperationQueryRetryBackoffFactor(batchOperations.getQueryRetryBackoffFactor())
+        .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
+        .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
+        .setCommandRedistributionInterval(distribution.getRetryInterval())
+        .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
+>>>>>>> 25ce09a8 (feat: Implement configurable command distribution retry intervals):zeebe/broker/src/main/java/io/camunda/zeebe/broker/system/configuration/engine/EngineCfg.java
         .setMaxProcessDepth(getMaxProcessDepth());
   }
 }
