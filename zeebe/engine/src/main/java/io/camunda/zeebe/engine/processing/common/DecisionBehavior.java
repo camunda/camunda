@@ -154,10 +154,13 @@ public class DecisionBehavior {
                     DecisionInfo::new));
 
     final var evaluatedDecisions = decisionResult.getEvaluatedDecisions();
-    for (int index = 1; index <= evaluatedDecisions.size(); index++) {
+    for (int index = 0; index < evaluatedDecisions.size(); index++) {
       final EvaluatedDecision evaluatedDecision = evaluatedDecisions.get(index);
+      // The decisionEvaluationInstanceKey is used to uniquely identify the evaluation of a
+      // decision within a decision evaluation event. It is constructed by appending the decision
+      // evaluation key to the index of the evaluated decision (starting from 1).
       final var decisionEvaluationInstanceKey =
-          String.format("%d-%d", decisionEvaluationKey, index);
+          String.format("%d-%d", decisionEvaluationKey, index + 1);
       addDecisionToEvaluationEvent(
           evaluatedDecision,
           decisionKeysByDecisionId.getOrDefault(
