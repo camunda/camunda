@@ -13,6 +13,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -67,6 +69,68 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * @param executor the executor on which the callback will be executed
    */
   void onComplete(BiConsumer<V, Throwable> consumer, Executor executor);
+
+  /**
+   * Runs a callback when the future terminates successfully If the caller is not an actor, the
+   * consumer is executed in the actor which completes this future. If the caller is not an actor,
+   * it is recommended to use {@link ActorFuture#onSuccess(Consumer, Executor)} instead.
+   *
+   * @param handler to run
+   */
+  default void onSuccess(final Consumer<V> handler) {
+    onComplete(
+        (v, error) -> {
+          if (error == null) {
+            handler.accept(v);
+          }
+        });
+  }
+
+  /**
+   * Runs a callback when the future terminates successfully
+   *
+   * @param handler to run
+   */
+  default void onSuccess(final Consumer<V> handler, final Executor executor) {
+    onComplete(
+        (v, error) -> {
+          if (error == null) {
+            handler.accept(v);
+          }
+        },
+        executor);
+  }
+
+  /**
+   * Runs a callback when the future terminates exceptionally If the caller is not an actor, the
+   * consumer is executed in the actor which completes this future. If the caller is not an actor,
+   * it is recommended to use {@link ActorFuture#onError(Consumer, Executor)} instead.
+   *
+   * @param handler to run
+   */
+  default void onError(final Consumer<Throwable> handler) {
+    onComplete(
+        (v, error) -> {
+          if (error != null) {
+            handler.accept(error);
+          }
+        });
+  }
+
+  /**
+   * Runs a callback when the future terminates exceptionally
+   *
+   * @param handler to run when
+   */
+  default void onError(final Consumer<Throwable> handler, final Executor executor) {
+    onComplete(
+        (v, error) -> {
+          if (error != null) {
+            handler.accept(error);
+          }
+        },
+        executor);
+  }
 
   boolean isCompletedExceptionally();
 
@@ -125,6 +189,20 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * @param <U> the type of the new future
    */
   <U> ActorFuture<U> andThen(Function<V, ActorFuture<U>> next, Executor executor);
+
+  /**
+   * Similar to {@link ActorFuture#andThen(Function, Executor)}}, but it allows to return a future
+   * even if this future completes exceptionally.
+   *
+   * @param next the function to apply to the result of this future.
+   * @param executor the executor used to handle completion callbacks.
+   * @return a new future that completes with the result of applying the function to the result of
+   *     this future. The function is run even if this future completes exceptionally. This future
+   *     can be used for further chaining, compared to the {@link
+   *     ActorFuture#onComplete(BiConsumer)} method.
+   * @param <U> the type of the new future
+   */
+  <U> ActorFuture<U> andThen(BiFunction<V, Throwable, ActorFuture<U>> next, Executor executor);
 
   /**
    * Similar to {@link CompletableFuture#thenApply(Function)} in that it applies a function to the
