@@ -150,11 +150,13 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       : processInstanceXmlData?.businessObjects[flowNodeInstance.flowNodeId];
 
     const isMultiInstanceBody = flowNodeInstance.type === 'MULTI_INSTANCE_BODY';
+    const isAdHocSubProcessInnerInstance = flowNodeInstance.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE';
 
     const isFoldable =
       isMultiInstanceBody ||
       isSubProcess(businessObject) ||
       isAdHocSubProcess(businessObject) ||
+      isAdHocSubProcessInnerInstance ||
       isRoot;
 
     const hasChildren = flowNodeInstance.isPlaceholder
@@ -239,13 +241,11 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         value={flowNodeInstance.id}
         aria-label={nodeName}
         renderIcon={() => {
-          return businessObject !== undefined ? (
-            <FlowNodeIcon
-              flowNodeInstanceType={flowNodeInstance.type}
-              diagramBusinessObject={businessObject}
-              hasLeftMargin={!hasChildren}
-            />
-          ) : undefined;
+          return <FlowNodeIcon
+            flowNodeInstanceType={flowNodeInstance.type}
+            diagramBusinessObject={businessObject}
+            hasLeftMargin={!hasChildren}
+          />;
         }}
         onSelect={() => {
           if (
