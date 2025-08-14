@@ -36,7 +36,7 @@ public class UsageMetricsTest {
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   public static final Duration EXPORT_INTERVAL = Duration.ofSeconds(2);
-  public static final Duration TWENTY_SECONDS = Duration.ofSeconds(20);
+  public static final Duration TEN_SECONDS = Duration.ofSeconds(10);
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -72,7 +72,7 @@ public class UsageMetricsTest {
       final OffsetDateTime endTime,
       final Consumer<UsageMetricsStatistics> fnRequirements) {
     Awaitility.await("should export metrics to secondary storage")
-        .atMost(EXPORT_INTERVAL.multipliedBy(10))
+        .atMost(EXPORT_INTERVAL.multipliedBy(2))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
@@ -105,7 +105,7 @@ public class UsageMetricsTest {
           assertThat(res.getActiveTenants()).isEqualTo(1);
         });
 
-    // Store first export time & wait 10 export intervals
+    // Store first export time & wait 2 export intervals
     exportedTime = OffsetDateTime.now();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
@@ -113,13 +113,19 @@ public class UsageMetricsTest {
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
     deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_B);
     deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_C);
+    deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_C);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID_2, TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID_2, TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID_2, TENANT_C);
+    startProcessInstance(adminClient, PROCESS_ID_2, TENANT_C);
 
     // Reassign user task to a different assignee and await
     reassignTask(adminClient, TENANT_A);
+
+    // Unassign a task for TENANT_C, assignee is set to empty string, make sure no assignee is
+    // stored
+    unassignTask(adminClient, TENANT_C);
 
     // Deploy a decision model for TENANT_A and evaluate it 2 times
     deployResource(adminClient, "decisions/decision_model.dmn", TENANT_A);
@@ -139,7 +145,7 @@ public class UsageMetricsTest {
         NOW.minusDays(1),
         NOW.plusDays(1),
         res -> {
-          assertThat(res.getProcessInstances()).isEqualTo(6);
+          assertThat(res.getProcessInstances()).isEqualTo(7);
           assertThat(res.getDecisionInstances()).isEqualTo(3);
           assertThat(res.getAssignees()).isEqualTo(2); // bar + bar2
           assertThat(res.getActiveTenants()).isEqualTo(3);
@@ -156,7 +162,7 @@ public class UsageMetricsTest {
         adminClient.newUsageMetricsRequest(now.minusDays(1), now.plusDays(1)).send().join();
 
     // then
-    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(6, 3, 2, 3, Map.of()));
+    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(7, 3, 2, 3, Map.of()));
   }
 
   @Test
@@ -176,7 +182,7 @@ public class UsageMetricsTest {
     assertThat(actual)
         .isEqualTo(
             new UsageMetricsStatisticsImpl(
-                6,
+                7,
                 3,
                 2,
                 3,
@@ -186,7 +192,7 @@ public class UsageMetricsTest {
                     TENANT_B,
                     new UsageMetricsStatisticsItemImpl(3, 1, 1),
                     TENANT_C,
-                    new UsageMetricsStatisticsItemImpl(1, 0, 1))));
+                    new UsageMetricsStatisticsItemImpl(2, 0, 1))));
   }
 
   @Test
@@ -276,12 +282,12 @@ public class UsageMetricsTest {
 
   private static void reassignTask(final CamundaClient camundaClient, final String tenantId) {
     Awaitility.await("user tasks should be available")
-        .atMost(TWENTY_SECONDS)
+        .atMost(TEN_SECONDS)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               final var result = camundaClient.newUserTaskSearchRequest().send().join();
-              assertThat(result.items()).hasSize(4);
+              assertThat(result.items()).hasSize(5);
               userTaskKey =
                   result.items().stream()
                       .filter(ut -> ut.getTenantId().equals(tenantId))
@@ -298,9 +304,27 @@ public class UsageMetricsTest {
         .join();
   }
 
+  private static void unassignTask(final CamundaClient camundaClient, final String tenantId) {
+    Awaitility.await("user tasks should be available")
+        .atMost(TEN_SECONDS)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result = camundaClient.newUserTaskSearchRequest().send().join();
+              assertThat(result.items()).hasSize(5);
+              userTaskKey =
+                  result.items().stream()
+                      .filter(ut -> ut.getTenantId().equals(tenantId))
+                      .findFirst()
+                      .orElseThrow()
+                      .getUserTaskKey();
+            });
+    camundaClient.newUserTaskUnassignCommand(userTaskKey).send().join();
+  }
+
   private static void assertTaskReassigned(final CamundaClient adminClient) {
     Awaitility.await("User tasks should have been reassigned")
-        .atMost(TWENTY_SECONDS)
+        .atMost(TEN_SECONDS)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
@@ -314,7 +338,7 @@ public class UsageMetricsTest {
 
   private static void assertDecisionsInstantiated(final CamundaClient adminClient) {
     Awaitility.await("Decision instances should be available")
-        .atMost(TWENTY_SECONDS)
+        .atMost(TEN_SECONDS)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
