@@ -31,6 +31,8 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
     implements EvaluatedDecisionValue {
 
   private final StringProperty decisionIdProp = new StringProperty("decisionId");
+  private final StringProperty decisionEvaluationInstanceKeyProp =
+      new StringProperty("decisionEvaluationInstanceKey");
   private final StringProperty decisionNameProp = new StringProperty("decisionName");
   private final LongProperty decisionKeyProp = new LongProperty("decisionKey");
   private final IntegerProperty decisionVersionProp = new IntegerProperty("decisionVersion");
@@ -47,8 +49,9 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public EvaluatedDecisionRecord() {
-    super(9);
+    super(10);
     declareProperty(decisionIdProp)
+        .declareProperty(decisionEvaluationInstanceKeyProp)
         .declareProperty(decisionNameProp)
         .declareProperty(decisionKeyProp)
         .declareProperty(decisionVersionProp)
@@ -66,6 +69,17 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
 
   public EvaluatedDecisionRecord setDecisionId(final String decisionId) {
     decisionIdProp.setValue(decisionId);
+    return this;
+  }
+
+  @Override
+  public String getDecisionEvaluationInstanceKey() {
+    return bufferAsString(decisionEvaluationInstanceKeyProp.getValue());
+  }
+
+  public EvaluatedDecisionRecord setDecisionEvaluationInstanceKey(
+      final String decisionEvaluationInstanceKey) {
+    decisionEvaluationInstanceKeyProp.setValue(decisionEvaluationInstanceKey);
     return this;
   }
 
