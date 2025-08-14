@@ -236,7 +236,7 @@ public final class CreateProcessInstanceTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId("process")
-            .withTags("businessKey: 1234", "priority: high")
+            .withTags("businessKey:1234", "priority:high")
             .create();
 
     // then
@@ -266,7 +266,7 @@ public final class CreateProcessInstanceTest {
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     final var tags = value.getTags();
-    assertThat(tags).containsExactlyInAnyOrder("businessKey: 1234", "priority: high");
+    assertThat(tags).containsExactlyInAnyOrder("businessKey:1234", "priority:high");
   }
 
   @Test
