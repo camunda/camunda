@@ -105,8 +105,8 @@ public class StreamProcessorHealthTest {
           }
 
           @Override
-          public void onRecovered() {
-            healthReport.set(null);
+          public void onRecovered(final HealthReport report) {
+            healthReport.set(report);
           }
 
           @Override
