@@ -85,6 +85,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
           .failureMessage("decision-evaluation-failure")
           .tenantId(TENANT_ID)
           .decisionInstanceKey(String.valueOf(DECISION_INSTANCE_KEY))
+          .decisionEvaluationKey(String.valueOf(DECISION_INSTANCE_KEY))
           .addEvaluatedDecisionsItem(EVALUATED_DECISION);
 
   @Test
@@ -286,6 +287,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     assertThat(response.getTenantId()).isEqualTo(EVALUATE_DECISION_RESPONSE.getTenantId());
     assertThat(String.valueOf(response.getDecisionInstanceKey()))
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionInstanceKey());
+    assertThat(String.valueOf(response.getDecisionEvaluationKey()))
+        .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionEvaluationKey());
 
     // assert EvaluatedDecision
     assertThat(response.getEvaluatedDecisions()).hasSize(1);

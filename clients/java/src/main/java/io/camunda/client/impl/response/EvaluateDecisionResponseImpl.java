@@ -40,6 +40,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   private final String failureMessage;
   private final String tenantId;
   private final long decisionInstanceKey;
+  private final long decisionEvaluationKey;
 
   public EvaluateDecisionResponseImpl(
       final EvaluateDecisionResult response, final JsonMapper jsonMapper) {
@@ -55,6 +56,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
     failureMessage = response.getFailureMessage();
     tenantId = response.getTenantId();
     decisionInstanceKey = Long.parseLong(response.getDecisionInstanceKey());
+    decisionEvaluationKey = Long.parseLong(response.getDecisionEvaluationKey());
     buildEvaluatedDecisions(response);
   }
 
@@ -73,6 +75,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
     failureMessage = response.getFailureMessage();
     tenantId = response.getTenantId();
     decisionInstanceKey = response.getDecisionInstanceKey();
+    decisionEvaluationKey = response.getDecisionEvaluationKey();
 
     response.getEvaluatedDecisionsList().stream()
         .map(evaluatedDecision -> new EvaluatedDecisionImpl(jsonMapper, evaluatedDecision))
@@ -147,5 +150,10 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   @Override
   public long getDecisionInstanceKey() {
     return decisionInstanceKey;
+  }
+
+  @Override
+  public long getDecisionEvaluationKey() {
+    return decisionEvaluationKey;
   }
 }

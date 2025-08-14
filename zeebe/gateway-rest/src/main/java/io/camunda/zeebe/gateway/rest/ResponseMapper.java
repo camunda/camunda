@@ -673,7 +673,8 @@ public final class ResponseMapper {
             .failedDecisionDefinitionId(decisionEvaluationRecord.getFailedDecisionId())
             .failureMessage(decisionEvaluationRecord.getEvaluationFailureMessage())
             .tenantId(decisionEvaluationRecord.getTenantId())
-            .decisionInstanceKey(KeyUtil.keyToString(brokerResponse.getKey()));
+            .decisionInstanceKey(KeyUtil.keyToString(brokerResponse.getKey()))
+            .decisionEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()));
 
     buildEvaluatedDecisions(decisionEvaluationRecord, response);
     return new ResponseEntity<>(response, HttpStatus.OK);
