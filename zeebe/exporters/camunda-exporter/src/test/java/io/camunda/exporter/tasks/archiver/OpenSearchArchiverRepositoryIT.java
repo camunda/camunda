@@ -38,7 +38,6 @@ import java.util.UUID;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -371,9 +370,6 @@ final class OpenSearchArchiverRepositoryIT {
 
   @Test
   void shouldSetTheCorrectFinishDateWithRollover() throws IOException {
-    Assumptions.assumeTrue(
-        System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isEmpty(),
-        "Skipping test if AWS is used. See https://github.com/camunda/camunda/pull/35591");
     // given a rollover of 3 days:
     config.setRolloverInterval("3d");
     final var dateFormatter =
@@ -456,9 +452,6 @@ final class OpenSearchArchiverRepositoryIT {
 
   @Test
   void shouldFetchHistoricalDatesOnStart() throws IOException {
-    Assumptions.assumeTrue(
-        System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isEmpty(),
-        "Skipping test if AWS is used. See https://github.com/camunda/camunda/pull/35591");
     final var dateFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     final var now = Instant.now();
@@ -491,9 +484,6 @@ final class OpenSearchArchiverRepositoryIT {
 
   @Test
   void shouldFetchHistoricalDatesOnStartAndExcludeZeebePrefix() throws IOException {
-    Assumptions.assumeTrue(
-        System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isEmpty(),
-        "Skipping test if AWS is used. See https://github.com/camunda/camunda/pull/35591");
 
     final var dateFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
