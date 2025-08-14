@@ -8,10 +8,15 @@
 package io.camunda.zeebe.gateway.rest.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.gateway.rest.util.OpenApiYamlLoader;
+import io.camunda.zeebe.gateway.rest.util.OpenApiYamlLoader.OpenApiLoadingException;
 import io.camunda.zeebe.gateway.rest.util.YamlToJsonResourceTransformer;
+import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -25,7 +30,7 @@ public class OpenApiResourceConfig implements WebMvcConfigurer {
   public static final String BEARER_SECURITY_SCHEMA_NAME = "bearerAuth";
   public static final SecurityScheme BEARER_SECURITY_SCHEMA =
       new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT");
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiResourceConfig.class);
   @Autowired private ObjectMapper objectMapper;
 
   @Override
@@ -38,21 +43,48 @@ public class OpenApiResourceConfig implements WebMvcConfigurer {
   }
 
   @Bean
-  public GroupedOpenApi restApiV1() {
+  public GroupedOpenApi restApiV2() {
     return GroupedOpenApi.builder()
         .group("Orchestration Cluster API")
-        .addOpenApiCustomizer(
-            openApi -> {
-              openApi
-                  .info(new Info().description(getApiDescription()))
-                  .getComponents()
-                  .addSecuritySchemes(BEARER_SECURITY_SCHEMA_NAME, BEARER_SECURITY_SCHEMA);
-
-              openApi.addSecurityItem(
-                  new SecurityRequirement().addList(BEARER_SECURITY_SCHEMA_NAME));
-            })
-        .pathsToMatch("/**")
+        .addOpenApiCustomizer(this::customizeOpenApi)
+        .pathsToMatch("/v2/**")
         .build();
+  }
+
+  private void customizeOpenApi(final OpenAPI openApi) {
+    try {
+      final OpenAPI yamlOpenApi = OpenApiYamlLoader.loadOpenApiFromYaml("apidoc/rest-api.yaml");
+
+      if (yamlOpenApi.getTags() != null) {
+        openApi.setTags(yamlOpenApi.getTags());
+      }
+
+      if (yamlOpenApi.getPaths() != null) {
+        final var v2Paths = new io.swagger.v3.oas.models.Paths();
+        yamlOpenApi
+            .getPaths()
+            .forEach(
+                (pathKey, pathItem) -> {
+                  v2Paths.addPathItem("/v2" + pathKey, pathItem);
+                });
+        openApi.setPaths(v2Paths);
+      }
+
+      if (yamlOpenApi.getComponents() != null) {
+        openApi.setComponents(yamlOpenApi.getComponents());
+      }
+    } catch (final OpenApiLoadingException e) {
+      LOGGER.warn(
+          "Could not load OpenAPI from rest-api.yaml, using controller-based organization: {}",
+          e.getMessage());
+    }
+
+    openApi
+        .info(new Info().description(getApiDescription()))
+        .getComponents()
+        .addSecuritySchemes(BEARER_SECURITY_SCHEMA_NAME, BEARER_SECURITY_SCHEMA);
+
+    openApi.addSecurityItem(new SecurityRequirement().addList(BEARER_SECURITY_SCHEMA_NAME));
   }
 
   private String getApiDescription() {
