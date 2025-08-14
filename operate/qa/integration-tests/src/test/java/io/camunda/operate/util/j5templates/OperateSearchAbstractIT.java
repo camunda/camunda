@@ -31,8 +31,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -63,8 +63,8 @@ import org.springframework.test.web.servlet.MvcResult;
 public class OperateSearchAbstractIT {
   public static final String DEFAULT_USER = "testuser";
   // These are mocked so we can bypass authentication issues when connecting to search
-  @MockBean protected CamundaAuthenticationProvider camundaAuthenticationProvider;
-  @MockBean protected TenantService tenantService;
+  @MockitoBean protected CamundaAuthenticationProvider camundaAuthenticationProvider;
+  @MockitoBean protected TenantService tenantService;
   @Autowired protected ProcessCache processCache;
   @Autowired protected TestSearchRepository testSearchRepository;
   @Autowired protected SearchContainerManager searchContainerManager;

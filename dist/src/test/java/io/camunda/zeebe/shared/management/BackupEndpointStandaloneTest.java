@@ -13,14 +13,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {BackupEndpointStandalone.class})
 public abstract class BackupEndpointStandaloneTest {
 
-  @MockBean private BackupEndpoint backupEndpoint;
+  @MockitoBean private BackupEndpoint backupEndpoint;
   @Autowired private BackupEndpointStandalone backupEndpointStandalone;
 
   @Test

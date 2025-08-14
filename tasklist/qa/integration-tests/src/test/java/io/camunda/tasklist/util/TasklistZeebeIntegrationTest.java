@@ -18,14 +18,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WithMockUser(DEFAULT_USER_ID)
 public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZeebeIntegrationTest {
   public static final String DEFAULT_USER_ID = "demo";
 
-  @MockBean protected CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean protected CamundaAuthenticationProvider authenticationProvider;
 
   private MockedStatic<TasklistAuthenticationUtil> authenticationUtil;
 

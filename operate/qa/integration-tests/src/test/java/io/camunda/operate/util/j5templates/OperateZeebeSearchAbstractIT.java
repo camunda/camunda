@@ -41,8 +41,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.web.WebAppConfiguration;
 
 /**
@@ -70,12 +70,12 @@ import org.springframework.test.context.web.WebAppConfiguration;
 public class OperateZeebeSearchAbstractIT {
 
   // These are mocked so we can bypass authentication issues when connecting to zeebe and search
-  @MockBean protected CamundaAuthenticationProvider camundaAuthenticationProvider;
-  @MockBean protected TenantService tenantService;
+  @MockitoBean protected CamundaAuthenticationProvider camundaAuthenticationProvider;
+  @MockitoBean protected TenantService tenantService;
 
   // Prevents the zeebe client from being constructed. Components that need to connect to zeebe
   // should use the one in the zeebe container manager
-  @MockBean protected CamundaClient mockCamundaClient;
+  @MockitoBean protected CamundaClient mockCamundaClient;
 
   @Autowired protected ZeebeContainerManager zeebeContainerManager;
   @Autowired protected SearchContainerManager searchContainerManager;

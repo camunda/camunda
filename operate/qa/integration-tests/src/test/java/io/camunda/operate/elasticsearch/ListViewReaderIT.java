@@ -34,13 +34,13 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 public class ListViewReaderIT extends OperateSearchAbstractIT {
   @Autowired private ListViewReader listViewReader;
   @Autowired private ListViewTemplate listViewTemplate;
   @Autowired private IncidentTemplate incidentTemplate;
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
 
   private ProcessInstanceForListViewEntity activeProcess;
   private ProcessInstanceForListViewEntity completedProcess;

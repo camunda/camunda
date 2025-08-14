@@ -10,14 +10,14 @@ package io.camunda.it.rdbms.exporter;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Configuration
 @EnableAutoConfiguration
 @Import({RdbmsConfiguration.class})
 public class RdbmsTestConfiguration {
 
-  @MockBean private ActorScheduler actorScheduler;
+  @MockitoBean private ActorScheduler actorScheduler;
 }

@@ -60,10 +60,10 @@ import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
@@ -95,10 +95,10 @@ public class IncidentNotifierIT {
   private final String bpmnProcessId = "testProcessId";
   private final String processName = "processName";
   private final int processVersion = 234;
-  @MockBean private M2mTokenManager m2mTokenManager;
-  @MockBean private ProcessCache processCache;
+  @MockitoBean private M2mTokenManager m2mTokenManager;
+  @MockitoBean private ProcessCache processCache;
 
-  @MockBean
+  @MockitoBean
   @Qualifier("incidentNotificationRestTemplate")
   private RestTemplate restTemplate;
 

@@ -35,8 +35,8 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.web.WebAppConfiguration;
 
 @SpringBootTest(
@@ -51,9 +51,9 @@ import org.springframework.test.context.web.WebAppConfiguration;
 @WithMockUser(username = AuthorizationIT.USER)
 public class AuthorizationIT {
   protected static final String USER = "calculon";
-  @MockBean private ProcessInstanceReader processInstanceReader;
-  @MockBean private PermissionsService permissionsService;
-  @MockBean private BatchOperationWriter batchOperationWriter;
+  @MockitoBean private ProcessInstanceReader processInstanceReader;
+  @MockitoBean private PermissionsService permissionsService;
+  @MockitoBean private BatchOperationWriter batchOperationWriter;
   @Autowired private ProcessInstanceRestService processInstanceRestService;
 
   @Test

@@ -39,7 +39,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 public class OperationExecutorIT extends OperateAbstractIT {
 
@@ -49,7 +49,7 @@ public class OperationExecutorIT extends OperateAbstractIT {
 
   @Autowired private OperationExecutor operationExecutor;
 
-  @MockBean private Map<OperationType, OperationHandler> handlers;
+  @MockitoBean private Map<OperationType, OperationHandler> handlers;
 
   @Autowired private OperationReader operationReader;
 

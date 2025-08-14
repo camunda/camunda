@@ -31,7 +31,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 @CamundaSpringProcessTest
@@ -41,9 +41,9 @@ public class ProcessIntegrationTest {
   @Autowired private CamundaProcessTestContext processTestContext;
 
   // mock services from job workers
-  @MockBean private PaymentService paymentService;
-  @MockBean private InventoryService inventoryService;
-  @MockBean private ShippingService shippingService;
+  @MockitoBean private PaymentService paymentService;
+  @MockitoBean private InventoryService inventoryService;
+  @MockitoBean private ShippingService shippingService;
 
   @Test
   void happyPath() {

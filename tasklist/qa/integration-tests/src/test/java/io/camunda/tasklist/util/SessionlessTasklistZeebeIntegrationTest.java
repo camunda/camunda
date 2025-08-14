@@ -38,8 +38,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.annotation.Order;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIntegrationTest {
@@ -59,8 +59,8 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
 
   public ZeebeContainer zeebeContainer;
 
-  @MockBean protected OrganizationService organizationService;
-  @MockBean protected CamundaClient mockedCamundaClient;
+  @MockitoBean protected OrganizationService organizationService;
+  @MockitoBean protected CamundaClient mockedCamundaClient;
   // we don't want to create CamundaClient, we will rather use the one from
   // test rule
   protected CamundaClient camundaClient;

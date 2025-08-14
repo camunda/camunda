@@ -33,8 +33,8 @@ import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 /** Tests Elasticsearch queries for decision. */
@@ -59,7 +59,7 @@ public class DecisionIT extends OperateAbstractIT {
   private static final String QUERY_DECISION_XML_URL_PATTERN =
       DecisionRestService.DECISION_URL + "/%s/xml";
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
 
   @Test
   public void testDecisionsGroupedWithPermissionWhenNotAllowed() throws Exception {

@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 /** Tests Elasticsearch query for process statistics. */
@@ -50,7 +50,7 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
   private static final Long PROCESS_KEY_DEMO_PROCESS = 42L;
   private static final Long PROCESS_KEY_OTHER_PROCESS = 27L;
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
 
   @Test
   public void testOneProcessStatistics() throws Exception {

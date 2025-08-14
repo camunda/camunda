@@ -30,9 +30,9 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     classes = {
@@ -43,19 +43,19 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class ImportListenerTestOpenSearch extends NoBeansTest {
 
-  @MockBean private ImportBatchProcessorFactory importBatchProcessorFactory;
+  @MockitoBean private ImportBatchProcessorFactory importBatchProcessorFactory;
 
-  @MockBean private ImportBatchProcessor importBatchProcessor;
+  @MockitoBean private ImportBatchProcessor importBatchProcessor;
 
-  @MockBean private ImportPositionHolder importPositionHolder;
+  @MockitoBean private ImportPositionHolder importPositionHolder;
 
-  @MockBean
+  @MockitoBean
   @Qualifier("tasklistZeebeOsClient")
   private OpenSearchClient zeebeOsClient;
 
-  @MockBean private RecordsReaderHolder recordsReaderHolder;
+  @MockitoBean private RecordsReaderHolder recordsReaderHolder;
 
-  @MockBean private TasklistProperties tasklistProperties;
+  @MockitoBean private TasklistProperties tasklistProperties;
 
   @Autowired private BeanFactory beanFactory;
 
@@ -81,7 +81,7 @@ public class ImportListenerTestOpenSearch extends NoBeansTest {
       when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
           .thenReturn(importBatchProcessor);
       doNothing().when(importBatchProcessor).performImport(importBatchOpenSearch);
-    } catch (PersistenceException e) {
+    } catch (final PersistenceException e) {
       // ignore
     }
 
@@ -107,7 +107,7 @@ public class ImportListenerTestOpenSearch extends NoBeansTest {
       doThrow(new PersistenceException())
           .when(importBatchProcessor)
           .performImport(importBatchElasticSearch);
-    } catch (PersistenceException e) {
+    } catch (final PersistenceException e) {
       // ignore
     }
 
@@ -128,13 +128,13 @@ public class ImportListenerTestOpenSearch extends NoBeansTest {
     private ImportBatch importBatchElasticSearch;
 
     @Override
-    public void finished(ImportBatch importBatchElasticSearch) {
+    public void finished(final ImportBatch importBatchElasticSearch) {
       finishedCalled = true;
       this.importBatchElasticSearch = importBatchElasticSearch;
     }
 
     @Override
-    public void failed(ImportBatch importBatchElasticSearch) {
+    public void failed(final ImportBatch importBatchElasticSearch) {
       failedCalled = true;
       this.importBatchElasticSearch = importBatchElasticSearch;
     }
