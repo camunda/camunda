@@ -422,14 +422,16 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             // If the stream processor is in replay mode, we do not want to report it as dead
             // because it is not critical. The leaders are still active and able to process
             // requests.
-            final var report = HealthReport.unhealthy(this).withIssue(throwable, ActorClock.current().instant());
+            final var report =
+                HealthReport.unhealthy(this).withIssue(throwable, ActorClock.current().instant());
             failureListeners.forEach(l -> l.onFailure(report));
           } else {
 
             // If it is a leader, we always want to report it as dead so that all related
             // services
             // are shutdown. (https://github.com/camunda/camunda/issues/16180)
-            final var report = HealthReport.dead(this).withIssue(throwable, ActorClock.current().instant());
+            final var report =
+                HealthReport.dead(this).withIssue(throwable, ActorClock.current().instant());
             failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
           }
         });
