@@ -241,7 +241,11 @@ public class KeycloakIdentityMigrationIT {
             a -> new HashSet<>(a.getPermissionTypes()))
         .contains(
             tuple("operate", ResourceType.MESSAGE, Set.of(PermissionType.READ)),
-            tuple("operate", ResourceType.RESOURCE, Set.of(PermissionType.READ)),
+            tuple(
+                "operate",
+                ResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.READ, PermissionType.DELETE_PROCESS, PermissionType.DELETE_DRD)),
             tuple(
                 "operate",
                 ResourceType.DECISION_DEFINITION,
@@ -254,7 +258,7 @@ public class KeycloakIdentityMigrationIT {
             tuple(
                 "operate",
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
+                Set.of(PermissionType.READ)),
             tuple(
                 "operate",
                 ResourceType.PROCESS_DEFINITION,
@@ -292,10 +296,6 @@ public class KeycloakIdentityMigrationIT {
                     PermissionType.CREATE,
                     PermissionType.DELETE_RESOURCE)),
             tuple("zeebe", ResourceType.SYSTEM, Set.of(PermissionType.READ, PermissionType.UPDATE)),
-            tuple(
-                "zeebe",
-                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.UPDATE, PermissionType.DELETE)),
             tuple(
                 "tasklist",
                 ResourceType.PROCESS_DEFINITION,
@@ -493,11 +493,6 @@ public class KeycloakIdentityMigrationIT {
             Authorization::getResourceType,
             a -> new HashSet<>(a.getPermissionTypes()))
         .contains(
-            tuple(
-                "migration-app",
-                OwnerType.CLIENT,
-                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.DELETE, PermissionType.UPDATE)),
             tuple(
                 "migration-app",
                 OwnerType.CLIENT,

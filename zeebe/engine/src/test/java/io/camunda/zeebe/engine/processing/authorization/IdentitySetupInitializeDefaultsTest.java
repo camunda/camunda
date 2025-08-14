@@ -122,8 +122,7 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION)
-                    .hasOnlyPermissionTypes(
-                        PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
+                    .hasOnlyPermissionTypes(PermissionType.READ),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.DECISION_DEFINITION)
