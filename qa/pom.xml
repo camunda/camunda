@@ -18,6 +18,7 @@
   <modules>
     <module>acceptance-tests</module>
     <module>util</module>
+    <module>arch-tests</module>
   </modules>
 
   <build>
