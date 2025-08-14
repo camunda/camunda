@@ -73,6 +73,7 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
   }
 
   @Override
+  @JsonIgnore
   public String getDecisionEvaluationInstanceKey() {
     return bufferAsString(decisionEvaluationInstanceKeyProp.getValue());
   }

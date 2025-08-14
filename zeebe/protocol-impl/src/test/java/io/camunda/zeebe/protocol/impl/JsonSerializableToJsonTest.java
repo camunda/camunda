@@ -1953,7 +1953,6 @@ final class JsonSerializableToJsonTest {
           "evaluatedDecisions":[
             {
               "decisionId":"decision-id",
-              "decisionEvaluationInstanceKey":"decision-evaluation-instance-key",
               "decisionName":"decision-name",
               "decisionKey":6,
               "decisionVersion":7,
@@ -2064,7 +2063,6 @@ final class JsonSerializableToJsonTest {
           "evaluatedDecisions":[
             {
               "decisionId":"decision-id",
-              "decisionEvaluationInstanceKey":"decision-evaluation-instance-key",
               "decisionName":"decision-name",
               "decisionKey":6,
               "decisionVersion":7,
