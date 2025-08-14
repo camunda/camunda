@@ -146,6 +146,7 @@ public class RdbmsWriter {
             jobWriter,
             sequenceFlowWriter,
             batchOperationWriter,
+            messageSubscriptionWriter,
             metrics);
   }
 
