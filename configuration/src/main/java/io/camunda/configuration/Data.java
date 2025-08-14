@@ -15,6 +15,9 @@ public class Data {
   /** This section allows configuring a backup store. */
   private Backup backup = new Backup();
 
+  /** This section allows configuring export. */
+  private final Export export = new Export();
+
   public PrimaryStorage getPrimaryStorage() {
     return primaryStorage;
   }
@@ -29,5 +32,9 @@ public class Data {
 
   public void setBackup(final Backup backup) {
     this.backup = backup;
+  }
+
+  public Export getExport() {
+    return export;
   }
 }
