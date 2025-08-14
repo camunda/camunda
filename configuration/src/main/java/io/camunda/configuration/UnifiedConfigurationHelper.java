@@ -8,8 +8,8 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
-import java.io.File;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import java.io.File;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
