@@ -35,7 +35,6 @@ import org.rocksdb.Options;
 import org.rocksdb.RateLimiter;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
-import org.rocksdb.SstPartitionerFixedPrefixFactory;
 import org.rocksdb.Statistics;
 import org.rocksdb.StatsLevel;
 import org.rocksdb.TableFormatConfig;
@@ -190,12 +189,6 @@ public final class ZeebeRocksDbFactory<
     // Apply configuration that cannot be set via Properties
     final var tableConfig = createTableFormatConfig(closeables, memoryConfig.blockCacheMemory);
     columnFamilyOptions.setTableFormatConfig(tableConfig);
-
-    // Apply SST partitioner factory if enabled (also cannot be set via properties)
-    if (rocksDbConfiguration.isSstPartitioningEnabled()) {
-      columnFamilyOptions.setSstPartitionerFactory(
-          new SstPartitionerFixedPrefixFactory(Long.BYTES));
-    }
     return columnFamilyOptions;
   }
 
