@@ -57,6 +57,8 @@ public class PingConsoleTask implements Runnable {
       final HttpRequest request =
           HttpRequest.newBuilder()
               .uri(pingConfiguration.endpoint())
+              .header("Accept", "application/json")
+              .header("Content-Type", "application/json")
               .POST(HttpRequest.BodyPublishers.ofString(licensePayload))
               .build();
 
