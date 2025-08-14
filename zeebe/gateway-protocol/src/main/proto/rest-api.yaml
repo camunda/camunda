@@ -1,8 +1,7 @@
 openapi: "3.0.3"
 info:
-  title: Orchestration Cluster REST API
+  title: Orchestration Cluster API
   version: "0.1"
-  description: API for communicating with a Camunda 8 cluster.
   license:
     name: Camunda License Version 1.0
     url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
@@ -10907,9 +10906,3 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/ProblemDetail"
-
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
