@@ -9,13 +9,11 @@ package io.camunda.zeebe.it.authorization;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockserver.model.HttpRequest.request;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.search.enums.OwnerType;
-import io.camunda.client.api.search.enums.PermissionType;
-import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -31,6 +29,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,21 +38,23 @@ import org.junit.jupiter.api.io.TempDir;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.mockserver.configuration.Configuration;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpForward;
+import org.mockserver.model.HttpForward.Scheme;
+import org.slf4j.event.Level;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ZeebeIntegration
-public class OidcAuthOverRestIT {
+public class OidcAuthOverRestStartupIT {
 
   private static final String DEFAULT_USER_ID = UUID.randomUUID().toString();
-  private static final String RESTRICTED_USER_ID = UUID.randomUUID().toString();
   private static final String KEYCLOAK_REALM = "camunda";
   private static final String DEFAULT_CLIENT_ID = "zeebe";
   private static final String DEFAULT_CLIENT_SECRET = "secret";
-  private static final String RESTRICTED_CLIENT_ID = "restricted";
-  private static final String RESTRICTED_CLIENT_SECRET = "secret";
   private static final String USER_ID_CLAIM_NAME = "sub";
 
   @Container
@@ -63,8 +64,10 @@ public class OidcAuthOverRestIT {
   @Container
   private static final KeycloakContainer KEYCLOAK = DefaultTestContainers.createDefaultKeycloak();
 
-  @AutoClose private static CamundaClient defaultMappingRuleClient;
-  @AutoClose private static CamundaClient restrictedClient;
+  @AutoClose private static CamundaClient client;
+
+  private final ClientAndServer keycloakProxy =
+      ClientAndServer.startClientAndServer(new Configuration().logLevel(Level.ERROR));
 
   @TestZeebe(awaitCompleteTopology = false)
   private final TestStandaloneBroker broker =
@@ -77,12 +80,16 @@ public class OidcAuthOverRestIT {
                 c.getAuthorizations().setEnabled(true);
 
                 final var oidcConfig = c.getAuthentication().getOidc();
-                oidcConfig.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
+                final String issuerUri =
+                    "http://localhost:"
+                        + keycloakProxy.getLocalPort()
+                        + "/realms/"
+                        + KEYCLOAK_REALM;
+                oidcConfig.setIssuerUri(issuerUri);
                 // The following two properties are only needed for the webapp login flow which we
                 // don't test here.
                 oidcConfig.setClientId("example");
                 oidcConfig.setRedirectUri("example.com");
-
                 c.getInitialization()
                     .setMappingRules(
                         List.of(
@@ -108,24 +115,11 @@ public class OidcAuthOverRestIT {
     defaultUser.setServiceAccountClientId(DEFAULT_CLIENT_ID);
     defaultUser.setEnabled(true);
 
-    final var restrictedClient = new ClientRepresentation();
-    restrictedClient.setClientId(RESTRICTED_CLIENT_ID);
-    restrictedClient.setEnabled(true);
-    restrictedClient.setClientAuthenticatorType("client-secret");
-    restrictedClient.setSecret(RESTRICTED_CLIENT_SECRET);
-    restrictedClient.setServiceAccountsEnabled(true);
-
-    final var restrictedUser = new UserRepresentation();
-    restrictedUser.setId(RESTRICTED_USER_ID);
-    restrictedUser.setUsername("restricted-service-account");
-    restrictedUser.setServiceAccountClientId(RESTRICTED_CLIENT_ID);
-    restrictedUser.setEnabled(true);
-
     final var realm = new RealmRepresentation();
     realm.setRealm("camunda");
     realm.setEnabled(true);
-    realm.setClients(List.of(defaultClient, restrictedClient));
-    realm.setUsers(List.of(defaultUser, restrictedUser));
+    realm.setClients(List.of(defaultClient));
+    realm.setUsers(List.of(defaultUser));
 
     try (final var keycloak = KEYCLOAK.getKeycloakAdminClient()) {
       keycloak.realms().create(realm);
@@ -134,7 +128,8 @@ public class OidcAuthOverRestIT {
 
   @BeforeEach
   void beforeEach(@TempDir final Path tempDir) {
-    defaultMappingRuleClient =
+
+    client =
         CamundaClient.newClientBuilder()
             .grpcAddress(broker.grpcAddress())
             .restAddress(broker.restAddress())
@@ -154,103 +149,55 @@ public class OidcAuthOverRestIT {
                     .credentialsCachePath(tempDir.resolve("default").toString())
                     .build())
             .build();
-
-    restrictedClient =
-        CamundaClient.newClientBuilder()
-            .grpcAddress(broker.grpcAddress())
-            .restAddress(broker.restAddress())
-            .usePlaintext()
-            .preferRestOverGrpc(true)
-            .defaultRequestTimeout(Duration.ofSeconds(15))
-            .credentialsProvider(
-                new OAuthCredentialsProviderBuilder()
-                    .clientId(RESTRICTED_CLIENT_ID)
-                    .clientSecret(RESTRICTED_CLIENT_SECRET)
-                    .audience("zeebe")
-                    .authorizationServerUrl(
-                        KEYCLOAK.getAuthServerUrl()
-                            + "/realms/"
-                            + KEYCLOAK_REALM
-                            + "/protocol/openid-connect/token")
-                    .credentialsCachePath(tempDir.resolve("restricted").toString())
-                    .build())
-            .build();
   }
 
   @Test
-  void shouldBeAuthorizedWithDefaultMapping() {
+  void shouldStartWhenKeycloakIsNotAvailableOnStartup() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
 
-    // when
-    final var deploymentEvent =
-        defaultMappingRuleClient
-            .newDeployResourceCommand()
-            .addProcessModel(
-                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-                "process.bpmn")
-            .send()
-            .join();
-
-    // then
-    assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
-  }
-
-  @Test
-  void shouldBeUnauthorizedWithMappingWithoutPermissions() {
-    // given
-    final var processId = Strings.newRandomValidBpmnId();
-
-    // when
-    final var deployFuture =
-        restrictedClient
-            .newDeployResourceCommand()
-            .addProcessModel(
-                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-                "process.bpmn")
-            .send();
-
-    // then
-    assertThatThrownBy(deployFuture::join)
+    // when/then
+    // keycloak is not available, so we expect the error
+    assertThatThrownBy(
+            () ->
+                client
+                    .newDeployResourceCommand()
+                    .addProcessModel(
+                        Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+                        "process.bpmn")
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Forbidden")
         .hasMessageContaining(
-            "Insufficient permissions to perform operation 'CREATE' on resource 'RESOURCE'");
-  }
-
-  @Test
-  void shouldBeAuthorizedWithMappingThatIsGrantedPermissions() {
-    // given
-    final var processId = Strings.newRandomValidBpmnId();
-    defaultMappingRuleClient
-        .newCreateMappingRuleCommand()
-        .mappingRuleId(RESTRICTED_USER_ID)
-        .claimName(USER_ID_CLAIM_NAME)
-        .claimValue(RESTRICTED_USER_ID)
-        .name(RESTRICTED_USER_ID)
-        .send()
-        .join();
-    defaultMappingRuleClient
-        .newCreateAuthorizationCommand()
-        .ownerId(RESTRICTED_USER_ID)
-        .ownerType(OwnerType.MAPPING_RULE)
-        .resourceId("*")
-        .resourceType(ResourceType.RESOURCE)
-        .permissionTypes(PermissionType.CREATE)
-        .send()
-        .join();
+            "Authentication service unavailable: Unable to connect to the configured Identity Provider (OIDC). "
+                + "Please try again later or contact your administrator.");
 
     // when
-    final var deploymentEvent =
-        restrictedClient
-            .newDeployResourceCommand()
-            .addProcessModel(
-                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-                "process.bpmn")
-            .send()
-            .join();
+    // point proxy to keycloak
+    keycloakProxy
+        .when(request())
+        .forward(
+            HttpForward.forward()
+                .withScheme(Scheme.HTTP)
+                .withHost(KEYCLOAK.getHost())
+                .withPort(KEYCLOAK.getHttpPort()));
 
-    // then
-    assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
+    Awaitility.await()
+        .pollDelay(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              final var deploymentEvent =
+                  client
+                      .newDeployResourceCommand()
+                      .addProcessModel(
+                          Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+                          "process.bpmn")
+                      .send()
+                      .join();
+
+              // then
+              assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId())
+                  .isEqualTo(processId);
+            });
   }
 }
