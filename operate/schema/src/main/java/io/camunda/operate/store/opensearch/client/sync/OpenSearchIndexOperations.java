@@ -213,6 +213,16 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
         });
   }
 
+  public Map<String, IndexState> getIndexSettingsForIndexPattern(final String indexPattern) {
+    return executeWithRetries(
+        "GetIndexSettings " + indexPattern,
+        () -> {
+          final GetIndicesSettingsResponse response =
+              openSearchClient.indices().getSettings(s -> s.index(indexPattern));
+          return response.result();
+        });
+  }
+
   public Map<String, IndexMapping> getIndexMappings(final String indexNamePattern) {
     return executeWithRetries(
         "GetIndexMappings " + indexNamePattern,

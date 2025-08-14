@@ -71,6 +71,9 @@ public class SchemaStartup {
               "SchemaStartup: schema won't be updated as schema creation is disabled in configuration.");
         }
       }
+      if (createSchema) {
+        schemaManager.updateIndexSettings();
+      }
       if (migrationProperties.isMigrationEnabled()) {
         LOGGER.info("SchemaStartup: migrate schema.");
         migrator.migrateData();

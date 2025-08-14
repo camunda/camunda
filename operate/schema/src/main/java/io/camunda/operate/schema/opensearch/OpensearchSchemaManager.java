@@ -9,6 +9,7 @@ package io.camunda.operate.schema.opensearch;
 
 import static io.camunda.operate.schema.indices.AbstractIndexDescriptor.SCHEMA_FOLDER_OPENSEARCH;
 import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,6 +33,7 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -120,7 +122,8 @@ public class OpensearchSchemaManager implements SchemaManager {
             new PutComponentTemplateRequest.Builder()
                 .name(settingsTemplateName)
                 .template(t -> t.settings(settings))
-                .build());
+                .build(),
+            false);
   }
 
   @Override
@@ -331,6 +334,62 @@ public class OpensearchSchemaManager implements SchemaManager {
     }
   }
 
+  @Override
+  public void updateIndexSettings() {
+    updateIndicesNumberOfReplicas();
+    updateComponentTemplateSettings();
+  }
+
+  private void updateIndicesNumberOfReplicas() {
+    Stream.concat(indexDescriptors.stream(), templateDescriptors.stream())
+        .forEach(
+            indexDescriptor -> {
+              final var expectedReplicas =
+                  String.valueOf(
+                      operateProperties
+                          .getOpensearch()
+                          .getNumberOfReplicas(indexDescriptor.getIndexName()));
+              final var settings =
+                  richOpenSearchClient
+                      .index()
+                      .getIndexSettingsForIndexPattern(indexDescriptor.getAlias());
+              if (!settings.values().stream()
+                  .map(s -> ofNullable(s.settings().numberOfReplicas()).orElse(NO_REPLICA))
+                  .allMatch(expectedReplicas::equals)) {
+                LOGGER.info(
+                    "Updating number of replicas of {} to {}",
+                    indexDescriptor.getAlias(),
+                    expectedReplicas);
+                richOpenSearchClient
+                    .index()
+                    .setIndexSettingsFor(
+                        IndexSettings.of(b -> b.numberOfReplicas(expectedReplicas)),
+                        indexDescriptor.getAlias());
+              }
+            });
+  }
+
+  private void updateComponentTemplateSettings() {
+    /*
+    final var settings = richOpenSearchClient.template().getComponentTemplateSettings();
+
+    final var expectedShards =
+        String.valueOf(operateProperties.getOpensearch().getNumberOfShards());
+    final var expectedReplicas =
+        String.valueOf(operateProperties.getOpensearch().getNumberOfReplicas());
+    final var actualShards = ofNullable(settings.numberOfShards()).orElse(DEFAULT_SHARDS);
+    final var actualReplicas = ofNullable(settings.numberOfReplicas()).orElse(NO_REPLICA);
+
+    if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
+      LOGGER.info(
+          "Updating component template settings to shards={}, replicas={}",
+          expectedShards,
+          expectedReplicas);
+      createComponentTemplate(true);
+    }
+    */
+  }
+
   private IndexSettings getDefaultIndexSettings() {
     final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
     return new IndexSettings.Builder()
@@ -341,14 +400,8 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   private IndexSettings getIndexSettings(final String indexName) {
     final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
-    final var shards =
-        osConfig
-            .getNumberOfShardsForIndices()
-            .getOrDefault(indexName, osConfig.getNumberOfShards());
-    final var replicas =
-        osConfig
-            .getNumberOfReplicasForIndices()
-            .getOrDefault(indexName, osConfig.getNumberOfReplicas());
+    final var shards = osConfig.getNumberOfShards(indexName);
+    final var replicas = osConfig.getNumberOfReplicas(indexName);
 
     return new IndexSettings.Builder()
         .numberOfShards(String.valueOf(shards))

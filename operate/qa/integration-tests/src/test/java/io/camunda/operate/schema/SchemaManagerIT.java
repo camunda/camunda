@@ -7,12 +7,15 @@
  */
 package io.camunda.operate.schema;
 
+import static io.camunda.operate.schema.SchemaManager.NUMBERS_OF_REPLICA;
+import static io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.NUMBERS_OF_SHARDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.indices.IndexDescriptor;
@@ -55,7 +58,8 @@ import org.springframework.test.context.ContextConfiguration;
       OpensearchTaskStore.class,
       TestOpenSearchConnector.class,
       JacksonConfig.class,
-      OperateDateTimeFormatter.class
+      OperateDateTimeFormatter.class,
+      OperateProperties.class
     })
 @SpringBootTest(properties = {"spring.profiles.active="})
 public class SchemaManagerIT extends AbstractSchemaIT {
@@ -69,6 +73,8 @@ public class SchemaManagerIT extends AbstractSchemaIT {
   @Autowired public TestTemplate testTemplate;
 
   @Autowired public ObservableConnector searchConnector;
+
+  @Autowired public OperateProperties operateProperties;
 
   @BeforeEach
   public void createDefault() {
@@ -288,6 +294,176 @@ public class SchemaManagerIT extends AbstractSchemaIT {
     final IndexMapping templateMappings = schemaHelper.getTemplateMappings(testTemplate);
     final Set<IndexMappingProperty> properties = templateMappings.getProperties();
     assertThat(properties).extracting("name").containsOnly("propA", "propB", "propC");
+  }
+
+  @Test
+  public void shouldDynamicallyUpdateIndexReplicas() {
+    failIfOpensearch();
+
+    // given
+    final Integer initialNumberOfReplicas = 0;
+    final Integer modifiedNumberOfReplicas = 2;
+
+    // Set initial replica count in properties and create schema
+    if (operateProperties.getElasticsearch() != null) {
+      operateProperties.getElasticsearch().setNumberOfReplicas(initialNumberOfReplicas);
+    } else {
+      operateProperties.getOpensearch().setNumberOfReplicas(initialNumberOfReplicas);
+    }
+    schemaManager.createSchema();
+
+    // Verify initial replica settings for test index
+    final String indexName = testIndex.getFullQualifiedName();
+    final Map<String, String> initialSettings =
+        schemaManager.getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+    assertThat(initialSettings.get(NUMBERS_OF_REPLICA))
+        .isEqualTo(String.valueOf(initialNumberOfReplicas));
+
+    // when
+    // Update replica count in properties and call updateIndexSettings
+    if (operateProperties.getElasticsearch() != null) {
+      operateProperties.getElasticsearch().setNumberOfReplicas(modifiedNumberOfReplicas);
+    } else {
+      operateProperties.getOpensearch().setNumberOfReplicas(modifiedNumberOfReplicas);
+    }
+    schemaManager.updateIndexSettings();
+
+    // then
+    final Map<String, String> updatedSettings =
+        schemaManager.getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+    assertThat(updatedSettings.get(NUMBERS_OF_REPLICA))
+        .isEqualTo(String.valueOf(modifiedNumberOfReplicas));
+  }
+
+  @Test
+  public void shouldDynamicallyUpdateReplicasForIndicesUsingSameAlias() {
+    failIfOpensearch();
+
+    // given
+    final Integer initialNumberOfReplicas = 0;
+    final Integer modifiedNumberOfReplicas = 1;
+
+    // Set initial replica count and create schema
+    if (operateProperties.getElasticsearch() != null) {
+      operateProperties.getElasticsearch().setNumberOfReplicas(initialNumberOfReplicas);
+    } else {
+      operateProperties.getOpensearch().setNumberOfReplicas(initialNumberOfReplicas);
+    }
+    schemaManager.createSchema();
+
+    // Create multiple indices using the same template/alias
+    final String firstIndexName = testTemplate.getFullQualifiedName() + "-2025-01-01";
+    final String secondIndexName = testTemplate.getFullQualifiedName() + "-2025-01-02";
+    final String thirdIndexName = testTemplate.getFullQualifiedName() + "-2025-01-03";
+
+    // Create documents to instantiate indices from template
+    clientTestHelper.createDocument(firstIndexName, "1", Map.of("propA", "value1"));
+    clientTestHelper.createDocument(secondIndexName, "2", Map.of("propA", "value2"));
+    clientTestHelper.createDocument(thirdIndexName, "3", Map.of("propA", "value3"));
+
+    // Verify initial replica settings for all indices
+    final String aliasName = testTemplate.getAlias();
+    Set<String> indexNames = schemaManager.getIndexNames(aliasName);
+    assertThat(indexNames).isNotEmpty();
+
+    for (final String indexName : indexNames) {
+      final Map<String, String> settings =
+          schemaManager.getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+      assertThat(settings.get(NUMBERS_OF_REPLICA))
+          .as("Index %s should have %d initial replicas", indexName, initialNumberOfReplicas)
+          .isEqualTo(String.valueOf(initialNumberOfReplicas));
+    }
+
+    // when
+    // Update replica settings and call updateIndexSettings
+    if (operateProperties.getElasticsearch() != null) {
+      operateProperties.getElasticsearch().setNumberOfReplicas(modifiedNumberOfReplicas);
+    } else {
+      operateProperties.getOpensearch().setNumberOfReplicas(modifiedNumberOfReplicas);
+    }
+    schemaManager.updateIndexSettings();
+
+    // then
+    // Verify all indices under the alias have updated replica settings
+    indexNames = schemaManager.getIndexNames(aliasName);
+    for (final String indexName : indexNames) {
+      final Map<String, String> settings =
+          schemaManager.getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+      assertThat(settings.get(NUMBERS_OF_REPLICA))
+          .as("Index %s should have %d updated replicas", indexName, modifiedNumberOfReplicas)
+          .isEqualTo(String.valueOf(modifiedNumberOfReplicas));
+    }
+  }
+
+  @Test
+  public void shouldDynamicallyUpdateComponentTemplateReplicasAndShards() {
+    failIfOpensearch();
+
+    // given
+    final int initialReplicas = 1;
+    final int initialShards = 1;
+    final int modifiedReplicas = 2;
+    final int modifiedShards = 3;
+
+    // Set initial settings and create schema
+    if (operateProperties.getElasticsearch() != null) {
+      operateProperties.getElasticsearch().setNumberOfReplicas(initialReplicas);
+      operateProperties.getElasticsearch().setNumberOfShards(initialShards);
+    } else {
+      operateProperties.getOpensearch().setNumberOfReplicas(initialReplicas);
+      operateProperties.getOpensearch().setNumberOfShards(initialShards);
+    }
+    schemaManager.createSchema();
+
+    // Verify initial component template settings
+    final String componentTemplateName = getComponentTemplateName();
+    if (componentTemplateName != null) {
+      final Map<String, String> initialSettings =
+          schemaHelper.getComponentTemplateSettings(componentTemplateName);
+      assertThat(initialSettings.get(NUMBERS_OF_REPLICA))
+          .isEqualTo(String.valueOf(initialReplicas));
+      assertThat(initialSettings.get(NUMBERS_OF_SHARDS)).isEqualTo(String.valueOf(initialShards));
+
+      // when
+      // Update component template settings
+      if (operateProperties.getElasticsearch() != null) {
+        operateProperties.getElasticsearch().setNumberOfReplicas(modifiedReplicas);
+        operateProperties.getElasticsearch().setNumberOfShards(modifiedShards);
+      } else {
+        operateProperties.getOpensearch().setNumberOfReplicas(modifiedReplicas);
+        operateProperties.getOpensearch().setNumberOfShards(modifiedShards);
+      }
+      schemaManager.updateIndexSettings();
+
+      // then
+      // Verify component template has updated settings
+      final Map<String, String> updatedSettings =
+          schemaHelper.getComponentTemplateSettings(componentTemplateName);
+      assertThat(updatedSettings.get(NUMBERS_OF_REPLICA))
+          .isEqualTo(String.valueOf(modifiedReplicas));
+      assertThat(updatedSettings.get(NUMBERS_OF_SHARDS)).isEqualTo(String.valueOf(modifiedShards));
+
+      // and verify new indices created from template inherit the updated settings
+      final String newIndexName = testTemplate.getFullQualifiedName() + "-after-update";
+      clientTestHelper.createDocument(newIndexName, "1", Map.of("propA", "value"));
+
+      final Map<String, String> newIndexSettings =
+          schemaManager.getIndexSettingsFor(newIndexName, NUMBERS_OF_REPLICA);
+      assertThat(newIndexSettings.get(NUMBERS_OF_REPLICA))
+          .isEqualTo(String.valueOf(modifiedReplicas));
+      // Note: shards cannot be changed for existing indices, only affects new indices created from
+      // template
+    }
+  }
+
+  private String getComponentTemplateName() {
+    final String indexPrefix;
+    if (operateProperties.getElasticsearch() != null) {
+      indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
+    } else {
+      indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
+    }
+    return String.format("%s_template", indexPrefix);
   }
 
   protected static boolean isIndexTemplatePutRequest(

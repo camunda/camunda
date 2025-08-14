@@ -131,6 +131,11 @@ public class OpenSearchSchemaTestHelper implements SchemaTestHelper {
     }
   }
 
+  @Override
+  public Map<String, String> getComponentTemplateSettings(final String componentTemplateName) {
+    return Map.of(); // TODO
+  }
+
   protected IndexMappingProperty mapProperty(final Entry<String, Property> property)
       throws OperateRuntimeException {
 

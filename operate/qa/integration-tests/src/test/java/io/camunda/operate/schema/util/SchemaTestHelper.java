@@ -10,6 +10,7 @@ package io.camunda.operate.schema.util;
 import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
+import java.util.Map;
 
 public interface SchemaTestHelper {
 
@@ -20,4 +21,6 @@ public interface SchemaTestHelper {
   void createIndex(IndexDescriptor indexDescriptor, String indexName, String indexSchemaFilename);
 
   void setReadOnly(String indexName, boolean readOnly);
+
+  Map<String, String> getComponentTemplateSettings(String componentTemplateName);
 }

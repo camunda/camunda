@@ -7,6 +7,9 @@
  */
 package io.camunda.operate.schema.elasticsearch;
 
+import static io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.DEFAULT_SHARDS;
+import static io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.NUMBERS_OF_SHARDS;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -30,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.client.indexlifecycle.DeleteAction;
 import org.elasticsearch.client.indexlifecycle.LifecycleAction;
@@ -105,7 +109,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         new PutComponentTemplateRequest()
             .name(settingsTemplate)
             .componentTemplate(componentTemplate);
-    retryElasticsearchClient.createComponentTemplate(request);
+    retryElasticsearchClient.createComponentTemplate(request, false);
   }
 
   @Override
@@ -273,6 +277,59 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     }
   }
 
+  @Override
+  public void updateIndexSettings() {
+    updateIndicesNumberOfReplicas();
+    updateComponentTemplateSettings();
+  }
+
+  private void updateComponentTemplateSettings() {
+    final var settings =
+        retryElasticsearchClient.getComponentTemplateSettings(settingsTemplateName());
+
+    final var expectedShards =
+        String.valueOf(operateProperties.getElasticsearch().getNumberOfShards());
+    final var expectedReplicas =
+        String.valueOf(operateProperties.getElasticsearch().getNumberOfReplicas());
+    final var actualShards = settings.get(NUMBERS_OF_SHARDS, DEFAULT_SHARDS);
+    final var actualReplicas = settings.get(NUMBERS_OF_REPLICA, NO_REPLICA);
+
+    if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
+      LOGGER.info(
+          "Updating component template settings to shards={}, replicas={}",
+          expectedShards,
+          expectedReplicas);
+      createComponentTemplate(true);
+    }
+  }
+
+  private void updateIndicesNumberOfReplicas() {
+    Stream.concat(indexDescriptors.stream(), templateDescriptors.stream())
+        .forEach(
+            indexDescriptor -> {
+              final var expectedReplicas =
+                  String.valueOf(
+                      operateProperties
+                          .getElasticsearch()
+                          .getNumberOfReplicas(indexDescriptor.getIndexName()));
+
+              final var settings =
+                  retryElasticsearchClient.getIndexSettingsForIndexPattern(
+                      indexDescriptor.getAlias());
+              if (!settings.values().stream()
+                  .map(s -> s.get(NUMBERS_OF_REPLICA, NO_REPLICA))
+                  .allMatch(expectedReplicas::equals)) {
+                LOGGER.info(
+                    "Updating number of replicas of {} to {}",
+                    indexDescriptor.getAlias(),
+                    expectedReplicas);
+                retryElasticsearchClient.setIndexSettingsFor(
+                    Settings.builder().put(NUMBERS_OF_REPLICA, expectedReplicas).build(),
+                    indexDescriptor.getAlias());
+              }
+            });
+  }
+
   private String settingsTemplateName() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     return String.format("%s_template", elsConfig.getIndexPrefix());
@@ -288,14 +345,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   private Settings getIndexSettings(final String indexName) {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-    final var shards =
-        elsConfig
-            .getNumberOfShardsForIndices()
-            .getOrDefault(indexName, elsConfig.getNumberOfShards());
-    final var replicas =
-        elsConfig
-            .getNumberOfReplicasForIndices()
-            .getOrDefault(indexName, elsConfig.getNumberOfReplicas());
+    final var shards = elsConfig.getNumberOfShards(indexName);
+    final var replicas = elsConfig.getNumberOfReplicas(indexName);
     return Settings.builder()
         .put(NUMBER_OF_SHARDS, shards)
         .put(NUMBER_OF_REPLICAS, replicas)
@@ -413,5 +464,16 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     } else {
       LOGGER.debug("Template [{}] was NOT created", request.name());
     }
+  }
+
+  private void createComponentTemplate(final boolean overwrite) {
+    final Settings settings = getDefaultIndexSettings();
+    final Template template = new Template(settings, null, null);
+    final ComponentTemplate componentTemplate = new ComponentTemplate(template, null, null);
+    final PutComponentTemplateRequest request =
+        new PutComponentTemplateRequest()
+            .name(settingsTemplateName())
+            .componentTemplate(componentTemplate);
+    retryElasticsearchClient.createComponentTemplate(request, overwrite);
   }
 }

@@ -65,4 +65,6 @@ public interface SchemaManager {
   void updateSchema(Map<IndexDescriptor, Set<IndexMappingProperty>> newFields);
 
   IndexMapping getExpectedIndexFields(IndexDescriptor indexDescriptor);
+
+  void updateIndexSettings();
 }

@@ -27,7 +27,7 @@ public class OperateOpensearchProperties extends OpensearchProperties {
     return indexPrefix;
   }
 
-  public void setIndexPrefix(String indexPrefix) {
+  public void setIndexPrefix(final String indexPrefix) {
     this.indexPrefix = indexPrefix;
   }
 
@@ -55,7 +55,7 @@ public class OperateOpensearchProperties extends OpensearchProperties {
     return refreshInterval;
   }
 
-  public void setRefreshInterval(String refreshInterval) {
+  public void setRefreshInterval(final String refreshInterval) {
     this.refreshInterval = refreshInterval;
   }
 
@@ -63,7 +63,7 @@ public class OperateOpensearchProperties extends OpensearchProperties {
     return numberOfShardsForIndices;
   }
 
-  public void setNumberOfShardsForIndices(Map<String, Integer> numberOfShardsForIndices) {
+  public void setNumberOfShardsForIndices(final Map<String, Integer> numberOfShardsForIndices) {
     this.numberOfShardsForIndices = numberOfShardsForIndices;
   }
 
@@ -71,7 +71,15 @@ public class OperateOpensearchProperties extends OpensearchProperties {
     return numberOfReplicasForIndices;
   }
 
-  public void setNumberOfReplicasForIndices(Map<String, Integer> numberOfReplicasForIndices) {
+  public void setNumberOfReplicasForIndices(final Map<String, Integer> numberOfReplicasForIndices) {
     this.numberOfReplicasForIndices = numberOfReplicasForIndices;
+  }
+
+  public int getNumberOfReplicas(final String indexName) {
+    return numberOfReplicasForIndices.getOrDefault(indexName, numberOfReplicas);
+  }
+
+  public int getNumberOfShards(final String indexName) {
+    return numberOfShardsForIndices.getOrDefault(indexName, numberOfShards);
   }
 }
