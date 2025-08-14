@@ -14,4 +14,7 @@ zeebe:
           timeoutCheckerBatchLimit: 1000
         validators:
           resultsOutputMaxSize: 2000
+        distribution:
+          retryInterval: 30s
+          maxBackoffDuration: 10m
         maxProcessDepth: 2000
