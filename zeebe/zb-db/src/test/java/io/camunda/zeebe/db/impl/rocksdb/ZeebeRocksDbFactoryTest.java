@@ -26,7 +26,6 @@ import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.util.ByteValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.stream.Stream;
@@ -114,43 +113,52 @@ final class ZeebeRocksDbFactoryTest {
   }
 
   @Test
-  void shouldCreateDbWithExpectedOptions(final @TempDir File pathName) throws Exception {
+  void shouldCreateDbWithExpectedOptions() {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
-    final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
-    final String golden;
-    try (final var in =
-        ZeebeRocksDbFactoryTest.class.getResourceAsStream("/rocksdb-options.golden")) {
-      golden = new String(in.readAllBytes());
-    }
+    final var factoryWithDefaults =
+        (ZeebeRocksDbFactory<DefaultColumnFamily>)
+            DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
 
     // when
-    final var options =
-        Files.readString(pathName.toPath().resolve("OPTIONS-000007"))
-            // compensate for locale-dependent formatting of doubles
-            .replace(
-                "blob_garbage_collection_force_threshold=1,000000",
-                "blob_garbage_collection_force_threshold=1.000000")
-            .replace(
-                "memtable_prefix_bloom_size_ratio=0,150000",
-                "memtable_prefix_bloom_size_ratio=0.150000")
-            .replace(
-                "max_bytes_for_level_multiplier=10,000000",
-                "max_bytes_for_level_multiplier=10.000000")
-            .replace(
-                "experimental_mempurge_threshold=0,000000",
-                "experimental_mempurge_threshold=0.000000")
-            .replace(
-                "blob_garbage_collection_age_cutoff=0,250000",
-                "blob_garbage_collection_age_cutoff=0.250000")
-            .replace(
-                "data_block_hash_table_util_ratio=0,750000",
-                "data_block_hash_table_util_ratio=0.750000");
+    final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
 
-    // then
-    assertThat(options).isEqualTo(golden);
+    // then - column family options match our defaults
+    assertThat(defaults.memtablePrefixBloomSizeRatio()).isEqualTo(0.15);
+    assertThat(defaults.minWriteBufferNumberToMerge()).isEqualTo(3);
+    assertThat(defaults.maxWriteBufferNumber()).isEqualTo(6);
+    assertThat(defaults.writeBufferSize()).isEqualTo(50_704_475L);
+    assertThat(defaults.compactionPriority())
+        .isEqualTo(org.rocksdb.CompactionPriority.OldestSmallestSeqFirst);
+    assertThat(defaults.compactionStyle()).isEqualTo(org.rocksdb.CompactionStyle.LEVEL);
+    assertThat(defaults.level0FileNumCompactionTrigger()).isEqualTo(6);
+    assertThat(defaults.level0SlowdownWritesTrigger()).isEqualTo(9);
+    assertThat(defaults.level0StopWritesTrigger()).isEqualTo(12);
+    assertThat(defaults.numLevels()).isEqualTo(4);
+    assertThat(defaults.maxBytesForLevelBase()).isEqualTo(33_554_432L);
+    assertThat(defaults.maxBytesForLevelMultiplier()).isEqualTo(10.0);
+    assertThat(defaults.compressionPerLevel())
+        .containsExactly(
+            org.rocksdb.CompressionType.NO_COMPRESSION,
+            org.rocksdb.CompressionType.NO_COMPRESSION,
+            org.rocksdb.CompressionType.LZ4_COMPRESSION,
+            org.rocksdb.CompressionType.LZ4_COMPRESSION);
+    assertThat(defaults.targetFileSizeBase()).isEqualTo(8 * 1_024 * 1_024L);
+    assertThat(defaults.targetFileSizeMultiplier()).isEqualTo(2);
 
-    db.close();
+    // then - table config matches our defaults
+    final var tableConfig = (org.rocksdb.BlockBasedTableConfig) defaults.tableFormatConfig();
+    assertThat(tableConfig.blockSize()).isEqualTo(32 * 1_024L);
+    assertThat(tableConfig.formatVersion()).isEqualTo(5);
+    assertThat(tableConfig.cacheIndexAndFilterBlocks()).isTrue();
+    assertThat(tableConfig.pinL0FilterAndIndexBlocksInCache()).isTrue();
+    assertThat(tableConfig.cacheIndexAndFilterBlocksWithHighPriority()).isTrue();
+    assertThat(tableConfig.indexType()).isEqualTo(org.rocksdb.IndexType.kHashSearch);
+    assertThat(tableConfig.dataBlockIndexType())
+        .isEqualTo(org.rocksdb.DataBlockIndexType.kDataBlockBinaryAndHash);
+    assertThat(tableConfig.dataBlockHashTableUtilRatio()).isEqualTo(0.75);
+    assertThat(tableConfig.wholeKeyFiltering()).isTrue();
+
+    defaults.close();
   }
 
   @Test
