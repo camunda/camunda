@@ -20,30 +20,30 @@ describe('isForbidden', () => {
     tenants: [],
     groups: [],
     canLogout: true,
-    authorizedApplications: [],
+    authorizedComponents: [],
     apiUser: false,
   };
 
-  it('should return true when authorizedApplications does not contain "operate" or "*"', () => {
+  it('should return true when authorizedComponents does not contain "operate" or "*"', () => {
     const user: CurrentUser = {
       ...baseUser,
-      authorizedApplications: ['tasklilst'],
+      authorizedComponents: ['tasklilst'],
     };
     expect(isForbidden(user)).toBe(true);
   });
 
-  it('should return false when authorizedApplications contains "operate"', () => {
+  it('should return false when authorizedComponents contains "operate"', () => {
     const user: CurrentUser = {
       ...baseUser,
-      authorizedApplications: ['operate', 'tasklist'],
+      authorizedComponents: ['operate', 'tasklist'],
     };
     expect(isForbidden(user)).toBe(false);
   });
 
-  it('should return false when authorizedApplications contains "*"', () => {
+  it('should return false when authorizedComponents contains "*"', () => {
     const user: CurrentUser = {
       ...baseUser,
-      authorizedApplications: ['*'],
+      authorizedComponents: ['*'],
     };
     expect(isForbidden(user)).toBe(false);
   });

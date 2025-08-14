@@ -60,7 +60,7 @@ const createWrapper = (initialPath: string = Paths.decisions()) => {
 describe('<InstancesTable />', () => {
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
   });
 
   it('should initially render skeleton', async () => {
