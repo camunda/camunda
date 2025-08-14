@@ -41,7 +41,7 @@ public class CamundaProcessTestRuntimeBuilder {
       CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION;
 
   private String elasticsearchDockerImageName =
-      CamundaProcessTestRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_NAME;
+      CamundaProcessTestRuntimeDefaults.DEFAULT_ELASTICSEARCH_DOCKER_IMAGE_NAME;
   private String elasticsearchDockerImageVersion =
       CamundaProcessTestRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_VERSION;
 
@@ -60,11 +60,11 @@ public class CamundaProcessTestRuntimeBuilder {
       new ArrayList<>(CamundaProcessTestRuntimeDefaults.CAMUNDA_EXPOSED_PORTS);
   private final List<Integer> elasticsearchExposedPorts = new ArrayList<>();
   private final List<Integer> connectorsExposedPorts =
-      new ArrayList<>(CamundaProcessTestRuntimeDefaults.CAMUNDA_EXPOSED_PORTS);
+      new ArrayList<>(CamundaProcessTestRuntimeDefaults.CONNECTORS_EXPOSED_PORTS);
 
   private String camundaLoggerName = CamundaProcessTestRuntimeDefaults.CAMUNDA_LOGGER_NAME;
   private String elasticsearchLoggerName =
-      CamundaProcessTestRuntimeDefaults.ELASTICSEARCH_LOGGER_NAME;
+      CamundaProcessTestRuntimeDefaults.DEFAULT_ELASTICSEARCH_LOGGER_NAME;
   private String connectorsLoggerName = CamundaProcessTestRuntimeDefaults.CONNECTORS_LOGGER_NAME;
 
   private boolean connectorsEnabled = CamundaProcessTestRuntimeDefaults.CONNECTORS_ENABLED;

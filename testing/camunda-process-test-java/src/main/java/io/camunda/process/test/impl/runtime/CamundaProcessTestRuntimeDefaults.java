@@ -28,11 +28,11 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION = "SNAPSHOT";
   public static final String DEFAULT_ELASTICSEARCH_VERSION = "8.13.0";
 
-  public static final String ELASTICSEARCH_DOCKER_IMAGE_NAME = "elasticsearch";
+  public static final String DEFAULT_ELASTICSEARCH_DOCKER_IMAGE_NAME = "elasticsearch";
 
-  public static final String ELASTICSEARCH_LOGGER_NAME = "tc.elasticsearch";
-  public static final String CAMUNDA_LOGGER_NAME = "tc.camunda";
-  public static final String CONNECTORS_LOGGER_NAME = "tc.connectors";
+  public static final String DEFAULT_ELASTICSEARCH_LOGGER_NAME = "tc.elasticsearch";
+  public static final String DEFAULT_CAMUNDA_LOGGER_NAME = "tc.camunda";
+  public static final String DEFAULT_CONNECTORS_LOGGER_NAME = "tc.connectors";
 
   public static final URI LOCAL_CAMUNDA_MONITORING_API_ADDRESS =
       URI.create("http://0.0.0.0:" + ContainerRuntimePorts.CAMUNDA_MONITORING_API);
@@ -54,6 +54,9 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final List<Integer> CAMUNDA_EXPOSED_PORTS =
       PROPERTIES_UTIL.getCamundaExposedPorts();
 
+  public static final String CAMUNDA_LOGGER_NAME = PROPERTIES_UTIL.getCamundaLoggerName();
+  public static final String CONNECTORS_LOGGER_NAME = PROPERTIES_UTIL.getConnectorsLoggerName();
+
   public static final boolean CONNECTORS_ENABLED = PROPERTIES_UTIL.isConnectorsEnabled();
   public static final String CONNECTORS_DOCKER_IMAGE_NAME =
       PROPERTIES_UTIL.getConnectorsDockerImageName();
@@ -63,6 +66,8 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getConnectorsEnvVars();
   public static final Map<String, String> CONNECTORS_SECRETS =
       PROPERTIES_UTIL.getConnectorsSecrets();
+  public static final List<Integer> CONNECTORS_EXPOSED_PORTS =
+      PROPERTIES_UTIL.getConnectorsExposedPorts();
 
   public static final CamundaProcessTestRuntimeMode RUNTIME_MODE = PROPERTIES_UTIL.getRuntimeMode();
 

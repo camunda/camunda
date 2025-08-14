@@ -299,6 +299,8 @@ public class ContainerRuntimePropertiesUtilTest {
       assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("1.1.0");
       assertThat(propertiesUtil.getCamundaDockerImageName()).isEqualTo("camunda/custom-camunda");
       assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("8.8.0-rc1");
+      assertThat(propertiesUtil.getCamundaLoggerName()).isEqualTo("camunda.custom.logger");
+      assertThat(propertiesUtil.getConnectorsLoggerName()).isEqualTo("connectors.custom.logger");
       assertThat(propertiesUtil.getConnectorsDockerImageName())
           .isEqualTo("camunda/connectors-bundle");
       assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("8.8.3");
@@ -334,6 +336,8 @@ public class ContainerRuntimePropertiesUtilTest {
           .containsAllEntriesOf(expectedConnectorsEnvVars);
       assertThat(propertiesUtil.getConnectorsSecrets())
           .containsAllEntriesOf(expectedConnectorsSecrets);
+      assertThat(propertiesUtil.getConnectorsExposedPorts())
+          .containsExactlyInAnyOrder(9080, 9081, 9088);
 
       assertThat(propertiesUtil.getRuntimeMode()).isEqualTo(CamundaProcessTestRuntimeMode.REMOTE);
       assertThat(propertiesUtil.getRemoteCamundaMonitoringApiAddress())
