@@ -30,7 +30,6 @@ public enum ResourceType {
   GROUP,
   USER,
   ROLE,
-  USAGE_METRIC,
   DOCUMENT,
   UNKNOWN_ENUM_VALUE,
 }

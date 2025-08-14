@@ -256,7 +256,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
           READ_USER_TASK,
           READ_DECISION_INSTANCE,
           READ_PROCESS_DEFINITION,
-          READ_DECISION_DEFINITION ->
+          READ_DECISION_DEFINITION,
+          READ_USAGE_METRIC ->
           true;
       default -> false;
     };

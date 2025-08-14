@@ -16,8 +16,8 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.G
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.SYSTEM;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
@@ -25,6 +25,7 @@ import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISIO
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_USER_TASK;
@@ -118,6 +119,10 @@ public record Authorization<T>(
       return resourceType(USER);
     }
 
+    public Builder<T> system() {
+      return resourceType(SYSTEM);
+    }
+
     public Builder<T> read() {
       return permissionType(READ);
     }
@@ -154,12 +159,12 @@ public record Authorization<T>(
       return permissionType(READ_DECISION_INSTANCE);
     }
 
-    public Builder<T> batchOperation() {
-      return resourceType(BATCH);
+    public Builder<T> readUsageMetric() {
+      return permissionType(READ_USAGE_METRIC);
     }
 
-    public Builder<T> usageMetric() {
-      return resourceType(USAGE_METRIC);
+    public Builder<T> batchOperation() {
+      return resourceType(BATCH);
     }
 
     public Builder<T> document() {

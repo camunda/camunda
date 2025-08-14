@@ -49,7 +49,7 @@ public final class UsageMetricsServices
     final UsageMetricsSearchClient authUsageMetricsSearchClient =
         usageMetricsSearchClient.withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.usageMetric().read())));
+                authentication, Authorization.of(a -> a.system().readUsageMetric())));
 
     final CompletableFuture<UsageMetricStatisticsEntity> statsFuture =
         CompletableFuture.supplyAsync(
