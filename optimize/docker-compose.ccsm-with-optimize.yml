@@ -2,7 +2,7 @@ services:
   optimize:
     profiles: ["", "elasticsearch"]
     container_name: optimize
-    image: camunda/optimize:8-latest
+    image: camunda/optimize:8.7.7
     depends_on:
       - elasticsearch
       - identity

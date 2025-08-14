@@ -12,6 +12,8 @@ import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
+import io.camunda.optimize.upgrade.es.indices.VariableUpdateInstanceIndexOldES;
+import io.camunda.optimize.upgrade.os.indices.VariableUpdateInstanceIndexOldOS;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -59,12 +61,18 @@ public final class IndexLookupUtilIncludingTestIndices {
   private static Map<String, Function<String, IndexMappingCreator>>
       createOpensearchIndexFunctionLookupMap() {
     final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
+    lookupMap.put(
+        VariableUpdateInstanceIndexOldES.class.getSimpleName(),
+        index -> new VariableUpdateInstanceIndexOldOS());
     return lookupMap;
   }
 
   private static Map<String, Function<String, IndexMappingCreator>>
       createElasticsearchIndexFunctionLookupMap() {
     final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
+    lookupMap.put(
+        VariableUpdateInstanceIndexOldOS.class.getSimpleName(),
+        index -> new VariableUpdateInstanceIndexOldES());
     return lookupMap;
   }
 

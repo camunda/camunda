@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.importing.ingested.mediator.factory;
 
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
+import io.camunda.optimize.service.db.writer.variable.ProcessVariableWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.ObjectVariableService;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 public class ExternalVariableUpdateImportMediatorFactory
     extends AbstractIngestedImportMediatorFactory {
 
-  private final ProcessVariableUpdateWriter variableWriter;
+  private final ProcessVariableWriter variableWriter;
   private final ObjectVariableService objectVariableService;
   private final DatabaseClient databaseClient;
 
@@ -33,7 +33,7 @@ public class ExternalVariableUpdateImportMediatorFactory
       final BeanFactory beanFactory,
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
       final ConfigurationService configurationService,
-      final ProcessVariableUpdateWriter variableWriter,
+      final ProcessVariableWriter variableWriter,
       final ObjectVariableService objectVariableService,
       final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);

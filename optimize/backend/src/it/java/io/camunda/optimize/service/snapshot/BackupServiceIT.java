@@ -15,6 +15,7 @@ import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.rest.BackupInfoDto;
 import io.camunda.optimize.service.BackupService;
 import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
 public class BackupServiceIT extends AbstractCCSMIT {
@@ -22,7 +23,7 @@ public class BackupServiceIT extends AbstractCCSMIT {
   private static final String VALID_REPOSITORY_NAME = "my_backup_1";
 
   @Test
-  public void backupApi() {
+  public void backupApi() throws IOException {
     // given
     databaseIntegrationTestExtension.cleanSnapshots(VALID_REPOSITORY_NAME);
     databaseIntegrationTestExtension.createRepoSnapshot(VALID_REPOSITORY_NAME);
