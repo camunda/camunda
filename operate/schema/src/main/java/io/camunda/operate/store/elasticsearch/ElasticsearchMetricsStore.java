@@ -9,9 +9,7 @@ package io.camunda.operate.store.elasticsearch;
 
 import static io.camunda.operate.store.elasticsearch.dao.Query.range;
 import static io.camunda.operate.store.elasticsearch.dao.Query.whereEquals;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TIME;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TYPE;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_VALUE;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.*;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.EDI;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
 
@@ -46,14 +44,13 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   @Override
   public Long retrieveProcessInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
-    final int limit = 1; // limiting to one, as we just care about the total documents number
     Query query =
         Query.whereEquals(EVENT_TYPE, RPI.name()).and(range(EVENT_TIME, startTime, endTime));
 
     if (tenantId != null) {
-      query = query.and(whereEquals(UsageMetricIndex.TENANT_ID, tenantId));
+      query = query.and(whereEquals(TENANT_ID, tenantId));
     }
-    query = query.aggregate(PROCESS_INSTANCES_AGG_NAME, EVENT_VALUE, limit);
+    query = query.aggregate(PROCESS_INSTANCES_AGG_NAME, EVENT_VALUE);
 
     final AggregationResponse response = dao.searchWithAggregation(query);
     if (response.hasError()) {
@@ -68,13 +65,12 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   @Override
   public Long retrieveDecisionInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
-    final int limit = 1; // limiting to one, as we just care about the total documents number
     Query query =
         Query.whereEquals(EVENT_TYPE, EDI.name()).and(range(EVENT_TIME, startTime, endTime));
     if (tenantId != null) {
-      query = query.and(whereEquals(UsageMetricIndex.TENANT_ID, tenantId));
+      query = query.and(whereEquals(TENANT_ID, tenantId));
     }
-    query = query.aggregate(DECISION_INSTANCES_AGG_NAME, EVENT_VALUE, limit);
+    query = query.aggregate(DECISION_INSTANCES_AGG_NAME, EVENT_VALUE);
 
     final AggregationResponse response = dao.searchWithAggregation(query);
     if (response.hasError()) {
