@@ -64,7 +64,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "displayName": "camunda user",
                   "username": "camundaUSer",
                   "email": "camunda.user@email.com",
-                  "authorizedApplications": ["test application"],
+                  "authorizedComponents": ["test application"],
                   "tenants": [{"tenantId":"testTenantId","name":"testTenantNem","description":"testTenantDescription"}],
                   "groups": ["test group"],
                   "roles": ["test role"],
