@@ -59,8 +59,9 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   private final ProtocolFactory factory = new ProtocolFactory();
   private int emptyBatches = 0;
 
+  @Override
   @Before
-  public void beforeEach() {
+  public void before() {
     operateProperties.getImporter().setImportPositionUpdateInterval(5000);
     CONFIG.setIncludeEnabledRecords(true);
     CONFIG.index.prefix = operateProperties.getZeebeElasticsearch().getPrefix();
@@ -83,6 +84,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     recordsReaderHolder.resetCountEmptyBatches();
     recordsReaderHolder.resetPartitionsCompletedImporting();
     registry.clear();
+    super.before();
   }
 
   @Test
