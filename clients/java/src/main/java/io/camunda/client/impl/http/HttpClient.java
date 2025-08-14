@@ -129,8 +129,9 @@ public final class HttpClient implements AutoCloseable {
       final String path,
       final String body,
       final RequestConfig requestConfig,
+      final JsonResponseTransformer<Void, RespT> transformer,
       final HttpCamundaFuture<RespT> result) {
-    post(path, body, requestConfig, Void.class, r -> null, result);
+    post(path, body, requestConfig, Void.class, transformer, result);
   }
 
   public <HttpT, RespT> void post(

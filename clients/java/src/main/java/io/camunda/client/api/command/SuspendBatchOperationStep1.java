@@ -15,4 +15,7 @@
  */
 package io.camunda.client.api.command;
 
-public interface SuspendBatchOperationStep1 extends FinalCommandStep<Void> {}
+import io.camunda.client.api.response.SuspendBatchOperationResponse;
+
+public interface SuspendBatchOperationStep1
+    extends FinalCommandStep<SuspendBatchOperationResponse> {}

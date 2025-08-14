@@ -26,6 +26,7 @@ import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DeleteResourceResponseImpl;
+import io.camunda.client.impl.response.EmptyApiResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
@@ -90,6 +91,7 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
         "/resources/" + resourceKey + "/deletion",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        r -> new EmptyApiResponse(),
         result);
     return result;
   }

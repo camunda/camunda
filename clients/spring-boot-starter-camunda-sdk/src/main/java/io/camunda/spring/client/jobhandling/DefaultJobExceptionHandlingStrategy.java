@@ -20,6 +20,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.FailJobResponse;
+import io.camunda.client.api.response.ThrowErrorResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.exception.BpmnError;
@@ -82,7 +83,7 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
     }
   }
 
-  private FinalCommandStep<Void> createThrowErrorCommand(
+  private FinalCommandStep<ThrowErrorResponse> createThrowErrorCommand(
       final JobClient jobClient, final ActivatedJob job, final BpmnError bpmnError) {
     final ThrowErrorCommandStep2 command =
         jobClient

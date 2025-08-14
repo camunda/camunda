@@ -23,6 +23,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivateAdHocSubProcessActivitiesResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.EmptyApiResponse;
 import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivityReference;
 import java.time.Duration;
@@ -93,6 +94,7 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
         "/element-instances/ad-hoc-activities/" + adHocSubProcessInstanceKey + "/activation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        r -> new EmptyApiResponse(),
         result);
     return result;
   }

@@ -32,6 +32,7 @@ import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandSte
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.response.FailJobResponse;
+import io.camunda.client.api.response.ThrowErrorResponse;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.impl.CamundaObjectMapper;
@@ -162,7 +163,7 @@ public class JobHandlerInvokingSpringBeansTest {
     final JobClient jobClient = mock(JobClient.class);
     final ThrowErrorCommandStep1 throwErrorCommandStep1 = mock(ThrowErrorCommandStep1.class);
     final ThrowErrorCommandStep2 throwErrorCommandStep2 = mock(ThrowErrorCommandStep2.class);
-    final CamundaFuture<Void> future = mock(CamundaFuture.class);
+    final CamundaFuture<ThrowErrorResponse> future = mock(CamundaFuture.class);
     when(jobClient.newThrowErrorCommand(anyLong())).thenReturn(throwErrorCommandStep1);
     when(throwErrorCommandStep1.errorCode(any())).thenReturn(throwErrorCommandStep2);
     when(throwErrorCommandStep2.errorMessage(any())).thenReturn(throwErrorCommandStep2);

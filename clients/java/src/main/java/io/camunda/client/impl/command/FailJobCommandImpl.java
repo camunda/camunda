@@ -25,6 +25,7 @@ import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.EmptyApiResponse;
 import io.camunda.client.impl.response.FailJobResponseImpl;
 import io.camunda.client.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -130,6 +131,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
         "/jobs/" + jobKey + "/failure",
         objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        r -> new EmptyApiResponse(),
         result);
     return result;
   }

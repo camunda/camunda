@@ -18,8 +18,10 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
+import io.camunda.client.api.response.SuspendBatchOperationResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.EmptyApiResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -39,18 +41,20 @@ public final class SuspendBatchOperationCommandImpl implements SuspendBatchOpera
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<SuspendBatchOperationResponse> requestTimeout(
+      final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<Void> send() {
-    final HttpCamundaFuture<Void> result = new HttpCamundaFuture<>();
+  public CamundaFuture<SuspendBatchOperationResponse> send() {
+    final HttpCamundaFuture<SuspendBatchOperationResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/batch-operations/" + batchOperationKey + "/suspension",
         null,
         httpRequestConfig.build(),
+        r -> new EmptyApiResponse(),
         result);
     return result;
   }

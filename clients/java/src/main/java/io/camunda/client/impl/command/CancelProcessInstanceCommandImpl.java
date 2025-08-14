@@ -26,6 +26,7 @@ import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CancelProcessInstanceResponseImpl;
+import io.camunda.client.impl.response.EmptyApiResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
@@ -93,6 +94,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
         "/process-instances/" + processInstanceKey + "/cancellation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        r -> new EmptyApiResponse(),
         result);
     return result;
   }

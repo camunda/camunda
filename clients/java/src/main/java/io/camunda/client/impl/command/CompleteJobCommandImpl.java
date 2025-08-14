@@ -29,6 +29,7 @@ import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CompleteJobResponseImpl;
+import io.camunda.client.impl.response.EmptyApiResponse;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
 import io.camunda.client.protocol.rest.JobResult.TypeEnum;
 import io.camunda.client.protocol.rest.JobResultActivateElement;
@@ -265,6 +266,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
         "/jobs/" + jobKey + "/completion",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        r -> new EmptyApiResponse(),
         result);
     return result;
   }

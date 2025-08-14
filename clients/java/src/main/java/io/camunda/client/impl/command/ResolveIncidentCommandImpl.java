@@ -24,6 +24,7 @@ import io.camunda.client.api.response.ResolveIncidentResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.EmptyApiResponse;
 import io.camunda.client.impl.response.ResolveIncidentResponseImpl;
 import io.camunda.client.protocol.rest.IncidentResolutionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -91,6 +92,7 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
         "/incidents/" + incidentKey + "/resolution",
         jsonMapper.toJson(incidentResolutionRequest),
         httpRequestConfig.build(),
+        r -> new EmptyApiResponse(),
         result);
     return result;
   }

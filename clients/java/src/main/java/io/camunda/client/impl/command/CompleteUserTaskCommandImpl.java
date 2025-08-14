@@ -22,6 +22,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CompleteUserTaskResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.EmptyApiResponse;
 import io.camunda.client.protocol.rest.UserTaskCompletionRequest;
 import java.time.Duration;
 import java.util.Map;
@@ -67,6 +68,7 @@ public final class CompleteUserTaskCommandImpl
         "/user-tasks/" + userTaskKey + "/completion",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
+        r -> new EmptyApiResponse(),
         result);
     return result;
   }

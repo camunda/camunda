@@ -26,6 +26,7 @@ import io.camunda.client.api.response.ModifyProcessInstanceResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.EmptyApiResponse;
 import io.camunda.client.impl.response.ModifyProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
@@ -305,6 +306,7 @@ public final class ModifyProcessInstanceCommandImpl
         "/process-instances/" + processInstanceKey + "/modification",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        r -> new EmptyApiResponse(),
         result);
     return result;
   }
