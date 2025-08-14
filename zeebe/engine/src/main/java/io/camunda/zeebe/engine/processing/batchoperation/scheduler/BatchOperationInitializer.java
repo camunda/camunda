@@ -7,78 +7,82 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
-import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.base.Strings.nullToEmpty;
-
-import com.google.common.collect.Lists;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.zeebe.engine.EngineConfiguration;
+import com.google.common.base.Strings;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
-import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The is class is a scheduler that periodically checks for newly created batch operations and
- * initializes them with the itemKeys to be executed.
+ * Initializes batch operations by processing items in chunks and handling the initialization phase.
  *
- * <p>For this, it deserializes the filter object and queries the EntityKeyProvider for all matching
- * itemKeys for this partition. Then this collection of itemKeys will be split into smaller chunks
- * and appended to the TaskResultBuilder as BatchOperationChunkRecord.
+ * <p>This class is responsible for:
+ *
+ * <ul>
+ *   <li>Processing batch operation items in configurable page sizes
+ *   <li>Handling chunk appending failures with retry logic and page size reduction
+ *   <li>Managing the transition from initialization to execution phase
+ *   <li>Recording metrics for batch operation performance
+ * </ul/>
+ *
+ * <p>The initialization process fetches items using an {@link ItemProviderFactory}, processes them
+ * in pages via {@link BatchOperationPageProcessor}, and builds commands through {@link
+ * BatchOperationCommandAppender}. If chunk appending fails, it attempts to reduce the page size and
+ * retry, or marks the operation as failed if the minimum page size is reached.
+ *
+ * @see BatchOperationPageProcessor
+ * @see BatchOperationCommandAppender
+ * @see ItemProviderFactory
+ * @see PersistedBatchOperation
  */
 public class BatchOperationInitializer {
-
   public static final String ERROR_MSG_FAILED_FIRST_CHUNK_APPEND =
       "Unable to append first chunk of batch operation items. Number of items: %d";
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationInitializer.class);
-  private static final UnifiedRecordValue EMPTY_EXECUTION_RECORD =
-      new BatchOperationExecutionRecord().setBatchOperationKey(-1L);
-  private static final UnifiedRecordValue EMPTY_INITIALIZATION_RECORD =
-      new BatchOperationInitializationRecord()
-          .setBatchOperationKey(-1L)
-          .setSearchQueryPageSize(0) // random int
-          // random cursor string. 1024 chars should be enough for any cursor without sorting
-          .setSearchResultCursor(RandomStringUtils.insecure().next(1024));
-  private final int chunkSize;
-  private final int queryPageSize;
 
   private final ItemProviderFactory itemProviderFactory;
   private final BatchOperationMetrics metrics;
-  private final int partitionId;
+  private final BatchOperationCommandAppender commandAppender;
+  private final BatchOperationPageProcessor pageProcessor;
+  private final int queryPageSize;
 
   public BatchOperationInitializer(
       final ItemProviderFactory itemProviderFactory,
-      final EngineConfiguration engineConfiguration,
-      final int partitionId,
+      final BatchOperationPageProcessor pageProcessor,
+      final BatchOperationCommandAppender commandAppender,
+      final int queryPageSize,
       final BatchOperationMetrics metrics) {
     this.itemProviderFactory = itemProviderFactory;
-    chunkSize = engineConfiguration.getBatchOperationChunkSize();
-    queryPageSize = engineConfiguration.getBatchOperationQueryPageSize();
+    this.commandAppender = commandAppender;
+    this.pageProcessor = pageProcessor;
+    this.queryPageSize = queryPageSize;
     this.metrics = metrics;
-    this.partitionId = partitionId;
   }
 
+  /**
+   * Initializes a batch operation by processing its items in pages and appending them as chunks.
+   * This method handles the initialization phase of a batch operation, including:
+   *
+   * <ul>
+   *   <li>Checking if the operation is suspended
+   *   <li>Fetching items using an item provider
+   *   <li>Processing pages of items and appending them as chunks
+   *   <li>Handling chunk appending failures with retries and page size reduction
+   *   <li>Transitioning to the execution phase once initialization is complete
+   *   <li>Recording metrics for the operation
+   *   <li>Returning a result containing the batch operation key and search result cursor
+   * </ul>
+   *
+   * This method is designed to be resilient against failures during the initialization phase,
+   * allowing for retries and adjustments to the page size if necessary.
+   *
+   * @param batchOperation the batch operation to initialize
+   * @param taskResultBuilder the builder to append task results
+   * @return a result containing the batch operation key and search result cursor
+   */
   public BatchOperationInitializationResult initializeBatchOperation(
       final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
     if (batchOperation.isSuspended()) {
@@ -88,264 +92,124 @@ public class BatchOperationInitializer {
     }
 
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
+    var context = InitializationContext.fromBatchOperation(batchOperation, queryPageSize);
 
-    // use overall state variable for all parameters that are used in the loop
-    final InitLoopState loopState = new InitLoopState(batchOperation);
-
-    while (loopState.hasNextPage()) {
+    while (true) {
       try {
-        loopState.page =
-            itemProvider.fetchItemPage(
-                loopState.lastSearchResultCursor, loopState.searchResultPageSize);
+        final var page = itemProvider.fetchItemPage(context.currentCursor(), context.pageSize());
+        final var result =
+            pageProcessor.processPage(batchOperation.getKey(), page, taskResultBuilder);
+
+        if (result.chunksAppended()) {
+          context = context.withNextPage(result.endCursor(), result.itemsProcessed(), true);
+
+          if (result.isLastPage()) {
+            finishInitialization(batchOperation, taskResultBuilder);
+            startExecutionPhase(taskResultBuilder, context);
+            return new BatchOperationInitializationResult(batchOperation.getKey(), "finished");
+          }
+        } else {
+          return handleFailedChunkAppend(taskResultBuilder, context, result.itemsProcessed());
+        }
+      } catch (final BatchOperationInitializationException e) {
+        throw e;
       } catch (final Exception e) {
-        // in case we already have appended records to the taskResultBuilder this run, we need to
-        // save the last working cursor to the state
-        if (loopState.chunksAppendedThisRun) {
-          continueInitialization(taskResultBuilder, loopState);
+        if (context.hasAppendedChunks()) {
+          continueInitialization(taskResultBuilder, context);
         }
-        final var exception =
-            e instanceof CamundaSearchException ? e : new CamundaSearchException(e.getMessage());
-        return new BatchOperationInitializationResult(
-            batchOperation.getKey(), loopState.lastSearchResultCursor, exception);
-      }
-
-      // Then try to append the items to the batch operation
-      final boolean appendedChunks =
-          appendChunks(batchOperation, taskResultBuilder, loopState.page.items());
-      if (appendedChunks) {
-        // everything went normally, so we can continue with the next page in the next loop
-
-        loopState.chunksAppendedThisRun = true;
-        loopState.lastSearchResultCursor = loopState.page.endCursor();
-        loopState.keysAdded += loopState.page.items().size();
-        if (loopState.page.isLastPage()) {
-          // If we have reached the last page, we can finalize the initialization and start the BO
-          // we always append the EXECUTE command at the end, even if no items were found, so we can
-          // leave the completion logic in that processor.
-          finishInitialization(loopState.batchOperation, taskResultBuilder);
-          startExecutionPhase(taskResultBuilder, loopState);
-
-          // this is the end of the initialization run, so we can break out of the loop
-
-          return new BatchOperationInitializationResult(batchOperation.getKey(), "finished");
-        }
-      } else {
-        handleFailedChunkAppend(taskResultBuilder, loopState);
-        break;
+        throw new BatchOperationInitializationException(e, context.currentCursor());
       }
     }
+  }
 
+  private BatchOperationInitializationResult handleFailedChunkAppend(
+      final TaskResultBuilder taskResultBuilder,
+      final InitializationContext context,
+      final int itemCount) {
+    if (!context.hasAppendedChunks()) {
+      if (context.pageSize() > 1) {
+        final var reducedContext = context.withHalvedPageSize();
+        continueInitialization(taskResultBuilder, reducedContext);
+      } else {
+        throw new BatchOperationInitializationException(
+            String.format(ERROR_MSG_FAILED_FIRST_CHUNK_APPEND, itemCount),
+            BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED,
+            context.currentCursor());
+      }
+    } else {
+      continueInitialization(taskResultBuilder, context);
+    }
     return new BatchOperationInitializationResult(
-        batchOperation.getKey(), nullToEmpty(loopState.lastSearchResultCursor));
+        context.operation().getKey(), Strings.nullToEmpty(context.currentCursor()));
   }
 
   private void startExecutionPhase(
-      final TaskResultBuilder resultBuilder, final InitLoopState state) {
-    appendExecution(state.batchOperation.getKey(), resultBuilder);
+      final TaskResultBuilder resultBuilder, final InitializationContext context) {
+    commandAppender.appendExecutionCommand(resultBuilder, context.operation().getKey());
 
-    // start some metrics for the execution phase
     metrics.recordItemsPerPartition(
-        state.batchOperation.getNumTotalItems() + state.keysAdded,
-        state.batchOperation.getBatchOperationType());
+        context.operation().getNumTotalItems() + context.itemsProcessed(),
+        context.operation().getBatchOperationType());
     metrics.startStartExecuteLatencyMeasure(
-        state.batchOperation.getKey(), state.batchOperation.getBatchOperationType());
+        context.operation().getKey(), context.operation().getBatchOperationType());
     metrics.startTotalExecutionLatencyMeasure(
-        state.batchOperation.getKey(), state.batchOperation.getBatchOperationType());
+        context.operation().getKey(), context.operation().getBatchOperationType());
   }
 
   private void finishInitialization(
       final PersistedBatchOperation batchOperation, final TaskResultBuilder resultBuilder) {
-    final long batchOperationKey = batchOperation.getKey();
-    final var command =
-        new BatchOperationInitializationRecord().setBatchOperationKey(batchOperationKey);
-    LOG.trace("Appending batch operation {} initializing finished command", batchOperationKey);
-
-    resultBuilder.appendCommandRecord(
-        batchOperationKey,
-        BatchOperationIntent.FINISH_INITIALIZATION,
-        command,
-        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
+    commandAppender.appendFinishInitializationCommand(resultBuilder, batchOperation.getKey());
     metrics.recordInitialized(batchOperation.getBatchOperationType());
   }
 
-  private void handleFailedChunkAppend(
-      final TaskResultBuilder taskResultBuilder, final InitLoopState state) {
-    if (!state.chunksAppendedThisRun) {
-      // the first chunk of this init-run could not be appended. We try to reduce the page size
-      // and retry again. If the pageSize can be halved, we will fail this partition.
-      if (state.searchResultPageSize > 1) {
-        state.searchResultPageSize = state.searchResultPageSize / 2;
-        continueInitialization(taskResultBuilder, state);
-      } else {
-        // If we failed to append the first chunk even when the pageSize is 1,
-        // we need to fail the batch operation. Otherwise, we would be stuck in an infinite loop
-        appendFailedCommand(
-            taskResultBuilder,
-            state.batchOperation,
-            String.format(ERROR_MSG_FAILED_FIRST_CHUNK_APPEND, state.page.items().size()),
-            BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED);
-      }
-    } else {
-      // The RecordBatch is full, so we need another init run to continue
-      continueInitialization(taskResultBuilder, state);
-    }
-  }
-
-  /**
-   * THis method will create chunk records from the given items and append them to the
-   * taskResultBuilder. This method is atomic. Either all chunks are appended or none.
-   *
-   * @param batchOperation the batch operation to which the chunks belong
-   * @param taskResultBuilder the task result builder to append the chunks to
-   * @param items the items to be chunked and appended
-   * @return true if the chunks were successfully appended, false otherwise
-   */
-  private boolean appendChunks(
-      final PersistedBatchOperation batchOperation,
-      final TaskResultBuilder taskResultBuilder,
-      final List<Item> items) {
-
-    final var chunkRecords =
-        Lists.partition(items, chunkSize).stream()
-            .map(chunkItems -> createChunkRecord(batchOperation, chunkItems))
-            .toList();
-
-    final FollowUpCommandMetadata metadata =
-        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperation.getKey()));
-
-    // we first ask the taskResultBuilder if we even can append the all the records. We also check
-    // for adding an EXECUTE and a CONTINUE_INITIALIZATION record
-    final List<UnifiedRecordValue> sizeCheckRecords = new ArrayList<>(chunkRecords);
-    sizeCheckRecords.add(EMPTY_EXECUTION_RECORD);
-    sizeCheckRecords.add(EMPTY_INITIALIZATION_RECORD);
-    final var canAppend = taskResultBuilder.canAppendRecords(sizeCheckRecords, metadata);
-
-    if (canAppend) {
-      chunkRecords.forEach(
-          command -> {
-            LOG.trace(
-                "Appending batch operation {} chunk with {} items.",
-                batchOperation.getKey(),
-                command.getItems().size());
-            taskResultBuilder.appendCommandRecord(
-                batchOperation.getKey(), BatchOperationChunkIntent.CREATE, command, metadata);
-            metrics.recordChunkCreated(batchOperation.getBatchOperationType());
-          });
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  private static BatchOperationChunkRecord createChunkRecord(
-      final PersistedBatchOperation batchOperation, final List<Item> chunkItems) {
-    final var command = new BatchOperationChunkRecord();
-    command.setBatchOperationKey(batchOperation.getKey());
-    command.setItems(
-        chunkItems.stream().map(BatchOperationInitializer::map).collect(Collectors.toSet()));
-    return command;
-  }
-
-  private static BatchOperationItem map(final Item i) {
-    return new BatchOperationItem()
-        .setItemKey(i.itemKey())
-        .setProcessInstanceKey(i.processInstanceKey());
-  }
-
   private void continueInitialization(
-      final TaskResultBuilder taskResultBuilder, final InitLoopState state) {
-    final var batchOperation = state.batchOperation;
-    final var command =
-        new BatchOperationInitializationRecord()
-            .setBatchOperationKey(batchOperation.getKey())
-            .setSearchResultCursor( // no null values allowed in the protocol
-                state.lastSearchResultCursor == null
-                    ? StringValue.EMPTY_STRING
-                    : state.lastSearchResultCursor)
-            .setSearchQueryPageSize(state.searchResultPageSize);
-    LOG.trace("Appending batch operation {} initializing command", batchOperation.getKey());
-    taskResultBuilder.appendCommandRecord(
-        batchOperation.getKey(),
-        BatchOperationIntent.INITIALIZE,
-        command,
-        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
+      final TaskResultBuilder taskResultBuilder, final InitializationContext context) {
+
+    commandAppender.appendInitializationCommand(
+        taskResultBuilder,
+        context.operation().getKey(),
+        context.currentCursor(),
+        context.pageSize());
   }
 
-  void appendFailedCommand(
+  public void appendFailedCommand(
       final TaskResultBuilder taskResultBuilder,
-      final PersistedBatchOperation batchOperation,
-      final String message,
-      final BatchOperationErrorType errorType) {
-    final var batchOperationKey = batchOperation.getKey();
-    final var command = new BatchOperationPartitionLifecycleRecord();
-    command.setBatchOperationKey(batchOperationKey);
-
-    final var error = new BatchOperationError();
-    error.setType(errorType);
-    error.setPartitionId(partitionId);
-    error.setMessage(message);
-    command.setError(error);
-
-    LOG.trace("Appending batch operation {} failed event", batchOperationKey);
-    taskResultBuilder.appendCommandRecord(
-        batchOperationKey,
-        BatchOperationIntent.FAIL,
-        command,
-        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
-  }
-
-  private void appendExecution(
-      final Long batchOperationKey, final TaskResultBuilder taskResultBuilder) {
-    final var command = new BatchOperationExecutionRecord();
-    command.setBatchOperationKey(batchOperationKey);
-
-    LOG.trace("Appending batch operation execution {}", batchOperationKey);
-    taskResultBuilder.appendCommandRecord(
-        batchOperationKey,
-        BatchOperationExecutionIntent.EXECUTE,
-        command,
-        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
+      final long batchOperationKey,
+      final BatchOperationInitializationException exception) {
+    commandAppender.appendFailureCommand(
+        taskResultBuilder, batchOperationKey, exception.getMessage(), exception.getErrorType());
   }
 
   public record BatchOperationInitializationResult(
-      long batchOperationKey, String searchResultCursor, Exception exception) {
-    public BatchOperationInitializationResult(
-        final long batchOperationKey, final String searchResultCursor) {
-      this(batchOperationKey, searchResultCursor, null);
+      long batchOperationKey, String searchResultCursor) {}
+
+  public static class BatchOperationInitializationException extends RuntimeException {
+    private final String endCursor;
+    private final BatchOperationErrorType errorType;
+
+    public BatchOperationInitializationException(final Throwable e, final String endCursor) {
+      super(
+          String.format(
+              "Failed to initialize batch operation with end cursor: %s. Reason: %s",
+              endCursor, e.getMessage()),
+          e);
+      this.endCursor = endCursor;
+      errorType = BatchOperationErrorType.QUERY_FAILED;
     }
 
-    public boolean isSuccess() {
-      return exception == null;
-    }
-  }
-
-  /**
-   * This is a mutable state class that is used to track the state of the initialization loop. Using
-   * this state class avoids the need to pass around multiple parameters.
-   */
-  private class InitLoopState {
-    public PersistedBatchOperation batchOperation;
-    public String lastSearchResultCursor;
-    public int searchResultPageSize;
-    public ItemPage page;
-    public int keysAdded;
-    public boolean chunksAppendedThisRun = false;
-
-    public InitLoopState(final PersistedBatchOperation batchOperation) {
-      this.batchOperation = batchOperation;
-      lastSearchResultCursor = batchOperation.getInitializationSearchCursor();
-      searchResultPageSize = batchOperation.getInitializationSearchQueryPageSize(queryPageSize);
-      page = null;
-      keysAdded = 0;
-      chunksAppendedThisRun = false;
-
-      // StringValue cannot be null, so we need to check for empty string and interpret it as NULL
-      // If the cursor is empty, we need to initialize it with the first page
-      lastSearchResultCursor = emptyToNull(batchOperation.getInitializationSearchCursor());
+    public BatchOperationInitializationException(
+        final String message, final BatchOperationErrorType errorType, final String endCursor) {
+      super(message);
+      this.endCursor = endCursor;
+      this.errorType = errorType;
     }
 
-    public boolean hasNextPage() {
-      return page == null || !page.isLastPage();
+    public BatchOperationErrorType getErrorType() {
+      return errorType;
+    }
+
+    public String getEndCursor() {
+      return endCursor;
     }
   }
 }
