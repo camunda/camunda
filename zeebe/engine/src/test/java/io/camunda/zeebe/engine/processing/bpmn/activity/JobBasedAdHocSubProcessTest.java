@@ -765,6 +765,47 @@ public class JobBasedAdHocSubProcessTest {
             tuple("results", "[\"a\",\"b\"]", ahsp.getKey()));
   }
 
+  @Test
+  public void shouldRaiseIncidentIfOutputCollectionIsNotAnArray() {
+    // given
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            adHocSubProcess -> {
+              adHocSubProcess.task("A").zeebeOutputExpression("= 1", "outputElement");
+              adHocSubProcess.zeebeOutputCollection("outputCollection");
+              adHocSubProcess.zeebeOutputElementExpression("= outputElement");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    RecordingExporter.jobRecords(JobIntent.CREATED).exists();
+    final var jobKey =
+        ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
+    final var jobResult =
+        new JobResult()
+            .setActivateElements(List.of(new JobResultActivateElement().setElementId("A")));
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .withResult(jobResult)
+        .withVariable("outputCollection", null)
+        .complete();
+
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId(AHSP_INNER_ELEMENT_ID)
+        .hasErrorMessage("The output collection has the wrong type. Expected ARRAY but was NIL.");
+  }
+
   private void completeJobWithActivateElements(
       final String jobType,
       final boolean completionConditionFulfilled,

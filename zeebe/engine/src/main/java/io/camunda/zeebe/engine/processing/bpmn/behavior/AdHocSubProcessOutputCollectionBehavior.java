@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackType;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -32,7 +33,8 @@ public class AdHocSubProcessOutputCollectionBehavior {
       return Either.left(
           new Failure(
               "The output collection has the wrong type. Expected %s but was %s."
-                  .formatted(MsgPackType.ARRAY, token.getType())));
+                  .formatted(MsgPackType.ARRAY, token.getType()),
+              ErrorType.EXTRACT_VALUE_ERROR));
     }
     final int currentSize = token.getSize();
     final int valuesOffset = outputCollectionReader.getOffset();

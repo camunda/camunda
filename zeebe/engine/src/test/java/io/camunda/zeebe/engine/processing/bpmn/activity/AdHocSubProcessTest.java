@@ -22,18 +22,21 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -1157,6 +1160,35 @@ public final class AdHocSubProcessTest {
         .containsSequence(
             tuple("results", "[\"a\"]", ahsp.getKey()),
             tuple("results", "[\"a\",\"b\"]", ahsp.getKey()));
+  }
+
+  @Test
+  public void shouldRaiseIncidentIfOutputCollectionIsNotAnArray() {
+    // given
+    createOutputCollectionProcessAndDeploy();
+    final long processInstanceKey = getProcessInstanceKeyForOutputCollectionTest();
+    final var ahsp =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst();
+
+    // when
+    final var variables = new HashMap<String, Object>();
+    variables.put("results", null);
+    ENGINE.variables().ofScope(ahsp.getKey()).withDocument(variables).update();
+    final var jobKey = ENGINE.jobs().withType("A").activate().getValue().getJobKeys().getFirst();
+    ENGINE.job().withKey(jobKey).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId(AHSP_INNER_INSTANCE_ELEMENT_ID)
+        .hasErrorMessage("The output collection has the wrong type. Expected ARRAY but was NIL.");
   }
 
   private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {
