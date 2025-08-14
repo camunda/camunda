@@ -40,14 +40,14 @@ public class PropertiesTest {
     assertThat(tasklistProperties.getImporter().isStartLoadingDataOnStartup()).isFalse();
     assertThat(tasklistProperties.getImporter().getCompletedReaderMinEmptyBatches()).isEqualTo(10);
     assertThat(tasklistProperties.getElasticsearch().getClusterName()).isEqualTo("clusterName");
-    assertThat(tasklistProperties.getElasticsearch().getHost()).isEqualTo("someHost");
-    assertThat(tasklistProperties.getElasticsearch().getPort()).isEqualTo(12345);
+    assertThat(tasklistProperties.getElasticsearch().getHost()).isEqualTo("localhost");
+    assertThat(tasklistProperties.getElasticsearch().getPort()).isEqualTo(9200);
     assertThat(tasklistProperties.getElasticsearch().getDateFormat()).isEqualTo("yyyy-MM-dd");
     assertThat(tasklistProperties.getElasticsearch().getBatchSize()).isEqualTo(111);
     assertThat(tasklistProperties.getZeebeElasticsearch().getClusterName())
         .isEqualTo("zeebeElasticClusterName");
-    assertThat(tasklistProperties.getZeebeElasticsearch().getHost()).isEqualTo("someOtherHost");
-    assertThat(tasklistProperties.getZeebeElasticsearch().getPort()).isEqualTo(54321);
+    assertThat(tasklistProperties.getZeebeElasticsearch().getHost()).isEqualTo("localhost");
+    assertThat(tasklistProperties.getZeebeElasticsearch().getPort()).isEqualTo(9200);
     assertThat(tasklistProperties.getZeebeElasticsearch().getDateFormat()).isEqualTo("dd-MM-yyyy");
     assertThat(tasklistProperties.getZeebeElasticsearch().getBatchSize()).isEqualTo(222);
     assertThat(tasklistProperties.getZeebeElasticsearch().getPrefix()).isEqualTo("somePrefix");
