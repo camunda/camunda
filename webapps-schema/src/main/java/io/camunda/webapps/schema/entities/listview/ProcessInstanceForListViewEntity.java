@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public class ProcessInstanceForListViewEntity
     implements ExporterEntity<ProcessInstanceForListViewEntity>,
@@ -52,6 +53,7 @@ public class ProcessInstanceForListViewEntity
       new ListViewJoinRelation(PROCESS_INSTANCE_JOIN_RELATION);
 
   private Long position;
+  private Set<String> tags;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -252,6 +254,15 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  public Set<String> getTags() {
+    return tags;
+  }
+
+  public ProcessInstanceForListViewEntity setTags(final Set<String> tags) {
+    this.tags = tags;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -273,7 +284,8 @@ public class ProcessInstanceForListViewEntity
         incident,
         tenantId,
         joinRelation,
-        position);
+        position,
+        tags);
   }
 
   @Override
@@ -303,6 +315,7 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(treePath, that.treePath)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(joinRelation, that.joinRelation)
-        && Objects.equals(position, that.position);
+        && Objects.equals(position, that.position)
+        && Objects.equals(tags, that.tags);
   }
 }
