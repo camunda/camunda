@@ -11,12 +11,14 @@ import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuild
 import io.camunda.process.test.impl.runtime.EmbeddedRuntimeBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class CamundaProcessTestEmbeddedRuntimeConfiguration {
 
   @Bean
-  public CamundaSpringProcessTestRuntimeBuilder camundaSpringProcessTestRuntimeBuilder() {
+  @Primary
+  public CamundaSpringProcessTestRuntimeBuilder embeddedCamundaSpringProcessTestRuntimeBuilder() {
     return new EmbeddedRuntimeBuilder();
   }
 }

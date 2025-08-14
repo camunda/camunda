@@ -19,8 +19,8 @@ import static org.mockito.Mockito.verify;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.process.test.api.CamundaEmbeddedSpringProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
-import io.camunda.process.test.api.CamundaSpringProcessTest;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +41,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       // but enable the normal glue code that just delegates to the ArchiveService
       "camunda.client.worker.override.archive-invoice.enabled=true",
     })
-@CamundaSpringProcessTest
+@CamundaEmbeddedSpringProcessTest
 public class InvoiceApprovalTest {
 
   @Autowired private CamundaClient client;
