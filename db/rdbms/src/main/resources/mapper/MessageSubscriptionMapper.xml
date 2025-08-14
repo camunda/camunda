@@ -34,7 +34,8 @@
     MESSAGE_NAME,
     CORRELATION_KEY,
     TENANT_ID,
-    PARTITION_ID
+    PARTITION_ID,
+    HISTORY_CLEANUP_DATE
     FROM ${prefix}MESSAGE_SUBSCRIPTION
 
     <include refid="io.camunda.db.rdbms.sql.MessageSubscriptionMapper.searchFilter" />
@@ -123,6 +124,7 @@
     <result column="CORRELATION_KEY" property="correlationKey" javaType="java.lang.String" />
     <result column="TENANT_ID" property="tenantId" javaType="java.lang.String" />
     <result column="PARTITION_ID" property="partitionId" javaType="java.lang.Integer" />
+    <result column="HISTORY_CLEANUP_DATE" property="historyCleanupDate" javaType="java.time.OffsetDateTime" />
   </resultMap>
 
 
@@ -138,7 +140,8 @@
                                                MESSAGE_NAME,
                                                CORRELATION_KEY,
                                                TENANT_ID,
-                                               PARTITION_ID
+                                               PARTITION_ID,
+                                               HISTORY_CLEANUP_DATE
     )
     VALUES (
             #{messageSubscriptionKey},
@@ -151,7 +154,8 @@
             #{messageName},
             #{correlationKey},
             #{tenantId},
-            #{partitionId}
+            #{partitionId},
+            #{historyCleanupDate, jdbcType=TIMESTAMP}
     )
   </insert>
 
@@ -165,7 +169,19 @@
         DATE_TIME = #{dateTime, jdbcType=TIMESTAMP},
         MESSAGE_NAME = #{messageName},
         CORRELATION_KEY = #{correlationKey},
-        TENANT_ID = #{tenantId}
+        TENANT_ID = #{tenantId},
+        HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP},
     WHERE MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey}
   </update>
+
+  <update id="updateHistoryCleanupDate">
+    UPDATE ${prefix}MESSAGE_SUBSCRIPTION SET
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <delete id="cleanupHistory">
+    <bind name="tableName" value="'MESSAGE_SUBSCRIPTION'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
 </mapper>

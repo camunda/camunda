@@ -7,12 +7,15 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.time.OffsetDateTime;
 
 public class MessageSubscriptionWriter {
 
@@ -43,5 +46,29 @@ public class MessageSubscriptionWriter {
             messageSubscription.messageSubscriptionKey(),
             "io.camunda.db.rdbms.sql.MessageSubscriptionMapper.update",
             messageSubscription));
+  }
+
+  public void scheduleForHistoryCleanup(
+      final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.MESSAGE_SUBSCRIPTION,
+            WriteStatementType.UPDATE,
+            processInstanceKey,
+            "io.camunda.db.rdbms.sql.MessageSubscriptionMapper.updateHistoryCleanupDate",
+            new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
+                .processInstanceKey(processInstanceKey)
+                .historyCleanupDate(historyCleanupDate)
+                .build()));
+  }
+
+  public int cleanupHistory(
+      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
+    return mapper.cleanupHistory(
+        new CleanupHistoryDto.Builder()
+            .partitionId(partitionId)
+            .cleanupDate(cleanupDate)
+            .limit(rowsToRemove)
+            .build());
   }
 }
