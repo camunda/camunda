@@ -11,9 +11,4 @@ import io.camunda.exporter.http.matcher.Filter;
 import java.util.List;
 
 public record SubscriptionConfig(
-    String url,
-    int batchSize,
-    long batchInterval,
-    List<String> rules,
-    List<Filter> filters,
-    String jsonFilter) {}
+    String url, int batchSize, long batchInterval, List<Filter> filters, String jsonFilter) {}

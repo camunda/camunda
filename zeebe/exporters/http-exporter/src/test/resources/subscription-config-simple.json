@@ -3,6 +3,5 @@
   "batchSize": 10,
   "batchInterval": 500,
   "jsonFilter": null,
-  "filters": [],
-  "rules": []
+  "filters": []
 }

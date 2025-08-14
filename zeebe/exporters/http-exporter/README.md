@@ -17,10 +17,7 @@ Example configuration for the HTTP exporter:
   "filters": [{
     "valueType": "INCIDENT",
     "intents": ["CREATED"]
-  }],
-  "rules": [
-    {"value": {"bpmnProcessId" : ["testProcess"]}}
-  ]
+  }]
 }
 ```
 
@@ -30,9 +27,6 @@ The `jsonFilter` is set to `valueType,value`, which means that the exporter will
 Please refer to the [Squiggly project](https://github.com/bohnman/squiggly?tab=readme-ov-file#top-level-filters) documentation for more details on how to configure JSON filters.
 
 The `filters` specify that only events of type `INCIDENT` with the intent `CREATED` will be sent.
-
-The `rules` section allows you to filter events based on specific criteria. In this example, only events related to the process with BPMN process ID `testProcess` will be sent.
-Please refer to the [Event Ruler documentation](https://github.com/aws/event-ruler?tab=readme-ov-file#ruler-by-example) for more details on rule configuration and usage.
 
 Other example configurations be found [here](src/test/resources).
 

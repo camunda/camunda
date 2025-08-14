@@ -19,7 +19,6 @@ TODOs for the HTTP Exporter in Zeebe
 ## Filtering
 
 - [x] Support filtering based on event types and intents.
-- [x] Support filtering based on event rules.
 
 ## JSON Views
 

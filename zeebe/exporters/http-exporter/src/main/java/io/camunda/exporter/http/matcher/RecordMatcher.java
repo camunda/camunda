@@ -8,8 +8,7 @@
 package io.camunda.exporter.http.matcher;
 
 import io.camunda.zeebe.protocol.record.Record;
-import java.util.function.Supplier;
 
 public interface RecordMatcher {
-  boolean matches(final Record<?> record, Supplier<String> jsonSupplier);
+  boolean matches(final Record<?> record);
 }

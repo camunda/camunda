@@ -18,24 +18,22 @@ import org.junit.jupiter.api.Test;
 final class ConfigTest {
 
   @Test
-  void testConfigLoading() throws Throwable {
+  void testConfigLoading() {
     final var configFactory =
         new SubscriptionConfigFactory(new ObjectMapper().registerModule(new ZeebeProtocolModule()));
     final var exporterConfig = new HttpExporterConfiguration();
     exporterConfig.setConfigPath("classpath:subscription-config-complete.json");
     final var subscriptionConfig = configFactory.readConfigFrom(exporterConfig);
     assertThat(subscriptionConfig.filters()).isNotEmpty();
-    assertThat(subscriptionConfig.rules()).isNotEmpty();
   }
 
   @Test
-  void testConfigLoadingWithEmptyCollections() throws Throwable {
+  void testConfigLoadingWithEmptyCollections() {
     final var configFactory =
         new SubscriptionConfigFactory(new ObjectMapper().registerModule(new ZeebeProtocolModule()));
     final var exporterConfig = new HttpExporterConfiguration();
     exporterConfig.setConfigPath("classpath:subscription-config-simple.json");
     final var subscriptionConfig = configFactory.readConfigFrom(exporterConfig);
     assertThat(subscriptionConfig.filters()).isEmpty();
-    assertThat(subscriptionConfig.rules()).isEmpty();
   }
 }

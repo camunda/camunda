@@ -9,13 +9,8 @@ package io.camunda.exporter.http;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.http.matcher.CombinedMatcher;
 import io.camunda.exporter.http.matcher.Filter;
 import io.camunda.exporter.http.matcher.FilterRecordMatcher;
-import io.camunda.exporter.http.matcher.RuleRecordMatcher;
-import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -26,66 +21,15 @@ import org.junit.jupiter.api.Test;
 
 final class RuleMatcherTest {
 
-  String incidentMatchingRule =
-      """
-    {"valueType": ["INCIDENT"]}"
-  """;
-  String jobMatchingRule =
-      """
-    {"valueType": ["JOB"]}"
-  """;
-
-  String incidentCreatedMatchingRule =
-      """
-      {
-        "valueType": ["INCIDENT"],
-        "intent": ["CREATED"]
-      }
-
-""";
-  final RuleRecordMatcher incidentMatcher = new RuleRecordMatcher(List.of(incidentMatchingRule));
-  final RuleRecordMatcher jobMatcher = new RuleRecordMatcher(List.of(jobMatchingRule));
   final FilterRecordMatcher incidentValueTypeMatcher =
       new FilterRecordMatcher(List.of(new Filter(ValueType.INCIDENT, Set.of())));
-  private final ObjectMapper objectMapper =
-      new ObjectMapper().registerModule(new ZeebeProtocolModule());
   private final FilterRecordMatcher incidentIntentCreatedMatcher =
       new FilterRecordMatcher(
           List.of(new Filter(ValueType.INCIDENT, Set.of(IncidentIntent.CREATED.name()))));
   private final ProtocolFactory factory = new ProtocolFactory(b -> b.withAuthorizations(Map.of()));
-  private final RuleRecordMatcher incidentCreatedMatcher =
-      new RuleRecordMatcher(List.of(incidentCreatedMatchingRule));
-
-  final CombinedMatcher combinedMatcher =
-      new CombinedMatcher(incidentIntentCreatedMatcher, incidentCreatedMatcher);
 
   @Test
-  void testRuleMatcher() throws Throwable {
-    final var incidentResolvedRecord =
-        objectMapper.writeValueAsString(
-            factory.generateRecordWithIntent(ValueType.INCIDENT, IncidentIntent.RESOLVED));
-
-    final var incidentCreatedRecord =
-        objectMapper.writeValueAsString(
-            factory.generateRecordWithIntent(ValueType.INCIDENT, IncidentIntent.CREATED));
-
-    final var jobRecord = objectMapper.writeValueAsString(factory.generateRecord(ValueType.JOB));
-
-    assertThat(incidentMatcher.matches(incidentResolvedRecord)).isTrue();
-    assertThat(incidentMatcher.matches(incidentCreatedRecord)).isTrue();
-    assertThat(incidentMatcher.matches(jobRecord)).isFalse();
-
-    assertThat(incidentCreatedMatcher.matches(incidentCreatedRecord)).isTrue();
-    assertThat(incidentCreatedMatcher.matches(incidentResolvedRecord)).isFalse();
-    assertThat(incidentCreatedMatcher.matches(jobRecord)).isFalse();
-
-    assertThat(jobMatcher.matches(incidentCreatedRecord)).isFalse();
-    assertThat(jobMatcher.matches(incidentResolvedRecord)).isFalse();
-    assertThat(jobMatcher.matches(jobRecord)).isTrue();
-  }
-
-  @Test
-  void testValueTypeMatcher() throws Throwable {
+  void testValueTypeMatcher() {
     final var jobRecord = factory.generateRecord(ValueType.JOB);
 
     final var incidentResolvedRecord =
@@ -101,20 +45,5 @@ final class RuleMatcherTest {
     assertThat(incidentIntentCreatedMatcher.matches(incidentCreatedRecord)).isTrue();
     assertThat(incidentIntentCreatedMatcher.matches(incidentResolvedRecord)).isFalse();
     assertThat(incidentIntentCreatedMatcher.matches(jobRecord)).isFalse();
-
-    assertThat(combinedMatcher.matches(incidentCreatedRecord, () -> toJson(incidentCreatedRecord)))
-        .isTrue();
-    assertThat(
-            combinedMatcher.matches(incidentResolvedRecord, () -> toJson(incidentResolvedRecord)))
-        .isFalse();
-    assertThat(combinedMatcher.matches(jobRecord, () -> toJson(jobRecord))).isFalse();
-  }
-
-  private String toJson(final Object object) {
-    try {
-      return objectMapper.writeValueAsString(object);
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
   }
 }

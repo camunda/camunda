@@ -2,6 +2,5 @@
   "url": "http://localhost:8080",
   "batchSize": 10,
   "batchInterval": 500,
-  "filters": [{"valueType": "INCIDENT", "intents": ["CREATED"]}],
-  "rules": [{"valueType": [{ "wildcard": "*" }]}]
+  "filters": [{"valueType": "INCIDENT", "intents": ["CREATED"]}]
 }

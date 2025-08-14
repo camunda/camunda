@@ -9,7 +9,6 @@ package io.camunda.exporter.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.http.client.ExporterHttpClient;
-import io.camunda.exporter.http.client.ExporterHttpClientImpl;
 import io.camunda.exporter.http.config.HttpExporterConfiguration;
 import io.camunda.exporter.http.config.SubscriptionConfigFactory;
 import io.camunda.exporter.http.subscription.Subscription;
@@ -32,7 +31,6 @@ public class HttpExporter implements Exporter {
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private final ObjectMapper objectMapper =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
-  private final ExporterHttpClient exporterHttpClient = new ExporterHttpClientImpl();
   private Controller controller;
   private SubscriptionConfig subscriptionConfig;
   private Subscription subscription;
@@ -66,7 +64,7 @@ public class HttpExporter implements Exporter {
       subscriptionConfig = configFactory.readConfigFrom(httpExporterConfiguration);
     }
 
-    subscription = configFactory.createSubscription(subscriptionConfig, exporterHttpClient);
+    subscription = configFactory.createSubscription(subscriptionConfig);
   }
 
   @Override
@@ -83,7 +81,9 @@ public class HttpExporter implements Exporter {
   @Override
   public void close() {
     log.info("Closing HTTP Exporter");
-    exporterHttpClient.close();
+    if (subscription != null) {
+      subscription.close();
+    }
   }
 
   @Override

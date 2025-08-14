@@ -22,32 +22,29 @@ public class Subscription {
   private final String url;
   private final RecordMatcher matcher;
   private final Batch batch;
-  private final ObjectMapper filteredObjectMapper;
 
   public Subscription(
       final ExporterHttpClient exporterHttpClient,
       final ObjectMapper objectMapper,
       final RecordMatcher matcher,
       final String url,
-      final ObjectMapper filteredObjectMapper,
       final Batch batch) {
     this.exporterHttpClient = exporterHttpClient;
     this.url = url;
     this.matcher = matcher;
     this.objectMapper = objectMapper;
     this.batch = batch;
-    this.filteredObjectMapper = filteredObjectMapper;
   }
 
   public Long exportRecord(final Record<?> record) {
-    if (matcher.matches(record, () -> toJson(record))) {
+    if (matcher.matches(record)) {
       // Record matches the filter criteria, we can add it to the batch
-      return batchRecord(new BatchEntry(toFilteredJson(record), record.getPosition()));
+      return batchRecord(new BatchEntry(toJson(record), record.getPosition()));
     } else if (batch.isEmpty()) {
       // An empty batch allows us to save the exported record position
       return record.getPosition();
     } else {
-      // We dont export the record and cant save the position
+      // We cant save the position
       return null;
     }
   }
@@ -113,15 +110,11 @@ public class Subscription {
     }
   }
 
-  private String toFilteredJson(final Object object) {
-    try {
-      return filteredObjectMapper.writeValueAsString(object);
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   public Batch getBatch() {
     return batch;
+  }
+
+  public void close() {
+    exporterHttpClient.close();
   }
 }

@@ -1,5 +1,6 @@
 {
   "batchSize": 10,
   "batchInterval": 500,
-  "jsonFilter": "valueType,value[bpmnProcessId]",
-  "rules": [{"valueType": [{ "wildcard": "*" }]}]}
+  "jsonFilter": "valueType,intent,value[bpmnProcessId]"
+}
+

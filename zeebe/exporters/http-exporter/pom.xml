@@ -27,12 +27,6 @@
     </dependency>
 
     <dependency>
-      <groupId>software.amazon.event.ruler</groupId>
-      <artifactId>event-ruler</artifactId>
-      <version>1.8.2</version>
-    </dependency>
-
-    <dependency>
       <groupId>com.github.bohnman</groupId>
       <artifactId>squiggly-filter-jackson</artifactId>
       <version>1.3.18</version>
