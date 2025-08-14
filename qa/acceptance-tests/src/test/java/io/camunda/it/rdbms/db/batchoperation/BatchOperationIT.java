@@ -164,6 +164,7 @@ public class BatchOperationIT {
             .findFirst()
             .get();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.COMPLETED);
+    assertThat(firstItem.operationType()).isEqualTo(batchOperation.operationType());
     assertThat(firstItem.processedDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(firstItem.errorMessage()).isNull();
