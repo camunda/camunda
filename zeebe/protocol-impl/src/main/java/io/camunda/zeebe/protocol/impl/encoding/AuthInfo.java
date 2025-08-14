@@ -103,10 +103,10 @@ public class AuthInfo extends UnpackedObject {
         + getFormat()
         + ", "
         + "authData="
-        + getAuthData()
+        + (authDataProp.isSet() ? "***" : "<unset|default>")
         + ", "
         + "claims="
-        + getClaims()
+        + (claimsProp.isSet() ? "***" : "<unset|default>")
         + '}';
   }
 

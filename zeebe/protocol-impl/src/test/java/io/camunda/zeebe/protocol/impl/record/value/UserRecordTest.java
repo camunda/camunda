@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
-import org.junit.jupiter.api.Test;
 
 final class UserRecordTest {
   @RegressionTest("https://github.com/camunda/camunda/issues/35177")
