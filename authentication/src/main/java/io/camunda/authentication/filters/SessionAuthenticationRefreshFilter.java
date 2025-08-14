@@ -41,33 +41,41 @@ public class SessionAuthenticationRefreshFilter extends OncePerRequestFilter {
       final FilterChain filterChain)
       throws ServletException, IOException {
     final var session = request.getSession(false);
-    if (session != null && authenticationProvider.getCamundaAuthentication() != null) {
+    if (session != null) {
       handleSessionRefresh(session);
     }
     filterChain.doFilter(request, response);
   }
 
   private void handleSessionRefresh(final HttpSession session) {
-    final Instant now = Instant.now();
-    Instant lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+    try {
+      if (authenticationProvider.getCamundaAuthentication() != null) {
 
-    // Initialize if first access
-    if (lastRefresh == null) {
-      session.setAttribute(LAST_REFRESH_ATTR, now);
-      session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", new Object());
-      return;
-    }
+        final Instant now = Instant.now();
+        Instant lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
 
-    // Check if refresh needed
-    if (isRefreshRequired(lastRefresh, now)) {
-      synchronized (session.getAttribute(LAST_REFRESH_ATTR + "_LOCK")) {
-        lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
-        // Double check if refresh still needed
-        if (isRefreshRequired(lastRefresh, now)) {
-          authenticationProvider.refresh();
+        // Initialize if first access
+        if (lastRefresh == null) {
           session.setAttribute(LAST_REFRESH_ATTR, now);
+          session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", new Object());
+          return;
+        }
+
+        // Check if refresh needed
+        if (isRefreshRequired(lastRefresh, now)) {
+          synchronized (session.getAttribute(LAST_REFRESH_ATTR + "_LOCK")) {
+            lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+            // Double check if refresh still needed
+            if (isRefreshRequired(lastRefresh, now)) {
+              authenticationProvider.refresh();
+              session.setAttribute(LAST_REFRESH_ATTR, now);
+            }
+          }
         }
       }
+    } catch (final Exception e) {
+      // ignore exception, just log it
+      logger.debug("The session doesn't have authentication to be refreshed.");
     }
   }
 
