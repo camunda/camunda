@@ -73,7 +73,7 @@ public class MetricReaderTest {
     final Query expected =
         Query.whereEquals(EVENT_TYPE, RPI.name())
             .and(range(EVENT_TIME, oneHourBefore, now))
-            .aggregate(MetricsStore.PROCESS_INSTANCES_AGG_NAME, EVENT_VALUE, 1);
+            .aggregate(MetricsStore.PROCESS_INSTANCES_AGG_NAME, EVENT_VALUE);
     final Query calledValue = entityCaptor.getValue();
     assertThat(calledValue).isEqualTo(expected);
   }
@@ -124,7 +124,7 @@ public class MetricReaderTest {
     final Query expected =
         Query.whereEquals(EVENT_TYPE, EDI.name())
             .and(range(EVENT_TIME, oneHourBefore, now))
-            .aggregate(MetricsStore.DECISION_INSTANCES_AGG_NAME, EVENT_VALUE, 1);
+            .aggregate(MetricsStore.DECISION_INSTANCES_AGG_NAME, EVENT_VALUE);
     final Query calledValue = entityCaptor.getValue();
     assertThat(calledValue).isEqualTo(expected);
   }

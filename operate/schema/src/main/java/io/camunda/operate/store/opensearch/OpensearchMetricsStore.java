@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.store.opensearch;
 
-import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
+import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.sumAggregation;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gteLte;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
@@ -30,7 +30,6 @@ import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
-import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +47,7 @@ public class OpensearchMetricsStore implements MetricsStore {
   @Autowired private UsageMetricIndex metricIndex;
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  private AggregationResult searchWithAggregation(
+  private Long searchWithSumAggregation(
       final SearchRequest.Builder requestBuilder, final String aggregationName) {
     final Aggregate aggregate;
 
@@ -60,37 +59,23 @@ public class OpensearchMetricsStore implements MetricsStore {
               .aggregations()
               .get(aggregationName);
     } catch (final OperateRuntimeException e) {
-      return new AggregationResult(true, null, null);
+      throw new OperateRuntimeException("Opensearch client threw exception while searching", e);
     }
 
     if (aggregate == null) {
       throw new OperateRuntimeException("Search with aggregation returned no aggregation");
     }
 
-    if (!aggregate.isSterms()) {
-      throw new OperateRuntimeException("Unexpected response for aggregations");
+    if (!aggregate.isSum()) {
+      throw new OperateRuntimeException("Unexpected response for sum aggregation");
     }
 
-    final List<StringTermsBucket> buckets = aggregate.sterms().buckets().array();
-
-    final List<RichOpenSearchClient.AggregationValue> values =
-        buckets.stream()
-            .map(
-                bucket ->
-                    new RichOpenSearchClient.AggregationValue(bucket.key(), bucket.docCount()))
-            .toList();
-
-    final long sumOfOtherDocCounts =
-        aggregate.sterms().sumOtherDocCount(); // size of documents not in result
-    final long total = sumOfOtherDocCounts + values.size(); // size of result + other docs
-    return new AggregationResult(false, values, total);
+    return Math.round(aggregate.sum().value());
   }
 
   @Override
   public Long retrieveProcessInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
-    final int limit = 1; // limiting to one, as we just care about the total documents number
-
     var query = and(gteLte(EVENT_TIME, startTime, endTime), term(EVENT_TYPE, RPI.name()));
     if (tenantId != null) {
       query = and(query, term(TENANT_ID, tenantId));
@@ -99,17 +84,14 @@ public class OpensearchMetricsStore implements MetricsStore {
     final var searchRequestBuilder =
         searchRequestBuilder(metricIndex.getFullQualifiedName())
             .query(query)
-            .aggregations(
-                PROCESS_INSTANCES_AGG_NAME, termAggregation(EVENT_VALUE, limit)._toAggregation());
+            .aggregations(PROCESS_INSTANCES_AGG_NAME, sumAggregation(EVENT_VALUE)._toAggregation());
 
-    return searchWithAggregation(searchRequestBuilder, PROCESS_INSTANCES_AGG_NAME).totalDocs();
+    return searchWithSumAggregation(searchRequestBuilder, PROCESS_INSTANCES_AGG_NAME);
   }
 
   @Override
   public Long retrieveDecisionInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
-    final int limit = 1; // limiting to one, as we just care about the total documents number
-
     var query = and(term(EVENT_TYPE, EDI.name()), gteLte(EVENT_TIME, startTime, endTime));
     if (tenantId != null) {
       query = and(query, term(TENANT_ID, tenantId));
@@ -119,9 +101,9 @@ public class OpensearchMetricsStore implements MetricsStore {
         searchRequestBuilder(metricIndex.getFullQualifiedName())
             .query(query)
             .aggregations(
-                DECISION_INSTANCES_AGG_NAME, termAggregation(EVENT_VALUE, limit)._toAggregation());
+                DECISION_INSTANCES_AGG_NAME, sumAggregation(EVENT_VALUE)._toAggregation());
 
-    return searchWithAggregation(searchRequestBuilder, DECISION_INSTANCES_AGG_NAME).totalDocs();
+    return searchWithSumAggregation(searchRequestBuilder, DECISION_INSTANCES_AGG_NAME);
   }
 
   @Override
