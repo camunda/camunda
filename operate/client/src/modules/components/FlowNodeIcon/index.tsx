@@ -93,19 +93,25 @@ import FlowNodeEventCompensationBoundary from 'modules/components/Icon/flow-node
 
 const getSVGComponent = (
   businessObject: BusinessObject | undefined,
-  isMultiInstanceBody: boolean,
+  flowNodeInstanceType: String,
 ) => {
   if (businessObject === undefined) {
     return FlowNodeTask;
   }
 
-  if (isMultiInstanceBody) {
+  console.log(flowNodeInstanceType);
+  if (flowNodeInstanceType === 'MULTI_INSTANCE_BODY') {
     switch (getMultiInstanceType(businessObject)) {
       case 'parallel':
         return FlowNodeTaskParallel;
       case 'sequential':
         return FlowNodeTaskMulti;
     }
+  } else if (flowNodeInstanceType === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
+    console.log(flowNodeInstanceType);
+    return FlowNodeTaskParallel;
+  } else if (businessObject === undefined) {
+    return FlowNodeTaskParallel;
   }
 
   switch (getEventType(businessObject)) {
@@ -294,7 +300,7 @@ const FlowNodeIcon: React.FC<Props> = ({
 }) => {
   const SVGComponent = getSVGComponent(
     diagramBusinessObject,
-    flowNodeInstanceType === 'MULTI_INSTANCE_BODY',
+    flowNodeInstanceType,
   );
 
   return (
