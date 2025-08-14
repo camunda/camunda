@@ -12,7 +12,6 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.util.LazySupplier;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.util.List;
@@ -21,15 +20,16 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TasklistPermissionServices {
-
-  private static final List<String> WILD_CARD_PERMISSION =
-      List.of(IdentityProperties.ALL_RESOURCES);
+  public static final String WILDCARD_RESOURCE = "*";
+  private static final List<String> WILD_CARD_PERMISSION = List.of(WILDCARD_RESOURCE);
   private static final Authorization<?> READ_PROC_DEF_AUTH_CHECK =
       Authorization.of(a -> a.processDefinition().readProcessDefinition());
   private static final Authorization<?> CREATE_PROC_INST_AUTH_CHECK =
       Authorization.of(a -> a.processDefinition().createProcessInstance());
   private static final Authorization<?> UPDATE_USER_TASK_AUTH_CHECK =
       Authorization.of(a -> a.processDefinition().updateUserTask());
+  private static final Authorization<?> READ_USER_TASK_AUTH_CHECK =
+      Authorization.of(a -> a.processDefinition().readUserTask());
 
   private final SecurityConfiguration securityConfiguration;
   private final CamundaAuthenticationProvider authenticationProvider;
@@ -56,6 +56,10 @@ public class TasklistPermissionServices {
     return isAuthorizedForResource(task.getBpmnProcessId(), UPDATE_USER_TASK_AUTH_CHECK);
   }
 
+  public boolean hasPermissionToReadUserTask(final String bpmnProcessId) {
+    return isAuthorizedForResource(bpmnProcessId, READ_USER_TASK_AUTH_CHECK);
+  }
+
   public List<String> getProcessDefinitionsWithCreateProcessInstancePermission() {
     final var authenticationSupplier =
         LazySupplier.of(authenticationProvider::getCamundaAuthentication);
@@ -66,6 +70,20 @@ public class TasklistPermissionServices {
     final var resourceAccess =
         resourceAccessProvider.resolveResourceAccess(
             authenticationSupplier.get(), CREATE_PROC_INST_AUTH_CHECK);
+    return resourceAccess.allowed() ? resourceAccess.authorization().resourceIds() : List.of();
+  }
+
+  public List<String> getProcessDefinitionsWithReadUserTaskPermission() {
+    final var authenticationSupplier =
+        LazySupplier.of(authenticationProvider::getCamundaAuthentication);
+    if (isAuthorizationCheckDisabled(authenticationSupplier)) {
+      return WILD_CARD_PERMISSION;
+    }
+
+    final var resourceAccess =
+        resourceAccessProvider.resolveResourceAccess(
+            authenticationSupplier.get(), READ_USER_TASK_AUTH_CHECK);
+
     return resourceAccess.allowed() ? resourceAccess.authorization().resourceIds() : List.of();
   }
 
