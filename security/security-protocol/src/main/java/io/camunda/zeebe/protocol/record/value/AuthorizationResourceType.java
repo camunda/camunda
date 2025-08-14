@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public enum AuthorizationResourceType {
   AUTHORIZATION(
-      PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE, PermissionType.CREATE),
+      PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   BATCH(
       PermissionType.CREATE,
       PermissionType.CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE,
@@ -25,13 +25,13 @@ public enum AuthorizationResourceType {
       PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE,
       PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION,
       PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
-      PermissionType.UPDATE,
-      PermissionType.READ),
+      PermissionType.READ,
+      PermissionType.UPDATE),
   COMPONENT(PermissionType.ACCESS),
   DECISION_DEFINITION(
+      PermissionType.CREATE_DECISION_INSTANCE,
       PermissionType.READ_DECISION_DEFINITION,
       PermissionType.READ_DECISION_INSTANCE,
-      PermissionType.CREATE_DECISION_INSTANCE,
       PermissionType.DELETE_DECISION_INSTANCE),
   DECISION_REQUIREMENTS_DEFINITION(PermissionType.READ),
   DOCUMENT(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE),
@@ -40,21 +40,21 @@ public enum AuthorizationResourceType {
       PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   MESSAGE(PermissionType.CREATE, PermissionType.READ),
   PROCESS_DEFINITION(
+      PermissionType.CREATE_PROCESS_INSTANCE,
       PermissionType.READ_PROCESS_DEFINITION,
       PermissionType.READ_PROCESS_INSTANCE,
       PermissionType.READ_USER_TASK,
       PermissionType.UPDATE_PROCESS_INSTANCE,
       PermissionType.UPDATE_USER_TASK,
-      PermissionType.CREATE_PROCESS_INSTANCE,
       PermissionType.MODIFY_PROCESS_INSTANCE,
       PermissionType.CANCEL_PROCESS_INSTANCE,
       PermissionType.DELETE_PROCESS_INSTANCE),
   RESOURCE(
-      PermissionType.READ,
       PermissionType.CREATE,
+      PermissionType.READ,
+      PermissionType.DELETE_DRD,
       PermissionType.DELETE_FORM,
       PermissionType.DELETE_PROCESS,
-      PermissionType.DELETE_DRD,
       PermissionType.DELETE_RESOURCE),
   ROLE(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   SYSTEM(PermissionType.READ, PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE),
