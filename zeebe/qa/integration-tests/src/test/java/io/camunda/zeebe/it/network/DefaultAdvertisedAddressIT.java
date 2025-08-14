@@ -34,6 +34,7 @@ final class DefaultAdvertisedAddressIT {
           .withImage(ZeebeTestContainerDefaults.defaultTestImage())
           .withGatewaysCount(1)
           .withBrokersCount(1)
+          .withEmbeddedGateway(false)
           .withNodeConfig(node -> node.withAdditionalExposedPort(8080))
           // explicitly unset the (advertised) host to force computing the default
           .withBrokerConfig(
@@ -71,6 +72,17 @@ final class DefaultAdvertisedAddressIT {
               () ->
                   TopologyAssert.assertThat(client.newTopologyRequest().send().join())
                       .isComplete(1, 1, 1));
+
+      Awaitility.await("until a client request is successful")
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () ->
+                  client
+                      .newPublishMessageCommand()
+                      .messageName("test-message")
+                      .correlationKey("test-key")
+                      .send()
+                      .join());
     }
   }
 }
