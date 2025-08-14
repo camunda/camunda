@@ -10,6 +10,7 @@ package io.camunda.qa.util.multidb;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.ApplicationUnderTest;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
@@ -84,6 +85,12 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
     final var client =
         createAuthenticatedClient(gateway, mappingRule.id(), mappingRule.claimValue());
     cachedClients.put(mappingRule.id(), client);
+  }
+
+  public void createClientForClient(final TestGateway<?> gateway, final TestClient client) {
+    final var camundaClient =
+        createAuthenticatedClient(gateway, client.clientId(), client.clientId());
+    cachedClients.put(client.clientId(), camundaClient);
   }
 
   private CamundaClient createAuthenticatedClient(
