@@ -11,6 +11,8 @@ import io.camunda.configuration.Backup.BackupStoreType;
 import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
 import io.camunda.configuration.RocksDb.AccessMetricsKind;
 import java.io.File;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
@@ -43,7 +45,26 @@ public class UnifiedConfigurationHelper {
       final Class<T> expectedType,
       final BackwardsCompatibilityMode backwardsCompatibilityMode,
       final Set<String> legacyProperties) {
-    // Input validation
+
+    final TypeReference<T> typeReference =
+        new TypeReference<>() {
+          @Override
+          public Type getType() {
+            return expectedType;
+          }
+        };
+
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        newProperty, newValue, typeReference, backwardsCompatibilityMode, legacyProperties);
+  }
+
+  public static <T> T validateLegacyConfiguration(
+      final String newProperty,
+      final T newValue,
+      final TypeReference<T> expectedType,
+      final BackwardsCompatibilityMode backwardsCompatibilityMode,
+      final Set<String> legacyProperties) {
+
     if (backwardsCompatibilityMode == null) {
       throw new UnifiedConfigurationException("backwardsCompatibilityMode cannot be null");
     }
@@ -67,7 +88,7 @@ public class UnifiedConfigurationHelper {
   }
 
   private static <T> T getLegacyValue(
-      final Set<String> legacyProperties, final Class<T> expectedType) {
+      final Set<String> legacyProperties, final TypeReference<T> expectedType) {
     final Set<T> legacyValues = new HashSet<>();
 
     for (final String legacyProperty : legacyProperties) {
@@ -215,11 +236,26 @@ public class UnifiedConfigurationHelper {
   }
 
   @SuppressWarnings("unchecked")
-  private static <T> T parseLegacyValue(final String strValue, final Class<T> type) {
+  private static <T> T parseLegacyValue(final String strValue, final TypeReference<T> typeRef) {
     if (strValue == null) {
       return null;
     }
 
+    final Type type = typeRef.getType();
+
+    if (type instanceof final Class<?> clazz) {
+      return (T) parseSimpleType(strValue, clazz);
+    }
+
+    if (type instanceof final ParameterizedType pt) {
+      return parseParameterizedType(strValue, pt);
+    }
+
+    throw new IllegalArgumentException("Unsupported type: " + type);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <T> T parseSimpleType(final String strValue, final Class<T> type) {
     return switch (type.getSimpleName()) {
       case "String" -> (T) strValue;
       case "Integer" -> (T) Integer.valueOf(strValue);
@@ -233,6 +269,23 @@ public class UnifiedConfigurationHelper {
       case "AccessMetricsKind" -> (T) AccessMetricsKind.valueOf(strValue.toUpperCase());
       case "BackupStoreType" -> (T) BackupStoreType.valueOf(strValue.toUpperCase());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <T> T parseParameterizedType(final String strValue, final ParameterizedType pt) {
+    final Class<?> rawType = (Class<?>) pt.getRawType();
+
+    return switch (rawType.getSimpleName()) {
+      case "Set" -> {
+        final Class<?> elementType = (Class<?>) pt.getActualTypeArguments()[0];
+        yield (T)
+            Arrays.stream(strValue.split(","))
+                .map(String::trim)
+                .map(s -> parseSimpleType(s, elementType))
+                .collect(Collectors.toSet());
+      }
+      default -> throw new IllegalArgumentException("Unsupported parameterized type: " + rawType);
     };
   }
 
