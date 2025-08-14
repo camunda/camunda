@@ -689,6 +689,8 @@ public final class ResponseMapper {
                 new EvaluatedDecisionResult()
                     .decisionDefinitionKey(KeyUtil.keyToString(evaluatedDecision.getDecisionKey()))
                     .decisionDefinitionId(evaluatedDecision.getDecisionId())
+                    .decisionEvaluationInstanceKey(
+                        evaluatedDecision.getDecisionEvaluationInstanceKey())
                     .decisionDefinitionName(evaluatedDecision.getDecisionName())
                     .decisionDefinitionVersion(evaluatedDecision.getDecisionVersion())
                     .output(evaluatedDecision.getDecisionOutput())
