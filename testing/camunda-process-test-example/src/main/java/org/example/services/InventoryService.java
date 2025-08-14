@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.services;
+package org.example.services;
 
-public interface ShippingService {
+public interface InventoryService {
 
-  void requestTrackingCode(String shippingId);
-
-  String shipOrder(String orderId);
+  void fetchItems(String orderId);
 }

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda;
+package org.example.services;
 
-import io.camunda.spring.client.annotation.Deployment;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+public interface ShippingService {
 
-@SpringBootApplication
-@Deployment(resources = "classpath*:/bpmn/**/*.bpmn")
-public class MySpringBootApplication {}
+  void requestTrackingCode(String shippingId);
+
+  String shipOrder(String orderId);
+}

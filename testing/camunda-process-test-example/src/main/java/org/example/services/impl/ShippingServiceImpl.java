@@ -13,11 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.services;
+package org.example.services.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import org.example.services.ShippingService;
+import org.springframework.stereotype.Service;
 
-public interface ArchiveService {
+@Service
+public class ShippingServiceImpl implements ShippingService {
 
-  public void archiveInvoice(String invoiceId, JsonNode invoiceJson) throws WiredLegacyException;
+  @Override
+  public void requestTrackingCode(final String shippingId) {}
+
+  @Override
+  public String shipOrder(final String orderId) {
+    return orderId + "_shipping";
+  }
 }

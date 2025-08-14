@@ -13,9 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.services;
+package org.example.services.impl;
 
-public interface PaymentService {
+import org.example.services.PaymentService;
+import org.springframework.stereotype.Service;
 
-  void processPayment(String orderId);
+@Service
+public class PaymentServiceImpl implements PaymentService {
+
+  @Override
+  public void processPayment(final String orderId) {}
 }

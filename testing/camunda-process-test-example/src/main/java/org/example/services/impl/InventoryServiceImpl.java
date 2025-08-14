@@ -13,18 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.services;
+package org.example.services.impl;
 
-public class WiredLegacyException extends Exception {
+import org.example.services.InventoryService;
+import org.springframework.stereotype.Service;
 
-  private static final long serialVersionUID = 1L;
+@Service
+public class InventoryServiceImpl implements InventoryService {
 
-  public WiredLegacyException() {
-    super(
-        "The legacy system has wired hiccups so there might be strange errors like this from time to time");
-  }
-
-  public WiredLegacyException(String message) {
-    super(message);
-  }
+  @Override
+  public void fetchItems(final String orderId) {}
 }

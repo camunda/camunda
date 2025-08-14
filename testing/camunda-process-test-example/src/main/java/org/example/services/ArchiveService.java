@@ -13,25 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.workers;
+package org.example.services;
 
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.services.PaymentService;
-import io.camunda.spring.client.annotation.JobWorker;
-import io.camunda.spring.client.annotation.Variable;
-import org.springframework.stereotype.Component;
+import com.fasterxml.jackson.databind.JsonNode;
 
-@Component
-public class CollectMoneyWorker {
+public interface ArchiveService {
 
-  private final PaymentService service;
-
-  public CollectMoneyWorker(final PaymentService service) {
-    this.service = service;
-  }
-
-  @JobWorker(type = "collect-money")
-  public void handleJob(final ActivatedJob job, @Variable("order_id") final String orderId) {
-    service.processPayment(orderId);
-  }
+  public void archiveInvoice(String invoiceId, JsonNode invoiceJson) throws WiredLegacyException;
 }

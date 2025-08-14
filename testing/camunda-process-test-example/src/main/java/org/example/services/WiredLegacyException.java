@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.services.impl;
+package org.example.services;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import io.camunda.services.ArchiveService;
-import org.springframework.stereotype.Component;
+public class WiredLegacyException extends Exception {
 
-@Component
-public class ArchiveServiceImpl implements ArchiveService {
+  private static final long serialVersionUID = 1L;
 
-  @Override
-  public void archiveInvoice(String invoiceId, JsonNode invoiceJson) {
-    // This would now call the real Archive API - probably injected via Spring
+  public WiredLegacyException() {
+    super(
+        "The legacy system has wired hiccups so there might be strange errors like this from time to time");
+  }
+
+  public WiredLegacyException(final String message) {
+    super(message);
   }
 }

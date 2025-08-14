@@ -13,28 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.workers;
+package org.example.workers;
 
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.services.ShippingService;
 import io.camunda.spring.client.annotation.JobWorker;
 import io.camunda.spring.client.annotation.Variable;
-import java.util.Map;
+import org.example.services.ShippingService;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ShipParcelWorker {
+public class RequestTrackingCodeWorker {
 
   private final ShippingService service;
 
-  public ShipParcelWorker(final ShippingService service) {
+  public RequestTrackingCodeWorker(final ShippingService service) {
     this.service = service;
   }
 
-  @JobWorker(type = "ship-parcel")
-  public Map<String, Object> handleJob(
-      final ActivatedJob job, @Variable("order_id") final String orderId) {
-    final String shippingId = service.shipOrder(orderId);
-    return Map.of("shipping_id", shippingId);
+  @JobWorker(type = "request-tracking-code")
+  public void handleJob(final ActivatedJob job, @Variable("shipping_id") final String shippingId) {
+    service.requestTrackingCode(shippingId);
   }
 }

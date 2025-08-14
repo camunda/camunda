@@ -28,8 +28,9 @@
     <!-- testing (for process test) -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-process-test-spring</artifactId>
+      <artifactId>camunda-process-test-embedded</artifactId>
       <scope>test</scope>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>

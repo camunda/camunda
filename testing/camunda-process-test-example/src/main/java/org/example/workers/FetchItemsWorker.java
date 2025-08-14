@@ -13,19 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.services.impl;
+package org.example.workers;
 
-import io.camunda.services.ShippingService;
-import org.springframework.stereotype.Service;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.spring.client.annotation.JobWorker;
+import io.camunda.spring.client.annotation.Variable;
+import org.example.services.InventoryService;
+import org.springframework.stereotype.Component;
 
-@Service
-public class ShippingServiceImpl implements ShippingService {
+@Component
+public class FetchItemsWorker {
 
-  @Override
-  public void requestTrackingCode(final String shippingId) {}
+  private final InventoryService service;
 
-  @Override
-  public String shipOrder(final String orderId) {
-    return orderId + "_shipping";
+  public FetchItemsWorker(final InventoryService service) {
+    this.service = service;
+  }
+
+  @JobWorker(type = "fetch-items")
+  public void handleJob(final ActivatedJob job, @Variable("order_id") final String orderId) {
+    service.fetchItems(orderId);
   }
 }

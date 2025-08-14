@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.services.impl;
+package org.example.services.impl;
 
-import io.camunda.services.InventoryService;
-import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.example.services.ArchiveService;
+import org.springframework.stereotype.Component;
 
-@Service
-public class InventoryServiceImpl implements InventoryService {
+@Component
+public class ArchiveServiceImpl implements ArchiveService {
 
   @Override
-  public void fetchItems(final String orderId) {}
+  public void archiveInvoice(final String invoiceId, final JsonNode invoiceJson) {
+    // This would now call the real Archive API - probably injected via Spring
+  }
 }

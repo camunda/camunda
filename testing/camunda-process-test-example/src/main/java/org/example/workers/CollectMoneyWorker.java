@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.workers;
+package org.example.workers;
 
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.services.InventoryService;
 import io.camunda.spring.client.annotation.JobWorker;
 import io.camunda.spring.client.annotation.Variable;
+import org.example.services.PaymentService;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FetchItemsWorker {
+public class CollectMoneyWorker {
 
-  private final InventoryService service;
+  private final PaymentService service;
 
-  public FetchItemsWorker(final InventoryService service) {
+  public CollectMoneyWorker(final PaymentService service) {
     this.service = service;
   }
 
-  @JobWorker(type = "fetch-items")
+  @JobWorker(type = "collect-money")
   public void handleJob(final ActivatedJob job, @Variable("order_id") final String orderId) {
-    service.fetchItems(orderId);
+    service.processPayment(orderId);
   }
 }
