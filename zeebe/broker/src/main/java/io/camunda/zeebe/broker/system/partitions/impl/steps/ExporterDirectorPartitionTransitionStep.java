@@ -61,7 +61,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var director = context.getExporterDirector();
     if (director != null && shouldCloseOnTransition(targetRole, context.getCurrentRole())) {
-      context.getComponentHealthMonitor().removeComponent(director.getName());
+      context.getComponentHealthMonitor().removeComponent(director);
       final ActorFuture<Void> future = director.closeAsync();
       future.onComplete(
           (success, error) -> {
@@ -129,7 +129,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final ExporterDirector director =
         exporterDirectorBuilder.apply(exporterCtx, context.getExporterPhase());
 
-    context.getComponentHealthMonitor().registerComponent(director.getName(), director);
+    context.getComponentHealthMonitor().registerComponent(director);
 
     final var startFuture = director.startAsync(context.getActorSchedulingService());
     startFuture.onComplete(
