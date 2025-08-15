@@ -183,6 +183,15 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.rdbms-change == 'true'
       }}
+  renovate-config-changes:
+    description: Output whether renovate config validator needs to be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.renovate-config-change == 'true'
+      }}
 
 runs:
   using: composite
@@ -199,6 +208,9 @@ runs:
           - '.github/workflows/**'
           - '.github/actionlint*'
           - '.github/conftest-*.rego'
+
+        renovate-config-change:
+          - '**/renovate.json'
 
         # We use specific src/main and src/test path to:
         #  * react on java code (production + test) changes
