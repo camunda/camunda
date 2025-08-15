@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { FC } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
@@ -21,17 +22,26 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const [callAddGroup, { loading, error }] = useApiCall(createGroup, {
     suppressErrorNotification: true,
   });
+  type FormData = {
+    groupId: string;
+    groupName: string;
+    description: string;
+  };
 
-  const [groupName, setGroupName] = useState("");
-  const [groupId, setGroupId] = useState("");
-  const [description, setDescription] = useState("");
-  const [isGroupIdValid, setIsGroupIdValid] = useState(true);
+  const { control, handleSubmit } = useForm<FormData>({
+    defaultValues: {
+      groupId: "",
+      groupName: "",
+      description: "",
+    },
+    mode: "all",
+  });
 
-  const handleSubmit = async () => {
+  const onSubmit = async (data: FormData) => {
     const { success } = await callAddGroup({
-      name: groupName,
-      groupId,
-      description: description,
+      name: data.groupName,
+      groupId: data.groupId,
+      description: data.description,
     });
 
     if (success) {
@@ -39,15 +49,11 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         kind: "success",
         title: t("groupCreated"),
         subtitle: t("groupCreatedSuccessfully", {
-          groupName,
+          groupName: data.groupName,
         }),
       });
       onSuccess();
     }
-  };
-
-  const validateGroupId = (id: string) => {
-    setIsGroupIdValid(isValidGroupId(id));
   };
 
   return (
@@ -55,38 +61,56 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       open={open}
       headline={t("createGroup")}
       onClose={onClose}
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
       loading={loading}
       error={error}
       loadingDescription={t("creatingGroup")}
       confirmLabel={t("createGroup")}
-      submitDisabled={!groupName || !groupId || !isGroupIdValid}
     >
-      <TextField
-        label={t("groupId")}
-        value={groupId}
-        placeholder={t("groupIdPlaceholder")}
-        onChange={(value) => {
-          validateGroupId(value);
-          setGroupId(value);
+      <Controller
+        name="groupId"
+        control={control}
+        rules={{
+          required: t("groupIdRequired"),
+          validate: (value) =>
+            isValidGroupId(value) || t("pleaseEnterValidGroupId"),
         }}
-        errors={!isGroupIdValid ? [t("pleaseEnterValidGroupId")] : []}
-        helperText={t("groupIdHelperText")}
-        autoFocus
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label={t("groupId")}
+            placeholder={t("groupIdPlaceholder")}
+            helperText={t("groupIdHelperText")}
+            errors={fieldState.error?.message}
+            autoFocus
+          />
+        )}
       />
-      <TextField
-        label={t("groupName")}
-        value={groupName}
-        placeholder={t("groupNamePlaceholder")}
-        onChange={setGroupName}
+      <Controller
+        name="groupName"
+        control={control}
+        rules={{ required: t("groupNameRequired") }}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label={t("groupName")}
+            placeholder={t("groupNamePlaceholder")}
+            errors={fieldState.error?.message}
+          />
+        )}
       />
-      <TextField
-        label={t("description")}
-        value={description || ""}
-        placeholder={t("groupDescriptionPlaceholder")}
-        onChange={setDescription}
-        cols={2}
-        enableCounter
+      <Controller
+        name="description"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            label={t("description")}
+            placeholder={t("groupDescriptionPlaceholder")}
+            cols={2}
+            enableCounter
+          />
+        )}
       />
     </FormModal>
   );
