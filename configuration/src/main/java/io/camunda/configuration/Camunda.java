@@ -22,6 +22,7 @@ public class Camunda {
   private System system = new System();
   private Data data = new Data();
   private Api api = new Api();
+  private License license = new License();
 
   public Cluster getCluster() {
     return cluster;
@@ -53,5 +54,13 @@ public class Camunda {
 
   public void setData(final Data data) {
     this.data = data;
+  }
+
+  public License getLicense() {
+    return license;
+  }
+
+  public void setLicense(final License license) {
+    this.license = license;
   }
 }
