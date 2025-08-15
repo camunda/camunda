@@ -182,7 +182,7 @@ export class IdentityAuthorizationsPage {
     await this.selectResourceTypeTab(authorization.resourceType);
     const item = this.getAuthorizationCell(authorization.ownerId);
     await waitForItemInList(this.page, item, {
-      clickAuthorizationsPageTab: () =>
+      onAfterReload: () =>
         this.selectResourceTypeTab(authorization.resourceType),
     });
   }
