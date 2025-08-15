@@ -17,6 +17,8 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -55,7 +57,7 @@ public class PersistedClusterTopologyTest {
           .build();
 
   @Test
-  void canHandleTopologyRequestsWhenBroker0IsRemoved() {
+  void canCorrelateAfterPartitionCountConfigIsChanged() {
     // given
     cluster.awaitCompleteTopology();
     client = cluster.newClientBuilder().build();
@@ -102,6 +104,7 @@ public class PersistedClusterTopologyTest {
     // when
     cluster.brokers().forEach((id, b) -> b.brokerConfig().getCluster().setPartitionsCount(1));
     cluster.start();
+    createSomeLoadToAllowSnapshot();
     cluster.awaitCompleteTopology(
         CLUSTER_SIZE, PARTITION_COUNT, REPLICATION_FACTOR, Duration.ofSeconds(10));
 
@@ -123,5 +126,28 @@ public class PersistedClusterTopologyTest {
     final var activatedJobs =
         client.newActivateJobsCommand().jobType("service1").maxJobsToActivate(1).send().join();
     assertThat(activatedJobs.getJobs()).isEmpty();
+  }
+
+  private void createSomeLoadToAllowSnapshot() {
+    final var pending = new LinkedBlockingQueue<String>();
+    pending.add("item-0");
+    pending.add("item-1");
+    pending.add("item-2");
+
+    final var deadline = Instant.now().plusSeconds(15);
+    while (!pending.isEmpty() && Instant.now().isBefore(deadline)) {
+      final var correlationKey = pending.poll();
+      client
+          .newPublishMessageCommand()
+          .messageName("fake_message")
+          .correlationKey(correlationKey)
+          .send()
+          .whenCompleteAsync(
+              (response, e) -> {
+                if (e != null) {
+                  pending.add(correlationKey);
+                }
+              });
+    }
   }
 }

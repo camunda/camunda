@@ -183,20 +183,22 @@ public class StateControllerImpl implements StateController {
   private NextSnapshotId tryFindNextSnapshotId(final long lastProcessedPosition)
       throws NoEntryAtSnapshotPosition {
     final var exportedPosition = exporterPositionSupplier.applyAsLong(db);
-    if (exportedPosition == -1) {
+    final var snapshotPosition = Math.min(exportedPosition, lastProcessedPosition);
+
+    if (snapshotPosition < 1) {
+      // The first log position is 1, so if we are below that, we don't have a log entry to
+      // determine index and term.
+      // If we already have a snapshot, we can copy its index and term.
       final var latestSnapshot = constructableSnapshotStore.getLatestSnapshot();
       if (latestSnapshot.isPresent()) {
-        // re-use index and term from the latest snapshot to ensure that the records from there are
-        // not compacted until they get exported.
         final var persistedSnapshot = latestSnapshot.get();
         return new NextSnapshotId(
             persistedSnapshot.getIndex(), persistedSnapshot.getTerm(), lastProcessedPosition, 0);
       }
-
+      // Otherwise, we will just use 0 for index and term, ensuring that nothing can be compacted.
       return new NextSnapshotId(0, 0, lastProcessedPosition, 0);
     }
 
-    final var snapshotPosition = Math.min(exportedPosition, lastProcessedPosition);
     final var logEntry = entrySupplier.getPreviousIndexedEntry(snapshotPosition);
 
     if (logEntry.isPresent()) {
