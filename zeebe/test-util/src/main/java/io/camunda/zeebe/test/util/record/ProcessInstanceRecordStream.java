@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.List;
 import java.util.stream.Stream;
 
 public final class ProcessInstanceRecordStream
@@ -57,6 +58,10 @@ public final class ProcessInstanceRecordStream
 
   public ProcessInstanceRecordStream withElementId(final String elementId) {
     return valueFilter(v -> elementId.equals(v.getElementId()));
+  }
+
+  public ProcessInstanceRecordStream withElementIdIn(final String... elementIds) {
+    return valueFilter(v -> List.of(elementIds).contains(v.getElementId()));
   }
 
   public ProcessInstanceRecordStream withFlowScopeKey(final long flowScopeKey) {

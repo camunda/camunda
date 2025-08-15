@@ -1191,6 +1191,171 @@ public final class AdHocSubProcessTest {
         .hasErrorMessage("The output collection has the wrong type. Expected ARRAY but was NIL.");
   }
 
+  @Test
+  public void shouldTriggerNonInterruptingEventSubProcess() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.serviceTask("A").zeebeJobType("jobType");
+              adHocSubProcess
+                  .embeddedSubProcess()
+                  .eventSubProcess("event_sub_process")
+                  .startEvent("event_sub_start")
+                  .message(m -> m.name("msg").zeebeCorrelationKeyExpression("=\"correlationKey\""))
+                  .interrupting(false)
+                  .endEvent("event_sub_end");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A"))
+            .create();
+
+    // when
+    ENGINE.message().withName("msg").withCorrelationKey("correlationKey").publish();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementIdIn("event_sub_process", "event_sub_start", "event_sub_end")
+                .limit("event_sub_process", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsExactly(
+            tuple("event_sub_process", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("event_sub_process", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("event_sub_start", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("event_sub_start", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("event_sub_start", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("event_sub_start", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("event_sub_end", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("event_sub_end", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("event_sub_end", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("event_sub_end", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("event_sub_process", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("event_sub_process", ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    final var jobKey =
+        ENGINE.jobs().withType("jobType").activate().getValue().getJobKeys().getFirst();
+    ENGINE.job().withKey(jobKey).complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldTriggerNonInterruptingEventSubProcessMultipleTimes() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.serviceTask("A").zeebeJobType("jobType");
+              adHocSubProcess
+                  .embeddedSubProcess()
+                  .eventSubProcess("event_sub_process")
+                  .startEvent("event_sub_start")
+                  .message(m -> m.name("msg").zeebeCorrelationKeyExpression("=\"correlationKey\""))
+                  .interrupting(false)
+                  .endEvent("event_sub_end");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A"))
+            .create();
+
+    // when
+    ENGINE.message().withName("msg").withCorrelationKey("correlationKey").publish();
+    ENGINE.message().withName("msg").withCorrelationKey("correlationKey").publish();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .hasSize(2);
+
+    final var jobKey =
+        ENGINE.jobs().withType("jobType").activate().getValue().getJobKeys().getFirst();
+    ENGINE.job().withKey(jobKey).complete();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldUpdateOutputCollectionOnEventSubProcessCompletion() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess
+                  .zeebeActiveElementsCollectionExpression("activateElements")
+                  .zeebeOutputCollection("results")
+                  .zeebeOutputElementExpression("result");
+              adHocSubProcess.serviceTask("A").zeebeJobType("jobType");
+              adHocSubProcess
+                  .embeddedSubProcess()
+                  .eventSubProcess("event_sub_process")
+                  .startEvent("event_sub_start")
+                  .message(m -> m.name("msg").zeebeCorrelationKeyExpression("=\"correlationKey\""))
+                  .interrupting(false)
+                  .endEvent("event_sub_end");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A"))
+            .create();
+
+    // when
+    ENGINE
+        .message()
+        .withName("msg")
+        .withCorrelationKey("correlationKey")
+        .withVariables(Map.of("result", "foo"))
+        .publish();
+
+    // then
+    final var ahspKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst()
+            .getKey();
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("results")
+                .getFirst()
+                .getValue())
+        .extracting(
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue,
+            VariableRecordValue::getScopeKey)
+        .containsOnly("results", "[\"foo\"]", ahspKey);
+  }
+
   private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {
     return r ->
         r.getIntent() == SignalIntent.BROADCASTED
