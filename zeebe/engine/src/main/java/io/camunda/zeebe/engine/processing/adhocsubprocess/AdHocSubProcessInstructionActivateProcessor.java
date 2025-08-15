@@ -127,6 +127,22 @@ public class AdHocSubProcessInstructionActivateProcessor
       return;
     }
 
+    final var activateElements =
+        command.getValue().activateElements().stream()
+            .map(AdHocSubProcessActivateElementInstruction::getElementId)
+            .toList();
+
+    final var thatCompletionConditionIsNotFulfilledWhenActivatingElements =
+        AdHocSubProcessUtils.validateThatCompletionConditionIsNotFulfilledWhenActivatingElements(
+            adHocSubProcessElementInstance.getKey(),
+            command.getValue().isCompletionConditionFulfilled(),
+            activateElements);
+    if (thatCompletionConditionIsNotFulfilledWhenActivatingElements.isLeft()) {
+      final var rejection = thatCompletionConditionIsNotFulfilledWhenActivatingElements.getLeft();
+      writeRejectionError(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var adHocSubProcessDefinition =
         processState
             .getProcessByKeyAndTenant(
@@ -139,10 +155,6 @@ public class AdHocSubProcessInstructionActivateProcessor
                 adHocSubProcessElementInstance.getValue().getElementId());
 
     // check that the given elements exist within the ad-hoc sub-process
-    final var activateElements =
-        command.getValue().activateElements().stream()
-            .map(AdHocSubProcessActivateElementInstruction::getElementId)
-            .toList();
     final var activateElementsAreInProcess =
         AdHocSubProcessUtils.validateActivateElementsExistInAdHocSubProcess(
             adHocSubProcessElementInstance.getKey(), adHocSubProcessElement, activateElements);
