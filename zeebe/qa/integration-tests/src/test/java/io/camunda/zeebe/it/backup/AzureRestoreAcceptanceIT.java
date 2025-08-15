@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.backup;
 
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -19,6 +20,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class AzureRestoreAcceptanceIT implements RestoreAcceptance {
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
   private static final String CONTAINER_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
+
+  @Override
+  public void restoreAppWithUnifiedConfig(final UnifiedConfiguration uc) {
+    final var backup = uc.getCamunda().getData().getBackup();
+    final var azure = backup.getAzure();
+
+    azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
+    azure.setBasePath(CONTAINER_NAME);
+
+    backup.setAzure(azure);
+  }
 
   @Override
   public void configureBackupStore(final BrokerCfg cfg) {

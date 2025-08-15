@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.it.backup;
 
+import io.camunda.configuration.S3;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -42,6 +44,21 @@ final class S3RestoreAcceptanceIT implements RestoreAcceptance {
     try (final var client = S3BackupStore.buildClient(config)) {
       client.createBucket(cfg -> cfg.bucket(BUCKET_NAME)).join();
     }
+  }
+
+  @Override
+  public void restoreAppWithUnifiedConfig(final UnifiedConfiguration uc) {
+    final var backup = uc.getCamunda().getData().getBackup();
+    final var s3 = new S3();
+
+    s3.setRegion(MINIO.region());
+    s3.setSecretKey(MINIO.secretKey());
+    s3.setBucketName(BUCKET_NAME);
+    s3.setEndpoint(MINIO.externalEndpoint());
+    s3.setAccessKey(MINIO.accessKey());
+    s3.setForcePathStyleAccess(true);
+
+    backup.setS3(s3);
   }
 
   @Override

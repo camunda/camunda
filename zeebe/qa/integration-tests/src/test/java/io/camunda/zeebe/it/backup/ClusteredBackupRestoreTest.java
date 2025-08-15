@@ -11,15 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.google.cloud.storage.BucketInfo;
+import io.camunda.configuration.Gcs;
+import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestClusterBuilder;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
@@ -64,7 +63,7 @@ public class ClusteredBackupRestoreTest {
             .withBrokersCount(3)
             .withPartitionsCount(3)
             .withReplicationFactor(1)
-            .withBrokerConfig(broker -> configureBackupStore(broker.brokerConfig()))
+            .withBrokerConfig(broker -> configureBackupStore(new UnifiedConfiguration()))
             .build()
             .start()
             .awaitCompleteTopology()) {
@@ -102,9 +101,9 @@ public class ClusteredBackupRestoreTest {
             .withBrokerConfig(
                 brokerCfg -> {
                   configureBackupStore(brokerCfg);
-                  brokerCfg.getCluster().setClusterSize(1);
-                  brokerCfg.getCluster().setPartitionsCount(3);
-                  brokerCfg.getCluster().setReplicationFactor(1);
+                  brokerCfg.getCamunda().getCluster().setSize(1);
+                  brokerCfg.getCamunda().getCluster().setPartitionCount(3);
+                  brokerCfg.getCamunda().getCluster().setReplicationFactor(1);
                 })
             .withBackupId(backupId)) {
 
@@ -112,15 +111,14 @@ public class ClusteredBackupRestoreTest {
     }
   }
 
-  private static void configureBackupStore(final BrokerCfg brokerCfg) {
-    final var backup = brokerCfg.getData().getBackup();
+  private static void configureBackupStore(final UnifiedConfiguration brokerCfg) {
+    final var backup = brokerCfg.getCamunda().getData().getBackup();
 
-    final var storeConfig = new GcsBackupStoreConfig();
+    final var storeConfig = new Gcs();
     storeConfig.setAuth(GcsBackupStoreAuth.NONE);
     storeConfig.setBucketName(BUCKET_NAME);
     storeConfig.setHost(GCS.externalEndpoint());
 
-    backup.setStore(BackupStoreType.GCS);
     backup.setGcs(storeConfig);
   }
 }

@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -118,6 +119,20 @@ public class ScaleUpPartitionsTest {
     backup.setStore(BackupStoreType.AZURE);
     azure.setBasePath(containerName);
     azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
+  }
+
+  private UnifiedConfiguration configureUnifiedConfiguration() {
+    final var uc = new UnifiedConfiguration();
+    final var backup = uc.getCamunda().getData().getBackup();
+    final var azure = backup.getAzure();
+
+    azure.setBasePath(containerName);
+    azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
+
+    uc.getCamunda().getCluster().getMetadata().setSyncDelay(Duration.ofSeconds(1));
+    uc.getCamunda().getCluster().getMetadata().setGossipFanout(500);
+
+    return uc;
   }
 
   @Test
@@ -470,7 +485,7 @@ public class ScaleUpPartitionsTest {
 
       Files.createDirectories(dataFolder);
       try (final var restoreApp =
-          new TestRestoreApp(broker.brokerConfig()).withBackupId(backupId)) {
+          new TestRestoreApp(configureUnifiedConfiguration()).withBackupId(backupId)) {
         assertThatNoException().isThrownBy(restoreApp::start);
       }
       FileUtil.flushDirectory(dataFolder);
