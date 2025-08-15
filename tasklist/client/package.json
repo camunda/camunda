@@ -54,7 +54,7 @@
     "lint": "npm run ts-check && npm run eslint && npm run stylelint",
     "coverage": "npm run test run --coverage --changed",
     "analyze-bundle": "npm run build && source-map-explorer 'build/assets/*.js'",
-    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.53.2 /bin/bash",
+    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.54.2 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
     "build:visual-regression": "VITE_VERSION=0.0.0-SNAPSHOT vite build --mode visual-regression",
     "extract-sbom": "vite build --mode sbom"
@@ -68,7 +68,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",
     "@eslint/js": "9.32.0",
-    "@playwright/test": "1.53.2",
+    "@playwright/test": "1.54.2",
     "@tanstack/react-query-devtools": "5.83.0",
     "@testing-library/dom": "10.4.0",
     "@testing-library/jest-dom": "6.6.3",
