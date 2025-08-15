@@ -20,4 +20,8 @@ public record Metadata(Long backupId, String version, Integer partNo, Integer pa
   public Metadata withPart(final int part) {
     return new Metadata(backupId, version, part, partCount);
   }
+
+  public Metadata withVersion(final String version) {
+    return new Metadata(backupId, version, partNo, partCount);
+  }
 }
