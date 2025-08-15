@@ -2,7 +2,7 @@ const helpers = require('./helpers');
 const githubApi = require('./github-api');
 
 async function main(context, github, currentData, prNumber, branchName) {
-  console.log(`📌 Processing flaky test comment for PR #${prNumber}`);
+  console.log(`[flaky-tests] Processing flaky test comment for PR #${prNumber}`);
 
   const { owner, repo } = context.repo;
 
@@ -12,31 +12,36 @@ async function main(context, github, currentData, prNumber, branchName) {
   // Step 2: Parse existing comment to extract historical data
   const historicalData = existingComment ? helpers.parseComment(existingComment.body) : null;
 
+  console.log("Existing comment:", existingComment);
+  console.log('Historical data:', historicalData);
+
   // Step 3: Merge current and historical data
   const mergedData = helpers.mergeFlakyData(currentData, historicalData);
+
+  console.log('Merged data:', JSON.stringify(mergedData, null, 2));
 
   // Step 4: Generate comment content
   const comment = await buildComment(mergedData, github, branchName);
 
   if (!comment) {
-    console.log('✅ No flaky tests found. Skipping comment.');
+    console.log('[flaky-tests] No flaky tests found. Skipping comment.');
     return;
   }
 
   // Step 5: Create or update comment
   if (existingComment) {
-    console.log('✏️ Updating existing flaky test comment...');
+    console.log('[flaky-tests] Updating existing flaky test comment...');
     await githubApi.updateComment(github, owner, repo, existingComment.id, comment);
   } else {
-    console.log('📝 Creating new flaky test comment...');
+    console.log('[flaky-tests] Creating new flaky test comment...');
     await githubApi.createComment(github, owner, repo, prNumber, comment);
   }
 
-  console.log('✅ Flaky test comment processed.');
+  console.log('[flaky-tests] Flaky test comment processed.');
 }
 
 async function buildComment(mergedData, github, branchName) {
-  if (!mergedData?.flakyTests?.length) return null;
+  if (!mergedData?.length) return null;
 
   const lines = [
     `# 🧪 Flaky Tests Summary`,
@@ -44,20 +49,13 @@ async function buildComment(mergedData, github, branchName) {
     ``
   ];
 
-  const allTests = mergedData.flakyTests.map(test => ({
-    ...test,
-    fullName: test.className ? `${test.className}.${test.methodName}` : test.methodName
-  }));
+  mergedData.sort((a, b) => b.flakiness - a.flakiness);
 
-  if (!allTests.length) return null;
-
-  allTests.sort((a, b) => b.flakiness - a.flakiness);
-
-  for (const test of allTests) {
+  for (const test of mergedData) {
     const icon = getFlakyIcon(test.flakiness);
     const url = await generateTestSourceUrl(test, github, branchName);
 
-    lines.push(`- [**${test.methodName}**](${url}) – ${icon} **${test.flakiness}% flakiness**`);
+    lines.push(`- [**${test.methodName || test.fullName}**](${url}) – ${icon} **${test.flakiness}% flakiness**`);
     lines.push(`  - Package: \`${test.packageName}\``);
     lines.push(`  - Class: \`${test.className ? `${test.className}` : ''}\``);
     lines.push(`  - Occurrences: ${test.occurrences} / ${test.totalRuns}`);
@@ -80,10 +78,10 @@ function getFlakyIcon(percent) {
 
 async function generateTestSourceUrl(test, github, branchName) {
     const originalUrl = await githubApi.getTestSourceUrl(test, github);
-    console.log(`🔗 Original URL for test ${test.fullName}: ${originalUrl}`);
+    console.log(`[flaky-tests] Original URL for test ${test.methodName || test.fullName}: ${originalUrl}`);
 
     if (!originalUrl) {
-        console.warn(`No source URL found for test: ${test.fullName}`);
+        console.warn(`[flaky-tests] No source URL found for test: ${test.fullName}`);
         return '';
     }
 

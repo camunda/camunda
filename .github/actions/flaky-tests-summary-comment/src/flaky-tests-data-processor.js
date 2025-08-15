@@ -16,23 +16,21 @@ function processFlakyTestsData(rawData) {
 
     testNames.forEach(testName => {
       const parsedTest = helpers.parseTestName(testName);
-      if (parsedTest) {
-        const key = helpers.getTestKey(parsedTest);
-        console.log(`[flaky-tests] Processing test "${key}" from job "${job}"`);
-        const existingTest = testMap.get(key);
+      const key = helpers.getTestKey(parsedTest);
+      console.log(`[flaky-tests] Processing test "${key}" from job "${job}"`);
+      const existingTest = testMap.get(key);
 
-        if (existingTest) {
-          if (!existingTest.jobs.includes(job)) {
-            existingTest.jobs.push(job);
-          }
-          existingTest.occurrences++;
-        } else {
-          testMap.set(key, {
-            ...parsedTest,
-            jobs: [job],
-            occurrences: 1
-          });
+      if (existingTest) {
+        if (!existingTest.jobs.includes(job)) {
+          existingTest.jobs.push(job);
         }
+        existingTest.occurrences++;
+      } else {
+        testMap.set(key, {
+          ...parsedTest,
+          jobs: [job],
+          occurrences: 1
+        });
       }
     });
   });

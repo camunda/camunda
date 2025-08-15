@@ -2,8 +2,10 @@ function parseTestName(testName) {
   const lastDotIndex = testName.lastIndexOf('.');
 
   if (lastDotIndex === -1) {
-    console.warn(`[flaky-tests]  Could not parse test name: ${testName}`);
-    return null;
+    console.warn(`[flaky-tests] Could not parse test name: ${testName}`);
+    return {
+      fullName: testName.trim()
+    };
   }
 
   const fullyQualifiedClass = testName.slice(0, lastDotIndex);
@@ -11,6 +13,9 @@ function parseTestName(testName) {
 
   // Remove trailing [index] if it exists
   methodName = methodName.replace(/\[\d+]\s*$/, '');
+
+  // Remove parameter list if it exists
+  methodName = methodName.replace(/\(.*?\)\s*$/, '').trim();
 
   const classParts = fullyQualifiedClass.split('.');
   const className = classParts[classParts.length - 1];
@@ -25,34 +30,29 @@ function parseTestName(testName) {
 
 function parseComment(body) {
   try {
-    const match = body.match(/_👻 Haunted Tests — They Fail When No One's Watching_\n\n([\s\S]*?)\n\nIf the changes affect this area/);
+    const match = body.match(/_👻 Haunted Tests.*?\n\n([\s\S]*?)\n\nIf the changes affect/i);
     if (!match) return null;
 
     const section = match[1];
-    const regex = /- \*\*(.*?)\*\* – .*? \*\*(\d+)% flakiness\*\*\n {2}- Package: `(.*?)`\n {2}- Class: `(.*?)`\n {2}- Occurrences: (\d+) \/ (\d+)/g;
+    const regex = /- \[\*\*(.*?)\*\*\](?:\(.*?\))? – .*?(\d+)% flakiness\*\*\n\s*- Package: `(.*?)`\n\s*- Class: `(.*?)`\n\s*- Occurrences: (\d+) \/ (\d+)/g;
 
-    const tests = [];
-    let totalRuns = 1;
+    const flakyTests = [];
     let m;
 
     while ((m = regex.exec(section)) !== null) {
-      const [_, methodName, , packageName, className, occurrences, runs] = m;
+      const [_, methodName, , packageName, className, occurrences] = m;
 
-      tests.push({
+      flakyTests.push({
         packageName,
         className,
         methodName,
         jobs: [],
-        occurrences: +occurrences,
-        totalRuns: +runs
+        occurrences: +occurrences
       });
-
-      totalRuns = +runs;
     }
 
     return {
-      totalRuns,
-      flakyTests: tests
+      flakyTests
     };
   } catch (err) {
     console.error('[flaky-tests] Failed to parse comment:', err);
@@ -98,7 +98,7 @@ function mergeFlakyData(current, historical) {
     flakys.push({ ...test, flakiness });
   }
 
-  return { flakyTests: flakys };
+  return flakys;
 }
 
 function prepareFirstRunData(currentData) {
@@ -115,7 +115,9 @@ function prepareFirstRunData(currentData) {
 }
 
 function getTestKey(test) {
-  return `${test.packageName}.${test.className}.${test.methodName}`;
+  return test.fullName
+    ? `${test.fullName}`
+    : `${test.packageName}.${test.className}.${test.methodName}`;
 }
 
 module.exports = {
