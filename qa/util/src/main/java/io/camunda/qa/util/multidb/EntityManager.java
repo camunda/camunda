@@ -146,6 +146,14 @@ public final class EntityManager {
                   .send()
                   .join();
               break;
+            case CLIENT:
+              defaultClient
+                  .newAssignClientToGroupCommand()
+                  .clientId(membership.memberId())
+                  .groupId(groupId)
+                  .send()
+                  .join();
+              break;
             default:
               throw new IllegalArgumentException("Unsupported entity type: " + entityType);
           }
@@ -178,6 +186,14 @@ public final class EntityManager {
                   .newAssignRoleToMappingRuleCommand()
                   .roleId(roleId)
                   .mappingRuleId(membership.memberId())
+                  .send()
+                  .join();
+              break;
+            case CLIENT:
+              defaultClient
+                  .newAssignRoleToClientCommand()
+                  .roleId(roleId)
+                  .clientId(membership.memberId())
                   .send()
                   .join();
               break;
