@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -166,7 +168,7 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    completeJobWithActivateElements(jobType, false, activateElement("A1"));
+    completeJob(jobType, false, false, activateElement("A1"));
 
     // then
     final var adHocSubProcess =
@@ -203,7 +205,7 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    completeJobWithActivateElements(jobType, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     // then
     final var adHocSubProcess =
@@ -241,10 +243,10 @@ public class JobBasedAdHocSubProcessTest {
             });
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    completeJobWithActivateElements(jobType, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     // when
-    completeJobWithActivateElements(jobType, false, activateElement("C"));
+    completeJob(jobType, false, false, activateElement("C"));
 
     // then
     Assertions.assertThat(
@@ -381,7 +383,7 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    completeJobWithActivateElements(jobType, false, activateElement("A1"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A1"), activateElement("B"));
 
     // then
     Assertions.assertThat(
@@ -423,8 +425,9 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    completeJobWithActivateElements(
+    completeJob(
         jobType,
+        false,
         false,
         activateElement("A", Map.of("foo", "bar", "baz", 10)),
         activateElement("B"));
@@ -472,8 +475,7 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    completeJobWithActivateElements(
-        jobType, false, activateElement("DoesntExist"), activateElement("NotThere"));
+    completeJob(jobType, false, false, activateElement("DoesntExist"), activateElement("NotThere"));
 
     final var ahspKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
@@ -511,7 +513,7 @@ public class JobBasedAdHocSubProcessTest {
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    completeJobWithActivateElements(jobType, true);
+    completeJob(jobType, true, false);
 
     // then
     Assertions.assertThat(
@@ -536,7 +538,7 @@ public class JobBasedAdHocSubProcessTest {
             });
     ENGINE.deployment().withXmlResource(process).deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    completeJobWithActivateElements(jobType, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -544,8 +546,7 @@ public class JobBasedAdHocSubProcessTest {
                 .exists())
         .describedAs("Element A is completed")
         .isTrue();
-    completeJobWithActivateElements(
-        jobType, true); // AHSP doesn't complete yet as B is still active
+    completeJob(jobType, true, false); // AHSP doesn't complete yet as B is still active
 
     // when
     final var userTaskKey =
@@ -624,7 +625,7 @@ public class JobBasedAdHocSubProcessTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    completeJobWithActivateElements(jobType, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     // then
     final var ahsp =
@@ -652,7 +653,7 @@ public class JobBasedAdHocSubProcessTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    completeJobWithActivateElements(jobType, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     // then
     final var innerInstanceKeys = getInnerInstanceKeysForOutputCollectionTest(processInstanceKey);
@@ -681,7 +682,7 @@ public class JobBasedAdHocSubProcessTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    completeJobWithActivateElements(jobType, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     final var innerInstanceKeys = getInnerInstanceKeysForOutputCollectionTest(processInstanceKey);
 
@@ -725,7 +726,7 @@ public class JobBasedAdHocSubProcessTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    completeJobWithActivateElements(jobType, false, activateElement("A"), activateElement("B"));
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
 
     final var ahsp =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -763,6 +764,77 @@ public class JobBasedAdHocSubProcessTest {
         .containsSequence(
             tuple("results", "[\"a\"]", ahsp.getKey()),
             tuple("results", "[\"a\",\"b\"]", ahsp.getKey()));
+  }
+
+  @Test
+  public void
+      shouldTerminateChildrenAndCompleteAhspIfCompletionConditionFulfilledAndCancelInstancesIsSetToTrue() {
+    // given
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.userTask("B");
+              adHocSubProcess.userTask("C");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    completeJob(
+        jobType, false, false, activateElement("A"), activateElement("B"), activateElement("C"));
+
+    // when
+    completeJob(jobType, true, true);
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("A", ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_ELEMENT_ID, ELEMENT_COMPLETED), // inner instance for A
+            tuple("B", ELEMENT_TERMINATED),
+            tuple(AHSP_INNER_ELEMENT_ID, ELEMENT_TERMINATED), // inner instance for B
+            tuple("C", ELEMENT_TERMINATED),
+            tuple(AHSP_INNER_ELEMENT_ID, ELEMENT_TERMINATED), // inner instance for C
+            tuple(AHSP_ELEMENT_ID, ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldTerminateChildrenAndActivateOthersWhenCancelInstancesIsSetToTrue() {
+    // given
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.userTask("B");
+              adHocSubProcess.userTask("C");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
+
+    // when
+    completeJob(jobType, false, true, activateElement("C"));
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(AHSP_INNER_ELEMENT_ID, ELEMENT_TERMINATED))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("A", ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_ELEMENT_ID, ELEMENT_COMPLETED), // inner instance for A
+            tuple(AHSP_INNER_ELEMENT_ID, ELEMENT_ACTIVATED), // inner instance for C
+            tuple("C", ELEMENT_ACTIVATED),
+            tuple("B", ELEMENT_TERMINATED),
+            tuple(AHSP_INNER_ELEMENT_ID, ELEMENT_TERMINATED)); // inner instance for B
   }
 
   @Test
@@ -806,16 +878,18 @@ public class JobBasedAdHocSubProcessTest {
         .hasErrorMessage("The output collection has the wrong type. Expected ARRAY but was NIL.");
   }
 
-  private void completeJobWithActivateElements(
+  private void completeJob(
       final String jobType,
       final boolean completionConditionFulfilled,
+      final boolean cancelRemainingInstances,
       final JobResultActivateElement... activateElements) {
     final var jobKey =
         ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
     final var jobResult =
         new JobResult()
             .setActivateElements(List.of(activateElements))
-            .setCompletionConditionFulfilled(completionConditionFulfilled);
+            .setCompletionConditionFulfilled(completionConditionFulfilled)
+            .setCancelRemainingInstances(cancelRemainingInstances);
     ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
   }
 

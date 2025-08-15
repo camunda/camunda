@@ -158,6 +158,10 @@ public class AdHocSubProcessInstructionActivateProcessor
         adHocSubProcessElementInstance.getValue(),
         adHocSubProcessElementInstance.getState());
 
+    if (command.getValue().isCancelRemainingInstances()) {
+      bpmnAdHocSubProcessBehavior.terminateChildInstances(bpmnElementContext);
+    }
+
     // activate the elements
     for (final var elementValue : command.getValue().activateElements()) {
       bpmnAdHocSubProcessBehavior.activateElement(
