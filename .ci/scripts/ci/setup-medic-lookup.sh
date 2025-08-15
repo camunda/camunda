@@ -6,7 +6,7 @@
 # except in compliance with the Camunda License 1.0.
 #
 declare -A lookupTeamMedic
-# @core-reatures-medic
+# @core-features-medic
 coreFeaturesMedic="<!subteam^S08P2CU9V8W|core-features-medic>"
 lookupTeamMedic["team-core-features"]=$coreFeaturesMedic
 lookupTeamMedic["Core Features"]=coreFeaturesMedic
@@ -23,9 +23,11 @@ identityMedic="<!subteam^S053MF48SSH|identity-medic>"
 lookupTeamMedic["team-identity"]=$identityMedic
 lookupTeamMedic["Identity"]=$identityMedic
 
-distributedSystemsMedic="Distributed Systems Medic" # no current medic slack handle
+# no current medic slack handle for this team
+distributedSystemsMedic="Distributed Systems Medic"
 lookupTeamMedic["team-distributed-systems"]=$distributedSystemsMedic
 lookupTeamMedic["Distributed Systems"]=$distributedSystemsMedic
 lookupTeamMedic["DistributedSystems"]=$distributedSystemsMedic
 
+# catch all for tests without an assigned team
 lookupTeamMedic["General"]="General Test, requires investigation"
