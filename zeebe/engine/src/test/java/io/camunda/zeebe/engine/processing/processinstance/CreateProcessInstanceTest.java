@@ -263,10 +263,8 @@ public final class CreateProcessInstanceTest {
         .hasFlowScopeKey(-1)
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey)
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-
-    final var tags = value.getTags();
-    assertThat(tags).containsExactlyInAnyOrder("businessKey:1234", "priority:high");
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .hasTags("businessKey:1234", "priority:high");
   }
 
   @Test
