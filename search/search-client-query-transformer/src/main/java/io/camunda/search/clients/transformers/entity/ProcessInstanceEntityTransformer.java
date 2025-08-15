@@ -31,7 +31,8 @@ public class ProcessInstanceEntityTransformer
         toState(source.getState()),
         source.isIncident(),
         source.getTenantId(),
-        source.getTreePath());
+        source.getTreePath(),
+        source.getTags());
   }
 
   private ProcessInstanceState toState(
