@@ -103,11 +103,11 @@ public class DecisionEvaluationEvaluteProcessor
                   decisionBehavior.evaluateDecisionInDrg(
                       drg, BufferUtil.bufferAsString(decision.getDecisionId()), variables);
 
+              final var evaluationRecordKey = keyGenerator.nextKey();
               final Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord>
                   evaluationRecordTuple =
-                      decisionBehavior.createDecisionEvaluationEvent(decision, evaluationResult);
-
-              final var evaluationRecordKey = keyGenerator.nextKey();
+                      decisionBehavior.createDecisionEvaluationEvent(
+                          decision, evaluationResult, evaluationRecordKey);
               stateWriter.appendFollowUpEvent(
                   evaluationRecordKey,
                   evaluationRecordTuple.getLeft(),

@@ -129,7 +129,9 @@ public class DecisionBehavior {
   }
 
   public Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> createDecisionEvaluationEvent(
-      final PersistedDecision decision, final DecisionEvaluationResult decisionResult) {
+      final PersistedDecision decision,
+      final DecisionEvaluationResult decisionResult,
+      final long decisionEvaluationKey) {
 
     final var decisionEvaluationEvent =
         new DecisionEvaluationRecord()
@@ -151,15 +153,21 @@ public class DecisionBehavior {
                     persistedDecision -> bufferAsString(persistedDecision.getDecisionId()),
                     DecisionInfo::new));
 
-    decisionResult
-        .getEvaluatedDecisions()
-        .forEach(
-            evaluatedDecision ->
-                addDecisionToEvaluationEvent(
-                    evaluatedDecision,
-                    decisionKeysByDecisionId.getOrDefault(
-                        evaluatedDecision.decisionId(), UNKNOWN_DECISION_INFO),
-                    decisionEvaluationEvent));
+    final var evaluatedDecisions = decisionResult.getEvaluatedDecisions();
+    for (int index = 0; index < evaluatedDecisions.size(); index++) {
+      final EvaluatedDecision evaluatedDecision = evaluatedDecisions.get(index);
+      // The decisionEvaluationInstanceKey is used to uniquely identify the evaluation of a
+      // decision within a decision evaluation event. It is constructed by appending the decision
+      // evaluation key to the index of the evaluated decision (starting from 1).
+      final var decisionEvaluationInstanceKey =
+          String.format("%d-%d", decisionEvaluationKey, index + 1);
+      addDecisionToEvaluationEvent(
+          evaluatedDecision,
+          decisionKeysByDecisionId.getOrDefault(
+              evaluatedDecision.decisionId(), UNKNOWN_DECISION_INFO),
+          decisionEvaluationEvent,
+          decisionEvaluationInstanceKey);
+    }
 
     final DecisionEvaluationIntent decisionEvaluationIntent;
     if (decisionResult.isFailure()) {
@@ -197,11 +205,13 @@ public class DecisionBehavior {
   private void addDecisionToEvaluationEvent(
       final EvaluatedDecision evaluatedDecision,
       final DecisionInfo decisionInfo,
-      final DecisionEvaluationRecord decisionEvaluationEvent) {
+      final DecisionEvaluationRecord decisionEvaluationEvent,
+      final String decisionEvaluationInstanceKey) {
 
     final var evaluatedDecisionRecord = decisionEvaluationEvent.evaluatedDecisions().add();
     evaluatedDecisionRecord
         .setDecisionId(evaluatedDecision.decisionId())
+        .setDecisionEvaluationInstanceKey(decisionEvaluationInstanceKey)
         .setDecisionName(evaluatedDecision.decisionName())
         .setDecisionKey(decisionInfo.key())
         .setDecisionVersion(decisionInfo.version())

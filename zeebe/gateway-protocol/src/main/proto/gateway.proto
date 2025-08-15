@@ -400,6 +400,8 @@ message EvaluatedDecision {
   repeated EvaluatedDecisionInput evaluatedInputs = 8;
   // the tenant identifier of the evaluated decision
   string tenantId = 9;
+  // the key of the decision evaluation instance
+  string decisionEvaluationInstanceKey = 10;
 }
 
 message EvaluatedDecisionInput {

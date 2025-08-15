@@ -33,6 +33,11 @@ public interface EvaluatedDecisionValue extends RecordValue, TenantOwned {
   String getDecisionId();
 
   /**
+   * @return the key of the evaluated decision
+   */
+  String getDecisionEvaluationInstanceKey();
+
+  /**
    * @return the name of the evaluated decision
    */
   String getDecisionName();

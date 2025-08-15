@@ -26,6 +26,11 @@ public interface EvaluatedDecision {
   String getDecisionId();
 
   /**
+   * @return the key of the decision evaluation instance
+   */
+  String getDecisionEvaluationInstanceKey();
+
+  /**
    * @return the assigned decision version
    */
   int getDecisionVersion();

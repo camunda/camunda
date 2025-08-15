@@ -30,6 +30,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
 
   @JsonIgnore private final JsonMapper jsonMapper;
   private final String decisionId;
+  private final String decisionEvaluationInstanceKey;
   private final long decisionKey;
   private final int decisionVersion;
   private final String decisionName;
@@ -43,6 +44,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
       final EvaluatedDecisionResult evaluatedDecisionItem, final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     decisionId = evaluatedDecisionItem.getDecisionDefinitionId();
+    decisionEvaluationInstanceKey = evaluatedDecisionItem.getDecisionEvaluationInstanceKey();
     decisionKey = Long.parseLong(evaluatedDecisionItem.getDecisionDefinitionKey());
     decisionVersion = evaluatedDecisionItem.getDecisionDefinitionVersion();
     decisionName = evaluatedDecisionItem.getDecisionDefinitionName();
@@ -58,6 +60,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
     this.jsonMapper = jsonMapper;
 
     decisionId = evaluatedDecision.getDecisionId();
+    decisionEvaluationInstanceKey = evaluatedDecision.getDecisionEvaluationInstanceKey();
     decisionKey = evaluatedDecision.getDecisionKey();
     decisionName = evaluatedDecision.getDecisionName();
     decisionVersion = evaluatedDecision.getDecisionVersion();
@@ -97,6 +100,11 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
   @Override
   public String getDecisionId() {
     return decisionId;
+  }
+
+  @Override
+  public String getDecisionEvaluationInstanceKey() {
+    return decisionEvaluationInstanceKey;
   }
 
   @Override
