@@ -1082,7 +1082,7 @@ public class JobBasedAdHocSubProcessTest {
   }
 
   @Test
-  public void shouldRejectWhenCompletionConditionIsFullfilledAndActivatingElements() {
+  public void shouldRejectWhenCompletionConditionIsFulfilledAndActivatingElements() {
     // given
     final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
@@ -1094,6 +1094,8 @@ public class JobBasedAdHocSubProcessTest {
               adHocSubProcess.userTask("C");
             });
     ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     completeJob(jobType, true, false, activateElement("A"), activateElement("B"));
