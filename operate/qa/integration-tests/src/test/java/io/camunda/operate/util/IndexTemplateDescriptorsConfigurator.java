@@ -15,6 +15,7 @@ import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
@@ -73,6 +74,21 @@ public class IndexTemplateDescriptorsConfigurator {
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
     return new MetricIndex(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb()) {
+      @Override
+      public String getIndexPrefix() {
+        return indexPrefixHolder.getIndexPrefix();
+      }
+    };
+  }
+
+  @Bean
+  public UsageMetricIndex getUsageMetricIndex(
+      final OperateProperties operateProperties,
+      final DatabaseInfo databaseInfo,
+      final IndexPrefixHolder indexPrefixHolder) {
+    return new UsageMetricIndex(
         operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
         databaseInfo.isElasticsearchDb()) {
       @Override

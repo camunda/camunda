@@ -18,6 +18,8 @@ import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
@@ -58,6 +60,22 @@ public class IndexTemplateDescriptorsConfigurator {
   public MetricIndex getMetricIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new MetricIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public UsageMetricIndex getUsageMetricIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new UsageMetricIndex(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public UsageMetricTUIndex getUsageMetricTU(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new UsageMetricTUIndex(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean

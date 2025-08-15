@@ -69,7 +69,11 @@ public class DecisionEvaluationZeebeRecordProcessor {
     for (final DecisionInstanceEntity entity : decisionEntities) {
       batchRequest.add(decisionInstanceTemplate.getFullQualifiedName(), entity);
       metricsStore.registerDecisionInstanceCompleteEvent(
-          entity.getId(), decisionEvaluation.getTenantId(), timestamp, batchRequest);
+          entity.getKey(),
+          decisionEvaluation.getTenantId(),
+          entity.getPartitionId(),
+          timestamp,
+          batchRequest);
     }
   }
 

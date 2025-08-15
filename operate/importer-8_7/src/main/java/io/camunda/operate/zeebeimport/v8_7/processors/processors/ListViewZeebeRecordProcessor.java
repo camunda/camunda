@@ -411,9 +411,12 @@ public class ListViewZeebeRecordProcessor {
       final BatchRequest batchRequest,
       final OffsetDateTime timestamp)
       throws PersistenceException {
-    final String processInstanceKey = String.valueOf(piEntity.getProcessInstanceKey());
     metricsStore.registerProcessInstanceStartEvent(
-        processInstanceKey, piEntity.getTenantId(), timestamp, batchRequest);
+        piEntity.getKey(),
+        piEntity.getTenantId(),
+        piEntity.getPartitionId(),
+        timestamp,
+        batchRequest);
   }
 
   private String getTreePathForCalledProcess(final ProcessInstanceRecordValue recordValue) {

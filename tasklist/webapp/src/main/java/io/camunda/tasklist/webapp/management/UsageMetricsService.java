@@ -11,14 +11,19 @@ import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricQueryDTO;
 import io.camunda.tasklist.webapp.rest.InternalAPIErrorController;
-import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 
+/**
+ * @deprecated please use {@link
+ *     io.camunda.zeebe.gateway.rest.controller.system.UsageMetricsController}
+ */
 @Component
+@Deprecated(forRemoval = true, since = "8.8")
 @RestControllerEndpoint(id = "usage-metrics")
 public class UsageMetricsService extends InternalAPIErrorController {
 
@@ -36,9 +41,9 @@ public class UsageMetricsService extends InternalAPIErrorController {
       value = "/assignees",
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public UsageMetricDTO retrieveUniqueAssignedUsers(final UsageMetricQueryDTO query) {
-    final List<String> assignees =
+    final Set<Long> assignees =
         taskMetricsStore.retrieveDistinctAssigneesBetweenDates(
-            query.getStartTime(), query.getEndTime());
+            query.getStartTime(), query.getEndTime(), query.getTenantId());
     return new UsageMetricDTO(assignees);
   }
 }

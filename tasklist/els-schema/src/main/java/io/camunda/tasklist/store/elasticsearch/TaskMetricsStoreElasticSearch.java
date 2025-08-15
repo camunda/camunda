@@ -8,21 +8,23 @@
 package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
-import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.EVENT;
-import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.EVENT_TIME;
-import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.ASSIGNEE_HASH;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.TENANT_ID;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskMetricsStore;
-import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
-import io.camunda.webapps.schema.entities.MetricEntity;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
+import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.zeebe.util.HashUtil;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
@@ -35,7 +37,7 @@ import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedLongTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
@@ -50,10 +52,11 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
 
-  public static final String EVENT_TASK_COMPLETED_BY_ASSIGNEE = "task_completed_by_assignee";
   public static final String ASSIGNEE = "assignee";
+  public static final String TU_ID_PATTERN = "%s_%s_%s";
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskMetricsStoreElasticSearch.class);
-  @Autowired private TasklistMetricIndex index;
+
+  @Autowired private UsageMetricTUIndex index;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -64,8 +67,8 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   private ObjectMapper objectMapper;
 
   @Override
-  public void registerTaskCompleteEvent(final TaskEntity task) {
-    final MetricEntity metric = createTaskCompleteEvent(task);
+  public void registerTaskAssigned(final TaskEntity task) {
+    final UsageMetricsTUEntity metric = createTaskAssignedEntity(task);
     final boolean inserted = insert(metric);
     if (!inserted) {
       final String message = "Wrong response status while logging event";
@@ -75,18 +78,21 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   }
 
   @Override
-  public List<String> retrieveDistinctAssigneesBetweenDates(
-      final OffsetDateTime startTime, final OffsetDateTime endTime) {
+  public Set<Long> retrieveDistinctAssigneesBetweenDates(
+      final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
 
-    final BoolQueryBuilder rangeQuery =
-        boolQuery()
-            .must(QueryBuilders.termsQuery(EVENT, EVENT_TASK_COMPLETED_BY_ASSIGNEE))
-            .must(QueryBuilders.rangeQuery(EVENT_TIME).gte(startTime).lte(endTime));
+    final BoolQueryBuilder boolQuery =
+        boolQuery().must(QueryBuilders.rangeQuery(EVENT_TIME).gte(startTime).lte(endTime));
+
+    if (tenantId != null) {
+      boolQuery.must(QueryBuilders.termQuery(TENANT_ID, tenantId));
+    }
+
     final TermsAggregationBuilder aggregation =
-        AggregationBuilders.terms(ASSIGNEE).field(VALUE).size(Integer.MAX_VALUE);
+        AggregationBuilders.terms(ASSIGNEE).field(ASSIGNEE_HASH).size(Integer.MAX_VALUE);
 
     final SearchSourceBuilder source =
-        SearchSourceBuilder.searchSource().query(rangeQuery).aggregation(aggregation);
+        SearchSourceBuilder.searchSource().query(boolQuery).aggregation(aggregation);
     final SearchRequest searchRequest =
         new SearchRequest(index.getFullQualifiedName())
             .indicesOptions(LENIENT_EXPAND_OPEN_IGNORE_THROTTLED)
@@ -100,14 +106,14 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
       }
 
       final Aggregation group = aggregations.get(ASSIGNEE);
-      if (!(group instanceof final ParsedStringTerms terms)) {
+      if (!(group instanceof final ParsedLongTerms terms)) {
         throw new TasklistRuntimeException("Unexpected response for aggregations");
       }
 
-      final List<ParsedStringTerms.ParsedBucket> buckets =
-          (List<ParsedStringTerms.ParsedBucket>) terms.getBuckets();
+      final List<ParsedLongTerms.ParsedBucket> buckets =
+          (List<ParsedLongTerms.ParsedBucket>) terms.getBuckets();
 
-      return buckets.stream().map(it -> String.valueOf(it.getKey())).collect(Collectors.toList());
+      return buckets.stream().map(it -> (long) it.getKey()).collect(Collectors.toSet());
     } catch (final IOException e) {
       LOGGER.error("Error while retrieving assigned users between dates from index: " + index, e);
       final String message = "Error while retrieving assigned users between dates";
@@ -115,7 +121,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
     }
   }
 
-  private boolean insert(final MetricEntity entity) {
+  private boolean insert(final UsageMetricsTUEntity entity) {
     try {
       final IndexRequest request =
           new IndexRequest(index.getFullQualifiedName())
@@ -130,11 +136,14 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
     }
   }
 
-  private MetricEntity createTaskCompleteEvent(final TaskEntity task) {
-    return new MetricEntity()
-        .setEvent(EVENT_TASK_COMPLETED_BY_ASSIGNEE)
-        .setValue(task.getAssignee())
-        .setEventTime(task.getCompletionTime())
-        .setTenantId(task.getTenantId());
+  private UsageMetricsTUEntity createTaskAssignedEntity(final TaskEntity task) {
+    final String tenantId = task.getTenantId();
+    final long assigneeHash = HashUtil.getStringHashValue(task.getAssignee());
+    return new UsageMetricsTUEntity()
+        .setId(String.format(TU_ID_PATTERN, task.getKey(), tenantId, assigneeHash))
+        .setEventTime(task.getCreationTime())
+        .setAssigneeHash(assigneeHash)
+        .setTenantId(tenantId)
+        .setPartitionId(task.getPartitionId());
   }
 }

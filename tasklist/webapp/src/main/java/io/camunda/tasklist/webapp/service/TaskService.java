@@ -185,7 +185,17 @@ public class TaskService {
     final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
     final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
     updateClaimedMetric(assignedTaskMetrics);
+    updateTaskAssignedMetric(claimedTask);
     return TaskDTO.createFrom(claimedTask, objectMapper);
+  }
+
+  public void updateTaskAssignedMetric(TaskEntity task) {
+    // Only write metrics when completing a Job-based User Tasks. With 8.7,
+    // metrics for completed (not Job-based) User Tasks are written by the
+    // handler "TaskCompletedMetricHandler" in the camunda-exporter
+    if (TaskImplementation.JOB_WORKER.equals(task.getImplementation())) {
+      taskMetricsStore.registerTaskAssigned(task);
+    }
   }
 
   private String determineTaskAssignee(final String assignee, final String authenticatedUsername) {
@@ -303,12 +313,6 @@ public class TaskService {
       final var authenticatedUsername = currentAuthentication.authenticatedUsername();
       final var completedTaskLabels = getTaskMetricLabels(task, authenticatedUsername);
       metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, completedTaskLabels);
-      // Only write metrics when completing a Job-based User Tasks. With 8.7,
-      // metrics for completed (not Job-based) User Tasks are written by the
-      // handler "TaskCompletedMetricHandler" in the camunda-exporter
-      if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
-        taskMetricsStore.registerTaskCompleteEvent(task);
-      }
     } catch (final Exception e) {
       LOGGER.error("Error updating completed task metric for task with ID: {}", task.getKey(), e);
       throw new TasklistRuntimeException(

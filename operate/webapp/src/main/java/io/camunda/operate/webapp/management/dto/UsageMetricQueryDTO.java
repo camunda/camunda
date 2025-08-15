@@ -21,6 +21,8 @@ public class UsageMetricQueryDTO {
   @DateTimeFormat(pattern = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT)
   private OffsetDateTime endTime;
 
+  private String tenantId;
+
   private int pageSize = DEFAULT_PAGE_SIZE;
 
   public OffsetDateTime getStartTime() {
@@ -37,6 +39,14 @@ public class UsageMetricQueryDTO {
 
   public void setEndTime(final OffsetDateTime endTime) {
     this.endTime = endTime;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
   }
 
   public int getPageSize() {
