@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.List;
+import java.util.Set;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -44,6 +45,9 @@ public interface ProcessInstanceCreationRecordValue
 
   /** Returns a list of runtime instructions (if available), or an empty list. */
   List<ProcessInstanceCreationRuntimeInstructionValue> getRuntimeInstructions();
+
+  /** Returns a set of tags */
+  Set<String> getTags();
 
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)

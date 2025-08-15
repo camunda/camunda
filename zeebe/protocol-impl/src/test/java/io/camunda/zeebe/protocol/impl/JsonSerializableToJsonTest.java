@@ -1597,7 +1597,8 @@ final class JsonSerializableToJsonTest {
                           MsgPackConverter.convertToMsgPack("{'foo':'bar','baz':'boz'}")))
                   .addStartInstruction(
                       new ProcessInstanceCreationStartInstruction().setElementId("element"))
-                  .setProcessInstanceKey(instanceKey);
+                  .setProcessInstanceKey(instanceKey)
+                  .setTags(Set.of("tag1", "tag2"));
             },
         """
         {
@@ -1615,7 +1616,8 @@ final class JsonSerializableToJsonTest {
             }
           ],
           "tenantId": "test-tenant",
-          "runtimeInstructions": []
+          "runtimeInstructions": [],
+          "tags": ["tag1", "tag2"]
         }
         """
       },
@@ -1635,7 +1637,8 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": -1,
           "startInstructions": [],
           "tenantId": "<default>",
-          "runtimeInstructions": []
+          "runtimeInstructions": [],
+          "tags": []
         }
         """
       },
@@ -1740,7 +1743,8 @@ final class JsonSerializableToJsonTest {
                   .setBpmnEventType(BpmnEventType.UNSPECIFIED)
                   .setElementInstancePath(elementInstancePath)
                   .setProcessDefinitionPath(processDefinitionPath)
-                  .setCallingElementPath(callingElementPath);
+                  .setCallingElementPath(callingElementPath)
+                  .setTags(Set.of("tag1", "tag2"));
             },
         """
         {
@@ -1757,7 +1761,8 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "elementInstancePath":[[101, 102], [103, 104]],
           "processDefinitionPath": [101, 102],
-          "callingElementPath": [12345, 67890]
+          "callingElementPath": [12345, 67890],
+          "tags": ["tag1", "tag2"]
         }
         """
       },
@@ -1783,7 +1788,8 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "elementInstancePath":[],
           "processDefinitionPath": [],
-          "callingElementPath": []
+          "callingElementPath": [],
+          "tags": []
         }
         """
       },
