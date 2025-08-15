@@ -27,8 +27,7 @@ public class OpenApiResourceConfig {
   public static final SecurityScheme BEARER_SECURITY_SCHEMA =
       new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT");
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiResourceConfig.class);
-  @Autowired
-  private ApiDescriptionConfig.ApiDescription apiDescription;
+  @Autowired private ApiDescriptionConfig.ApiDescription apiDescription;
 
   @Bean
   public GroupedOpenApi restApiV2() {

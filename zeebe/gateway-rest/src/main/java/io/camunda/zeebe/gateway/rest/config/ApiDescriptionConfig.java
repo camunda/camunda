@@ -23,7 +23,7 @@ public class ApiDescriptionConfig {
         API for communicating with a Camunda 8 SaaS cluster.
 
         **Authentication:**
-        - **OIDC Authentication**: Log into `/operate/login` to get proper credentials
+        - **OAuth 2.0 Authentication**: Log into `/operate/login` to get proper credentials
         - **Bearer Token**: Use the Authorize button in Swagger UI to provide a Bearer token""");
   }
 
@@ -35,10 +35,9 @@ public class ApiDescriptionConfig {
         API for communicating with a Camunda 8 Self-Managed cluster.
 
         **Authentication Options:**
-        - **Basic Authentication**: Use username/password credentials
-        - **OIDC Authentication**: Both OAuth2 flow and Bearer token supported
-          - Use Swagger UI's Authorize flow, or
-          - Log into `/operate/login` to get proper credentials""");
+        - **Basic Authentication**: Use the Authorize button to provide username/password credentials
+        - **OAuth 2.0 Authentication**: Log into `/operate/login` to get proper credentials
+        - **Bearer Token**: Use the Authorize button in Swagger UI to provide a Bearer token""");
   }
 
   public static class ApiDescription {
