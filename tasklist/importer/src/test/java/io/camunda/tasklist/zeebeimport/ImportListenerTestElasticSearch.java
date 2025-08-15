@@ -30,9 +30,9 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     classes = {
@@ -43,19 +43,19 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ImportListenerTestElasticSearch extends NoBeansTest {
 
-  @MockBean private ImportBatchProcessorFactory importBatchProcessorFactory;
+  @MockitoBean private ImportBatchProcessorFactory importBatchProcessorFactory;
 
-  @MockBean private ImportBatchProcessor elasticsearchBulkProcessor;
+  @MockitoBean private ImportBatchProcessor elasticsearchBulkProcessor;
 
-  @MockBean private ImportPositionHolder importPositionHolder;
+  @MockitoBean private ImportPositionHolder importPositionHolder;
 
-  @MockBean
+  @MockitoBean
   @Qualifier("tasklistZeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  @MockBean private RecordsReaderHolder recordsReaderHolder;
+  @MockitoBean private RecordsReaderHolder recordsReaderHolder;
 
-  @MockBean private TasklistProperties tasklistProperties;
+  @MockitoBean private TasklistProperties tasklistProperties;
 
   @Autowired private BeanFactory beanFactory;
 
@@ -82,7 +82,7 @@ public class ImportListenerTestElasticSearch extends NoBeansTest {
       when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
           .thenReturn(elasticsearchBulkProcessor);
       doNothing().when(elasticsearchBulkProcessor).performImport(importBatchElasticSearch);
-    } catch (PersistenceException e) {
+    } catch (final PersistenceException e) {
       // ignore
     }
 
@@ -109,7 +109,7 @@ public class ImportListenerTestElasticSearch extends NoBeansTest {
       doThrow(new PersistenceException())
           .when(elasticsearchBulkProcessor)
           .performImport(importBatchElasticSearch);
-    } catch (PersistenceException e) {
+    } catch (final PersistenceException e) {
       // ignore
     }
 
@@ -130,13 +130,13 @@ public class ImportListenerTestElasticSearch extends NoBeansTest {
     private ImportBatch importBatchElasticSearch;
 
     @Override
-    public void finished(ImportBatch importBatchElasticSearch) {
+    public void finished(final ImportBatch importBatchElasticSearch) {
       finishedCalled = true;
       this.importBatchElasticSearch = importBatchElasticSearch;
     }
 
     @Override
-    public void failed(ImportBatch importBatchElasticSearch) {
+    public void failed(final ImportBatch importBatchElasticSearch) {
       failedCalled = true;
       this.importBatchElasticSearch = importBatchElasticSearch;
     }

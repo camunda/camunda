@@ -25,7 +25,7 @@ import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest(
@@ -42,9 +42,9 @@ import org.springframework.test.web.servlet.MvcResult;
     })
 public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
 
-  @MockBean private DecisionInstanceReader decisionInstanceReader;
+  @MockitoBean private DecisionInstanceReader decisionInstanceReader;
 
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
 
   @Test
   public void testDecisionInstanceFailsWhenNoPermissions() throws Exception {

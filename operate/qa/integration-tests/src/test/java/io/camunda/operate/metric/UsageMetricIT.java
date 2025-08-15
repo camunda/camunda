@@ -23,12 +23,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestExecutionListeners;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
@@ -57,7 +57,7 @@ public class UsageMetricIT {
       "/actuator/usage-metrics/decision-instances?startTime={startTime}&endTime={endTime}";
 
   @Autowired private TestRestTemplate testRestTemplate;
-  @MockBean private MetricsStore metricsStore;
+  @MockitoBean private MetricsStore metricsStore;
 
   @LocalManagementPort private int managementPort;
 

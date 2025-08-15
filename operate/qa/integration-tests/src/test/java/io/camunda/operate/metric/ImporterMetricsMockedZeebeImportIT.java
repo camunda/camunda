@@ -27,9 +27,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @ContextConfiguration(initializers = ManagementPropertyRemoval.class)
 public class ImporterMetricsMockedZeebeImportIT extends OperateZeebeAbstractIT {
@@ -38,7 +38,7 @@ public class ImporterMetricsMockedZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private TestImportListener countImportListener;
 
-  @MockBean
+  @MockitoBean
   @Qualifier("importThreadPoolExecutor")
   private ThreadPoolTaskExecutor importExecutor;
 

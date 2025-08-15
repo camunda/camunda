@@ -40,7 +40,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 public class IncidentStatisticsIT extends OperateAbstractIT {
 
@@ -57,7 +57,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
   private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
   private final Random random = new Random();
 
   private final String tenantId1 = "tenant1";

@@ -35,8 +35,8 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.stereotype.Component;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     classes = {
@@ -52,19 +52,19 @@ import org.springframework.stereotype.Component;
     })
 public class ImportListenerIT extends NoBeansIT {
 
-  @MockBean private ImportBatchProcessorFactory importBatchProcessorFactory;
+  @MockitoBean private ImportBatchProcessorFactory importBatchProcessorFactory;
 
-  @MockBean private ImportBulkProcessor elasticsearchBulkProcessor;
+  @MockitoBean private ImportBulkProcessor elasticsearchBulkProcessor;
 
-  @MockBean private ImportPositionHolder importPositionHolder;
+  @MockitoBean private ImportPositionHolder importPositionHolder;
 
-  @MockBean
+  @MockitoBean
   @Qualifier("zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  @MockBean private RecordsReaderHolder recordsReaderHolder;
+  @MockitoBean private RecordsReaderHolder recordsReaderHolder;
 
-  @MockBean private OperateProperties operateProperties;
+  @MockitoBean private OperateProperties operateProperties;
 
   @Autowired private BeanFactory beanFactory;
 

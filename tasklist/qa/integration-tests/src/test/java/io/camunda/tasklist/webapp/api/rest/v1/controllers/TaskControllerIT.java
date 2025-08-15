@@ -56,9 +56,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -66,7 +66,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
   @InjectMocks private IdentityProperties identityProperties;
 
-  @MockBean private UserGroupService userGroupService;
+  @MockitoBean private UserGroupService userGroupService;
 
   @Autowired private WebApplicationContext context;
 

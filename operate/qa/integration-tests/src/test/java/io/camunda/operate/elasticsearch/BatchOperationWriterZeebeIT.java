@@ -36,7 +36,7 @@ import org.apache.http.HttpStatus;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 /** Tests Elasticsearch queries for operations. */
@@ -50,7 +50,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   private final String bpmnProcessId3 = "bpmnProcessId3";
   @Autowired private BatchOperationWriter batchOperationWriter;
   @Autowired private OperationTemplate operationTemplate;
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
 
   @Test
   public void testBatchUpdateWithPermisssionWhenAllowed() throws Exception {

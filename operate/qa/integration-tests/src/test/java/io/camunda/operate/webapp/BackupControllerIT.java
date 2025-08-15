@@ -65,12 +65,12 @@ import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 /* This class should be moved to the dist/ module as it does not really test anything operate specific
@@ -95,16 +95,16 @@ anymore, it will be done in a follow-up PR
 public class BackupControllerIT {
   private ElasticsearchSnapshotClient snapshotClient;
 
-  @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
+  @MockitoBean(answers = Answers.RETURNS_DEEP_STUBS)
   private ElasticsearchClient elasticsearchClient;
 
   private final JsonpMapper jsonpMapper = new JacksonJsonpMapper();
   private final SnapshotNameProvider snapshotNameProvider = new WebappsSnapshotNameProvider();
 
-  @MockBean(name = "esClient", answer = Answers.RETURNS_DEEP_STUBS)
+  @MockitoBean(name = "esClient", answers = Answers.RETURNS_DEEP_STUBS)
   private RestHighLevelClient esClient;
 
-  @MockBean(name = "zeebeEsClient")
+  @MockitoBean(name = "zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
   @SpyBean private OperateProperties operateProperties;

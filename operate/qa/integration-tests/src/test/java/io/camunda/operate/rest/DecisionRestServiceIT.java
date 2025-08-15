@@ -32,7 +32,7 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -51,11 +51,11 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
     })
 public class DecisionRestServiceIT extends OperateAbstractIT {
 
-  @MockBean protected DecisionReader decisionReader;
+  @MockitoBean protected DecisionReader decisionReader;
 
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
 
-  @MockBean private BatchOperationWriter batchOperationWriter;
+  @MockitoBean private BatchOperationWriter batchOperationWriter;
 
   @Test
   public void testDecisionDefinitionXmlFailsWhenNoPermissions() throws Exception {

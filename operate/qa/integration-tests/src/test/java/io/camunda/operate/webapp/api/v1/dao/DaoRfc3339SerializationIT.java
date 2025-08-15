@@ -46,7 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
@@ -98,7 +98,7 @@ public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
 
   @Autowired private OperateDateTimeFormatter dateTimeFormatter;
 
-  @MockBean private ProcessCache processCache;
+  @MockitoBean private ProcessCache processCache;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
