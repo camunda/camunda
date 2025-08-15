@@ -134,6 +134,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             List.of(
                 this::checkAdHocSubprocessActivationTargetsAreValid,
                 this::checkAdHocSubprocessInstanceIsActive,
+                this::checkAdHocSubProcessCompletionConditionNotFulfilledForElementActivation,
                 this::checkTaskListenerJobForProvidingVariables,
                 this::checkTaskListenerJobForSupportingDenying,
                 this::checkTaskListenerJobForDenyingWithCorrections,
@@ -227,6 +228,11 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
     final var jobResult = jobRecord.getResult();
 
+    if (jobResult.isCompletionConditionFulfilled() && !jobResult.getActivateElements().isEmpty()) {
+      // reject
+      System.out.println("debug point");
+    }
+
     final AdHocSubProcessInstructionRecord instructionRecord =
         new AdHocSubProcessInstructionRecord()
             .setAdHocSubProcessInstanceKey(jobRecord.getElementInstanceKey())
@@ -273,6 +279,26 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
         targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
         targetAdHocSubProcessInstanceValue.getTenantId(),
         completingJobRecord.getVariablesBuffer());
+  }
+
+  private Either<Rejection, JobRecord>
+      checkAdHocSubProcessCompletionConditionNotFulfilledForElementActivation(
+          final TypedRecord<JobRecord> command, final JobRecord job) {
+
+    if (job.getJobKind() == JobKind.AD_HOC_SUB_PROCESS) {
+      final List<String> elementsToBeActivated =
+          command.getValue().getResult().getActivateElements().stream()
+              .map(JobResultActivateElementValue::getElementId)
+              .toList();
+
+      return AdHocSubProcessUtils
+          .validateThatCompletionConditionIsNotFulfilledWhenActivatingElements(
+              job.getElementInstanceKey(),
+              command.getValue().getResult().isCompletionConditionFulfilled(),
+              elementsToBeActivated)
+          .map(right -> job);
+    }
+    return Either.right(job);
   }
 
   private Either<Rejection, JobRecord> checkAdHocSubprocessActivationTargetsAreValid(
