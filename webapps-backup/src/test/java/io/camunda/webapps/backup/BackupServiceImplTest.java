@@ -153,9 +153,9 @@ public class BackupServiceImplTest {
     // all the snapshot parts created are removed
     assertThat(backupRepository.removedSnasphotNames)
         .contains(
-            "camunda_webapps_1_8.3_part_1_of_3",
-            "camunda_webapps_1_8.3_part_2_of_3",
-            "camunda_webapps_1_8.3_part_3_of_3");
+            "camunda_webapps_1_*_part_1_of_3",
+            "camunda_webapps_1_*_part_2_of_3",
+            "camunda_webapps_1_*_part_3_of_3");
   }
 
   private void waitForAllTasks() {
