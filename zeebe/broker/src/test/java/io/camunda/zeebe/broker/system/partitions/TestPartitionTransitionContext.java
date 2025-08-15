@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
@@ -42,6 +43,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
@@ -83,9 +85,12 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private MeterRegistry partitionMeterRegistry;
   private MeterRegistry transitionMeterRegistry;
   private String brokerVersion = PartitionTransitionContext.super.getBrokerVersion();
+  private boolean migrationsPerformed;
+  private final ComponentTreeListener healthMetrics;
 
   public TestPartitionTransitionContext() {
     transitionMeterRegistry = MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(1));
+    healthMetrics = new HealthTreeMetrics(transitionMeterRegistry);
   }
 
   @Override
@@ -341,6 +346,21 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setPartitionTransitionMeterRegistry(final MeterRegistry transitionMeterRegistry) {
     this.transitionMeterRegistry = transitionMeterRegistry;
+  }
+
+  @Override
+  public void markMigrationsDone() {
+    migrationsPerformed = true;
+  }
+
+  @Override
+  public boolean areMigrationsPerformed() {
+    return migrationsPerformed;
+  }
+
+  @Override
+  public ComponentTreeListener getComponentTreeListener() {
+    return healthMetrics;
   }
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {

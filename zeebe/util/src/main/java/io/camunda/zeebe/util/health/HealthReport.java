@@ -76,6 +76,16 @@ public record HealthReport(
     return new HealthReport(component, HealthStatus.DEAD, null, Map.of());
   }
 
+  public static HealthReport fromStatus(
+      final HealthStatus status, final HealthMonitorable component) {
+    return switch (status) {
+      case HEALTHY -> HealthReport.healthy(component);
+      case UNHEALTHY -> HealthReport.unhealthy(component);
+      case DEAD -> HealthReport.dead(component);
+      case null -> HealthReport.unknown(component.componentName());
+    };
+  }
+
   public boolean isHealthy() {
     return status == HealthStatus.HEALTHY;
   }
