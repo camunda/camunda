@@ -47,7 +47,7 @@ public class GroupEntityRemovedHandler
     final var groupRecord = record.getValue();
     return List.of(
         GroupIndex.JOIN_RELATION_FACTORY.createChildId(
-            groupRecord.getGroupId(), groupRecord.getEntityId()));
+            groupRecord.getGroupId(), groupRecord.getEntityId(), groupRecord.getEntityType()));
   }
 
   @Override

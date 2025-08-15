@@ -64,7 +64,7 @@ public class GroupEntityAddedHandlerTest {
     assertThat(idList)
         .containsExactly(
             GroupIndex.JOIN_RELATION_FACTORY.createChildId(
-                value.getGroupId(), value.getEntityId()));
+                value.getGroupId(), value.getEntityId(), value.getEntityType()));
   }
 
   @Test

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter;
+package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -13,7 +13,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.RoleMemberRemovedHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity;
@@ -62,7 +61,8 @@ public class RoleMemberRemovedHandlerTest {
     final var value = roleRecord.getValue();
     assertThat(idList)
         .containsExactly(
-            RoleIndex.JOIN_RELATION_FACTORY.createChildId(value.getRoleId(), value.getEntityId()));
+            RoleIndex.JOIN_RELATION_FACTORY.createChildId(
+                value.getRoleId(), value.getEntityId(), value.getEntityType()));
   }
 
   @Test
