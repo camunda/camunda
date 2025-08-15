@@ -221,24 +221,22 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
             )}
           />
         </DropdownAutoFocus>
-        <TextFieldContainer>
-          <Controller
-            name="ownerId"
-            control={control}
-            rules={{
-              required: "EMPTY",
-            }}
-            render={({ field, fieldState }) => (
-              <OwnerSelection
-                type={watchedOwnerType}
-                ownerId={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                isEmpty={!!fieldState.error?.message}
-              />
-            )}
-          />
-        </TextFieldContainer>
+        <Controller
+          name="ownerId"
+          control={control}
+          rules={{
+            required: "EMPTY",
+          }}
+          render={({ field, fieldState }) => (
+            <OwnerSelection
+              type={watchedOwnerType}
+              ownerId={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              isEmpty={!!fieldState.error?.message}
+            />
+          )}
+        />
       </Row>
       <Divider />
       <Row>
