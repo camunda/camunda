@@ -17,6 +17,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
@@ -56,7 +57,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         BrokerModuleConfiguration.class,
         CommonsModuleConfiguration.class,
         UnifiedConfigurationHelper.class,
-        UnifiedConfiguration.class);
+        UnifiedConfiguration.class,
+        GatewayRestPropertiesOverride.class);
 
     config = new BrokerBasedProperties();
 

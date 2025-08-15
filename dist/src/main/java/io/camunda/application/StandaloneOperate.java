@@ -14,6 +14,7 @@ import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
+import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
@@ -48,6 +49,7 @@ public class StandaloneOperate {
                 UnifiedConfigurationHelper.class,
                 OperatePropertiesOverride.class,
                 GatewayBasedPropertiesOverride.class,
+                GatewayRestPropertiesOverride.class,
                 // ---
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,

@@ -10,6 +10,7 @@ package io.camunda.tasklist.util.apps.modules;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
+import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
@@ -64,6 +65,7 @@ import org.springframework.context.annotation.Profile;
   UnifiedConfiguration.class,
   UnifiedConfigurationHelper.class,
   GatewayBasedPropertiesOverride.class,
+  GatewayRestPropertiesOverride.class
 })
 public class ModulesTestApplication {
 
