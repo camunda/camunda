@@ -55,7 +55,6 @@
               <goal>npm</goal>
             </goals>
             <configuration>
-              <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
               <arguments>ci</arguments>
             </configuration>
@@ -67,7 +66,6 @@
               <goal>npm</goal>
             </goals>
             <configuration>
-              <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
               <arguments>run build</arguments>
             </configuration>
