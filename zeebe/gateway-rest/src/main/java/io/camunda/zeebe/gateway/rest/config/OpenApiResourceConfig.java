@@ -16,6 +16,7 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,6 +27,8 @@ public class OpenApiResourceConfig {
   public static final SecurityScheme BEARER_SECURITY_SCHEMA =
       new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT");
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiResourceConfig.class);
+  @Autowired
+  private ApiDescriptionConfig.ApiDescription apiDescription;
 
   @Bean
   public GroupedOpenApi restApiV2() {
@@ -54,6 +57,6 @@ public class OpenApiResourceConfig {
   }
 
   private String getApiDescription() {
-    return "API for communicating with a Camunda 8 cluster.";
+    return apiDescription.getDescription();
   }
 }
