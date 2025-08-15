@@ -130,7 +130,6 @@ public class WebComponentAuthorizationCheckFilter extends OncePerRequestFilter {
         authorizationsEnabled);
 
     if (clientAssertionEnabled && isClientCredentials) {
-      LOG.info("MS Entra certificate authentication enabled for: {}", request.getRequestURI());
       if (!authorizationsEnabled) {
         LOG.info(
             "Authorizations disabled, forwarding to certificate access for: {}",

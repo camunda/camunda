@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,7 @@ class AdminUserCheckFilterTest {
     when(roleServices.hasMembersOfType(any(), any())).thenReturn(false);
     when(request.getContextPath()).thenReturn("localhost:8080");
     final AdminUserCheckFilter adminUserCheckFilter =
-        new AdminUserCheckFilter(securityConfig, roleServices);
+        new AdminUserCheckFilter(securityConfig, roleServices, Optional.empty());
 
     // when
     adminUserCheckFilter.doFilterInternal(request, response, filterChain);
@@ -67,7 +68,7 @@ class AdminUserCheckFilterTest {
         .getDefaultRoles()
         .put("admin", Map.of("users", Set.of("adminUser")));
     final AdminUserCheckFilter adminUserCheckFilter =
-        new AdminUserCheckFilter(securityConfig, roleServices);
+        new AdminUserCheckFilter(securityConfig, roleServices, Optional.empty());
 
     // when
     adminUserCheckFilter.doFilterInternal(request, response, filterChain);
@@ -85,7 +86,7 @@ class AdminUserCheckFilterTest {
         .thenReturn(roleServices);
     when(roleServices.hasMembersOfType(any(), any())).thenReturn(true);
     final AdminUserCheckFilter adminUserCheckFilter =
-        new AdminUserCheckFilter(securityConfig, roleServices);
+        new AdminUserCheckFilter(securityConfig, roleServices, Optional.empty());
 
     // when
     adminUserCheckFilter.doFilterInternal(request, response, filterChain);
@@ -101,7 +102,7 @@ class AdminUserCheckFilterTest {
     when(request.getContextPath()).thenReturn("");
     when(request.getRequestURI()).thenReturn("/identity/setup");
     final AdminUserCheckFilter adminUserCheckFilter =
-        new AdminUserCheckFilter(securityConfig, roleServices);
+        new AdminUserCheckFilter(securityConfig, roleServices, Optional.empty());
 
     // when
     adminUserCheckFilter.doFilterInternal(request, response, filterChain);
@@ -117,7 +118,7 @@ class AdminUserCheckFilterTest {
     when(request.getContextPath()).thenReturn("");
     when(request.getRequestURI()).thenReturn("/identity/assets/some-asset.js");
     final AdminUserCheckFilter adminUserCheckFilter =
-        new AdminUserCheckFilter(securityConfig, roleServices);
+        new AdminUserCheckFilter(securityConfig, roleServices, Optional.empty());
 
     // when
     adminUserCheckFilter.doFilterInternal(request, response, filterChain);

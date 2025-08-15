@@ -31,10 +31,10 @@ import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.CertificateBasedOAuth2Filter;
+import io.camunda.authentication.filters.MutualTlsAuthenticationFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.RequestScopedAuthenticationRestorationFilter;
 import io.camunda.authentication.filters.SessionAuthenticationRefreshFilter;
-import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.oauth.ClientAssertionConstants;
@@ -64,6 +64,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -71,6 +72,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -445,7 +447,8 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final SecurityConfiguration securityConfiguration,
-        final CookieCsrfTokenRepository csrfTokenRepository)
+        final CookieCsrfTokenRepository csrfTokenRepository,
+        final Optional<MutualTlsAuthenticationFilter> mutualTlsAuthenticationFilter)
         throws Exception {
       LOG.info("The API is protected by HTTP Basic authentication.");
       final var filterChainBuilder =
@@ -481,6 +484,12 @@ public class WebSecurityConfig {
                   (sessionManagement) ->
                       sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER));
 
+      // Add mTLS filter if enabled
+      if (mutualTlsAuthenticationFilter.isPresent()) {
+        filterChainBuilder.addFilterBefore(
+            mutualTlsAuthenticationFilter.get(), AuthorizationFilter.class);
+      }
+
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
@@ -495,7 +504,9 @@ public class WebSecurityConfig {
         final CamundaAuthenticationProvider authenticationProvider,
         final ResourceAccessProvider resourceAccessProvider,
         final RoleServices roleServices,
-        final CookieCsrfTokenRepository csrfTokenRepository)
+        final CookieCsrfTokenRepository csrfTokenRepository,
+        final Optional<MutualTlsAuthenticationFilter> mutualTlsAuthenticationFilter,
+        final Optional<MutualTlsProperties> mtlsProperties)
         throws Exception {
       LOG.info("Web Applications Login/Logout is setup.");
       final var filterChainBuilder =
@@ -545,8 +556,14 @@ public class WebSecurityConfig {
                       securityConfiguration, authenticationProvider, resourceAccessProvider),
                   AuthorizationFilter.class)
               .addFilterBefore(
-                  new AdminUserCheckFilter(securityConfiguration, roleServices),
+                  new AdminUserCheckFilter(securityConfiguration, roleServices, mtlsProperties),
                   AuthorizationFilter.class);
+
+      // Add mTLS filter if enabled
+      if (mutualTlsAuthenticationFilter.isPresent()) {
+        filterChainBuilder.addFilterBefore(
+            mutualTlsAuthenticationFilter.get(), AuthorizationFilter.class);
+      }
 
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
@@ -617,14 +634,19 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnExpression("${camunda.security.authentication.entra.enabled:false}")
     public CertificateBasedOAuth2Filter certificateBasedOAuth2Filter(
         final SecurityConfiguration securityConfiguration,
         final CertificateClientAssertionService certificateClientAssertionService,
         final RestTemplate restTemplate,
         final JwtDecoder jwtDecoder) {
+      LOG.info(
+          "Creating CertificateBasedOAuth2Filter - MS Entra certificate authentication enabled");
       return new CertificateBasedOAuth2Filter(
           securityConfiguration, certificateClientAssertionService, restTemplate, jwtDecoder);
     }
+
+    // mTLS beans are now configured in MtlsConfig class with custom condition
 
     /**
      * Maps certificate properties from Spring Boot configuration to OIDC authentication
@@ -793,7 +815,8 @@ public class WebSecurityConfig {
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager,
-        final CertificateBasedOAuth2Filter certificateBasedOAuth2Filter)
+        final Optional<CertificateBasedOAuth2Filter> certificateBasedOAuth2Filter,
+        final Optional<MutualTlsAuthenticationFilter> mutualTlsAuthenticationFilter)
         throws Exception {
       final String[] apiPathsForThisChain;
       final boolean isClientCredentials =
@@ -841,12 +864,21 @@ public class WebSecurityConfig {
                   oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
               .oauth2Login(AbstractHttpConfigurer::disable)
               .oidcLogout(AbstractHttpConfigurer::disable)
-              .logout(AbstractHttpConfigurer::disable)
-              .addFilterBefore(certificateBasedOAuth2Filter, AuthorizationFilter.class);
+              .logout(AbstractHttpConfigurer::disable);
+
+      // Add filters only if they are enabled
+      if (certificateBasedOAuth2Filter.isPresent()) {
+        filterChainBuilder.addFilterBefore(
+            certificateBasedOAuth2Filter.get(), AuthorizationFilter.class);
+      }
+      if (mutualTlsAuthenticationFilter.isPresent()) {
+        filterChainBuilder.addFilterBefore(
+            mutualTlsAuthenticationFilter.get(), AuthorizationFilter.class);
+      }
 
       applyOauth2RefreshTokenFilter(
-          httpSecurity, authorizedClientRepository, authorizedClientManager);
-      applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+          filterChainBuilder, authorizedClientRepository, authorizedClientManager);
+      applyCsrfConfiguration(filterChainBuilder, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
     }
@@ -863,7 +895,8 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientManager authorizedClientManager,
         final ClientRegistrationRepository clientRegistrationRepository,
         final AuthorizationServices authorizationServices,
-        final CertificateBasedOAuth2Filter certificateBasedOAuth2Filter,
+        final Optional<CertificateBasedOAuth2Filter> certificateBasedOAuth2Filter,
+        final Optional<MutualTlsAuthenticationFilter> mutualTlsAuthenticationFilter,
         final JwtDecoder jwtDecoder,
         @Value("${server.ssl.enabled:false}") final boolean sslEnabled)
         throws Exception {
@@ -875,135 +908,147 @@ public class WebSecurityConfig {
 
       final String[] identityPaths = API_V2_PATHS.toArray(String[]::new);
 
-      return httpSecurity
-          .securityMatcher(identityPaths)
-          .authorizeHttpRequests(
-              (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().authenticated())
-          .exceptionHandling(
-              ex ->
-                  ex.authenticationEntryPoint(
-                          (request, response, authException) -> {
-                            // Try to restore authentication from session before failing
-                            try {
-                              final var session = request.getSession(false);
-                              if (session != null) {
-                                final var storedAuth =
-                                    (Authentication)
-                                        session.getAttribute(ClientAssertionConstants.SESSION_KEY);
-                                if (storedAuth != null && storedAuth.isAuthenticated()) {
-                                  SecurityContextHolder.getContext().setAuthentication(storedAuth);
-                                  LOG.info(
-                                      "Restored authentication from session in error handler: {} - Thread: {}",
-                                      storedAuth.getName(),
-                                      Thread.currentThread().getName());
-                                  return;
+      HttpSecurity http =
+          httpSecurity
+              .securityMatcher(identityPaths)
+              .authorizeHttpRequests(
+                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().authenticated())
+              .exceptionHandling(
+                  ex ->
+                      ex.authenticationEntryPoint(
+                              (request, response, authException) -> {
+                                // Try to restore authentication from session before failing
+                                try {
+                                  final var session = request.getSession(false);
+                                  if (session != null) {
+                                    final var storedAuth =
+                                        (Authentication)
+                                            session.getAttribute(
+                                                ClientAssertionConstants.SESSION_KEY);
+                                    if (storedAuth != null && storedAuth.isAuthenticated()) {
+                                      SecurityContextHolder.getContext()
+                                          .setAuthentication(storedAuth);
+                                      LOG.info(
+                                          "Restored authentication from session in error handler: {} - Thread: {}",
+                                          storedAuth.getName(),
+                                          Thread.currentThread().getName());
+                                      return;
+                                    }
+                                  }
+                                } catch (final Exception e) {
+                                  LOG.warn(
+                                      "Failed to restore authentication from session in error handler",
+                                      e);
                                 }
-                              }
-                            } catch (final Exception e) {
-                              LOG.warn(
-                                  "Failed to restore authentication from session in error handler",
-                                  e);
+
+                                LOG.error(
+                                    "Authentication failed for certificate-based request: {} - Exception: {} - Thread: {} - SecurityContext: {}",
+                                    request.getRequestURI(),
+                                    authException.getMessage(),
+                                    Thread.currentThread().getName(),
+                                    SecurityContextHolder.getContext().hashCode());
+                                final var currentAuth =
+                                    SecurityContextHolder.getContext().getAuthentication();
+                                LOG.error(
+                                    "Current authentication state: Type: {}, Principal: {}, Authenticated: {}",
+                                    currentAuth != null
+                                        ? currentAuth.getClass().getSimpleName()
+                                        : "null",
+                                    currentAuth != null ? currentAuth.getName() : "null",
+                                    currentAuth != null ? currentAuth.isAuthenticated() : false);
+                                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                response.setContentType("application/json");
+                                response
+                                    .getWriter()
+                                    .write(
+                                        "{\"error\":\"Certificate-based authentication required: "
+                                            + authException.getMessage()
+                                            + "\"}");
+                              })
+                          .accessDeniedHandler(
+                              (request, response, accessDeniedException) -> {
+                                LOG.error(
+                                    "Access denied for certificate-based request: {} - Exception: {}",
+                                    request.getRequestURI(),
+                                    accessDeniedException.getMessage());
+                                final var currentAuth =
+                                    SecurityContextHolder.getContext().getAuthentication();
+                                LOG.error(
+                                    "Current authentication state during access denied: Type: {}, Principal: {}, Authenticated: {}",
+                                    currentAuth != null
+                                        ? currentAuth.getClass().getSimpleName()
+                                        : "null",
+                                    currentAuth != null ? currentAuth.getName() : "null",
+                                    currentAuth != null ? currentAuth.isAuthenticated() : false);
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                response.setContentType("application/json");
+                                response
+                                    .getWriter()
+                                    .write(
+                                        "{\"error\":\"Access denied: "
+                                            + accessDeniedException.getMessage()
+                                            + "\"}");
+                              }))
+              .headers(
+                  headers ->
+                      setupSecureHeaders(
+                          headers,
+                          securityConfiguration.getHttpHeaders(),
+                          securityConfiguration.getSaas().isConfigured()))
+              .cors(
+                  cors ->
+                      cors.configurationSource(
+                          request -> {
+                            final var corsConfig =
+                                new org.springframework.web.cors.CorsConfiguration();
+
+                            // For local development, allow all origins. For production, restrict
+                            // origins
+                            if (sslEnabled) {
+                              // Production: Allow only same origin and specific domains
+                              corsConfig.setAllowedOrigins(
+                                  java.util.List.of(
+                                      request.getScheme()
+                                          + "://"
+                                          + request.getServerName()
+                                          + ":"
+                                          + request.getServerPort()));
+                            } else {
+                              // Local development: Allow localhost origins
+                              corsConfig.setAllowedOriginPatterns(
+                                  java.util.List.of("http://localhost:*", "http://127.0.0.1:*"));
                             }
 
-                            LOG.error(
-                                "Authentication failed for certificate-based request: {} - Exception: {} - Thread: {} - SecurityContext: {}",
-                                request.getRequestURI(),
-                                authException.getMessage(),
-                                Thread.currentThread().getName(),
-                                SecurityContextHolder.getContext().hashCode());
-                            final var currentAuth =
-                                SecurityContextHolder.getContext().getAuthentication();
-                            LOG.error(
-                                "Current authentication state: Type: {}, Principal: {}, Authenticated: {}",
-                                currentAuth != null
-                                    ? currentAuth.getClass().getSimpleName()
-                                    : "null",
-                                currentAuth != null ? currentAuth.getName() : "null",
-                                currentAuth != null ? currentAuth.isAuthenticated() : false);
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType("application/json");
-                            response
-                                .getWriter()
-                                .write(
-                                    "{\"error\":\"Certificate-based authentication required: "
-                                        + authException.getMessage()
-                                        + "\"}");
-                          })
-                      .accessDeniedHandler(
-                          (request, response, accessDeniedException) -> {
-                            LOG.error(
-                                "Access denied for certificate-based request: {} - Exception: {}",
-                                request.getRequestURI(),
-                                accessDeniedException.getMessage());
-                            final var currentAuth =
-                                SecurityContextHolder.getContext().getAuthentication();
-                            LOG.error(
-                                "Current authentication state during access denied: Type: {}, Principal: {}, Authenticated: {}",
-                                currentAuth != null
-                                    ? currentAuth.getClass().getSimpleName()
-                                    : "null",
-                                currentAuth != null ? currentAuth.getName() : "null",
-                                currentAuth != null ? currentAuth.isAuthenticated() : false);
-                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.setContentType("application/json");
-                            response
-                                .getWriter()
-                                .write(
-                                    "{\"error\":\"Access denied: "
-                                        + accessDeniedException.getMessage()
-                                        + "\"}");
+                            corsConfig.setAllowedMethods(
+                                java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                            corsConfig.setAllowedHeaders(java.util.List.of("*"));
+                            corsConfig.setAllowCredentials(true);
+                            corsConfig.setMaxAge(3600L);
+                            return corsConfig;
                           }))
-          .headers(
-              headers ->
-                  setupSecureHeaders(
-                      headers,
-                      securityConfiguration.getHttpHeaders(),
-                      securityConfiguration.getSaas().isConfigured()))
-          .cors(
-              cors ->
-                  cors.configurationSource(
-                      request -> {
-                        final var corsConfig = new org.springframework.web.cors.CorsConfiguration();
+              .formLogin(AbstractHttpConfigurer::disable)
+              .oauth2Login(AbstractHttpConfigurer::disable)
+              .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+              .anonymous(AbstractHttpConfigurer::disable)
+              .sessionManagement(
+                  session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+              .securityContext(
+                  securityContext ->
+                      securityContext.securityContextRepository(
+                          new HttpSessionSecurityContextRepository()));
 
-                        // For local development, allow all origins. For production, restrict
-                        // origins
-                        if (sslEnabled) {
-                          // Production: Allow only same origin and specific domains
-                          corsConfig.setAllowedOrigins(
-                              java.util.List.of(
-                                  request.getScheme()
-                                      + "://"
-                                      + request.getServerName()
-                                      + ":"
-                                      + request.getServerPort()));
-                        } else {
-                          // Local development: Allow localhost origins
-                          corsConfig.setAllowedOriginPatterns(
-                              java.util.List.of("http://localhost:*", "http://127.0.0.1:*"));
-                        }
+      // Add conditional filters
+      if (certificateBasedOAuth2Filter.isPresent()) {
+        http = http.addFilterBefore(certificateBasedOAuth2Filter.get(), AuthorizationFilter.class);
+      }
+      if (mutualTlsAuthenticationFilter.isPresent()) {
+        http = http.addFilterBefore(mutualTlsAuthenticationFilter.get(), AuthorizationFilter.class);
+      }
 
-                        corsConfig.setAllowedMethods(
-                            java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                        corsConfig.setAllowedHeaders(java.util.List.of("*"));
-                        corsConfig.setAllowCredentials(true);
-                        corsConfig.setMaxAge(3600L);
-                        return corsConfig;
-                      }))
-          .formLogin(AbstractHttpConfigurer::disable)
-          .oauth2Login(AbstractHttpConfigurer::disable)
-          .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
-          .anonymous(AbstractHttpConfigurer::disable)
-          .sessionManagement(
-              session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-          .securityContext(
-              securityContext ->
-                  securityContext.securityContextRepository(
-                      new HttpSessionSecurityContextRepository()))
-          .addFilterBefore(certificateBasedOAuth2Filter, AuthorizationFilter.class)
-          .addFilterBefore(
+      return http.addFilterBefore(
               new RequestScopedAuthenticationRestorationFilter(), AuthorizationFilter.class)
           .addFilterBefore(
-              new WebApplicationAuthorizationCheckFilter(
+              new WebComponentAuthorizationCheckFilter(
                   securityConfiguration, authenticationProvider, resourceAccessProvider),
               AuthorizationFilter.class)
           .csrf(
@@ -1118,8 +1163,8 @@ public class WebSecurityConfig {
                   AuthorizationFilter.class);
 
       applyOauth2RefreshTokenFilter(
-          httpSecurity, authorizedClientRepository, authorizedClientManager);
-      applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+          filterChainBuilder, authorizedClientRepository, authorizedClientManager);
+      applyCsrfConfiguration(filterChainBuilder, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
     }

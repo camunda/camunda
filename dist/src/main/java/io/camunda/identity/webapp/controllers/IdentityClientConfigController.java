@@ -34,10 +34,15 @@ public class IdentityClientConfigController {
 
   private final String clientConfigAsJS;
   private final ObjectMapper objectMapper;
+  private final boolean isCertificateAuthEnabled;
 
   public IdentityClientConfigController(final SecurityConfiguration securityConfiguration) {
     objectMapper = new ObjectMapper();
+    isCertificateAuthEnabled = detectCertificateAuthentication();
     clientConfigAsJS = generateClientConfig(securityConfiguration);
+    LOG.info(
+        "IdentityClientConfigController initialized - isCertificateAuthEnabled: {}",
+        isCertificateAuthEnabled);
   }
 
   private String generateClientConfig(final SecurityConfiguration securityConfiguration) {
@@ -68,7 +73,28 @@ public class IdentityClientConfigController {
   }
 
   private boolean isOidcAuthentication(final SecurityConfiguration securityConfiguration) {
-    return AuthenticationMethod.OIDC.equals(securityConfiguration.getAuthentication().getMethod());
+    final boolean isOidcMethod =
+        AuthenticationMethod.OIDC.equals(securityConfiguration.getAuthentication().getMethod());
+    // For frontend routing purposes, treat certificate authentication as "OIDC-like"
+    // because it should have access to mapping-rules functionality
+    return isOidcMethod || isCertificateAuthEnabled;
+  }
+
+  private boolean detectCertificateAuthentication() {
+    // Check environment variables for certificate authentication
+    final String certAuthEnabled = System.getenv("CAMUNDA_SECURITY_CERT_AUTH_ENABLED");
+    final String mtlsEnabled = System.getenv("CAMUNDA_SECURITY_AUTHENTICATION_MTLS_ENABLED");
+
+    final boolean isCertAuth = "true".equalsIgnoreCase(certAuthEnabled);
+    final boolean isMtlsAuth = "true".equalsIgnoreCase(mtlsEnabled);
+
+    LOG.info(
+        "Certificate authentication detection - CAMUNDA_SECURITY_CERT_AUTH_ENABLED: {}, CAMUNDA_SECURITY_AUTHENTICATION_MTLS_ENABLED: {}, detected: {}",
+        certAuthEnabled,
+        mtlsEnabled,
+        isCertAuth || isMtlsAuth);
+
+    return isCertAuth || isMtlsAuth;
   }
 
   private boolean isCamundaGroupsEnabled(final SecurityConfiguration securityConfiguration) {

@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.config.MutualTlsProperties;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
@@ -23,10 +24,15 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.UserServices;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import jakarta.json.Json;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -42,8 +48,9 @@ import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.server.resource.authentication.AbstractOAuth2TokenAuthenticationToken;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
-public class OidcCamundaUserServiceTest {
+public class CertificateUserServiceTest {
 
   @Mock private OidcUser oidcUser;
   @Mock private CamundaAuthentication camundaAuthentication;
@@ -51,7 +58,10 @@ public class OidcCamundaUserServiceTest {
   @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private ResourceAccessProvider resourceAccessProvider;
   @Mock private TenantServices tenantServices;
-  private OidcCamundaUserService userService;
+  @Mock private UserServices userServices;
+  @Mock private RoleServices roleServices;
+  @Mock private MutualTlsProperties mtlsProperties;
+  private CertificateUserService userService;
 
   @BeforeEach
   public void setUp() throws Exception {
@@ -70,13 +80,17 @@ public class OidcCamundaUserServiceTest {
     when(resourceAccessProvider.resolveResourceAccess(
             any(CamundaAuthentication.class), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*")));
+    when(mtlsProperties.getDefaultRoles()).thenReturn(List.of("ROLE_USER"));
     userService =
-        new OidcCamundaUserService(
+        new CertificateUserService(
             authenticationProvider,
             resourceAccessProvider,
             tenantServices,
-            authorizedClientRepository,
-            null);
+            userServices,
+            roleServices,
+            Optional.of(authorizedClientRepository),
+            Optional.empty(),
+            Optional.of(mtlsProperties));
   }
 
   @Test
@@ -290,5 +304,95 @@ public class OidcCamundaUserServiceTest {
     assertThatThrownBy(() -> userService.getUserToken())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("User does not have a valid token");
+  }
+
+  @Test
+  void shouldFailForMtlsUserTokenRequest() {
+    // given
+    final var mockCertificate = mock(X509Certificate.class);
+    final var authentication = mock(PreAuthenticatedAuthenticationToken.class);
+    when(authentication.getPrincipal()).thenReturn(mockCertificate);
+
+    final var securityContext = mock(SecurityContext.class);
+    when(securityContext.getAuthentication()).thenReturn(authentication);
+    SecurityContextHolder.setContext(securityContext);
+
+    // when / then
+    assertThatThrownBy(() -> userService.getUserToken())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("mTLS users do not have OAuth tokens");
+  }
+
+  @Test
+  void shouldEnsureUserExistsForNewMtlsUser() throws Exception {
+    // given
+    final var mockCertificate = mock(X509Certificate.class);
+    when(mockCertificate.getSubjectX500Principal())
+        .thenReturn(new javax.security.auth.x500.X500Principal("CN=testuser,O=Test,C=US"));
+
+    when(userServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(userServices);
+    when(userServices.getUser("testuser")).thenThrow(new RuntimeException("User not found"));
+
+    final var createdUser = mock(UserRecord.class);
+    when(createdUser.getUsername()).thenReturn("testuser");
+    when(userServices.createUser(any()))
+        .thenReturn(java.util.concurrent.CompletableFuture.completedFuture(createdUser));
+
+    when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(roleServices);
+    when(roleServices.hasMembersOfType(any(), any())).thenReturn(false);
+    when(roleServices.addMember(any()))
+        .thenReturn(java.util.concurrent.CompletableFuture.completedFuture(null));
+
+    // when
+    userService.ensureUserExists("testuser", mockCertificate);
+
+    // then - verify user creation was attempted
+    Mockito.verify(userServices).createUser(any(UserServices.UserDTO.class));
+    Mockito.verify(roleServices).addMember(any(RoleServices.RoleMemberRequest.class));
+  }
+
+  @Test
+  void shouldSkipCreationForExistingMtlsUser() throws Exception {
+    // given
+    final var mockCertificate = mock(X509Certificate.class);
+    final var existingUser = mock(io.camunda.search.entities.UserEntity.class);
+
+    when(userServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(userServices);
+    when(userServices.getUser("existinguser")).thenReturn(existingUser);
+
+    // when
+    userService.ensureUserExists("existinguser", mockCertificate);
+
+    // then - verify no user creation attempted
+    Mockito.verify(userServices, Mockito.never()).createUser(any());
+  }
+
+  @Test
+  void shouldHandleMtlsCertificateUserClaims() {
+    // given
+    final var mockCertificate = mock(X509Certificate.class);
+    when(mockCertificate.getSubjectX500Principal())
+        .thenReturn(
+            new javax.security.auth.x500.X500Principal(
+                "CN=Test User,EMAILADDRESS=test@example.com,O=Test,C=US"));
+
+    final var authentication = mock(PreAuthenticatedAuthenticationToken.class);
+    when(authentication.getPrincipal()).thenReturn(mockCertificate);
+
+    final var securityContext = mock(SecurityContext.class);
+    when(securityContext.getAuthentication()).thenReturn(authentication);
+    SecurityContextHolder.setContext(securityContext);
+
+    when(camundaAuthentication.authenticatedUsername()).thenReturn("Test User");
+
+    // when
+    final var currentUser = userService.getCurrentUser();
+
+    // then
+    assertThat(currentUser.displayName()).isEqualTo("Test User");
+    assertThat(currentUser.email()).isEqualTo("test@example.com");
   }
 }
