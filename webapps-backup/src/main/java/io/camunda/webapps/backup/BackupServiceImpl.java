@@ -56,7 +56,9 @@ public class BackupServiceImpl implements BackupService {
     final int partCount = backupMetadata.partCount();
     for (int partIdx = 1; partIdx <= partCount; partIdx++) {
       final String snapshotName =
-          repository.snapshotNameProvider().getSnapshotName(backupMetadata.withPart(partIdx));
+          repository
+              .snapshotNameProvider()
+              .getSnapshotName(backupMetadata.withPart(partIdx).withVersion("*"));
       repository.deleteSnapshot(repositoryName, snapshotName);
     }
   }
