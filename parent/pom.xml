@@ -168,7 +168,7 @@
 
     <version.elasticsearch-test-container>1.21.3</version.elasticsearch-test-container>
     <version.postgres-test-container>1.21.3</version.postgres-test-container>
-    <version.elasticsearch7>7.17.29</version.elasticsearch7>
+    <version.elasticsearch7>8.15.1</version.elasticsearch7>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
