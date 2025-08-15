@@ -32,6 +32,7 @@ public class OpenApiResourceConfig implements WebMvcConfigurer {
       new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT");
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiResourceConfig.class);
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private ApiDescriptionConfig.ApiDescription apiDescription;
 
   @Override
   public void addResourceHandlers(final ResourceHandlerRegistry registry) {
@@ -88,6 +89,6 @@ public class OpenApiResourceConfig implements WebMvcConfigurer {
   }
 
   private String getApiDescription() {
-    return "API for communicating with a Camunda 8 cluster.";
+    return apiDescription.getDescription();
   }
 }
