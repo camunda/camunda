@@ -49,6 +49,7 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class OpenSearchArchiverRepository extends OpensearchRepository
     implements ArchiverRepository {
@@ -61,7 +62,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private static final String VERSIONED_INDEX_PATTERN = ".+-\\d+\\.\\d+\\.\\d+_.+$";
   private static final String USAGE_METRIC_INDEX_PREFIX =
       "%s-%s".formatted(ComponentNames.CAMUNDA, UsageMetricIndex.INDEX_NAME);
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchArchiverRepository.class);
   private final int partitionId;
   private final HistoryConfiguration config;
   private final RetentionConfiguration retention;
@@ -337,7 +338,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
     }
     final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
-
+    LOGGER.warn("End date for archiving batch: {}", endDate);
     final CompletableFuture<String> dateFuture;
     try {
       dateFuture =
@@ -354,6 +355,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
           lastHistoricalArchiverDate =
               DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
                   endDate, date, config.getRolloverInterval(), config.getElsRolloverDateFormat());
+          LOGGER.warn("Last historical archiver date: {}", lastHistoricalArchiverDate);
 
           final var ids =
               hits.stream()
