@@ -128,6 +128,7 @@ test.describe.serial('authorizations CRUD', () => {
     identityAuthorizationsPage,
   }) => {
     await test.step(`Delete Authorization of new user`, async () => {
+      await identityAuthorizationsPage.clickResourceType('Component');
       await identityAuthorizationsPage.clickDeleteAuthorizationButton(
         NEW_AUTH_ROLE.id,
       );
@@ -141,7 +142,10 @@ test.describe.serial('authorizations CRUD', () => {
       const item = identityAuthorizationsPage.getAuthorizationCell(
         NEW_AUTH_ROLE.id,
       );
-      await waitForItemInList(page, item, {shouldBeVisible: false});
+      await waitForItemInList(page, item, {
+        clickAuthorizationsPageTab: () =>
+          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+      });
     });
 
     await test.step(`Logout and login with new user and assert authorization`, async () => {
