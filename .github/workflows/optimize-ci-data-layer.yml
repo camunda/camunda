@@ -168,6 +168,12 @@ jobs:
           OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
           OPENSEARCH_JVM_MEMORY: 1
           OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
       - name: Install optimize dependencies
         uses: ./.github/actions/run-maven
         with:
@@ -233,6 +239,11 @@ jobs:
           OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
           OPENSEARCH_JVM_MEMORY: 1
           OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
 
       - name: Install optimize dependencies
         uses: ./.github/actions/run-maven

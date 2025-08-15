@@ -84,6 +84,11 @@ jobs:
         with:
           directory: ./optimize/client
 
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
       #########################################################################
       # Build optimize dependencies
       - name: Build optimize dependencies

@@ -82,8 +82,13 @@ jobs:
           project_name: e2e
           additional_flags: "--profile self-managed"
 
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
       - name: Build backend
-        run: mvn -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am
+        run: ./mvnw clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
