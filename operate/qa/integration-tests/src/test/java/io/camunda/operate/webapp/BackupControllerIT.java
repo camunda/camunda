@@ -65,12 +65,12 @@ import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 /* This class should be moved to the dist/ module as it does not really test anything operate specific
@@ -107,7 +107,7 @@ public class BackupControllerIT {
   @MockitoBean(name = "zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  @SpyBean private OperateProperties operateProperties;
+  @MockitoSpyBean private OperateProperties operateProperties;
   @Autowired private BackupController backupController;
   @Autowired private TestRestTemplate testRestTemplate;
 

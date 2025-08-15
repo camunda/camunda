@@ -21,11 +21,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 public class ProcessCacheIT extends TasklistZeebeIntegrationTest {
 
-  @SpyBean private ProcessCache processCache;
+  @MockitoSpyBean private ProcessCache processCache;
 
   @Autowired
   @Qualifier(PROCESS_IS_DEPLOYED_CHECK)

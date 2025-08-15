@@ -17,11 +17,11 @@ import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import org.junit.After;
 import org.junit.Test;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 public class ProcessCacheZeebeImportIT extends OperateZeebeAbstractIT {
 
-  @SpyBean private ProcessCache processCache;
+  @MockitoSpyBean private ProcessCache processCache;
 
   @Override
   @After
