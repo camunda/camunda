@@ -6557,6 +6557,12 @@ components:
         parentElementInstanceKey:
           type: string
           description: The parent element instance key.
+        tags:
+          description: list of tags that will be associated with the process instance, and will also be forwarded to job workers etc.
+          type: array
+          items:
+            type: string
+          uniqueItems: true
     ProcessInstanceStateEnum:
       description: Process instance states
       enum:
@@ -10155,6 +10161,12 @@ components:
         tenantId:
           description: The tenant ID of the process definition.
           type: string
+        tags:
+          description: list of tags that will be associated with the process instance, and will also be forwarded to job workers etc.
+          type: array
+          items:
+            type: string
+          uniqueItems: true
         operationReference:
           $ref: '#/components/schemas/OperationReference'
         startInstructions:
@@ -10272,6 +10284,12 @@ components:
             The unique identifier of the created process instance; to be used wherever a request
             needs a process instance key (e.g. CancelProcessInstanceRequest).
           type: string
+        tags:
+          description: list of tags associated with the process instance, and will also be forwarded to job workers etc.
+          type: array
+          items:
+            type: string
+          uniqueItems: true
     ProcessInstanceMigrationBatchOperationRequest:
       type: object
       properties:

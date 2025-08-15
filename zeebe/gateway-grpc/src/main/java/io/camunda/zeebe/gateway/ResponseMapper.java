@@ -194,6 +194,7 @@ public final class ResponseMapper {
         .setVersion(brokerResponse.getVersion())
         .setTenantId(brokerResponse.getTenantId())
         .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
+        .addAllTags(brokerResponse.getTags())
         .build();
   }
 
@@ -206,6 +207,7 @@ public final class ResponseMapper {
         .setTenantId(brokerResponse.getTenantId())
         .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
         .setVariables(bufferAsJson(brokerResponse.getVariablesBuffer()))
+        .addAllTags(brokerResponse.getTags())
         .build();
   }
 

@@ -40,6 +40,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -143,6 +146,19 @@ public final class CreateProcessInstanceCommandImpl
         httpClient,
         useRest,
         httpRequestObject);
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 tags(final String... tags) {
+    final Set<String> uniqueTags = new HashSet<>(Arrays.asList(tags)); // ensure no duplicates
+
+    // For gRPC, tags support may be added in the future
+    grpcRequestObjectBuilder.addAllTags(uniqueTags);
+
+    // For HTTP, use the List directly
+    httpRequestObject.setTags(uniqueTags);
+
+    return this;
   }
 
   @Override
