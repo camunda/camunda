@@ -83,6 +83,7 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Random;
@@ -155,7 +156,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       MissedSnapshotReplicationEvents.NONE;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
-  private volatile HealthReport health = HealthReport.healthy(this);
+  private volatile HealthReport health;
 
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
@@ -181,6 +182,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     random = randomFactory.get();
     this.partitionId = partitionId;
     this.meterRegistry = checkNotNull(meterRegistry, "meterRegistry cannot be null");
+    health = HealthReport.healthy(this);
 
     raftRoleMetrics = new RaftRoleMetrics(name, meterRegistry);
 
@@ -312,10 +314,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private void notifyFailureListeners(final Throwable error) {
     try {
       if (error instanceof UnrecoverableException) {
-        health = HealthReport.dead(this).withIssue(error);
+        health = HealthReport.dead(this).withIssue(error, Instant.now());
         failureListeners.forEach((l) -> l.onUnrecoverableFailure(health));
       } else {
-        health = HealthReport.unhealthy(this).withIssue(error);
+        health = HealthReport.unhealthy(this).withIssue(error, Instant.now());
         failureListeners.forEach((l) -> l.onFailure(health));
       }
     } catch (final Exception e) {
@@ -695,7 +697,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     if (!this.role.role().active() && role.active()) {
       health = HealthReport.healthy(this);
-      failureListeners.forEach(FailureListener::onRecovered);
+      failureListeners.forEach(l -> l.onRecovered(health));
     }
 
     if (this.role.role() == role) {

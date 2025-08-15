@@ -18,11 +18,20 @@ public interface FailureListener {
    * be marked unhealthy initially and set to healthy only after start up is complete. It is
    * expected to call {#onRecovered} when it is marked as healthy.
    */
-  void onRecovered();
+  void onRecovered(HealthReport report);
 
   /**
    * Invoked when the health status becomes dead and the system can't become healthy again without
    * external intervention.
    */
   void onUnrecoverableFailure(HealthReport report);
+
+  default void onHealthReport(final HealthReport healthReport) {
+    switch (healthReport.getStatus()) {
+      case HEALTHY -> onRecovered(healthReport);
+      case UNHEALTHY -> onFailure(healthReport);
+      case DEAD -> onUnrecoverableFailure(healthReport);
+      default -> {}
+    }
+  }
 }

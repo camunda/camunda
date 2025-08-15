@@ -157,6 +157,32 @@ public class ActorControl implements ConcurrencyControl {
   }
 
   /**
+   * Invoke the callback when the given futures are completed (successfully or exceptionally). This
+   * call does not block the actor.
+   *
+   * <p>The callback is executed while the actor is in the following actor lifecycle phases: {@link
+   * ActorLifecyclePhase#STARTED}
+   *
+   * @param futures the futures to wait on
+   * @param callback The throwable is <code>null</code> when all futures are completed successfully.
+   *     Otherwise, it holds the exception of the last completed future.
+   */
+  @Override
+  public <T> void runOnCompletion(
+      final Collection<ActorFuture<T>> futures, final Consumer<Throwable> callback) {
+    if (!futures.isEmpty()) {
+      final BiConsumer<T, Throwable> futureConsumer =
+          new AllCompletedFutureConsumer<>(futures.size(), callback);
+
+      for (final ActorFuture<T> future : futures) {
+        runOnCompletion(future, futureConsumer);
+      }
+    } else {
+      callback.accept(null);
+    }
+  }
+
+  /**
    * Runnables submitted by the actor itself are executed while the actor is in any of its lifecycle
    * phases.
    *
@@ -282,32 +308,6 @@ public class ActorControl implements ConcurrencyControl {
     continuationJob.setSubscription(subscription);
 
     future.block(task);
-  }
-
-  /**
-   * Invoke the callback when the given futures are completed (successfully or exceptionally). This
-   * call does not block the actor.
-   *
-   * <p>The callback is executed while the actor is in the following actor lifecycle phases: {@link
-   * ActorLifecyclePhase#STARTED}
-   *
-   * @param futures the futures to wait on
-   * @param callback The throwable is <code>null</code> when all futures are completed successfully.
-   *     Otherwise, it holds the exception of the last completed future.
-   */
-  @Override
-  public <T> void runOnCompletion(
-      final Collection<ActorFuture<T>> futures, final Consumer<Throwable> callback) {
-    if (!futures.isEmpty()) {
-      final BiConsumer<T, Throwable> futureConsumer =
-          new AllCompletedFutureConsumer<>(futures.size(), callback);
-
-      for (final ActorFuture<T> future : futures) {
-        runOnCompletion(future, futureConsumer);
-      }
-    } else {
-      callback.accept(null);
-    }
   }
 
   /** can be called by the actor to yield the thread */
