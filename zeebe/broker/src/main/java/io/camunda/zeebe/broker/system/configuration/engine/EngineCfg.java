@@ -141,6 +141,8 @@ public final class EngineCfg implements ConfigurationEntry {
         .setBatchOperationQueryRetryBackoffFactor(batchOperations.getQueryRetryBackoffFactor())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
         .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
+        .setCommandRedistributionInterval(distribution.getCommandRedistributionInterval())
+        .setCommandRedistributionRetryMaxBackoffDuration(distribution.getRetryMaxBackoffDuration())
         .setMaxProcessDepth(getMaxProcessDepth());
   }
 }
