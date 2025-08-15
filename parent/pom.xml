@@ -2759,7 +2759,7 @@
         <plugin>
           <groupId>org.openapitools</groupId>
           <artifactId>openapi-generator-maven-plugin</artifactId>
-          <version>7.12.0</version>
+          <version>7.14.0</version>
           <configuration>
             <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
             <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/spring.md -->
