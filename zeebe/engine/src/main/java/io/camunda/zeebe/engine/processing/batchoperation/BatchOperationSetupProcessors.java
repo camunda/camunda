@@ -15,6 +15,11 @@ import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcess
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResolveIncidentBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationCommandAppender;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationExecutionScheduler;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializer;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -59,6 +64,21 @@ public final class BatchOperationSetupProcessors {
             BatchOperationType.MODIFY_PROCESS_INSTANCE,
             new ModifyProcessInstanceBatchOperationExecutor(
                 writers.command(), processingState.getElementInstanceState()));
+
+    final var batchOperationInitializer =
+        new BatchOperationInitializer(
+            new ItemProviderFactory(searchClientsProxy, batchOperationMetrics, partitionId),
+            new BatchOperationPageProcessor(engineConfiguration.getBatchOperationChunkSize()),
+            new BatchOperationCommandAppender(partitionId),
+            engineConfiguration.getBatchOperationQueryPageSize(),
+            batchOperationMetrics);
+
+    final var retryHandler =
+        new BatchOperationRetryHandler(
+            engineConfiguration.getBatchOperationQueryRetryInitialDelay(),
+            engineConfiguration.getBatchOperationQueryRetryMaxDelay(),
+            engineConfiguration.getBatchOperationQueryRetryMax(),
+            engineConfiguration.getBatchOperationQueryRetryBackoffFactor());
 
     typedRecordProcessors
         .onCommand(
@@ -145,9 +165,8 @@ public final class BatchOperationSetupProcessors {
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
-                new ItemProviderFactory(searchClientsProxy, batchOperationMetrics, partitionId),
-                engineConfiguration,
-                partitionId,
-                batchOperationMetrics));
+                batchOperationInitializer,
+                retryHandler,
+                engineConfiguration.getBatchOperationSchedulerInterval()));
   }
 }
