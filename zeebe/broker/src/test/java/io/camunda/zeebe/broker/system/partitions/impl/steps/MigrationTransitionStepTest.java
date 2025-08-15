@@ -60,7 +60,9 @@ public class MigrationTransitionStepTest {
     // given
     migrationState.setMigratedByVersion("8.7.0");
 
-    context.setBrokerCfg(new BrokerCfg());
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getExperimental().setVersionCheckRestrictionEnabled(false);
+    context.setBrokerCfg(brokerCfg);
     final var step = new MigrationTransitionStep();
 
     // when
