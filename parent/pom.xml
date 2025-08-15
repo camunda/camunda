@@ -117,7 +117,7 @@
     <version.byte-buddy>1.17.6</version.byte-buddy>
     <version.revapi>0.28.4</version.revapi>
     <version.resilience4j>2.3.0</version.resilience4j>
-    <version.immutables>2.10.1</version.immutables>
+    <version.immutables>2.11.3</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.181</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
