@@ -105,7 +105,7 @@
     <version.spring>6.2.8</version.spring>
     <version.spring-security>6.5.2</version.spring-security>
     <version.spring-boot>3.4.7</version.spring-boot>
-    <version.tomcat>10.1.43</version.tomcat>
+    <version.tomcat>11.0.10</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
