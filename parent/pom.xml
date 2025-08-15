@@ -160,7 +160,7 @@
     <version.postgres-test-container>1.20.6</version.postgres-test-container>
     <version.elasticsearch7>7.17.29</version.elasticsearch7>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
-    <version.lucene>8.11.3</version.lucene>
+    <version.lucene>8.11.4</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.13.1</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
