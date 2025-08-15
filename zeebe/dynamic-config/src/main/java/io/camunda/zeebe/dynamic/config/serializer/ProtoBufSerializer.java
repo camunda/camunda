@@ -153,14 +153,18 @@ public class ProtoBufSerializer
             ? decodeRoutingState(encodedClusterTopology.getRoutingState())
             : Optional.empty();
 
-    // TODO: implement decoding of cluster id.
+    final Optional<String> clusterId =
+        encodedClusterTopology.hasClusterId()
+            ? decodeClusterId(encodedClusterTopology.getClusterId())
+            : Optional.empty();
+
     return new ClusterConfiguration(
         encodedClusterTopology.getVersion(),
         members,
         completedChange,
         currentChange,
         routingState,
-        Optional.empty());
+        clusterId);
   }
 
   private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(
@@ -188,6 +192,9 @@ public class ProtoBufSerializer
     clusterConfiguration
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
+    clusterConfiguration
+        .clusterId()
+        .ifPresent(clusterId -> builder.setClusterId(encodeClusterId(clusterId)));
 
     return builder.build();
   }
@@ -543,6 +550,14 @@ public class ProtoBufSerializer
     }
   }
 
+  private Optional<String> decodeClusterId(final Topology.ClusterId clusterId) {
+    if (clusterId.equals(Topology.ClusterId.getDefaultInstance())) {
+      return Optional.empty();
+    } else {
+      return Optional.of(clusterId.getClusterId());
+    }
+  }
+
   private RequestHandling decodeRequestHandling(final Topology.RequestHandling requestHandling) {
     return switch (requestHandling.getStrategyCase()) {
       case ALLPARTITIONS ->
@@ -573,6 +588,10 @@ public class ProtoBufSerializer
         .setRequestHandling(encodeRequestHandling(routingState.requestHandling()))
         .setMessageCorrelation(encodeMessageCorrelation(routingState.messageCorrelation()))
         .build();
+  }
+
+  private Topology.ClusterId encodeClusterId(final String clusterId) {
+    return Topology.ClusterId.newBuilder().setClusterId(clusterId).build();
   }
 
   private Topology.RequestHandling encodeRequestHandling(final RequestHandling requestHandling) {
