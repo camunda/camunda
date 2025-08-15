@@ -115,7 +115,7 @@
     <version.okio-jvm>3.9.1</version.okio-jvm>
     <version.jwks-rsa>0.22.2</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>9.37.3</version.nimbus-jose-jwt>
+    <version.nimbus-jose-jwt>10.0.2</version.nimbus-jose-jwt>
     <version.keycloak>23.0.7</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.commons-compress>1.26.2</version.commons-compress>
