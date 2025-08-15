@@ -58,10 +58,8 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
   @GetMapping("/{decisionInstanceId}")
   public DecisionInstanceDto queryDecisionInstanceById(
       @PathVariable final String decisionInstanceId) {
-    final DecisionInstanceDto decisionInstanceDto =
-        decisionInstanceReader.getDecisionInstance(decisionInstanceId);
-    checkIdentityReadPermission(decisionInstanceDto);
-    return decisionInstanceDto;
+    checkIdentityReadPermission(decisionInstanceId);
+    return decisionInstanceReader.getDecisionInstance(decisionInstanceId);
   }
 
   @Operation(summary = "Get DRD data for decision instance")
@@ -72,7 +70,7 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
     final Map<String, List<DRDDataEntryDto>> result =
         decisionInstanceReader.getDecisionInstanceDRDData(decisionInstanceId);
     if (result.isEmpty()) {
-      throw new NotFoundException("Decision instance nor found: " + decisionInstanceId);
+      throw new NotFoundException("Decision instance not found: " + decisionInstanceId);
     }
     return result;
   }
@@ -84,9 +82,8 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
   }
 
   private void checkIdentityReadPermission(final DecisionInstanceDto decisionInstance) {
-    if (permissionsService.permissionsEnabled()
-        && !permissionsService.hasPermissionForDecision(
-            decisionInstance.getDecisionId(), PermissionType.READ_DECISION_INSTANCE)) {
+    if (!permissionsService.hasPermissionForDecision(
+        decisionInstance.getDecisionId(), PermissionType.READ_DECISION_INSTANCE)) {
       throw new NotAuthorizedException(
           String.format(
               "No read permission for decision instance %s", decisionInstance.getDecisionId()));

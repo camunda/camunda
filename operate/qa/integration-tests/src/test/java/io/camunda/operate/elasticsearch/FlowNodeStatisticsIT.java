@@ -55,6 +55,8 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
   @Test
   public void testOneProcessStatistics() throws Exception {
     createData(PROCESS_KEY_DEMO_PROCESS);
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     getStatisticsAndAssert(createGetAllProcessInstancesQuery(PROCESS_KEY_DEMO_PROCESS));
   }
@@ -62,6 +64,8 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
   @Test
   public void testStatisticsWithQueryByActivityId() throws Exception {
     createData(PROCESS_KEY_DEMO_PROCESS);
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     final ListViewQueryDto queryRequest =
         createGetAllProcessInstancesQuery(PROCESS_KEY_DEMO_PROCESS);
@@ -82,6 +86,8 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
   @Test
   public void testStatisticsWithQueryByErrorMessage() throws Exception {
     createData(PROCESS_KEY_DEMO_PROCESS);
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     final ListViewQueryDto queryRequest =
         createGetAllProcessInstancesQuery(PROCESS_KEY_DEMO_PROCESS);
@@ -111,6 +117,8 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
   public void testTwoProcessesStatistics() throws Exception {
     createData(PROCESS_KEY_DEMO_PROCESS);
     createData(PROCESS_KEY_OTHER_PROCESS);
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     getStatisticsAndAssert(createGetAllProcessInstancesQuery(PROCESS_KEY_DEMO_PROCESS));
     getStatisticsAndAssert(createGetAllProcessInstancesQuery(PROCESS_KEY_OTHER_PROCESS));
@@ -118,6 +126,9 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
 
   @Test
   public void testGetCoreStatistics() throws Exception {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
+
     // when request core-statistics
     ProcessInstanceCoreStatisticsDto coreStatistics =
         mockMvcTestRule.fromResponse(
@@ -165,7 +176,6 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
     final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
@@ -195,7 +205,6 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
     final ListViewRequestDto queryRequest = createGetAllProcessInstancesRequest();
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 

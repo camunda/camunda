@@ -40,7 +40,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 public class IncidentStatisticsIT extends OperateAbstractIT {
 
@@ -57,7 +57,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
   private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
   private final Random random = new Random();
 
   private final String tenantId1 = "tenant1";
@@ -66,6 +66,10 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   @Test
   public void testAbsentProcessDoesntThrowExceptions() throws Exception {
     final List<ExporterEntity> entities = new ArrayList<>();
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     // Create a processInstance that has no matching process
     final Long processDefinitionKey = 0L;
@@ -83,6 +87,10 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   @Test
   public void testIncidentStatisticsByError() throws Exception {
     createData();
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
     assertThat(response).hasSize(2);
@@ -134,6 +142,8 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   @Test
   public void testProcessAndIncidentStatistics() throws Exception {
     createData();
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     final List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
 
@@ -146,6 +156,8 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   @Test
   public void testProcessWithoutInstancesIsSortedByVersionAscending() throws Exception {
     createNoInstancesProcessData(3);
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     final List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
 
@@ -167,7 +179,6 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     createData();
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
@@ -214,8 +225,9 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     createData();
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     // then
@@ -228,7 +240,6 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
             .filter(x -> Objects.equals(x.getErrorMessage(), TestUtil.ERROR_MSG))
             .findFirst()
             .orElseThrow();
-    // TODO: Check
     assertThat(incidentsByError1.getInstancesWithErrorCount()).isEqualTo(3);
     assertThat(incidentsByError1.getProcesses()).hasSize(2);
     assertThat(incidentsByError1.getIncidentErrorHashCode())
@@ -261,8 +272,9 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     createData();
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
     // then
@@ -278,8 +290,9 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     createData();
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(DEMO_BPMN_PROCESS_ID)));
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(DEMO_BPMN_PROCESS_ID)));
 
     // then
@@ -324,8 +337,9 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     createData();
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(ORDER_BPMN_PROCESS_ID)));
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(ORDER_BPMN_PROCESS_ID)));
 
     // then
@@ -338,7 +352,6 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
             .filter(x -> Objects.equals(x.getErrorMessage(), TestUtil.ERROR_MSG))
             .findFirst()
             .orElseThrow();
-    // TODO: Check
     assertThat(incidentsByError1.getInstancesWithErrorCount()).isEqualTo(1);
     assertThat(incidentsByError1.getProcesses()).hasSize(1);
     assertThat(incidentsByError1.getIncidentErrorHashCode())

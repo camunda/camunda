@@ -180,6 +180,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesAllRunning() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setCanceled(false).setCompleted(false).setFinished(false);
 
@@ -191,6 +193,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesAll() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
 
     final var response = listViewReader.queryProcessInstances(requestDto);
@@ -200,6 +204,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesNone() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     // Setting running and finished to false creates a matchNone query regardless of other values
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setRunning(false).setFinished(false);
@@ -211,6 +217,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesNoEndDate() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     // Setting running + active (but not incidents) should return only processes without an
     // end date. Even though completed is set to true, the completed process should not be returned
     // since it has an end date value
@@ -225,6 +233,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesAllFinished() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setRunning(false).setActive(false).setIncidents(false);
 
@@ -236,6 +246,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByRetriesLeft() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setRetriesLeft(true);
 
@@ -247,6 +259,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByActivityId() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setActivityId("start");
 
@@ -258,6 +272,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesById() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setIds(List.of("101", "notexist"));
 
@@ -269,6 +285,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByErrorMessage() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setErrorMessage("Some error message");
 
@@ -280,6 +298,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByIncidentErrorHashCode() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setIncidentErrorHashCode(incident.getErrorMessageHash());
 
@@ -291,6 +311,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByBeforeStartDate() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto
         .getQuery()
@@ -305,6 +327,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByAfterStartDate() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto
         .getQuery()
@@ -319,6 +343,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByBeforeEndDate() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto
         .getQuery()
@@ -333,6 +359,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByAfterEndDate() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto
         .getQuery()
@@ -347,6 +375,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByProcessDefinition() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setProcessIds(List.of("300", "301"));
 
@@ -358,6 +388,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByBpmnId() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setBpmnProcessId("p2");
 
@@ -369,6 +401,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByExcludeIds() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setExcludeIds(List.of("101"));
 
@@ -380,6 +414,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByVariable() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setVariable(new VariablesQueryDto().setName("p1v1").setValue("Y"));
 
@@ -391,6 +427,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByVariableValues() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto
         .getQuery()
@@ -405,6 +443,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByBatchOperationId() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setBatchOperationId("b3");
 
@@ -416,6 +456,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByParentId() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setParentInstanceId(50L);
 
@@ -427,6 +469,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesByTenantId() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.getQuery().setTenantId("tenant1");
 
@@ -438,7 +482,6 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesWithPermissions() {
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(
             PermissionsService.ResourcesAllowed.withIds(Set.of(activeProcess.getBpmnProcessId())));
@@ -453,6 +496,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesWithSorting() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
     requestDto.setSorting(
         new SortingDto()

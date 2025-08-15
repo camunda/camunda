@@ -90,9 +90,7 @@ public class OpenSearchQueryHelper {
         batchOperationIdQuery(query),
         parentInstanceIdQuery(query),
         tenantIdQuery(query),
-        readPermissionQuery()
-        // TODO filter by tenants assigned to current user #4858
-        );
+        readPermissionQuery());
   }
 
   private Query runningFinishedQuery(
@@ -335,14 +333,8 @@ public class OpenSearchQueryHelper {
   }
 
   private Query readPermissionQuery() {
-    if (!permissionsService.permissionsEnabled()) {
-      return null;
-    }
     final var allowed =
         permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
-    if (allowed == null) {
-      return null;
-    }
     return allowed.isAll()
         ? matchAll()
         : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());

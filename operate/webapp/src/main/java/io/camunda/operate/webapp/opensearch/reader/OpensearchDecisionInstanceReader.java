@@ -240,14 +240,8 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
   }
 
   private Query createReadPermissionQuery() {
-    if (!permissionsService.permissionsEnabled()) {
-      return null;
-    }
     final var allowed =
         permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE);
-    if (allowed == null) {
-      return null;
-    }
     return allowed.isAll() ? matchAll() : stringTerms(DecisionIndex.DECISION_ID, allowed.getIds());
   }
 

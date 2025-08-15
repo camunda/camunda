@@ -16,15 +16,34 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.j5templates.MockMvcManager;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
+import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
+import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.listener.ListenerType;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import jakarta.validation.ConstraintViolationException;
+import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestExecutionListeners;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -35,8 +54,7 @@ import org.springframework.test.web.servlet.MvcResult;
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-      OperateProperties.PREFIX + ".multiTenancy.enabled = false",
-      "camunda.security.authorizations.enabled=false"
+      OperateProperties.PREFIX + ".multiTenancy.enabled = false"
     })
 @WebAppConfiguration
 @TestExecutionListeners(
@@ -45,6 +63,8 @@ import org.springframework.test.web.servlet.MvcResult;
 @WithMockUser(DEFAULT_USER)
 public class ProcessInstanceRestServiceIT {
   @Autowired MockMvcManager mockMvcManager;
+  @MockitoBean PermissionsService mockPermissionsService;
+  @MockitoBean ProcessInstanceReader mockProcessInstanceReader;
 
   @Test
   public void testGetInstanceByIdWithInvalidId() throws Exception {
@@ -130,5 +150,130 @@ public class ProcessInstanceRestServiceIT {
                 + ", "
                 + ListenerType.TASK_LISTENER
                 + "]");
+  }
+
+  @Test
+  public void testPostUnsupportedOperationDeleteDecisionRequest() throws Exception {
+    // given
+    final String url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/1/operation";
+    final CreateOperationRequestDto request =
+        new CreateOperationRequestDto().setOperationType(OperationType.DELETE_DECISION_DEFINITION);
+
+    // when - then
+    final MvcResult mvcResult = mockMvcManager.postRequest(url, request, 400);
+    assertThat(mvcResult.getResolvedException().getMessage())
+        .contains(
+            "Operation type '%s' is not supported by this endpoint."
+                .formatted(OperationType.DELETE_DECISION_DEFINITION));
+  }
+
+  @Test
+  public void testPostUnsupportedOperationDeleteProcessRequest() throws Exception {
+    // given
+    final String url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/1/operation";
+    final CreateOperationRequestDto request =
+        new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_DEFINITION);
+
+    // when - then
+    final MvcResult mvcResult = mockMvcManager.postRequest(url, request, 400);
+    assertThat(mvcResult.getResolvedException().getMessage())
+        .contains(
+            "Operation type '%s' is not supported by this endpoint."
+                .formatted(OperationType.DELETE_PROCESS_DEFINITION));
+  }
+
+  @ParameterizedTest
+  @MethodSource("noPermissionPostParameters")
+  public void testPostWithNoPermission(
+      final String urlFragment, final Object requestObject, final PermissionType permissionType)
+      throws Exception {
+    // given
+    Mockito.when(mockProcessInstanceReader.getProcessInstanceByKey(1L))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("p1"));
+    Mockito.when(mockPermissionsService.hasPermissionForProcess("p1", permissionType))
+        .thenReturn(false);
+    final String url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + urlFragment;
+
+    // when - then
+    final MvcResult mvcResult = mockMvcManager.postRequest(url, requestObject, 403);
+    assertThat(mvcResult.getResolvedException().getMessage())
+        .contains("No %s permission for process instance".formatted(permissionType));
+  }
+
+  @ParameterizedTest
+  @MethodSource("noPermissionGetParameters")
+  public void testGetWithNoPermission(final String urlFragment) throws Exception {
+    Mockito.when(mockProcessInstanceReader.getProcessInstanceByKey(1L))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("p1"));
+    Mockito.when(
+            mockPermissionsService.hasPermissionForProcess(
+                "p1", PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(false);
+    final String url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + urlFragment;
+    final MvcResult mvcResult =
+        mockMvcManager.getRequestShouldFailWithException(url, NotAuthorizedException.class);
+    assertThat(mvcResult.getResolvedException().getMessage())
+        .contains(
+            "No %s permission for process instance"
+                .formatted(PermissionType.READ_PROCESS_INSTANCE));
+  }
+
+  private static Stream<Arguments> noPermissionGetParameters() {
+    return Stream.of(
+        Arguments.of("/1"),
+        Arguments.of("/1/incidents"),
+        Arguments.of("/1/sequence-flows"),
+        Arguments.of("/1/variables/1"),
+        Arguments.of("/1/variables/1"),
+        Arguments.of("/1/flow-node-states"),
+        Arguments.of("/1/statistics"));
+  }
+
+  private static Stream<Arguments> noPermissionPostParameters() {
+    return Stream.of(
+        Arguments.of(
+            "/1/operation",
+            new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_INSTANCE),
+            PermissionType.DELETE_PROCESS_INSTANCE),
+        Arguments.of(
+            "/1/operation",
+            new CreateOperationRequestDto().setOperationType(OperationType.CANCEL_PROCESS_INSTANCE),
+            PermissionType.CANCEL_PROCESS_INSTANCE),
+        Arguments.of(
+            "/1/operation",
+            new CreateOperationRequestDto().setOperationType(OperationType.RESOLVE_INCIDENT),
+            PermissionType.UPDATE_PROCESS_INSTANCE),
+        Arguments.of(
+            "/1/operation",
+            new CreateOperationRequestDto().setOperationType(OperationType.ADD_VARIABLE),
+            PermissionType.UPDATE_PROCESS_INSTANCE),
+        Arguments.of(
+            "/1/operation",
+            new CreateOperationRequestDto().setOperationType(OperationType.UPDATE_VARIABLE),
+            PermissionType.UPDATE_PROCESS_INSTANCE),
+        Arguments.of(
+            "/1/operation",
+            new CreateOperationRequestDto()
+                .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE),
+            PermissionType.UPDATE_PROCESS_INSTANCE),
+        Arguments.of(
+            "/1/modify",
+            new ModifyProcessInstanceRequestDto()
+                .setModifications(
+                    List.of(
+                        new Modification().setModification(Type.ADD_TOKEN).setToFlowNodeId("fid"))),
+            PermissionType.MODIFY_PROCESS_INSTANCE),
+        Arguments.of(
+            "/1/variables",
+            new VariableRequestDto().setScopeId("scope"),
+            PermissionType.READ_PROCESS_INSTANCE),
+        Arguments.of(
+            "/1/listeners",
+            new ListenerRequestDto().setPageSize(5).setFlowNodeId("fid"),
+            PermissionType.READ_PROCESS_INSTANCE),
+        Arguments.of(
+            "/1/flow-node-metadata",
+            new FlowNodeMetadataRequestDto().setFlowNodeId("fid"),
+            PermissionType.READ_PROCESS_INSTANCE));
   }
 }

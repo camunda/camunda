@@ -144,6 +144,16 @@ public class NoCompatibilityModeOperateZeebeAuthorizationIT {
                   ResourceType.PROCESS_DEFINITION,
                   PermissionType.UPDATE_PROCESS_INSTANCE,
                   List.of(
+                      PROCESS_WITH_INCIDENT, PROCESS_WITH_VARIABLE, PROCESS_WITH_SERVICE_TASKS)),
+              new Permissions(
+                  ResourceType.PROCESS_DEFINITION,
+                  PermissionType.CANCEL_PROCESS_INSTANCE,
+                  List.of(
+                      PROCESS_WITH_INCIDENT, PROCESS_WITH_VARIABLE, PROCESS_WITH_SERVICE_TASKS)),
+              new Permissions(
+                  ResourceType.PROCESS_DEFINITION,
+                  PermissionType.MODIFY_PROCESS_INSTANCE,
+                  List.of(
                       PROCESS_WITH_INCIDENT, PROCESS_WITH_VARIABLE, PROCESS_WITH_SERVICE_TASKS))));
 
   private static long processDefinitionForDeletionKey;

@@ -41,7 +41,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -54,11 +54,13 @@ public class DecisionListQueryIT extends OperateAbstractIT {
 
   @Autowired private DecisionDataUtil testDataUtil;
 
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
 
   @Test
   public void testVariousQueries() throws Exception {
     createData();
+    when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     testQueryAll();
     testQueryEvaluated();
@@ -239,6 +241,8 @@ public class DecisionListQueryIT extends OperateAbstractIT {
     final DecisionInstanceEntity decisionInstance2 = testDataUtil.createDecisionInstance(date2);
     final DecisionInstanceEntity decisionInstance3 = testDataUtil.createDecisionInstance(date3);
     searchTestRule.persistNew(decisionInstance1, decisionInstance2, decisionInstance3);
+    when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     // when
     DecisionInstanceListRequestDto query =
@@ -599,7 +603,6 @@ public class DecisionListQueryIT extends OperateAbstractIT {
     createData();
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
@@ -623,7 +626,6 @@ public class DecisionListQueryIT extends OperateAbstractIT {
     createData();
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId)));
 
