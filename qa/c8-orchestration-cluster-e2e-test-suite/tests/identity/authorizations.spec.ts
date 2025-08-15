@@ -11,7 +11,7 @@ import {test} from 'fixtures';
 import {
   LOGIN_CREDENTIALS,
   createTestData,
-  createApplicationAuthorization,
+  createComponentAuthorization,
 } from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
 import {relativizePath, Paths} from 'utils/relativizePath';
@@ -24,7 +24,7 @@ test.describe.serial('authorizations CRUD', () => {
     ReturnType<typeof createTestData>['userAuth']
   >;
   let NEW_APPLICATION_AUTHORIZATION: NonNullable<
-    ReturnType<typeof createApplicationAuthorization>
+    ReturnType<typeof createComponentAuthorization>
   >;
   test.beforeAll(() => {
     // Create test data once for the entire serial test suite
@@ -105,7 +105,7 @@ test.describe.serial('authorizations CRUD', () => {
     });
   });
 
-  test('create application authorization', async ({
+  test('create component authorization', async ({
     identityUsersPage,
     identityAuthorizationsPage,
     identityHeader,

@@ -72,10 +72,10 @@ export const createUserAuthorization = (authRole: {name: string}) => ({
   accessPermissions: ['update', 'create', 'read', 'delete'],
 });
 
-export const createApplicationAuthorization = (authRole: {name: string}) => ({
+export const createComponentAuthorization = (authRole: {name: string}) => ({
   ownerType: 'Role',
   ownerId: authRole.name,
-  resourceType: 'Application',
+  resourceType: 'Component',
   resourceId: '*',
   accessPermissions: ['access'],
 });
@@ -105,7 +105,7 @@ export const createTestData = (options: {
     user?: ReturnType<typeof createUniqueUser>;
     authRole?: ReturnType<typeof createUniqueAuthRole>;
     userAuth?: ReturnType<typeof createUserAuthorization>;
-    applicationAuth?: ReturnType<typeof createApplicationAuthorization>;
+    applicationAuth?: ReturnType<typeof createComponentAuthorization>;
     group?: ReturnType<typeof createUniqueGroup>;
     editedGroup?: ReturnType<typeof createEditedGroup>;
     tenant?: ReturnType<typeof createUniqueTenant>;
@@ -138,7 +138,7 @@ export const createTestData = (options: {
   }
 
   if (applicationAuth && result.authRole) {
-    result.applicationAuth = createApplicationAuthorization(result.authRole);
+    result.applicationAuth = createComponentAuthorization(result.authRole);
   }
 
   return result;
