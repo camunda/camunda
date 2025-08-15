@@ -38,8 +38,7 @@ jobs:
             const events = await octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}/timeline', {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: issueNumber,
-              mediaType: { previews: ['mockingbird'] }
+              issue_number: issueNumber
             });
 
             // 2. Find parent from sub-issue relationship
@@ -182,12 +181,23 @@ jobs:
               `, { projectId, itemId: childItemId, fieldId: teamData.fieldId, optionId: teamData.optionId }));
             }
 
-            await Promise.all(updates);
+            try {
+              await Promise.all(updates);
+            } catch (error) {
+              console.error("Failed to update child project item fields with parent's values:", error);
+              throw error;
+            }
 
             console.log(`Inherited Project Name & Team from parent #${parentNumber} in project ${projectId}`);
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Submit CI health metrics
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: "${{ env.GITHUB_JOB }}/${{ matrix.identifier }}"
           build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
