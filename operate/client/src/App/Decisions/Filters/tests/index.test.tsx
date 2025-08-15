@@ -67,8 +67,8 @@ const MOCK_FILTERS_PARAMS = {
 describe('<Filters />', () => {
   beforeEach(async () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
     await groupedDecisionsStore.fetchDecisions();
     vi.useFakeTimers({shouldAdvanceTime: true});
   });

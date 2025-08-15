@@ -7691,8 +7691,8 @@ components:
         email:
           description: The email of the user.
           type: string
-        authorizedApplications:
-          description: The applications the user is authorized to use.
+        authorizedComponents:
+          description: The web components the user is authorized to use.
           type: array
           items:
             type: string

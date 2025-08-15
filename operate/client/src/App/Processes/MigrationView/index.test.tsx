@@ -78,9 +78,9 @@ function createWrapper(options?: {initialPath?: string; contextPath?: string}) {
 describe('MigrationView', () => {
   beforeEach(() => {
     processInstanceMigrationStore.enable();
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
     mockMe({contextPath: '/custom'}).withSuccess(
-      createUser({authorizedApplications: ['operate']}),
+      createUser({authorizedComponents: ['operate']}),
     );
   });
 

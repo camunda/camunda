@@ -910,7 +910,7 @@ public final class SearchQueryResponseMapper {
         .displayName(camundaUser.displayName())
         .username(camundaUser.username())
         .email(camundaUser.email())
-        .authorizedApplications(camundaUser.authorizedComponents())
+        .authorizedComponents(camundaUser.authorizedComponents())
         .tenants(toTenants(camundaUser.tenants()))
         .groups(camundaUser.groups())
         .roles(camundaUser.roles())

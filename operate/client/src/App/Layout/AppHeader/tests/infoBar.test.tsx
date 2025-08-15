@@ -24,7 +24,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('Info bar', () => {
   it('should render with correct links', async () => {
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
     const mockOpenFn = vi.fn();
     vi.stubGlobal('open', mockOpenFn);
 
@@ -71,7 +71,7 @@ describe('Info bar', () => {
 
   it('should not render feedback and support link for free plan', async () => {
     mockMe().withSuccess(
-      createUser({salesPlanType: 'free', authorizedApplications: ['operate']}),
+      createUser({salesPlanType: 'free', authorizedComponents: ['operate']}),
     );
 
     const mockOpenFn = vi.fn();
@@ -101,7 +101,7 @@ describe('Info bar', () => {
       mockMe().withSuccess(
         createUser({
           salesPlanType,
-          authorizedApplications: ['operate'],
+          authorizedComponents: ['operate'],
         }),
       );
 

@@ -38,7 +38,7 @@ describe('App switcher', () => {
           {name: 'console', link: 'https://link-to-console'},
           {name: 'optimize', link: 'https://link-to-optimize'},
         ],
-        authorizedApplications: ['operate'],
+        authorizedComponents: ['operate'],
       }),
     );
 

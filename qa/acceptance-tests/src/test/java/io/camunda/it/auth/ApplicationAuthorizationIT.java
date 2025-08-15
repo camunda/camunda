@@ -203,7 +203,7 @@ class ApplicationAuthorizationIT {
 
     // then
     final MeResponse meResponse = OBJECT_MAPPER.readValue(response.body(), MeResponse.class);
-    assertThat(meResponse.authorizedApplications).containsExactly("tasklist");
+    assertThat(meResponse.authorizedComponents).containsExactly("tasklist");
   }
 
   private static void assertRedirectToForbidden(
@@ -233,5 +233,5 @@ class ApplicationAuthorizationIT {
             HttpURLConnection.HTTP_MOVED_TEMP);
   }
 
-  private record MeResponse(List<String> authorizedApplications) {}
+  private record MeResponse(List<String> authorizedComponents) {}
 }

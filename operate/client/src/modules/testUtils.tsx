@@ -177,7 +177,7 @@ const createUser = (options: Partial<CurrentUser> = {}): CurrentUser => ({
   username: 'demo',
   displayName: 'firstname lastname',
   email: 'firstname.lastname@camunda.com',
-  authorizedApplications: [],
+  authorizedComponents: [],
   tenants: [],
   groups: [],
   roles: [],
