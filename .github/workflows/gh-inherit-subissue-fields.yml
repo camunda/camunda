@@ -30,7 +30,7 @@ jobs:
             const ghql = graphql.defaults({ headers: { authorization: `token ${token}` } });
             const octokit = github;
 
-#            this is the global ID for project core features (173)
+            // this is the global ID for project core features (173)
             const TARGET_PROJECT_ID = "PVT_kwDOACVKPs4A1Kno";
 
             const issueNumber = context.payload.issue.number;
