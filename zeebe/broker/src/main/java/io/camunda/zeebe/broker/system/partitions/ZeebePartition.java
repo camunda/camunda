@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
@@ -326,11 +327,11 @@ public final class ZeebePartition extends Actor
 
   @Override
   @Deprecated // will be removed from public API of ZeebePartition
-  public void onRecovered() {
+  public void onRecovered(final HealthReport report) {
     actor.run(
         () -> {
           healthMetrics.setHealthy();
-          failureListeners.forEach(FailureListener::onRecovered);
+          failureListeners.forEach(l -> l.onRecovered(report));
         });
   }
 
@@ -387,7 +388,9 @@ public final class ZeebePartition extends Actor
   }
 
   private void handleUnrecoverableFailure(final Throwable error) {
-    final var report = HealthReport.dead(this).withIssue(error);
+    final var instant = ActorClock.current().instant();
+
+    final var report = HealthReport.dead(this).withIssue(error, instant);
     healthMetrics.setDead();
     zeebePartitionHealth.onUnrecoverableFailure(error);
     stopPartitionOnError();
@@ -422,7 +425,7 @@ public final class ZeebePartition extends Actor
         () -> {
           failureListeners.add(failureListener);
           if (getHealthReport().getStatus() == HealthStatus.HEALTHY) {
-            failureListener.onRecovered();
+            failureListener.onRecovered(getHealthReport());
           } else {
             failureListener.onFailure(getHealthReport());
           }

@@ -422,14 +422,16 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             // If the stream processor is in replay mode, we do not want to report it as dead
             // because it is not critical. The leaders are still active and able to process
             // requests.
-            final var report = HealthReport.unhealthy(this).withIssue(throwable);
+            final var report =
+                HealthReport.unhealthy(this).withIssue(throwable, ActorClock.current().instant());
             failureListeners.forEach(l -> l.onFailure(report));
           } else {
 
             // If it is a leader, we always want to report it as dead so that all related
             // services
             // are shutdown. (https://github.com/camunda/camunda/issues/16180)
-            final var report = HealthReport.dead(this).withIssue(throwable);
+            final var report =
+                HealthReport.dead(this).withIssue(throwable, ActorClock.current().instant());
             failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
           }
         });
@@ -478,20 +480,22 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   public HealthReport getHealthReport() {
+    final var instant =
+        ActorClock.current() != null ? ActorClock.current().instant() : Instant.now();
     if (actor.isClosed()) {
-      return HealthReport.unhealthy(this).withMessage("actor is closed");
+      return HealthReport.unhealthy(this).withMessage("actor is closed", instant);
     }
 
     if (processingStateMachine != null && !processingStateMachine.isMakingProgress()) {
       return HealthReport.unhealthy(this)
-          .withMessage("Processing not making progress. It is in an error handling loop.");
+          .withMessage("Processing not making progress. It is in an error handling loop.", instant);
     }
 
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
     if (ActorClock.currentTimeMillis() - lastTickTime > HEALTH_CHECK_TICK_DURATION.toMillis() * 2) {
-      return HealthReport.unhealthy(this).withMessage("actor appears blocked");
+      return HealthReport.unhealthy(this).withMessage("actor appears blocked", instant);
     } else if (streamProcessorContext.getStreamProcessorPhase() == Phase.FAILED) {
-      return HealthReport.unhealthy(this).withMessage("in failed phase");
+      return HealthReport.unhealthy(this).withMessage("in failed phase", instant);
     } else {
       return HealthReport.healthy(this);
     }
