@@ -4752,7 +4752,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
-    patch:
+    put:
       tags:
         - User
       operationId: updateUser
