@@ -10,9 +10,14 @@ package io.camunda.zeebe.gateway.rest.config;
 public class GatewayRestConfiguration {
 
   private final ProcessCacheConfiguration processCache = new ProcessCacheConfiguration();
+  private final ApiExecutorConfiguration apiExecutor = new ApiExecutorConfiguration();
 
   public ProcessCacheConfiguration getProcessCache() {
     return processCache;
+  }
+
+  public ApiExecutorConfiguration getApiExecutor() {
+    return apiExecutor;
   }
 
   public static class ProcessCacheConfiguration {
@@ -40,6 +45,41 @@ public class GatewayRestConfiguration {
 
     public void setExpirationIdleMillis(final Long expirationIdleMillis) {
       this.expirationIdleMillis = expirationIdleMillis;
+    }
+  }
+
+  public static class ApiExecutorConfiguration {
+
+    private static final int DEFAULT_CORE_POOL_SIZE_MULTIPLIER = 1;
+    private static final int DEFAULT_MAX_POOL_SIZE_MULTIPLIER = 2;
+    private static final long DEFAULT_KEEP_ALIVE_SECONDS = 60L;
+
+    private int corePoolSize = DEFAULT_CORE_POOL_SIZE_MULTIPLIER;
+    private int threadCountMultiplier = DEFAULT_MAX_POOL_SIZE_MULTIPLIER;
+    private long keepAliveSeconds = DEFAULT_KEEP_ALIVE_SECONDS;
+
+    public int getCorePoolSize() {
+      return corePoolSize;
+    }
+
+    public void setCorePoolSize(final int corePoolSize) {
+      this.corePoolSize = corePoolSize;
+    }
+
+    public int getThreadCountMultiplier() {
+      return threadCountMultiplier;
+    }
+
+    public void setThreadCountMultiplier(final int threadCountMultiplier) {
+      this.threadCountMultiplier = threadCountMultiplier;
+    }
+
+    public long getKeepAliveSeconds() {
+      return keepAliveSeconds;
+    }
+
+    public void setKeepAliveSeconds(final long keepAliveSeconds) {
+      this.keepAliveSeconds = keepAliveSeconds;
     }
   }
 }
