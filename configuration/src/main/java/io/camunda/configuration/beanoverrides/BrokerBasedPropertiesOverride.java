@@ -8,6 +8,7 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Azure;
+import io.camunda.configuration.Data;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
@@ -242,6 +243,9 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromData(final BrokerBasedProperties override) {
+    final Data data = unifiedConfiguration.getCamunda().getData();
+    override.getData().setSnapshotPeriod(data.getSnapshotPeriod());
+
     populateFromExport(override);
     populateFromBackup(override);
   }

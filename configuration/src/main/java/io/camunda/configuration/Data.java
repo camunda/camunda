@@ -7,7 +7,17 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.time.Duration;
+import java.util.Set;
+
 public class Data {
+  private static final String PREFIX = "camunda.data";
+  private static final Set<String> LEGACY_SNAPSHOT_PERIOD_PROPERTIES =
+      Set.of("zeebe.broker.data.snapshotPeriod");
+
+  /** How often we take snapshots of streams (time unit) */
+  private Duration snapshotPeriod = Duration.ofMinutes(5);
 
   /** This section allows to configure primary Zeebe's data storage. */
   private PrimaryStorage primaryStorage = new PrimaryStorage();
@@ -17,6 +27,19 @@ public class Data {
 
   /** This section allows configuring export. */
   private final Export export = new Export();
+
+  public Duration getSnapshotPeriod() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".snapshot-period",
+        snapshotPeriod,
+        Duration.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_SNAPSHOT_PERIOD_PROPERTIES);
+  }
+
+  public void setSnapshotPeriod(final Duration snapshotPeriod) {
+    this.snapshotPeriod = snapshotPeriod;
+  }
 
   public PrimaryStorage getPrimaryStorage() {
     return primaryStorage;
