@@ -40,7 +40,6 @@ export default function Header({noActions}: {noActions?: boolean}) {
     webappsLinks,
     optimizeVersion,
     onboarding,
-    notificationsUrl,
     validLicense,
     licenseType,
     commercial,
@@ -49,14 +48,26 @@ export default function Header({noActions}: {noActions?: boolean}) {
   const timezoneInfo =
     t('footer.timezone') + ' ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
   const userSideBar = useUserMenu(optimizeVersion, timezoneInfo);
+  const [isAppBarOpen, setIsAppBarOpen] = useState(false);
 
   useEffect(() => {
     mightFail(getUserToken(), setUserToken, showError);
   }, [mightFail]);
 
+  const isCloud = optimizeProfile === 'cloud';
+
   const props: C3NavigationProps = {
+    toggleAppbar: (isAppBarOpen) => setIsAppBarOpen(isAppBarOpen),
     app: createAppProps(location),
-    appBar: createAppBarProps(webappsLinks),
+    appBar: {
+      ariaLabel: 'Camunda Apps',
+      isOpen: isAppBarOpen,
+      appTeaserRouteProps: isCloud ? {} : undefined,
+      elements: isCloud ? undefined : createWebappLinks(webappsLinks),
+      elementClicked: (app) => {
+        track(app + ':open');
+      },
+    },
     navbar: {elements: []},
     forwardRef: Link as React.ForwardRefExoticComponent<ComponentProps<Link>>,
   };
@@ -70,7 +81,6 @@ export default function Header({noActions}: {noActions?: boolean}) {
     props.userSideBar = userSideBar;
   }
 
-  const isCloud = optimizeProfile === 'cloud';
   if (isCloud) {
     props.notificationSideBar = {
       isOpen: false,
@@ -81,10 +91,10 @@ export default function Header({noActions}: {noActions?: boolean}) {
   return (
     <NavbarWrapper
       isCloud={isCloud}
-      notificationsUrl={notificationsUrl}
       userToken={userToken}
       getNewUserToken={getUserToken}
       organizationId={onboarding.orgId}
+      clusterId={onboarding.clusterId}
     >
       <C3Navigation {...props} />
     </NavbarWrapper>
@@ -98,19 +108,6 @@ function createAppProps(location: {pathname: string}): C3NavigationProps['app'] 
     routeProps: {
       to: '/',
       replace: location.pathname === '/',
-    },
-  };
-}
-
-function createAppBarProps(
-  webappLinks: Record<string, string> | null
-): C3NavigationProps['appBar'] {
-  return {
-    ariaLabel: t('navigation.appSwitcher').toString(),
-    isOpen: false,
-    elements: createWebappLinks(webappLinks),
-    elementClicked: (app) => {
-      track(app + ':open');
     },
   };
 }
@@ -222,33 +219,53 @@ function createInfoSideBarProps(
   };
 }
 
+function getStage(host: string): 'dev' | 'int' | 'prod' {
+  if (host.includes('dev.ultrawombat.com')) {
+    return 'dev';
+  }
+
+  if (host.includes('ultrawombat.com')) {
+    return 'int';
+  }
+
+  if (host.includes('camunda.io')) {
+    return 'prod';
+  }
+
+  return 'dev';
+}
+
 type NavbarWrapperProps = Omit<
   ComponentProps<typeof C3UserConfigurationProvider>,
   'userToken' | 'activeOrganizationId'
 > & {
   isCloud: boolean;
-  notificationsUrl?: string;
   organizationId?: string;
+  clusterId?: string;
   userToken?: string | null;
 };
 
 function NavbarWrapper({
   isCloud,
   userToken,
-  notificationsUrl,
   organizationId,
   children,
+  clusterId,
 }: NavbarWrapperProps) {
-  return isCloud && userToken && notificationsUrl && organizationId ? (
-    <C3UserConfigurationProvider
-      endpoints={{notifications: notificationsUrl}}
-      userToken={userToken}
-      getNewUserToken={getUserToken}
-      activeOrganizationId={organizationId}
-    >
-      {children}
-    </C3UserConfigurationProvider>
-  ) : (
-    <>{children}</>
-  );
+  if (isCloud && userToken && organizationId && clusterId) {
+    return (
+      <C3UserConfigurationProvider
+        userToken={userToken}
+        getNewUserToken={getUserToken}
+        activeOrganizationId={organizationId}
+        currentClusterUuid={clusterId}
+        currentApp="optimize"
+        stage={getStage(typeof window === 'undefined' ? '' : window.location.host)}
+      >
+        {children}
+      </C3UserConfigurationProvider>
+    );
+  }
+
+  return <>{children}</>;
 }
