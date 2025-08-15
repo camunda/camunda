@@ -21,7 +21,6 @@ import static io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex.
 import static io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex.N_GRAM_FIELD;
 import static io.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex.INGESTION_TIMESTAMP;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex.TIMESTAMP;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
@@ -70,8 +69,6 @@ import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespon
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableSourceDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQueryDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
@@ -84,7 +81,6 @@ import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
-import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
@@ -92,7 +88,6 @@ import io.camunda.optimize.service.db.repository.VariableRepository;
 import io.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.db.util.ProcessVariableHelper;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DefinitionQueryUtilES;
@@ -108,7 +103,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -244,33 +238,6 @@ public class VariableRepositoryES implements VariableRepository {
   }
 
   @Override
-  public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
-    taskRepositoryES.tryDeleteByQueryRequest(
-        Query.of(
-            q ->
-                q.bool(
-                    b ->
-                        b.filter(
-                            f ->
-                                f.terms(
-                                    t ->
-                                        t.field(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID)
-                                            .terms(
-                                                tt ->
-                                                    tt.value(
-                                                        processInstanceIds.stream()
-                                                            .map(FieldValue::of)
-                                                            .toList())))))),
-        String.format("variable updates of %d process instances", processInstanceIds.size()),
-        false,
-        // use wildcarded index name to catch all indices that exist after potential rollover
-        esClient
-            .getIndexNameService()
-            .getOptimizeIndexNameWithVersionWithWildcardSuffix(
-                new VariableUpdateInstanceIndexES()));
-  }
-
-  @Override
   public Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
       final List<String> processDefinitionKeys) {
     try {
@@ -307,59 +274,6 @@ public class VariableRepositoryES implements VariableRepository {
       LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-  }
-
-  @Override
-  public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
-      final Set<String> processInstanceIds) {
-
-    final SearchResponse<VariableUpdateInstanceDto> searchResponse;
-    try {
-      searchResponse =
-          esClient.search(
-              OptimizeSearchRequestBuilderES.of(
-                  s ->
-                      s.optimizeIndex(
-                              esClient, DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
-                          .scroll(
-                              c ->
-                                  c.time(
-                                      configurationService
-                                              .getElasticSearchConfiguration()
-                                              .getScrollTimeoutInSeconds()
-                                          + "s"))
-                          .query(
-                              q ->
-                                  q.bool(
-                                      b ->
-                                          b.must(
-                                              m ->
-                                                  m.terms(
-                                                      t ->
-                                                          t.field(
-                                                                  VariableUpdateInstanceIndex
-                                                                      .PROCESS_INSTANCE_ID)
-                                                              .terms(
-                                                                  tt ->
-                                                                      tt.value(
-                                                                          processInstanceIds
-                                                                              .stream()
-                                                                              .map(FieldValue::of)
-                                                                              .toList()))))))
-                          .size(MAX_RESPONSE_SIZE_LIMIT)
-                          .sort(ss -> ss.field(f -> f.field(TIMESTAMP).order(SortOrder.Asc)))),
-              VariableUpdateInstanceDto.class);
-    } catch (final IOException e) {
-      LOG.error("Was not able to retrieve variable instance updates!", e);
-      throw new OptimizeRuntimeException("Was not able to retrieve variable instance updates!", e);
-    }
-
-    return ElasticsearchReaderUtil.retrieveAllScrollResults(
-        searchResponse,
-        VariableUpdateInstanceDto.class,
-        objectMapper,
-        esClient,
-        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
   }
 
   @Override

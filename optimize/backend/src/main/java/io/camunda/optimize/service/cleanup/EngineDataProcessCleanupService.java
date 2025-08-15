@@ -14,8 +14,7 @@ import io.camunda.optimize.dto.optimize.query.PageResultDto;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessInstanceReader;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
-import io.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
-import io.camunda.optimize.service.db.writer.variable.VariableUpdateInstanceWriter;
+import io.camunda.optimize.service.db.writer.variable.ProcessVariableWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
@@ -34,22 +33,19 @@ public class EngineDataProcessCleanupService extends CleanupService {
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessInstanceReader processInstanceReader;
   private final ProcessInstanceWriter processInstanceWriter;
-  private final ProcessVariableUpdateWriter processVariableUpdateWriter;
-  private final VariableUpdateInstanceWriter variableUpdateInstanceWriter;
+  private final ProcessVariableWriter processVariableWriter;
 
   public EngineDataProcessCleanupService(
       final ConfigurationService configurationService,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceReader processInstanceReader,
       final ProcessInstanceWriter processInstanceWriter,
-      final ProcessVariableUpdateWriter processVariableUpdateWriter,
-      final VariableUpdateInstanceWriter variableUpdateInstanceWriter) {
+      final ProcessVariableWriter processVariableWriter) {
     this.configurationService = configurationService;
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceReader = processInstanceReader;
     this.processInstanceWriter = processInstanceWriter;
-    this.processVariableUpdateWriter = processVariableUpdateWriter;
-    this.variableUpdateInstanceWriter = variableUpdateInstanceWriter;
+    this.processVariableWriter = processVariableWriter;
   }
 
   @Override
@@ -113,7 +109,6 @@ public class EngineDataProcessCleanupService extends CleanupService {
             definitionKey, endDate, batchSize);
     while (!currentPageOfProcessInstanceIds.isEmpty()) {
       final List<String> currentInstanceIds = currentPageOfProcessInstanceIds.getEntities();
-      variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
       processInstanceWriter.deleteByIds(definitionKey, currentInstanceIds);
       currentPageOfProcessInstanceIds =
           processInstanceReader.getNextPageOfProcessInstanceIdsThatEndedBefore(
@@ -128,8 +123,7 @@ public class EngineDataProcessCleanupService extends CleanupService {
             definitionKey, endDate, batchSize);
     while (!currentPageOfProcessInstanceIds.isEmpty()) {
       final List<String> currentInstanceIds = currentPageOfProcessInstanceIds.getEntities();
-      variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
-      processVariableUpdateWriter.deleteVariableDataByProcessInstanceIds(
+      processVariableWriter.deleteVariableDataByProcessInstanceIds(
           definitionKey, currentInstanceIds);
 
       currentPageOfProcessInstanceIds =

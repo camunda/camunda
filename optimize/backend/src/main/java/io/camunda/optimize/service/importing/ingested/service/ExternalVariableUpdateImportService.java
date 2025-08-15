@@ -14,7 +14,7 @@ import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDt
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
+import io.camunda.optimize.service.db.writer.variable.ProcessVariableWriter;
 import io.camunda.optimize.service.importing.DatabaseImportJob;
 import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.engine.service.ImportService;
@@ -41,14 +41,14 @@ public class ExternalVariableUpdateImportService
       org.slf4j.LoggerFactory.getLogger(ExternalVariableUpdateImportService.class);
 
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
-  private final ProcessVariableUpdateWriter variableWriter;
+  private final ProcessVariableWriter variableWriter;
   private final ConfigurationService configurationService;
   private final ObjectVariableService objectVariableService;
   private final DatabaseClient databaseClient;
 
   public ExternalVariableUpdateImportService(
       final ConfigurationService configurationService,
-      final ProcessVariableUpdateWriter variableWriter,
+      final ProcessVariableWriter variableWriter,
       final ObjectVariableService objectVariableService,
       final DatabaseClient databaseClient) {
     databaseImportJobExecutor =

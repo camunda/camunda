@@ -43,7 +43,6 @@ import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.VariableUpdateInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.report.SingleProcessReportIndexOS;
 import io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil;
 import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
@@ -52,7 +51,6 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DatabaseHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -295,17 +293,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void deleteTerminatedSessionsIndex() {
     deleteIndexOfMapping(new TerminatedUserSessionIndexOS());
-  }
-
-  @Override
-  public void deleteAllVariableUpdateInstanceIndices() {
-    final String[] indexNames =
-        getOptimizeOpenSearchClient()
-            .getAllIndicesForAlias(
-                getIndexNameService()
-                    .getOptimizeIndexAliasForIndex(new VariableUpdateInstanceIndexOS()))
-            .toArray(String[]::new);
-    deleteIndices(indexNames);
   }
 
   @Override
@@ -763,11 +750,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
-    return new VariableUpdateInstanceIndexOS();
-  }
-
-  @Override
   public void deleteAllDocumentsInIndex(final String optimizeIndexAliasForIndex) {
     getOptimizeOpenSearchClient()
         .deleteByQuery(QueryDSL.matchAll(), true, optimizeIndexAliasForIndex);
@@ -893,11 +875,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public String[] getIndexNames() {
-    return OpenSearchSchemaManager.getAllNonDynamicMappings().stream()
-        .filter(IndexMappingCreator::isImportIndex)
-        .map(getIndexNameService()::getOptimizeIndexAliasForIndex)
-        .toArray(String[]::new);
+  public String[] getIndexNames() throws IOException {
+    return getOptimizeOpenSearchClient().getAllIndexNames().toArray(new String[0]);
   }
 
   private IndexSettings createIndexSettings(

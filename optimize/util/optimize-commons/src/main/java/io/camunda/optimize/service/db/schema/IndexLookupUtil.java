@@ -25,7 +25,6 @@ import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TenantIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableLabelIndexES;
-import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.index.PositionBasedImportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
@@ -49,7 +48,6 @@ import io.camunda.optimize.service.db.os.schema.index.SettingsIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TenantIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.VariableLabelIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.VariableUpdateInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.index.PositionBasedImportIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.index.TimestampBasedImportIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.report.CombinedReportIndexOS;
@@ -83,7 +81,7 @@ public class IndexLookupUtil {
             .orElseThrow(
                 () ->
                     new OptimizeRuntimeException(
-                        "Cannot provide ES index for class as no lookup specified: "
+                        "Cannot provide OS index for class as no lookup specified: "
                             + indexToConvert.getClass().getSimpleName()));
       }
     } else if (databaseType.equals(DatabaseType.OPENSEARCH)) {
@@ -125,9 +123,6 @@ public class IndexLookupUtil {
     lookupMap.put(
         TerminatedUserSessionIndexES.class.getSimpleName(),
         index -> new TerminatedUserSessionIndexOS());
-    lookupMap.put(
-        VariableUpdateInstanceIndexES.class.getSimpleName(),
-        index -> new VariableUpdateInstanceIndexOS());
     lookupMap.put(
         TimestampBasedImportIndexES.class.getSimpleName(),
         index -> new TimestampBasedImportIndexOS());
@@ -177,9 +172,6 @@ public class IndexLookupUtil {
     lookupMap.put(
         TerminatedUserSessionIndexOS.class.getSimpleName(),
         index -> new TerminatedUserSessionIndexES());
-    lookupMap.put(
-        VariableUpdateInstanceIndexOS.class.getSimpleName(),
-        index -> new VariableUpdateInstanceIndexES());
     lookupMap.put(
         TimestampBasedImportIndexOS.class.getSimpleName(),
         index -> new TimestampBasedImportIndexES());

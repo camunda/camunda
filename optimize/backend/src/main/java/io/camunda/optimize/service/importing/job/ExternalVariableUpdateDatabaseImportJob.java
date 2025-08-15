@@ -9,18 +9,18 @@ package io.camunda.optimize.service.importing.job;
 
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
+import io.camunda.optimize.service.db.writer.variable.ProcessVariableWriter;
 import io.camunda.optimize.service.importing.DatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 
 public class ExternalVariableUpdateDatabaseImportJob extends DatabaseImportJob<ProcessVariableDto> {
 
-  private final ProcessVariableUpdateWriter variableWriter;
+  private final ProcessVariableWriter variableWriter;
   private final ConfigurationService configurationService;
 
   public ExternalVariableUpdateDatabaseImportJob(
-      final ProcessVariableUpdateWriter variableWriter,
+      final ProcessVariableWriter variableWriter,
       final ConfigurationService configurationService,
       final Runnable callback,
       final DatabaseClient databaseClient) {

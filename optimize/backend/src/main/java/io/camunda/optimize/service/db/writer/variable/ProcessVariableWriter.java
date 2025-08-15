@@ -39,17 +39,16 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ProcessVariableUpdateWriter {
+public class ProcessVariableWriter {
 
   private static final String VARIABLE_UPDATES_FROM_ENGINE = "variableUpdatesFromEngine";
-  private static final Logger LOG =
-      org.slf4j.LoggerFactory.getLogger(ProcessVariableUpdateWriter.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ProcessVariableWriter.class);
 
   private final ObjectMapper objectMapper;
   private final IndexRepository indexRepository;
   private final VariableRepository variableRepository;
 
-  public ProcessVariableUpdateWriter(
+  public ProcessVariableWriter(
       final ObjectMapper objectMapper,
       final IndexRepository indexRepository,
       final VariableRepository variableRepository) {
