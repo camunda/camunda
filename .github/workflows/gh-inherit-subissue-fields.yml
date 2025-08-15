@@ -1,11 +1,24 @@
-name: Inherit Project & Team from Parent Sub-Issue (Project 173 only)
+# This workflow automatically inherits the 'Project Name' and 'Team' fields from a parent sub-issue
+# if the parent is in Project 173 (Core Features only). It ensures that sub-issues are correctly
+# associated with the same project and team as their parent, maintaining project consistency.
+#
+# The workflow triggers on issue creation or edit events, checks for a parent sub-issue relationship,
+# and, if found, copies the relevant fields from the parent to the child issue in the GitHub project.
+#
+# owner: @camunda/core-features
+
+name: Inherit Project & Team from Parent Sub-Issue (Project 173 which is Core Features only )
 
 on:
   issues:
     types: [opened, edited]
 
 jobs:
-  inherit-from-parent:
+  inherit-from-parent: # owner: @camunda/core-features
+    permissions:
+      issues: write
+      contents: write
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - name: Inherit fields from parent sub-issue if parent is in project 173(PVT_kwDOACVKPs4A1Kno)
@@ -146,27 +159,27 @@ jobs:
             const updates = [];
             if (projectNameData) {
               updates.push(ghql(`
-                mutation($itemId:ID!, $fieldId:ID!, $optionId:ID!) {
+                mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:ID!) {
                   updateProjectV2ItemFieldValue(input:{
-                    projectId: "${projectId}",
+                    projectId: $projectId,
                     itemId: $itemId,
                     fieldId: $fieldId,
                     value: { singleSelectOptionId: $optionId }
                   }) { projectV2Item { id } }
                 }
-              `, { itemId: childItemId, fieldId: projectNameData.fieldId, optionId: projectNameData.optionId }));
+              `, { projectId, itemId: childItemId, fieldId: projectNameData.fieldId, optionId: projectNameData.optionId }));
             }
             if (teamData) {
               updates.push(ghql(`
-                mutation($itemId:ID!, $fieldId:ID!, $optionId:ID!) {
+                mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:ID!) {
                   updateProjectV2ItemFieldValue(input:{
-                    projectId: "${projectId}",
+                    projectId: $projectId,
                     itemId: $itemId,
                     fieldId: $fieldId,
                     value: { singleSelectOptionId: $optionId }
                   }) { projectV2Item { id } }
                 }
-              `, { itemId: childItemId, fieldId: teamData.fieldId, optionId: teamData.optionId }));
+              `, { projectId, itemId: childItemId, fieldId: teamData.fieldId, optionId: teamData.optionId }));
             }
 
             await Promise.all(updates);
@@ -174,3 +187,7 @@ jobs:
             console.log(`Inherited Project Name & Team from parent #${parentNumber} in project ${projectId}`);
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Submit CI health metrics
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
