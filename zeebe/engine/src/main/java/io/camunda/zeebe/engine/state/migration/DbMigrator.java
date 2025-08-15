@@ -16,9 +16,9 @@ public interface DbMigrator {
    */
   MigrationsPerformed runMigrations();
 
-  record MigrationsPerformed(int initializations, int migrations) {
-    public static MigrationsPerformed zero() {
-      return new MigrationsPerformed(0, 0);
+  record MigrationsPerformed(int initializations, int migrations, boolean versionChanged) {
+    public static MigrationsPerformed none() {
+      return new MigrationsPerformed(0, 0, false);
     }
 
     public static MigrationsPerformed fromList(final List<MigrationTask> executedMigrations) {
@@ -31,7 +31,7 @@ public interface DbMigrator {
           migrations++;
         }
       }
-      return new MigrationsPerformed(initializations, migrations);
+      return new MigrationsPerformed(initializations, migrations, true);
     }
   }
 }
