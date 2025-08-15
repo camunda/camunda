@@ -15,22 +15,22 @@ export const waitForItemInList = async (
     shouldBeVisible?: boolean;
     timeout?: number;
     emptyStateLocator?: Locator;
-    clickAuthorizationsPageTab?: () => Promise<void>;
+    onAfterReload?: () => Promise<void>;
   },
 ) => {
   const {
     shouldBeVisible = true,
     timeout = 10000,
     emptyStateLocator,
-    clickAuthorizationsPageTab,
+    onAfterReload,
   } = options || {};
 
   const poll = expect.poll(
     async () => {
       await page.reload();
 
-      if (clickAuthorizationsPageTab) {
-        await clickAuthorizationsPageTab();
+      if (onAfterReload) {
+        await onAfterReload();
       }
 
       if (emptyStateLocator) {

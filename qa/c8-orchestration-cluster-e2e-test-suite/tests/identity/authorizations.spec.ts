@@ -11,7 +11,7 @@ import {test} from 'fixtures';
 import {
   LOGIN_CREDENTIALS,
   createTestData,
-  createApplicationAuthorization,
+  createComponentAuthorization,
 } from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
 import {relativizePath, Paths} from 'utils/relativizePath';
@@ -23,8 +23,8 @@ test.describe.serial('authorizations CRUD', () => {
   let NEW_USER_AUTHORIZATION: NonNullable<
     ReturnType<typeof createTestData>['userAuth']
   >;
-  let NEW_APPLICATION_AUTHORIZATION: NonNullable<
-    ReturnType<typeof createApplicationAuthorization>
+  let NEW_COMPONENT_AUTHORIZATION: NonNullable<
+    ReturnType<typeof createComponentAuthorization>
   >;
   test.beforeAll(() => {
     // Create test data once for the entire serial test suite
@@ -32,12 +32,12 @@ test.describe.serial('authorizations CRUD', () => {
       user: true,
       authRole: true,
       userAuth: true,
-      applicationAuth: true,
+      componentAuth: true,
     });
     NEW_USER = testData.user!;
     NEW_AUTH_ROLE = testData.authRole!;
     NEW_USER_AUTHORIZATION = testData.userAuth!;
-    NEW_APPLICATION_AUTHORIZATION = testData.applicationAuth!;
+    NEW_COMPONENT_AUTHORIZATION = testData.componentAuth!;
   });
 
   test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
@@ -105,14 +105,14 @@ test.describe.serial('authorizations CRUD', () => {
     });
   });
 
-  test('create application authorization', async ({
+  test('create component authorization', async ({
     identityUsersPage,
     identityAuthorizationsPage,
     identityHeader,
     loginPage,
   }) => {
     await identityAuthorizationsPage.createAuthorization(
-      NEW_APPLICATION_AUTHORIZATION,
+      NEW_COMPONENT_AUTHORIZATION,
     );
     await identityHeader.logout();
     await loginPage.login(NEW_USER.username, NEW_USER.password);
@@ -128,9 +128,12 @@ test.describe.serial('authorizations CRUD', () => {
     identityAuthorizationsPage,
   }) => {
     await test.step(`Delete Authorization of new user`, async () => {
+      const resourceType = NEW_COMPONENT_AUTHORIZATION.resourceType;
+      await identityAuthorizationsPage.selectResourceTypeTab(resourceType);
       await identityAuthorizationsPage.clickDeleteAuthorizationButton(
         NEW_AUTH_ROLE.id,
       );
+
       await expect(
         identityAuthorizationsPage.deleteAuthorizationModal,
       ).toBeVisible();
@@ -138,10 +141,15 @@ test.describe.serial('authorizations CRUD', () => {
       await expect(
         identityAuthorizationsPage.deleteAuthorizationModal,
       ).toBeHidden();
+
+      await identityAuthorizationsPage.selectResourceTypeTab(resourceType);
       const item = identityAuthorizationsPage.getAuthorizationCell(
         NEW_AUTH_ROLE.id,
       );
-      await waitForItemInList(page, item, {shouldBeVisible: false});
+      await waitForItemInList(page, item, {
+        shouldBeVisible: false, 
+        onAfterReload: () => identityAuthorizationsPage.selectResourceTypeTab(resourceType)
+      });
     });
 
     await test.step(`Logout and login with new user and assert authorization`, async () => {
