@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.utils.ProcessInstanceBuilder.newActiveProcessInstance;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -23,9 +24,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.impl.search.response.MessageSubscriptionImpl;
+import io.camunda.client.protocol.rest.MessageSubscriptionResult;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
@@ -41,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -77,7 +82,7 @@ public class ProcessInstanceAssertTest {
       when(camundaDataSource.findProcessInstances(any()))
           .thenReturn(
               Arrays.asList(
-                  ProcessInstanceBuilder.newActiveProcessInstance(ACTIVE_PROCESS_INSTANCE_KEY)
+                  newActiveProcessInstance(ACTIVE_PROCESS_INSTANCE_KEY)
                       .setProcessDefinitionId("active-process")
                       .build(),
                   ProcessInstanceBuilder.newCompletedProcessInstance(COMPLETED_PROCESS_INSTANCE_KEY)
@@ -238,8 +243,7 @@ public class ProcessInstanceAssertTest {
       // given
       when(camundaDataSource.findProcessInstances(any()))
           .thenReturn(
-              Collections.singletonList(
-                  ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -353,8 +357,7 @@ public class ProcessInstanceAssertTest {
       // given
       when(camundaDataSource.findProcessInstances(any()))
           .thenReturn(
-              Collections.singletonList(
-                  ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()))
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()))
           .thenReturn(
               Collections.singletonList(
                   ProcessInstanceBuilder.newCompletedProcessInstance(PROCESS_INSTANCE_KEY)
@@ -375,8 +378,7 @@ public class ProcessInstanceAssertTest {
       // given
       when(camundaDataSource.findProcessInstances(any()))
           .thenReturn(
-              Collections.singletonList(
-                  ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -454,8 +456,7 @@ public class ProcessInstanceAssertTest {
       // given
       when(camundaDataSource.findProcessInstances(any()))
           .thenReturn(
-              Collections.singletonList(
-                  ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()))
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()))
           .thenReturn(
               Collections.singletonList(
                   ProcessInstanceBuilder.newTerminatedProcessInstance(PROCESS_INSTANCE_KEY)
@@ -476,8 +477,7 @@ public class ProcessInstanceAssertTest {
       // given
       when(camundaDataSource.findProcessInstances(any()))
           .thenReturn(
-              Collections.singletonList(
-                  ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -518,8 +518,7 @@ public class ProcessInstanceAssertTest {
       // given
       when(camundaDataSource.findProcessInstances(any()))
           .thenReturn(
-              Collections.singletonList(
-                  ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -590,8 +589,7 @@ public class ProcessInstanceAssertTest {
     void configureMocks() {
       when(camundaDataSource.findProcessInstances(any()))
           .thenReturn(
-              Collections.singletonList(
-                  ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
     }
 
     @Test
@@ -684,6 +682,250 @@ public class ProcessInstanceAssertTest {
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasVariable("x", 1)
           .hasActiveElements("A");
+    }
+  }
+
+  @Nested
+  class MessageSubscriptions {
+
+    @Captor private ArgumentCaptor<Consumer<MessageSubscriptionFilter>> filterCaptor;
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private MessageSubscriptionFilter messageSubscriptionFilter;
+
+    @Test
+    void shouldFindMessageSubscription() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+          .thenReturn(
+              Collections.singletonList(
+                  new MessageSubscriptionImpl(new MessageSubscriptionResult())));
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).isWaitingForMessage("expected");
+
+      filterCaptor.getValue().accept(messageSubscriptionFilter);
+      verify(messageSubscriptionFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(messageSubscriptionFilter).messageName("expected");
+    }
+
+    @Test
+    void shouldFindMessageSubscriptionWithCorrelationKey() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+          .thenReturn(
+              Collections.singletonList(
+                  new MessageSubscriptionImpl(new MessageSubscriptionResult())));
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .isWaitingForMessage("expected", "correlation-key");
+
+      filterCaptor.getValue().accept(messageSubscriptionFilter);
+      verify(messageSubscriptionFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(messageSubscriptionFilter).messageName("expected");
+      verify(messageSubscriptionFilter).correlationKey("correlation-key");
+    }
+
+    @Test
+    void shouldAssertNoMessageSubscriptionFound() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+          .thenReturn(Collections.emptyList());
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .isNotWaitingForMessage("expected");
+
+      filterCaptor.getValue().accept(messageSubscriptionFilter);
+      verify(messageSubscriptionFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(messageSubscriptionFilter).messageName("expected");
+    }
+
+    @Test
+    void shouldAssertNoMessageSubscriptionFoundWithCorrelationKey() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+          .thenReturn(Collections.emptyList());
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .isNotWaitingForMessage("expected", "correlation-key");
+
+      filterCaptor.getValue().accept(messageSubscriptionFilter);
+      verify(messageSubscriptionFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(messageSubscriptionFilter).messageName("expected");
+      verify(messageSubscriptionFilter).correlationKey("correlation-key");
+    }
+
+    @Test
+    void shouldAwaitMessageSubscription() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(
+              Collections.singletonList(
+                  new MessageSubscriptionImpl(new MessageSubscriptionResult())));
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).isWaitingForMessage("expected");
+
+      filterCaptor.getValue().accept(messageSubscriptionFilter);
+      verify(messageSubscriptionFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(messageSubscriptionFilter).messageName("expected");
+    }
+
+    @Test
+    void shouldAwaitNoMessageSubscription() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList());
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .isNotWaitingForMessage("expected");
+
+      filterCaptor.getValue().accept(messageSubscriptionFilter);
+      verify(messageSubscriptionFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(messageSubscriptionFilter).messageName("expected");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldErrorIfNoMessageSubscriptionWasFound() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+          .thenReturn(Collections.emptyList());
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .isWaitingForMessage("expected"))
+          .hasMessage(
+              "Process instance [key: 1] should be expecting message 'expected', but was not.");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldErrorIfNoMessageSubscriptionWasFoundWithCorrelationKey() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+          .thenReturn(Collections.emptyList());
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .isWaitingForMessage("expected", "correlation-key"))
+          .hasMessage(
+              "Process instance [key: 1] should be expecting message 'expected' [correlation-key: correlation-key], but was not.");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldErrorIfMessageSubscriptionWasFoundDespiteNotExpectingOne() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+          .thenReturn(
+              Collections.singletonList(
+                  new MessageSubscriptionImpl(new MessageSubscriptionResult())));
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .isNotWaitingForMessage("expected"))
+          .hasMessage(
+              "Process instance [key: 1] should not be expecting message 'expected', but was.");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldErrorIfMessageSubscriptionWithCorrelationKeyWasFoundDespiteNotExpectingOne() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+          .thenReturn(
+              Collections.singletonList(
+                  new MessageSubscriptionImpl(new MessageSubscriptionResult())));
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .isNotWaitingForMessage("expected", "correlation-key"))
+          .hasMessage(
+              "Process instance [key: 1] should not be expecting message 'expected' [correlation-key: correlation-key], but was.");
     }
   }
 }

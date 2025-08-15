@@ -45,6 +45,7 @@ public class ProcessInstanceAssertj
   private final ElementAssertj elementAssertj;
   private final VariableAssertj variableAssertj;
   private final IncidentAssertj incidentAssertj;
+  private final MessageSubscriptionAssertj messageSubscriptionAssertj;
   private final String failureMessagePrefix;
   private final Function<String, ElementSelector> elementSelector;
 
@@ -76,6 +77,8 @@ public class ProcessInstanceAssertj
     elementAssertj = new ElementAssertj(dataSource, awaitBehavior, failureMessagePrefix);
     variableAssertj = new VariableAssertj(dataSource, awaitBehavior, failureMessagePrefix);
     incidentAssertj = new IncidentAssertj(dataSource, awaitBehavior, failureMessagePrefix);
+    messageSubscriptionAssertj =
+        new MessageSubscriptionAssertj(dataSource, awaitBehavior, failureMessagePrefix);
   }
 
   @Override
@@ -346,6 +349,34 @@ public class ProcessInstanceAssertj
   @Override
   public ProcessInstanceAssert hasActiveIncidents() {
     incidentAssertj.hasActiveIncidents(getProcessInstanceKey());
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert isWaitingForMessage(final String expectedMessageName) {
+    messageSubscriptionAssertj.isWaitingForMessage(getProcessInstanceKey(), expectedMessageName);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert isWaitingForMessage(
+      final String expectedMessageName, final String correlationKey) {
+    messageSubscriptionAssertj.isWaitingForMessage(
+        getProcessInstanceKey(), expectedMessageName, correlationKey);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert isNotWaitingForMessage(final String expectedMessageName) {
+    messageSubscriptionAssertj.isNotWaitingForMessage(getProcessInstanceKey(), expectedMessageName);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert isNotWaitingForMessage(
+      final String expectedMessageName, final String correlationKey) {
+    messageSubscriptionAssertj.isNotWaitingForMessage(
+        getProcessInstanceKey(), expectedMessageName, correlationKey);
     return this;
   }
 

@@ -19,6 +19,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
@@ -26,6 +27,7 @@ import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
@@ -121,5 +123,21 @@ public class CamundaDataSource {
 
   public DecisionInstance getDecisionInstance(final String decisionInstanceId) {
     return client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
+  }
+
+  public List<MessageSubscription> getMessageSubscriptions() {
+    return getMessageSubscriptions(filter -> {});
+  }
+
+  public List<MessageSubscription> getMessageSubscriptions(
+      final Consumer<MessageSubscriptionFilter> filter) {
+    return client
+        .newMessageSubscriptionSearchRequest()
+        .filter(filter)
+        .sort(sort -> sort.lastUpdatedDate().asc())
+        .page(DEFAULT_PAGE_REQUEST)
+        .send()
+        .join()
+        .items();
   }
 }

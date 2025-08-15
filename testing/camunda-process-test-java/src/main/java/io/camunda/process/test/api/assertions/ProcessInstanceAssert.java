@@ -496,4 +496,52 @@ public interface ProcessInstanceAssert {
    * @return the assertion object
    */
   ProcessInstanceAssert hasActiveIncidents();
+
+  /**
+   * Verifies that the process instance is currently waiting to receive one or more specified
+   * messages.
+   *
+   * <p>The assertion waits for the correct message subscription.
+   *
+   * @param expectedMessageName the name of the message
+   * @return the assertion object
+   */
+  ProcessInstanceAssert isWaitingForMessage(final String expectedMessageName);
+
+  /**
+   * Verifies that the process instance is currently waiting to receive one or more specified
+   * messages.
+   *
+   * <p>The assertion waits for the correct message subscription.
+   *
+   * @param expectedMessageName the name of the message
+   * @param correlationKey the message's correlation key
+   * @return the assertion object
+   */
+  ProcessInstanceAssert isWaitingForMessage(
+      final String expectedMessageName, final String correlationKey);
+
+  /**
+   * Verifies that the process instance is not currently waiting to receive one or more specified
+   * messages.
+   *
+   * <p>The assertion waits for a message subscription that may invalidate the assertion
+   *
+   * @param expectedMessageName the name of the message
+   * @return the assertion object
+   */
+  ProcessInstanceAssert isNotWaitingForMessage(final String expectedMessageName);
+
+  /**
+   * Verifies that the process instance is not currently waiting to receive one or more specified
+   * messages.
+   *
+   * <p>The assertion waits for a message subscription that may invalidate the assertion
+   *
+   * @param expectedMessageName the name of the message
+   * @param correlationKey the message's correlation key
+   * @return the assertion object
+   */
+  ProcessInstanceAssert isNotWaitingForMessage(
+      final String expectedMessageName, final String correlationKey);
 }
