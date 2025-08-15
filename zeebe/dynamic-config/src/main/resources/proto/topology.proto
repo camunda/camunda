@@ -13,12 +13,17 @@ message ClusterTopology {
   CompletedChange lastChange = 3;
   ClusterChangePlan currentChange = 4;
   RoutingState routingState = 5;
+  ClusterId clusterId = 6;
 }
 
 message RoutingState {
   int64 version = 1;
   RequestHandling requestHandling = 2;
   MessageCorrelation messageCorrelation = 3;
+}
+
+message ClusterId {
+  string clusterId = 1;
 }
 
 message RequestHandling {
