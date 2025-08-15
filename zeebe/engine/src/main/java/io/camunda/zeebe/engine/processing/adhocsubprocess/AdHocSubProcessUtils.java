@@ -18,6 +18,16 @@ public class AdHocSubProcessUtils {
   private static final String ERROR_MSG_ELEMENTS_NOT_FOUND =
       "Expected to activate activities for ad-hoc sub-process with key '%s', but the given elements %s do not exist.";
 
+  private static final String AHSP_JOB_CANNOT_ACTIVATE_ELEMENTS_WITH_COMPLETE_CONDITION_FULFILLED =
+      """
+      Expected to complete ad-hoc sub-process job, but the job result contains elements to \
+      be activated while the completion condition is fulfilled \
+      (job key '%d'). \
+      When the completion condition is fulfilled, no further element activations are allowed. \
+      Either remove the elements to be activated from the job result, or set the \
+      completion condition to not fulfilled.
+      """;
+
   public static Either<Rejection, List<String>> validateActivateElementsExistInAdHocSubProcess(
       final long adHocSubProcessKey,
       final ExecutableAdHocSubProcess adHocSubProcess,
@@ -36,6 +46,23 @@ public class AdHocSubProcessUtils {
           new Rejection(
               RejectionType.NOT_FOUND,
               ERROR_MSG_ELEMENTS_NOT_FOUND.formatted(adHocSubProcessKey, elementsNotFound)));
+    }
+  }
+
+  public static Either<Rejection, List<String>>
+      validateThatCompletionConditionIsNotFulfilledWhenActivatingElements(
+          final long adHocSubProcessKey,
+          final boolean completionConditionFulfilled,
+          final List<String> activateElementsCollection) {
+
+    if (!activateElementsCollection.isEmpty() && completionConditionFulfilled) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              AHSP_JOB_CANNOT_ACTIVATE_ELEMENTS_WITH_COMPLETE_CONDITION_FULFILLED.formatted(
+                  adHocSubProcessKey)));
+    } else {
+      return Either.right(activateElementsCollection);
     }
   }
 }

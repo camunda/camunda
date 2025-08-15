@@ -1081,6 +1081,29 @@ public class JobBasedAdHocSubProcessTest {
             JobIntent.CREATED); // Completion of event sub process
   }
 
+  @Test
+  public void shouldRejectWhenCompletionConditionIsFullfilledAndActivatingElements() {
+    // given
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.userTask("B");
+              adHocSubProcess.userTask("C");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    completeJob(jobType, true, false, activateElement("A"), activateElement("B"));
+
+    // then
+    Assertions.assertThat(RecordingExporter.jobRecords().onlyCommandRejections().getFirst())
+        .extracting(Record::getRejectionType, Record::getIntent)
+        .containsOnly(RejectionType.INVALID_ARGUMENT, JobIntent.COMPLETE);
+  }
+
   private void completeJob(
       final String jobType,
       final boolean completionConditionFulfilled,
@@ -1094,6 +1117,7 @@ public class JobBasedAdHocSubProcessTest {
             .setCompletionConditionFulfilled(completionConditionFulfilled)
             .setCancelRemainingInstances(cancelRemainingInstances);
     ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+    System.out.println("this is the job key: " + jobKey);
   }
 
   private JobResultActivateElement activateElement(final String elementId) {
