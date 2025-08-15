@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 6,
+  "id": 8,
   "links": [],
   "panels": [
     {
@@ -242,7 +242,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 625
+            "y": 817
           },
           "id": 32,
           "options": {
@@ -359,7 +359,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 632
+            "y": 824
           },
           "id": 33,
           "options": {
@@ -485,7 +485,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 637
+            "y": 829
           },
           "id": 34,
           "options": {
@@ -592,7 +592,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 637
+            "y": 829
           },
           "id": 35,
           "options": {
@@ -699,7 +699,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 637
+            "y": 829
           },
           "id": 36,
           "options": {
@@ -802,7 +802,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 645
+            "y": 837
           },
           "id": 37,
           "options": {
@@ -1197,7 +1197,7 @@
           "targets": [
             {
               "editorMode": "code",
-              "expr": "zeebe_camunda_exporter_since_last_flush_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}",
+              "expr": "min by (partition) (zeebe_camunda_exporter_since_last_flush_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
               "legendFormat": "partition-{{partition}}",
               "range": true,
               "refId": "A"
@@ -1478,9 +1478,9 @@
               },
               "editorMode": "code",
               "exemplar": true,
-              "expr": "rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "min by (partition) (rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))",
               "interval": "",
-              "legendFormat": "{{pod}} Exporter {{partition}}",
+              "legendFormat": "partition-{{partition}}",
               "range": true,
               "refId": "A"
             }
@@ -2270,7 +2270,7 @@
           "targets": [
             {
               "editorMode": "code",
-              "expr": "zeebe_camunda_exporter_process_instances_awaiting_archival{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}\n",
+              "expr": "max by (partition) (zeebe_camunda_exporter_process_instances_awaiting_archival{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})\n",
               "legendFormat": "Partition {{partition}}",
               "range": true,
               "refId": "A"
@@ -2518,7 +2518,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 374
+            "y": 566
           },
           "id": 2,
           "options": {
@@ -2642,7 +2642,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 374
+            "y": 566
           },
           "id": 3,
           "options": {
@@ -2699,7 +2699,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 400
+            "y": 592
           },
           "id": 4,
           "options": {
@@ -2823,7 +2823,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 400
+            "y": 592
           },
           "id": 5,
           "options": {
@@ -2894,7 +2894,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 263
+            "y": 455
           },
           "id": 22,
           "options": {
@@ -2980,7 +2980,7 @@
             "h": 8,
             "w": 11,
             "x": 10,
-            "y": 263
+            "y": 455
           },
           "id": 23,
           "options": {
@@ -3081,7 +3081,7 @@
             "h": 8,
             "w": 3,
             "x": 21,
-            "y": 263
+            "y": 455
           },
           "id": 24,
           "options": {
@@ -3141,7 +3141,7 @@
             "h": 10,
             "w": 11,
             "x": 0,
-            "y": 335
+            "y": 527
           },
           "id": 25,
           "options": {
@@ -3268,7 +3268,7 @@
             "h": 10,
             "w": 8,
             "x": 11,
-            "y": 335
+            "y": 527
           },
           "id": 26,
           "options": {
@@ -3345,7 +3345,7 @@
             "h": 10,
             "w": 5,
             "x": 19,
-            "y": 335
+            "y": 527
           },
           "id": 27,
           "options": {
