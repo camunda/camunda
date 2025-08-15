@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
+import io.micrometer.core.instrument.Tag;
 import io.netty.util.NetUtil;
 import java.util.Collections;
 import java.util.List;
@@ -60,7 +62,10 @@ public final class Broker implements AutoCloseable {
     final BrokerInfo localBroker = createBrokerInfo(getConfig());
     final var nodeId = MemberId.from(String.valueOf(getConfig().getCluster().getNodeId()));
 
-    healthCheckService = new BrokerHealthCheckService(nodeId);
+    healthCheckService =
+        new BrokerHealthCheckService(
+            nodeId,
+            new HealthTreeMetrics(systemContext.getMeterRegistry(), Tag.of("partition", "none")));
 
     final var startupContext =
         new BrokerStartupContextImpl(
