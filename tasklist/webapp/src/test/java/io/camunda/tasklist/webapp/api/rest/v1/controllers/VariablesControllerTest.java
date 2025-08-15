@@ -9,12 +9,14 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.VariableService;
@@ -33,6 +35,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class VariablesControllerTest {
 
   @Mock private VariableService variableService;
+  @Mock private TasklistPermissionServices tasklistPermissionServices;
 
   @InjectMocks private VariablesController instance;
 
@@ -41,6 +44,7 @@ class VariablesControllerTest {
   @BeforeEach
   void setUp() {
     mockMvc = MockMvcBuilders.standaloneSetup(instance).build();
+    when(tasklistPermissionServices.hasPermissionToReadProcessDefinition(any())).thenReturn(true);
   }
 
   @Test
@@ -76,5 +80,20 @@ class VariablesControllerTest {
     when(variableService.getVariableResponse(variableId)).thenThrow(NotFoundApiException.class);
     assertThatThrownBy(() -> instance.getVariableById(variableId))
         .isInstanceOf(NotFoundApiException.class);
+  }
+
+  @Test
+  void getVariablesReturnsForbiddenWhenUserHasNoPermission() throws Exception {
+    // Given
+    when(tasklistPermissionServices.hasPermissionToReadProcessDefinition(any())).thenReturn(false);
+    // When
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.get(
+                    TasklistURIs.VARIABLES_URL_V1.concat("/{variableId}"), "untested-variable")
+                .accept(MediaType.APPLICATION_JSON))
+        .andDo(print())
+        .andExpect(status().isForbidden())
+        .andReturn();
   }
 }
