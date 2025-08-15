@@ -166,7 +166,7 @@ public final class CreateProcessInstanceCommandImpl
     final Set<String> uniqueTags = new HashSet<>(Arrays.asList(tags)); // ensure no duplicates
 
     // For gRPC, tags support may be added in the future
-    // grpcRequestObjectBuilder.setTags(...); // TODO: Uncomment when setTags method is available
+    grpcRequestObjectBuilder.addAllTags(uniqueTags);
 
     // For HTTP, use the List directly
     httpRequestObject.setTags(uniqueTags);

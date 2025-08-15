@@ -18,6 +18,9 @@ package io.camunda.client.impl.response;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class CreateProcessInstanceResponseImpl implements ProcessInstanceEvent {
 
@@ -26,6 +29,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
   private final int version;
   private final long processInstanceKey;
   private final String tenantId;
+  private final Set<String> tags;
 
   public CreateProcessInstanceResponseImpl(
       final GatewayOuterClass.CreateProcessInstanceResponse response) {
@@ -34,6 +38,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
     version = response.getVersion();
     processInstanceKey = response.getProcessInstanceKey();
     tenantId = response.getTenantId();
+    tags = Collections.unmodifiableSet(new HashSet<>(response.getTagsList()));
   }
 
   public CreateProcessInstanceResponseImpl(final CreateProcessInstanceResult response) {
@@ -42,6 +47,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
     version = response.getProcessDefinitionVersion();
     processInstanceKey = Long.parseLong(response.getProcessInstanceKey());
     tenantId = response.getTenantId();
+    tags = response.getTags();
   }
 
   @Override
@@ -67,6 +73,11 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return tags;
   }
 
   @Override

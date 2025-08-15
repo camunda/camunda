@@ -31,7 +31,9 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -311,6 +313,28 @@ public final class CreateProcessInstanceTest extends ClientTest {
     final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
     assertThat(request.getTenantId()).isEqualTo(customTenantId);
     assertThat(request.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldCreateWithTags() {
+    // given
+    final Long processDefinitionKey = 1L;
+
+    // when
+    final ProcessInstanceEvent response =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .tags("tag1", "tag2")
+            .send()
+            .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(new HashSet<>(request.getTagsList()))
+        .isEqualTo(new HashSet<>(Arrays.asList("tag1", "tag2")));
+
+    assertThat(response.).isEqualTo(new HashSet<>(Arrays.asList("tag1", "tag2")));
   }
 
   public static class VariableDocument {

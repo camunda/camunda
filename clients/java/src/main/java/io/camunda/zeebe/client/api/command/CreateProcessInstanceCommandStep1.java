@@ -138,6 +138,8 @@ public interface CreateProcessInstanceCommandStep1
      *     it to the broker
      */
     CreateProcessInstanceWithResultCommandStep1 withResult();
+
+    CreateProcessInstanceCommandStep3 tags(String... tags);
   }
 
   interface CreateProcessInstanceWithResultCommandStep1

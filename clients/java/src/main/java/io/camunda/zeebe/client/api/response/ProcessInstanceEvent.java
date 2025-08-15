@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.api.response;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
+import java.util.Set;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
@@ -39,4 +40,6 @@ public interface ProcessInstanceEvent {
   /** Tenant identifier that owns this process instance */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/13321")
   String getTenantId();
+
+  Set<String> getTags();
 }
