@@ -16,6 +16,7 @@ import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
 import io.camunda.search.clients.auth.DocumentBasedResourceAccessController;
 import io.camunda.search.connect.configuration.DatabaseConfig;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.security.reader.ResourceAccessProvider;
@@ -51,22 +52,11 @@ public class ResourceAccessControllerConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(
-      prefix = "camunda.security.multiTenancy",
-      name = "checksEnabled",
-      havingValue = "true")
-  public TenantAccessProvider tenantAccessProvider() {
-    return new DefaultTenantAccessProvider();
-  }
-
-  @Bean
-  @ConditionalOnProperty(
-      prefix = "camunda.security.multiTenancy",
-      name = "checksEnabled",
-      havingValue = "false",
-      matchIfMissing = true)
-  public TenantAccessProvider disabledTenantAccessProvider() {
-    return new DisabledTenantAccessProvider();
+  public TenantAccessProvider tenantAccessProvider(
+      final SecurityConfiguration securityConfiguration) {
+    return securityConfiguration.getMultiTenancy().isChecksEnabled()
+        ? new DefaultTenantAccessProvider()
+        : new DisabledTenantAccessProvider();
   }
 
   @Bean
