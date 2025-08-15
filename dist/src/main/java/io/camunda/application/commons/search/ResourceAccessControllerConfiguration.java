@@ -23,7 +23,6 @@ import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.reader.TenantAccessProvider;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,22 +32,11 @@ import org.springframework.context.annotation.Configuration;
 public class ResourceAccessControllerConfiguration {
 
   @Bean
-  @ConditionalOnProperty(
-      prefix = "camunda.security.authorizations",
-      name = "enabled",
-      havingValue = "true",
-      matchIfMissing = true)
-  public ResourceAccessProvider resourceAccessProvider(final AuthorizationChecker checker) {
-    return new DefaultResourceAccessProvider(checker);
-  }
-
-  @Bean
-  @ConditionalOnProperty(
-      prefix = "camunda.security.authorizations",
-      name = "enabled",
-      havingValue = "false")
-  public ResourceAccessProvider disabledResourceAccessProvider() {
-    return new DisabledResourceAccessProvider();
+  public ResourceAccessProvider resourceAccessProvider(
+      final SecurityConfiguration securityConfiguration, final AuthorizationChecker checker) {
+    return securityConfiguration.getAuthorizations().isEnabled()
+        ? new DefaultResourceAccessProvider(checker)
+        : new DisabledResourceAccessProvider();
   }
 
   @Bean
