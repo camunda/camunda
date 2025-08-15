@@ -16,6 +16,7 @@ import {
 import {waitForItemInList} from 'utils/waitForItemInList';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {sleep} from '../../utils/sleep';
 
 test.describe.serial('authorizations CRUD', () => {
   let NEW_USER: NonNullable<ReturnType<typeof createTestData>['user']>;
@@ -23,7 +24,7 @@ test.describe.serial('authorizations CRUD', () => {
   let NEW_USER_AUTHORIZATION: NonNullable<
     ReturnType<typeof createTestData>['userAuth']
   >;
-  let NEW_APPLICATION_AUTHORIZATION: NonNullable<
+  let NEW_COMPONENT_AUTHORIZATION: NonNullable<
     ReturnType<typeof createComponentAuthorization>
   >;
   test.beforeAll(() => {
@@ -37,7 +38,7 @@ test.describe.serial('authorizations CRUD', () => {
     NEW_USER = testData.user!;
     NEW_AUTH_ROLE = testData.authRole!;
     NEW_USER_AUTHORIZATION = testData.userAuth!;
-    NEW_APPLICATION_AUTHORIZATION = testData.applicationAuth!;
+    NEW_COMPONENT_AUTHORIZATION = testData.applicationAuth!;
   });
 
   test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
@@ -112,7 +113,7 @@ test.describe.serial('authorizations CRUD', () => {
     loginPage,
   }) => {
     await identityAuthorizationsPage.createAuthorization(
-      NEW_APPLICATION_AUTHORIZATION,
+      NEW_COMPONENT_AUTHORIZATION,
     );
     await identityHeader.logout();
     await loginPage.login(NEW_USER.username, NEW_USER.password);
@@ -128,6 +129,9 @@ test.describe.serial('authorizations CRUD', () => {
     identityAuthorizationsPage,
   }) => {
     await test.step(`Delete Authorization of new user`, async () => {
+      await identityAuthorizationsPage.selectResourceTypeTab(
+        NEW_COMPONENT_AUTHORIZATION.resourceType,
+      );
       await identityAuthorizationsPage.clickDeleteAuthorizationButton(
         NEW_AUTH_ROLE.id,
       );
@@ -141,7 +145,13 @@ test.describe.serial('authorizations CRUD', () => {
       const item = identityAuthorizationsPage.getAuthorizationCell(
         NEW_AUTH_ROLE.id,
       );
-      await waitForItemInList(page, item, {shouldBeVisible: false});
+      await waitForItemInList(page, item, {
+        clickAuthorizationsPageTab: () =>
+          identityAuthorizationsPage.selectResourceTypeTab(
+            NEW_COMPONENT_AUTHORIZATION.resourceType,
+          ),
+      });
+      await sleep(3000);
     });
 
     await test.step(`Logout and login with new user and assert authorization`, async () => {
