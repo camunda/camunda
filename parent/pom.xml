@@ -75,7 +75,7 @@
     <version.mockito>5.18.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.10</version.msgpack>
-    <version.netty>4.1.119.Final</version.netty>
+    <version.netty>4.2.4.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.17.0</version.opensearch>
     <version.opensearch-java>2.19.0</version.opensearch-java>
