@@ -227,7 +227,7 @@
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
-    <plugin.version.google-java-format>1.25.2</plugin.version.google-java-format>
+    <plugin.version.google-java-format>1.28.0</plugin.version.google-java-format>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
