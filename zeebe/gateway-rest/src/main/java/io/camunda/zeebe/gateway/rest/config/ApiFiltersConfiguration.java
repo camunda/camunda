@@ -11,6 +11,8 @@ import static io.camunda.security.configuration.MultiTenancyConfiguration.API_EN
 import static io.camunda.security.configuration.OidcAuthenticationConfiguration.GROUPS_CLAIM_PROPERTY;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.ConditionalOnAuthenticationMethod;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -23,8 +25,12 @@ public class ApiFiltersConfiguration {
 
   @VisibleForTesting
   public static final String GROUPS_API_DISABLED_ERROR_MESSAGE =
-      "Groups API is disabled because the application is configured in group claim mode. To use the Groups API, reconfigure the application to to manage group mode removing the '%s' property."
+      "Groups API is disabled because the application is configured in group claim mode. To use the Groups API, reconfigure the application to manage group mode removing the '%s' property."
           .formatted(GROUPS_CLAIM_PROPERTY);
+
+  @VisibleForTesting
+  public static final String USERS_API_DISABLED_ERROR_MESSAGE =
+      "Users API is disabled because the application is configured in OIDC mode.";
 
   @VisibleForTesting
   public static final String TENANTS_API_DISABLED_ERROR_MESSAGE =
@@ -40,6 +46,19 @@ public class ApiFiltersConfiguration {
     registration.setFilter(
         new EndpointAccessErrorFilter(objectMapper, GROUPS_API_DISABLED_ERROR_MESSAGE));
     registration.addUrlPatterns("/v2/groups/*");
+    registration.setOrder(1);
+    return registration;
+  }
+
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+  @Bean
+  public FilterRegistrationBean<EndpointAccessErrorFilter> registerUsersFilter(
+      final ObjectMapper objectMapper) {
+    final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
+        new FilterRegistrationBean<>();
+    registration.setFilter(
+        new EndpointAccessErrorFilter(objectMapper, USERS_API_DISABLED_ERROR_MESSAGE));
+    registration.addUrlPatterns("/v2/users/*");
     registration.setOrder(1);
     return registration;
   }
