@@ -242,7 +242,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 817
+            "y": 753
           },
           "id": 32,
           "options": {
@@ -359,7 +359,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 824
+            "y": 760
           },
           "id": 33,
           "options": {
@@ -485,7 +485,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 829
+            "y": 765
           },
           "id": 34,
           "options": {
@@ -592,7 +592,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 829
+            "y": 765
           },
           "id": 35,
           "options": {
@@ -699,7 +699,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 829
+            "y": 765
           },
           "id": 36,
           "options": {
@@ -802,7 +802,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 837
+            "y": 773
           },
           "id": 37,
           "options": {
@@ -1308,15 +1308,55 @@
           "description": "For every non empty flush of a bulk request, this is the number of entities flushed.",
           "fieldConfig": {
             "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
               "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
                   "viz": false
                 },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
                 }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
               }
             },
             "overrides": []
@@ -1329,41 +1369,16 @@
           },
           "id": 11,
           "options": {
-            "calculate": false,
-            "calculation": {},
-            "cellGap": 2,
-            "cellValues": {},
-            "color": {
-              "exponent": 0.5,
-              "fill": "#ef843c",
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Spectral",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
             "legend": {
-              "show": false
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
             },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "showValue": "never",
             "tooltip": {
+              "hideZeros": false,
               "mode": "single",
-              "showColorScale": false,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "short"
+              "sort": "none"
             }
           },
           "pluginVersion": "12.1.0",
@@ -1373,17 +1388,17 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_camunda_exporter_bulk_size_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_camunda_exporter_bulk_size_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition) / \nsum(increase(zeebe_camunda_exporter_bulk_size_count{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
-              "legendFormat": "{{le}}",
+              "legendFormat": "partition-{{partition}}",
               "range": true,
               "refId": "A"
             }
           ],
           "title": "Camunda Exporter (Bulk Size)",
-          "type": "heatmap"
+          "type": "timeseries"
         },
         {
           "datasource": {
@@ -1478,9 +1493,9 @@
               },
               "editorMode": "code",
               "exemplar": true,
-              "expr": "min by (partition) (rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))",
+              "expr": "rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
               "interval": "",
-              "legendFormat": "partition-{{partition}}",
+              "legendFormat": "{{pod}} Exporter {{partition}}",
               "range": true,
               "refId": "A"
             }
@@ -2270,7 +2285,7 @@
           "targets": [
             {
               "editorMode": "code",
-              "expr": "max by (partition) (zeebe_camunda_exporter_process_instances_awaiting_archival{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})\n",
+              "expr": "zeebe_camunda_exporter_process_instances_awaiting_archival{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}\n",
               "legendFormat": "Partition {{partition}}",
               "range": true,
               "refId": "A"
@@ -2518,7 +2533,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 566
+            "y": 502
           },
           "id": 2,
           "options": {
@@ -2642,7 +2657,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 566
+            "y": 502
           },
           "id": 3,
           "options": {
@@ -2699,7 +2714,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 592
+            "y": 528
           },
           "id": 4,
           "options": {
@@ -2823,7 +2838,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 592
+            "y": 528
           },
           "id": 5,
           "options": {
@@ -2894,7 +2909,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 455
+            "y": 391
           },
           "id": 22,
           "options": {
@@ -2980,7 +2995,7 @@
             "h": 8,
             "w": 11,
             "x": 10,
-            "y": 455
+            "y": 391
           },
           "id": 23,
           "options": {
@@ -3081,7 +3096,7 @@
             "h": 8,
             "w": 3,
             "x": 21,
-            "y": 455
+            "y": 391
           },
           "id": 24,
           "options": {
@@ -3141,7 +3156,7 @@
             "h": 10,
             "w": 11,
             "x": 0,
-            "y": 527
+            "y": 463
           },
           "id": 25,
           "options": {
@@ -3268,7 +3283,7 @@
             "h": 10,
             "w": 8,
             "x": 11,
-            "y": 527
+            "y": 463
           },
           "id": 26,
           "options": {
@@ -3345,7 +3360,7 @@
             "h": 10,
             "w": 5,
             "x": 19,
-            "y": 527
+            "y": 463
           },
           "id": 27,
           "options": {
