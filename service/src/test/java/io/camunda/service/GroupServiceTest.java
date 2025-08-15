@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +44,7 @@ public class GroupServiceTest {
   private GroupSearchClient client;
   private CamundaAuthentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
+  private ApiServicesExecutorProvider executorProvider;
 
   @BeforeEach
   public void before() {
@@ -50,9 +52,15 @@ public class GroupServiceTest {
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(GroupSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
         new GroupServices(
-            stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
+            stubbedBrokerClient,
+            mock(SecurityContextProvider.class),
+            client,
+            authentication,
+            executorProvider);
   }
 
   @Test

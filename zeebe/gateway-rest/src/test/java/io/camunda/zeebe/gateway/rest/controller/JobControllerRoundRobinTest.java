@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.JobServices;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -415,7 +416,12 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
         final BrokerClient brokerClient,
         final ActivateJobsHandler<JobActivationResult> activateJobsHandler) {
       return new JobServices<>(
-          brokerClient, new SecurityContextProvider(), activateJobsHandler, null, null);
+          brokerClient,
+          new SecurityContextProvider(),
+          activateJobsHandler,
+          null,
+          null,
+          new ApiServicesExecutorProvider(1, 1, 1));
     }
   }
 }

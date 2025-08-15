@@ -25,6 +25,7 @@ import io.camunda.search.clients.MappingRuleSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.clients.TenantSearchClient;
+import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -70,42 +71,50 @@ public class IdentityMigrationModuleConfiguration {
   public AuthorizationServices authorizationServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final AuthorizationSearchClient authorizationSearchClient) {
+      final AuthorizationSearchClient authorizationSearchClient,
+      final ApiServicesExecutorProvider executorProvider) {
     return new AuthorizationServices(
-        brokerClient, securityContextProvider, authorizationSearchClient, null);
+        brokerClient, securityContextProvider, authorizationSearchClient, null, executorProvider);
   }
 
   @Bean
   public GroupServices groupServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final GroupSearchClient groupSearchClient) {
-    return new GroupServices(brokerClient, securityContextProvider, groupSearchClient, null);
+      final GroupSearchClient groupSearchClient,
+      final ApiServicesExecutorProvider executorProvider) {
+    return new GroupServices(
+        brokerClient, securityContextProvider, groupSearchClient, null, executorProvider);
   }
 
   @Bean
   public MappingRuleServices mappingRuleServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final MappingRuleSearchClient mappingRuleSearchClient) {
+      final MappingRuleSearchClient mappingRuleSearchClient,
+      final ApiServicesExecutorProvider executorProvider) {
     return new MappingRuleServices(
-        brokerClient, securityContextProvider, mappingRuleSearchClient, null);
+        brokerClient, securityContextProvider, mappingRuleSearchClient, null, executorProvider);
   }
 
   @Bean
   public RoleServices roleServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final RoleSearchClient roleSearchClient) {
-    return new RoleServices(brokerClient, securityContextProvider, roleSearchClient, null);
+      final RoleSearchClient roleSearchClient,
+      final ApiServicesExecutorProvider executorProvider) {
+    return new RoleServices(
+        brokerClient, securityContextProvider, roleSearchClient, null, executorProvider);
   }
 
   @Bean
   public TenantServices tenantServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final TenantSearchClient tenantSearchClient) {
-    return new TenantServices(brokerClient, securityContextProvider, tenantSearchClient, null);
+      final TenantSearchClient tenantSearchClient,
+      final ApiServicesExecutorProvider executorProvider) {
+    return new TenantServices(
+        brokerClient, securityContextProvider, tenantSearchClient, null, executorProvider);
   }
 
   @Bean

@@ -69,7 +69,8 @@ public class UserTaskServiceTest {
             elementInstanceServices,
             variableServices,
             processCache,
-            null);
+            null,
+            mock(ApiServicesExecutorProvider.class));
 
     when(client.withSecurityContext(any())).thenReturn(client);
     when(formServices.withAuthentication(any(CamundaAuthentication.class)))

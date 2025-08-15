@@ -31,15 +31,20 @@ public final class DecisionInstanceServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityHandler,
       final DecisionInstanceSearchClient decisionInstanceSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityHandler, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityHandler, authentication, executorProvider);
     this.decisionInstanceSearchClient = decisionInstanceSearchClient;
   }
 
   @Override
   public DecisionInstanceServices withAuthentication(final CamundaAuthentication authentication) {
     return new DecisionInstanceServices(
-        brokerClient, securityContextProvider, decisionInstanceSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        decisionInstanceSearchClient,
+        authentication,
+        executorProvider);
   }
 
   /**
