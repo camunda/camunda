@@ -168,6 +168,12 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>task-migration</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-db-rdbms</artifactId>
     </dependency>

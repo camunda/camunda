@@ -25,7 +25,7 @@ import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("process-migration")
+@Profile({"process-migration", "task-migration"}) // TODO: Update for multiple migration profiles
 @ComponentScan(basePackages = "io.camunda.application.commons.migration")
 public class AsyncMigrationsRunner implements ApplicationRunner {
 
