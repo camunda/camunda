@@ -44,13 +44,13 @@ public class MappingRuleServices
 
   @Override
   public SearchQueryResult<MappingRuleEntity> search(final MappingRuleQuery query) {
+    final var securityContext =
+        securityContextProvider.provideSecurityContext(
+            authentication, MAPPING_RULE_READ_AUTHORIZATION);
+
     return executeSearchRequest(
         () ->
-            mappingRuleSearchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication, MAPPING_RULE_READ_AUTHORIZATION))
-                .searchMappingRules(query));
+            mappingRuleSearchClient.withSecurityContext(securityContext).searchMappingRules(query));
   }
 
   @Override

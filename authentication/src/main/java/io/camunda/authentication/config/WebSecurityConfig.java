@@ -30,18 +30,23 @@ import io.camunda.authentication.converter.UsernamePasswordAuthenticationTokenCo
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
+import io.camunda.authentication.filters.CertificateBasedOAuth2Filter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
+import io.camunda.authentication.filters.RequestScopedAuthenticationRestorationFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.authentication.oauth.ClientAssertionConstants;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.auth.OidcGroupsLoader;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
@@ -59,6 +64,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -82,11 +88,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
@@ -101,6 +110,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -108,6 +118,9 @@ import org.springframework.security.web.header.writers.CrossOriginEmbedderPolicy
 import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy;
 import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.session.web.http.CookieSerializer;
+import org.springframework.session.web.http.DefaultCookieSerializer;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -146,6 +159,7 @@ public class WebSecurityConfig {
           "/decisions/*",
           "/instances",
           "/instances/*");
+  public static final Set<String> API_V2_PATHS = Set.of("/v2/**");
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -250,6 +264,9 @@ public class WebSecurityConfig {
       final HeaderConfiguration headerConfig,
       final boolean isSaas) {
 
+    // Configure SecurityContext to be inherited by child threads to handle async processing
+    SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+
     if (headerConfig.getContentTypeOptions().isDisabled()) {
       headers.contentTypeOptions(ContentTypeOptionsConfig::disable);
     }
@@ -337,6 +354,7 @@ public class WebSecurityConfig {
     final CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
     repository.setHeaderName(X_CSRF_TOKEN);
     repository.setCookieName(X_CSRF_TOKEN);
+    repository.setCookieCustomizer(cc -> cc.httpOnly(true));
     return repository;
   }
 
@@ -555,6 +573,67 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public CamundaAuthenticationConverter<Authentication>
+        oidcUsernamePasswordAuthenticationConverter(
+            final RoleServices roleServices,
+            final GroupServices groupServices,
+            final TenantServices tenantServices) {
+      return new UsernamePasswordAuthenticationTokenConverter(
+          roleServices, groupServices, tenantServices);
+    }
+
+    @Bean
+    public CertificateClientAssertionService certificateClientAssertionService() {
+      return new CertificateClientAssertionService();
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+      return new RestTemplate();
+    }
+
+    @Bean
+    public CertificateBasedOAuth2Filter certificateBasedOAuth2Filter(
+        final SecurityConfiguration securityConfiguration,
+        final CertificateClientAssertionService certificateClientAssertionService,
+        final RestTemplate restTemplate,
+        final JwtDecoder jwtDecoder) {
+      return new CertificateBasedOAuth2Filter(
+          securityConfiguration, certificateClientAssertionService, restTemplate, jwtDecoder);
+    }
+
+    /**
+     * Maps certificate properties from Spring Boot configuration to OIDC authentication
+     * configuration.
+     */
+    @Bean
+    public OidcAuthenticationConfiguration enhancedOidcConfiguration(
+        final SecurityConfiguration securityConfiguration,
+        final CertificateOidcProperties certificateProperties) {
+      final var oidcConfig = securityConfiguration.getAuthentication().getOidc();
+
+      // Map certificate properties if they exist
+      if (certificateProperties.getClientAssertionKeystorePath() != null) {
+        oidcConfig.setClientAssertionKeystorePath(
+            certificateProperties.getClientAssertionKeystorePath());
+      }
+      if (certificateProperties.getClientAssertionKeystorePassword() != null) {
+        oidcConfig.setClientAssertionKeystorePassword(
+            certificateProperties.getClientAssertionKeystorePassword());
+      }
+      if (certificateProperties.getClientAssertionKeystoreKeyAlias() != null) {
+        oidcConfig.setClientAssertionKeystoreKeyAlias(
+            certificateProperties.getClientAssertionKeystoreKeyAlias());
+      }
+      if (certificateProperties.getClientAssertionKeystoreKeyPassword() != null) {
+        oidcConfig.setClientAssertionKeystoreKeyPassword(
+            certificateProperties.getClientAssertionKeystoreKeyPassword());
+      }
+
+      return oidcConfig;
+    }
+
+    @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
         final SecurityConfiguration securityConfiguration) {
       return new InMemoryClientRegistrationRepository(
@@ -628,6 +707,48 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public OAuth2AuthorizedClientManager authorizedClientManager(
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final OAuth2AuthorizedClientRepository authorizedClientRepository,
+        final CertificateClientAssertionService certificateClientAssertionService,
+        final SecurityConfiguration securityConfiguration) {
+
+      final OAuth2AuthorizedClientProvider authorizedClientProvider;
+
+      // Check if using client credentials with certificate
+      if (ClientAssertionConstants.CLIENT_ASSERTION_GRANT_TYPE.equals(
+          securityConfiguration.getAuthentication().getOidc().getGrantType())) {
+        final var clientCredentialsTokenResponseClient =
+            new CertificateBasedClientCredentialsTokenResponseClient(
+                certificateClientAssertionService,
+                securityConfiguration.getAuthentication().getOidc());
+
+        authorizedClientProvider =
+            OAuth2AuthorizedClientProviderBuilder.builder()
+                .clientCredentials(
+                    configurer ->
+                        configurer.accessTokenResponseClient(clientCredentialsTokenResponseClient))
+                .build();
+
+        LOG.info("Configured OAuth2 client credentials flow with certificate-based authentication");
+      } else {
+        authorizedClientProvider =
+            OAuth2AuthorizedClientProviderBuilder.builder()
+                .authorizationCode()
+                .refreshToken()
+                .clientCredentials()
+                .build();
+      }
+
+      final DefaultOAuth2AuthorizedClientManager clientManager =
+          new DefaultOAuth2AuthorizedClientManager(
+              clientRegistrationRepository, authorizedClientRepository);
+      clientManager.setAuthorizedClientProvider(authorizedClientProvider);
+
+      return clientManager;
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
     public SecurityFilterChain oidcApiSecurity(
@@ -637,11 +758,33 @@ public class WebSecurityConfig {
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final OAuth2AuthorizedClientManager authorizedClientManager)
+        final OAuth2AuthorizedClientManager authorizedClientManager,
+        final CertificateBasedOAuth2Filter certificateBasedOAuth2Filter)
         throws Exception {
+      final String[] apiPathsForThisChain;
+      final boolean isClientCredentials =
+          ClientAssertionConstants.CLIENT_ASSERTION_GRANT_TYPE.equals(
+              securityConfiguration.getAuthentication().getOidc().getGrantType());
+      final boolean isCertificateBasedAuth =
+          isClientCredentials
+              && securityConfiguration.getAuthentication().getOidc().isClientAssertionEnabled();
+
+      if (isClientCredentials) {
+        if (isCertificateBasedAuth) {
+          // For certificate-based client credentials, exclude /v2/** as it's handled by
+          // identityClientCredentialsSecurityFilterChain
+          apiPathsForThisChain = new String[] {"/api/**", "/v1/**"};
+        } else {
+          // For non-certificate client credentials, include all paths
+          apiPathsForThisChain = new String[] {"/api/**", "/v1/**", "/v2/**"};
+        }
+      } else {
+        apiPathsForThisChain = API_PATHS.toArray(new String[0]);
+      }
+
       final var filterChainBuilder =
           httpSecurity
-              .securityMatcher(API_PATHS.toArray(new String[0]))
+              .securityMatcher(apiPathsForThisChain)
               .authorizeHttpRequests(
                   (authorizeHttpRequests) ->
                       authorizeHttpRequests
@@ -664,13 +807,188 @@ public class WebSecurityConfig {
                   oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
               .oauth2Login(AbstractHttpConfigurer::disable)
               .oidcLogout(AbstractHttpConfigurer::disable)
-              .logout(AbstractHttpConfigurer::disable);
+              .logout(AbstractHttpConfigurer::disable)
+              .addFilterBefore(certificateBasedOAuth2Filter, AuthorizationFilter.class);
 
       applyOauth2RefreshTokenFilter(
           httpSecurity, authorizedClientRepository, authorizedClientManager);
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
+    }
+
+    @Bean
+    @Order(ORDER_UNPROTECTED - 1) // Highest priority to ensure it runs first
+    @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+    public SecurityFilterChain identityClientCredentialsSecurityFilterChain(
+        final HttpSecurity httpSecurity,
+        final SecurityConfiguration securityConfiguration,
+        final CamundaAuthenticationProvider authenticationProvider,
+        final ResourceAccessProvider resourceAccessProvider,
+        final CookieCsrfTokenRepository csrfTokenRepository,
+        final OAuth2AuthorizedClientManager authorizedClientManager,
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final AuthorizationServices authorizationServices,
+        final CertificateBasedOAuth2Filter certificateBasedOAuth2Filter,
+        final JwtDecoder jwtDecoder,
+        @Value("${server.ssl.enabled:false}") final boolean sslEnabled)
+        throws Exception {
+
+      final String grantType = securityConfiguration.getAuthentication().getOidc().getGrantType();
+      if (!ClientAssertionConstants.CLIENT_ASSERTION_GRANT_TYPE.equals(grantType)) {
+        return null;
+      }
+
+      final String[] identityPaths = API_V2_PATHS.toArray(String[]::new);
+
+      return httpSecurity
+          .securityMatcher(identityPaths)
+          .authorizeHttpRequests(
+              (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().authenticated())
+          .exceptionHandling(
+              ex ->
+                  ex.authenticationEntryPoint(
+                          (request, response, authException) -> {
+                            // Try to restore authentication from session before failing
+                            try {
+                              final var session = request.getSession(false);
+                              if (session != null) {
+                                final var storedAuth =
+                                    (Authentication)
+                                        session.getAttribute(ClientAssertionConstants.SESSION_KEY);
+                                if (storedAuth != null && storedAuth.isAuthenticated()) {
+                                  SecurityContextHolder.getContext().setAuthentication(storedAuth);
+                                  LOG.info(
+                                      "Restored authentication from session in error handler: {} - Thread: {}",
+                                      storedAuth.getName(),
+                                      Thread.currentThread().getName());
+                                  return;
+                                }
+                              }
+                            } catch (final Exception e) {
+                              LOG.warn(
+                                  "Failed to restore authentication from session in error handler",
+                                  e);
+                            }
+
+                            LOG.error(
+                                "Authentication failed for certificate-based request: {} - Exception: {} - Thread: {} - SecurityContext: {}",
+                                request.getRequestURI(),
+                                authException.getMessage(),
+                                Thread.currentThread().getName(),
+                                SecurityContextHolder.getContext().hashCode());
+                            final var currentAuth =
+                                SecurityContextHolder.getContext().getAuthentication();
+                            LOG.error(
+                                "Current authentication state: Type: {}, Principal: {}, Authenticated: {}",
+                                currentAuth != null
+                                    ? currentAuth.getClass().getSimpleName()
+                                    : "null",
+                                currentAuth != null ? currentAuth.getName() : "null",
+                                currentAuth != null ? currentAuth.isAuthenticated() : false);
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response
+                                .getWriter()
+                                .write(
+                                    "{\"error\":\"Certificate-based authentication required: "
+                                        + authException.getMessage()
+                                        + "\"}");
+                          })
+                      .accessDeniedHandler(
+                          (request, response, accessDeniedException) -> {
+                            LOG.error(
+                                "Access denied for certificate-based request: {} - Exception: {}",
+                                request.getRequestURI(),
+                                accessDeniedException.getMessage());
+                            final var currentAuth =
+                                SecurityContextHolder.getContext().getAuthentication();
+                            LOG.error(
+                                "Current authentication state during access denied: Type: {}, Principal: {}, Authenticated: {}",
+                                currentAuth != null
+                                    ? currentAuth.getClass().getSimpleName()
+                                    : "null",
+                                currentAuth != null ? currentAuth.getName() : "null",
+                                currentAuth != null ? currentAuth.isAuthenticated() : false);
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            response
+                                .getWriter()
+                                .write(
+                                    "{\"error\":\"Access denied: "
+                                        + accessDeniedException.getMessage()
+                                        + "\"}");
+                          }))
+          .headers(
+              headers ->
+                  setupSecureHeaders(
+                      headers,
+                      securityConfiguration.getHttpHeaders(),
+                      securityConfiguration.getSaas().isConfigured()))
+          .cors(
+              cors ->
+                  cors.configurationSource(
+                      request -> {
+                        final var corsConfig = new org.springframework.web.cors.CorsConfiguration();
+
+                        // For local development, allow all origins. For production, restrict
+                        // origins
+                        if (sslEnabled) {
+                          // Production: Allow only same origin and specific domains
+                          corsConfig.setAllowedOrigins(
+                              java.util.List.of(
+                                  request.getScheme()
+                                      + "://"
+                                      + request.getServerName()
+                                      + ":"
+                                      + request.getServerPort()));
+                        } else {
+                          // Local development: Allow localhost origins
+                          corsConfig.setAllowedOriginPatterns(
+                              java.util.List.of("http://localhost:*", "http://127.0.0.1:*"));
+                        }
+
+                        corsConfig.setAllowedMethods(
+                            java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                        corsConfig.setAllowedHeaders(java.util.List.of("*"));
+                        corsConfig.setAllowCredentials(true);
+                        corsConfig.setMaxAge(3600L);
+                        return corsConfig;
+                      }))
+          .formLogin(AbstractHttpConfigurer::disable)
+          .oauth2Login(AbstractHttpConfigurer::disable)
+          .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+          .anonymous(AbstractHttpConfigurer::disable)
+          .sessionManagement(
+              session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+          .securityContext(
+              securityContext ->
+                  securityContext.securityContextRepository(
+                      new HttpSessionSecurityContextRepository()))
+          .addFilterBefore(certificateBasedOAuth2Filter, AuthorizationFilter.class)
+          .addFilterBefore(
+              new RequestScopedAuthenticationRestorationFilter(), AuthorizationFilter.class)
+          .addFilterBefore(
+              new WebApplicationAuthorizationCheckFilter(
+                  securityConfiguration, authenticationProvider, resourceAccessProvider),
+              AuthorizationFilter.class)
+          .csrf(
+              securityConfiguration.getCsrf().isEnabled()
+                  ? csrf -> configureCsrf(csrfTokenRepository, csrf)
+                  : AbstractHttpConfigurer::disable)
+          .build();
+    }
+
+    @Bean
+    public CookieSerializer cookieSerializer(
+        @Value("${server.ssl.enabled:false}") final boolean sslEnabled) {
+      final DefaultCookieSerializer serializer = new DefaultCookieSerializer();
+      // cross-origin cookie to allow identity frontend to work with backend API, otherwise 403
+      serializer.setSameSite("None");
+
+      // Use secure cookies only when SSL/HTTPS is enabled
+      serializer.setUseSecureCookie(sslEnabled);
+      return serializer;
     }
 
     @Bean
@@ -686,13 +1004,22 @@ public class WebSecurityConfig {
         final ResourceAccessProvider resourceAccessProvider,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final OAuth2AuthorizedClientManager authorizedClientManager)
+        final OAuth2AuthorizedClientManager authorizedClientManager,
+        final CertificateClientAssertionService certificateClientAssertionService)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
               .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
               .authorizeHttpRequests(
-                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().authenticated())
+                  (authorizeHttpRequests) -> {
+                    // If using client credentials flow, allow access without interactive login
+                    if (ClientAssertionConstants.CLIENT_ASSERTION_GRANT_TYPE.equals(
+                        securityConfiguration.getAuthentication().getOidc().getGrantType())) {
+                      authorizeHttpRequests.anyRequest().permitAll();
+                    } else {
+                      authorizeHttpRequests.anyRequest().authenticated();
+                    }
+                  })
               .headers(
                   headers ->
                       setupSecureHeaders(
@@ -719,6 +1046,20 @@ public class WebSecurityConfig {
                                 authorization.authorizationRequestResolver(
                                     authorizationRequestResolver(
                                         clientRegistrationRepository, securityConfiguration)));
+
+                    if (securityConfiguration
+                        .getAuthentication()
+                        .getOidc()
+                        .isClientAssertionEnabled()) {
+                      final var certificateTokenResponseClient =
+                          new CertificateBasedOAuth2AccessTokenResponseClient(
+                              certificateClientAssertionService,
+                              securityConfiguration.getAuthentication().getOidc());
+                      oauthLoginConfigurer.tokenEndpoint(
+                          tokenEndpointConfig ->
+                              tokenEndpointConfig.accessTokenResponseClient(
+                                  certificateTokenResponseClient));
+                    }
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
               .logout(
@@ -727,6 +1068,12 @@ public class WebSecurityConfig {
                           .logoutUrl(LOGOUT_URL)
                           .logoutSuccessHandler(new NoContentResponseHandler())
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+              .sessionManagement(
+                  session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+              .securityContext(
+                  securityContext ->
+                      securityContext.securityContextRepository(
+                          new HttpSessionSecurityContextRepository()))
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(
                       securityConfiguration, authenticationProvider, resourceAccessProvider),
