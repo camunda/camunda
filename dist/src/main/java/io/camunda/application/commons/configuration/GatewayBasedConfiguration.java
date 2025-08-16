@@ -110,6 +110,11 @@ public final class GatewayBasedConfiguration {
         .setProtocolConfig(membership);
   }
 
+  //  @Bean
+  //  public ClusterConfigurationGossiperConfig configManagerCfg() {
+  //    return properties.getCluster().getConfigManager().gossip();
+  //  }
+
   private MemberConfig memberConfig(final ClusterCfg cluster) {
     final var advertisedAddress =
         Address.from(cluster.getAdvertisedHost(), cluster.getAdvertisedPort());

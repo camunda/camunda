@@ -16,13 +16,11 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
+import io.camunda.zeebe.gateway.api.util.TestBrokerClusterState;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 final class PublishMessageDispatchStrategyTest {
@@ -68,84 +66,6 @@ final class PublishMessageDispatchStrategyTest {
         .isEqualTo(
             SubscriptionUtil.getSubscriptionPartitionId(
                 BufferUtil.wrapString(correlationKey), messagePartitionCount));
-  }
-
-  private record TestBrokerClusterState(int partitionCount) implements BrokerClusterState {
-
-    @Override
-    public boolean isInitialized() {
-      return true;
-    }
-
-    @Override
-    public int getClusterSize() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getPartitionsCount() {
-      return partitionCount;
-    }
-
-    @Override
-    public int getReplicationFactor() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getLeaderForPartition(final int partition) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Set<Integer> getFollowersForPartition(final int partition) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Set<Integer> getInactiveNodesForPartition(final int partition) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getRandomBroker() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<Integer> getPartitions() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<Integer> getBrokers() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String getBrokerAddress(final int brokerId) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getPartition(final int index) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String getBrokerVersion(final int brokerId) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long getLastCompletedChangeId() {
-      throw new UnsupportedOperationException();
-    }
   }
 
   private record TestTopologyManager(

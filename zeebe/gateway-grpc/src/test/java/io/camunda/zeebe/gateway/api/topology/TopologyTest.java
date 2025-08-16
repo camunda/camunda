@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.api.topology;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.api.util.StubbedTopologyManager;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
@@ -43,8 +43,8 @@ public final class TopologyTest extends GatewayTest {
   @Test
   public void shouldUpdatePartitionHealthHealthy() {
     // given
-    final var topology = (BrokerClusterStateImpl) brokerClient.getTopologyManager().getTopology();
-    topology.setPartitionHealthStatus(0, 1, PartitionHealthStatus.HEALTHY);
+    final var topologyManager = (StubbedTopologyManager) brokerClient.getTopologyManager();
+    topologyManager.setPartitionHealthStatus(0, 1, PartitionHealthStatus.HEALTHY);
 
     // when
     final var response = client.topology(TopologyRequest.newBuilder().build());
@@ -57,8 +57,8 @@ public final class TopologyTest extends GatewayTest {
   @Test
   public void shouldUpdatePartitionHealth() {
     // given
-    final var topology = (BrokerClusterStateImpl) brokerClient.getTopologyManager().getTopology();
-    topology.setPartitionHealthStatus(0, 1, PartitionHealthStatus.UNHEALTHY);
+    final var topologyManager = (StubbedTopologyManager) brokerClient.getTopologyManager();
+    topologyManager.setPartitionHealthStatus(0, 1, PartitionHealthStatus.UNHEALTHY);
 
     // when
     final var response = client.topology(TopologyRequest.newBuilder().build());
@@ -71,9 +71,9 @@ public final class TopologyTest extends GatewayTest {
   @Test
   public void shouldUpdateMultiplePartitionHealths() {
     // given
-    final var topology = (BrokerClusterStateImpl) brokerClient.getTopologyManager().getTopology();
-    topology.setPartitionHealthStatus(0, 1, PartitionHealthStatus.UNHEALTHY);
-    topology.setPartitionHealthStatus(0, 6, PartitionHealthStatus.HEALTHY);
+    final var topologyManager = (StubbedTopologyManager) brokerClient.getTopologyManager();
+    topologyManager.setPartitionHealthStatus(0, 1, PartitionHealthStatus.UNHEALTHY);
+    topologyManager.setPartitionHealthStatus(0, 6, PartitionHealthStatus.HEALTHY);
 
     // when
     final var response = client.topology(TopologyRequest.newBuilder().build());
@@ -88,9 +88,9 @@ public final class TopologyTest extends GatewayTest {
   public void shouldUpdateInactiveBroker() {
     // given
     final int partitionId = 3;
-    final var clusterState =
-        (BrokerClusterStateImpl) brokerClient.getTopologyManager().getTopology();
-    clusterState.addPartitionInactive(partitionId, 0);
+
+    final var topologyManager = (StubbedTopologyManager) brokerClient.getTopologyManager();
+    topologyManager.addPartitionInactive(partitionId, 0);
 
     // when
     final TopologyResponse response = client.topology(TopologyRequest.newBuilder().build());

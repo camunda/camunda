@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Set;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -203,6 +204,11 @@ public class KeycloakIdentityMigrationIT {
     migration = new TestStandaloneIdentityMigration(migrationProperties);
 
     client = BROKER.newClientBuilder().build();
+  }
+
+  @AfterEach
+  void tearDown() {
+    migration.close();
   }
 
   @Test
