@@ -15,7 +15,7 @@ import {isInstanceRunning} from 'modules/utils/instance';
 
 const PROCESS_INSTANCE_QUERY_KEY = 'processInstance';
 
-function getQueryKey(processInstanceKey?: string) {
+function getProcessInstanceQueryKey(processInstanceKey?: string) {
   return [PROCESS_INSTANCE_QUERY_KEY, processInstanceKey];
 }
 
@@ -25,7 +25,7 @@ const useProcessInstance = <T = ProcessInstance>(
   const {processInstanceId} = useProcessInstancePageParams();
 
   return useQuery({
-    queryKey: getQueryKey(processInstanceId),
+    queryKey: getProcessInstanceQueryKey(processInstanceId),
     queryFn: processInstanceId
       ? async () => {
           const {response, error} =
@@ -49,4 +49,4 @@ const useProcessInstance = <T = ProcessInstance>(
   });
 };
 
-export {useProcessInstance};
+export {useProcessInstance, getProcessInstanceQueryKey};

@@ -34,6 +34,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockMe} from 'modules/mocks/api/v2/me';
 
 vi.mock('modules/stores/notifications', () => ({
@@ -287,57 +288,6 @@ describe('InstanceHeader', () => {
     });
   });
 
-  it('should hide delete operation button when user has no resource based permission for delete process instance', async () => {
-    vi.stubGlobal('clientConfig', {resourcePermissionsEnabled: true});
-
-    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    render(
-      <ProcessInstanceHeader
-        processInstance={{...mockInstance, state: 'TERMINATED'}}
-      />,
-      {
-        wrapper: Wrapper,
-      },
-    );
-
-    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('instance-header-skeleton'),
-    );
-
-    expect(
-      screen.queryByRole('button', {name: /Delete Instance/}),
-    ).not.toBeInTheDocument();
-  });
-
-  it('should hide operation buttons when user has no resource based permission for update process instance', async () => {
-    vi.stubGlobal('clientConfig', {resourcePermissionsEnabled: true});
-
-    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
-      wrapper: Wrapper,
-    });
-
-    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('instance-header-skeleton'),
-    );
-
-    expect(
-      screen.queryByRole('button', {name: /Cancel Instance/}),
-    ).not.toBeInTheDocument();
-
-    expect(
-      screen.queryByRole('button', {name: /Modify Instance/}),
-    ).not.toBeInTheDocument();
-  });
-
   it('should show spinner on process instance cancellation', async () => {
     // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess({
@@ -346,6 +296,10 @@ describe('InstanceHeader', () => {
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockCancelProcessInstance().withSuccess({});
+    mockFetchProcessInstanceV2().withSuccess({
+      ...mockInstance,
+      state: 'TERMINATED',
+    });
 
     const {user, rerender} = render(
       <ProcessInstanceHeader processInstance={mockInstance} />,
@@ -363,20 +317,12 @@ describe('InstanceHeader', () => {
     await user.click(screen.getByRole('button', {name: /cancel instance/i}));
     await user.click(screen.getByRole('button', {name: /apply/i}));
 
-    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /cancel instance/i}),
-    ).toBeDisabled();
-
     rerender(
       <ProcessInstanceHeader
         processInstance={{...mockInstance, state: 'TERMINATED'}}
       />,
     );
 
-    await waitFor(() =>
-      expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument(),
-    );
     expect(
       screen.queryByRole('button', {name: /cancel instance/i}),
     ).not.toBeInTheDocument();

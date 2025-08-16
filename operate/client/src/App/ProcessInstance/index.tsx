@@ -67,7 +67,11 @@ const stopPolling = () => {
 const ProcessInstance: React.FC = observer(() => {
   const {data: processInstance, error} = useProcessInstance();
   const {data: processTitle} = useProcessTitle();
-  const {data: callHierarchy} = useCallHierarchy();
+  const {processInstanceKey} = processInstance ?? {};
+  const {data: callHierarchy} = useCallHierarchy(
+    {processInstanceKey: processInstanceKey!},
+    {enabled: processInstanceKey !== undefined},
+  );
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const isRootNodeSelected = useIsRootNodeSelected();
   const rootNode = useRootNode();

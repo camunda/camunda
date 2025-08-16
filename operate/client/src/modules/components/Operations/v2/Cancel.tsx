@@ -10,45 +10,35 @@ import {useState} from 'react';
 import {Modal} from '@carbon/react';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {Paths} from 'modules/Routes';
-import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
 import {OperationItem} from 'modules/components/OperationItem';
 import {Link} from 'modules/components/Link';
-import {useRootInstanceId} from 'modules/queries/callHierarchy/useRootInstanceId';
-import {notificationsStore} from 'modules/stores/notifications';
-import {useProcessInstanceOperationsContext} from 'App/ProcessInstance/ProcessInstanceHeader/processInstanceOperationsContext';
-
+import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
+  onExecute: () => void;
+  disabled?: boolean;
 };
 
-const Cancel: React.FC<Props> = ({processInstanceKey}) => {
+const Cancel: React.FC<Props> = ({
+  processInstanceKey,
+  onExecute,
+  disabled = false,
+}) => {
   const [isCancellationModalVisible, setIsCancellationModalVisible] =
     useState(false);
 
-  const {data: rootInstanceId} = useRootInstanceId({
-    enabled: isCancellationModalVisible,
-  });
-
-  const processInstanceOperationsContext =
-    useProcessInstanceOperationsContext();
-  const {isPending, onMutate, onError} =
-    processInstanceOperationsContext?.cancellation ?? {};
-
-  const cancelProcessInstanceMutation = useCancelProcessInstance(
-    processInstanceKey,
-    {
-      onError: (error) => {
-        notificationsStore.displayNotification({
-          kind: 'error',
-          title: 'Failed to cancel process instance',
-          subtitle: error.message,
-          isDismissable: true,
-        });
-        onError?.(error);
-      },
-      onMutate,
-    },
+  const {data: callHierarchy} = useCallHierarchy(
+    {processInstanceKey},
+    {enabled: isCancellationModalVisible},
   );
+  const rootInstanceId = callHierarchy?.[0]?.processInstanceKey;
+
+  const confirmation = {
+    title: 'Apply Operation',
+    message: `About to cancel Instance ${processInstanceKey}. In case there are called instances, these will be canceled too.`,
+    primaryButtonText: 'Apply',
+    secondaryButtonText: 'Cancel',
+  };
 
   return (
     <>
@@ -56,7 +46,7 @@ const Cancel: React.FC<Props> = ({processInstanceKey}) => {
         type="CANCEL_PROCESS_INSTANCE"
         onClick={() => setIsCancellationModalVisible(true)}
         title={`Cancel Instance ${processInstanceKey}`}
-        disabled={isPending}
+        disabled={disabled}
         size="sm"
       />
 
@@ -66,19 +56,19 @@ const Cancel: React.FC<Props> = ({processInstanceKey}) => {
             <Modal
               open={isCancellationModalVisible}
               preventCloseOnClickOutside
-              modalHeading="Apply Operation"
-              primaryButtonText="Apply"
-              secondaryButtonText="Cancel"
+              modalHeading={confirmation.title}
+              primaryButtonText={confirmation.primaryButtonText}
+              secondaryButtonText={confirmation.secondaryButtonText}
               onRequestSubmit={() => {
                 setIsCancellationModalVisible(false);
-                cancelProcessInstanceMutation.mutate();
+                onExecute();
               }}
               onRequestClose={() => setIsCancellationModalVisible(false)}
               size="md"
               data-testid="confirm-cancellation-modal"
             >
-              <p>{`About to cancel Instance ${processInstanceKey}. In case there are called instances, these will be canceled too.`}</p>
-              <p>Click "Apply" to proceed.</p>
+              <p>{confirmation.message}</p>
+              <p>Click "{confirmation.primaryButtonText}" to proceed.</p>
             </Modal>
           ) : (
             <Modal

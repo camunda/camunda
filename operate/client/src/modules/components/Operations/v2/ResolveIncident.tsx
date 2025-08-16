@@ -8,35 +8,23 @@
 
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {OperationItem} from 'modules/components/OperationItem';
-import {useCreateIncidentResolutionBatchOperation} from 'modules/mutations/processInstance/useCreateIncidentResolutionBatchOperation';
-import {notificationsStore} from 'modules/stores/notifications';
-
 type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
+  onExecute: () => void;
+  disabled?: boolean;
 };
 
-const ResolveIncident: React.FC<Props> = ({processInstanceKey}) => {
-  const {mutate, isPending} = useCreateIncidentResolutionBatchOperation(
-    processInstanceKey,
-    {
-      onError: (error) =>
-        notificationsStore.displayNotification({
-          kind: 'error',
-          title: 'Failed to retry process instance',
-          subtitle: error.message,
-          isDismissable: true,
-        }),
-    },
-  );
-
+const ResolveIncident: React.FC<Props> = ({
+  processInstanceKey,
+  onExecute,
+  disabled = false,
+}) => {
   return (
     <OperationItem
       type="RESOLVE_INCIDENT"
-      onClick={() => {
-        mutate();
-      }}
+      onClick={onExecute}
       title={`Retry Instance ${processInstanceKey}`}
-      disabled={isPending}
+      disabled={disabled}
       size="sm"
     />
   );
