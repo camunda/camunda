@@ -9,6 +9,7 @@ package io.camunda.authentication.filters;
 
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 
+import io.camunda.authentication.oauth.ClientAssertionConstants;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
@@ -52,6 +53,8 @@ public class WebComponentAuthorizationCheckFilter extends OncePerRequestFilter {
       final FilterChain filterChain)
       throws ServletException, IOException {
 
+    LOG.debug("WebApplicationAuthorizationCheckFilter processing: {}", request.getRequestURI());
+
     if (!isAllowed(request)) {
       LOG.warn("Access denied for request: {}", request.getRequestURI());
       response.sendRedirect(
@@ -62,6 +65,9 @@ public class WebComponentAuthorizationCheckFilter extends OncePerRequestFilter {
   }
 
   private boolean isAllowed(final HttpServletRequest request) {
+    if (hasClientCertificate(request)) {
+      return true;
+    }
 
     if (!securityConfig.getAuthorizations().isEnabled() || !isAuthenticated()) {
       return true;
@@ -104,5 +110,39 @@ public class WebComponentAuthorizationCheckFilter extends OncePerRequestFilter {
   private boolean isAuthenticated() {
     final var auth = SecurityContextHolder.getContext().getAuthentication();
     return auth != null && auth.isAuthenticated();
+  }
+
+  private boolean hasClientCertificate(final HttpServletRequest request) {
+    final Object certificates = request.getAttribute("jakarta.servlet.request.X509Certificate");
+    final boolean clientAssertionEnabled =
+        securityConfig.getAuthentication().getOidc().isClientAssertionEnabled();
+    final boolean isClientCredentials =
+        ClientAssertionConstants.CLIENT_ASSERTION_GRANT_TYPE.equals(
+            securityConfig.getAuthentication().getOidc().getGrantType());
+    final boolean authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
+
+    LOG.info(
+        "Certificate detection for {}: certificates={}, clientAssertionEnabled={}, isClientCredentials={}, authorizationsEnabled={}",
+        request.getRequestURI(),
+        certificates != null,
+        clientAssertionEnabled,
+        isClientCredentials,
+        authorizationsEnabled);
+
+    if (clientAssertionEnabled && isClientCredentials) {
+      LOG.info("MS Entra certificate authentication enabled for: {}", request.getRequestURI());
+      if (!authorizationsEnabled) {
+        LOG.info(
+            "Authorizations disabled, forwarding to certificate access for: {}",
+            request.getRequestURI());
+        return true;
+      }
+      // Certificate authentication will be handled by CertificateBasedOAuth2Filter
+      // Do not create authentication here - requires proper OAuth2 flow
+      final var currentAuth = SecurityContextHolder.getContext().getAuthentication();
+      return currentAuth != null && currentAuth.isAuthenticated();
+    }
+
+    return certificates != null && clientAssertionEnabled;
   }
 }

@@ -9,6 +9,7 @@ package io.camunda.authentication.config.controllers;
 
 import io.camunda.authentication.service.DefaultMembershipService;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -34,5 +35,10 @@ public class WebSecurityOidcTestContext {
       final SecurityConfiguration securityConfiguration) {
     return new DefaultMembershipService(
         mappingRuleServices, tenantServices, roleServices, groupServices, securityConfiguration);
+  }
+
+  @Bean
+  public AuthorizationServices authorizationServices() {
+    return new AuthorizationServices(null, null, null, null);
   }
 }
