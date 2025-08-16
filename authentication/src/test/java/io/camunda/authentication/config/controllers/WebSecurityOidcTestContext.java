@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.config.controllers;
 
-import io.camunda.authentication.config.CertificateOidcProperties;
 import io.camunda.authentication.service.DefaultMembershipService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
@@ -36,11 +35,6 @@ public class WebSecurityOidcTestContext {
       final SecurityConfiguration securityConfiguration) {
     return new DefaultMembershipService(
         mappingRuleServices, tenantServices, roleServices, groupServices, securityConfiguration);
-  }
-
-  @Bean
-  public CertificateOidcProperties certificateOidcProperties() {
-    return new CertificateOidcProperties("", "", "", "");
   }
 
   @Bean

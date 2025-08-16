@@ -40,13 +40,11 @@ import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.auth.OidcGroupsLoader;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
@@ -573,16 +571,6 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public CamundaAuthenticationConverter<Authentication>
-        oidcUsernamePasswordAuthenticationConverter(
-            final RoleServices roleServices,
-            final GroupServices groupServices,
-            final TenantServices tenantServices) {
-      return new UsernamePasswordAuthenticationTokenConverter(
-          roleServices, groupServices, tenantServices);
-    }
-
-    @Bean
     public CertificateClientAssertionService certificateClientAssertionService() {
       return new CertificateClientAssertionService();
     }
@@ -600,37 +588,6 @@ public class WebSecurityConfig {
         final JwtDecoder jwtDecoder) {
       return new CertificateBasedOAuth2Filter(
           securityConfiguration, certificateClientAssertionService, restTemplate, jwtDecoder);
-    }
-
-    /**
-     * Maps certificate properties from Spring Boot configuration to OIDC authentication
-     * configuration.
-     */
-    @Bean
-    public OidcAuthenticationConfiguration enhancedOidcConfiguration(
-        final SecurityConfiguration securityConfiguration,
-        final CertificateOidcProperties certificateProperties) {
-      final var oidcConfig = securityConfiguration.getAuthentication().getOidc();
-
-      // Map certificate properties if they exist
-      if (certificateProperties.getClientAssertionKeystorePath() != null) {
-        oidcConfig.setClientAssertionKeystorePath(
-            certificateProperties.getClientAssertionKeystorePath());
-      }
-      if (certificateProperties.getClientAssertionKeystorePassword() != null) {
-        oidcConfig.setClientAssertionKeystorePassword(
-            certificateProperties.getClientAssertionKeystorePassword());
-      }
-      if (certificateProperties.getClientAssertionKeystoreKeyAlias() != null) {
-        oidcConfig.setClientAssertionKeystoreKeyAlias(
-            certificateProperties.getClientAssertionKeystoreKeyAlias());
-      }
-      if (certificateProperties.getClientAssertionKeystoreKeyPassword() != null) {
-        oidcConfig.setClientAssertionKeystoreKeyPassword(
-            certificateProperties.getClientAssertionKeystoreKeyPassword());
-      }
-
-      return oidcConfig;
     }
 
     @Bean
@@ -826,11 +783,7 @@ public class WebSecurityConfig {
         final CamundaAuthenticationProvider authenticationProvider,
         final ResourceAccessProvider resourceAccessProvider,
         final CookieCsrfTokenRepository csrfTokenRepository,
-        final OAuth2AuthorizedClientManager authorizedClientManager,
-        final ClientRegistrationRepository clientRegistrationRepository,
-        final AuthorizationServices authorizationServices,
         final CertificateBasedOAuth2Filter certificateBasedOAuth2Filter,
-        final JwtDecoder jwtDecoder,
         @Value("${server.ssl.enabled:false}") final boolean sslEnabled)
         throws Exception {
 
