@@ -32,8 +32,8 @@ import io.camunda.authentication.exception.BasicAuthenticationNotSupportedExcept
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.CertificateBasedOAuth2Filter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
-import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.filters.RequestScopedAuthenticationRestorationFilter;
+import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.oauth.ClientAssertionConstants;
 import io.camunda.authentication.service.MembershipService;
@@ -969,7 +969,7 @@ public class WebSecurityConfig {
           .addFilterBefore(
               new RequestScopedAuthenticationRestorationFilter(), AuthorizationFilter.class)
           .addFilterBefore(
-              new WebApplicationAuthorizationCheckFilter(
+              new WebComponentAuthorizationCheckFilter(
                   securityConfiguration, authenticationProvider, resourceAccessProvider),
               AuthorizationFilter.class)
           .csrf(
