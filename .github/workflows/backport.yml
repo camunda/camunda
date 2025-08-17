@@ -42,7 +42,7 @@ jobs:
           git_user_signingkey: true
           git_commit_gpgsign: true
       - name: Create backport PRs
-        uses: korthout/backport-action@v3
+        uses: korthout/backport-action@ca4972adce8039ff995e618f5fc02d1b7961f27a #v3.3.0
         with:
           # Token to authenticate requests to GitHub
           github_token: ${{ secrets.BACKPORT_ACTION_PAT }}
