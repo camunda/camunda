@@ -55,9 +55,11 @@ async function buildComment(mergedData, github, branchName) {
     const icon = getFlakyIcon(test.flakiness);
     const url = await generateTestSourceUrl(test, github, branchName);
 
-    lines.push(`- [**${test.methodName || test.fullName}**](${url}) – ${icon} **${test.flakiness}% flakiness**`);
+    const testName = test.methodName || test.fullName;
+    const formattedName = url ? `[**${testName}**](${url})` : `**${testName}**`;
+    lines.push(`- ${formattedName} – ${icon} **${test.flakiness}% flakiness**`);
     lines.push(`  - Package: \`${test.packageName}\``);
-    lines.push(`  - Class: \`${test.className ? `${test.className}` : ''}\``);
+    lines.push(`  - Class: ${test.className ? `\`${test.className}\`` : "-"}`);
     lines.push(`  - Occurrences: ${test.occurrences} / ${test.totalRuns}`);
     lines.push('');
   }
@@ -78,10 +80,11 @@ function getFlakyIcon(percent) {
 
 async function generateTestSourceUrl(test, github, branchName) {
     const originalUrl = await githubApi.getTestSourceUrl(test, github);
-    console.log(`[flaky-tests] Original URL for test ${test.methodName || test.fullName}: ${originalUrl}`);
+    const testName = test.methodName || test.fullName;
+    console.log(`[flaky-tests] Original URL for test ${testName}: ${originalUrl}`);
 
-    if (!originalUrl) {
-        console.warn(`[flaky-tests] No source URL found for test: ${test.fullName}`);
+    if (!originalUrl || typeof originalUrl !== 'string') {
+        console.warn(`[flaky-tests] No valid source URL found for test: ${testName}`);
         return '';
     }
 
