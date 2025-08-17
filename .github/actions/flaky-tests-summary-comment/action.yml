@@ -3,6 +3,8 @@ name: Flaky Tests Summary Comment
 
 description: Creates or updates a PR comment with flaky test summary across all test jobs
 
+# owner: @camunda/monorepo-devops-team
+
 inputs:
   flaky-tests-data:
     description: 'JSON array containing flaky test data from all jobs'
