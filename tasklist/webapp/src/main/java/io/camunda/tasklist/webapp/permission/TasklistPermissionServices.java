@@ -56,8 +56,8 @@ public class TasklistPermissionServices {
     return isAuthorizedForResource(task.getBpmnProcessId(), UPDATE_USER_TASK_AUTH_CHECK);
   }
 
-  public boolean hasPermissionToReadUserTask(final String bpmnProcessId) {
-    return isAuthorizedForResource(bpmnProcessId, READ_USER_TASK_AUTH_CHECK);
+  public boolean hasWildcardPermissionToReadUserTask() {
+    return isAuthorizedForResource(WILDCARD_RESOURCE, READ_USER_TASK_AUTH_CHECK);
   }
 
   public List<String> getProcessDefinitionsWithCreateProcessInstancePermission() {

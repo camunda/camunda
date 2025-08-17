@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
-import static io.camunda.tasklist.webapp.permission.TasklistPermissionServices.WILDCARD_RESOURCE;
-
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
 import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.Error;

@@ -86,7 +86,7 @@ class TaskControllerTest {
     mockMvc = MockMvcBuilders.standaloneSetup(instance).build();
     final var authentication = mock(CamundaAuthentication.class);
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
-    when(tasklistPermissionServices.hasPermissionToReadUserTask(any())).thenReturn(true);
+    when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(true);
   }
 
   @Nested
@@ -100,7 +100,7 @@ class TaskControllerTest {
               .setState(TaskState.CREATED)
               .setAssigned(true)
               .setSearchAfter(new String[] {"123", "456"});
-      when(tasklistPermissionServices.hasPermissionToReadUserTask(any())).thenReturn(false);
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(false);
 
       // When
       final var responseAsString =
@@ -398,7 +398,7 @@ class TaskControllerTest {
     @Test
     void returnsEmptyVariableListWhenUserHasNoUserTaskPermission() throws Exception {
       // Given
-      when(tasklistPermissionServices.hasPermissionToReadUserTask(any())).thenReturn(false);
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(false);
 
       // When
       final var responseAsString =

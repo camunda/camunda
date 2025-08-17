@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
-import static io.camunda.tasklist.webapp.permission.TasklistPermissionServices.WILDCARD_RESOURCE;
-
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
@@ -76,7 +74,7 @@ public class FormController extends ApiErrorController {
               description = "The version of the form. Valid only for deployed forms.",
               required = false)
           final Long version) {
-    if (!tasklistPermissionServices.hasPermissionToReadProcessDefinition(WILDCARD_RESOURCE)) {
+    if (!tasklistPermissionServices.hasWildcardPermissionToReadUserTask()) {
       throw new ForbiddenActionException(
           "User does not have permission to read resource. Please check your permissions.");
     }

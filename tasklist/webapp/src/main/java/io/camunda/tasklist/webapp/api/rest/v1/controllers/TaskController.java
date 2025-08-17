@@ -8,7 +8,6 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static io.camunda.tasklist.webapp.mapper.TaskMapper.TASK_DESCRIPTION;
-import static io.camunda.tasklist.webapp.permission.TasklistPermissionServices.WILDCARD_RESOURCE;
 import static java.util.Objects.requireNonNullElse;
 
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -111,7 +110,7 @@ public class TaskController extends ApiErrorController {
   public ResponseEntity<List<TaskSearchResponse>> searchTasks(
       @RequestBody(required = false) final TaskSearchRequest searchRequest) {
 
-    if (!permissionServices.hasPermissionToReadUserTask(WILDCARD_RESOURCE)) {
+    if (!permissionServices.hasWildcardPermissionToReadUserTask()) {
       // We return an empty list here to match the behaviour of V2
       return ResponseEntity.ok(Collections.emptyList());
     }
@@ -483,7 +482,7 @@ public class TaskController extends ApiErrorController {
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
           final String taskId,
       @RequestBody(required = false) final VariablesSearchRequest variablesSearchRequest) {
-    if (!permissionServices.hasPermissionToReadUserTask(WILDCARD_RESOURCE)) {
+    if (!permissionServices.hasWildcardPermissionToReadUserTask()) {
       // We return an empty list here to match the behaviour of V2
       return ResponseEntity.ok(Collections.emptyList());
     }
