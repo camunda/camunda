@@ -643,6 +643,19 @@ class TaskControllerTest {
   @Nested
   class GetTaskTests {
     @Test
+    void returnsForbiddenWhenUserHasNoUserTaskPermission() throws Exception {
+      // Given
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(false);
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(get(TasklistURIs.TASKS_URL_V1.concat("/untested-id")))
+              .andDo(print())
+              .andExpect(status().isForbidden());
+    }
+
+    @Test
     void getTaskById() throws Exception {
       // Given
       final var taskId = "2222222";
