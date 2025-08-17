@@ -1,15 +1,16 @@
 # Flaky Tests Summary Comment Action
 
 ## Purpose
+
 Creates or updates a PR comment with a comprehensive summary of flaky tests across all test jobs.
 
 ## Inputs
 
-| Input | Description | Required |
-|-------|-------------|----------|
-| `flaky-tests-data` | JSON array containing processed flaky test data | true |
-| `pr-number` | Pull request number for the comment | true |
-| `branch-name` | Branch name where the comment will be posted | true |
+| Input              | Description                                      | Required |
+|--------------------|--------------------------------------------------|----------|
+| `flaky-tests-data` | JSON array containing processed flaky test data | true     |
+| `pr-number`        | Pull request number for the comment             | true     |
+| `branch-name`      | Branch name where the comment will be posted    | true     |
 
 ## Expected Data Structure
 
@@ -75,5 +76,6 @@ This action does not produce outputs. It creates or updates a PR comment directl
   - `src/helpers.js` - Utility functions
 
 ## Dependencies
+
 - `actions/github-script@v7` for GitHub API access
 - Modular JavaScript processors in `src/` directory

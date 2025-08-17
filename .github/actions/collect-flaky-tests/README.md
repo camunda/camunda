@@ -1,6 +1,7 @@
 # Collect Flaky Tests Action
 
 ## Purpose
+
 This composite action collects and aggregates flaky test results from multiple CI jobs in the Camunda orchestration cluster project. It processes results from various test suites including unit tests, integration tests with different databases (Elasticsearch, OpenSearch, RDBMS), and Docker checks.
 
 ## Inputs
@@ -26,7 +27,7 @@ This composite action collects and aggregates flaky test results from multiple C
 
 ## Outputs
 
- Output | Description |
+| Output | Description |
 |--------|-------------|
 | `flaky_tests_data` | JSON array of flaky tests data aggregated from all test jobs. Each object contains `job` (string) and `flaky_tests` (string) fields |
 
@@ -78,6 +79,7 @@ This composite action collects and aggregates flaky test results from multiple C
 ```
 
 ## Internal Implementation
+
 - Uses bash shell scripts located in `scripts/collect-flaky-tests.sh`
 - Processes both single job results and matrix job results
 - Aggregates flaky test data into a unified JSON structure
