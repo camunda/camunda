@@ -17,16 +17,16 @@ async function main(context, github, currentData, prNumber, branchName) {
 
   // Step 3: Merge current and historical data
   const mergedData = helpers.mergeFlakyData(currentData, historicalData);
-
   console.log('Merged data:', JSON.stringify(mergedData, null, 2));
 
   // Step 4: Generate comment content
-  const comment = await buildComment(mergedData, github, branchName);
-
-  if (!comment) {
+  if (!mergedData || !mergedData.flakyTests.length) {
     console.log('[flaky-tests] No flaky tests found. Skipping comment.');
     return;
   }
+
+  const comment = await buildComment(mergedData, github, branchName);
+  console.log('Generated comment:', comment);
 
   // Step 5: Create or update comment
   if (existingComment) {
@@ -41,17 +41,15 @@ async function main(context, github, currentData, prNumber, branchName) {
 }
 
 async function buildComment(mergedData, github, branchName) {
-  if (!mergedData?.length) return null;
-
   const lines = [
     `# 🧪 Flaky Tests Summary`,
     `_👻 Haunted Tests — They Fail When No One's Watching_`,
     ``
   ];
 
-  mergedData.sort((a, b) => b.flakiness - a.flakiness);
+  mergedData.flakyTests.sort((a, b) => b.flakiness - a.flakiness);
 
-  for (const test of mergedData) {
+  for (const test of mergedData.flakyTests) {
     const icon = getFlakyIcon(test.flakiness);
     const url = await generateTestSourceUrl(test, github, branchName);
 
