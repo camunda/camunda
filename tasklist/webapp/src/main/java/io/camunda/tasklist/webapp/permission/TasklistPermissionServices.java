@@ -30,6 +30,8 @@ public class TasklistPermissionServices {
       Authorization.of(a -> a.processDefinition().updateUserTask());
   private static final Authorization<?> READ_USER_TASK_AUTH_CHECK =
       Authorization.of(a -> a.processDefinition().readUserTask());
+  private static final Authorization<?> READ_PROCESS_INSTANCE_AUTH_CHECK =
+      Authorization.of(a -> a.processDefinition().readProcessInstance());
 
   private final SecurityConfiguration securityConfiguration;
   private final CamundaAuthenticationProvider authenticationProvider;
@@ -58,6 +60,10 @@ public class TasklistPermissionServices {
 
   public boolean hasWildcardPermissionToReadUserTask() {
     return isAuthorizedForResource(WILDCARD_RESOURCE, READ_USER_TASK_AUTH_CHECK);
+  }
+
+  public boolean hasWildcardPermissionToReadProcessInstance() {
+    return isAuthorizedForResource(WILDCARD_RESOURCE, READ_PROCESS_INSTANCE_AUTH_CHECK);
   }
 
   public List<String> getProcessDefinitionsWithCreateProcessInstancePermission() {

@@ -56,7 +56,7 @@ public class VariablesController extends ApiErrorController {
   public ResponseEntity<VariableResponse> getVariableById(
       @PathVariable @Parameter(description = "The ID of the variable.", required = true)
           final String variableId) {
-    if (!tasklistPermissionServices.hasPermissionToReadProcessDefinition(WILDCARD_RESOURCE)) {
+    if (!tasklistPermissionServices.hasWildcardPermissionToReadProcessInstance()) {
       throw new ForbiddenActionException(
           "User does not have permission to read resource. Please check your permissions.");
     }
