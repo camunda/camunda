@@ -10,10 +10,10 @@ using BPMN (Business Process Model and Notation) for process definition and exec
 - Install quickly: `./mvnw install -Dquickly -T1C`
 - Lint: `./mvnw verify -T1C -Dquickly -Dspotless.checks.skip=false`
 - Auto format: `./mvnw process-sources -PautoFormat -T1C -Dquickly -Dspotless.apply.skip=false`
-- Run unit tests: `./mvnw verify -DskipChecks -DskipITs -T1C -DskipUTs=false`
-- Run integration tests: `./mvnw verify -DskipChecks -DskipUTs -T1C -DskipITs=false`
-- Run tests: `./mvnw verify -DskipChecks -T1C`
-- Build the docker image: `./mvnw package -DskipTests -T1C && docker build -f camunda.Dockerfile --target app -t "camunda/camunda:current-test" --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz .`
+- Run unit tests: `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C`
+- Run integration tests: `./mvnw verify -Dquickly -DskipTests=false -DskipUTs -T1C`
+- Run tests: `./mvnw verify -Dquickly -DskipTests=false -T1C`
+- Build the docker image: `./mvnw package -Dquickly -Dassembly.skipAssembly=false -T1C && docker build -f camunda.Dockerfile --target app -t "camunda/camunda:current-test" --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz .`
 
 ### Development Environment
 
