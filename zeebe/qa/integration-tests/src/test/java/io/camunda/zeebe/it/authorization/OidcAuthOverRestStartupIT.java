@@ -58,7 +58,8 @@ public class OidcAuthOverRestStartupIT {
     // given
     final String expectedMessage =
         "Unable to connect to the Identity Provider endpoint `http://localhost:1000/realms/camunda'. "
-            + "Please try again later or contact your administrator.";
+            + "Double check that it is configured correctly, and if the problem persists, "
+            + "contact your external Identity provider.";
 
     // when
     final Throwable exception = Assertions.assertThatThrownBy(broker::start).actual();

@@ -571,7 +571,8 @@ public class WebSecurityConfig {
         throw new IllegalStateException(
             "Unable to connect to the Identity Provider endpoint `"
                 + issuerUri
-                + "'. Please try again later or contact your administrator.",
+                + "'. Double check that it is configured correctly, and if the problem persists, "
+                + "contact your external Identity provider.",
             e);
       }
     }
