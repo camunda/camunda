@@ -85,6 +85,10 @@ jobs:
         uses: ./.github/actions/build-frontend
         with:
           directory: ./optimize/client
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
       - name: 'build backend & frontend'
         run: ./mvnw clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
       - name: 'start backend'
