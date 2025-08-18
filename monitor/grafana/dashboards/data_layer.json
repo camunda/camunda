@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 8,
+  "id": 4,
   "links": [],
   "panels": [
     {
@@ -82,7 +82,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -115,7 +116,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -226,7 +227,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -242,7 +244,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 753
+            "y": 3
           },
           "id": 32,
           "options": {
@@ -258,7 +260,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -343,7 +345,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -359,7 +362,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 760
+            "y": 138
           },
           "id": 33,
           "options": {
@@ -375,7 +378,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -469,7 +472,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -485,7 +489,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 765
+            "y": 143
           },
           "id": 34,
           "options": {
@@ -508,7 +512,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -576,7 +580,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -592,7 +597,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 765
+            "y": 143
           },
           "id": 35,
           "options": {
@@ -615,7 +620,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -683,7 +688,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -699,7 +705,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 765
+            "y": 143
           },
           "id": 36,
           "options": {
@@ -720,7 +726,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -787,7 +793,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -802,7 +809,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 773
+            "y": 151
           },
           "id": 37,
           "options": {
@@ -818,7 +825,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -1493,9 +1500,9 @@
               },
               "editorMode": "code",
               "exemplar": true,
-              "expr": "rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "min by (partition) (\n  rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / \n  rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])\n)",
               "interval": "",
-              "legendFormat": "{{pod}} Exporter {{partition}}",
+              "legendFormat": "Partition {{partition}}",
               "range": true,
               "refId": "A"
             }
@@ -2533,7 +2540,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 502
+            "y": 663
           },
           "id": 2,
           "options": {
@@ -2657,7 +2664,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 502
+            "y": 663
           },
           "id": 3,
           "options": {
@@ -2714,7 +2721,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 528
+            "y": 689
           },
           "id": 4,
           "options": {
@@ -2838,7 +2845,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 528
+            "y": 689
           },
           "id": 5,
           "options": {
@@ -2909,7 +2916,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 391
+            "y": 552
           },
           "id": 22,
           "options": {
@@ -2995,7 +3002,7 @@
             "h": 8,
             "w": 11,
             "x": 10,
-            "y": 391
+            "y": 552
           },
           "id": 23,
           "options": {
@@ -3096,7 +3103,7 @@
             "h": 8,
             "w": 3,
             "x": 21,
-            "y": 391
+            "y": 552
           },
           "id": 24,
           "options": {
@@ -3156,7 +3163,7 @@
             "h": 10,
             "w": 11,
             "x": 0,
-            "y": 463
+            "y": 624
           },
           "id": 25,
           "options": {
@@ -3283,7 +3290,7 @@
             "h": 10,
             "w": 8,
             "x": 11,
-            "y": 463
+            "y": 624
           },
           "id": 26,
           "options": {
@@ -3360,7 +3367,7 @@
             "h": 10,
             "w": 5,
             "x": 19,
-            "y": 463
+            "y": 624
           },
           "id": 27,
           "options": {
