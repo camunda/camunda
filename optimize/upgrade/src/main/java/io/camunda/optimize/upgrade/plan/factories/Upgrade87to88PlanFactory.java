@@ -12,6 +12,7 @@ import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import io.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
+import io.camunda.optimize.upgrade.steps.schema.DeleteIndexTemplateIfExistsStep;
 
 public class Upgrade87to88PlanFactory implements UpgradePlanFactory {
 
@@ -22,6 +23,9 @@ public class Upgrade87to88PlanFactory implements UpgradePlanFactory {
         .toVersion("8.8.0")
         .addUpgradeStep(
             new DeleteIndexIfExistsStep(DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME, 2))
+        .addUpgradeStep(
+            new DeleteIndexTemplateIfExistsStep(
+                DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME, 2))
         .build();
   }
 }
