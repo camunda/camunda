@@ -10,6 +10,7 @@ package io.camunda.exporter.http.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.bohnman.squiggly.Squiggly;
 import io.camunda.exporter.http.client.ExporterHttpClientImpl;
+import io.camunda.exporter.http.client.HttpConfig;
 import io.camunda.exporter.http.matcher.FilterRecordMatcher;
 import io.camunda.exporter.http.matcher.RecordMatcherImpl;
 import io.camunda.exporter.http.subscription.Batch;
@@ -29,16 +30,6 @@ public class SubscriptionConfigFactory {
     this.objectMapper = objectMapper;
   }
 
-  public SubscriptionConfig readConfigFrom(final HttpExporterConfiguration configuration) {
-    final var configUrl = getUrlFor(configuration.getConfigPath());
-    try {
-      return mergeConfigs(
-          objectMapper.readValue(configUrl, SubscriptionConfig.class), configuration);
-    } catch (final IOException e) {
-      throw new RuntimeException("Failed to read subscription config from " + configUrl, e);
-    }
-  }
-
   private SubscriptionConfig mergeConfigs(
       final SubscriptionConfig fileConfig, final HttpExporterConfiguration exporterConfig) {
     final var url = exporterConfig.getUrl() != null ? exporterConfig.getUrl() : fileConfig.url();
@@ -54,8 +45,36 @@ public class SubscriptionConfigFactory {
         exporterConfig.getJsonFilter() != null
             ? exporterConfig.getJsonFilter()
             : fileConfig.jsonFilter();
-    final var filters = fileConfig.filters();
-    return new SubscriptionConfig(url, batchSize, batchInterval, filters, jsonFilter);
+    final var maxRetries =
+        exporterConfig.getMaxRetries() != null
+            ? exporterConfig.getMaxRetries()
+            : fileConfig.maxRetries();
+    final var retryDelay =
+        exporterConfig.getRetryDelay() != null
+            ? exporterConfig.getRetryDelay()
+            : fileConfig.retryDelay();
+    final var timeout =
+        exporterConfig.getTimeout() != null ? exporterConfig.getTimeout() : fileConfig.timeout();
+    final var continueOnError =
+        exporterConfig.getContinueOnError() != null
+            ? exporterConfig.getContinueOnError()
+            : fileConfig.continueOnError();
+
+    final var filters =
+        exporterConfig.getFilters() != null
+            ? exporterConfig.getFilters()
+            : fileConfig != null ? fileConfig.filters() : null;
+
+    return new SubscriptionConfig(
+        url,
+        batchSize,
+        batchInterval,
+        filters,
+        jsonFilter,
+        continueOnError,
+        maxRetries,
+        retryDelay,
+        timeout);
   }
 
   private URL getUrlFor(String path) {
@@ -91,9 +110,29 @@ public class SubscriptionConfigFactory {
       subscriptionObjectMapper = objectMapper;
     }
 
-    final var httpClient = new ExporterHttpClientImpl();
+    final var httpClient =
+        new ExporterHttpClientImpl(
+            new HttpConfig(config.maxRetries(), config.retryDelay(), config.timeout()));
 
     return new Subscription(
-        httpClient, subscriptionObjectMapper, recordMatcherImpl, config.url(), batch);
+        httpClient,
+        subscriptionObjectMapper,
+        recordMatcherImpl,
+        config.url(),
+        batch,
+        config.continueOnError());
+  }
+
+  public SubscriptionConfig readConfigFrom(final HttpExporterConfiguration configuration) {
+    SubscriptionConfig fileConfig = null;
+    if (configuration.getConfigPath() != null) {
+      final var configUrl = getUrlFor(configuration.getConfigPath());
+      try {
+        fileConfig = objectMapper.readValue(configUrl, SubscriptionConfig.class);
+      } catch (final IOException e) {
+        throw new RuntimeException("Failed to read subscription config from " + configUrl, e);
+      }
+    }
+    return mergeConfigs(fileConfig, configuration);
   }
 }

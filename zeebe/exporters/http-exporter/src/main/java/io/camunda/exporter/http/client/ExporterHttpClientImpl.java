@@ -7,9 +7,15 @@
  */
 package io.camunda.exporter.http.client;
 
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
+import dev.failsafe.Timeout;
+import dev.failsafe.TimeoutExceededException;
+import java.io.IOException;
+import java.time.Duration;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ConnectionKeepAliveStrategy;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
@@ -24,16 +30,30 @@ import org.slf4j.LoggerFactory;
 public class ExporterHttpClientImpl implements ExporterHttpClient {
 
   private static final String CONTENT_TYPE_JSON = "application/json";
+
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private final CloseableHttpClient httpClient;
+  private final Timeout<Object> timeout;
+  private final RetryPolicy<Object> retryPolicy;
 
-  public ExporterHttpClientImpl(final CloseableHttpClient httpClient) {
+  public ExporterHttpClientImpl(final HttpConfig httpConfig, final CloseableHttpClient httpClient) {
+    retryPolicy =
+        RetryPolicy.builder()
+            .handle(IOException.class, ClientProtocolException.class, RuntimeException.class)
+            .withDelay(Duration.ofMillis(httpConfig.retryDelay()))
+            .withMaxRetries(httpConfig.maxRetries())
+            .build();
+
+    timeout = Timeout.of(Duration.ofMillis(httpConfig.timeout()));
     this.httpClient = httpClient;
   }
 
-  public ExporterHttpClientImpl() {
-    final ConnectionKeepAliveStrategy keepAliveStrategy = new DefaultConnectionKeepAliveStrategy();
-    httpClient = HttpClientBuilder.create().setKeepAliveStrategy(keepAliveStrategy).build();
+  public ExporterHttpClientImpl(final HttpConfig httpConfig) {
+    this(
+        httpConfig,
+        HttpClientBuilder.create()
+            .setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy())
+            .build());
   }
 
   @Override
@@ -45,7 +65,7 @@ public class ExporterHttpClientImpl implements ExporterHttpClient {
   private void sendPostRequest(final String url, final String json) {
     final HttpPost httpPost = new HttpPost(url);
     httpPost.setEntity(createJsonEntity(json));
-    executeRequest(httpPost);
+    post(httpPost);
   }
 
   private StringEntity createJsonEntity(final String json) {
@@ -54,18 +74,45 @@ public class ExporterHttpClientImpl implements ExporterHttpClient {
     return entity;
   }
 
-  private void executeRequest(final HttpPost httpPost) {
+  private void post(final HttpPost httpPost) {
+    Failsafe.with(timeout)
+        .compose(retryPolicy)
+        .onFailure(
+            event -> {
+              if (event.getException() instanceof TimeoutExceededException) {
+                abortRequest(httpPost);
+              }
+            })
+        .run(() -> executeRequest(httpPost));
+  }
+
+  private void executeRequest(final HttpPost httpPost) throws Exception {
     try (final CloseableHttpResponse response = httpClient.execute(httpPost)) {
-      final int statusCode = response.getStatusLine().getStatusCode();
-      if (statusCode >= 200 && statusCode < 300) {
-        log.debug("Successfully posted records to: {}", httpPost.getURI());
-      } else {
-        throw new RuntimeException(
-            "Unexpected response from: " + httpPost.getURI() + " status: " + statusCode);
+      handleResponse(response);
+    }
+  }
+
+  private void abortRequest(final HttpPost httpPost) {
+    log.debug("Aborting HTTP request due to timeout or failure");
+    if (!httpPost.isAborted()) {
+      try {
+        httpPost.abort();
+      } catch (final Exception e) {
+        log.error("Failed to abort HTTP request", e);
       }
-    } catch (final Throwable e) {
-      log.error("Failed to post records to: {}", httpPost.getURI(), e);
-      throw new RuntimeException("Failed to post records", e);
+    }
+  }
+
+  private void handleResponse(final CloseableHttpResponse response) {
+    final int statusCode = response.getStatusLine().getStatusCode();
+    if (statusCode >= 200 && statusCode < 300) {
+      log.debug("Successfully posted records to: {}", response.getStatusLine().getReasonPhrase());
+    } else {
+      log.debug(
+          "Failed posting records status:{} reason: {}",
+          statusCode,
+          response.getStatusLine().getReasonPhrase());
+      throw new RuntimeException("Failed to post records, status: " + statusCode);
     }
   }
 

@@ -16,7 +16,7 @@
   </Appenders>
 
   <Loggers>
-    <Logger name="io.camunda.zeebe" level="debug"/>
+    <Logger name="io.camunda.exporter" level="debug"/>
     <Logger name="com.github.tomakehurst.wiremock" level="debug"/>
 
     <Root level="info">

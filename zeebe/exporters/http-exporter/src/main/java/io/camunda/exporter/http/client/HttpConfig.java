@@ -5,18 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.http.subscription;
+package io.camunda.exporter.http.client;
 
-import io.camunda.exporter.http.matcher.Filter;
-import java.util.List;
-
-public record SubscriptionConfig(
-    String url,
-    int batchSize,
-    long batchInterval,
-    List<Filter> filters,
-    String jsonFilter,
-    boolean continueOnError,
-    int maxRetries,
-    long retryDelay,
-    long timeout) {}
+public record HttpConfig(int maxRetries, long retryDelay, long timeout) {}

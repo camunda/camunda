@@ -14,26 +14,39 @@ import io.camunda.exporter.http.client.ExporterHttpClient;
 import io.camunda.exporter.http.matcher.RecordMatcher;
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Subscription {
 
+  private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private final ExporterHttpClient exporterHttpClient;
   private final ObjectMapper objectMapper;
   private final String url;
   private final RecordMatcher matcher;
   private final Batch batch;
+  private final ReentrantLock lock = new ReentrantLock();
+  private final boolean continueOnError;
 
   public Subscription(
       final ExporterHttpClient exporterHttpClient,
       final ObjectMapper objectMapper,
       final RecordMatcher matcher,
       final String url,
-      final Batch batch) {
+      final Batch batch,
+      final boolean continueOnError) {
     this.exporterHttpClient = exporterHttpClient;
     this.url = url;
     this.matcher = matcher;
     this.objectMapper = objectMapper;
     this.batch = batch;
+    this.continueOnError = continueOnError;
+    if (continueOnError) {
+      log.warn(
+          "Subscription to {} is configured to continue on error. This may lead to data loss if errors occur during export.",
+          url);
+    }
   }
 
   public Long exportRecord(final Record<?> record) {
@@ -44,53 +57,80 @@ public class Subscription {
       // An empty batch allows us to save the exported record position
       return record.getPosition();
     } else {
-      // We cant save the position
+      // Batch has entries, but the record does not match the filter
+      // We do not export it, but we return null to indicate no position was pushed
       return null;
     }
   }
 
   private Long batchRecord(final BatchEntry batchEntry) {
-    synchronized (batch) {
-      final var spaceLeft = batch.spaceLeft();
-      switch (spaceLeft) {
-        case 0:
-          {
-            // We flush the batch as it is full
-            final var logPositionPushed = flush();
-            batch.addRecord(batchEntry);
-            return logPositionPushed;
-          }
-        case 1:
-          {
-            // We add to the batch if it has only one space left
-            if (batch.addRecord(batchEntry)) {
-              // Flush if the record was added successfully as its full now
-              return flush();
-            } else {
-              return null;
-            }
-          }
-        default:
-          {
-            batch.addRecord(batchEntry);
+    lock.lock();
+    try {
+      return verifyAndAddToBatch(batchEntry);
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  private Long verifyAndAddToBatch(final BatchEntry batchEntry) {
+    final var spaceLeft = batch.spaceLeft();
+    switch (spaceLeft) {
+      case 0:
+        {
+          // We flush the batch as it is full
+          final var logPositionPushed = flush();
+          batch.addRecord(batchEntry);
+          return logPositionPushed;
+        }
+      case 1:
+        {
+          // We add to the batch if it has only one space left
+          if (batch.addRecord(batchEntry)) {
+            // Flush if the record was added successfully as its full now
+            return flush();
+          } else {
             return null;
           }
-      }
+        }
+      default:
+        {
+          batch.addRecord(batchEntry);
+          return null;
+        }
     }
   }
 
   public Long attemptFlush() {
-    synchronized (batch) {
+    if (lock.tryLock()) {
       if (batch.shouldFlush()) {
-        return flush();
+        try {
+          return flush();
+        } finally {
+          lock.unlock();
+        }
       }
-      return null;
     }
+    return null;
   }
 
   private Long flush() {
-    postRecords(batch.getEntries());
-    return batch.flush();
+    long lastPosition;
+    try {
+      postRecords(batch.getEntries());
+      lastPosition = batch.flush();
+    } catch (final Exception e) {
+      if (continueOnError) {
+        lastPosition = batch.flush();
+        log.debug(
+            "Failed to post records to {}. Continuing with last position: {}.",
+            url,
+            lastPosition,
+            e);
+      } else {
+        throw new RuntimeException(e);
+      }
+    }
+    return lastPosition;
   }
 
   private void postRecords(final List<BatchEntry> batchEntries) {

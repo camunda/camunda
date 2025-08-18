@@ -67,7 +67,12 @@ final class HttpExporterIT {
     final var config = new HttpExporterConfiguration();
     config.setUrl(url); // Set the URL to the WireMock server
     config.setBatchSize(1);
-    config.setConfigPath("classpath:subscription-config.json");
+    config.setBatchInterval(10000); // 10 seconds
+    config.setMaxRetries(3);
+    config.setRetryDelay(1000L); // 1 second
+    config.setTimeout(5000L); // 5 seconds
+    config.setContinueOnError(false); // Default behavior for error handling
+    config.setJsonFilter("valueType,intent,value[bpmnProcessId]");
     testContext.setConfiguration(new ExporterTestConfiguration<>("test", config));
 
     exporter = new HttpExporter();
@@ -117,7 +122,7 @@ final class HttpExporterIT {
     exporter.configure(testContext);
 
     // given
-    final var record = createIncidentRecord(++logPosition, "testProcess");
+    final var record = createIncidentRecord(++logPosition);
 
     // when
     exporter.export(record);
@@ -133,7 +138,7 @@ final class HttpExporterIT {
                     true)));
   }
 
-  private Record<?> createIncidentRecord(final long position, final String bpmnProcessId) {
+  private Record<?> createIncidentRecord(final long position) {
     final Record<RecordValue> recordValueRecord = factory.generateRecord(ValueType.INCIDENT);
     return factory.generateRecord(
         ValueType.INCIDENT,
@@ -143,7 +148,7 @@ final class HttpExporterIT {
                 .withValue(
                     ImmutableIncidentRecordValue.builder()
                         .from((IncidentRecordValue) recordValueRecord.getValue())
-                        .withBpmnProcessId(bpmnProcessId)
+                        .withBpmnProcessId("testProcess")
                         .build()));
   }
 }
