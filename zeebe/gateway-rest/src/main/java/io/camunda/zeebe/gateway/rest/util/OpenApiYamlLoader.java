@@ -54,6 +54,47 @@ public final class OpenApiYamlLoader {
     }
   }
 
+  /**
+   * Customizes an OpenAPI specification by loading configuration from a YAML file and applying it
+   * to the target OpenAPI instance.
+   *
+   * @param targetOpenApi the OpenAPI instance to customize
+   * @param yamlPath the path to the YAML file containing the configuration
+   * @throws OpenApiLoadingException if the YAML file cannot be loaded or parsed
+   */
+  public static void customizeOpenApiFromYaml(final OpenAPI targetOpenApi, final String yamlPath) {
+    try {
+      final OpenAPI yamlOpenApi = loadOpenApiFromYaml(yamlPath);
+
+      if (yamlOpenApi.getTags() != null) {
+        targetOpenApi.setTags(yamlOpenApi.getTags());
+      }
+
+      if (yamlOpenApi.getPaths() != null) {
+        final var v2Paths = new io.swagger.v3.oas.models.Paths();
+        yamlOpenApi
+            .getPaths()
+            .forEach(
+                (pathKey, pathItem) -> {
+                  v2Paths.addPathItem("/v2" + pathKey, pathItem);
+                });
+        targetOpenApi.setPaths(v2Paths);
+      }
+
+      if (yamlOpenApi.getComponents() != null) {
+        targetOpenApi.setComponents(yamlOpenApi.getComponents());
+      }
+
+      LOG.debug("Successfully customized OpenAPI specification from: {}", yamlPath);
+    } catch (final OpenApiLoadingException e) {
+      LOG.warn(
+          "Could not load OpenAPI from {}, using controller-based organization: {}",
+          yamlPath,
+          e.getMessage());
+      throw e;
+    }
+  }
+
   private static String loadYamlContent(final String yamlPath) throws IOException {
     final Path absolutePath = Path.of(yamlPath);
     if (absolutePath.isAbsolute() && Files.exists(absolutePath)) {

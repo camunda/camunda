@@ -53,26 +53,7 @@ public class OpenApiResourceConfig implements WebMvcConfigurer {
 
   private void customizeOpenApi(final OpenAPI openApi) {
     try {
-      final OpenAPI yamlOpenApi = OpenApiYamlLoader.loadOpenApiFromYaml("apidoc/rest-api.yaml");
-
-      if (yamlOpenApi.getTags() != null) {
-        openApi.setTags(yamlOpenApi.getTags());
-      }
-
-      if (yamlOpenApi.getPaths() != null) {
-        final var v2Paths = new io.swagger.v3.oas.models.Paths();
-        yamlOpenApi
-            .getPaths()
-            .forEach(
-                (pathKey, pathItem) -> {
-                  v2Paths.addPathItem("/v2" + pathKey, pathItem);
-                });
-        openApi.setPaths(v2Paths);
-      }
-
-      if (yamlOpenApi.getComponents() != null) {
-        openApi.setComponents(yamlOpenApi.getComponents());
-      }
+      OpenApiYamlLoader.customizeOpenApiFromYaml(openApi, "apidoc/rest-api.yaml");
     } catch (final OpenApiLoadingException e) {
       LOGGER.warn(
           "Could not load OpenAPI from rest-api.yaml, using controller-based organization: {}",

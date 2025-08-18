@@ -10907,3 +10907,9 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/ProblemDetail"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
