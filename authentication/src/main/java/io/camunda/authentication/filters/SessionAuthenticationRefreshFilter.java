@@ -77,7 +77,7 @@ public class SessionAuthenticationRefreshFilter extends OncePerRequestFilter {
 
   private static void initializeRefreshAttributes(final HttpSession session, final Instant now) {
     session.setAttribute(LAST_REFRESH_ATTR, now);
-    session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", new Object());
+    session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", session.getId() + "LOCK");
   }
 
   private boolean isRefreshRequired(final Instant lastRefresh, final Instant now) {

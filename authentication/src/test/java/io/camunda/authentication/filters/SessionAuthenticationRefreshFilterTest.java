@@ -10,6 +10,7 @@ package io.camunda.authentication.filters;
 import static io.camunda.authentication.filters.SessionAuthenticationRefreshFilter.LAST_REFRESH_ATTR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -141,7 +142,13 @@ public class SessionAuthenticationRefreshFilterTest {
     final MockHttpSession session = new MockHttpSession();
     setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(createMockAuthentication());
-
+    doAnswer(
+            invocation -> {
+              Thread.sleep(100);
+              return null; // because it's a void method
+            })
+        .when(authenticationProvider)
+        .refresh();
     final AtomicInteger successfulRequests = new AtomicInteger(0);
     final Runnable requestTask =
         () -> {
@@ -190,6 +197,6 @@ public class SessionAuthenticationRefreshFilterTest {
       final MockHttpSession session, final Duration refreshInterval) {
     final Instant lastRefreshRef = Instant.now().minus(refreshInterval);
     session.setAttribute(LAST_REFRESH_ATTR, lastRefreshRef);
-    session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", new Object());
+    session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", session.getId() + "LOCK");
   }
 }
