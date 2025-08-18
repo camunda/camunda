@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -25,9 +26,7 @@ import org.slf4j.LoggerFactory;
  * partitions is unreliable.
  *
  * <p>A simple exponential backoff is used for retrying these retriable distributions. This
- * exponential backoff is configurable through {@link
- * io.camunda.zeebe.engine.EngineConfiguration#getCommandRedistributionInterval()} and {@link
- * io.camunda.zeebe.engine.EngineConfiguration#getCommandRedistributionMaxBackoff()}, with defaults
+ * exponential backoff is configurable through the {@link EngineConfiguration}, with defaults
  * of 10 seconds and 5 minutes respectively. The backoff starts at the initial interval and doubles
  * every retry until it reaches the maximum backoff duration. This backoff is tracked for each
  * retriable distribution individually.
@@ -41,14 +40,8 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
   private final Duration commandRedistributionInterval;
 
   /**
-   * Specifies the maximum backoff interval for retrying a specific retriable distribution, i.e. the
-   * maximum delay between two retries of the same retriable distribution.
-   */
-  private final Duration retryMaxBackoffDuration;
-
-  /**
-   * This calculated value specifies the maximum number of retry cycles until the {@link
-   * #retryMaxBackoffDuration} is reached by the exponential backoff.
+   * This calculated value specifies the maximum number of retry cycles until the maximum backoff
+   * duration is reached by the exponential backoff.
    */
   private final long maxRetryCycles;
 
@@ -69,15 +62,12 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
   public CommandRedistributor(
       final CommandDistributionBehavior distributionBehavior,
       final RoutingInfo routingInfo,
-      final boolean isDistributionPaused,
-      final Duration commandRedistributionInterval,
-      final Duration retryMaxBackoffDuration) {
+      final EngineConfiguration config) {
     this.distributionBehavior = distributionBehavior;
     this.routingInfo = routingInfo;
-    this.isDistributionPaused = isDistributionPaused;
-    this.commandRedistributionInterval = commandRedistributionInterval;
-    this.retryMaxBackoffDuration = retryMaxBackoffDuration;
-    this.maxRetryCycles = retryMaxBackoffDuration.dividedBy(commandRedistributionInterval);
+    this.isDistributionPaused = config.isCommandDistributionPaused();
+    this.commandRedistributionInterval = config.getCommandRedistributionInterval();
+    this.maxRetryCycles = config.getCommandRedistributionMaxBackoff().dividedBy(commandRedistributionInterval);
   }
 
   @Override
