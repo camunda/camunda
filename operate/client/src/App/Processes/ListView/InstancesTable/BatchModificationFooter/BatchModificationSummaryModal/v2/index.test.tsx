@@ -128,7 +128,6 @@ describe('BatchModificationSummaryModal', () => {
   });
 
   it('should apply batch operation', async () => {
-    const trackSpy = vi.spyOn(tracking, 'track');
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
 
     const {user} = render(
@@ -151,7 +150,7 @@ describe('BatchModificationSummaryModal', () => {
       expect(batchModificationStore.state.isEnabled).toBe(false);
     });
 
-    expect(trackSpy).toHaveBeenCalledWith({
+    expect(tracking.track).toHaveBeenCalledWith({
       eventName: 'batch-operation',
       operationType: 'MODIFY_PROCESS_INSTANCE',
     });
