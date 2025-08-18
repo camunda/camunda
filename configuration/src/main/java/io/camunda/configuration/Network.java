@@ -27,6 +27,8 @@ public class Network {
   /** The network host for internal cluster communication. */
   private String host = DEFAULT_CLUSTER_HOST;
 
+  private CommandApi commandApi = new CommandApi();
+
   public String getHost() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".host",
@@ -38,6 +40,14 @@ public class Network {
 
   public void setHost(final String host) {
     this.host = host;
+  }
+
+  public CommandApi getCommandApi() {
+    return commandApi;
+  }
+
+  public void setCommandApi(final CommandApi commandApi) {
+    this.commandApi = commandApi;
   }
 
   @Override
