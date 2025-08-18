@@ -28,11 +28,11 @@ import org.springframework.util.unit.DataSize;
 @ConfigurationProperties("camunda.client")
 public class CamundaClientProperties {
 
-  /** Whether the Camunda client is enabled. If disabled, no bean is created. */
+  /** Enable or disable the Camunda client. If disabled, the client bean is not created. */
   private boolean enabled = true;
 
   /**
-   * The client mode to be used. If not set, `saas` mode will be detected based on the presence of a
+   * The client mode to use. If not set, `saas` mode is detected based on the presence of a
    * `camunda.client.cloud.cluster-id`.
    */
   private ClientMode mode;
@@ -46,39 +46,40 @@ public class CamundaClientProperties {
   /** The number of threads for invocation of job workers. */
   private Integer executionThreads = DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
 
-  /** The time-to-live which is used when none is provided for a message. */
+  /** The default time-to-live for a message when no value is provided. */
   private Duration messageTimeToLive = DEFAULT_MESSAGE_TTL;
 
   /**
-   * A custom maxMessageSize allows the client to receive larger or smaller responses from Camunda.
-   * Technically, it specifies the maxInboundMessageSize of the gRPC channel.
+   * A custom `maxMessageSize` sets the maximum inbound message size the client can receive from
+   * Camunda. It specifies the `maxInboundMessageSize` of the gRPC channel.
    */
   private DataSize maxMessageSize = DataSize.ofBytes(DEFAULT_MAX_MESSAGE_SIZE);
 
   /**
-   * A custom maxMetadataSize allows the client to receive larger or smaller response headers from
-   * Camunda. Technically, it specifies the maxInboundMetadataSize of the gRPC channel.
+   * A custom `maxMetadataSize` sets the maximum inbound metadata size the client can receive from
+   * Camunda. It specifies the `maxInboundMetadataSize` of the gRPC channel.
    */
   private DataSize maxMetadataSize = DataSize.ofBytes(DEFAULT_MAX_METADATA_SIZE);
 
-  /** Path to a root CA certificate to be used instead of the certificate in the default store. */
+  /**
+   * The path to a root Certificate Authority (CA) certificate to use instead of the certificate in
+   * the default store.
+   */
   private String caCertificatePath;
 
-  /** Time interval between keep alive messages sent to the gateway. */
+  /** The time interval between keep-alive messages sent to the gateway. */
   private Duration keepAlive = DEFAULT_KEEP_ALIVE;
 
   /**
-   * Overrides the authority used with TLS virtual hosting. Specifically, to override hostname
-   * verification in the TLS handshake. It does not change what host is actually connected to.
+   * Overrides the authority used with TLS virtual hosting to change hostname verification during
+   * the TLS handshake. It does not change the actual host connected to.
    */
   private String overrideAuthority;
 
   @NestedConfigurationProperty
   private CamundaClientWorkerProperties worker = new CamundaClientWorkerProperties();
 
-  /**
-   * If true, will prefer to use REST over gRPC for calls which can be done over both REST and gRPC.
-   */
+  /** If `true`, prefers REST over gRPC for operations supported by both protocols. */
   private boolean preferRestOverGrpc = DEFAULT_PREFER_REST_OVER_GRPC;
 
   /**
@@ -88,27 +89,25 @@ public class CamundaClientProperties {
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
 
   /**
-   * The REST API address of Camunda that the client can connect to. The address must be an absolute
-   * URL, including the scheme. An alternative default is set by both`camunda.client.mode`.
+   * The REST API address of the Camunda instance that the client can connect to. The address must
+   * be an absolute URL, including the scheme. An alternative default is set by
+   * both`camunda.client.mode`.
    */
   private URI restAddress = DEFAULT_REST_ADDRESS;
 
   @NestedConfigurationProperty
   private CamundaClientDeploymentProperties deployment = new CamundaClientDeploymentProperties();
 
-  /**
-   * The tenant identifier which is used for tenant-aware commands when no tenant identifier is set.
-   */
+  /** The tenant ID used for tenant-aware commands when no tenant ID is set. */
   private String tenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 
-  /** The request timeout used if not overridden by the command. */
+  /** The request timeout to use when not overridden by a specific command. */
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
 
   /**
-   * The request timeout client offset is used in commands where the request timeout is also passed
-   * to the server. This ensures that the client timeout does not occur before the server timeout.
-   * The client-side timeout for these commands is calculated as the sum of request timeout plus
-   * offset.
+   * The request timeout client offset applies to commands that also pass the request timeout to the
+   * server. It ensures the client timeout occurs after the server timeout. For these commands, the
+   * client-side timeout equals the request timeout plus the offset.
    */
   private Duration requestTimeoutOffset = DEFAULT_REQUEST_TIMEOUT_OFFSET;
 

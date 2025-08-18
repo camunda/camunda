@@ -17,7 +17,7 @@ package io.camunda.spring.client.properties;
 
 public class CamundaClientDeploymentProperties {
 
-  /** Whether a deployment will be done using the `@Deployment` annotation. */
+  /** Indicates if deployment uses the `@Deployment` annotation. */
   private boolean enabled = true;
 
   public boolean isEnabled() {

@@ -2,64 +2,70 @@
   "groups": [
     {
       "name": "camunda.client.auth.client-assertion",
-      "description": "Properties related to oidc authentication using client-assertion instead of a client secret."
+      "description": "Properties for OIDC authentication using a client assertion instead of a client secret."
     },
     {
       "name": "camunda.client",
-      "description": "Properties related to the Camunda client."
+      "description": "Properties for the Camunda client."
     },
     {
       "name": "camunda.client.auth",
-      "description": "Properties related to the authentication of the Camunda client."
+      "description": "Properties for authenticating the Camunda client."
     },
     {
       "name": "camunda.client.cloud",
-      "description": "Properties related to the connection of the Camunda client to SaaS. They will only be used to compose default connection details if the client is configured to `camunda.client.mode: saas`."
+      "description": "Properties for connecting the Camunda client to SaaS. These are used to compose default connection details when the client is configured to `camunda.client.mode: saas`."
     },
     {
       "name": "camunda.client.worker",
-      "description": "Properties related to the job workers being registered to the Camunda client."
+      "description": "Properties for the job workers being registered to the Camunda client."
     },
     {
       "name": "camunda.client.deployment",
-      "description": "Properties related to the automatic deployment at startup."
+      "description": "Properties for automatic deployment at startup."
     },
     {
       "name": "camunda.client.worker.defaults",
-      "description": "Properties related to the global defaults of job workers being registered to the Camunda client."
+      "description": "Global default properties for job workers registered to the Camunda client."
     },
     {
       "name": "camunda.client.worker.override",
-      "description": "Properties related to the override of individual job workers being registered to the Camunda client. Overrides are composed in key-value pairs where the key is the job type of the worker and the values have the same properties as `camunda.client.worker.defaults` each: `camunda.client.worker.override.<job-type>.<property-name>: <property-value>`."
+      "description": "Properties for overriding settings of individual job workers registered to the Camunda client. Overrides are specified as key-value pairs, where the key is the worker's job type and the values have the same properties as `camunda.client.worker.defaults` each: `camunda.client.worker.override.<job-type>.<property-name>: <property-value>`."
     },
     {
       "name": "camunda.client.zeebe",
-      "type": "io.camunda.spring.client.properties.common.ZeebeClientProperties"
+      "type": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
+      "description": "Properties for Zeebe client settings."
     },
     {
       "name": "camunda.client.zeebe.defaults",
-      "type": "io.camunda.spring.client.annotation.value.JobWorkerValue"
+      "type": "io.camunda.spring.client.annotation.value.JobWorkerValue",
+      "description": "default properties for Zeebe job workers."
     },
     {
       "name": "camunda.client.zeebe.deployment",
-      "type": "io.camunda.spring.client.properties.CamundaClientZeebeDeploymentProperties"
+      "type": "io.camunda.spring.client.properties.CamundaClientZeebeDeploymentProperties",
+      "description": "Deployment properties for Zeebe."
     },
     {
       "name": "camunda.client.zeebe.override",
       "type": "java.util.Map",
-      "description": "Properties related to the override of individual job workers being registered to the Camunda client. Replaced by `camunda.client.worker.override`."
+      "description": "Properties for overriding individual job workers registered to the Camunda client. Replaced by `camunda.client.worker.override`."
     },
     {
       "name": "camunda.client.identity",
-      "type": "io.camunda.spring.client.properties.common.IdentityProperties"
+      "type": "io.camunda.spring.client.properties.common.IdentityProperties",
+      "description": "Properties for identity settings."
     },
     {
       "name": "common",
-      "type": "io.camunda.spring.client.properties.CommonConfigurationProperties"
+      "type": "io.camunda.spring.client.properties.CommonConfigurationProperties",
+      "description": "Common client properties."
     },
     {
       "name": "common.keycloak",
-      "type": "io.camunda.spring.client.properties.common.Keycloak"
+      "type": "io.camunda.spring.client.properties.common.Keycloak",
+      "description": "Keycloak-specific properties."
     },
     {
       "name": "zeebe",
@@ -67,36 +73,43 @@
     },
     {
       "name": "zeebe.client",
-      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties"
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
+      "description": "Zeebe client properties."
     },
     {
       "name": "zeebe.client.broker",
-      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Broker"
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Broker",
+      "description": "Zeebe broker properties."
     },
     {
       "name": "zeebe.client.cloud",
-      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud"
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
+      "description": "Zeebe cloud connection properties."
     },
     {
       "name": "zeebe.client.job",
-      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Job"
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Job",
+      "description": "Zeebe job worker properties."
     },
     {
       "name": "zeebe.client.message",
-      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Message"
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Message",
+      "description": "Zeebe message properties."
     },
     {
       "name": "zeebe.client.security",
-      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Security"
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Security",
+      "description": "Zeebe security properties."
     },
     {
       "name": "zeebe.client.worker",
-      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Worker"
+      "type": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Worker",
+      "description": "Zeebe job worker properties."
     },
     {
       "name": "zeebe.client.worker.override",
       "type": "java.util.Map",
-      "description": "Properties related to the override of individual job workers being registered to the Camunda client. Replaced by `camunda.client.worker.override`."
+      "description": "Properties to override the individual job workers registered with the Camunda client. Replaced by `camunda.client.worker.override`."
     }
   ],
   "properties": [
@@ -221,8 +234,7 @@
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.common.Keycloak",
       "deprecation": {
-        "reason": "There is no keycloak-specific configuration for camunda, the issuer is provided as url.",
-        "replacement": "camunda.client.auth.token-url"
+        "reason": "There is no keycloak-specific configuration for Camunda; the issuer is provided as a URL."
       }
     },
     {
@@ -230,7 +242,7 @@
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.common.Keycloak",
       "deprecation": {
-        "reason": "There is no keycloak-specific configuration for camunda, the issuer is provided as url.",
+        "reason": "There is no keycloak-specific configuration for Camunda; the issuer is provided as a URL.",
         "replacement": "camunda.client.auth.token-url"
       }
     },
@@ -239,7 +251,7 @@
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.common.Keycloak",
       "deprecation": {
-        "reason": "There is no keycloak-specific configuration for camunda, the issuer is provided as url.",
+        "reason": "There is no keycloak-specific configuration for Camunda; the issuer is provided as a URL.",
         "replacement": "camunda.client.auth.token-url"
       }
     },
@@ -256,7 +268,7 @@
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
       "deprecation": {
-        "reason": "The rest address is the unified endpoint for all interaction with Camunda.",
+        "reason": "The REST address is the unified endpoint for all interaction with Camunda.",
         "replacement": "camunda.client.rest-address"
       }
     },
@@ -273,7 +285,7 @@
       "type": "java.lang.Boolean",
       "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
       "deprecation": {
-        "reason": "Only the environment variables belonging to the Spring SDK will be applied."
+        "reason": "Only the environment variables belonging to the Spring SDK are applied."
       }
     },
     {
@@ -322,8 +334,7 @@
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
       "deprecation": {
-        "reason": "The zeebe client url is now configured as http\/https url.",
-        "replacement": "camunda.client.grpc-address"
+        "replacement": "camunda.client.cloud.domain"
       }
     },
     {
@@ -347,7 +358,7 @@
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
       "deprecation": {
-        "replacement": "camunda.client.cluster-id"
+        "replacement": "camunda.client.cloud.cluster-id"
       }
     },
     {
@@ -363,8 +374,7 @@
       "type": "java.lang.Integer",
       "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
       "deprecation": {
-        "reason": "The zeebe client url is now configured as http\/https url.",
-        "replacement": "camunda.client.grpc-address"
+        "reason": "The Zeebe client URL is now configured as HTTP\/HTTPS URL."
       }
     },
     {
@@ -372,7 +382,7 @@
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
       "deprecation": {
-        "replacement": "camunda.client.region"
+        "replacement": "camunda.client.cloud.region"
       }
     },
     {
@@ -380,7 +390,7 @@
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
       "deprecation": {
-        "replacement": "camunda.client.scope"
+        "replacement": "camunda.client.auth.scope"
       }
     },
     {
@@ -389,7 +399,7 @@
       "description": "Connection mode can be set to \"CLOUD\" (connect to SaaS with properties), or \"ADDRESS\" (to use a manually set address to the broker) If not set, \"CLOUD\" is used if a `zeebe.client.cloud.cluster-id` property is set, \"ADDRESS\" otherwise.",
       "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
       "deprecation": {
-        "reason": "There are client modes now.",
+        "reason": "Client modes are now available.",
         "replacement": "camunda.client.mode"
       }
     },
@@ -414,8 +424,7 @@
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
       "deprecation": {
-        "reason": "the first provided tenant id is applied.",
-        "replacement": "camunda.client.worker.defaults.tenant-ids"
+        "replacement": "camunda.client.tenant-id"
       }
     },
     {
@@ -487,8 +496,7 @@
       "type": "java.lang.Boolean",
       "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Security",
       "deprecation": {
-        "reason": "plaintext is determined by the url protocol (http\/https) now.",
-        "replacement": "camunda.client.grpc-address"
+        "reason": "plaintext is now determined by the URL protocol (HTTP or HTTPS)."
       }
     },
     {
@@ -680,7 +688,7 @@
       "type": "java.net.URL",
       "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
       "deprecation": {
-        "replacement": "camunda.client.restAddress"
+        "replacement": "camunda.client.rest-address"
       }
     },
     {
@@ -768,7 +776,7 @@
       "type": "java.time.Duration",
       "sourceType": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
       "deprecation": {
-        "replacement": "camunda.client.worker.defaults.request-timeout"
+        "replacement": "camunda.client.request-timeout"
       }
     },
     {

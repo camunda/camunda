@@ -18,21 +18,19 @@ package io.camunda.spring.client.properties;
 import java.nio.file.Path;
 
 public class CamundaClientAuthClientAssertionProperties {
-  /** Path to the keystore where the client assertion certificate is stored. */
+  /** The path to the keystore where the client assertion certificate is stored. */
   private Path keystorePath;
 
-  /** Password of the referenced keystore. */
+  /** The password of the referenced keystore. */
   private String keystorePassword;
 
   /**
-   * Alias of the key holding the certificate to sign the client assertion certificate. If not set,
-   * the first alias from the keystore will be used.
+   * The alias of the key containing the certificate used to sign the client assertion certificate.
+   * If not set, the first alias from the keystore is used.
    */
   private String keystoreKeyAlias;
 
-  /**
-   * Password of the key the alias points to. If not set, the password of the keystore will be used.
-   */
+  /** The password of the key referenced by the alias. If not set, the keystore password is used. */
   private String keystoreKeyPassword;
 
   public Path getKeystorePath() {
