@@ -22,11 +22,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.camunda.spring.client.CamundaClientPropertiesTestConfig;
+import io.camunda.spring.client.properties.CamundaClientLegacyPropertiesMapping;
+import io.camunda.spring.client.properties.CamundaClientLegacyPropertiesMappingsLoader;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -112,7 +115,7 @@ public class AlignmentTest {
   @Autowired CamundaClientProperties camundaClientProperties;
 
   @TestFactory
-  Stream<DynamicTest> alignmentTest() throws IOException {
+  Stream<DynamicTest> alignmentWithDefaultPropertiesTest() throws IOException {
     final ObjectMapper objectMapper = new ObjectMapper();
     final JsonNode jsonNode =
         objectMapper.readTree(
@@ -138,4 +141,35 @@ public class AlignmentTest {
                   });
             });
   }
+
+  @TestFactory
+  Stream<DynamicTest> alignmentWithLegacyPropertyMappingsTest() throws IOException {
+    final List<CamundaClientLegacyPropertiesMapping> legacyPropertiesMappings =
+        CamundaClientLegacyPropertiesMappingsLoader.load();
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final JsonNode jsonNode =
+        objectMapper.readTree(
+            ResourceUtils.getFile(
+                "classpath:META-INF/additional-spring-configuration-metadata.json"));
+    final ArrayNode properties = (ArrayNode) jsonNode.get("properties");
+    return properties
+        .valueStream()
+        .filter(p -> p.has("deprecation") && p.get("deprecation").has("replacement"))
+        .map(
+            p ->
+                new DeprecatedProperty(
+                    p.get("name").asText(), p.get("deprecation").get("replacement").asText()))
+        .map(
+            dp ->
+                DynamicTest.dynamicTest(
+                    dp.name() + " -> " + dp.replacement(),
+                    () ->
+                        assertThat(legacyPropertiesMappings)
+                            .anyMatch(
+                                m ->
+                                    m.getPropertyName().equals(dp.replacement())
+                                        && m.getLegacyPropertyNames().contains(dp.name()))));
+  }
+
+  private record DeprecatedProperty(String name, String replacement) {}
 }
