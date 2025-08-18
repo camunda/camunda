@@ -42,6 +42,7 @@ public class HistoryCleanupService {
   private final JobWriter jobWriter;
   private final SequenceFlowWriter sequenceFlowWriter;
   private final BatchOperationWriter batchOperationWriter;
+  private final MessageSubscriptionWriter messageSubscriptionWriter;
 
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
@@ -56,6 +57,7 @@ public class HistoryCleanupService {
       final JobWriter jobWriter,
       final SequenceFlowWriter sequenceFlowWriter,
       final BatchOperationWriter batchOperationWriter,
+      final MessageSubscriptionWriter messageSubscriptionWriter,
       final RdbmsWriterMetrics metrics) {
     LOG.info(
         "Creating HistoryCleanupService with default history ttl {}",
@@ -82,6 +84,7 @@ public class HistoryCleanupService {
     this.jobWriter = jobWriter;
     this.sequenceFlowWriter = sequenceFlowWriter;
     this.batchOperationWriter = batchOperationWriter;
+    this.messageSubscriptionWriter = messageSubscriptionWriter;
     this.metrics = metrics;
   }
 
@@ -101,6 +104,7 @@ public class HistoryCleanupService {
     decisionInstanceWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     jobWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     sequenceFlowWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
+    messageSubscriptionWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
   }
 
   public void scheduleBatchOperationForHistoryCleanup(
@@ -162,6 +166,9 @@ public class HistoryCleanupService {
         batchOperationWriter.cleanupItemHistory(cleanupDate, cleanupBatchSize));
     numDeletedRecords.put(
         "batchOperation", batchOperationWriter.cleanupHistory(cleanupDate, cleanupBatchSize));
+    numDeletedRecords.put(
+        "messageSubscription",
+        messageSubscriptionWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
     final long end = System.currentTimeMillis();
     sample.close();
 
