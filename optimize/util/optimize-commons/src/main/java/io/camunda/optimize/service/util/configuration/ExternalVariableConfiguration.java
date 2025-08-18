@@ -11,20 +11,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ExternalVariableConfiguration {
 
-  private IndexRolloverConfiguration variableIndexRollover;
-
   @JsonProperty("import")
   private ExternalVariableImportConfiguration importConfiguration;
 
   public ExternalVariableConfiguration() {}
-
-  public IndexRolloverConfiguration getVariableIndexRollover() {
-    return variableIndexRollover;
-  }
-
-  public void setVariableIndexRollover(final IndexRolloverConfiguration variableIndexRollover) {
-    this.variableIndexRollover = variableIndexRollover;
-  }
 
   public ExternalVariableImportConfiguration getImportConfiguration() {
     return importConfiguration;
@@ -52,10 +42,6 @@ public class ExternalVariableConfiguration {
 
   @Override
   public String toString() {
-    return "ExternalVariableConfiguration(variableIndexRollover="
-        + getVariableIndexRollover()
-        + ", importConfiguration="
-        + getImportConfiguration()
-        + ")";
+    return "ExternalVariableConfiguration(importConfiguration=" + getImportConfiguration() + ")";
   }
 }

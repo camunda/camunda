@@ -7,7 +7,10 @@
  */
 package io.camunda.optimize.upgrade.plan.factories;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+
 import io.camunda.optimize.service.db.DatabaseConstants;
+import io.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -26,6 +29,9 @@ public class Upgrade87to88PlanFactory implements UpgradePlanFactory {
         .addUpgradeStep(
             new DeleteIndexTemplateIfExistsStep(
                 DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME, 2))
+        .addUpgradeStep(
+            new DeleteIndexTemplateIfExistsStep(
+                EXTERNAL_PROCESS_VARIABLE_INDEX_NAME, ExternalProcessVariableIndex.VERSION))
         .build();
   }
 }

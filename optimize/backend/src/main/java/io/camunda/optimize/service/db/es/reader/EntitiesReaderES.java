@@ -369,10 +369,6 @@ public class EntitiesReaderES implements EntitiesReader {
 
   private long getDocCountForIndex(
       final StringTermsAggregate byIndexNameTerms, final IndexMappingCreator<?> indexMapper) {
-    if (indexMapper.isCreateFromTemplate()) {
-      throw new OptimizeRuntimeException(
-          "Cannot fetch the document count for indices created from template");
-    }
     return byIndexNameTerms.buckets().array().stream()
         .filter(
             s ->

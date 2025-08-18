@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.upgrade;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockserver.model.HttpRequest.request;
@@ -93,98 +92,6 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
   }
 
   @Test
-  public void templatedIndexDetectRunningReindexAndWaitForIt() throws IOException {
-    // given a prepared index with some data in it
-    createIndex(testIndexWithTemplateV1);
-    insertTestDocuments(5);
-    // and the update was run
-    final UpdateIndexStep upgradeStep =
-        createUpdateIndexStep(testIndexWithTemplateUpdatedMappingV2);
-    final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
-    // with a throttled reindex (so it is still pending later)
-    final HttpRequest firstIndexReindexRequest =
-        forwardThrottledReindexRequestWithOneDocPerSecond(
-            getVersionedIndexName(testIndexWithTemplateV1.getIndexName(), 1)
-                + INDEX_SUFFIX_PRE_ROLLOVER,
-            getVersionedIndexName(testIndexWithTemplateUpdatedMappingV2.getIndexName(), 2)
-                + INDEX_SUFFIX_PRE_ROLLOVER);
-    // and getting the reindex status immediately failed and aborted the upgrade
-    performUpgradeAndLetReindexStatusCheckFail(upgradePlan, firstIndexReindexRequest);
-
-    // when it is retried and any new reindex operation would get rejected
-    dbMockServer
-        .when(firstIndexReindexRequest, Times.unlimited())
-        .error(HttpError.error().withDropConnection(true));
-    final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
-    upgradeProcedure.performUpgrade(upgradePlan);
-
-    // then it succeeds
-    assertUpdateLogIsComplete(upgradeStep, frozenDate);
-
-    final List<String> indicesWithWriteAlias =
-        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(
-            testIndexWithTemplateUpdatedMappingV2.getIndexName());
-    assertThat(indicesWithWriteAlias)
-        .containsExactly(
-            getVersionedIndexName(testIndexWithTemplateUpdatedMappingV2.getIndexName(), 2)
-                + INDEX_SUFFIX_PRE_ROLLOVER);
-
-    schemaUpdateClientLogs.assertContains("Found pending task with id");
-    schemaUpdateClientLogs.assertContains("will wait for it to finish.");
-  }
-
-  @Test
-  public void templatedRolledOverIndexDetectRunningReindexAndWaitForIt() throws IOException {
-    // given a prepared index with some data in it and being rolled over
-    createIndex(testIndexWithTemplateV1);
-    insertTestDocuments(5);
-    getPrefixAwareClient().triggerRollover(testIndexWithTemplateV1.getIndexName(), 0);
-    insertTestDocuments(5);
-    // and the update was run
-    final UpdateIndexStep upgradeStep =
-        createUpdateIndexStep(testIndexWithTemplateUpdatedMappingV2);
-    final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
-    // with a throttled reindex (so it is still pending later)
-    final HttpRequest reindexRequest =
-        forwardThrottledReindexRequestWithOneDocPerSecond(
-            getVersionedIndexName(testIndexWithTemplateV1.getIndexName(), 1)
-                + INDEX_SUFFIX_PRE_ROLLOVER,
-            getVersionedIndexName(testIndexWithTemplateUpdatedMappingV2.getIndexName(), 2)
-                + INDEX_SUFFIX_PRE_ROLLOVER);
-    // and getting the reindex status immediately failed and aborted the upgrade
-    performUpgradeAndLetReindexStatusCheckFail(upgradePlan, reindexRequest);
-
-    // when it is retried and any new reindex operation would get rejected
-    dbMockServer
-        .when(reindexRequest, Times.unlimited())
-        .error(HttpError.error().withDropConnection(true));
-    final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
-    upgradeProcedure.performUpgrade(upgradePlan);
-
-    // then it succeeds
-    assertUpdateLogIsComplete(upgradeStep, frozenDate);
-
-    final List<String> indicesReadOnly =
-        databaseIntegrationTestExtension.getAllIndicesWithReadOnlyAlias(
-            testIndexWithTemplateUpdatedMappingV2.getIndexName());
-    assertThat(indicesReadOnly)
-        .containsExactly(
-            getVersionedIndexName(testIndexWithTemplateUpdatedMappingV2.getIndexName(), 2)
-                + INDEX_SUFFIX_PRE_ROLLOVER);
-
-    final List<String> indicesWithWriteAlias =
-        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(
-            testIndexWithTemplateUpdatedMappingV2.getIndexName());
-    assertThat(indicesWithWriteAlias)
-        .containsExactly(
-            getVersionedIndexName(testIndexWithTemplateUpdatedMappingV2.getIndexName(), 2)
-                + NEWEST_INDEX_SUFFIX);
-
-    schemaUpdateClientLogs.assertContains("Found pending task with id");
-    schemaUpdateClientLogs.assertContains("will wait for it to finish.");
-  }
-
-  @Test
   public void singleIndexDetectFinishedReindexAndSkipIt() throws IOException {
     // given a prepared index with some data in it
     createIndex(testIndexV1);
@@ -213,92 +120,6 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     schemaUpdateClientLogs.assertContains(
         "Found that index [optimize-users_v2] already contains "
             + "the same amount of documents as [optimize-users_v1], will skip reindex.");
-  }
-
-  @Test
-  public void templatedIndexDetectFinishedReindexAndSkipIt() throws IOException {
-    // given a prepared index with some data in it
-    createIndex(testIndexWithTemplateV1);
-    insertTestDocuments(5);
-    // and the update was run
-    final UpdateIndexStep upgradeStep =
-        createUpdateIndexStep(testIndexWithTemplateUpdatedMappingV2);
-    final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
-    // and getting the reindex status immediately failed and aborted the upgrade
-    performUpgradeAndLetReindexStatusCheckFail(upgradePlan, createReindexRequestMatcher());
-
-    // when it is retried and any new reindex operation would get rejected
-    dbMockServer
-        .when(createReindexRequestMatcher(), Times.unlimited())
-        .error(HttpError.error().withDropConnection(true));
-    final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
-    upgradeProcedure.performUpgrade(upgradePlan);
-
-    // then it succeeds
-    assertUpdateLogIsComplete(upgradeStep, frozenDate);
-
-    final List<String> indices =
-        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(
-            testIndexWithTemplateUpdatedMappingV2.getIndexName());
-    assertThat(indices)
-        .containsExactly(
-            getVersionedIndexName(testIndexWithTemplateUpdatedMappingV2.getIndexName(), 2)
-                + INDEX_SUFFIX_PRE_ROLLOVER);
-
-    schemaUpdateClientLogs.assertContains(
-        "Found that index [optimize-users_v2-000001] already contains "
-            + "the same amount of documents as [optimize-users_v1-000001], will skip reindex.");
-  }
-
-  @Test
-  public void templatedRolledOverIndexDetectFinishedReindexAndSkipIt() throws IOException {
-    // given a prepared index with some data in it and being rolled over
-    createIndex(testIndexWithTemplateV1);
-    insertTestDocuments(5);
-    getPrefixAwareClient().triggerRollover(testIndexWithTemplateV1.getIndexName(), 0);
-    insertTestDocuments(5);
-    // and the update was run
-    final UpdateIndexStep upgradeStep =
-        createUpdateIndexStep(testIndexWithTemplateUpdatedMappingV2);
-    final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
-    // and getting the reindex status immediately failed and aborted the upgrade
-    final HttpRequest reindexRequest =
-        createReindexRequestMatcher(
-            getVersionedIndexName(testIndexWithTemplateV1.getIndexName(), 1)
-                + INDEX_SUFFIX_PRE_ROLLOVER,
-            getVersionedIndexName(testIndexWithTemplateUpdatedMappingV2.getIndexName(), 2)
-                + INDEX_SUFFIX_PRE_ROLLOVER);
-    performUpgradeAndLetReindexStatusCheckFail(upgradePlan, reindexRequest);
-
-    // when it is retried and any new reindex operation would get rejected
-    dbMockServer
-        .when(reindexRequest, Times.unlimited())
-        .error(HttpError.error().withDropConnection(true));
-    final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
-    upgradeProcedure.performUpgrade(upgradePlan);
-
-    // then it succeeds
-    assertUpdateLogIsComplete(upgradeStep, frozenDate);
-
-    final List<String> indicesReadOnly =
-        databaseIntegrationTestExtension.getAllIndicesWithReadOnlyAlias(
-            testIndexWithTemplateUpdatedMappingV2.getIndexName());
-    assertThat(indicesReadOnly)
-        .containsExactly(
-            getVersionedIndexName(testIndexWithTemplateUpdatedMappingV2.getIndexName(), 2)
-                + INDEX_SUFFIX_PRE_ROLLOVER);
-
-    final List<String> indicesWithWriteAlias =
-        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(
-            testIndexWithTemplateUpdatedMappingV2.getIndexName());
-    assertThat(indicesWithWriteAlias)
-        .containsExactly(
-            getVersionedIndexName(testIndexWithTemplateUpdatedMappingV2.getIndexName(), 2)
-                + NEWEST_INDEX_SUFFIX);
-
-    schemaUpdateClientLogs.assertContains(
-        "Found that index [optimize-users_v2-000001] already contains "
-            + "the same amount of documents as [optimize-users_v1-000001], will skip reindex.");
   }
 
   private void performUpgradeAndLetReindexStatusCheckFail(

@@ -38,18 +38,18 @@ public abstract class ExternalProcessVariableIndex<TBuilder>
   }
 
   @Override
-  public int getVersion() {
-    return VERSION;
-  }
-
-  @Override
   public String getIndexNameInitialSuffix() {
-    return DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+    return DatabaseConstants.INDEX_SUFFIX;
   }
 
   @Override
   public boolean isCreateFromTemplate() {
     return true;
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

@@ -681,12 +681,6 @@ externalVariable:
     enabled: false
     # Determines the page size for the external variable import, that got ingested via the external variable API
     maxPageSize: 10000
-  variableIndexRollover:
-    # scheduleIntervalInMinutes specifies how frequently the rollover API should be called to see if a rollover of the
-    # external variable index is required (whether the rollover is triggered depends on the conditions specified by maxIndexSizeGB).
-    scheduleIntervalInMinutes: 10
-    # A rollover is triggered when the size of the current external variable index matches or exceeds the maxIndexSizeGB threshold.
-    maxIndexSizeGB: 50
 
 multitenancy:
   # Currently only available in C8SM. Determines whether multi tenancy is enabled in Optimize.
