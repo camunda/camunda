@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.authentication.config.controllers.TestApiController;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
 import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
 import java.util.List;
@@ -32,6 +33,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
@@ -64,6 +66,8 @@ public class AbstractWebSecurityConfigTest {
    * logging.level.org.springframework.security=DEBUG to the Spring Boot config
    */
   @Autowired MockMvcTester mockMvcTester;
+
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   /**
    * Different types of endpoints that the security config handles specifically
