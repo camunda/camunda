@@ -32,6 +32,7 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -74,6 +75,25 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
             getDecisionXmlByIdUrl(decisionDefinitionKey.toString()));
     // then
     assertErrorMessageContains(mvcResult, "No read permission for decision");
+  }
+
+  @Test
+  public void testDecisionDefinitionXmlSucceedsWhenAuthorized() throws Exception {
+    // given
+    final Long decisionDefinitionKey = 123L;
+    final String decisionId = "decisionId";
+    // when
+    when(decisionReader.getDiagram(decisionDefinitionKey)).thenReturn("diagram");
+    when(decisionReader.getDecision(decisionDefinitionKey))
+        .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
+    when(permissionsService.hasPermissionForDecision(
+            decisionId, PermissionType.READ_DECISION_INSTANCE))
+        .thenReturn(true);
+    final MvcResult mvcResult = getRequest(getDecisionXmlByIdUrl(decisionDefinitionKey.toString()));
+    // then
+    assertThat(mvcResult.getResponse().getStatus()).isEqualTo(HttpStatus.OK.value());
+    assertThat(mvcResult.getResponse().getContentAsString()).isEqualTo("diagram");
   }
 
   @Test

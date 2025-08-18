@@ -18,6 +18,7 @@ import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startDefaultTestDecisionProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitUntilAuthorizationVisible;
 import static io.camunda.qa.util.cluster.TestRestOperateClient.toJsonString;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,6 +26,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
+import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
@@ -99,16 +102,17 @@ public class OperateInternalApiPermissionsIT {
     decisionNotToFind =
         startDefaultTestDecisionProcessInstance(adminClient, "decision_model_1.dmn");
     // give restricted user access to one of the decisions
-    final var authResponse =
-        adminClient
-            .newCreateAuthorizationCommand()
-            .ownerId(RESTRICTED_USER_USERNAME)
-            .ownerType(OwnerType.USER)
-            .resourceId(decisionToFind.getDmnDecisionId())
-            .resourceType(DECISION_DEFINITION)
-            .permissionTypes(READ_DECISION_INSTANCE)
-            .send()
-            .join();
+    adminClient
+        .newCreateAuthorizationCommand()
+        .ownerId(RESTRICTED_USER_USERNAME)
+        .ownerType(OwnerType.USER)
+        .resourceId(decisionToFind.getDmnDecisionId())
+        .resourceType(DECISION_DEFINITION)
+        .permissionTypes(READ_DECISION_INSTANCE, READ_DECISION_DEFINITION)
+        .send()
+        .join();
+    waitUntilAuthorizationVisible(
+        adminClient, RESTRICTED_USER_USERNAME, decisionToFind.getDmnDecisionId());
   }
 
   @AfterAll
@@ -194,5 +198,41 @@ public class OperateInternalApiPermissionsIT {
     assertThat(restrictedDto.getTotalCount()).isOne();
     assertThat(restrictedDto.getDecisionInstances().getFirst().getDecisionName())
         .isEqualTo(decisionToFind.getDmnDecisionName());
+  }
+
+  @Test
+  public void shouldReturnOnlyAuthorizedGroupedDecisionDefinitions(final CamundaClient adminClient)
+      throws URISyntaxException, IOException, InterruptedException {
+    // given
+    final String decisionInstanceRequest = toJsonString(new DecisionRequestDto());
+
+    final var adminOperateClient =
+        STANDALONE_CAMUNDA.newOperateClient(SUPER_USER_USERNAME, SUPER_USER.password());
+    final var restrictedOperateClient =
+        STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER_USERNAME, RESTRICTED_USER.password());
+
+    // when
+    final var adminResponse =
+        adminOperateClient.sendInternalSearchRequest(
+            "api/decisions/grouped", decisionInstanceRequest);
+    final var adminResponseDto =
+        adminOperateClient.mapResult(adminResponse, DecisionGroupDto[].class);
+
+    final var restrictedResponse =
+        restrictedOperateClient.sendInternalSearchRequest(
+            "api/decisions/grouped", decisionInstanceRequest);
+    final var restrictedResponseDto =
+        restrictedOperateClient.mapResult(restrictedResponse, DecisionGroupDto[].class);
+
+    // then
+    assertThat(adminResponseDto.isRight()).isTrue();
+    assertThat(adminResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
+    assertThat(((DecisionGroupDto[]) adminResponseDto.get())).hasSize(2);
+
+    assertThat(restrictedResponseDto.isRight()).isTrue();
+    final DecisionGroupDto[] restrictedDto = (DecisionGroupDto[]) restrictedResponseDto.get();
+    assertThat(restrictedResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
+    assertThat(restrictedDto).hasSize(1);
+    assertThat(restrictedDto[0].getDecisionId()).isEqualTo(decisionToFind.getDmnDecisionId());
   }
 }

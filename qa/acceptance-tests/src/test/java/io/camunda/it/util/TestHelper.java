@@ -893,6 +893,23 @@ public final class TestHelper {
             });
   }
 
+  public static void waitUntilAuthorizationVisible(
+      final CamundaClient camundaClient, final String owner, final String resource) {
+    Awaitility.await("should wait until authorization is visible")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(f -> f.ownerId(owner).resourceIds(resource))
+                      .send()
+                      .join();
+              assertThat(result.items().size()).isOne();
+            });
+  }
+
   public static <T, U extends Comparable<U>> void assertSorted(
       final SearchResponse<T> resultAsc,
       final SearchResponse<T> resultDesc,
