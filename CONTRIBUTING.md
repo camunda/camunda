@@ -153,10 +153,10 @@ This is a small overview of the contents of this repository:
 > [!NOTE]
 > All Camunda core modules are built and tested with JDK 21. Most modules use language level 21, exceptions are: camunda-client-java, camunda-process-test-java, zeebe-bpmn-model, zeebe-build-tools, camunda-client-java, zeebe-gateway-protocol zeebe-gateway-protocol-impl, zeebe-protocol, and zeebe-protocol-jackson which use language level 8.
 
-* **Quick build:** To **quickly** build all components for development, run the command: `mvn clean install -Dquickly` in the root folder. This flag is also used to skip Optimize, when building Camunda.
-* **Full build:** To build the full distribution for local usage (skipping tests and checks), run the command `mvn clean install -DskipChecks -DskipTests`.
-* **Full build without frontends:** To build the full distribution for local usage without frontends (skipping tests), run the command `mvn clean install -DskipChecks -DskipTests -PskipFrontendBuild`.
-* **Full build and test:** To fully build and test the Camunda distribution, run the command: `mvn clean install` in the root folder.
+* **Quick build:** To **quickly** build all components for development, run the command: `./mvnw clean install -Dquickly` in the root folder. This flag is also used to skip Optimize, when building Camunda.
+* **Full build:** To build the full distribution for local usage (skipping tests and checks), run the command `./mvnw clean install -DskipChecks -DskipTests`.
+* **Full build without frontends:** To build the full distribution for local usage without frontends (skipping tests), run the command `./mvnw clean install -DskipChecks -DskipTests -PskipFrontendBuild`.
+* **Full build and test:** To fully build and test the Camunda distribution, run the command: `./mvnw clean install` in the root folder.
 
 If you built a distribution, it can be found in the folder `dist/target`, i.e.
 
@@ -264,10 +264,10 @@ You can run the Camunda distribution via IntelliJ for development purposes.
 
 ### Test execution
 
-Tests can be executed via Maven (`mvn verify`) or in your preferred IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), which we also [provide settings for](https://github.com/camunda/camunda/tree/main/.idea).
+Tests can be executed via Maven (`./mvnw verify`) or in your preferred IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), which we also [provide settings for](https://github.com/camunda/camunda/tree/main/.idea).
 
 > [!TIP]
-> To execute the tests quickly, run `mvn verify -Dquickly -DskipTests=false`.
+> To execute the tests quickly, run `./mvnw verify -Dquickly -DskipTests=false`.
 > The tests will be skipped when using `-Dquickly` without `-DskipTests=false`.
 
 #### Test troubleshooting
