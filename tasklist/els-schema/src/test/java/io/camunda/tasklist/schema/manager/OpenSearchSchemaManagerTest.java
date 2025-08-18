@@ -9,7 +9,6 @@ package io.camunda.tasklist.schema.manager;
 
 import static io.camunda.tasklist.property.TasklistProperties.OPEN_SEARCH;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

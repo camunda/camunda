@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -298,19 +299,27 @@ public class ElasticsearchSchemaManager implements SchemaManager {
               operateProperties
                   .getElasticsearch()
                   .getNumberOfReplicas(templateDescriptor.getIndexName()));
+      final var expectedPriority =
+          ofNullable(operateProperties.getElasticsearch().getIndexTemplatePriority())
+              .map(Long::valueOf)
+              .orElse(null);
       String actualShards = null;
       String actualReplicas = null;
       if (indexTemplate.template().settings() != null) {
         actualShards = indexTemplate.template().settings().get(NUMBERS_OF_SHARDS);
         actualReplicas = indexTemplate.template().settings().get(NUMBERS_OF_REPLICA);
       }
+      final var actualPriority = indexTemplate.priority();
 
-      if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
+      if (!expectedShards.equals(actualShards)
+          || !expectedReplicas.equals(actualReplicas)
+          || !Objects.equals(expectedPriority, actualPriority)) {
         LOGGER.info(
-            "Updating index template {} to shards={}, replicas={}",
+            "Updating index template {} to shards={}, replicas={}, priority={}",
             templateDescriptor.getTemplateName(),
             expectedShards,
-            expectedReplicas);
+            expectedReplicas,
+            expectedPriority);
         putIndexTemplate(prepareComposableTemplateRequest(templateDescriptor, null), true);
       }
     }

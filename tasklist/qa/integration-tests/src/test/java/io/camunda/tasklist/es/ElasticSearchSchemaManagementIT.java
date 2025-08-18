@@ -419,6 +419,112 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
         .isEqualTo(String.valueOf(updatedNumberOfReplicas));
   }
 
+  @Test
+  public void shouldUpdateIndexTemplatePriorityDynamically() {
+    final int initialPriority = 100;
+    final int updatedPriority = 200;
+
+    // Set initial priority and create schema
+    tasklistProperties.getElasticsearch().setIndexTemplatePriority(initialPriority);
+    schemaManager.createSchema();
+
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      // Verify initial template priority
+      final var initialIndexTemplate =
+          retryElasticsearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(initialIndexTemplate.priority())
+          .as(
+              "%s template should initially have priority %d",
+              templateDescriptor.getIndexName(), initialPriority)
+          .isEqualTo(initialPriority);
+    }
+
+    // Update priority and apply changes
+    tasklistProperties.getElasticsearch().setIndexTemplatePriority(updatedPriority);
+    schemaManager.updateIndexSettings();
+
+    // Verify updated template priority
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      final var updatedIndexTemplate =
+          retryElasticsearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(updatedIndexTemplate.priority())
+          .as(
+              "%s template should have updated priority to %d",
+              templateDescriptor.getIndexName(), updatedPriority)
+          .isEqualTo(updatedPriority);
+    }
+  }
+
+  @Test
+  public void shouldSetIndexTemplatePriorityToNullWhenNotConfigured() {
+    final int initialPriority = 150;
+
+    // Set initial priority and create schema
+    tasklistProperties.getElasticsearch().setIndexTemplatePriority(initialPriority);
+    schemaManager.createSchema();
+
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      // Verify initial template priority
+      final var initialIndexTemplate =
+          retryElasticsearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(initialIndexTemplate.priority())
+          .as(
+              "%s template should initially have priority %d",
+              templateDescriptor.getIndexName(), initialPriority)
+          .isEqualTo(initialPriority);
+    }
+
+    // Remove priority configuration (set to null) and apply changes
+    tasklistProperties.getElasticsearch().setIndexTemplatePriority(null);
+    schemaManager.updateIndexSettings();
+
+    // Verify template priority is now null (default)
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      final var updatedIndexTemplate =
+          retryElasticsearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(updatedIndexTemplate.priority())
+          .as(
+              "%s template should have null priority when not configured",
+              templateDescriptor.getIndexName())
+          .isNull();
+    }
+  }
+
+  @Test
+  public void shouldSetIndexTemplatePriorityFromNullToValue() {
+    // Start with no priority configured (null)
+    tasklistProperties.getElasticsearch().setIndexTemplatePriority(null);
+    schemaManager.createSchema();
+
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      // Verify initial template priority is null
+      final var initialIndexTemplate =
+          retryElasticsearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(initialIndexTemplate.priority())
+          .as(
+              "%s template should initially have null priority when not configured",
+              templateDescriptor.getIndexName())
+          .isNull();
+    }
+
+    final int updatedPriority = 300;
+
+    // Set priority configuration and apply changes
+    tasklistProperties.getElasticsearch().setIndexTemplatePriority(updatedPriority);
+    schemaManager.updateIndexSettings();
+
+    // Verify template priority is now set to the configured value
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      final var updatedIndexTemplate =
+          retryElasticsearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(updatedIndexTemplate.priority())
+          .as(
+              "%s template should have updated priority to %d",
+              templateDescriptor.getIndexName(), updatedPriority)
+          .isEqualTo(updatedPriority);
+    }
+  }
+
   private TaskEntity createSampleTaskEntity(final long taskKey) {
     return new TaskEntity().setId(String.valueOf(taskKey)).setKey(taskKey);
   }

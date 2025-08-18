@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -403,6 +404,10 @@ public class OpensearchSchemaManager implements SchemaManager {
               operateProperties
                   .getOpensearch()
                   .getNumberOfReplicas(templateDescriptor.getIndexName()));
+      final var expectedPriority =
+          ofNullable(operateProperties.getOpensearch().getIndexTemplatePriority())
+              .map(Long::valueOf)
+              .orElse(null);
 
       String actualShards = null;
       String actualReplicas = null;
@@ -415,13 +420,17 @@ public class OpensearchSchemaManager implements SchemaManager {
         actualShards = indexSettingsJson.getString("number_of_shards", null);
         actualReplicas = indexSettingsJson.getString("number_of_replicas", null);
       }
+      final var actualPriority = indexTemplate.priority();
 
-      if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
+      if (!expectedShards.equals(actualShards)
+          || !expectedReplicas.equals(actualReplicas)
+          || !Objects.equals(expectedPriority, actualPriority)) {
         LOGGER.info(
-            "Updating index template settings for {} to shards={}, replicas={}",
+            "Updating index template settings for {} to shards={}, replicas={}, priority={}",
             templateDescriptor.getTemplateName(),
             expectedShards,
-            expectedReplicas);
+            expectedReplicas,
+            expectedPriority);
 
         // Recreate the template with updated settings
         final String json = readTemplateJson(templateDescriptor.getSchemaClasspathFilename());

@@ -71,7 +71,6 @@ public class SchemaManagerIT extends AbstractSchemaIT {
   @Autowired public TestTemplate testTemplate;
 
   @Autowired public ObservableConnector searchConnector;
-  @Autowired private TemplateDescriptor templateDescriptor;
 
   @DynamicPropertySource
   static void setProperties(final DynamicPropertyRegistry registry) {
@@ -430,8 +429,8 @@ public class SchemaManagerIT extends AbstractSchemaIT {
     schemaManager.createSchema();
     final String componentTemplateName = getComponentTemplateName();
     final var initialSettings = schemaHelper.getComponentTemplateSettings(componentTemplateName);
-    assertThat(initialSettings.get(NUMBERS_OF_REPLICA)).isEqualTo("0");
-    assertThat(initialSettings.get(NUMBERS_OF_SHARDS)).isEqualTo("1");
+    assertThat(initialSettings.numberOfReplicas()).isEqualTo("0");
+    assertThat(initialSettings.numberOfShards()).isEqualTo("1");
 
     // when
     // Update component template settings
@@ -441,8 +440,8 @@ public class SchemaManagerIT extends AbstractSchemaIT {
 
     // then
     final var updatedSettings = schemaHelper.getComponentTemplateSettings(componentTemplateName);
-    assertThat(updatedSettings.get(NUMBERS_OF_REPLICA)).isEqualTo("2");
-    assertThat(updatedSettings.get(NUMBERS_OF_SHARDS)).isEqualTo("3");
+    assertThat(updatedSettings.numberOfReplicas()).isEqualTo("2");
+    assertThat(updatedSettings.numberOfShards()).isEqualTo("3");
   }
 
   private String getComponentTemplateName() {
@@ -513,11 +512,11 @@ public class SchemaManagerIT extends AbstractSchemaIT {
     final var templateSettings =
         schemaHelper.getIndexTemplateSettings(testTemplate.getTemplateName());
 
-    assertThat(templateSettings.get(NUMBERS_OF_SHARDS))
+    assertThat(templateSettings.numberOfShards())
         .as("template should have %d shards", numberOfShards)
         .isEqualTo(String.valueOf(numberOfShards));
 
-    assertThat(templateSettings.get(NUMBERS_OF_REPLICA))
+    assertThat(templateSettings.numberOfReplicas())
         .as("template should have %d replicas", numberOfReplicas)
         .isEqualTo(String.valueOf(numberOfReplicas));
   }
@@ -531,11 +530,11 @@ public class SchemaManagerIT extends AbstractSchemaIT {
         schemaHelper.getIndexTemplateSettings(testTemplate.getTemplateName());
 
     // Assert initial settings are using default values (1 shard, 0 replicas by default)
-    assertThat(initialTemplateSettings.get(NUMBERS_OF_SHARDS))
+    assertThat(initialTemplateSettings.numberOfShards())
         .as("template should initially have default number of shards")
         .isEqualTo("1");
 
-    assertThat(initialTemplateSettings.get(NUMBERS_OF_REPLICA))
+    assertThat(initialTemplateSettings.numberOfReplicas())
         .as("template should initially have default number of replicas")
         .isEqualTo("0");
 
@@ -567,12 +566,122 @@ public class SchemaManagerIT extends AbstractSchemaIT {
     final var templateSettings =
         schemaHelper.getIndexTemplateSettings(testTemplate.getTemplateName());
 
-    assertThat(templateSettings.get(NUMBERS_OF_SHARDS))
+    assertThat(templateSettings.numberOfShards())
         .as("template should have updated shards to %d", updateNumberOfShards)
         .isEqualTo(String.valueOf(updateNumberOfShards));
 
-    assertThat(templateSettings.get(NUMBERS_OF_REPLICA))
+    assertThat(templateSettings.numberOfReplicas())
         .as("template should have updated replicas to %d", updatedNumberOfReplicas)
         .isEqualTo(String.valueOf(updatedNumberOfReplicas));
+  }
+
+  @Test
+  public void shouldUpdateIndexTemplatePriorityDynamically() {
+    final int initialPriority = 100;
+    final int updatedPriority = 200;
+
+    // Set initial priority and create schema
+    if (DatabaseInfo.isElasticsearch()) {
+      operateProperties.getElasticsearch().setIndexTemplatePriority(initialPriority);
+    } else {
+      operateProperties.getOpensearch().setIndexTemplatePriority(initialPriority);
+    }
+    schemaManager.createSchema();
+
+    // Verify initial template priority
+    final var initialTemplatePriority =
+        schemaHelper.getIndexTemplateSettings(testTemplate.getTemplateName()).priority();
+    assertThat(initialTemplatePriority)
+        .as("template should initially have priority %d", initialPriority)
+        .isEqualTo(initialPriority);
+
+    // Update priority and apply changes
+    if (DatabaseInfo.isElasticsearch()) {
+      operateProperties.getElasticsearch().setIndexTemplatePriority(updatedPriority);
+    } else {
+      operateProperties.getOpensearch().setIndexTemplatePriority(updatedPriority);
+    }
+    schemaManager.updateIndexSettings();
+
+    // Verify updated template priority
+    final var updatedTemplatePriority =
+        schemaHelper.getIndexTemplateSettings(testTemplate.getTemplateName()).priority();
+    assertThat(updatedTemplatePriority)
+        .as("template should have updated priority to %d", updatedPriority)
+        .isEqualTo(updatedPriority);
+  }
+
+  @Test
+  public void shouldSetIndexTemplatePriorityToNullWhenNotConfigured() {
+    final int initialPriority = 150;
+
+    // Set initial priority and create schema
+    if (DatabaseInfo.isElasticsearch()) {
+      operateProperties.getElasticsearch().setIndexTemplatePriority(initialPriority);
+    } else {
+      operateProperties.getOpensearch().setIndexTemplatePriority(initialPriority);
+    }
+    schemaManager.createSchema();
+
+    // Verify initial template priority
+    final var initialTemplatePriority =
+        schemaHelper.getIndexTemplateSettings(testTemplate.getTemplateName()).priority();
+    assertThat(initialTemplatePriority)
+        .as("template should initially have priority %d", initialPriority)
+        .isEqualTo(initialPriority);
+
+    // Remove priority configuration (set to null) and apply changes
+    if (DatabaseInfo.isElasticsearch()) {
+      operateProperties.getElasticsearch().setIndexTemplatePriority(null);
+    } else {
+      operateProperties.getOpensearch().setIndexTemplatePriority(null);
+    }
+    schemaManager.updateIndexSettings();
+
+    // Verify template priority is now null (default)
+    final var updatedTemplatePriority =
+        schemaHelper.getIndexTemplateSettings(testTemplate.getTemplateName()).priority();
+    assertThat(updatedTemplatePriority)
+        .as("template should have null priority when not configured")
+        .isNull();
+  }
+
+  @Test
+  public void shouldSetIndexTemplatePriorityFromNullToValue() {
+    // Start with no priority configured (null)
+    if (DatabaseInfo.isElasticsearch()) {
+      operateProperties.getElasticsearch().setIndexTemplatePriority(null);
+    } else {
+      operateProperties.getOpensearch().setIndexTemplatePriority(null);
+    }
+    schemaManager.createSchema();
+
+    // Verify initial template priority is null
+    final var initialTemplatePriority =
+        schemaHelper.getIndexTemplateSettings(testTemplate.getTemplateName()).priority();
+    assertThat(initialTemplatePriority)
+        .as(
+            "%s template should initially have null priority when not configured",
+            testTemplate.getIndexName())
+        .isNull();
+
+    final int updatedPriority = 300;
+
+    // Set priority configuration and apply changes
+    if (DatabaseInfo.isElasticsearch()) {
+      operateProperties.getElasticsearch().setIndexTemplatePriority(updatedPriority);
+    } else {
+      operateProperties.getOpensearch().setIndexTemplatePriority(updatedPriority);
+    }
+    schemaManager.updateIndexSettings();
+
+    // Verify template priority is now set to the configured value
+    final var updatedTemplatePriority =
+        schemaHelper.getIndexTemplateSettings(testTemplate.getTemplateName()).priority();
+    assertThat(updatedTemplatePriority)
+        .as(
+            "%s template should have updated priority to %d",
+            testTemplate.getIndexName(), updatedPriority)
+        .isEqualTo(updatedPriority);
   }
 }

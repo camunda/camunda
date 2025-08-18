@@ -10,7 +10,7 @@ package io.camunda.tasklist.schema.manager;
 import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.platform.commons.util.ReflectionUtils.tryToReadFieldValue;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,7 +64,7 @@ class ElasticsearchSchemaManagerTest {
 
     // then
     final var requestCaptor = ArgumentCaptor.forClass(PutComposableIndexTemplateRequest.class);
-    verify(retryElasticsearchClient).createTemplate(requestCaptor.capture(), isNull());
+    verify(retryElasticsearchClient).createTemplate(requestCaptor.capture(), eq(false));
     final ComposableIndexTemplate indexTemplate =
         (ComposableIndexTemplate)
             tryToReadFieldValue(

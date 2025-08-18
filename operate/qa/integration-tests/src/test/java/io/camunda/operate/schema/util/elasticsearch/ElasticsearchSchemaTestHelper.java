@@ -139,7 +139,7 @@ public class ElasticsearchSchemaTestHelper implements SchemaTestHelper {
   }
 
   @Override
-  public Map<String, String> getComponentTemplateSettings(final String componentTemplateName) {
+  public IndexSettings getComponentTemplateSettings(final String componentTemplateName) {
     final Settings settings;
     try {
       settings =
@@ -154,15 +154,12 @@ public class ElasticsearchSchemaTestHelper implements SchemaTestHelper {
     } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
-    return Map.of(
-        NUMBERS_OF_REPLICA,
-        settings.get(NUMBERS_OF_REPLICA),
-        NUMBERS_OF_SHARDS,
-        settings.get(NUMBERS_OF_SHARDS));
+    return new IndexSettings(
+        settings.get(NUMBERS_OF_SHARDS), settings.get(NUMBERS_OF_REPLICA), null);
   }
 
   @Override
-  public Map<String, String> getIndexTemplateSettings(final String indexTemplateName) {
+  public IndexSettings getIndexTemplateSettings(final String indexTemplateName) {
     final ComposableIndexTemplate indexTemplate;
     try {
       indexTemplate =
@@ -176,10 +173,9 @@ public class ElasticsearchSchemaTestHelper implements SchemaTestHelper {
       throw new OperateRuntimeException(e);
     }
     final Settings settings = indexTemplate.template().settings();
-    return Map.of(
-        NUMBERS_OF_REPLICA,
+    return new IndexSettings(
+        settings.get(NUMBERS_OF_SHARDS),
         settings.get(NUMBERS_OF_REPLICA),
-        NUMBERS_OF_SHARDS,
-        settings.get(NUMBERS_OF_SHARDS));
+        indexTemplate.priority());
   }
 }

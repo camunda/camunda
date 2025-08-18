@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
@@ -85,6 +86,11 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
   static void setProperties(final DynamicPropertyRegistry registry) {
     // Disable schema creation for the test, as we want to manage it manually
     registry.add("camunda.tasklist.opensearch.createSchema", () -> false);
+  }
+
+  @BeforeEach
+  public void setUp() {
+    assertThat(templateDescriptors.isEmpty()).isFalse();
   }
 
   @Test
@@ -419,6 +425,112 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
             templateSettings.get("index").toJson().asJsonObject().getString("number_of_replicas"))
         .as("Task template should have updated replicas to %d", updatedNumberOfReplicas)
         .isEqualTo(String.valueOf(updatedNumberOfReplicas));
+  }
+
+  @Test
+  public void shouldUpdateIndexTemplatePriorityDynamically() {
+    final int initialPriority = 100;
+    final int updatedPriority = 200;
+
+    // Set initial priority and create schema
+    tasklistProperties.getOpenSearch().setIndexTemplatePriority(initialPriority);
+    schemaManager.createSchema();
+
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      // Verify initial template priority
+      final var initialIndexTemplate =
+          retryOpenSearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(initialIndexTemplate.priority())
+          .as(
+              "%s template should initially have priority %d",
+              templateDescriptor.getIndexName(), initialPriority)
+          .isEqualTo(initialPriority);
+    }
+
+    // Update priority and apply changes
+    tasklistProperties.getOpenSearch().setIndexTemplatePriority(updatedPriority);
+    schemaManager.updateIndexSettings();
+
+    // Verify updated template priority
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      final var updatedIndexTemplate =
+          retryOpenSearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(updatedIndexTemplate.priority())
+          .as(
+              "%s template should have updated priority to %d",
+              templateDescriptor.getIndexName(), updatedPriority)
+          .isEqualTo(updatedPriority);
+    }
+  }
+
+  @Test
+  public void shouldSetIndexTemplatePriorityToNullWhenNotConfigured() {
+    final int initialPriority = 150;
+
+    // Set initial priority and create schema
+    tasklistProperties.getOpenSearch().setIndexTemplatePriority(initialPriority);
+    schemaManager.createSchema();
+
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      // Verify initial template priority
+      final var initialIndexTemplate =
+          retryOpenSearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(initialIndexTemplate.priority())
+          .as(
+              "%s template should initially have priority %d",
+              templateDescriptor.getIndexName(), initialPriority)
+          .isEqualTo(initialPriority);
+    }
+
+    // Remove priority configuration (set to null) and apply changes
+    tasklistProperties.getOpenSearch().setIndexTemplatePriority(null);
+    schemaManager.updateIndexSettings();
+
+    // Verify template priority is now null (default)
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      final var updatedIndexTemplate =
+          retryOpenSearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(updatedIndexTemplate.priority())
+          .as(
+              "%s template should have null priority when not configured",
+              templateDescriptor.getIndexName())
+          .isNull();
+    }
+  }
+
+  @Test
+  public void shouldSetIndexTemplatePriorityFromNullToValue() {
+    // Start with no priority configured (null)
+    tasklistProperties.getOpenSearch().setIndexTemplatePriority(null);
+    schemaManager.createSchema();
+
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      // Verify initial template priority is null
+      final var initialIndexTemplate =
+          retryOpenSearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(initialIndexTemplate.priority())
+          .as(
+              "%s template should initially have null priority when not configured",
+              templateDescriptor.getIndexName())
+          .isNull();
+    }
+
+    final int updatedPriority = 300;
+
+    // Set priority configuration and apply changes
+    tasklistProperties.getOpenSearch().setIndexTemplatePriority(updatedPriority);
+    schemaManager.updateIndexSettings();
+
+    // Verify template priority is now set to the configured value
+    for (final TemplateDescriptor templateDescriptor : templateDescriptors) {
+      final var updatedIndexTemplate =
+          retryOpenSearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      assertThat(updatedIndexTemplate.priority())
+          .as(
+              "%s template should have updated priority to %d",
+              templateDescriptor.getIndexName(), updatedPriority)
+          .isEqualTo(updatedPriority);
+    }
   }
 
   private TaskEntity createSampleTaskEntity(final long taskKey) {
