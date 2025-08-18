@@ -16,7 +16,7 @@ import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../../MigrationConfirmationModal';
-import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation.ts';
+import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
 import {getMigrationBatchOperationFilter} from './getMigrationBatchOperationFilter';
@@ -90,9 +90,9 @@ const Footer: React.FC = observer(() => {
           onClick={() =>
             processInstanceMigrationStore.setCurrentStep('summary')
           }
-          disabled={!processInstanceMigrationStore.hasFlowNodeMapping}
+          disabled={!processInstanceMigrationStore.hasElementMapping}
           title={
-            !processInstanceMigrationStore.hasFlowNodeMapping
+            !processInstanceMigrationStore.hasElementMapping
               ? 'Please map at least one element to continue'
               : undefined
           }
@@ -134,7 +134,7 @@ const Footer: React.FC = observer(() => {
                     processesStore.migrationState;
 
                   const {
-                    flowNodeMapping,
+                    elementMapping,
                     batchOperationQuery,
                     targetProcessDefinitionKey,
                     sourceProcessDefinitionKey,
@@ -158,7 +158,7 @@ const Footer: React.FC = observer(() => {
                     filter,
                     migrationPlan: {
                       targetProcessDefinitionKey,
-                      mappingInstructions: Object.entries(flowNodeMapping).map(
+                      mappingInstructions: Object.entries(elementMapping).map(
                         ([sourceElementId, targetElementId]) => ({
                           sourceElementId,
                           targetElementId,
