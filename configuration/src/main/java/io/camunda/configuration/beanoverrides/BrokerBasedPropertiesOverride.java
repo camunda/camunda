@@ -9,6 +9,7 @@ package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Azure;
 import io.camunda.configuration.Backup;
+import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Filesystem;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
+import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
@@ -295,6 +297,7 @@ public class BrokerBasedPropertiesOverride {
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
     override.getGateway().getNetwork().setMaxMessageSize(ucNetwork.getMaxMessageSize());
 
+    populateFromCommandApi(override);
     populateFromInternalApi(override);
   }
 
@@ -314,6 +317,17 @@ public class BrokerBasedPropertiesOverride {
     socketBindingCfg.setAdvertisedHost(internalApi.getAdvertisedHost());
     Optional.ofNullable(internalApi.getAdvertisedPort())
         .ifPresent(socketBindingCfg::setAdvertisedPort);
+  }
+
+  private void populateFromCommandApi(final BrokerBasedProperties override) {
+    final CommandApi commandApi =
+        unifiedConfiguration.getCamunda().getCluster().getNetwork().getCommandApi();
+    final CommandApiCfg commandApiCfg = override.getNetwork().getCommandApi();
+
+    commandApiCfg.setHost(commandApi.getHost());
+    Optional.ofNullable(commandApi.getPort()).ifPresent(commandApiCfg::setPort);
+    commandApiCfg.setAdvertisedHost(commandApi.getAdvertisedHost());
+    Optional.ofNullable(commandApi.getAdvertisedPort()).ifPresent(commandApiCfg::setAdvertisedPort);
   }
 
   private void populateFromRestFilters(final BrokerBasedProperties override) {
