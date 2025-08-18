@@ -93,7 +93,7 @@ jobs:
               # only notify team medic if the owner is a team name and the number of failures is above the threshold and there is no GH issue
               if [ "${NUMBER_OF_FAILS}" -ge "${FAILED_TEST_THRESHOLD}" ]  && [ -z "$GH_ISSUE_ID" ]; then
                 if [[ -n "${lookupTeamMedic[$TEST_OWNER]}" ]]; then
-                  printf "    • %s\n\n" "${lookupTeamMedic[$TEST_OWNER]}"
+                  printf ":arrow_right:  %s\n\n" "${lookupTeamMedic[$TEST_OWNER]}"
                 fi
               fi
 
