@@ -40,6 +40,16 @@ public class TestRestTasklistClient implements CloseableSilently {
     this.authentication = authentication;
   }
 
+  public HttpResponse<String> searchRequest(final String path, final String body) {
+    final var formattedPath = String.format("%s%s", endpoint, path);
+    return sendRequest("POST", formattedPath, body);
+  }
+
+  public HttpResponse<String> getRequest(final String path) {
+    final var formattedPath = String.format("%s%s", endpoint, path);
+    return sendRequest("GET", formattedPath, null);
+  }
+
   public HttpResponse<String> searchTasks(final Long processInstanceKey) {
     final var path = String.format("%sv1/tasks/search", endpoint);
     return sendRequest(
