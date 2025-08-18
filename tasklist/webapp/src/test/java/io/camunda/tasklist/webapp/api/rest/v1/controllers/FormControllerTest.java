@@ -9,7 +9,6 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -55,7 +54,7 @@ class FormControllerTest {
     @BeforeEach
     void setUp() {
       // Mock the permission service to allow all permissions for the test
-      when(tasklistPermissionServices.hasPermissionToReadProcessDefinition(any())).thenReturn(true);
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(true);
     }
 
     @Test
@@ -121,8 +120,7 @@ class FormControllerTest {
       final var formId = "userTaskForm_111";
       final var processDefinitionKey = "100001";
 
-      when(tasklistPermissionServices.hasPermissionToReadProcessDefinition(any()))
-          .thenReturn(false);
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(false);
 
       // Then
       mockMvc
@@ -130,7 +128,6 @@ class FormControllerTest {
               get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
                   .param("processDefinitionKey", processDefinitionKey)
                   .param("version", ""))
-          .andDo(print())
           .andExpect(status().isForbidden())
           .andReturn();
     }
@@ -141,7 +138,7 @@ class FormControllerTest {
     @BeforeEach
     void setUp() {
       // Mock the permission service to allow all permissions for the test
-      when(tasklistPermissionServices.hasPermissionToReadProcessDefinition(any())).thenReturn(true);
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(true);
     }
 
     @Test

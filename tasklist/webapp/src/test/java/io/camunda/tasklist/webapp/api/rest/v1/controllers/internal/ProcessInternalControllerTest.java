@@ -8,6 +8,7 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+import static io.camunda.tasklist.webapp.permission.TasklistPermissionServices.WILDCARD_RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -239,6 +240,8 @@ class ProcessInternalControllerTest {
     @Test
     void getPublicEndpoints() throws Exception {
       // given
+      when(permissionServices.hasPermissionToReadProcessDefinition(WILDCARD_RESOURCE))
+          .thenReturn(true);
 
       final var processEntity =
           new ProcessEntity()

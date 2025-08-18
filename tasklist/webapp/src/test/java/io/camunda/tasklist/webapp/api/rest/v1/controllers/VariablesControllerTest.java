@@ -9,7 +9,6 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -44,7 +43,7 @@ class VariablesControllerTest {
   @BeforeEach
   void setUp() {
     mockMvc = MockMvcBuilders.standaloneSetup(instance).build();
-    when(tasklistPermissionServices.hasPermissionToReadProcessDefinition(any())).thenReturn(true);
+    when(tasklistPermissionServices.hasWildcardPermissionToReadProcessInstance()).thenReturn(true);
   }
 
   @Test
@@ -85,7 +84,7 @@ class VariablesControllerTest {
   @Test
   void getVariablesReturnsForbiddenWhenUserHasNoPermission() throws Exception {
     // Given
-    when(tasklistPermissionServices.hasPermissionToReadProcessDefinition(any())).thenReturn(false);
+    when(tasklistPermissionServices.hasWildcardPermissionToReadProcessInstance()).thenReturn(false);
     // When
     mockMvc
         .perform(
