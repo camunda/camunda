@@ -9,8 +9,6 @@ package io.camunda.zeebe.gateway.rest.config;
 
 import io.camunda.security.ConditionalOnSaaSConfigured;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
-import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
@@ -19,20 +17,16 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 @ConditionalOnSaaSConfigured
 @Primary
-public class SaaSOpenApiConfigurer implements OpenApiConfigurer {
+public class SaaSOpenApiConfigurer extends OpenApiConfigurer {
 
-  public static final String BEARER_SECURITY_SCHEMA_NAME = "bearerAuth";
-  public static final SecurityScheme BEARER_SECURITY_SCHEMA =
-      new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT");
   private static final Logger LOGGER = LoggerFactory.getLogger(SaaSOpenApiConfigurer.class);
 
   @Override
   public void configureSecurity(final OpenAPI openApi) {
     LOGGER.debug("Configuring OpenAPI security for SaaS deployment");
 
-    openApi.getComponents().addSecuritySchemes(BEARER_SECURITY_SCHEMA_NAME, BEARER_SECURITY_SCHEMA);
-
-    openApi.addSecurityItem(new SecurityRequirement().addList(BEARER_SECURITY_SCHEMA_NAME));
+    // Add common bearer authentication
+    addBearerAuthentication(openApi);
   }
 
   @Override

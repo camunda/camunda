@@ -19,13 +19,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConditionalOnSelfManagedConfigured
 @EnableConfigurationProperties(OpenApiConfigurationProperties.class)
-public class SelfManagedOpenApiConfigurer implements OpenApiConfigurer {
+public class SelfManagedOpenApiConfigurer extends OpenApiConfigurer {
 
-  public static final String BEARER_SECURITY_SCHEMA_NAME = "bearerAuth";
   public static final String BASIC_SECURITY_SCHEMA_NAME = "basicAuth";
   public static final String OIDC_SECURITY_SCHEMA_NAME = "oidc";
-  public static final SecurityScheme BEARER_SECURITY_SCHEMA =
-      new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT");
   public static final SecurityScheme BASIC_SECURITY_SCHEMA =
       new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("basic");
   private static final Logger LOGGER = LoggerFactory.getLogger(SelfManagedOpenApiConfigurer.class);
@@ -39,8 +36,7 @@ public class SelfManagedOpenApiConfigurer implements OpenApiConfigurer {
   public void configureSecurity(final OpenAPI openApi) {
     LOGGER.debug("Configuring OpenAPI security for Self-Managed deployment");
 
-    openApi.getComponents().addSecuritySchemes(BEARER_SECURITY_SCHEMA_NAME, BEARER_SECURITY_SCHEMA);
-    openApi.addSecurityItem(new SecurityRequirement().addList(BEARER_SECURITY_SCHEMA_NAME));
+    addBearerAuthentication(openApi);
 
     LOGGER.debug("Adding Basic Auth security scheme");
     openApi.getComponents().addSecuritySchemes(BASIC_SECURITY_SCHEMA_NAME, BASIC_SECURITY_SCHEMA);

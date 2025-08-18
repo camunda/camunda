@@ -8,24 +8,42 @@
 package io.camunda.zeebe.gateway.rest.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 
 /**
- * Interface for configuring OpenAPI security schemes and descriptions based on deployment type
- * (SaaS vs Self-Managed).
+ * Abstract base class for OpenAPI configurers that provides common security scheme definitions and
+ * utilities. Subclasses should implement deployment-specific security configurations for SaaS vs
+ * Self-Managed deployments.
  */
-public interface OpenApiConfigurer {
+public abstract class OpenApiConfigurer {
+
+  public static final String BEARER_SECURITY_SCHEMA_NAME = "bearerAuth";
+  public static final SecurityScheme BEARER_SECURITY_SCHEMA =
+      new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT");
 
   /**
    * Configures the OpenAPI security schemes for the specific deployment type.
    *
    * @param openApi the OpenAPI object to configure
    */
-  void configureSecurity(OpenAPI openApi);
+  public abstract void configureSecurity(OpenAPI openApi);
 
   /**
    * Gets the API description for the specific deployment type.
    *
    * @return the API description text
    */
-  String getApiDescription();
+  public abstract String getApiDescription();
+
+  /**
+   * Adds bearer authentication to the OpenAPI specification. This is common for both SaaS and
+   * Self-Managed deployments.
+   *
+   * @param openApi the OpenAPI object to configure
+   */
+  protected final void addBearerAuthentication(final OpenAPI openApi) {
+    openApi.getComponents().addSecuritySchemes(BEARER_SECURITY_SCHEMA_NAME, BEARER_SECURITY_SCHEMA);
+    openApi.addSecurityItem(new SecurityRequirement().addList(BEARER_SECURITY_SCHEMA_NAME));
+  }
 }
