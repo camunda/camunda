@@ -54,7 +54,7 @@
     <spring.boot.version>3.3.13</spring.boot.version>
     <spring.version>6.1.21</spring.version>
     <spring.security.version>6.4.7</spring.security.version>
-    <version.tomcat>10.1.43</version.tomcat>
+    <version.tomcat>10.1.44</version.tomcat>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
