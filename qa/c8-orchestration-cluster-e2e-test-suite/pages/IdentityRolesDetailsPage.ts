@@ -74,7 +74,7 @@ export class IdentityRolesDetailsPage {
         name: 'remove user',
       },
     );
-    this.emptyState = page.getByText('Assign users to this Role');
+    this.emptyState = page.getByText('No users assigned to this role yet');
   }
 
   async assignUser(user: {

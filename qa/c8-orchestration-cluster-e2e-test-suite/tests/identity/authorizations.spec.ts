@@ -147,8 +147,9 @@ test.describe.serial('authorizations CRUD', () => {
         NEW_AUTH_ROLE.id,
       );
       await waitForItemInList(page, item, {
-        shouldBeVisible: false, 
-        onAfterReload: () => identityAuthorizationsPage.selectResourceTypeTab(resourceType)
+        shouldBeVisible: false,
+        onAfterReload: () =>
+          identityAuthorizationsPage.selectResourceTypeTab(resourceType),
       });
     });
 
