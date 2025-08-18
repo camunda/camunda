@@ -8,23 +8,16 @@
 package io.camunda.zeebe.gateway.rest.config;
 
 import io.camunda.security.ConditionalOnSelfManagedConfigured;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnRestGatewayEnabled
 @ConditionalOnSelfManagedConfigured
-@ConditionalOnProperty(
-    name = "camunda.rest.swagger.enabled",
-    havingValue = "true",
-    matchIfMissing = true)
 @EnableConfigurationProperties(OpenApiConfigurationProperties.class)
 public class SelfManagedOpenApiConfigurer implements OpenApiConfigurer {
 
@@ -46,16 +39,13 @@ public class SelfManagedOpenApiConfigurer implements OpenApiConfigurer {
   public void configureSecurity(final OpenAPI openApi) {
     LOGGER.debug("Configuring OpenAPI security for Self-Managed deployment");
 
-    // Always add Bearer authentication
     openApi.getComponents().addSecuritySchemes(BEARER_SECURITY_SCHEMA_NAME, BEARER_SECURITY_SCHEMA);
     openApi.addSecurityItem(new SecurityRequirement().addList(BEARER_SECURITY_SCHEMA_NAME));
 
-    // Always add Basic Auth in Self-Managed
     LOGGER.debug("Adding Basic Auth security scheme");
     openApi.getComponents().addSecuritySchemes(BASIC_SECURITY_SCHEMA_NAME, BASIC_SECURITY_SCHEMA);
     openApi.addSecurityItem(new SecurityRequirement().addList(BASIC_SECURITY_SCHEMA_NAME));
 
-    // Add OIDC if discovery URL is configured
     if (properties.getSelfManagedAuth().getOpenIdConnectDiscoveryUrl() != null
         && !properties.getSelfManagedAuth().getOpenIdConnectDiscoveryUrl().trim().isEmpty()) {
 

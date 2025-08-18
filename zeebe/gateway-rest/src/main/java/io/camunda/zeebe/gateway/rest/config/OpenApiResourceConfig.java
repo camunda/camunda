@@ -16,9 +16,7 @@ import io.swagger.v3.oas.models.info.Info;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springdoc.core.models.GroupedOpenApi;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -28,12 +26,15 @@ import org.springframework.context.annotation.Configuration;
     name = "camunda.rest.swagger.enabled",
     havingValue = "true",
     matchIfMissing = true)
-@EnableConfigurationProperties(OpenApiConfigurationProperties.class)
 public class OpenApiResourceConfig {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiResourceConfig.class);
 
-  @Autowired private OpenApiConfigurer openApiConfigurer;
+  private final OpenApiConfigurer openApiConfigurer;
+
+  public OpenApiResourceConfig( final OpenApiConfigurer openApiConfigurer) {
+    this.openApiConfigurer = openApiConfigurer;
+  }
 
   @Bean
   public GroupedOpenApi restApiV2() {

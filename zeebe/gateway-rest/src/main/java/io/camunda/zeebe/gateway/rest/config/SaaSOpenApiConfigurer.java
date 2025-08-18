@@ -8,22 +8,17 @@
 package io.camunda.zeebe.gateway.rest.config;
 
 import io.camunda.security.ConditionalOnSaaSConfigured;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
-@ConditionalOnRestGatewayEnabled
 @ConditionalOnSaaSConfigured
-@ConditionalOnProperty(
-    name = "camunda.rest.swagger.enabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@Primary
 public class SaaSOpenApiConfigurer implements OpenApiConfigurer {
 
   public static final String BEARER_SECURITY_SCHEMA_NAME = "bearerAuth";
