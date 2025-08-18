@@ -164,8 +164,6 @@ describe('Footer', () => {
   });
 
   it('should track confirm button click', async () => {
-    const trackSpy = vi.spyOn(tracking, 'track');
-
     processInstanceMigrationStore.setBatchOperationQuery({
       active: true,
     });
@@ -181,7 +179,7 @@ describe('Footer', () => {
     await user.type(withinModal.getByRole('textbox'), 'MIGRATE');
     await user.click(withinModal.getByRole('button', {name: /confirm/i}));
 
-    expect(trackSpy).toHaveBeenCalledWith({
+    expect(tracking.track).toHaveBeenCalledWith({
       eventName: 'process-instance-migration-confirmed',
     });
   });
@@ -200,8 +198,6 @@ describe('Footer', () => {
       'source-process-key',
     );
 
-    const trackSpy = vi.spyOn(tracking, 'track');
-
     const {user} = render(<Footer />, {wrapper: Wrapper});
 
     await user.click(screen.getByRole('button', {name: /map element/i}));
@@ -214,7 +210,7 @@ describe('Footer', () => {
 
     vi.runOnlyPendingTimers();
 
-    expect(trackSpy).toHaveBeenCalledWith({
+    expect(tracking.track).toHaveBeenCalledWith({
       eventName: 'batch-operation',
       operationType: 'MIGRATE_PROCESS_INSTANCE',
     });
