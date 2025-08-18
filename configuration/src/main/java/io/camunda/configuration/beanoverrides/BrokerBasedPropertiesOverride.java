@@ -7,8 +7,8 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.configuration.Azure;
-import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.S3;
@@ -18,7 +18,9 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
+import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
@@ -26,11 +28,11 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
-import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -70,8 +72,6 @@ public class BrokerBasedPropertiesOverride {
 
     populateFromLongPolling(override);
 
-    populateFromRestFilters(override);
-
     // from camunda.system.* sections in relation
     // with zeebe.broker.*
     populateFromSystem(override);
@@ -80,13 +80,65 @@ public class BrokerBasedPropertiesOverride {
 
     populateFromGrpc(override);
 
+    // TODO: Populate the bean from rest of camunda.* sections
+    // populateFromData(override);
     // from camunda.data.* sections
     populateFromData(override);
 
-    // TODO: Populate the rest of the bean using unifiedConfiguration
-    //  override.setSampleField(unifiedConfiguration.getSampleField());
+    populateCamundaExporter(override);
 
     return override;
+  }
+
+  private void populateCamundaExporter(final BrokerBasedProperties override) {
+
+    // TODO. confirm the exporter name - camundaexporter, camunda-exporter, camundaExporter?
+
+    // 1. Get the legacy camunda exporter configuration as a map
+    final ExporterCfg camundaexporter = override.getExporters().get("camundaexporter");
+    // TODO - null checks. If the config does not exist, we can create a new one.
+    final var configMap = camundaexporter.getArgs();
+    final io.camunda.zeebe.broker.exporter.context.ExporterConfiguration
+        exporterConfigurationHelper =
+            new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
+                "camundaexporter", configMap);
+
+    // 2. Convert it into ExporterConfiguration class so that it is easy to update individual
+    // properties
+    final var camundaExporterConfiguration =
+        exporterConfigurationHelper.instantiate(
+            io.camunda.exporter.config.ExporterConfiguration.class);
+
+    // 3. override the camunda exporter configuration
+    // Examples
+    // --------------
+    camundaExporterConfiguration
+        .getConnect()
+        .setType(
+            unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType().toString());
+    camundaExporterConfiguration
+        .getConnect()
+        .setUrl(
+            unifiedConfiguration
+                .getCamunda()
+                .getData()
+                .getSecondaryStorage()
+                .getElasticsearch()
+                .getUrl());
+
+    // ----------------------------
+
+    // 4. convert camundaExporterConfiguration to a map using MAPPER available in
+    // ExporterConfiguration
+    final Map<String, Object> updatedConfigMap =
+        ExporterConfiguration.MAPPER.convertValue(
+            camundaExporterConfiguration, new TypeReference<>() {});
+
+    // 5. Override broker config override with the new configuration
+    camundaexporter.setArgs(updatedConfigMap);
+    override
+        .getExporters()
+        .put("camundaexporter", camundaexporter); // Update the exporter with new configuration
   }
 
   private void populateFromGrpc(final BrokerBasedProperties override) {
@@ -190,24 +242,6 @@ public class BrokerBasedPropertiesOverride {
     override.getNetwork().setHost(network.getHost());
   }
 
-  private void populateFromRestFilters(final BrokerBasedProperties override) {
-    // Order between legacy and new filters props is not guaranteed.
-    // Log common filters warning instead of using UnifiedConfigurationHelper logging.
-    if (!override.getGateway().getFilters().isEmpty()) {
-      final String warningMessage =
-          String.format(
-              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
-              "camunda.api.rest.filters", "zeebe.broker.gateway.filters");
-      LOGGER.warn(warningMessage);
-    }
-
-    final List<Filter> filters = unifiedConfiguration.getCamunda().getApi().getRest().getFilters();
-    if (!filters.isEmpty()) {
-      final List<FilterCfg> filterCfgList = filters.stream().map(Filter::toFilterCfg).toList();
-      override.getGateway().setFilters(filterCfgList);
-    }
-  }
-
   private void populateFromSystem(final BrokerBasedProperties override) {
     final var system = unifiedConfiguration.getCamunda().getSystem();
 
@@ -257,6 +291,7 @@ public class BrokerBasedPropertiesOverride {
     data.setRuntimeDirectory(primaryStorage.getRuntimeDirectory());
     data.setLogIndexDensity(primaryStorage.getLogStream().getLogIndexDensity());
     data.setLogSegmentSize(primaryStorage.getLogStream().getLogSegmentSize());
+
     final var brokerDiskConfig = data.getDisk();
     final var unifiedDiskConfig = primaryStorage.getDisk();
     brokerDiskConfig.getFreeSpace().setProcessing(unifiedDiskConfig.getFreeSpace().getProcessing());
