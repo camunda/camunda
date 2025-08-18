@@ -402,14 +402,6 @@ public class TaskController extends ApiErrorController {
     }
   }
 
-  private boolean isUserRestrictionEnabled() {
-    if (tasklistProperties.getIdentity() != null) {
-      return tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled();
-    } else {
-      return false;
-    }
-  }
-
   @Operation(
       summary = "Save draft variables",
       description =
