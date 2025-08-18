@@ -43,11 +43,12 @@ const DecisionInstance: React.FC = observer(() => {
   }, [decisionInstanceId]);
 
   useEffect(() => {
-    if (decisionInstanceId !== '' && decisionName !== undefined)
+    if (decisionInstanceId !== '' && decisionName !== undefined) {
       document.title = PAGE_TITLE.DECISION_INSTANCE(
         decisionInstanceId,
         decisionName,
       );
+    }
   }, [decisionInstanceId, decisionName]);
 
   useEffect(() => {

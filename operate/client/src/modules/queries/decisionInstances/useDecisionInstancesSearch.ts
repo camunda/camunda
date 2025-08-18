@@ -20,7 +20,9 @@ const useDecisionInstancesSearch = (
     queryKey: [DECISION_INSTANCES_SEARCH_QUERY_KEY, payload],
     queryFn: () =>
       searchDecisionInstances(payload).then(({response, error}) => {
-        if (response !== null) return response;
+        if (response !== null) {
+          return response;
+        }
         throw error;
       }),
     enabled,

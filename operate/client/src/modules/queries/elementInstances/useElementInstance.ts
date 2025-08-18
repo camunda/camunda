@@ -26,7 +26,9 @@ const useElementInstance = <T = ElementInstance>(
           const {response, error} = await fetchElementInstance({
             elementInstanceKey,
           });
-          if (response !== null) return response;
+          if (response !== null) {
+            return response;
+          }
           throw error;
         }
       : skipToken,

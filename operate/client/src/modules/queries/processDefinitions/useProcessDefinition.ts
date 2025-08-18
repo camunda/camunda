@@ -23,7 +23,9 @@ const useProcessDefinition = (
       const {response, error} = await fetchProcessDefinition({
         processDefinitionKey,
       });
-      if (response !== null) return response;
+      if (response !== null) {
+        return response;
+      }
       throw error;
     },
     enabled: options?.enabled,

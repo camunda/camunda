@@ -90,7 +90,9 @@ const BottomPanel: React.FC = observer(() => {
    * - the bpmn type is matching in source and target diagram
    */
   const autoMappableElements = useMemo(() => {
-    if (sourceData === undefined || targetData === undefined) return [];
+    if (sourceData === undefined || targetData === undefined) {
+      return [];
+    }
 
     return [
       ...sourceData.selectableFlowNodes,
