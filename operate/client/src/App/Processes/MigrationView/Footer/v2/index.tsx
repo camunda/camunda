@@ -28,7 +28,7 @@ const Footer: React.FC = observer(() => {
 
   const navigate = useNavigate();
 
-  const mutation = useMigrateProcessInstancesBatchOperation({
+  const {mutate: migrateProcess} = useMigrateProcessInstancesBatchOperation({
     onSuccess: () => {
       tracking.track({
         eventName: 'batch-operation',
@@ -154,7 +154,7 @@ const Footer: React.FC = observer(() => {
                     baseFilter,
                   });
 
-                  mutation.mutate({
+                  migrateProcess({
                     filter,
                     migrationPlan: {
                       targetProcessDefinitionKey,
