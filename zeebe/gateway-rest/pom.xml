@@ -34,7 +34,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-protocol</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -429,15 +428,6 @@
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <targetPath>apidoc</targetPath>
-        <directory>../gateway-protocol/src/main/proto</directory>
-        <includes>
-          <include>rest-api.yaml</include>
-        </includes>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <groupId>org.openapitools</groupId>

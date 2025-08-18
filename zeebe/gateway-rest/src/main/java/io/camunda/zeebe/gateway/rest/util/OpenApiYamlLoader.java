@@ -11,6 +11,8 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.slf4j.Logger;
@@ -102,8 +104,10 @@ public final class OpenApiYamlLoader {
       return Files.readString(absolutePath);
     } else {
       LOG.debug("Loading YAML from classpath: {}", yamlPath);
-      final Path path = new ClassPathResource(yamlPath).getFile().toPath();
-      return Files.readString(path);
+      final ClassPathResource resource = new ClassPathResource(yamlPath);
+      try (final InputStream inputStream = resource.getInputStream()) {
+        return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+      }
     }
   }
 
