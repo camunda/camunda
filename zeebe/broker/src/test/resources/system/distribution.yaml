@@ -1,7 +1,0 @@
-zeebe:
-  broker:
-    experimental:
-      engine:
-        distribution:
-          retryInterval: 5s
-          maxBackoffDuration: 2m

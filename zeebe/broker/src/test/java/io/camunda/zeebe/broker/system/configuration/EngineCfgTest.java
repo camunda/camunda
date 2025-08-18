@@ -45,7 +45,7 @@ final class EngineCfgTest {
     assertThat(configuration.getCommandRedistributionInterval())
         .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
     assertThat(configuration.getCommandRedistributionMaxBackoff())
-        .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF);
+        .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
   }
 
   @Test

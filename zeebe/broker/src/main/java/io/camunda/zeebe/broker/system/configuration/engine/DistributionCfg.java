@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
-import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF;
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
@@ -17,8 +17,8 @@ import java.time.Duration;
 public class DistributionCfg implements ConfigurationEntry {
 
   private boolean pauseCommandDistribution = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
-  private Duration retryInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
-  private Duration maxBackoffDuration = DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF;
+  private Duration redistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
+  private Duration maxBackoffDuration = DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
 
   public boolean isPauseCommandDistribution() {
     return pauseCommandDistribution;
@@ -28,12 +28,12 @@ public class DistributionCfg implements ConfigurationEntry {
     this.pauseCommandDistribution = pauseCommandDistribution;
   }
 
-  public Duration getRetryInterval() {
-    return retryInterval;
+  public Duration getRedistributionInterval() {
+    return redistributionInterval;
   }
 
-  public void setRetryInterval(final Duration retryInterval) {
-    this.retryInterval = retryInterval;
+  public void setRedistributionInterval(final Duration redistributionInterval) {
+    this.redistributionInterval = redistributionInterval;
   }
 
   public Duration getMaxBackoffDuration() {
@@ -49,8 +49,8 @@ public class DistributionCfg implements ConfigurationEntry {
     return "DistributionCfg{"
         + "pauseCommandDistribution="
         + pauseCommandDistribution
-        + ", retryInterval="
-        + retryInterval
+        + ", redistributionInterval="
+        + redistributionInterval
         + ", maxBackoffDuration="
         + maxBackoffDuration
         + '}';

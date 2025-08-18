@@ -1430,6 +1430,18 @@
           # The default value is false, meaning that command redistribution is not paused.
           # pauseCommandDistribution: false
 
+          # Allows configuring command redistribution retry interval. This is the initial interval used when retrying
+          # command distributions that have not been acknowledged. This setting can also be set using the environment variable
+          # ZEEBE_BROKER_EXPERIMENTAL_ENGINE_DISTRIBUTION_REDISTRIBUTIONINTERVAL.
+          # The default value is 10 seconds.
+          # redistributionInterval: 10s
+
+          # Allows configuring the maximum backoff duration for command redistribution retries. The retry interval
+          # is doubled after each retry until it reaches this maximum duration. This setting can also be set using the environment variable
+          # ZEEBE_BROKER_EXPERIMENTAL_ENGINE_DISTRIBUTION_MAXBACKOFFDURATION.
+          # The default value is 5 minutes.
+          # maxBackoffDuration: 5m
+
         # batchOperation:
           # to avoid too large records, the set of executed items ina  batch operation is split into multiple chunks.
           # smaller values lead to more records needed to transport the items and the more metadata overhead is created.
