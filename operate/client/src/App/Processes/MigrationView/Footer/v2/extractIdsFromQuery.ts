@@ -7,18 +7,27 @@
  */
 
 import type {BatchOperationQuery} from 'modules/api/processInstances/operations';
+import {z} from 'zod';
+
+const filterSchema = z.object({
+  ids: z.array(z.string()).optional().catch(undefined),
+  excludeIds: z.array(z.string()).optional().catch(undefined),
+});
 
 function extractIdsFromQuery(query: BatchOperationQuery): {
   ids?: string[];
   excludeIds?: string[];
 } {
-  return {
-    ids: 'ids' in query && Array.isArray(query.ids) ? query.ids : undefined,
-    excludeIds:
-      'excludeIds' in query && Array.isArray(query.excludeIds)
-        ? query.excludeIds
-        : undefined,
-  };
+  const result = filterSchema.safeParse(query);
+
+  if (!result.success) {
+    return {
+      ids: undefined,
+      excludeIds: undefined,
+    };
+  }
+
+  return result.data;
 }
 
 export {extractIdsFromQuery};
