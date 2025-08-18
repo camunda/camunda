@@ -88,7 +88,7 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForDecision(
-            decisionId, PermissionType.READ_DECISION_INSTANCE))
+            decisionId, PermissionType.READ_DECISION_DEFINITION))
         .thenReturn(true);
     final MvcResult mvcResult = getRequest(getDecisionXmlByIdUrl(decisionDefinitionKey.toString()));
     // then

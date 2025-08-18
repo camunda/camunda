@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -63,13 +64,17 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   private final String tenantId1 = "tenant1";
   private final String tenantId2 = "tenant2";
 
-  @Test
-  public void testAbsentProcessDoesntThrowExceptions() throws Exception {
-    final List<ExporterEntity> entities = new ArrayList<>();
+  @Before
+  public void setup() {
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
+  }
+
+  @Test
+  public void testAbsentProcessDoesntThrowExceptions() throws Exception {
+    final List<ExporterEntity> entities = new ArrayList<>();
 
     // Create a processInstance that has no matching process
     final Long processDefinitionKey = 0L;
@@ -87,10 +92,6 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   @Test
   public void testIncidentStatisticsByError() throws Exception {
     createData();
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
     assertThat(response).hasSize(2);
@@ -142,8 +143,6 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   @Test
   public void testProcessAndIncidentStatistics() throws Exception {
     createData();
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     final List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
 
@@ -156,8 +155,6 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   @Test
   public void testProcessWithoutInstancesIsSortedByVersionAscending() throws Exception {
     createNoInstancesProcessData(3);
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     final List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
 
@@ -179,8 +176,6 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     createData();
 
     // when
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     // then
     final List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
@@ -224,13 +219,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     // given
     createData();
 
-    // when
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
-
-    // then
+    // when - then
     final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
 
     assertThat(response).hasSize(2);

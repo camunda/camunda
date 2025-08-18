@@ -9,6 +9,8 @@ package io.camunda.operate.rest;
 
 import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
@@ -16,7 +18,9 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.j5templates.MockMvcManager;
+import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
@@ -38,7 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -65,6 +68,8 @@ public class ProcessInstanceRestServiceIT {
   @Autowired MockMvcManager mockMvcManager;
   @MockitoBean PermissionsService mockPermissionsService;
   @MockitoBean ProcessInstanceReader mockProcessInstanceReader;
+  @MockitoBean VariableReader mockVariableReader;
+  @MockitoBean OperationReader mockOperationReader;
 
   @Test
   public void testGetInstanceByIdWithInvalidId() throws Exception {
@@ -185,10 +190,11 @@ public class ProcessInstanceRestServiceIT {
       final String urlFragment, final Object requestObject, final PermissionType permissionType)
       throws Exception {
     // given
-    Mockito.when(mockProcessInstanceReader.getProcessInstanceByKey(1L))
+    when(mockProcessInstanceReader.getProcessInstanceByKey(1L))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("p1"));
-    Mockito.when(mockPermissionsService.hasPermissionForProcess("p1", permissionType))
-        .thenReturn(false);
+    when(mockPermissionsService.hasPermissionForProcess("p1", permissionType)).thenReturn(false);
+    when(mockVariableReader.getVariableByName(any(), any(), any())).thenReturn(null);
+    when(mockOperationReader.getOperations(any(), any(), any(), any())).thenReturn(List.of());
     final var url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + urlFragment;
 
     // when - then
@@ -200,11 +206,9 @@ public class ProcessInstanceRestServiceIT {
   @ParameterizedTest
   @MethodSource("noPermissionGetParameters")
   public void testGetWithNoPermission(final String urlFragment) throws Exception {
-    Mockito.when(mockProcessInstanceReader.getProcessInstanceByKey(1L))
+    when(mockProcessInstanceReader.getProcessInstanceByKey(1L))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("p1"));
-    Mockito.when(
-            mockPermissionsService.hasPermissionForProcess(
-                "p1", PermissionType.READ_PROCESS_INSTANCE))
+    when(mockPermissionsService.hasPermissionForProcess("p1", PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(false);
     final var url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + urlFragment;
     final MvcResult mvcResult =
@@ -242,11 +246,19 @@ public class ProcessInstanceRestServiceIT {
             PermissionType.UPDATE_PROCESS_INSTANCE),
         Arguments.of(
             "/1/operation",
-            new CreateOperationRequestDto().setOperationType(OperationType.ADD_VARIABLE),
+            new CreateOperationRequestDto()
+                .setOperationType(OperationType.ADD_VARIABLE)
+                .setVariableScopeId("scope")
+                .setVariableName("varName")
+                .setVariableValue("a"),
             PermissionType.UPDATE_PROCESS_INSTANCE),
         Arguments.of(
             "/1/operation",
-            new CreateOperationRequestDto().setOperationType(OperationType.UPDATE_VARIABLE),
+            new CreateOperationRequestDto()
+                .setOperationType(OperationType.UPDATE_VARIABLE)
+                .setVariableScopeId("scope")
+                .setVariableName("varName")
+                .setVariableValue("a"),
             PermissionType.UPDATE_PROCESS_INSTANCE),
         Arguments.of(
             "/1/operation",

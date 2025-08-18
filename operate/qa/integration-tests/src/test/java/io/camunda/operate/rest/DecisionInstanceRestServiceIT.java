@@ -128,7 +128,9 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
     // when
     when(decisionInstanceReader.getDecisionInstance(decisionInstanceId))
         .thenReturn(new DecisionInstanceDto().setDecisionId(bpmnDecisionId));
-    when(permissionsService.permissionsEnabled()).thenReturn(false);
+    when(permissionsService.hasPermissionForDecision(
+            bpmnDecisionId, PermissionType.READ_DECISION_INSTANCE))
+        .thenReturn(true);
     final MvcResult mvcResult = getRequest(getDecisionInstanceByIdUrl(decisionInstanceId));
     // then
     final DecisionInstanceDto result =

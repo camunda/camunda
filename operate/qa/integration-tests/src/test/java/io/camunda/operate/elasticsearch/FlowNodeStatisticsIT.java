@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -51,6 +52,12 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
   private static final Long PROCESS_KEY_OTHER_PROCESS = 27L;
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   @MockitoBean private PermissionsService permissionsService;
+
+  @Before
+  public void setup() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
+  }
 
   @Test
   public void testOneProcessStatistics() throws Exception {
@@ -165,7 +172,6 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
     final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
@@ -195,7 +201,6 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
     final ListViewRequestDto queryRequest = createGetAllProcessInstancesRequest();
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 

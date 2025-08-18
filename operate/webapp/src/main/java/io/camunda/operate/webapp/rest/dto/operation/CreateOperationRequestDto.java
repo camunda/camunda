@@ -27,7 +27,7 @@ public class CreateOperationRequestDto {
 
   public CreateOperationRequestDto() {}
 
-  public CreateOperationRequestDto(OperationType operationType) {
+  public CreateOperationRequestDto(final OperationType operationType) {
     this.operationType = operationType;
   }
 
@@ -35,7 +35,7 @@ public class CreateOperationRequestDto {
     return operationType;
   }
 
-  public CreateOperationRequestDto setOperationType(OperationType operationType) {
+  public CreateOperationRequestDto setOperationType(final OperationType operationType) {
     this.operationType = operationType;
     return this;
   }
@@ -44,40 +44,45 @@ public class CreateOperationRequestDto {
     return name;
   }
 
-  public void setName(String name) {
+  public CreateOperationRequestDto setName(final String name) {
     this.name = name;
+    return this;
   }
 
   public String getIncidentId() {
     return incidentId;
   }
 
-  public void setIncidentId(String incidentId) {
+  public CreateOperationRequestDto setIncidentId(final String incidentId) {
     this.incidentId = incidentId;
+    return this;
   }
 
   public String getVariableScopeId() {
     return variableScopeId;
   }
 
-  public void setVariableScopeId(String variableScopeId) {
+  public CreateOperationRequestDto setVariableScopeId(final String variableScopeId) {
     this.variableScopeId = variableScopeId;
+    return this;
   }
 
   public String getVariableName() {
     return variableName;
   }
 
-  public void setVariableName(String variableName) {
+  public CreateOperationRequestDto setVariableName(final String variableName) {
     this.variableName = variableName;
+    return this;
   }
 
   public String getVariableValue() {
     return variableValue;
   }
 
-  public void setVariableValue(String variableValue) {
+  public CreateOperationRequestDto setVariableValue(final String variableValue) {
     this.variableValue = variableValue;
+    return this;
   }
 
   @Override
@@ -92,7 +97,7 @@ public class CreateOperationRequestDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
