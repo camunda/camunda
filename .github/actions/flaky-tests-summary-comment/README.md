@@ -6,15 +6,16 @@ Creates or updates a PR comment with a comprehensive summary of flaky tests acro
 
 ## Inputs
 
-| Input              | Description                                      | Required |
-|--------------------|--------------------------------------------------|----------|
-| `flaky-tests-data` | JSON array containing processed flaky test data | true     |
-| `pr-number`        | Pull request number for the comment             | true     |
-| `branch-name`      | Branch name where the comment will be posted    | true     |
+|··········Input···········|······················Description·····················|····Required····|
+|--------------------------|------------------------------------------------------|----------------|
+|···`flaky-tests-data`·····|···JSON·array·containing·processed·flaky·test·data····|···true·········|
+|···`pr-number`············|···Pull·request·number·for·the·comment················|···true·········|
+|···`branch-name`··········|···Branch·name·where·the·comment·will·be·posted·······|···true·········|
 
 ## Expected Data Structure
 
 ### Example `flaky-tests-data` input:
+
 ```json
 [
   {
@@ -29,6 +30,7 @@ Creates or updates a PR comment with a comprehensive summary of flaky tests acro
 ```
 
 ### Example internal data structure:
+
 ```json
  {
   "flakyTests": [
@@ -46,8 +48,8 @@ Creates or updates a PR comment with a comprehensive summary of flaky tests acro
 ```
 
 ## Outputs
-This action does not produce outputs. It creates or updates a PR comment directly.
 
+This action does not produce outputs. It creates or updates a PR comment directly.
 
 ## Example Usage
 
@@ -61,6 +63,7 @@ This action does not produce outputs. It creates or updates a PR comment directl
 ```
 
 ## Features
+
 - Processes JSON array of flaky test data from multiple test jobs
 - Creates formatted PR comments with test failure summaries
 - Updates existing comments to avoid spam
@@ -68,6 +71,7 @@ This action does not produce outputs. It creates or updates a PR comment directl
 - Provides detailed logging for debugging
 
 ## Internal Implementation
+
 - Uses GitHub Script action for API interactions
 - Processes data through modular JavaScript files:
   - `src/flaky-tests-data-processor.js` - Structures and processes raw flaky test data
@@ -79,3 +83,4 @@ This action does not produce outputs. It creates or updates a PR comment directl
 
 - `actions/github-script@v7` for GitHub API access
 - Modular JavaScript processors in `src/` directory
+

@@ -6,30 +6,30 @@ This composite action collects and aggregates flaky test results from multiple C
 
 ## Inputs
 
-| Input | Description | Required | Default |
-|-------|-------------|----------|---------|
-| `general-unit-tests-result` | Result of the general unit tests job | true | N/A |
-| `general-unit-tests-flaky` | Flaky tests from the general unit tests job | true | N/A |
-| `elasticsearch-tests-result` | Result of the Elasticsearch integration tests job | true | N/A |
-| `elasticsearch-tests-flaky` | Flaky tests from the Elasticsearch integration tests job | true | N/A |
-| `opensearch-tests-result` | Result of the OpenSearch integration tests job | true | N/A |
-| `opensearch-tests-flaky` | Flaky tests from the OpenSearch integration tests job | true | N/A |
-| `rdbms-h2-tests-result` | Result of the RDBMS H2 integration tests job | true | N/A |
-| `rdbms-h2-tests-flaky` | Flaky tests from the RDBMS H2 integration tests job | true | N/A |
-| `rdbms-tests-result` | Result of the RDBMS integration tests job | true | N/A |
-| `rdbms-tests-flaky` | Flaky tests from the RDBMS integration tests job | true | N/A |
-| `docker-checks-result` | Result of the Docker checks job | true | N/A |
-| `docker-checks-flaky` | Flaky tests from the Docker checks job | true | N/A |
-| `zeebe-tests-result` | Result of the Zeebe unit tests job | true | N/A |
-| `zeebe-matrix-output-result` | Matrix output for Zeebe unit tests | true | N/A |
-| `integration-tests-result` | Result of the integration tests job | true | N/A |
-| `integration-matrix-output-result` | Matrix output for integration tests | true | N/A |
+| ···············Input················ | ·······················Description························ | ·Required· | ·Default· |
+|--------------------------------------|------------------------------------------------------------|------------|-----------|
+| `general-unit-tests-result`          | Result of the general unit tests job                       | true       | N/A       |
+| `general-unit-tests-flaky`           | Flaky tests from the general unit tests job                | true       | N/A       |
+| `elasticsearch-tests-result`         | Result of the Elasticsearch integration tests job          | true       | N/A       |
+| `elasticsearch-tests-flaky`          | Flaky tests from the Elasticsearch integration tests job   | true       | N/A       |
+| `opensearch-tests-result`            | Result of the OpenSearch integration tests job             | true       | N/A       |
+| `opensearch-tests-flaky`             | Flaky tests from the OpenSearch integration tests job      | true       | N/A       |
+| `rdbms-h2-tests-result`              | Result of the RDBMS H2 integration tests job               | true       | N/A       |
+| `rdbms-h2-tests-flaky`               | Flaky tests from the RDBMS H2 integration tests job        | true       | N/A       |
+| `rdbms-tests-result`                 | Result of the RDBMS integration tests job                  | true       | N/A       |
+| `rdbms-tests-flaky`                  | Flaky tests from the RDBMS integration tests job           | true       | N/A       |
+| `docker-checks-result`               | Result of the Docker checks job                            | true       | N/A       |
+| `docker-checks-flaky`                | Flaky tests from the Docker checks job                     | true       | N/A       |
+| `zeebe-tests-result`                 | Result of the Zeebe unit tests job                         | true       | N/A       |
+| `zeebe-matrix-output-result`         | Matrix output for Zeebe unit tests                         | true       | N/A       |
+| `integration-tests-result`           | Result of the integration tests job                        | true       | N/A       |
+| `integration-matrix-output-result`   | Matrix output for integration tests                        | true       | N/A       |
 
 ## Outputs
 
-| Output | Description |
-|--------|-------------|
-| `flaky_tests_data` | JSON array of flaky tests data aggregated from all test jobs. Each object contains `job` (string) and `flaky_tests` (string) fields |
+| ·······Output······· | ·····························································Description····························································· |
+|----------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `flaky_tests_data`   | JSON array of flaky tests data aggregated from all test jobs. Each object contains `job` (string) and `flaky_tests` (string) fields   |
 
 ### Output Format Example
 
@@ -84,3 +84,4 @@ This composite action collects and aggregates flaky test results from multiple C
 - Processes both single job results and matrix job results
 - Aggregates flaky test data into a unified JSON structure
 - Handles empty or skipped job results gracefully
+

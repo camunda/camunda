@@ -20,7 +20,7 @@ async function main(context, github, currentData, prNumber, branchName) {
   console.log('Merged data:', JSON.stringify(mergedData, null, 2));
 
   // Step 4: Generate comment content
-  if (!mergedData || !mergedData.flakyTests.length) {
+  if (!mergedData || !mergedData.length) {
     console.log('[flaky-tests] No flaky tests found. Skipping comment.');
     return;
   }
@@ -47,9 +47,9 @@ async function buildComment(mergedData, github, branchName) {
     ``
   ];
 
-  mergedData.flakyTests.sort((a, b) => b.flakiness - a.flakiness);
+  mergedData.sort((a, b) => b.flakiness - a.flakiness);
 
-  for (const test of mergedData.flakyTests) {
+  for (const test of mergedData) {
     const icon = getFlakyIcon(test.flakiness);
     const url = await generateTestSourceUrl(test, github, branchName);
 
