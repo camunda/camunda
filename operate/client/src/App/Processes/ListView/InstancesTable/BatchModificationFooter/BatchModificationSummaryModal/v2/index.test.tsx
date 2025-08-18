@@ -29,6 +29,19 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockModifyProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/mockModifyProcessInstancesBatchOperation';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
+import {panelStatesStore} from 'modules/stores/panelStates';
+import {tracking} from 'modules/tracking';
+
+vi.mock('modules/tracking', () => ({
+  tracking: {
+    track: vi.fn(),
+  },
+}));
+vi.mock('modules/stores/notifications', () => ({
+  notificationsStore: {
+    displayNotification: vi.fn(() => () => {}),
+  },
+}));
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
   ({children}) => {
@@ -115,6 +128,7 @@ describe('BatchModificationSummaryModal', () => {
   });
 
   it('should apply batch operation', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
 
     const {user} = render(
@@ -136,6 +150,13 @@ describe('BatchModificationSummaryModal', () => {
     await waitFor(() => {
       expect(batchModificationStore.state.isEnabled).toBe(false);
     });
+
+    expect(trackSpy).toHaveBeenCalledWith({
+      eventName: 'batch-operation',
+      operationType: 'MODIFY_PROCESS_INSTANCE',
+    });
+
+    expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
   });
 
   it('should close the modal when cancel button is clicked', async () => {
