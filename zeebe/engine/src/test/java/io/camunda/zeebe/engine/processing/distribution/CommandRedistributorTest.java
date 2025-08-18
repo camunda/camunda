@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
@@ -130,12 +131,15 @@ public class CommandRedistributorTest {
             mockCommandSender,
             mockDistributionMetrics);
 
-    return new CommandRedistributor(
-        behavior,
-        routingInfo,
-        commandDistributionPaused,
-        Duration.ofSeconds(10), // Use default interval for tests
-        Duration.ofMinutes(5)); // Use default max backoff for tests
+    final var config =
+        new EngineConfiguration()
+            .setCommandDistributionPaused(commandDistributionPaused)
+            .setCommandRedistributionInterval(
+                Duration.ofSeconds(10)) // Use default interval for tests
+            .setCommandRedistributionMaxBackoff(
+                Duration.ofMinutes(5)); // Use default max backoff for tests
+
+    return new CommandRedistributor(behavior, routingInfo, config);
   }
 
   @Nested
@@ -212,6 +216,113 @@ public class CommandRedistributorTest {
 
       // then
       verify(mockContext, never()).getScheduleService();
+    }
+  }
+
+  @Nested
+  class ConfigurableRetryIntervals {
+
+    @BeforeEach
+    void setUp() {
+      // Set up routing state for configuration tests
+      routingState.setDesiredPartitions(Set.of(1, 2), 10L);
+
+      final long configTestDistributionKey = 1L;
+      final var recordValue = new UserRecord().setUserKey(1L);
+      final var record = new CommandDistributionRecord();
+      record.setPartitionId(1).setValueType(ValueType.USER).setIntent(UserIntent.CREATE);
+
+      // Add a retriable distribution
+      distributionState.addRetriableDistribution(configTestDistributionKey, 1);
+    }
+
+    @Test
+    void shouldUseConfigurableRetryInterval() {
+      // given - use a very short retry interval for testing
+      final var customInterval = Duration.ofMillis(100);
+      final var customMaxBackoff = Duration.ofMinutes(1);
+      final var redistributor =
+          createCommandRedistributorWithCustomConfig(false, customInterval, customMaxBackoff);
+
+      // when - run multiple cycles to see retry behavior
+      redistributor.runRetryCycle(); // cycle 0 - no retry (starts at 0)
+      redistributor.runRetryCycle(); // cycle 1 - should retry (bitCount(1) == 1)
+
+      // then - verify retry occurred
+      verify(mockCommandSender, times(1))
+          .sendCommand(1, ValueType.USER, UserIntent.CREATE, 1L, new UserRecord().setUserKey(1L));
+    }
+
+    @Test
+    void shouldUseConfigurableMaxBackoff() {
+      // given - use custom backoff values
+      final var customInterval = Duration.ofSeconds(2);
+      final var customMaxBackoff = Duration.ofSeconds(8); // Only 4 cycles until max backoff
+      final var redistributor =
+          createCommandRedistributorWithCustomConfig(false, customInterval, customMaxBackoff);
+
+      // when - run enough cycles to reach max backoff
+      for (int i = 0; i < 10; i++) {
+        redistributor.runRetryCycle();
+      }
+
+      // then - verify retries occurred based on exponential backoff and then fixed intervals
+      // Cycle 0: no retry
+      // Cycle 1: retry (bitCount(1) == 1)
+      // Cycle 2: retry (bitCount(2) == 1)
+      // Cycle 3: no retry (bitCount(3) == 2)
+      // Cycle 4: retry (4 >= maxRetryCycles=4 and 4 % 4 == 0)
+      // Cycle 5-7: no retry (not multiple of 4)
+      // Cycle 8: retry (8 % 4 == 0)
+      // Cycle 9: no retry
+
+      verify(mockCommandSender, times(4))
+          .sendCommand(1, ValueType.USER, UserIntent.CREATE, 1L, new UserRecord().setUserKey(1L));
+    }
+
+    @Test
+    void shouldRespectPausedDistributionFlag() {
+      // given - distribution is paused
+      final var redistributor =
+          createCommandRedistributorWithCustomConfig(
+              true, Duration.ofSeconds(1), Duration.ofMinutes(1));
+
+      // when - run retry cycles
+      redistributor.runRetryCycle();
+      redistributor.runRetryCycle();
+
+      // then - no retries should occur
+      verify(mockCommandSender, never())
+          .sendCommand(1, ValueType.USER, UserIntent.CREATE, 1L, new UserRecord().setUserKey(1L));
+    }
+
+    private CommandRedistributor createCommandRedistributorWithCustomConfig(
+        final boolean commandDistributionPaused,
+        final Duration redistributionInterval,
+        final Duration maxBackoffDuration) {
+      final var fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
+      final Writers writers =
+          new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
+
+      final RoutingInfo routingInfo =
+          RoutingInfo.dynamic(routingState, new StaticRoutingInfo(Set.of(1, 2), 2));
+
+      final CommandDistributionBehavior behavior =
+          new CommandDistributionBehavior(
+              distributionState,
+              writers,
+              1,
+              routingInfo,
+              mockCommandSender,
+              mockDistributionMetrics);
+
+      final var config =
+          new EngineConfiguration()
+              .setCommandDistributionPaused(commandDistributionPaused)
+              .setCommandRedistributionInterval(redistributionInterval)
+              .setCommandRedistributionMaxBackoff(maxBackoffDuration);
+
+      return new CommandRedistributor(behavior, routingInfo, config);
     }
   }
 }

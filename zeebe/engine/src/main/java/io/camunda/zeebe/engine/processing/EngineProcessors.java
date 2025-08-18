@@ -623,9 +623,7 @@ public final class EngineProcessors {
               RoutingInfo.dynamic(
                   scheduledTaskState.getRoutingState(),
                   RoutingInfo.forStaticPartitions(staticPartitionsCount)),
-              config.isCommandDistributionPaused(),
-              config.getCommandRedistributionInterval(),
-              config.getCommandRedistributionMaxBackoff()));
+              config));
     }
 
     final var distributionState = processingState.getDistributionState();
