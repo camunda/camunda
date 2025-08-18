@@ -25,9 +25,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const { graphql } = require('@octokit/graphql');
-            const token = process.env.GITHUB_TOKEN;
-            const ghql = graphql.defaults({ headers: { authorization: `token ${token}` } });
             const octokit = github;
 
             // this is the global ID for project core features (173)
@@ -59,7 +56,7 @@ jobs:
 
             // 3. Fetch parent & child info including project items and fields
             async function getIssueInfo(number) {
-              const data = await ghql(`
+              const data = await github.graphql(`
                 query($owner:String!, $repo:String!, $number:Int!) {
                   repository(owner:$owner, name:$repo) {
                     issue(number:$number) {
@@ -132,7 +129,7 @@ jobs:
             // 6. Add child to same project if not already added
             let childItemId;
             if (childIssue.projectItems.nodes.length === 0) {
-              const addChildItemRes = await ghql(`
+              const addChildItemRes = await github.graphql(`
                 mutation($projectId:ID!, $contentId:ID!) {
                   addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
                     item { id }
@@ -145,7 +142,7 @@ jobs:
               const existingItem = childIssue.projectItems.nodes.find(item => item.project.id === TARGET_PROJECT_ID);
               if (!existingItem) {
                 console.log("Child is not in the target project but is in others — adding now.");
-                const addChildItemRes = await ghql(`
+                const addChildItemRes = await github.graphql(`
                   mutation($projectId:ID!, $contentId:ID!) {
                     addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
                       item { id }
@@ -161,7 +158,7 @@ jobs:
             // 7. Update child project item fields with parent's values
             const updates = [];
             if (projectNameData) {
-              updates.push(ghql(`
+              updates.push(github.graphql(`
                 mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:ID!) {
                   updateProjectV2ItemFieldValue(input:{
                     projectId: $projectId,
@@ -173,7 +170,7 @@ jobs:
               `, { projectId, itemId: childItemId, fieldId: projectNameData.fieldId, optionId: projectNameData.optionId }));
             }
             if (teamData) {
-              updates.push(ghql(`
+              updates.push(github.graphql(`
                 mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:ID!) {
                   updateProjectV2ItemFieldValue(input:{
                     projectId: $projectId,
