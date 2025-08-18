@@ -8,31 +8,19 @@
 
 import isNil from 'lodash/isNil';
 import {formatDate} from 'modules/utils/date';
-import {Operations} from 'modules/components/Operations/v2';
+import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 import {getProcessDefinitionName} from 'modules/utils/instance';
 import {Link} from 'modules/components/Link';
 import {Locations, Paths} from 'modules/Routes';
-import {Restricted} from 'modules/components/Restricted';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
-import {notificationsStore} from 'modules/stores/notifications';
 import {VersionTag} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {usePermissions} from 'modules/queries/permissions/usePermissions';
-import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
-import {useQueryClient} from '@tanstack/react-query';
-import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
-import {useNavigate} from 'react-router-dom';
-import {useProcessInstanceOperations} from 'modules/hooks/useProcessInstanceOperations';
-import {ProcessInstanceOperationsContext} from './processInstanceOperationsContext';
-import {IS_BATCH_OPERATIONS_V2} from 'modules/feature-flags';
-import {useHasActiveBatchOperationMutation} from 'modules/mutations/processInstance/useHasActiveBatchOperationMutation';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 
 const headerColumns = [
@@ -86,12 +74,6 @@ type Props = {
 };
 
 const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
-  const queryClient = useQueryClient();
-  const {data: permissions} = usePermissions();
-  const {data: hasActiveOperationLegacy} = useHasActiveOperations();
-  const hasActiveBatchOperationMutation = useHasActiveBatchOperationMutation(
-    processInstance.processInstanceKey,
-  );
   const {
     processInstanceKey,
     processDefinitionVersion,
@@ -107,15 +89,12 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const tenantsById = useAvailableTenants();
   const tenantName = tenantsById[tenantId] ?? tenantId;
 
-  const navigate = useNavigate();
-
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
     processDefinitionKey,
   });
-  const {cancellation} = useProcessInstanceOperations(processInstance.state);
 
   if (processInstance === null || isPending) {
     return <Skeleton headerColumns={skeletonColumns} />;
@@ -266,82 +245,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
         },
       ]}
       additionalContent={
-        <Restricted
-          resourceBasedRestrictions={{
-            scopes: ['UPDATE_PROCESS_INSTANCE', 'DELETE_PROCESS_INSTANCE'],
-            permissions: permissions,
-          }}
-        >
-          <ProcessInstanceOperationsContext.Provider
-            value={{
-              cancellation: {
-                isPending: cancellation.isPending,
-                onError: () => cancellation.setIsPending(false),
-                onMutate: () => cancellation.setIsPending(true),
-              },
-            }}
-          >
-            <Operations
-              instance={processInstance}
-              onOperation={() => {
-                queryClient.invalidateQueries({
-                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
-                });
-              }}
-              onError={({statusCode}) => {
-                queryClient.invalidateQueries({
-                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
-                });
-
-                notificationsStore.displayNotification({
-                  kind: 'error',
-                  title: 'Operation could not be created',
-                  subtitle:
-                    statusCode === 403
-                      ? 'You do not have permission'
-                      : undefined,
-                  isDismissable: true,
-                });
-              }}
-              onSuccess={(operationType) => {
-                queryClient.invalidateQueries({
-                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
-                });
-
-                tracking.track({
-                  eventName: 'single-operation',
-                  operationType,
-                  source: 'instance-header',
-                });
-
-                if (operationType === 'DELETE_PROCESS_INSTANCE') {
-                  navigate(
-                    Locations.processes({
-                      active: true,
-                      incidents: true,
-                    }),
-                    {replace: true},
-                  );
-
-                  notificationsStore.displayNotification({
-                    kind: 'success',
-                    title: 'Instance deleted',
-                    isDismissable: true,
-                  });
-                }
-              }}
-              forceSpinner={
-                cancellation.isPending ||
-                hasActiveOperationLegacy ||
-                (IS_BATCH_OPERATIONS_V2 && hasActiveBatchOperationMutation)
-              }
-              isInstanceModificationVisible={
-                !modificationsStore.isModificationModeEnabled
-              }
-              permissions={permissions}
-            />
-          </ProcessInstanceOperationsContext.Provider>
-        </Restricted>
+        <ProcessInstanceOperations processInstance={processInstance} />
       }
     />
   );

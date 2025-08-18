@@ -6,152 +6,47 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useState} from 'react';
-
-import {type ErrorHandler, operationsStore} from 'modules/stores/operations';
-import {observer} from 'mobx-react';
-
 import {OperationItems} from 'modules/components/OperationItems';
-import {OperationItem} from 'modules/components/OperationItem';
-import {modificationsStore} from 'modules/stores/modifications';
-import {Restricted} from 'modules/components/Restricted';
 import {InlineLoading} from '@carbon/react';
 import {OperationsContainer} from '../styled';
-import {processInstancesStore} from 'modules/stores/processInstances';
-import {getStateLocally} from 'modules/utils/localStorage';
-import {ModificationHelperModal} from '../ModificationHelperModal';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {Cancel} from './Cancel';
-import {Delete} from './Delete';
-import {ResolveIncidentLegacy} from './ResolveIncidentLegacy';
-import {ResolveIncident} from './ResolveIncident';
-import type {
-  InstanceOperationEntity,
-  ResourceBasedPermissionDto,
-  OperationEntityType,
-} from 'modules/types/operate';
-import {IS_BATCH_OPERATIONS_V2} from 'modules/feature-flags';
+import {OperationRenderer} from './OperationRenderer';
+import type {OperationConfig} from './types';
 
 type Props = {
-  instance: ProcessInstance;
-  onOperation?: (operationType: OperationEntityType) => void;
-  onError?: ErrorHandler;
-  onSuccess?: (operationType: OperationEntityType) => void;
-  forceSpinner?: boolean;
-  isInstanceModificationVisible?: boolean;
-  permissions?: ResourceBasedPermissionDto[] | null;
+  operations: OperationConfig[];
+  processInstanceKey: string;
+  isLoading?: boolean;
+  loadingMessage?: string;
 };
 
-const Operations: React.FC<Props> = observer(
-  ({
-    instance,
-    onOperation,
-    onError,
-    onSuccess,
-    forceSpinner,
-    isInstanceModificationVisible = false,
-    permissions,
-  }) => {
-    const [
-      isModificationModeHelperModalVisible,
-      setIsModificationModeHelperModalVisible,
-    ] = useState(false);
-
-    const {isModificationModeEnabled} = modificationsStore;
-
-    const applyOperation = async (
-      operationType: InstanceOperationEntity['type'],
-    ) => {
-      await operationsStore.applyOperation({
-        instanceId: instance.processInstanceKey,
-        payload: {
-          operationType,
-        },
-        onError,
-        onSuccess,
-      });
-
-      onOperation?.(operationType);
-    };
-
-    const isInstanceActive = instance.state === 'ACTIVE';
-
-    return (
-      <OperationsContainer orientation="horizontal">
-        {(forceSpinner ||
-          processInstancesStore.processInstanceIdsWithActiveOperations.includes(
-            instance.processInstanceKey,
-          )) && (
-          <InlineLoading
-            data-testid="operation-spinner"
-            title={`Instance ${instance.processInstanceKey} has scheduled Operations`}
+const Operations: React.FC<Props> = ({
+  operations,
+  processInstanceKey,
+  isLoading = false,
+  loadingMessage,
+}) => {
+  return (
+    <OperationsContainer orientation="horizontal">
+      {isLoading ? (
+        <InlineLoading
+          data-testid="operation-spinner"
+          title={
+            loadingMessage ||
+            `Instance ${processInstanceKey} has scheduled Operations`
+          }
+        />
+      ) : null}
+      <OperationItems>
+        {operations.map((operation) => (
+          <OperationRenderer
+            key={operation.type}
+            operation={operation}
+            processInstanceKey={processInstanceKey}
           />
-        )}
-        <OperationItems>
-          {instance.hasIncident &&
-            !isModificationModeEnabled &&
-            (IS_BATCH_OPERATIONS_V2 ? (
-              <ResolveIncident
-                processInstanceKey={instance.processInstanceKey}
-              />
-            ) : (
-              <ResolveIncidentLegacy
-                processInstanceKey={instance.processInstanceKey}
-                permissions={permissions}
-                applyOperation={applyOperation}
-              />
-            ))}
-          {isInstanceActive && !isModificationModeEnabled && (
-            <Cancel processInstanceKey={instance.processInstanceKey} />
-          )}
-          {!isInstanceActive && (
-            <Delete
-              processInstanceKey={instance.processInstanceKey}
-              permissions={permissions}
-              applyOperation={applyOperation}
-            />
-          )}
-
-          {isInstanceModificationVisible &&
-            isInstanceActive &&
-            !isModificationModeEnabled && (
-              <Restricted
-                resourceBasedRestrictions={{
-                  scopes: ['UPDATE_PROCESS_INSTANCE'],
-                  permissions,
-                }}
-              >
-                <OperationItem
-                  type="ENTER_MODIFICATION_MODE"
-                  onClick={() => {
-                    if (getStateLocally()?.hideModificationHelperModal) {
-                      modificationsStore.enableModificationMode();
-                    } else {
-                      setIsModificationModeHelperModalVisible(true);
-                    }
-                  }}
-                  title={`Modify Instance ${instance.processInstanceKey}`}
-                  size="sm"
-                />
-              </Restricted>
-            )}
-        </OperationItems>
-
-        {isModificationModeHelperModalVisible && (
-          <ModificationHelperModal
-            isVisible={isModificationModeHelperModalVisible}
-            onClose={() => {
-              setIsModificationModeHelperModalVisible(false);
-            }}
-            onSubmit={() => {
-              setIsModificationModeHelperModalVisible(false);
-              modificationsStore.enableModificationMode();
-            }}
-          />
-        )}
-      </OperationsContainer>
-    );
-  },
-);
+        ))}
+      </OperationItems>
+    </OperationsContainer>
+  );
+};
 
 export {Operations};

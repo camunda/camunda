@@ -9,72 +9,56 @@
 import {useState} from 'react';
 import {Modal} from '@carbon/react';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {Restricted} from 'modules/components/Restricted';
-import {useOperations} from 'modules/queries/operations/useOperations';
-import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 import {DangerButton} from 'modules/components/OperationItem/DangerButton';
-import type {
-  ResourceBasedPermissionDto,
-  OperationEntityType,
-} from 'modules/types/operate';
-
 type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
-  permissions?: ResourceBasedPermissionDto[] | null;
-  applyOperation: (operationType: OperationEntityType) => Promise<void>;
+  onExecute: () => void;
+  disabled?: boolean;
 };
 
 const Delete: React.FC<Props> = ({
   processInstanceKey,
-  applyOperation,
-  permissions,
+  onExecute,
+  disabled = false,
 }) => {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
-  const {data: operations} = useOperations();
 
-  const isOperationActive = (operationType: OperationEntityType) => {
-    return operations?.some(
-      (operation) =>
-        operation.type === operationType &&
-        ACTIVE_OPERATION_STATES.includes(operation.state),
-    );
+  const confirmation = {
+    title: 'Delete Instance',
+    message: `About to delete Instance ${processInstanceKey}.`,
+    primaryButtonText: 'Delete',
+    secondaryButtonText: 'Cancel',
+    isDangerous: true,
   };
 
   return (
     <>
-      <Restricted
-        resourceBasedRestrictions={{
-          scopes: ['DELETE_PROCESS_INSTANCE'],
-          permissions,
-        }}
-      >
-        <DangerButton
-          type="DELETE"
-          onClick={() => setIsDeleteModalVisible(true)}
-          title={`Delete Instance ${processInstanceKey}`}
-          disabled={isOperationActive('DELETE_PROCESS_INSTANCE')}
-          size="sm"
-        />
-      </Restricted>
+      <DangerButton
+        type="DELETE"
+        onClick={() => setIsDeleteModalVisible(true)}
+        title={`Delete Instance ${processInstanceKey}`}
+        disabled={disabled}
+        size="sm"
+      />
 
       {isDeleteModalVisible && (
         <Modal
           open={isDeleteModalVisible}
-          danger
+          danger={confirmation.isDangerous}
           preventCloseOnClickOutside
-          modalHeading="Delete Instance"
-          primaryButtonText="Delete"
-          secondaryButtonText="Cancel"
+          modalHeading={confirmation.title}
+          primaryButtonText={confirmation.primaryButtonText}
+          secondaryButtonText={confirmation.secondaryButtonText}
           onRequestSubmit={() => {
-            applyOperation('DELETE_PROCESS_INSTANCE');
+            onExecute();
             setIsDeleteModalVisible(false);
           }}
           onRequestClose={() => setIsDeleteModalVisible(false)}
           size="md"
           data-testid="confirm-deletion-modal"
         >
-          <p>About to delete Instance {processInstanceKey}.</p>
-          <p>Click "Delete" to proceed.</p>
+          <p>{confirmation.message}</p>
+          <p>Click "{confirmation.primaryButtonText}" to proceed.</p>
         </Modal>
       )}
     </>
