@@ -89,6 +89,7 @@
     <version.wiremock>3.4.2</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
+<<<<<<< HEAD
     <version.testcontainers>1.19.8</version.testcontainers>
     <version.netflix.concurrency>0.4.2</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.7</version.zeebe-test-container>
@@ -98,6 +99,21 @@
     <version.spring>6.2.10</version.spring>
     <version.spring-security>6.5.3</version.spring-security>
     <version.spring-boot>3.4.8</version.spring-boot>
+=======
+    <version.testcontainers>1.21.3</version.testcontainers>
+    <version.mariadb-java-client>3.4.1</version.mariadb-java-client>
+    <version.testcontainer-mariadb>1.20.0</version.testcontainer-mariadb>
+    <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
+    <version.netflix.concurrency>0.5.3</version.netflix.concurrency>
+    <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
+    <version.feel-scala>1.19.3</version.feel-scala>
+    <version.dmn-scala>1.10.1</version.dmn-scala>
+    <version.rest-assured>5.5.5</version.rest-assured>
+    <version.spring>6.2.8</version.spring>
+    <version.spring-security>6.5.2</version.spring-security>
+    <version.spring-boot>3.4.7</version.spring-boot>
+    <version.tomcat>10.1.44</version.tomcat>
+>>>>>>> 960c32a4 (deps: upgrade tomcat to 10.1.44)
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
