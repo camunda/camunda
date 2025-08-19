@@ -380,7 +380,19 @@ public class OpensearchSchemaManager implements SchemaManager {
   }
 
   private void updateIndexTemplateSettings() {
+    final var indexTemplates =
+        richOpenSearchClient
+            .template()
+            .getIndexTemplates(operateProperties.getOpensearch().getIndexPrefix() + "*");
     for (final var templateDescriptor : templateDescriptors) {
+      var indexTemplate = indexTemplates.get(templateDescriptor.getTemplateName());
+      if (indexTemplate == null) {
+        LOGGER.debug(
+            "Index template '{}' not found in wildcard search results by pattern. Attempting direct lookup by full template name",
+            templateDescriptor.getTemplateName());
+        indexTemplate =
+            richOpenSearchClient.template().getIndexTemplate(templateDescriptor.getTemplateName());
+      }
       final var expectedShards =
           String.valueOf(
               operateProperties
@@ -394,9 +406,6 @@ public class OpensearchSchemaManager implements SchemaManager {
 
       String actualShards = null;
       String actualReplicas = null;
-
-      final var indexTemplate =
-          richOpenSearchClient.template().getIndexTemplate(templateDescriptor.getTemplateName());
 
       final var templateSettings = indexTemplate.template().settings();
 

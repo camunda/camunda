@@ -75,6 +75,7 @@ import org.opensearch.client.opensearch.indices.IndexState;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplate;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.client.opensearch.ingest.Processor;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.slf4j.Logger;
@@ -824,5 +825,18 @@ public class RetryOpenSearchClient {
                 .indexTemplates()
                 .getFirst()
                 .indexTemplate());
+  }
+
+  public Map<String, IndexTemplate> getIndexTemplates(final String templateNamePattern) {
+    return executeWithRetries(
+        "GetIndexTemplate " + templateNamePattern,
+        () ->
+            openSearchClient
+                .indices()
+                .getIndexTemplate(it -> it.name(templateNamePattern))
+                .indexTemplates()
+                .stream()
+                .collect(
+                    Collectors.toMap(IndexTemplateItem::name, IndexTemplateItem::indexTemplate)));
   }
 }

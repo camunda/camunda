@@ -254,7 +254,18 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   private void updateIndexTemplateSettings() {
+    final var indexTemplates =
+        retryOpenSearchClient.getIndexTemplates(
+            tasklistProperties.getOpenSearch().getIndexPrefix() + "*");
     for (final var templateDescriptor : templateDescriptors) {
+      var indexTemplate = indexTemplates.get(templateDescriptor.getTemplateName());
+      if (indexTemplate == null) {
+        LOGGER.debug(
+            "Index template '{}' not found in wildcard search results by pattern. Attempting direct lookup by full template name",
+            templateDescriptor.getTemplateName());
+        indexTemplate =
+            retryOpenSearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      }
       final var expectedShards =
           String.valueOf(
               tasklistProperties
@@ -268,8 +279,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
       String actualShards = null;
       String actualReplicas = null;
-      final var indexTemplate =
-          retryOpenSearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
 
       final var templateSettings = indexTemplate.template().settings();
 
