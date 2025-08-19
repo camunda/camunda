@@ -105,11 +105,7 @@ public class DocumentDataConsumer<T>
   @Override
   public ApiEntity<T> getContent() {
     if (problemDetail) {
-      try {
-        return (ApiEntity<T>) problemDetailConsumer.generateContent();
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
+      return (ApiEntity<T>) problemDetailConsumer.generateContent();
     }
     return (ApiEntity<T>) ApiEntity.of(inputStream);
   }

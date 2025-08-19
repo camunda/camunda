@@ -44,7 +44,7 @@ public interface TypedApiEntityConsumer<T> {
    * @return an {@link ApiEntity} containing the deserialized content, or null if no data was
    *     consumed
    */
-  ApiEntity<T> generateContent() throws IOException;
+  ApiEntity<T> generateContent();
 
   /**
    * Consumes data from the provided {@link ByteBuffer}. This method is called as data becomes
@@ -92,7 +92,7 @@ public interface TypedApiEntityConsumer<T> {
     }
 
     @Override
-    public ApiEntity<T> generateContent() throws IOException {
+    public ApiEntity<T> generateContent() {
       try {
         if (isResponse) {
           return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
