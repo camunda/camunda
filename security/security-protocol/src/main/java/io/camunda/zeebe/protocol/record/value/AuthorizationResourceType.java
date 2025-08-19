@@ -58,6 +58,7 @@ public enum AuthorizationResourceType {
       PermissionType.DELETE_RESOURCE),
   ROLE(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   SYSTEM(PermissionType.READ, PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE),
+  CLUSTER_VARIABLE(PermissionType.CREATE, PermissionType.UPDATE, PermissionType.DELETE),
   TENANT(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   UNSPECIFIED(),
   USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE);
