@@ -25,10 +25,10 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation.ts';
+import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {buildProcessInstanceKeyCriterion} from '../../../../../../../modules/mutations/processes/buildProcessInstanceKeyCriterion.ts';
+import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
