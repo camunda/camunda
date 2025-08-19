@@ -21,6 +21,8 @@
   "groupDescriptionPlaceholder": "Enter a group description (Max 255 characters)",
   "pleaseEnterValidGroupId": "Please enter a valid group ID (only alphanumeric characters and max 256 characters)",
   "groupIdHelperText": "The group ID must be unique and can not be modified",
+  "groupIdRequired": "Group ID is required",
+  "groupNameRequired": "Group name is required",
   "openGroupContextMenu": "Open group context menu",
   "unableToLoadMembers": "We were unable to load the members. Click \"Retry\" to try again.",
   "assignUser": "Assign user",
