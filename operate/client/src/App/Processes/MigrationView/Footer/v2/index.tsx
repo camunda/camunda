@@ -19,8 +19,7 @@ import {MigrationConfirmationModal} from '../../MigrationConfirmationModal';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
-import {getMigrationBatchOperationFilter} from './getMigrationBatchOperationFilter';
-import {extractIdsFromQuery} from './extractIdsFromQuery';
+import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter.ts';
 import {panelStatesStore} from 'modules/stores/panelStates';
 
 const Footer: React.FC = observer(() => {
@@ -144,15 +143,21 @@ const Footer: React.FC = observer(() => {
                     return;
                   }
 
-                  const {ids, excludeIds} =
-                    extractIdsFromQuery(batchOperationQuery);
+                  const includeIds =
+                    'ids' in batchOperationQuery
+                      ? (batchOperationQuery.ids ?? [])
+                      : [];
+                  const excludeIds =
+                    'excludeIds' in batchOperationQuery
+                      ? batchOperationQuery.excludeIds
+                      : [];
 
-                  const filter = getMigrationBatchOperationFilter({
-                    ids,
+                  const filter = buildMigrationBatchOperationFilter(
+                    baseFilter,
+                    includeIds,
                     excludeIds,
                     sourceProcessDefinitionKey,
-                    baseFilter,
-                  });
+                  );
 
                   migrateProcess({
                     filter,
