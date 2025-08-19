@@ -76,11 +76,10 @@ public class BackupService {
     repository.validateRepositoryExists(getRepositoryName());
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
-    final String version = getCurrentOperateVersion();
     for (int index = 0; index < count; index++) {
       final String snapshotName =
           new Metadata()
-              .setVersion(version)
+              .setVersion("*")
               .setPartCount(count)
               .setPartNo(index + 1)
               .setBackupId(backupId)
