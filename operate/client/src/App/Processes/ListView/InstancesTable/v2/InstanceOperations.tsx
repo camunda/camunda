@@ -6,14 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Operations} from 'modules/components/Operations/v2';
+import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {tracking} from 'modules/tracking';
 import {operationsStore, type ErrorHandler} from 'modules/stores/operations';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
 import {useCreateIncidentResolutionBatchOperation} from 'modules/mutations/processInstance/useCreateIncidentResolutionBatchOperation';
-import type {OperationConfig} from 'modules/components/Operations/v2/types';
+import type {OperationConfig} from 'modules/components/Operations/types';
 import type {OperationEntityType} from 'modules/types/operate';
 import {logger} from 'modules/logger';
 

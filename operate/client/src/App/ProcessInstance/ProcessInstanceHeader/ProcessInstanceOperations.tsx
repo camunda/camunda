@@ -10,7 +10,7 @@ import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {Operations} from 'modules/components/Operations/v2';
+import {Operations} from 'modules/components/Operations';
 import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
 import {tracking} from 'modules/tracking';
@@ -21,10 +21,10 @@ import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCan
 import {useCreateIncidentResolutionBatchOperation} from 'modules/mutations/processInstance/useCreateIncidentResolutionBatchOperation';
 import {operationsStore, type ErrorHandler} from 'modules/stores/operations';
 import {type OperationEntityType} from 'modules/types/operate';
-import {ModificationHelperModal} from 'modules/components/Operations/ModificationHelperModal';
+import {ModificationHelperModal} from './ModificationHelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import type {OperationConfig} from 'modules/components/Operations/v2/types';
+import type {OperationConfig} from 'modules/components/Operations/types';
 import {logger} from 'modules/logger';
 
 type Props = {

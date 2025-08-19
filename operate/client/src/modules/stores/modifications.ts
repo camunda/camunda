@@ -674,6 +674,6 @@ class Modifications {
   };
 }
 
-export type {FlowNodeModification, FlowNodeModificationPayload};
+export type {FlowNodeModification};
 export const modificationsStore = new Modifications();
 export {EMPTY_MODIFICATION};
