@@ -121,8 +121,10 @@ public class JobWorkerController {
         type,
         jobWorkerValue.getType(),
         jobWorkerValue.getName(),
-        ofNullable(jobWorkerValue.getEnabled()).orElse(true));
+        ofNullable(jobWorkerValue.getEnabled()).orElse(true),
+        jobWorkerValue.getTenantIds());
   }
 
-  public record JobWorkerDto(String type, String currentType, String name, boolean enabled) {}
+  public record JobWorkerDto(
+      String type, String currentType, String name, boolean enabled, List<String> tenantIds) {}
 }
