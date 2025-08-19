@@ -38,7 +38,9 @@ import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
@@ -68,6 +70,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
   private final String zeebeIndexPrefix;
+  private final Map<String, String> lifeCyclePolicyApplied = new HashMap<>();
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -116,6 +119,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
+  // keep map
   @Override
   public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
     if (!retention.isEnabled()) {
@@ -266,6 +270,14 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private CompletableFuture<Void> applyPolicyToIndices(
       final String policyName, final List<String> indices) {
 
+    if (indices.stream()
+        .allMatch(
+            index ->
+                lifeCyclePolicyApplied.containsKey(index)
+                    && lifeCyclePolicyApplied.get(index).equals(policyName))) {
+      return CompletableFuture.completedFuture(null);
+    }
+
     logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
 
     final var settingsRequest =
@@ -276,7 +288,15 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .ignoreUnavailable(true)
             .build();
 
-    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
+    return client
+        .indices()
+        .putSettings(settingsRequest)
+        .thenApplyAsync(
+            ok -> {
+              indices.forEach(indexName -> lifeCyclePolicyApplied.put(indexName, policyName));
+              return null;
+            },
+            executor);
   }
 
   private CompletableFuture<ArchiveBatch> createArchiveBatch(
