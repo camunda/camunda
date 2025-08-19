@@ -563,8 +563,18 @@ public class WebSecurityConfig {
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
         final SecurityConfiguration securityConfiguration) {
-      return new InMemoryClientRegistrationRepository(
-          OidcClientRegistration.create(securityConfiguration.getAuthentication().getOidc()));
+      try {
+        return new InMemoryClientRegistrationRepository(
+            OidcClientRegistration.create(securityConfiguration.getAuthentication().getOidc()));
+      } catch (final Exception e) {
+        final String issuerUri = securityConfiguration.getAuthentication().getOidc().getIssuerUri();
+        throw new IllegalStateException(
+            "Unable to connect to the Identity Provider endpoint `"
+                + issuerUri
+                + "'. Double check that it is configured correctly, and if the problem persists, "
+                + "contact your external Identity provider.",
+            e);
+      }
     }
 
     @Bean
