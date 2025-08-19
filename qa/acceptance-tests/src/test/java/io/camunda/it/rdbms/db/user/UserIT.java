@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.UserDbModel;
+import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.UserFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -101,6 +102,34 @@ public class UserIT {
                 new UserFilter.Builder().usernames(user.username()).build(),
                 UserSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+
+    final var instance = searchResult.items().getFirst();
+
+    assertThat(instance).isNotNull();
+    assertThat(instance.userKey()).isEqualTo(user.userKey());
+    assertThat(instance.username()).isEqualTo(user.username());
+    assertThat(instance.name()).isEqualTo(user.name());
+    assertThat(instance.email()).isEqualTo(user.email());
+  }
+
+  @TestTemplate
+  public void shouldFindAuthorization(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final UserDbReader userReader = rdbmsService.getUserReader();
+
+    final var user = UserFixtures.createRandomized(b -> b);
+    createAndSaveUser(rdbmsWriter, user);
+    createAndSaveRandomUsers(rdbmsWriter, b -> b.email("john.doe@camunda.com"));
+
+    final var searchResult =
+        userReader.search(
+            UserQuery.of(b -> b),
+            CommonFixtures.resourceAccessChecksFromResourceIds(user.username()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
