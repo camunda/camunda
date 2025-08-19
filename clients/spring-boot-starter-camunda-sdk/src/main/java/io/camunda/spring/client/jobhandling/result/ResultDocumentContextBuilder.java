@@ -17,7 +17,6 @@ package io.camunda.spring.client.jobhandling.result;
 
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1.CreateDocumentBatchCommandStep2;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.jobhandling.DocumentContext;
 import java.util.function.Function;
 
@@ -25,7 +24,8 @@ import java.util.function.Function;
  * A builder to create a {@link DocumentContext} for a job worker result.
  *
  * <p>The {@link DefaultResultProcessor} will use the context to execute a {@link
- * JobClient#newCreateDocumentBatchCommand()} and set the references as process variable.
+ * io.camunda.client.CamundaClient#newCreateDocumentBatchCommand()} and set the references as
+ * process variable.
  */
 public interface ResultDocumentContextBuilder {
 
