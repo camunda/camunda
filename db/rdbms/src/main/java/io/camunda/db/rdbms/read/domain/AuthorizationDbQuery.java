@@ -16,7 +16,10 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record AuthorizationDbQuery(
-    AuthorizationFilter filter, DbQuerySorting<AuthorizationEntity> sort, DbQueryPage page) {
+    AuthorizationFilter filter,
+    List<String> authorizedResourceIds,
+    DbQuerySorting<AuthorizationEntity> sort,
+    DbQueryPage page) {
 
   public static AuthorizationDbQuery of(
       final Function<Builder, ObjectBuilder<AuthorizationDbQuery>> fn) {
@@ -28,11 +31,18 @@ public record AuthorizationDbQuery(
     private static final AuthorizationFilter EMPTY_FILTER = FilterBuilders.authorization().build();
 
     private AuthorizationFilter filter;
+    private List<String> authorizedResourceIds = List.of();
     private DbQuerySorting<AuthorizationEntity> sort;
     private DbQueryPage page;
 
     public AuthorizationDbQuery.Builder filter(final AuthorizationFilter value) {
       filter = value;
+      return this;
+    }
+
+    public AuthorizationDbQuery.Builder authorizedResourceIds(
+        final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
       return this;
     }
 
@@ -63,7 +73,8 @@ public record AuthorizationDbQuery(
     public AuthorizationDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new AuthorizationDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      return new AuthorizationDbQuery(filter, authorizedResourceIds, sort, page);
     }
   }
 }
