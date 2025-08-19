@@ -1423,7 +1423,92 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /variables:
+    post:
+      tags:
+        - Variable
+      operationId: createVariable
+      summary: Create variable
+      description: |
+        Create cluster level variables
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVariableRequest"
+      responses:
+        "201":
+          description: >
+            The variable creation status.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /variables/{variableKey}:
+    parameters:
+      - name: variableKey
+        in: path
+        required: true
+        description: The variable key.
+        schema:
+          type: string
+    patch:
+      tags:
+        - Variable
+      operationId: updateVariable
+      summary: Update variables
+      description: |
+        Update cluster level variables
+      parameters:
+        - name: variableKey
+          in: path
+          required: true
+          description: The key of the variable.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVariableRequest"
+      responses:
+        "204":
+          description: >
+            The variable update status.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Variable
+      operationId: deleteVariable
+      summary: Delete variable
+      description: |
+        Delete cluster level variables
+      responses:
+        "204":
+          description: >
+            The variable creation status.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     get:
       tags:
         - Variable
@@ -1431,13 +1516,6 @@ paths:
       summary: Get variable
       description: |
         Get the variable by the variable key.
-      parameters:
-        - name: variableKey
-          in: path
-          required: true
-          description: The variable key.
-          schema:
-            type: string
       responses:
         "200":
           description: >
@@ -5900,6 +5978,46 @@ components:
           description: The key of the process instance of this variable.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
+    VariableScope:
+      type: string
+      enum: [ cluster, tenant ]
+    CreateVariableRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The variable name to create
+        value:
+          type: object
+          description: The variable value; string or any JSON object
+        scope:
+          $ref: '#/components/schemas/VariableScope'
+      required: [name, value, scope]
+      discriminator:
+        propertyName: scope
+    ClusterVariableCreateRequest:
+      x-discriminator-value: cluster
+      allOf:
+        - $ref: '#/components/schemas/CreateVariableRequest'
+        - type: object
+      description: Create a cluster-scoped variable.
+    TenantVariableCreateRequest:
+      x-discriminator-value: tenant
+      allOf:
+        - $ref: '#/components/schemas/CreateVariableRequest'
+        - type: object
+          properties:
+            tenantId:
+              type: string
+              description: The tenant target for the variable
+          required: [tenantId]
+      description: Create a tenant-scoped variable.
+    UpdateVariableRequest:
+      type: object
+      properties:
+        value:
+          type: object
+          description: The variable value; string or any JSON object
     VariableSearchQueryResult:
       description: Variable search query response.
       type: object
