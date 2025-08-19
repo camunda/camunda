@@ -16,6 +16,7 @@
 package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import java.util.Set;
 
 public interface ProcessInstance {
 
@@ -44,4 +45,6 @@ public interface ProcessInstance {
   Boolean getHasIncident();
 
   String getTenantId();
+
+  Set<String> getTags();
 }

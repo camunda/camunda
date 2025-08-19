@@ -22,6 +22,9 @@ import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.client.util.ClientRestTest;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
@@ -179,6 +182,27 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getTenantId()).isEqualTo(tenantId);
+  }
+
+  @Test
+  public void shouldAllowTags() {
+    // given
+    final Long processDefinitionKey = 1L;
+    final Set<String> tags = new HashSet<>(Arrays.asList("tag1", "tag2"));
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .tags(tags)
+        .withResult()
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    assertThat(request.getTags()).isEqualTo(tags);
   }
 
   private static final class VariablesPojo {
