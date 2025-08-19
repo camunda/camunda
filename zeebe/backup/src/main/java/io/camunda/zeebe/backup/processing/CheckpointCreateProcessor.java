@@ -25,20 +25,22 @@ import java.util.Set;
 public final class CheckpointCreateProcessor {
   private final CheckpointState checkpointState;
   private final BackupManager backupManager;
-
-  private final Set<CheckpointListener> listeners;
-
   private final CheckpointMetrics metrics;
+  private final ScalingStatusSupplier scalingStatusSupplier;
+  private final CheckpointCreatedEventApplier checkpointCreatedApplier;
 
   public CheckpointCreateProcessor(
       final CheckpointState checkpointState,
       final BackupManager backupManager,
       final Set<CheckpointListener> listeners,
+      final ScalingStatusSupplier scalingStatusSupplier,
       final CheckpointMetrics metrics) {
     this.checkpointState = checkpointState;
     this.backupManager = backupManager;
-    this.listeners = listeners;
+    this.scalingStatusSupplier = scalingStatusSupplier;
     this.metrics = metrics;
+    checkpointCreatedApplier =
+        new CheckpointCreatedEventApplier(checkpointState, listeners, metrics);
   }
 
   public ProcessingResult process(
@@ -46,35 +48,120 @@ public final class CheckpointCreateProcessor {
 
     final var checkpointRecord = record.getValue();
     final long checkpointId = checkpointRecord.getCheckpointId();
+    final var checkpointPosition = record.getPosition();
+
     if (checkpointState.getLatestCheckpointId() < checkpointId) {
-      // Only take a checkpoint if it is newer
-      final var checkpointPosition = record.getPosition();
-      backupManager.takeBackup(checkpointId, checkpointPosition);
-      checkpointState.setLatestCheckpointInfo(checkpointId, checkpointPosition);
-
-      // Notify listeners immediately
-      listeners.forEach(l -> l.onNewCheckpointCreated(checkpointId));
-
-      metrics.created(checkpointId, checkpointPosition);
-
-      final var followupRecord =
-          new CheckpointRecord()
-              .setCheckpointId(checkpointId)
-              .setCheckpointPosition(checkpointPosition);
-      return createFollowUpAndResponse(
-          record, CheckpointIntent.CREATED, followupRecord, resultBuilder);
+      // Only process checkpoint if it is newer
+      return processNewCheckpoint(record, resultBuilder, checkpointId, checkpointPosition);
     } else {
-      metrics.ignored();
-      // A checkpoint already exists. Ignore the command. Use the latest checkpoint info in
-      // the record so that the response sent contains the latest checkpointId. This is useful to
-      // return useful information back to the client.
-      return createFollowUpAndResponse(
-          record,
-          CheckpointIntent.IGNORED,
-          new CheckpointRecord()
-              .setCheckpointId(checkpointState.getLatestCheckpointId())
-              .setCheckpointPosition(checkpointState.getLatestCheckpointPosition()),
-          resultBuilder);
+      // A checkpoint already exists. Ignore the command.
+      return processExistingCheckpoint(record, resultBuilder);
+    }
+  }
+
+  private ProcessingResult processNewCheckpoint(
+      final TypedRecord<CheckpointRecord> record,
+      final ProcessingResultBuilder resultBuilder,
+      final long checkpointId,
+      final long checkpointPosition) {
+
+    final boolean scalingInProgress = scalingStatusSupplier.isScalingInProgress();
+
+    // Create backup (either normal or failed based on scaling state)
+    if (scalingInProgress) {
+      // We want to mark the backup as failed for observability
+      backupManager.createFailedBackup(
+          checkpointId,
+          checkpointPosition,
+          "Cannot create checkpoint while scaling is in progress");
+    } else {
+      backupManager.takeBackup(checkpointId, checkpointPosition);
+    }
+
+    // Create follow-up record
+    final var followupRecord =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointPosition(checkpointPosition);
+
+    // Checkpoint should be created even if we don't take a backup for checkpoint-consistency
+    appendCheckpointCreatedEvent(record, resultBuilder, followupRecord);
+
+    checkpointCreatedApplier.apply(followupRecord);
+
+    // Handle client response based on scaling state
+    if (scalingInProgress) {
+      addRejectionResponse(record, resultBuilder);
+    } else {
+      addSuccessResponse(record, resultBuilder, followupRecord);
+    }
+
+    return resultBuilder.build();
+  }
+
+  private ProcessingResult processExistingCheckpoint(
+      final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
+
+    metrics.ignored();
+    // Use the latest checkpoint info in the response for client information
+    final var latestCheckpointRecord =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointState.getLatestCheckpointId())
+            .setCheckpointPosition(checkpointState.getLatestCheckpointPosition());
+
+    return createFollowUpAndResponse(
+        record, CheckpointIntent.IGNORED, latestCheckpointRecord, resultBuilder);
+  }
+
+  private void appendCheckpointCreatedEvent(
+      final TypedRecord<CheckpointRecord> record,
+      final ProcessingResultBuilder resultBuilder,
+      final CheckpointRecord followupRecord) {
+
+    resultBuilder.appendRecord(
+        record.getKey(),
+        followupRecord,
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .intent(CheckpointIntent.CREATED)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason("")
+            .operationReference(record.getOperationReference()));
+  }
+
+  private void addRejectionResponse(
+      final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
+
+    if (record.hasRequestMetadata()) {
+      resultBuilder.withResponse(
+          RecordType.COMMAND_REJECTION,
+          record.getKey(),
+          CheckpointIntent.CREATE,
+          record.getValue(),
+          ValueType.CHECKPOINT,
+          RejectionType.INVALID_STATE,
+          "Cannot create checkpoint while scaling is in progress",
+          record.getRequestId(),
+          record.getRequestStreamId());
+    }
+  }
+
+  private void addSuccessResponse(
+      final TypedRecord<CheckpointRecord> record,
+      final ProcessingResultBuilder resultBuilder,
+      final CheckpointRecord followupRecord) {
+
+    if (record.hasRequestMetadata()) {
+      resultBuilder.withResponse(
+          RecordType.EVENT,
+          record.getKey(),
+          CheckpointIntent.CREATED,
+          followupRecord,
+          ValueType.CHECKPOINT,
+          RejectionType.NULL_VAL,
+          "",
+          record.getRequestId(),
+          record.getRequestStreamId());
     }
   }
 

@@ -177,6 +177,17 @@ public final class BackupService extends Actor implements BackupManager {
     internalBackupManager.failInProgressBackups(partitionId, lastCheckpointId, actor);
   }
 
+  @Override
+  public void createFailedBackup(
+      final long checkpointId, final long checkpointPosition, final String failureReason) {
+    actor.run(
+        () -> {
+          final var backupId = getBackupId(checkpointId);
+          internalBackupManager.createFailedBackup(
+              backupId, checkpointPosition, failureReason, actor);
+        });
+  }
+
   private BackupIdentifierImpl getBackupId(final long checkpointId) {
     return new BackupIdentifierImpl(nodeId, partitionId, checkpointId);
   }
