@@ -15,6 +15,9 @@ import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +37,7 @@ public class GatewayClusterConfigurationService extends Actor
   // Keep an in memory copy of the configuration. No need to persist it.
   private ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
   private final TopologyMetrics topologyMetrics;
+  private final CompletableActorFuture<Void> startedFuture = new CompletableActorFuture<>();
 
   public GatewayClusterConfigurationService(
       final ClusterCommunicationService communicationService,
@@ -52,6 +56,19 @@ public class GatewayClusterConfigurationService extends Actor
             topologyMetrics);
   }
 
+  public ActorFuture<Void> start(final ActorScheduler scheduler) {
+    scheduler.submitActor(this).onError(startedFuture::completeExceptionally);
+
+    startedFuture.onSuccess(
+        ignore -> {
+          LOG.info("Cluster Configuration Manager started successfully");
+        });
+
+    startedFuture.onError(
+        error -> LOG.error("Failed to start GatewayClusterConfigurationService", error));
+    return startedFuture;
+  }
+
   @Override
   public String getName() {
     return "GatewayClusterConfigurationService";
@@ -60,16 +77,7 @@ public class GatewayClusterConfigurationService extends Actor
   @Override
   protected void onActorStarting() {
     LOG.info("Starting Cluster Configuration Manager");
-    clusterConfigurationGossiper
-        .start()
-        .onComplete(
-            (ignore, error) -> {
-              if (error != null) {
-                LOG.error("Failed to start cluster configuration gossiper", error);
-              } else {
-                LOG.info("Started Cluster Configuration Manager");
-              }
-            });
+    clusterConfigurationGossiper.start().onComplete(startedFuture);
   }
 
   @Override
