@@ -302,7 +302,7 @@ jobs:
           # ZCL_TARGET_REV should be replaced with the tag name for the version you are releasing, and
           # ZCL_FROM_REV should be replaced as the tag name for the previous version, based on the release type
           ZCL_FROM_REV="${{ steps.prev_version.outputs.previous_version }}"
-          ZCL_TARGET_REV="${{ inputs.releaseVersion }}"
+          ZCL_TARGET_REV="${RELEASE_TAG}"
 
           # The following command will add labels to the issues on GitHub.
           # You can verify this step by looking at closed issues. They should now be tagged with the release.
