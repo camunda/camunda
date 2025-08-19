@@ -27,6 +27,8 @@ public class IdentityClientConfigController {
   private static final String IS_OIDC = "isOidc";
   private static final String IS_CAMUNDA_GROUPS_ENABLED = "isCamundaGroupsEnabled";
   private static final String IS_TENANTS_API_ENABLED = "isTenantsApiEnabled";
+  private static final String ORGANIZATION_ID = "organizationId";
+  private static final String CLUSTER_ID = "clusterId";
   private static final String FALLBACK_CONFIG_JS = "window.clientConfig = {};";
   private static final String CONFIG_JS_TEMPLATE = "window.clientConfig = %s;";
 
@@ -50,11 +52,19 @@ public class IdentityClientConfigController {
   }
 
   private Map<String, String> createConfigMap(final SecurityConfiguration securityConfiguration) {
-    return Map.of(
-        IS_OIDC, String.valueOf(isOidcAuthentication(securityConfiguration)),
-        IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(securityConfiguration)),
+    final var config = new java.util.HashMap<String, String>();
+    final var saasConfiguration = securityConfiguration.getSaas();
+
+    config.put(IS_OIDC, String.valueOf(isOidcAuthentication(securityConfiguration)));
+    config.put(
+        IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(securityConfiguration)));
+    config.put(
         IS_TENANTS_API_ENABLED,
-            String.valueOf(securityConfiguration.getMultiTenancy().isApiEnabled()));
+        String.valueOf(securityConfiguration.getMultiTenancy().isApiEnabled()));
+    config.put(ORGANIZATION_ID, saasConfiguration.getOrganizationId());
+    config.put(CLUSTER_ID, saasConfiguration.getClusterId());
+
+    return config;
   }
 
   private boolean isOidcAuthentication(final SecurityConfiguration securityConfiguration) {

@@ -14,15 +14,19 @@ import { checkLicense, License } from "src/utility/api/headers";
 import { getAuthentication } from "src/utility/api/authentication";
 import { ArrowRight } from "@carbon/react/icons";
 import { logout } from "src/utility/auth";
+import { useState } from "react";
+import { isSaaS } from "src/configuration";
 
 const AppHeader = ({ hideNavLinks = false }) => {
   const routes = useGlobalRoutes();
   const navigate = useNavigate();
   const { data: license } = useApi(checkLicense);
   const { data: camundaUser } = useApi(getAuthentication);
+  const [isAppBarOpen, setIsAppBarOpen] = useState(false);
 
   return (
     <C3Navigation
+      toggleAppbar={(isAppBarOpen) => setIsAppBarOpen(isAppBarOpen)}
       app={{
         name: "Identity",
         ariaLabel: "Identity",
@@ -31,8 +35,10 @@ const AppHeader = ({ hideNavLinks = false }) => {
         },
       }}
       appBar={{
-        isOpen: false,
-        elements: [],
+        ariaLabel: "App panel",
+        isOpen: isAppBarOpen,
+        elements: isSaaS ? undefined : [],
+        appTeaserRouteProps: isSaaS ? {} : undefined,
       }}
       navbar={{
         elements: hideNavLinks
