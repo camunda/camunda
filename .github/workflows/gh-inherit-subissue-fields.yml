@@ -29,6 +29,7 @@ jobs:
 
             // this is the global ID for project core features (173)
             const TARGET_PROJECT_ID = "PVT_kwDOACVKPs4A1Kno";
+            console.log("context:",JSON.stringify(context));
 
             const issueNumber = context.payload.issue.number;
 
@@ -46,6 +47,7 @@ jobs:
               e.source &&
               e.source.issue
             );
+            console.log("sublink:",JSON.stringify(subLink));
 
             if (!subLink) {
               console.log("No parent sub-issue link found. Skipping.");
@@ -96,7 +98,9 @@ jobs:
             }
 
             const parentIssue = await getIssueInfo(parentNumber);
+            console.log("parentIssue:",JSON.stringify(parentIssue));
             const childIssue = await getIssueInfo(issueNumber);
+            console.log("childIssue:",JSON.stringify(childIssue));
 
             if (parentIssue.projectItems.nodes.length === 0) {
               console.log("Parent has no project item. Skipping.");
