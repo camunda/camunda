@@ -25,171 +25,181 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const octokit = github;
+            try {
+                const octokit = github;
 
-            // this is the global ID for project core features (173)
-            const TARGET_PROJECT_ID = "PVT_kwDOACVKPs4A1Kno";
+                // this is the global ID for project core features (173)
+                const TARGET_PROJECT_ID = "PVT_kwDOACVKPs4A1Kno";
+                console.log("context:",JSON.stringify(context));
 
-            const issueNumber = context.payload.issue.number;
+                const issueNumber = context.payload.issue.number;
 
-            // 1. Get timeline events for this issue (child)
-            const events = await octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}/timeline', {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber
-            });
+                // 1. Get timeline events for this issue (child)
+                const events = await octokit.request('GET /repos/{owner}/{repo}/issues/{issue_number}/timeline', {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber
+                });
 
-            // 2. Find parent from sub-issue relationship
-            const subLink = events.data.find(e =>
-              e.event === 'connected' &&
-              e.sub_issue &&
-              e.source &&
-              e.source.issue
-            );
+                // 2. Find parent from sub-issue relationship
+                const subLink = events.data.find(e =>
+                  e.event === 'connected' &&
+                  e.sub_issue &&
+                  e.source &&
+                  e.source.issue
+                );
+                console.log("sublink:",JSON.stringify(subLink));
 
-            if (!subLink) {
-              console.log("No parent sub-issue link found. Skipping.");
-              return;
-            }
+                if (!subLink) {
+                  console.log("No parent sub-issue link found. Skipping.");
+                  return;
+                }
 
-            const parentNumber = subLink.source.issue.number;
+                const parentNumber = subLink.source.issue.number;
 
-            // 3. Fetch parent & child info including project items and fields
-            async function getIssueInfo(number) {
-              const data = await github.graphql(`
-                query($owner:String!, $repo:String!, $number:Int!) {
-                  repository(owner:$owner, name:$repo) {
-                    issue(number:$number) {
-                      id
-                      projectItems(first:5) {
-                        nodes {
+                // 3. Fetch parent & child info including project items and fields
+                async function getIssueInfo(number) {
+                  const data = await github.graphql(`
+                    query($owner:String!, $repo:String!, $number:Int!) {
+                      repository(owner:$owner, name:$repo) {
+                        issue(number:$number) {
                           id
-                          project {
-                            id
-                            title
-                            fields(first:20) {
-                              nodes {
+                          projectItems(first:5) {
+                            nodes {
+                              id
+                              project {
                                 id
-                                name
-                                dataType
-                                ... on ProjectV2SingleSelectField {
-                                  options { id name }
+                                title
+                                fields(first:20) {
+                                  nodes {
+                                    id
+                                    name
+                                    dataType
+                                    ... on ProjectV2SingleSelectField {
+                                      options { id name }
+                                    }
+                                  }
                                 }
                               }
-                            }
-                          }
-                          fieldValues(first:20) {
-                            nodes {
-                              ... on ProjectV2ItemFieldSingleSelectValue {
-                                field { ... on ProjectV2SingleSelectField { id name } }
-                                option { id name }
+                              fieldValues(first:20) {
+                                nodes {
+                                  ... on ProjectV2ItemFieldSingleSelectValue {
+                                    field { ... on ProjectV2SingleSelectField { id name } }
+                                    option { id name }
+                                  }
+                                }
                               }
                             }
                           }
                         }
                       }
                     }
-                  }
+                  `, { owner: context.repo.owner, repo: context.repo.repo, number });
+                  return data.repository.issue;
                 }
-              `, { owner: context.repo.owner, repo: context.repo.repo, number });
-              return data.repository.issue;
-            }
 
-            const parentIssue = await getIssueInfo(parentNumber);
-            const childIssue = await getIssueInfo(issueNumber);
+                const parentIssue = await getIssueInfo(parentNumber);
+                console.log("parentIssue:",JSON.stringify(parentIssue));
+                const childIssue = await getIssueInfo(issueNumber);
+                console.log("childIssue:",JSON.stringify(childIssue));
 
-            if (parentIssue.projectItems.nodes.length === 0) {
-              console.log("Parent has no project item. Skipping.");
-              return;
-            }
-
-            // 4. Check if parent is in the target project
-            const parentItem = parentIssue.projectItems.nodes.find(item => item.project.id === TARGET_PROJECT_ID);
-            if (!parentItem) {
-              console.log(`Parent is not in the target project (${TARGET_PROJECT_ID}). Skipping.`);
-              return;
-            }
-
-            const projectId = parentItem.project.id;
-
-            // 5. Helper to get field and option IDs for given field name
-            function getFieldOptionId(fieldName) {
-              const fieldDef = parentItem.project.fields.nodes.find(f => f.name === fieldName);
-              const fieldValue = parentItem.fieldValues.nodes.find(v => v.field?.name === fieldName);
-              if (!fieldDef || !fieldValue) return null;
-              const result = {};
-              result.fieldId = fieldDef.id;
-              result.optionId = fieldValue.option.id;
-              return result;
-            }
-
-            const projectNameData = getFieldOptionId("PH Project name");
-            const teamData = getFieldOptionId("Team");
-
-            // 6. Add child to same project if not already added
-            let childItemId;
-            if (childIssue.projectItems.nodes.length === 0) {
-              const addChildItemRes = await github.graphql(`
-                mutation($projectId:ID!, $contentId:ID!) {
-                  addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
-                    item { id }
-                  }
+                if (parentIssue.projectItems.nodes.length === 0) {
+                  console.log("Parent has no project item. Skipping.");
+                  return;
                 }
-              `, { projectId, contentId: childIssue.id });
-              childItemId = addChildItemRes.addProjectV2ItemById.item.id;
-            } else {
-              // If already in project, pick the matching project item id
-              const existingItem = childIssue.projectItems.nodes.find(item => item.project.id === TARGET_PROJECT_ID);
-              if (!existingItem) {
-                console.log("Child is not in the target project but is in others — adding now.");
-                const addChildItemRes = await github.graphql(`
-                  mutation($projectId:ID!, $contentId:ID!) {
-                    addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
-                      item { id }
+
+                // 4. Check if parent is in the target project
+                const parentItem = parentIssue.projectItems.nodes.find(item => item.project.id === TARGET_PROJECT_ID);
+                if (!parentItem) {
+                  console.log(`Parent is not in the target project (${TARGET_PROJECT_ID}). Skipping.`);
+                  return;
+                }
+
+                const projectId = parentItem.project.id;
+
+                // 5. Helper to get field and option IDs for given field name
+                function getFieldOptionId(fieldName) {
+                  const fieldDef = parentItem.project.fields.nodes.find(f => f.name === fieldName);
+                  const fieldValue = parentItem.fieldValues.nodes.find(v => v.field?.name === fieldName);
+                  if (!fieldDef || !fieldValue) return null;
+                  const result = {};
+                  result.fieldId = fieldDef.id;
+                  result.optionId = fieldValue.option.id;
+                  return result;
+                }
+
+                const projectNameData = getFieldOptionId("PH Project name");
+                const teamData = getFieldOptionId("Team");
+
+                // 6. Add child to same project if not already added
+                let childItemId;
+                if (childIssue.projectItems.nodes.length === 0) {
+                  const addChildItemRes = await github.graphql(`
+                    mutation($projectId:ID!, $contentId:ID!) {
+                      addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
+                        item { id }
+                      }
                     }
+                  `, { projectId, contentId: childIssue.id });
+                  childItemId = addChildItemRes.addProjectV2ItemById.item.id;
+                } else {
+                  // If already in project, pick the matching project item id
+                  const existingItem = childIssue.projectItems.nodes.find(item => item.project.id === TARGET_PROJECT_ID);
+                  if (!existingItem) {
+                    console.log("Child is not in the target project but is in others — adding now.");
+                    const addChildItemRes = await github.graphql(`
+                      mutation($projectId:ID!, $contentId:ID!) {
+                        addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
+                          item { id }
+                        }
+                      }
+                    `, { projectId, contentId: childIssue.id });
+                    childItemId = addChildItemRes.addProjectV2ItemById.item.id;
+                  } else {
+                    childItemId = existingItem.id;
                   }
-                `, { projectId, contentId: childIssue.id });
-                childItemId = addChildItemRes.addProjectV2ItemById.item.id;
-              } else {
-                childItemId = existingItem.id;
-              }
-            }
-
-            // 7. Update child project item fields with parent's values
-            const updates = [];
-            if (projectNameData) {
-              updates.push(github.graphql(`
-                mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:ID!) {
-                  updateProjectV2ItemFieldValue(input:{
-                    projectId: $projectId,
-                    itemId: $itemId,
-                    fieldId: $fieldId,
-                    value: { singleSelectOptionId: $optionId }
-                  }) { projectV2Item { id } }
                 }
-              `, { projectId, itemId: childItemId, fieldId: projectNameData.fieldId, optionId: projectNameData.optionId }));
-            }
-            if (teamData) {
-              updates.push(github.graphql(`
-                mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:ID!) {
-                  updateProjectV2ItemFieldValue(input:{
-                    projectId: $projectId,
-                    itemId: $itemId,
-                    fieldId: $fieldId,
-                    value: { singleSelectOptionId: $optionId }
-                  }) { projectV2Item { id } }
-                }
-              `, { projectId, itemId: childItemId, fieldId: teamData.fieldId, optionId: teamData.optionId }));
-            }
 
-            try {
-              await Promise.all(updates);
+                // 7. Update child project item fields with parent's values
+                const updates = [];
+                if (projectNameData) {
+                  updates.push(github.graphql(`
+                    mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:ID!) {
+                      updateProjectV2ItemFieldValue(input:{
+                        projectId: $projectId,
+                        itemId: $itemId,
+                        fieldId: $fieldId,
+                        value: { singleSelectOptionId: $optionId }
+                      }) { projectV2Item { id } }
+                    }
+                  `, { projectId, itemId: childItemId, fieldId: projectNameData.fieldId, optionId: projectNameData.optionId }));
+                }
+                if (teamData) {
+                  updates.push(github.graphql(`
+                    mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:ID!) {
+                      updateProjectV2ItemFieldValue(input:{
+                        projectId: $projectId,
+                        itemId: $itemId,
+                        fieldId: $fieldId,
+                        value: { singleSelectOptionId: $optionId }
+                      }) { projectV2Item { id } }
+                    }
+                  `, { projectId, itemId: childItemId, fieldId: teamData.fieldId, optionId: teamData.optionId }));
+                }
+
+                try {
+                  await Promise.all(updates);
+                } catch (error) {
+                  console.error("Failed to update child project item fields with parent's values:", error);
+                  throw error;
+                }
+
+                console.log(`Inherited Project Name & Team from parent #${parentNumber} in project ${projectId}`);
             } catch (error) {
-              console.error("Failed to update child project item fields with parent's values:", error);
-              throw error;
+              console.error("Failed to run script:", error);
+              return;
             }
 
-            console.log(`Inherited Project Name & Team from parent #${parentNumber} in project ${projectId}`);
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHA_BEST_PRACTICES_LINTER: disabled
