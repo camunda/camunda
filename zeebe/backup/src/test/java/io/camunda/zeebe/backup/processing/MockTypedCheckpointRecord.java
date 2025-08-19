@@ -20,8 +20,27 @@ record MockTypedCheckpointRecord(
     long sourceRecordPosition,
     Intent intent,
     RecordType recordType,
-    CheckpointRecord value)
+    CheckpointRecord value,
+    int requestStreamId,
+    long requestId)
     implements TypedRecord<CheckpointRecord> {
+
+  public MockTypedCheckpointRecord(
+      final long position,
+      final long sourceRecordPosition,
+      final Intent intent,
+      final RecordType recordType,
+      final CheckpointRecord value) {
+    this(
+        position,
+        sourceRecordPosition,
+        intent,
+        recordType,
+        value,
+        -1, // requestStreamId
+        -1L // requestId
+        );
+  }
 
   @Override
   public long getPosition() {
@@ -105,12 +124,12 @@ record MockTypedCheckpointRecord(
 
   @Override
   public int getRequestStreamId() {
-    return -1;
+    return requestStreamId;
   }
 
   @Override
   public long getRequestId() {
-    return -1L;
+    return requestId;
   }
 
   @Override
