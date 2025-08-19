@@ -8,6 +8,7 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Azure;
+import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
@@ -22,6 +23,7 @@ import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
+import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
@@ -209,6 +211,18 @@ public class BrokerBasedPropertiesOverride {
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
 
     override.getNetwork().setHost(network.getHost());
+
+    populateFromCommandApi(override);
+  }
+
+  private void populateFromCommandApi(final BrokerBasedProperties override) {
+    final CommandApi commandApi =
+        unifiedConfiguration.getCamunda().getCluster().getNetwork().getCommandApi();
+    final CommandApiCfg commandApiCfg = override.getNetwork().getCommandApi();
+    commandApiCfg.setHost(commandApi.getHost());
+    commandApiCfg.setPort(commandApi.getPort());
+    commandApiCfg.setAdvertisedHost(commandApi.getAdvertisedHost());
+    commandApiCfg.setAdvertisedPort(commandApi.getAdvertisedPort());
   }
 
   private void populateFromRestFilters(final BrokerBasedProperties override) {
