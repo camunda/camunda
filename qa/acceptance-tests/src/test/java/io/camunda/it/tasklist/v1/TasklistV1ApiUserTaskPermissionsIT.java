@@ -53,8 +53,8 @@ public class TasklistV1ApiUserTaskPermissionsIT {
   private static final String ADMIN_USERNAME = "admin";
   private static final String UNAUTHORIZED_USERNAME = "unauthorized";
   private static long taskKey;
-  private static TestRestTasklistClient AUTHORIZED_CLIENT;
-  private static TestRestTasklistClient UNAUTHORIZED_CLIENT;
+  private static TestRestTasklistClient authorizedClient;
+  private static TestRestTasklistClient unauthorizedClient;
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
@@ -115,11 +115,11 @@ public class TasklistV1ApiUserTaskPermissionsIT {
               taskKey = tasks.getFirst().getUserTaskKey();
             });
 
-    AUTHORIZED_CLIENT =
+    authorizedClient =
         STANDALONE_CAMUNDA
             .newTasklistClient()
             .withAuthentication(ADMIN.username(), ADMIN.password());
-    UNAUTHORIZED_CLIENT =
+    unauthorizedClient =
         STANDALONE_CAMUNDA
             .newTasklistClient()
             .withAuthentication(UNAUTHORIZED.username(), UNAUTHORIZED.password());
@@ -127,7 +127,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
 
   @Test
   void shouldBeAuthorizedToSearchUserTasks() throws JsonProcessingException {
-    final var response = AUTHORIZED_CLIENT.searchRequest("v1/tasks/search", null);
+    final var response = authorizedClient.searchRequest("v1/tasks/search", null);
     assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
     final var userTasks =
         TestRestTasklistClient.OBJECT_MAPPER.readValue(response.body(), TaskSearchResponse[].class);
@@ -136,7 +136,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
 
   @Test
   void shouldBeUnauthorizedToSearchUserTasks() throws JsonProcessingException {
-    final var response = UNAUTHORIZED_CLIENT.searchRequest("v1/tasks/search", null);
+    final var response = unauthorizedClient.searchRequest("v1/tasks/search", null);
     assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
     final var userTasks =
         TestRestTasklistClient.OBJECT_MAPPER.readValue(response.body(), TaskSearchResponse[].class);
@@ -145,7 +145,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
 
   @Test
   void shouldBeAuthorizedToGetUserTasks() throws JsonProcessingException {
-    final var response = AUTHORIZED_CLIENT.getRequest("v1/tasks/" + taskKey);
+    final var response = authorizedClient.getRequest("v1/tasks/" + taskKey);
     final var userTask =
         TestRestTasklistClient.OBJECT_MAPPER.readValue(response.body(), TaskResponse.class);
     assertThat(userTask).isNotNull();
@@ -154,7 +154,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
 
   @Test
   void shouldBeUnauthorizedToGetUserTasks() {
-    final var response = UNAUTHORIZED_CLIENT.getRequest("v1/tasks/" + taskKey);
+    final var response = unauthorizedClient.getRequest("v1/tasks/" + taskKey);
     assertThat(response.statusCode()).isEqualTo(HttpStatus.FORBIDDEN.value());
     assertThat(response.body()).contains("User does not have permission to perform on this task.");
   }
@@ -162,7 +162,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
   @Test
   void shouldBeAuthorizedToSearchUserTaskVariables() throws JsonProcessingException {
     final var response =
-        AUTHORIZED_CLIENT.searchRequest("v1/tasks/" + taskKey + "/variables/search", null);
+        authorizedClient.searchRequest("v1/tasks/" + taskKey + "/variables/search", null);
     assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
     final var userTasks =
         TestRestTasklistClient.OBJECT_MAPPER.readValue(
@@ -173,7 +173,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
   @Test
   void shouldBeUnauthorizedToSearchUserTaskVariables() throws JsonProcessingException {
     final var response =
-        UNAUTHORIZED_CLIENT.searchRequest("v1/tasks/" + taskKey + "/variables/search", null);
+        unauthorizedClient.searchRequest("v1/tasks/" + taskKey + "/variables/search", null);
     assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
     final var userTasks =
         TestRestTasklistClient.OBJECT_MAPPER.readValue(

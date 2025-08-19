@@ -9,6 +9,7 @@ package io.camunda.it.tasklist.v1;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.PermissionType.READ_USER_TASK;
 import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
@@ -27,11 +28,9 @@ import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.test.util.JsonUtil;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import java.net.http.HttpClient;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -42,17 +41,13 @@ import org.springframework.http.HttpStatus;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class TasklistV1ApiFormPermissionsIT {
+public class TasklistV1ApiInternalProcessPermissionsIT {
   @MultiDbTestApplication
   static final TestCamundaApplication STANDALONE_CAMUNDA =
       new TestCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
 
-  private static final String PROCESS_ID = "processId";
   private static final String ADMIN_USERNAME = "admin";
   private static final String UNAUTHORIZED_USERNAME = "unauthorized";
-  private static long processDefinitionKey;
-  private static long taskKey;
-  private static String formId;
   private static TestRestTasklistClient authorizedClient;
   private static TestRestTasklistClient unauthorizedClient;
 
@@ -67,6 +62,7 @@ public class TasklistV1ApiFormPermissionsIT {
               new Permissions(AUTHORIZATION, CREATE, List.of("*")),
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
 
   @UserDefinition
@@ -76,62 +72,28 @@ public class TasklistV1ApiFormPermissionsIT {
   @BeforeAll
   public static void beforeAll(@Authenticated(ADMIN_USERNAME) final CamundaClient adminClient)
       throws Exception {
-    await()
-        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var form =
-                  adminClient
-                      .newDeployResourceCommand()
-                      .addResourceFromClasspath("form/form.form")
-                      .send()
-                      .join()
-                      .getForm()
-                      .getFirst();
-              formId = form.getFormId();
-            });
-
-    final var deployment =
+    final var deployedProcess =
         adminClient
             .newDeployResourceCommand()
-            .addProcessModel(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .userTask()
-                    .zeebeFormId(formId)
-                    .zeebeUserTask()
-                    .endEvent()
-                    .done(),
-                "process.bpmn")
+            .addResourceFromClasspath("process/process_start_form.bpmn")
             .send()
-            .join();
-    processDefinitionKey = deployment.getProcesses().getFirst().getProcessDefinitionKey();
+            .join()
+            .getProcesses()
+            .getFirst();
 
-    final String json = JsonUtil.toJson(Collections.singletonMap("key", "val"));
-    final var processInstanceEvent =
-        adminClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .variables(json)
-            .send()
-            .join();
     await()
         .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var tasks =
+              final var definition =
                   adminClient
-                      .newUserTaskSearchRequest()
+                      .newProcessDefinitionSearchRequest()
                       .filter(
-                          t -> t.processInstanceKey(processInstanceEvent.getProcessInstanceKey()))
+                          f -> f.processDefinitionKey(deployedProcess.getProcessDefinitionKey()))
                       .send()
-                      .join()
-                      .items();
-              assertThat(tasks).describedAs("Wait until the task exists").hasSize(1);
-              taskKey = tasks.getFirst().getUserTaskKey();
+                      .join();
+              assertThat(definition).describedAs("Wait until the definition exists").isNotNull();
             });
 
     authorizedClient =
@@ -145,24 +107,21 @@ public class TasklistV1ApiFormPermissionsIT {
   }
 
   @Test
-  void shouldBeAuthorizedToGetForm() throws JsonProcessingException {
-    final var response =
-        authorizedClient.getRequest(
-            "v1/forms/%s?processDefinitionKey=%s".formatted(formId, processDefinitionKey));
+  void shouldBeAuthorizedToGetPublicEndpoints() throws JsonProcessingException {
+    final var response = authorizedClient.getRequest("v1/internal/processes/publicEndpoints");
     assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-    final var form =
-        TestRestTasklistClient.OBJECT_MAPPER.readValue(response.body(), FormResponse.class);
-    assertThat(form).isNotNull();
-    assertThat(form.getId()).isEqualTo(formId);
+    final var publicEndpoints =
+        TestRestTasklistClient.OBJECT_MAPPER.readValue(
+            response.body(), ProcessPublicEndpointsResponse[].class);
+    assertThat(publicEndpoints).hasSize(1);
   }
 
   @Test
-  void shouldBeUnauthorizedToGetForm() throws JsonProcessingException {
-    final var response =
-        unauthorizedClient.getRequest(
-            "v1/forms/%s?processDefinitionKey=%s".formatted(formId, processDefinitionKey));
-    assertThat(response.statusCode()).isEqualTo(HttpStatus.FORBIDDEN.value());
-    assertThat(response.body())
-        .contains("User does not have permission to read resource. Please check your permissions.");
+  void shouldBeUnauthorizedToGetPublicEndpoints() throws JsonProcessingException {
+    final var response = unauthorizedClient.getRequest("v1/internal/processes/publicEndpoints");
+    assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+    final var publicEndpoints =
+        TestRestTasklistClient.OBJECT_MAPPER.readValue(response.body(), TaskSearchResponse[].class);
+    assertThat(publicEndpoints).isEmpty();
   }
 }
