@@ -31,6 +31,8 @@ import {getRandomId, getScreenBounds} from 'services';
 
 import classNames from 'classnames';
 
+import CollapsibleSection, {CollapsibleSectionContext} from './CollapsibleSection';
+
 import './Popover.scss';
 
 interface PopoverProps extends Omit<CarbonPopoverProps<'div'>, 'open'> {
@@ -229,30 +231,32 @@ export default function Popover({
   const popoverId = getRandomId();
 
   return (
-    <TriggerContext.Provider value={{open, setOpen, buttonRef, popoverId}}>
-      <CarbonPopover
-        className={classNames(className, 'Popover')}
-        {...props}
-        align={alignment}
-        open={open}
-        ref={popoverRef}
-      >
-        {trigger}
-        {open && (
-          <PopoverContent
-            id={popoverId}
-            className={classNames('popoverContent', {scrollable})}
-            ref={dialogRef}
-            style={popoverStyles}
-            onMouseDownCapture={() => {
-              isInsideClick.current = true;
-            }}
-          >
-            <Layer ref={contentRef}>{children}</Layer>
-          </PopoverContent>
-        )}
-      </CarbonPopover>
-    </TriggerContext.Provider>
+    <CollapsibleSectionContext.Provider value={{calculateDialogStyle}}>
+      <TriggerContext.Provider value={{open, setOpen, buttonRef, popoverId}}>
+        <CarbonPopover
+          className={classNames(className, 'Popover')}
+          {...props}
+          align={alignment}
+          open={open}
+          ref={popoverRef}
+        >
+          {trigger}
+          {open && (
+            <PopoverContent
+              id={popoverId}
+              className={classNames('popoverContent', {scrollable})}
+              ref={dialogRef}
+              style={popoverStyles}
+              onMouseDownCapture={() => {
+                isInsideClick.current = true;
+              }}
+            >
+              <Layer ref={contentRef}>{children}</Layer>
+            </PopoverContent>
+          )}
+        </CarbonPopover>
+      </TriggerContext.Provider>
+    </CollapsibleSectionContext.Provider>
   );
 }
 
@@ -324,6 +328,8 @@ Popover.Button = function ButtonTrigger(
     />
   );
 };
+
+Popover.CollapsibleSection = CollapsibleSection;
 
 function getScrollBounds(element: HTMLElement | null) {
   if (!element) {
