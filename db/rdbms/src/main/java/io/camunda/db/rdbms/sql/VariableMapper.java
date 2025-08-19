@@ -19,6 +19,8 @@ public interface VariableMapper extends ProcessBasedHistoryCleanupMapper {
 
   void update(VariableDbModel variable);
 
+  void delete(VariableDbModel variable);
+
   void migrateToProcess(MigrateToProcessDto dto);
 
   Long count(VariableDbQuery filter);

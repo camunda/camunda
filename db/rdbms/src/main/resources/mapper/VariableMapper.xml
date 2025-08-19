@@ -109,6 +109,7 @@
     <constructor>
       <idArg column="VAR_KEY" javaType="java.lang.Long"/>
       <arg column="VAR_NAME" javaType="java.lang.String"/>
+      <arg column="VAR_NAME" javaType="java.lang.String"/>
       <arg column="VAR_VALUE" javaType="java.lang.String"/>
       <arg column="VAR_FULL_VALUE" javaType="java.lang.String"/>
       <arg column="IS_PREVIEW" javaType="java.lang.Boolean"/>
@@ -138,6 +139,11 @@
           HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
       WHERE VAR_KEY = #{variableKey}
   </update>
+
+  <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel">
+    DELETE FROM ${prefix}VARIABLE
+    WHERE VAR_KEY = #{variableKey}
+  </delete>
 
   <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}VARIABLE SET
