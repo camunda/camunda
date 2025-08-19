@@ -21,10 +21,10 @@
     SELECT * FROM (
     SELECT
     TENANT_KEY,
-    TENANT_ID,
+    t.TENANT_ID,
     NAME,
     DESCRIPTION
-    FROM ${prefix}TENANT
+    FROM ${prefix}TENANT t
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -33,13 +33,51 @@
   </select>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
-    <if test="filter.key != null">AND TENANT_KEY = #{filter.key}</if>
-    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
-      AND TENANT_ID IN
-      <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
-    </if>
-    <if test="filter.name != null">AND NAME = #{filter.name}</if>
+    <where>
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="filter.key != null">AND TENANT_KEY = #{filter.key}</if>
+      <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+        AND t.TENANT_ID IN
+        <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">
+          #{value}
+        </foreach>
+      </if>
+      <if test="filter.name != null">AND NAME = #{filter.name}</if>
+
+      <if
+        test="filter.memberIds != null and !filter.memberIds.isEmpty() and filter.childMemberType != null">
+        AND t.TENANT_ID IN ( SELECT tmf.TENANT_ID FROM ${prefix}TENANT_MEMBER tmf
+        WHERE
+        tmf.ENTITY_TYPE = #{filter.childMemberType}
+        AND tmf.ENTITY_ID IN
+        <foreach collection="filter.memberIds" item="memberId" open="(" separator="," close=")">
+          #{memberId}
+        </foreach>
+        )
+      </if>
+      <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+        AND t.TENANT_ID IN ( SELECT tmt.TENANT_ID FROM ${prefix}TENANT_MEMBER tmt
+        <where>
+          <foreach collection="filter.memberIdsByType" index="memberType" item="values" open="("
+            separator=" OR " close=")">
+            <if test="values != null and !values.isEmpty()">
+              tmt.ENTITY_TYPE = #{memberType} AND tmt.ENTITY_ID IN
+              <foreach collection="values" item="value" open="(" separator=" , " close=")">
+                #{value}
+              </foreach>
+            </if>
+          </foreach>
+        </where>
+        )
+      </if>
+    </where>
   </sql>
 
   <resultMap id="tenantResultMap" type="io.camunda.db.rdbms.write.domain.TenantDbModel">
@@ -55,9 +93,9 @@
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel">
-    UPDATE ${prefix}TENANT SET
-                    NAME = #{name},
-                    DESCRIPTION = #{description}
+    UPDATE ${prefix}TENANT
+    SET NAME        = #{name},
+        DESCRIPTION = #{description}
     WHERE TENANT_ID = #{tenantId}
   </update>
 

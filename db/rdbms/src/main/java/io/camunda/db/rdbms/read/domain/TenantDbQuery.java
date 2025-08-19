@@ -11,12 +11,16 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.util.ObjectBuilder;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
 public record TenantDbQuery(
-    TenantFilter filter, DbQuerySorting<TenantEntity> sort, DbQueryPage page) {
+    TenantFilter filter,
+    List<String> authorizedResourceIds,
+    DbQuerySorting<TenantEntity> sort,
+    DbQueryPage page) {
 
   public static TenantDbQuery of(
       final Function<TenantDbQuery.Builder, ObjectBuilder<TenantDbQuery>> fn) {
@@ -30,6 +34,7 @@ public record TenantDbQuery(
     private TenantFilter filter;
     private DbQuerySorting<TenantEntity> sort;
     private DbQueryPage page;
+    private List<String> authorizedResourceIds = Collections.emptyList();
 
     public Builder filter(final TenantFilter value) {
       filter = value;
@@ -43,6 +48,11 @@ public record TenantDbQuery(
 
     public Builder page(final DbQueryPage value) {
       page = value;
+      return this;
+    }
+
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
       return this;
     }
 
@@ -61,7 +71,7 @@ public record TenantDbQuery(
     public TenantDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new TenantDbQuery(filter, sort, page);
+      return new TenantDbQuery(filter, authorizedResourceIds, sort, page);
     }
   }
 }
