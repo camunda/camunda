@@ -102,16 +102,6 @@ public record BrokerClientTopologyImpl(
   }
 
   @Override
-  public int getPartition(final int index) {
-    final List<Integer> partitions = getPartitions();
-    if (!partitions.isEmpty()) {
-      return partitions.get(index % partitions.size());
-    } else {
-      return PARTITION_ID_NULL;
-    }
-  }
-
-  @Override
   public String getBrokerVersion(final int brokerId) {
     return liveClusterState.brokerVersions.get(brokerId);
   }

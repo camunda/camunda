@@ -200,11 +200,6 @@ public class TopologyControllerTest extends RestControllerTest {
     }
 
     @Override
-    public int getPartition(final int index) {
-      return 1;
-    }
-
-    @Override
     public String getBrokerVersion(final int brokerId) {
       return version;
     }

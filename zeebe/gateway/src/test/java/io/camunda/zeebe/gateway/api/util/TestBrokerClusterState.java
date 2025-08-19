@@ -104,11 +104,6 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   @Override
-  public int getPartition(final int index) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public String getBrokerVersion(final int brokerId) {
     return "1.0.0"; // Default version for testing purposes;
   }

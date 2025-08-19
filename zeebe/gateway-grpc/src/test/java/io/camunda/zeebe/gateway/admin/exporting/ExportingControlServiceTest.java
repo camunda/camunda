@@ -209,11 +209,6 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public int getPartition(final int index) {
-        return topology.keySet().stream().toList().get(index);
-      }
-
-      @Override
       public String getBrokerVersion(final int brokerId) {
         throw new UnsupportedOperationException();
       }

@@ -132,11 +132,6 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     @Override
-    public int getPartition(final int index) {
-      return partitions.get(index % partitions.size());
-    }
-
-    @Override
     public String getBrokerVersion(final int brokerId) {
       return "";
     }
