@@ -4800,7 +4800,7 @@ paths:
         - Setup
       operationId: createAdminUser
       summary: Create admin user
-      description: Creates a new user and assign the admin role to it.
+      description: Creates a new user and assigns the admin role to it. This endpoint is only usable when users are managed in the Orchestration Cluster and while no user is assigned to the admin role.
       requestBody:
         content:
           application/json:
