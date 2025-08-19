@@ -43,8 +43,6 @@ public interface BrokerClusterState {
 
   String getBrokerAddress(int brokerId);
 
-  int getPartition(int index);
-
   String getBrokerVersion(int brokerId);
 
   PartitionHealthStatus getPartitionHealth(int brokerId, int partition);

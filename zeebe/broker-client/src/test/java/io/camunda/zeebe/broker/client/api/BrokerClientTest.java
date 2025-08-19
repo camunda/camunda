@@ -22,6 +22,9 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ErrorCode;
@@ -38,6 +41,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Future;
@@ -97,10 +101,19 @@ public final class BrokerClientTest {
     actorScheduler.submitActor(topologyManager).join();
     atomixCluster.getMembershipService().addListener(topologyManager);
 
+    final var clusterTopology =
+        ClusterConfiguration.init()
+            .addMember(
+                broker.member().id(),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, null))));
+
+    topologyManager.onClusterConfigurationUpdated(clusterTopology);
     topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, broker.member()));
     Awaitility.await("Topology is updated")
         .untilAsserted(
-            () -> assertThat(topologyManager.getTopology().getPartitions()).isNotEmpty());
+            () ->
+                assertThat(topologyManager.getTopology().getLeaderForPartition(1))
+                    .isNotEqualTo(BrokerClusterState.NODE_ID_NULL));
 
     client =
         new BrokerClientImpl(
@@ -537,6 +550,13 @@ public final class BrokerClientTest {
 
       try (final var otherBroker = new StubBroker(1, 2).start()) {
         registerSuccessResponse(otherBroker);
+        final var updatedClusterConfiguration =
+            topologyManager
+                .getClusterConfiguration()
+                .addMember(
+                    otherBroker.member().id(),
+                    MemberState.initializeAsActive(Map.of(2, PartitionState.active(2, null))));
+        topologyManager.onClusterConfigurationUpdated(updatedClusterConfiguration);
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(

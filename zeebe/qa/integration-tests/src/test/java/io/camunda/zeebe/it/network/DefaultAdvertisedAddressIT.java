@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.network;
 
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
+import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 
 import io.camunda.client.CamundaClient;
@@ -34,6 +35,7 @@ final class DefaultAdvertisedAddressIT {
           .withImage(ZeebeTestContainerDefaults.defaultTestImage())
           .withGatewaysCount(1)
           .withBrokersCount(1)
+          .withEmbeddedGateway(false)
           .withNodeConfig(node -> node.withAdditionalExposedPort(8080))
           // explicitly unset the (advertised) host to force computing the default
           .withBrokerConfig(
@@ -42,6 +44,7 @@ final class DefaultAdvertisedAddressIT {
                 node.getEnvMap().remove("ZEEBE_BROKER_NETWORK_HOST");
                 node.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
                 node.addEnv(UNPROTECTED_API_ENV_VAR, "true");
+                node.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
               })
           .withGatewayConfig(
               node -> {
@@ -49,6 +52,7 @@ final class DefaultAdvertisedAddressIT {
                 node.getEnvMap().remove("ZEEBE_GATEWAY_CLUSTER_HOST");
                 node.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
                 node.addEnv(UNPROTECTED_API_ENV_VAR, "true");
+                node.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
               })
           .build();
 
@@ -71,6 +75,17 @@ final class DefaultAdvertisedAddressIT {
               () ->
                   TopologyAssert.assertThat(client.newTopologyRequest().send().join())
                       .isComplete(1, 1, 1));
+
+      Awaitility.await("until a client request is successful")
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () ->
+                  client
+                      .newPublishMessageCommand()
+                      .messageName("test-message")
+                      .correlationKey("test-key")
+                      .send()
+                      .join());
     }
   }
 }

@@ -88,7 +88,7 @@ public final class StubBroker implements AutoCloseable {
     cluster =
         AtomixCluster.builder(meterRegistry)
             .withPort(currentStubPort)
-            .withMemberId("0")
+            .withMemberId(String.valueOf(nodeId))
             .withClusterId(CLUSTER_ID)
             .build();
     cluster.start().join();

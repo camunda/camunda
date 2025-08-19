@@ -7,8 +7,6 @@
  */
 package io.camunda.configuration;
 
-import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_HOST;
-
 import java.util.Map;
 import java.util.Set;
 
@@ -25,7 +23,7 @@ public class Network {
   private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_NETWORK_PROPERTIES;
 
   /** The network host for internal cluster communication. */
-  private String host = DEFAULT_CLUSTER_HOST;
+  private String host = null; // Do not set a default value.
 
   public String getHost() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
