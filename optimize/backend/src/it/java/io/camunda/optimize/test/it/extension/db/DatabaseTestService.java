@@ -37,7 +37,6 @@ import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
@@ -131,8 +130,6 @@ public abstract class DatabaseTestService {
   public abstract void deleteAllSingleProcessReports();
 
   public abstract void deleteTerminatedSessionsIndex();
-
-  public abstract void deleteAllVariableUpdateInstanceIndices();
 
   public abstract void deleteAllExternalVariableIndices();
 
@@ -297,8 +294,6 @@ public abstract class DatabaseTestService {
 
   public abstract List<String> getAllIndicesWithWriteAlias(String aliasNameWithPrefix);
 
-  public abstract VariableUpdateInstanceIndex getVariableUpdateInstanceIndex();
-
   public abstract void deleteAllDocumentsInIndex(String optimizeIndexAliasForIndex);
 
   public abstract void insertTestDocuments(int amount, String indexName, String jsonDocument)
@@ -321,5 +316,5 @@ public abstract class DatabaseTestService {
 
   public abstract List<String> getAllIndicesWithReadOnlyAlias(String aliasNameWithPrefix);
 
-  public abstract String[] getIndexNames();
+  public abstract String[] getIndexNames() throws IOException;
 }
