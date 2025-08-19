@@ -266,6 +266,8 @@ jobs:
     name: Github Release
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      RELEASE_NAME: ${RELEASE_TAG}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -361,7 +363,7 @@ jobs:
         uses: ncipollo/release-action@v1
         if: ${{ !inputs.dryRun }}
         with:
-          name: ${{ inputs.releaseVersion }}
+          name: ${RELEASE_NAME}
           artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
           draft: ${{ inputs.releaseProcessDryRun }}
