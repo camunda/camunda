@@ -40,4 +40,8 @@ public final class ErrorMessages {
   public static final String ERROR_MESSAGE_NULL_VARIABLE_VALUE = "Variable value must not be null";
   public static final String ERROR_MESSAGE_INVALID_KEY_FORMAT =
       "The provided %s '%s' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?";
+  public static final String ERROR_MESSAGE_INVALID_TAG_FORMAT =
+      "The provided tag '%s' is not valid. %s";
+  public static final String ERROR_MESSAGE_INVALID_TAGS_COUNT =
+      "The provided number of tags '%s' is not supported. Ensure to not add more than %s tags.";
 }

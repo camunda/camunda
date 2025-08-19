@@ -30,6 +30,7 @@ public final class CreateProcessInstanceTest extends GatewayTest {
     final CreateProcessInstanceRequest request =
         CreateProcessInstanceRequest.newBuilder()
             .setProcessDefinitionKey(stub.getProcessDefinitionKey())
+            .addAllTags(stub.getTags())
             .build();
 
     // when
@@ -41,6 +42,7 @@ public final class CreateProcessInstanceTest extends GatewayTest {
     assertThat(response.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
     assertThat(response.getProcessInstanceKey()).isEqualTo(stub.getProcessInstanceKey());
     assertThat(response.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(response.getTagsList()).containsAll(stub.getTags());
 
     final BrokerCreateProcessInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getIntent()).isEqualTo(ProcessInstanceCreationIntent.CREATE);
@@ -50,5 +52,6 @@ public final class CreateProcessInstanceTest extends GatewayTest {
     assertThat(brokerRequestValue.getProcessDefinitionKey())
         .isEqualTo(stub.getProcessDefinitionKey());
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(brokerRequestValue.getTags()).isEqualTo(stub.getTags());
   }
 }

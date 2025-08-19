@@ -63,7 +63,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
              "processDefinitionVersion":-1,
              "processInstanceKey":"123",
              "tenantId":"tenantId",
-             "variables":{}
+             "variables":{},
+             "tags":[]
           }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
@@ -159,7 +160,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               "processDefinitionVersion":-1,
               "processInstanceKey":"123",
               "tenantId":"<default>",
-              "variables":{}
+              "variables":{},
+              "tags":[]
             }""";
 
     // when / then

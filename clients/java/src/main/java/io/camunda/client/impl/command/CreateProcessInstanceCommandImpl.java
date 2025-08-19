@@ -30,6 +30,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.impl.util.TagUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
@@ -42,6 +43,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreati
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TerminateProcessInstanceInstruction;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -156,6 +160,31 @@ public final class CreateProcessInstanceCommandImpl
         httpClient,
         useRest,
         httpRequestObject);
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 tags(final String... tags) {
+    final Set<String> uniqueTags = new HashSet<>(Arrays.asList(tags)); // ensure no duplicates
+
+    return tags(uniqueTags);
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 tags(final Iterable<String> tags) {
+
+    final Set<String> uniqueTags = new HashSet<>();
+    for (final String item : tags) {
+      uniqueTags.add(item);
+    }
+    return tags(uniqueTags);
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 tags(final Set<String> tags) {
+    TagUtil.ensureValidTags("tags", tags);
+    grpcRequestObjectBuilder.addAllTags(tags);
+    httpRequestObject.setTags(tags);
+    return this;
   }
 
   @Override

@@ -9,13 +9,20 @@ package io.camunda.zeebe.util;
 
 import java.util.regex.Pattern;
 
+/**
+ * Utility class for validating tags used in Zeebe. Tags are used to categorize and label resources
+ * within the system.
+ *
+ * <p>NOTE: Whenever you adjust the tag format or max number, also consider updating the REST API
+ * documentation and the duplicated Camunda client validation (see TagUtil.java)
+ */
 public class TagUtil {
 
   public static final int MAX_NUMBER_OF_TAGS = 10;
   public static final int MAX_TAG_LENGTH = 100;
   public static final String TAG_FORMAT_DESCRIPTION =
       String.format(
-          "Tag must start with a letter (a-z, A-Z), followed by alphanumerics, underscores, minuses, colons, or periods. "
+          "Tags must start with a letter (a-z, A-Z), followed by alphanumerics, underscores, minuses, colons, or periods. "
               + "It must not be blank and must be %s characters or less.",
           MAX_TAG_LENGTH);
 

@@ -255,6 +255,9 @@ message CreateProcessInstanceRequest {
   // instance during its execution
   // if empty (default), the process instance will be executed normally
   repeated ProcessInstanceCreationRuntimeInstruction runtimeInstructions = 8;
+
+  // a list of tags that can be attached as meta-data to process instances
+  repeated string tags = 9;
 }
 
 message ProcessInstanceCreationStartInstruction {
@@ -295,6 +298,8 @@ message CreateProcessInstanceResponse {
   int64 processInstanceKey = 4;
   // the tenant identifier of the created process instance
   string tenantId = 5;
+  // tags attached to a process instance
+  repeated string tags = 6;
 }
 
 message CreateProcessInstanceWithResultRequest {
@@ -324,6 +329,8 @@ message CreateProcessInstanceWithResultResponse {
   string variables = 5;
   // the tenant identifier of the process definition
   string tenantId = 6;
+  // tags attached to a process instance
+  repeated string tags = 7;
 }
 
 message EvaluateDecisionRequest {

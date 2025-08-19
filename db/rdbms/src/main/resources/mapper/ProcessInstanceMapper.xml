@@ -28,7 +28,8 @@
            pi.VERSION AS PROCESS_DEFINITION_VERSION,
            pi.TREE_PATH,
            pd.NAME        AS PROCESS_DEFINITION_NAME,
-           pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
+           pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG,
+           NULL AS TAGS
     FROM ${prefix}PROCESS_INSTANCE pi
            LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
@@ -66,7 +67,8 @@
     pi.VERSION PROCESS_DEFINITION_VERSION,
     pi.TREE_PATH,
     pd.NAME AS PROCESS_DEFINITION_NAME,
-    pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
+    pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG,
+    NULL AS TAGS
     FROM ${prefix}PROCESS_INSTANCE pi
     LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     <where>
@@ -278,6 +280,8 @@
       <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
       <arg column="TREE_PATH" javaType="java.lang.String"/>
+      <arg column="TAGS" javaType="java.util.Set"
+           typeHandler="io.camunda.db.rdbms.typehandler.EmptyStringSetTypeHandler"/>
     </constructor>
 
   </resultMap>
