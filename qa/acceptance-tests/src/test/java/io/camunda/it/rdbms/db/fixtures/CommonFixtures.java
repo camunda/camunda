@@ -7,6 +7,10 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -82,5 +86,30 @@ public class CommonFixtures {
     }
     final int x = RANDOM.nextInt(validEnums.size());
     return validEnums.get(x);
+  }
+
+  public static ResourceAccessChecks resourceAccessChecks(
+      List<String> resourceIds, List<String> tenantIds) {
+    return ResourceAccessChecks.of(
+        AuthorizationCheck.enabled(Authorization.of(b -> b.resourceIds(resourceIds))),
+        TenantCheck.enabled(tenantIds));
+  }
+
+  public static ResourceAccessChecks resourceAccessChecksFromResourceIds(String... resourceIds) {
+    return resourceAccessChecksFromResourceIds(Arrays.asList(resourceIds));
+  }
+
+  public static ResourceAccessChecks resourceAccessChecksFromResourceIds(List<String> resourceIds) {
+    return ResourceAccessChecks.of(
+        AuthorizationCheck.enabled(Authorization.of(b -> b.resourceIds(resourceIds))),
+        TenantCheck.disabled());
+  }
+
+  public static ResourceAccessChecks resourceAccessChecksFromTenantIds(String... tenantIds) {
+    return resourceAccessChecksFromTenantIds(Arrays.asList(tenantIds));
+  }
+
+  public static ResourceAccessChecks resourceAccessChecksFromTenantIds(List<String> tenantIds) {
+    return ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(tenantIds));
   }
 }
