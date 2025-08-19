@@ -22,39 +22,17 @@ import org.springframework.context.annotation.Configuration;
 public class SelfManagedOpenApiConfigurer extends OpenApiConfigurer {
 
   public static final String BASIC_SECURITY_SCHEMA_NAME = "basicAuth";
-  public static final String OIDC_SECURITY_SCHEMA_NAME = "oidc";
   public static final SecurityScheme BASIC_SECURITY_SCHEMA =
       new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("basic");
   private static final Logger LOGGER = LoggerFactory.getLogger(SelfManagedOpenApiConfigurer.class);
-  private final OpenApiConfigurationProperties properties;
-
-  public SelfManagedOpenApiConfigurer(final OpenApiConfigurationProperties properties) {
-    this.properties = properties;
-  }
 
   @Override
   public void configureSecurity(final OpenAPI openApi) {
     LOGGER.debug("Configuring OpenAPI security for Self-Managed deployment");
 
     addBearerAuthentication(openApi);
-
-    LOGGER.debug("Adding Basic Auth security scheme");
     openApi.getComponents().addSecuritySchemes(BASIC_SECURITY_SCHEMA_NAME, BASIC_SECURITY_SCHEMA);
     openApi.addSecurityItem(new SecurityRequirement().addList(BASIC_SECURITY_SCHEMA_NAME));
-
-    if (properties.getSelfManagedAuth().getOpenIdConnectDiscoveryUrl() != null
-        && !properties.getSelfManagedAuth().getOpenIdConnectDiscoveryUrl().trim().isEmpty()) {
-
-      LOGGER.debug(
-          "Adding OIDC security scheme with discovery URL: {}",
-          properties.getSelfManagedAuth().getOpenIdConnectDiscoveryUrl());
-
-      final SecurityScheme oidcSecurityScheme =
-          createOidcSecurityScheme(properties.getSelfManagedAuth().getOpenIdConnectDiscoveryUrl());
-
-      openApi.getComponents().addSecuritySchemes(OIDC_SECURITY_SCHEMA_NAME, oidcSecurityScheme);
-      openApi.addSecurityItem(new SecurityRequirement().addList(OIDC_SECURITY_SCHEMA_NAME));
-    }
   }
 
   @Override
@@ -63,18 +41,8 @@ public class SelfManagedOpenApiConfigurer extends OpenApiConfigurer {
         API for communicating with a Camunda 8 Self-Managed cluster.
 
         **Authentication Options:**
-        - **Basic Authentication**: Use username/password credentials
-        - **OIDC Authentication**: Both OAuth2 flow and Bearer token supported
-          - Use Swagger UI's Authorize flow, or
-          - Log into `/operate/login` to get proper credentials""";
-  }
-
-  private SecurityScheme createOidcSecurityScheme(final String discoveryUrl) {
-    // For OpenAPI documentation, we use the OpenID Connect URL directly
-    // The actual authorization and token URLs will be discovered at runtime by the OIDC client
-    // We don't need to specify them explicitly in the OpenAPI spec when using openIdConnectUrl
-    return new SecurityScheme()
-        .type(SecurityScheme.Type.OPENIDCONNECT)
-        .openIdConnectUrl(discoveryUrl);
+        - **Basic Authentication**: Use the Authorize button to provide username/password credentials
+        - **OAuth 2.0 Authentication**: Log into `/operate/login` to get proper credentials
+        - **Bearer Token**: Use the Authorize button in Swagger UI to provide a Bearer token""";
   }
 }

@@ -25,7 +25,6 @@ public class SaaSOpenApiConfigurer extends OpenApiConfigurer {
   public void configureSecurity(final OpenAPI openApi) {
     LOGGER.debug("Configuring OpenAPI security for SaaS deployment");
 
-    // Add common bearer authentication
     addBearerAuthentication(openApi);
   }
 
@@ -35,7 +34,7 @@ public class SaaSOpenApiConfigurer extends OpenApiConfigurer {
         API for communicating with a Camunda 8 SaaS cluster.
 
         **Authentication:**
-        - **OIDC Authentication**: Log into `/operate/login` to get proper credentials
+        - **OAuth 2.0 Authentication**: Log into `/operate/login` to get proper credentials
         - **Bearer Token**: Use the Authorize button in Swagger UI to provide a Bearer token""";
   }
 }

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.util.OpenApiYamlLoader;
 import io.camunda.zeebe.gateway.rest.util.OpenApiYamlLoader.OpenApiLoadingException;
@@ -32,7 +31,7 @@ public class OpenApiResourceConfig {
 
   private final OpenApiConfigurer openApiConfigurer;
 
-  public OpenApiResourceConfig( final OpenApiConfigurer openApiConfigurer) {
+  public OpenApiResourceConfig(final OpenApiConfigurer openApiConfigurer) {
     this.openApiConfigurer = openApiConfigurer;
   }
 
