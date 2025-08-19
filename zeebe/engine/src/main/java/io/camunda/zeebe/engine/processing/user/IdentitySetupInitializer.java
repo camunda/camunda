@@ -214,6 +214,15 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             .setResourceMatcher(WILDCARD.getMatcher())
             .setResourceId(WILDCARD.getResourceId())
             .setPermissionTypes(Set.of(PermissionType.CREATE)));
+    setupRecord.addAuthorization(
+        new AuthorizationRecord()
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(connectorsRoleId)
+            .setResourceType(AuthorizationResourceType.DOCUMENT)
+            .setResourceMatcher(WILDCARD.getMatcher())
+            .setResourceId(WILDCARD.getResourceId())
+            .setPermissionTypes(
+                Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)));
     setupRecord.addTenantMember(
         new TenantRecord()
             .setTenantId(DEFAULT_TENANT_ID)
