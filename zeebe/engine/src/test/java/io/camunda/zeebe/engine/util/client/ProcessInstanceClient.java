@@ -210,6 +210,11 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceCreationWithResultClient withTags(final Set<String> tags) {
+      record.setTags(tags);
+      return this;
+    }
+
     public long create() {
       final long position =
           writer.writeCommand(
