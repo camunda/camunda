@@ -74,6 +74,20 @@ public class VariableIT {
   }
 
   @TestTemplate
+  public void shouldDeleteVariableByKey(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final VariableDbModel randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);
+
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriter.getVariableWriter().delete(randomizedVariable);
+    rdbmsWriter.flush();
+
+    final var instance = rdbmsService.getVariableReader().findOne(randomizedVariable.variableKey());
+
+    assertThat(instance).isNull();
+  }
+
+  @TestTemplate
   public void shouldSaveAndFindBigVariableByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
