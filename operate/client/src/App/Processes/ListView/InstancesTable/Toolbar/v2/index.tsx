@@ -92,7 +92,9 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
   });
 
   const handleApplyClick = () => {
-    if (modalMode === null) return;
+    if (modalMode === null) {
+      return;
+    }
 
     const baseFilter = getProcessInstancesRequestFilters();
     const {
