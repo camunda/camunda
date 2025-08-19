@@ -54,8 +54,8 @@ const Drd: React.FC<{decisionDefinitionKey?: string}> = observer(
 
     const {data: decisionDefinitionXml} = useQuery(
       useDecisionDefinitionXmlOptions({
-        decisionDefinitionKey,
-        enabled: !!decisionDefinitionKey,
+        decisionDefinitionKey: decisionDefinitionKey ?? '',
+        enabled: decisionDefinitionKey !== undefined,
       }),
     );
 

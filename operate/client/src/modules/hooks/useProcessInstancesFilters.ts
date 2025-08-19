@@ -7,9 +7,11 @@
  */
 
 import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
-import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useFilters} from 'modules/hooks/useFilters';
-import {type GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {
+  type GetProcessDefinitionStatisticsRequestBody,
+  type ProcessInstanceState,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const formatToISO = (dateString: string | undefined): string | undefined => {
   if (!dateString) {
@@ -104,15 +106,15 @@ function mapFiltersToRequest(
     };
   }
 
-  const state: Array<'ACTIVE' | 'COMPLETED' | 'TERMINATED'> = [];
+  const state: Array<ProcessInstanceState> = [];
   if (active) {
-    state.push(ProcessInstanceState.ACTIVE);
+    state.push('ACTIVE');
   }
   if (completed) {
-    state.push(ProcessInstanceState.COMPLETED);
+    state.push('COMPLETED');
   }
   if (canceled) {
-    state.push(ProcessInstanceState.TERMINATED);
+    state.push('TERMINATED');
   }
 
   if (incidents) {

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type RequestResult, requestWithThrow} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 import {
   endpoints,
   type CreateMigrationBatchOperationRequestBody,
@@ -15,7 +15,7 @@ import {
 
 const migrateProcessInstancesBatchOperation = async (
   payload: CreateMigrationBatchOperationRequestBody,
-): RequestResult<CreateMigrationBatchOperationResponseBody> => {
+) => {
   return requestWithThrow<CreateMigrationBatchOperationResponseBody>({
     url: endpoints.createMigrationBatchOperation.getUrl(),
     method: endpoints.createMigrationBatchOperation.method,

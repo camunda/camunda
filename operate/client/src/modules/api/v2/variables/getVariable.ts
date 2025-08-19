@@ -7,9 +7,9 @@
  */
 
 import {endpoints, type Variable} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {type RequestResult, requestWithThrow} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
-const getVariable = async (variableKey: string): RequestResult<Variable> => {
+const getVariable = async (variableKey: string) => {
   return requestWithThrow<Variable>({
     url: endpoints.getVariable.getUrl({variableKey}),
     method: endpoints.getVariable.method,

@@ -11,12 +11,12 @@ import {
   type CreateIncidentResolutionBatchOperationResponseBody,
   endpoints,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {requestWithThrow, type RequestResult} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
 const resolveProcessInstancesIncidentsBatchOperation = async (
   payload: CreateIncidentResolutionBatchOperationRequestBody,
-): RequestResult<CreateIncidentResolutionBatchOperationResponseBody> => {
-  return requestWithThrow({
+) => {
+  return requestWithThrow<CreateIncidentResolutionBatchOperationResponseBody>({
     url: endpoints.createIncidentResolutionBatchOperation.getUrl(),
     method: endpoints.createIncidentResolutionBatchOperation.method,
     body: payload,

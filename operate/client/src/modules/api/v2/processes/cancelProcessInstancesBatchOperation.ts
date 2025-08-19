@@ -11,12 +11,12 @@ import {
   type CreateCancellationBatchOperationResponseBody,
   endpoints,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {requestWithThrow, type RequestResult} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
 const cancelProcessInstancesBatchOperation = async (
   payload: CreateCancellationBatchOperationRequestBody,
-): RequestResult<CreateCancellationBatchOperationResponseBody> => {
-  return requestWithThrow({
+) => {
+  return requestWithThrow<CreateCancellationBatchOperationResponseBody>({
     url: endpoints.createCancellationBatchOperation.getUrl(),
     method: endpoints.createCancellationBatchOperation.method,
     body: payload,
