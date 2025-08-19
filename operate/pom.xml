@@ -73,7 +73,7 @@
     <version.parsson>1.1.7</version.parsson>
     <version.opensearch>2.5.0</version.opensearch>
     <version.springdoc>2.2.0</version.springdoc>
-    <version.tomcat>10.1.43</version.tomcat>
+    <version.tomcat>10.1.44</version.tomcat>
     <version.jakarta.json>2.0.1</version.jakarta.json>
     <version.node>v20.8.0</version.node>
     <version.yarn>v1.22.10</version.yarn>
