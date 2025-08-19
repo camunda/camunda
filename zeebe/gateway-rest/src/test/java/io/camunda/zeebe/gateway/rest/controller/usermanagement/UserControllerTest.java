@@ -437,7 +437,7 @@ public class UserControllerTest {
       // given
       final var dto = new UserDTO("alice-test", "Alice", "test+alice@camunda.com", null);
 
-      // when
+      // when/then
       webClient
           .post()
           .uri(USER_BASE_URL)
@@ -458,7 +458,7 @@ public class UserControllerTest {
       final UserDTO user = new UserDTO(username, "Alice", "test+alice@camunda.com", null);
       final var uri = USER_BASE_URL + "/" + username;
 
-      // when
+      // when/then
       webClient
           .put()
           .uri(uri)
@@ -481,7 +481,8 @@ public class UserControllerTest {
       // given
       final String username = "alice-test";
       final var uri = USER_BASE_URL + "/" + username;
-      // when
+
+      // when/then
       webClient
           .delete()
           .uri(uri)
@@ -498,7 +499,8 @@ public class UserControllerTest {
       // given
       final String username = "alice-test";
       final var uri = USER_BASE_URL + "/" + username;
-      // when
+
+      // when/then
       webClient
           .get()
           .uri(uri)
@@ -512,9 +514,11 @@ public class UserControllerTest {
 
     @Test
     void shouldReturnErrorOnSearch() {
+      // given
       final String request = "{}";
       final var uri = USER_BASE_URL + "/search";
 
+      // when/then
       webClient
           .post()
           .uri(uri)
