@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import feign.FeignException.NotFound;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.qa.util.cluster.HistoryBackupClient;
@@ -95,6 +96,8 @@ public class BackupRestoreIT {
   @TestZeebe(autoStart = false)
   protected TestStandaloneApplication<?> testStandaloneApplication;
 
+  protected UnifiedConfiguration unifiedConfiguration;
+
   protected BackupDBClient webappsDBClient;
 
   @RegisterExtension
@@ -176,6 +179,8 @@ public class BackupRestoreIT {
     webappsDBClient = BackupDBClient.create(dbUrl, config.databaseType, EXECUTOR);
     webappsDBClient.createRepository(REPOSITORY_NAME);
     generator = new DataGenerator(camundaClient, PROCESS_ID, TIMEOUT);
+
+    unifiedConfiguration = new UnifiedConfiguration();
   }
 
   public static Stream<BackupRestoreTestConfig> sources() {
@@ -242,8 +247,7 @@ public class BackupRestoreIT {
   }
 
   private void restoreZeebe() {
-    try (final var restoreApp =
-        new TestRestoreApp(testStandaloneApplication.brokerConfig()).withBackupId(BACKUP_ID)) {
+    try (final var restoreApp = new TestRestoreApp(unifiedConfiguration).withBackupId(BACKUP_ID)) {
       assertThatNoException().isThrownBy(restoreApp::start);
     }
   }

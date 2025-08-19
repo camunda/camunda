@@ -13,6 +13,8 @@ import static org.awaitility.Awaitility.await;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.Gcs;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
@@ -128,7 +130,7 @@ final class ContinuousBackupIT {
     FileUtil.ensureDirectoryExists(dataDirectory);
     final var restore =
         new TestRestoreApp()
-            .withBrokerConfig(this::configureBroker)
+            .withUnifiedConfiguration(this::configureBackupStore)
             .withWorkingDirectory(dataDirectory)
             .withBackupId(1, 2, 3)
             .start();
@@ -171,7 +173,7 @@ final class ContinuousBackupIT {
     FileUtil.ensureDirectoryExists(dataDirectory);
     final var restore =
         new TestRestoreApp()
-            .withBrokerConfig(this::configureBroker)
+            .withUnifiedConfiguration(this::configureBackupStore)
             .withWorkingDirectory(dataDirectory)
             .withBackupId(1, 3);
 
@@ -254,5 +256,21 @@ final class ContinuousBackupIT {
     cfg.getData().getBackup().setStore(BackupStoreType.GCS);
     cfg.getData().setLogSegmentSize(DataSize.ofMegabytes(1));
     cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(500));
+  }
+
+  private void configureBackupStore(final UnifiedConfiguration config) {
+    final var backup = config.getCamunda().getData().getBackup();
+    final var gcs = backup.getGcs();
+    gcs.setAuth(Gcs.GcsBackupStoreAuth.NONE);
+    gcs.setBasePath(basePath);
+    gcs.setBucketName(BUCKET_NAME);
+    gcs.setHost(GCS.externalEndpoint());
+    config
+        .getCamunda()
+        .getData()
+        .getPrimaryStorage()
+        .getLogStream()
+        .setLogSegmentSize(DataSize.ofMegabytes(1));
+    // config.getCamunda().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(500)); ???
   }
 }

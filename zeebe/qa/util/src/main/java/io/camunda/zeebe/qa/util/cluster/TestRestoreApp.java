@@ -9,8 +9,7 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
-import io.camunda.configuration.beans.BrokerBasedProperties;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
 import java.util.Arrays;
@@ -21,19 +20,20 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Represents an instance of the {@link RestoreApp} Spring application. */
 public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> {
-  private final BrokerBasedProperties config;
+  private final UnifiedConfiguration config;
   private long[] backupId;
 
   public TestRestoreApp() {
-    this(new BrokerBasedProperties());
+    this(new UnifiedConfiguration());
   }
 
-  public TestRestoreApp(final BrokerBasedProperties config) {
+  public TestRestoreApp(final UnifiedConfiguration config) {
     super(RestoreApp.class);
     this.config = config;
 
     //noinspection resource
-    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.RESTORE);
+    withBean("unifiedConfiguration", config, UnifiedConfiguration.class)
+        .withAdditionalProfile(Profile.RESTORE);
   }
 
   @Override
@@ -43,7 +43,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(String.valueOf(config.getCluster().getNodeId()));
+    return MemberId.from(String.valueOf(config.getCamunda().getCluster().getNodeId()));
   }
 
   @Override
@@ -71,7 +71,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
     return super.createSpringBuilder().web(WebApplicationType.NONE);
   }
 
-  public TestRestoreApp withBrokerConfig(final Consumer<BrokerCfg> modifier) {
+  public TestRestoreApp withUnifiedConfiguration(final Consumer<UnifiedConfiguration> modifier) {
     modifier.accept(config);
     return this;
   }
