@@ -119,12 +119,14 @@ public class RoleSpecificFilterIT {
     final var roleId = Strings.newRandomValidIdentityId();
     final var anotherRoleId = Strings.newRandomValidIdentityId();
     final var group = GroupFixtures.createRandomized(b -> b);
+    final var otherGroup = GroupFixtures.createRandomized(b -> b);
     final var userId = Strings.newRandomValidIdentityId();
     createAndSaveUser(
         rdbmsWriter,
         UserFixtures.createRandomized(
             b -> b.username(userId).name("User 1337").password("password")));
     createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriter, otherGroup);
     createAndSaveRole(
         rdbmsWriter, RoleFixtures.createRandomized(b -> b.roleId(roleId).name("Role 1337")));
     createAndSaveRole(
@@ -133,13 +135,15 @@ public class RoleSpecificFilterIT {
 
     addUserToRole(roleId, userId);
     addGroupToRole(roleId, group.groupId());
+    addGroupToRole(roleId, otherGroup.groupId());
     addGroupToRole(anotherRoleId, group.groupId());
 
     final var roles =
         roleReader.search(
             new RoleQuery(
                 new RoleFilter.Builder()
-                    .memberIdsByType(Map.of(memberType, Set.of(group.groupId())))
+                    .memberIdsByType(
+                        Map.of(memberType, Set.of(group.groupId(), otherGroup.groupId())))
                     .build(),
                 RoleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
