@@ -53,12 +53,18 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const {data: statistics} = useFlownodeInstancesStatistics();
 
   const instanceCount = useMemo(() => {
-    if (!statistics?.items || !elementId) return null;
+    if (!statistics?.items || !elementId) {
+      return null;
+    }
     const elementStats = statistics.items.find(
       (stat) => stat.elementId === elementId,
     );
-    if (!elementStats) return 0;
-    if (isMultiInstance) return 1;
+    if (!elementStats) {
+      return 0;
+    }
+    if (isMultiInstance) {
+      return 1;
+    }
     return (
       elementStats.active +
       elementStats.completed +
