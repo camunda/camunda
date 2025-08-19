@@ -808,6 +808,16 @@ public class RetryElasticsearchClient {
         });
   }
 
+  public Map<String, ComposableIndexTemplate> getIndexTemplates(final String templateNamePattern) {
+    return executeWithRetries(
+        "GetIndexTemplate " + templateNamePattern,
+        () -> {
+          final var request = new GetComposableIndexTemplateRequest(templateNamePattern);
+          final var response = esClient.indices().getIndexTemplate(request, requestOptions);
+          return response.getIndexTemplates();
+        });
+  }
+
   public Map<String, IndexMapping> getIndexMappings(final String namePattern) {
     return executeWithRetries(
         "Get indices mappings for " + namePattern,

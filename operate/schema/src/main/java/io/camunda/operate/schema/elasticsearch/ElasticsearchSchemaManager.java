@@ -275,7 +275,18 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private void updateIndexTemplateSettings() {
+    final var indexTemplates =
+        retryElasticsearchClient.getIndexTemplates(
+            operateProperties.getElasticsearch().getIndexPrefix() + "*");
     for (final var templateDescriptor : templateDescriptors) {
+      var indexTemplate = indexTemplates.get(templateDescriptor.getTemplateName());
+      if (indexTemplate == null) {
+        LOGGER.debug(
+            "Index template '{}' not found in wildcard search results by pattern. Attempting direct lookup by full template name",
+            templateDescriptor.getTemplateName());
+        indexTemplate =
+            retryElasticsearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      }
       final var expectedShards =
           String.valueOf(
               operateProperties
@@ -288,8 +299,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
                   .getNumberOfReplicas(templateDescriptor.getIndexName()));
       String actualShards = null;
       String actualReplicas = null;
-      final var indexTemplate =
-          retryElasticsearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
       if (indexTemplate.template().settings() != null) {
         actualShards = indexTemplate.template().settings().get(NUMBERS_OF_SHARDS);
         actualReplicas = indexTemplate.template().settings().get(NUMBERS_OF_REPLICA);
