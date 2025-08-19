@@ -37,14 +37,6 @@
     resultType="long">
     SELECT COUNT(*)
     FROM ${prefix}MAPPING_RULES m
-    <if test="filter.groupId != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_RULE_ID = gm.ENTITY_ID
-      AND gm.ENTITY_TYPE = 'MAPPING_RULE'
-    </if>
-    <if test="filter.roleId != null">
-      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
-      AND rm.ENTITY_TYPE = 'MAPPING_RULE'
-    </if>
     <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
   </select>
 
@@ -58,15 +50,7 @@
     CLAIM_VALUE,
     NAME
     FROM ${prefix}MAPPING_RULES m
-    <if test="filter.groupId != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_RULE_ID = gm.ENTITY_ID
-      AND gm.ENTITY_TYPE = 'MAPPING_RULE'
-    </if>
-    <if test="filter.roleId != null">
-      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
-      AND rm.ENTITY_TYPE = 'MAPPING_RULE'
-    </if>
-    <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+      <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -74,28 +58,36 @@
   </select>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
-    <if test="filter.mappingRuleId != null">
-      AND MAPPING_RULE_ID = #{filter.mappingRuleId}
-    </if>
-    <if test="filter.mappingRuleKey != null">
-      AND MAPPING_RULE_KEY = #{filter.mappingRuleKey}
-    </if>
-    <if test="filter.claimName != null">
-      AND CLAIM_NAME = #{filter.claimName}
-    </if>
-    <if test="filter.claimValue">
-      AND CLAIM_VALUE = #{filter.claimValue}
-    </if>
-    <if test="filter.name != null">
-      AND NAME = #{filter.name}
-    </if>
-    <if test="filter.roleId != null">
-        AND rm.ROLE_ID = #{filter.roleId}
-    </if>
-    <if test="filter.groupId != null">
-      AND gm.GROUP_ID = #{filter.groupId}
-    </if>
+    <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND MAPPING_RULE_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="filter.mappingRuleId != null">
+        AND MAPPING_RULE_ID = #{filter.mappingRuleId}
+      </if>
+      <if test="filter.mappingRuleKey != null">
+        AND MAPPING_RULE_KEY = #{filter.mappingRuleKey}
+      </if>
+      <if test="filter.claimName != null">
+        AND CLAIM_NAME = #{filter.claimName}
+      </if>
+      <if test="filter.claimValue">
+        AND CLAIM_VALUE = #{filter.claimValue}
+      </if>
+      <if test="filter.name != null">
+        AND NAME = #{filter.name}
+      </if>
+      <if test="filter.groupId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM ${prefix}GROUP_MEMBER
+        WHERE ENTITY_TYPE = 'MAPPING_RULE' AND GROUP_ID = #{filter.groupId})
+      </if>
+      <if test="filter.roleId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM ${prefix}ROLE_MEMBER
+        WHERE ENTITY_TYPE = 'MAPPING_RULE' AND ROLE_ID = #{filter.roleId})
+      </if>
+    </where>
   </sql>
 
 </mapper>
