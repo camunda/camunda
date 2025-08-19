@@ -123,15 +123,16 @@ class TagUtilTest {
 
   @Test
   void shouldRejectTagExceeding100Characters() {
-    final String tooLongTag = "a" + "b".repeat(100); // 101 characters
+    final String tooLongTag = "a" + "b".repeat(TagUtil.MAX_TAG_LENGTH); // 101 characters
     assertThat(TagUtil.isValidTag(tooLongTag)).isFalse();
-    assertThat(tooLongTag.length()).isEqualTo(101);
+    assertThat(tooLongTag.length()).isEqualTo(TagUtil.MAX_TAG_LENGTH + 1);
   }
 
   @Test
   void shouldAcceptTagWith100Characters() {
-    final String maxLengthTag = "a" + "b".repeat(99); // exactly 100 characters
+    final String maxLengthTag =
+        "a" + "b".repeat(TagUtil.MAX_TAG_LENGTH - 1); // exactly 100 characters
     assertThat(TagUtil.isValidTag(maxLengthTag)).isTrue();
-    assertThat(maxLengthTag.length()).isEqualTo(100);
+    assertThat(maxLengthTag.length()).isEqualTo(TagUtil.MAX_TAG_LENGTH);
   }
 }

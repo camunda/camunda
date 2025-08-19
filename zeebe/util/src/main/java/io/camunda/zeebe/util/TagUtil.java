@@ -14,8 +14,10 @@ public class TagUtil {
   public static final int MAX_NUMBER_OF_TAGS = 10;
   public static final int MAX_TAG_LENGTH = 100;
   public static final String TAG_FORMAT_DESCRIPTION =
-      "Tag must start with a letter (a-z, A-Z), followed by alphanumerics, underscores, minuses, colons, or periods. "
-          + "It must not be blank and must be 100 characters or less.";
+      String.format(
+          "Tag must start with a letter (a-z, A-Z), followed by alphanumerics, underscores, minuses, colons, or periods. "
+              + "It must not be blank and must be %s characters or less.",
+          MAX_TAG_LENGTH);
 
   // Pattern for valid tag format: starts with letter, followed by alphanumerics, _, -, :, .
   private static final Pattern VALID_TAG_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_\\-:.]*$");
