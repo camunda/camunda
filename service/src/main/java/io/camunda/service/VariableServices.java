@@ -18,6 +18,12 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateVariableRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteVariableRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateVariableRequest;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 public final class VariableServices
     extends SearchQueryService<VariableServices, VariableQuery, VariableEntity> {
@@ -60,5 +66,23 @@ public final class VariableServices
                         withAuthorization(
                             VARIABLE_READ_AUTHORIZATION, VariableEntity::processDefinitionId)))
                 .getVariable(key));
+  }
+
+  public CompletableFuture<VariableRecord> createClusterVariable(
+      final String name, final Object value) {
+    return sendBrokerRequest(
+        new BrokerCreateVariableRequest()
+            .clusterLevel()
+            .setVariable(name, getDocumentOrEmpty(value)));
+  }
+
+  public CompletableFuture<VariableRecord> updateVariable(
+      final Long variableKey, final Object value) {
+    return sendBrokerRequest(
+        new BrokerUpdateVariableRequest().setKey(variableKey).setValue(getDocumentOrEmpty(value)));
+  }
+
+  public CompletableFuture<VariableRecord> deleteVariable(final Long variableKey) {
+    return sendBrokerRequest(new BrokerDeleteVariableRequest().setKey(variableKey));
   }
 }
