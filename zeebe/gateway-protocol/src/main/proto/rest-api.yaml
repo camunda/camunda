@@ -10883,6 +10883,10 @@ components:
             $ref: "#/components/schemas/ProblemDetail"
     Unauthorized:
       description: The request lacks valid authentication credentials.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
       content:
         application/problem+json:
           schema:
