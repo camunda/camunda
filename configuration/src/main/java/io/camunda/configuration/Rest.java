@@ -18,6 +18,9 @@ public class Rest {
   /** Set the process cache configuration */
   private ProcessCache processCache = new ProcessCache();
 
+  /** Set the executor configuration */
+  private Executor executor = new Executor();
+
   public List<Filter> getFilters() {
     return filters;
   }
@@ -32,5 +35,13 @@ public class Rest {
 
   public void setProcessCache(final ProcessCache processCache) {
     this.processCache = processCache;
+  }
+
+  public Executor getExecutor() {
+    return executor;
+  }
+
+  public void setExecutor(final Executor executor) {
+    this.executor = executor;
   }
 }
