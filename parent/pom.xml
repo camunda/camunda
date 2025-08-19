@@ -52,7 +52,7 @@
     <version.zstd-jni>1.5.7-4</version.zstd-jni>
     <version.commons-text>1.14.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
-    <version.docker-java-api>3.5.2</version.docker-java-api>
+    <version.docker-java-api>3.5.3</version.docker-java-api>
     <version.elasticsearch>8.16.6</version.elasticsearch>
     <version.error-prone>2.41.0</version.error-prone>
     <version.grpc>1.73.0</version.grpc>
