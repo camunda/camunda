@@ -7,130 +7,103 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.LongFunction;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class VariableClient {
 
   private static final long DEFAULT_KEY = -1;
-
-  private static final LongFunction<Record<VariableDocumentRecordValue>>
-      UPDATED_EXPECTATION_SUPPLIER =
-          (sourceRecordPosition) ->
-              RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
-                  .withSourceRecordPosition(sourceRecordPosition)
-                  .getFirst();
-  private static final LongFunction<Record<VariableDocumentRecordValue>>
-      UPDATING_EXPECTATION_SUPPLIER =
-          (sourceRecordPosition) ->
-              RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATING)
-                  .withSourceRecordPosition(sourceRecordPosition)
-                  .getFirst();
-
-  private static final LongFunction<Record<VariableDocumentRecordValue>>
-      REJECTION_EXPECTATION_SUPPLIER =
-          (sourceRecordPosition) ->
-              RecordingExporter.variableDocumentRecords()
-                  .onlyCommandRejections()
-                  .withSourceRecordPosition(sourceRecordPosition)
-                  .getFirst();
-
-  private final VariableDocumentRecord variableDocumentRecord;
+  private static final LongFunction<Record<VariableRecordValue>> SUCCESS_SUPPLIER =
+      (sourceRecordPosition) ->
+          RecordingExporter.variableRecords()
+              .onlyEvents()
+              .withSourceRecordPosition(sourceRecordPosition)
+              .getFirst();
+  private static final LongFunction<Record<VariableRecordValue>> REJECTION_SUPPLIER =
+      (sourceRecordPosition) ->
+          RecordingExporter.variableRecords()
+              .onlyCommandRejections()
+              .withSourceRecordPosition(sourceRecordPosition)
+              .getFirst();
+  private long key;
+  private final VariableRecord variableRecord;
   private final CommandWriter writer;
+  private final String[] authorizedTenants = new String[] {TenantOwned.DEFAULT_TENANT_IDENTIFIER};
 
-  private long requestId = new Random().nextLong();
-  private int requestStreamId = new Random().nextInt();
+  private final long requestId = new Random().nextLong();
+  private final int requestStreamId = new Random().nextInt();
 
-  private LongFunction<Record<VariableDocumentRecordValue>> expectation =
-      UPDATED_EXPECTATION_SUPPLIER;
-  private String[] authorizedTenants = new String[] {TenantOwned.DEFAULT_TENANT_IDENTIFIER};
+  private LongFunction<Record<VariableRecordValue>> expectation = SUCCESS_SUPPLIER;
 
   public VariableClient(final CommandWriter writer) {
     this.writer = writer;
-    variableDocumentRecord = new VariableDocumentRecord();
+    variableRecord = new VariableRecord();
   }
 
-  public VariableClient ofScope(final long scopeKey) {
-    variableDocumentRecord.setScopeKey(scopeKey);
+  public VariableClient withClusterVariable(final String name, final Object value) {
+    variableRecord.setScopeKey(-1);
+    variableRecord.setProcessInstanceKey(-1);
+    variableRecord.setProcessDefinitionKey(-1);
+    variableRecord.setName(name);
+    variableRecord.setValue(new UnsafeBuffer(MsgPackUtil.asMsgPack(value)));
     return this;
   }
 
-  public VariableClient withDocument(final Map<String, Object> variables) {
-    final UnsafeBuffer serializedVariables =
-        new UnsafeBuffer(MsgPackUtil.asMsgPack(variables).byteArray());
-    return withDocument(serializedVariables);
-  }
-
-  public VariableClient withDocument(final DirectBuffer variables) {
-    variableDocumentRecord.setVariables(variables);
+  public VariableClient withKey(final long key) {
+    this.key = key;
     return this;
   }
 
-  public VariableClient withDocument(final String variables) {
-    return withDocument(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
-  }
-
-  public VariableClient withLocalSemantic() {
-    return withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL);
-  }
-
-  public VariableClient withPropagateSemantic() {
-    return withUpdateSemantic(VariableDocumentUpdateSemantic.PROPAGATE);
-  }
-
-  public VariableClient withUpdateSemantic(final VariableDocumentUpdateSemantic semantic) {
-    variableDocumentRecord.setUpdateSemantics(semantic);
-    return this;
-  }
-
-  public VariableClient forAuthorizedTenants(final String... authorizedTenants) {
-    this.authorizedTenants = authorizedTenants;
+  public VariableClient withValue(final Object value) {
+    variableRecord.setValue(new UnsafeBuffer(MsgPackUtil.asMsgPack(value)));
     return this;
   }
 
   public VariableClient expectRejection() {
-    expectation = REJECTION_EXPECTATION_SUPPLIER;
+    expectation = REJECTION_SUPPLIER;
     return this;
   }
 
-  public VariableClient expectUpdating() {
-    expectation = UPDATING_EXPECTATION_SUPPLIER;
-    return this;
-  }
-
-  public Record<VariableDocumentRecordValue> update() {
+  public Record<VariableRecordValue> create() {
     final long position =
         writer.writeCommand(
             DEFAULT_KEY,
             requestStreamId,
             requestId,
-            VariableDocumentIntent.UPDATE,
-            variableDocumentRecord,
+            VariableIntent.CREATE,
+            variableRecord,
             authorizedTenants);
     return expectation.apply(position);
   }
 
-  public Record<VariableDocumentRecordValue> update(final String username) {
+  public Record<VariableRecordValue> update() {
     final long position =
         writer.writeCommand(
-            DEFAULT_KEY,
+            key,
             requestStreamId,
             requestId,
-            VariableDocumentIntent.UPDATE,
-            username,
-            variableDocumentRecord,
+            VariableIntent.UPDATE,
+            variableRecord,
+            authorizedTenants);
+    return expectation.apply(position);
+  }
+
+  public Record<VariableRecordValue> delete() {
+    final long position =
+        writer.writeCommand(
+            key,
+            requestStreamId,
+            requestId,
+            VariableIntent.DELETE,
+            variableRecord,
             authorizedTenants);
     return expectation.apply(position);
   }

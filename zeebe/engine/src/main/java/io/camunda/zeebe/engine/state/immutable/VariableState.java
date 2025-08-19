@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.instance.VariableDocumentState;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
+import io.camunda.zeebe.engine.state.variable.VariablePointer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,8 @@ public interface VariableState {
   DirectBuffer getVariable(long scopeKey, DirectBuffer name);
 
   DirectBuffer getVariable(long scopeKey, DirectBuffer name, int nameOffset, int nameLength);
+
+  VariablePointer getVariableByKey(long key);
 
   DirectBuffer getVariablesAsDocument(long scopeKey);
 

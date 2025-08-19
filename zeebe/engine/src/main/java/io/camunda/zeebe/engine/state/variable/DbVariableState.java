@@ -52,6 +52,14 @@ public class DbVariableState implements MutableVariableState {
   private final DbLong scopeKey;
   private final DbString variableName;
 
+  // recordKey -> (scopeKey, name)
+  // This is meant to be filled only by cluster variable, as it is a new concept, we do not want to
+  // fill
+  // variablePointer for all variables yet
+  private final ColumnFamily<DbLong, VariablePointer> variablePointerByRecordKey;
+  private final DbLong variableRecordKey;
+  private final VariablePointer variablePointer = new VariablePointer();
+
   // (scope key) => (variable document state)
   // we need two separate wrapper to not interfere with get and put
   // see https://github.com/zeebe-io/zeebe/issues/1914
@@ -93,6 +101,14 @@ public class DbVariableState implements MutableVariableState {
             transactionContext,
             scopeKey,
             variableDocumentStateToRead);
+
+    variableRecordKey = new DbLong();
+    variablePointerByRecordKey =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.VARIABLES_BY_RECORD_KEY,
+            transactionContext,
+            variableRecordKey,
+            new VariablePointer());
   }
 
   @Override
@@ -104,6 +120,28 @@ public class DbVariableState implements MutableVariableState {
       final DirectBuffer value) {
     setVariableLocal(
         key, scopeKey, processDefinitionKey, name, 0, name.capacity(), value, 0, value.capacity());
+  }
+
+  @Override
+  public void createVariablePointer(
+      final long recordKey, final long scopeKey, final DirectBuffer name) {
+    variableRecordKey.wrapLong(recordKey);
+    variablePointer.setName(name, 0, name.capacity());
+    variablePointer.setScope(scopeKey);
+    variablePointerByRecordKey.upsert(variableRecordKey, variablePointer);
+  }
+
+  @Override
+  public void removeVariable(final long scopeKey, final DirectBuffer name) {
+    this.scopeKey.wrapLong(scopeKey);
+    variableName.wrapBuffer(name);
+    variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey);
+  }
+
+  @Override
+  public void removeVariableVariablePointer(final long key) {
+    variableRecordKey.wrapLong(key);
+    variablePointerByRecordKey.deleteExisting(variableRecordKey);
   }
 
   @Override
@@ -158,6 +196,19 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
+  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
+    scopeKey.wrapLong(record.getScopeKey());
+    variableDocumentStateToWrite.setKey(key).setRecord(record);
+    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
+  }
+
+  @Override
+  public void removeVariableDocumentState(final long scopeKey) {
+    this.scopeKey.wrapLong(scopeKey);
+    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
+  }
+
+  @Override
   public DirectBuffer getVariableLocal(final long scopeKey, final DirectBuffer name) {
     final VariableInstance variable = getVariableLocal(scopeKey, name, 0, name.capacity());
 
@@ -208,6 +259,12 @@ public class DbVariableState implements MutableVariableState {
     } while (currentScopeKey >= 0);
 
     return null;
+  }
+
+  @Override
+  public VariablePointer getVariableByKey(final long key) {
+    variableRecordKey.wrapLong(key);
+    return variablePointerByRecordKey.get(variableRecordKey);
   }
 
   @Override
@@ -323,19 +380,6 @@ public class DbVariableState implements MutableVariableState {
 
     final ParentScopeKey parentScopeKey = childParentColumnFamily.get(childKey);
     return parentScopeKey != null ? parentScopeKey.get() : NO_PARENT;
-  }
-
-  @Override
-  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
-    scopeKey.wrapLong(record.getScopeKey());
-    variableDocumentStateToWrite.setKey(key).setRecord(record);
-    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
-  }
-
-  @Override
-  public void removeVariableDocumentState(final long scopeKey) {
-    this.scopeKey.wrapLong(scopeKey);
-    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
   }
 
   @Override

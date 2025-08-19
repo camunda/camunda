@@ -13,7 +13,7 @@ import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
+import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
 import java.util.List;
@@ -32,7 +32,7 @@ class ExpressionProcessorTest {
       ExpressionLanguageFactory.createExpressionLanguage(
           new ZeebeFeelEngineClock(InstantSource.system()));
   private static final EvaluationContext EMPTY_LOOKUP = x -> null;
-  private static final EvaluationContextLookup DEFAULT_CONTEXT_LOOKUP = scope -> EMPTY_LOOKUP;
+  private static final ScopedEvaluationContext DEFAULT_CONTEXT_LOOKUP = scope -> EMPTY_LOOKUP;
 
   @Nested
   @TestInstance(Lifecycle.PER_CLASS)
