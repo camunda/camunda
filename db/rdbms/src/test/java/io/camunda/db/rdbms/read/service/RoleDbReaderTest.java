@@ -9,40 +9,39 @@ package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.Set;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class RoleDbReaderTest {
-
   private final RoleMapper roleMapper = mock(RoleMapper.class);
-  private final RoleDbReader reader = new RoleDbReader(roleMapper);
+  private final RoleDbReader roleDbReader = new RoleDbReader(roleMapper);
 
   @Test
-  void shouldImmediatelyReturnEmptyResultWhenMemberIdsFilterIsEmpty() {
-    // When
-    final var result =
-        reader.search(
-            RoleQuery.of(
-                b -> b.filter(f -> f.memberIds(Set.of()).childMemberType(EntityType.USER))),
-            null);
+  void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {
+    final RoleQuery query = RoleQuery.of(b -> b);
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(Authorization.of(a -> a.role().read())),
+            TenantCheck.disabled());
 
-    // Then
-    assertThat(result.total()).isZero();
-    verifyNoInteractions(roleMapper);
+    final var items = roleDbReader.search(query, resourceAccessChecks).items();
+    assertThat(items).isEmpty();
   }
 
   @Test
-  void shouldImmediatelyReturnEmptyResultWhenRoleIdsFilterIsEmpty() {
-    // When
-    final var result = reader.search(RoleQuery.of(b -> b.filter(f -> f.roleIds(Set.of()))), null);
+  void shouldReturnEmptyListWhenAuthorizedTenantIdsIsNull() {
+    final RoleQuery query = RoleQuery.of(b -> b);
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
 
-    // Then
-    assertThat(result.total()).isZero();
-    verifyNoInteractions(roleMapper);
+    final var items = roleDbReader.search(query, resourceAccessChecks).items();
+    assertThat(items).isEmpty();
   }
 }
