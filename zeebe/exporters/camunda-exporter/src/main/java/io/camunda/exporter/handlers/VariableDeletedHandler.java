@@ -18,12 +18,12 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.List;
 
-public class VariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
+public class VariableDeletedHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
 
   private final int variableSizeThreshold;
   private final String indexName;
 
-  public VariableHandler(final String indexName, final int variableSizeThreshold) {
+  public VariableDeletedHandler(final String indexName, final int variableSizeThreshold) {
     this.indexName = indexName;
     this.variableSizeThreshold = variableSizeThreshold;
   }
@@ -40,7 +40,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
 
   @Override
   public boolean handlesRecord(final Record<VariableRecordValue> record) {
-    return !(record.getIntent().equals(VariableIntent.MIGRATED) || record.getIntent().equals(VariableIntent.DELETED));
+    return record.getIntent().equals(VariableIntent.DELETED);
   }
 
   @Override
@@ -84,7 +84,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
 
   @Override
   public void flush(final VariableEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.delete(indexName, entity.getId());
   }
 
   @Override
