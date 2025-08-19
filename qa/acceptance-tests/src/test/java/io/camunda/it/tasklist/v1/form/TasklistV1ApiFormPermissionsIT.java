@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.tasklist.v1;
+package io.camunda.it.tasklist.v1.form;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
@@ -30,10 +30,8 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.JsonUtil;
-import java.net.http.HttpClient;
 import java.util.Collections;
 import java.util.List;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -51,12 +49,9 @@ public class TasklistV1ApiFormPermissionsIT {
   private static final String ADMIN_USERNAME = "admin";
   private static final String UNAUTHORIZED_USERNAME = "unauthorized";
   private static long processDefinitionKey;
-  private static long taskKey;
   private static String formId;
   private static TestRestTasklistClient authorizedClient;
   private static TestRestTasklistClient unauthorizedClient;
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @UserDefinition
   private static final TestUser ADMIN =
@@ -131,7 +126,6 @@ public class TasklistV1ApiFormPermissionsIT {
                       .join()
                       .items();
               assertThat(tasks).describedAs("Wait until the task exists").hasSize(1);
-              taskKey = tasks.getFirst().getUserTaskKey();
             });
 
     authorizedClient =

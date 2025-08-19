@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.tasklist.v1;
+package io.camunda.it.tasklist.v1.task;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
@@ -32,7 +32,6 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.JsonUtil;
-import java.net.http.HttpClient;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.AutoClose;
@@ -53,10 +52,8 @@ public class TasklistV1ApiUserTaskPermissionsIT {
   private static final String ADMIN_USERNAME = "admin";
   private static final String UNAUTHORIZED_USERNAME = "unauthorized";
   private static long taskKey;
-  private static TestRestTasklistClient authorizedClient;
-  private static TestRestTasklistClient unauthorizedClient;
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  @AutoClose private static TestRestTasklistClient authorizedClient;
+  @AutoClose private static TestRestTasklistClient unauthorizedClient;
 
   @UserDefinition
   private static final TestUser ADMIN =

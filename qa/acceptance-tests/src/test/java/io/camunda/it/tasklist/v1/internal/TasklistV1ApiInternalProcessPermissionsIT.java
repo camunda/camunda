@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.tasklist.v1;
+package io.camunda.it.tasklist.v1.internal;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
@@ -30,7 +30,6 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
-import java.net.http.HttpClient;
 import java.util.List;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,10 +47,8 @@ public class TasklistV1ApiInternalProcessPermissionsIT {
 
   private static final String ADMIN_USERNAME = "admin";
   private static final String UNAUTHORIZED_USERNAME = "unauthorized";
-  private static TestRestTasklistClient authorizedClient;
-  private static TestRestTasklistClient unauthorizedClient;
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  @AutoClose private static TestRestTasklistClient authorizedClient;
+  @AutoClose private static TestRestTasklistClient unauthorizedClient;
 
   @UserDefinition
   private static final TestUser ADMIN =
