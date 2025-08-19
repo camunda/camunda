@@ -22,7 +22,6 @@ import PageEmptyState from "src/components/layout/PageEmptyState";
 
 const List: FC = () => {
   const { t } = useTranslate("tenants");
-  const RESOURCE_TYPE_STRING = t("tenant").toLowerCase();
   const navigate = useNavigate();
   const {
     data: tenantSearchResults,
@@ -55,7 +54,7 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <PageEmptyState
-          resourceType={RESOURCE_TYPE_STRING}
+          resourceTypeTranslationString={"tenant"}
           docsLinkPath=""
           handleClick={addTenant}
         />

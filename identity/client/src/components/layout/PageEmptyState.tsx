@@ -14,29 +14,31 @@ import { docsUrl } from "src/configuration";
 import useTranslate from "src/utility/localization";
 
 type PageEmptyStateProps = {
-  resourceType: string;
+  resourceTypeTranslationString: string;
   docsLinkPath?: string;
   handleClick: () => void;
 };
 
 const PageEmptyState: FC<PageEmptyStateProps> = ({
-  resourceType,
+  resourceTypeTranslationString,
   docsLinkPath = "",
   handleClick,
 }) => {
   const { t } = useTranslate();
 
+  const resourceTypeText = t(resourceTypeTranslationString).toLowerCase();
+
   return (
     <C3EmptyState
       heading={t("emptyStateTitleCreate", {
-        resourceType,
+        resourceType: resourceTypeText,
       })}
       description={t("emptyStateSubtitleCreate", {
-        resourceType,
+        resourceType: resourceTypeText,
       })}
       button={{
         label: t("emptyStateButtonCreate", {
-          resourceType,
+          resourceType: resourceTypeText,
         }),
         onClick: handleClick,
         icon: Add,
@@ -44,7 +46,7 @@ const PageEmptyState: FC<PageEmptyStateProps> = ({
       link={{
         href: documentationHref(docsUrl, docsLinkPath),
         label: t("emptyStateLearnText", {
-          resourceType,
+          resourceType: resourceTypeText,
         }),
       }}
     />

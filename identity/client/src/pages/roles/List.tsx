@@ -22,7 +22,6 @@ import PageEmptyState from "src/components/layout/PageEmptyState";
 
 const List: FC = () => {
   const { t } = useTranslate("roles");
-  const RESOURCE_TYPE_STRING = t("role").toLowerCase();
   const navigate = useNavigate();
   const {
     data: roles,
@@ -54,7 +53,7 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <PageEmptyState
-          resourceType={RESOURCE_TYPE_STRING}
+          resourceTypeTranslationString={"role"}
           docsLinkPath=""
           handleClick={addRole}
         />

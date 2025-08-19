@@ -27,8 +27,6 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ roleId }) => {
   const { t } = useTranslate("roles");
-  const CHILD_RESOURCE_TYPE_STRING = t("user").toLowerCase();
-  const PARENT_RESOURCE_TYPE_STRING = t("role").toLowerCase();
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
     getMembersByRole,
@@ -57,7 +55,7 @@ const Members: FC<MembersProps> = ({ roleId }) => {
       <C3EmptyState
         heading={t("somethingsWrong")}
         description={t("unableToLoadResource", {
-          resourceType: CHILD_RESOURCE_TYPE_STRING,
+          resourceType: t("user").toLowerCase(),
         })}
         button={{ label: t("retry"), onClick: reload }}
       />
@@ -67,8 +65,8 @@ const Members: FC<MembersProps> = ({ roleId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceType={CHILD_RESOURCE_TYPE_STRING}
-          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          childResourceTypeTranslationString={"user"}
+          parentResourceTypeTranslationString={"role"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

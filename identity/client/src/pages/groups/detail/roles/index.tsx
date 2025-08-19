@@ -24,8 +24,6 @@ type RolesProps = {
 
 const Roles: FC<RolesProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
-  const CHILD_RESOURCE_TYPE_STRING = t("role").toLowerCase();
-  const PARENT_RESOURCE_TYPE_STRING = t("group").toLowerCase();
 
   const {
     data: roles,
@@ -60,7 +58,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
       <C3EmptyState
         heading={t("somethingsWrong")}
         description={t("unableToLoadResource", {
-          resourceType: CHILD_RESOURCE_TYPE_STRING,
+          resourceType: t("role").toLowerCase(),
         })}
         button={{ label: t("retry"), onClick: reload }}
       />
@@ -70,8 +68,8 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceType={CHILD_RESOURCE_TYPE_STRING}
-          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          childResourceTypeTranslationString={"role"}
+          parentResourceTypeTranslationString={"group"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

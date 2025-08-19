@@ -24,8 +24,6 @@ type MappingRulesProps = {
 
 const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
   const { t } = useTranslate("roles");
-  const CHILD_RESOURCE_TYPE_STRING = t("mappingRule").toLowerCase();
-  const PARENT_RESOURCE_TYPE_STRING = t("role").toLowerCase();
 
   const {
     data: mappingRules,
@@ -61,7 +59,7 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
       <C3EmptyState
         heading={t("somethingsWrong")}
         description={t("unableToLoadResource", {
-          resourceType: CHILD_RESOURCE_TYPE_STRING,
+          resourceType: t("mappingRule").toLowerCase(),
         })}
         button={{ label: t("retry"), onClick: reload }}
       />
@@ -71,8 +69,8 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceType={CHILD_RESOURCE_TYPE_STRING}
-          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          childResourceTypeTranslationString={"mappingRule"}
+          parentResourceTypeTranslationString={"role"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

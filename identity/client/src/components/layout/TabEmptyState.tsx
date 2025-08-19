@@ -14,36 +14,45 @@ import { documentationHref } from "src/components/documentation";
 import useTranslate from "src/utility/localization";
 
 type TabEmptyStateProps = {
-  childResourceType: string;
-  parentResourceType: string;
+  childResourceTypeTranslationString: string;
+  parentResourceTypeTranslationString: string;
+  description?: string;
   docsLinkPath?: string;
   handleClick: () => void;
 };
 
 const TabEmptyState: FC<TabEmptyStateProps> = ({
-  childResourceType,
-  parentResourceType,
+  childResourceTypeTranslationString,
+  parentResourceTypeTranslationString,
+  description,
   docsLinkPath = "",
   handleClick,
 }) => {
   const { t } = useTranslate();
 
+  const childResourceTypeText = t(
+    childResourceTypeTranslationString,
+  ).toLowerCase();
+  const parentResourceTypeText = t(
+    parentResourceTypeTranslationString,
+  ).toLowerCase();
+
   return (
     <C3EmptyState
       heading={t("emptyStateTitleAssign", {
-        childResourceType,
-        parentResourceType,
+        childResourceType: childResourceTypeText,
+        parentResourceType: parentResourceTypeText,
       })}
       description={
-        parentResourceType === t("tenant").toLowerCase()
-          ? t("emptyStateTenantAccessDisclaimer")
+        description
+          ? description
           : t("emptyStateSubtitleAssign", {
-              childResourceType,
+              childResourceType: childResourceTypeText,
             })
       }
       button={{
         label: t("emptyStateButtonAssign", {
-          childResourceType,
+          childResourceType: childResourceTypeText,
         }),
         onClick: handleClick,
         icon: Add,
@@ -51,7 +60,7 @@ const TabEmptyState: FC<TabEmptyStateProps> = ({
       link={{
         href: documentationHref(docsUrl, docsLinkPath),
         label: t("emptyStateLearnText", {
-          resourceType: childResourceType,
+          resourceType: childResourceTypeText,
         }),
       }}
     />

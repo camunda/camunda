@@ -22,7 +22,6 @@ import PageEmptyState from "src/components/layout/PageEmptyState";
 
 const List: FC = () => {
   const { t } = useTranslate("mappingRules");
-  const RESOURCE_TYPE_STRING = t("mappingRule").toLowerCase();
   const {
     data: mappingRuleSearchResults,
     loading,
@@ -59,7 +58,7 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <PageEmptyState
-          resourceType={RESOURCE_TYPE_STRING}
+          resourceTypeTranslationString={"mappingRule"}
           docsLinkPath=""
           handleClick={addMappingRule}
         />

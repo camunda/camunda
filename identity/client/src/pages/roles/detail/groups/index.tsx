@@ -27,8 +27,6 @@ type GroupsProps = {
 
 const Groups: FC<GroupsProps> = ({ roleId }) => {
   const { t } = useTranslate("roles");
-  const CHILD_RESOURCE_TYPE_STRING = t("group").toLowerCase();
-  const PARENT_RESOURCE_TYPE_STRING = t("role").toLowerCase();
 
   const { groups, loading, success, reload, paginationProps } =
     useEnrichedGroups(getGroupsByRoleId, {
@@ -57,7 +55,7 @@ const Groups: FC<GroupsProps> = ({ roleId }) => {
       <C3EmptyState
         heading={t("somethingsWrong")}
         description={t("unableToLoadResource", {
-          resourceType: CHILD_RESOURCE_TYPE_STRING,
+          resourceType: t("group").toLowerCase(),
         })}
         button={{ label: t("retry"), onClick: reload }}
       />
@@ -67,8 +65,8 @@ const Groups: FC<GroupsProps> = ({ roleId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceType={CHILD_RESOURCE_TYPE_STRING}
-          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          childResourceTypeTranslationString={"group"}
+          parentResourceTypeTranslationString={"role"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

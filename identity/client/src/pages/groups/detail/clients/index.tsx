@@ -24,8 +24,6 @@ type ClientsProps = {
 
 const Clients: FC<ClientsProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
-  const CHILD_RESOURCE_TYPE_STRING = t("client").toLowerCase();
-  const PARENT_RESOURCE_TYPE_STRING = t("group").toLowerCase();
 
   const { data, loading, success, reload, ...paginationProps } =
     usePaginatedApi(getClientsByGroupId, {
@@ -50,7 +48,7 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
       <C3EmptyState
         heading={t("somethingsWrong")}
         description={t("unableToLoadResource", {
-          resourceType: CHILD_RESOURCE_TYPE_STRING,
+          resourceType: t("client").toLowerCase(),
         })}
         button={{ label: t("retry"), onClick: reload }}
       />
@@ -60,8 +58,8 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceType={CHILD_RESOURCE_TYPE_STRING}
-          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          childResourceTypeTranslationString={"client"}
+          parentResourceTypeTranslationString={"group"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

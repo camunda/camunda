@@ -24,8 +24,6 @@ type ClientsProps = {
 
 const Clients: FC<ClientsProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
-  const CHILD_RESOURCE_TYPE_STRING = t("client").toLowerCase();
-  const PARENT_RESOURCE_TYPE_STRING = t("tenant").toLowerCase();
 
   const {
     data: clients,
@@ -56,7 +54,7 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
       <C3EmptyState
         heading={t("somethingsWrong")}
         description={t("unableToLoadResource", {
-          resourceType: CHILD_RESOURCE_TYPE_STRING,
+          resourceType: t("client").toLowerCase(),
         })}
         button={{ label: t("retry"), onClick: reload }}
       />
@@ -66,9 +64,10 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceType={CHILD_RESOURCE_TYPE_STRING}
-          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          childResourceTypeTranslationString={"client"}
+          parentResourceTypeTranslationString={"tenant"}
           handleClick={openAssignModal}
+          description={t("emptyStateTenantAccessDisclaimer")}
           docsLinkPath=""
         />
         {assignClientModal}

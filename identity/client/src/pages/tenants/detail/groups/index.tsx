@@ -27,8 +27,6 @@ type GroupsProps = {
 
 const Groups: FC<GroupsProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
-  const CHILD_RESOURCE_TYPE_STRING = t("group").toLowerCase();
-  const PARENT_RESOURCE_TYPE_STRING = t("tenant").toLowerCase();
 
   const { groups, loading, success, reload, paginationProps } =
     useEnrichedGroups(getGroupsByTenantId, {
@@ -57,7 +55,7 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
       <C3EmptyState
         heading={t("somethingsWrong")}
         description={t("unableToLoadResource", {
-          resourceType: CHILD_RESOURCE_TYPE_STRING,
+          resourceType: t("group").toLowerCase(),
         })}
         button={{ label: t("retry"), onClick: reload }}
       />
@@ -67,9 +65,10 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceType={CHILD_RESOURCE_TYPE_STRING}
-          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          childResourceTypeTranslationString={"group"}
+          parentResourceTypeTranslationString={"tenant"}
           handleClick={openAssignModal}
+          description={t("emptyStateTenantAccessDisclaimer")}
           docsLinkPath=""
         />
         {assignGroupsModal}

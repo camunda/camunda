@@ -27,8 +27,6 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
-  const CHILD_RESOURCE_TYPE_STRING = t("user").toLowerCase();
-  const PARENT_RESOURCE_TYPE_STRING = t("group").toLowerCase();
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
     searchMembersByGroup,
@@ -56,7 +54,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
       <C3EmptyState
         heading={t("somethingsWrong")}
         description={t("unableToLoadResource", {
-          resourceType: CHILD_RESOURCE_TYPE_STRING,
+          resourceType: t("user").toLowerCase(),
         })}
         button={{ label: t("retry"), onClick: reload }}
       />
@@ -66,8 +64,8 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceType={CHILD_RESOURCE_TYPE_STRING}
-          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          childResourceTypeTranslationString={"user"}
+          parentResourceTypeTranslationString={"group"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

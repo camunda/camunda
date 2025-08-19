@@ -24,8 +24,6 @@ type RolesProps = {
 
 const Roles: FC<RolesProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
-  const CHILD_RESOURCE_TYPE_STRING = t("role").toLowerCase();
-  const PARENT_RESOURCE_TYPE_STRING = t("tenant").toLowerCase();
 
   const {
     data: roles,
@@ -60,7 +58,7 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
       <C3EmptyState
         heading={t("somethingsWrong")}
         description={t("unableToLoadResource", {
-          resourceType: CHILD_RESOURCE_TYPE_STRING,
+          resourceType: t("role").toLowerCase(),
         })}
         button={{ label: t("retry"), onClick: reload }}
       />
@@ -70,9 +68,10 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceType={CHILD_RESOURCE_TYPE_STRING}
-          parentResourceType={PARENT_RESOURCE_TYPE_STRING}
+          childResourceTypeTranslationString={"role"}
+          parentResourceTypeTranslationString={"tenant"}
           handleClick={openAssignModal}
+          description={t("emptyStateTenantAccessDisclaimer")}
           docsLinkPath=""
         />
         {assignRolesModal}

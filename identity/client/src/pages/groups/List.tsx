@@ -23,7 +23,6 @@ import PageEmptyState from "src/components/layout/PageEmptyState";
 
 const List: FC = () => {
   const { t } = useTranslate("groups");
-  const RESOURCE_TYPE_STRING = t("group").toLowerCase();
   const navigate = useNavigate();
 
   const {
@@ -57,7 +56,7 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <PageEmptyState
-          resourceType={RESOURCE_TYPE_STRING}
+          resourceTypeTranslationString={"group"}
           docsLinkPath=""
           handleClick={addGroup}
         />
