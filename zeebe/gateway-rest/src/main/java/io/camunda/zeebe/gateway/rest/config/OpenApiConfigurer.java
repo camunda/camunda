@@ -23,7 +23,11 @@ public abstract class OpenApiConfigurer {
       new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT");
 
   /**
-   * Configures the OpenAPI security schemes for the specific deployment type.
+   * Configures the OpenAPI security schemes for the specific deployment type. Ensure that the
+   * `securitySchemes` section in the OpenAPI YAML file mirrors the security schemes defined in
+   * `OpenApiResourceConfig.java`. This helps client generators produce better boilerplate code for
+   * authentication. Any changes to the security configuration in the Java file should be reflected
+   * in the YAML specification.
    *
    * @param openApi the OpenAPI object to configure
    */
