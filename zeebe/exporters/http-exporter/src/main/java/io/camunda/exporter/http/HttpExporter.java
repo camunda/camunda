@@ -9,10 +9,10 @@ package io.camunda.exporter.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.http.client.ExporterHttpClient;
-import io.camunda.exporter.http.config.HttpExporterConfiguration;
+import io.camunda.exporter.http.config.HttpExporterConfig;
+import io.camunda.exporter.http.config.SubscriptionConfig;
 import io.camunda.exporter.http.config.SubscriptionConfigFactory;
 import io.camunda.exporter.http.subscription.Subscription;
-import io.camunda.exporter.http.subscription.SubscriptionConfig;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -60,7 +60,7 @@ public class HttpExporter implements Exporter {
       log.debug(
           "Subscription config not provided in constructor, loading from configuration file.");
       final var httpExporterConfiguration =
-          context.getConfiguration().instantiate(HttpExporterConfiguration.class);
+          context.getConfiguration().instantiate(HttpExporterConfig.class);
       subscriptionConfig = configFactory.readConfigFrom(httpExporterConfiguration);
     }
 

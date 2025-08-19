@@ -10,7 +10,7 @@ package io.camunda.exporter.http;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.http.config.HttpExporterConfiguration;
+import io.camunda.exporter.http.config.HttpExporterConfig;
 import io.camunda.exporter.http.config.SubscriptionConfigFactory;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ final class ConfigTest {
   void testConfigLoading() {
     final var configFactory =
         new SubscriptionConfigFactory(new ObjectMapper().registerModule(new ZeebeProtocolModule()));
-    final var exporterConfig = new HttpExporterConfiguration();
+    final var exporterConfig = new HttpExporterConfig();
     exporterConfig.setConfigPath("classpath:subscription-config-complete.json");
     final var subscriptionConfig = configFactory.readConfigFrom(exporterConfig);
     assertThat(subscriptionConfig.filters()).isNotEmpty();
@@ -31,7 +31,7 @@ final class ConfigTest {
   void testConfigLoadingWithEmptyCollections() {
     final var configFactory =
         new SubscriptionConfigFactory(new ObjectMapper().registerModule(new ZeebeProtocolModule()));
-    final var exporterConfig = new HttpExporterConfiguration();
+    final var exporterConfig = new HttpExporterConfig();
     exporterConfig.setConfigPath("classpath:subscription-config-simple.json");
     final var subscriptionConfig = configFactory.readConfigFrom(exporterConfig);
     assertThat(subscriptionConfig.filters()).isEmpty();

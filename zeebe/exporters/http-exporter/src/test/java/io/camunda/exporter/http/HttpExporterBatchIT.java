@@ -24,7 +24,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
-import io.camunda.exporter.http.subscription.SubscriptionConfig;
+import io.camunda.exporter.http.config.SubscriptionConfig;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
@@ -72,7 +72,7 @@ final class HttpExporterBatchIT {
   void testSingleRecordBatching() {
     exporter =
         new HttpExporter(
-            new SubscriptionConfig(url, 1, 100, List.of(), null, false, 2, 1000, 10000));
+            new SubscriptionConfig(url, 1, 100L, List.of(), null, false, 2, 1000, 10000));
     exporter.configure(testContext);
     exporter.open(controller);
 
@@ -96,7 +96,7 @@ final class HttpExporterBatchIT {
   void testRetries() {
     exporter =
         new HttpExporter(
-            new SubscriptionConfig(url, 1, 100, List.of(), null, false, 2, 1000, 10000));
+            new SubscriptionConfig(url, 1, 100L, List.of(), null, false, 2, 100, 10000));
     exporter.configure(testContext);
     exporter.open(controller);
 
@@ -131,7 +131,7 @@ final class HttpExporterBatchIT {
   void testAllRetriesFail() {
     exporter =
         new HttpExporter(
-            new SubscriptionConfig(url, 1, 100, List.of(), null, false, 2, 1000, 10000));
+            new SubscriptionConfig(url, 1, 100L, List.of(), null, false, 2, 100, 10000));
     exporter.configure(testContext);
     exporter.open(controller);
 
@@ -140,10 +140,7 @@ final class HttpExporterBatchIT {
             .inScenario("retry")
             .whenScenarioStateIs(Scenario.STARTED)
             .willSetStateTo("second attempt")
-            .willReturn(
-                ResponseDefinitionBuilder.responseDefinition()
-                    .withStatus(500)
-                    .withFixedDelay(500)));
+            .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
 
     stubFor(
         post(anyUrl())
@@ -175,7 +172,7 @@ final class HttpExporterBatchIT {
   void testAllRetriesFailWithContinueOnError() {
     exporter =
         new HttpExporter(
-            new SubscriptionConfig(url, 1, 100, List.of(), null, true, 2, 1000, 10000));
+            new SubscriptionConfig(url, 1, 100L, List.of(), null, true, 2, 100, 10000));
     exporter.configure(testContext);
     exporter.open(controller);
     assertThat(exporter.getSubscription().getBatch().getLastLogPosition()).isEqualTo(-1L);
@@ -185,10 +182,7 @@ final class HttpExporterBatchIT {
             .inScenario("retry")
             .whenScenarioStateIs(Scenario.STARTED)
             .willSetStateTo("second attempt")
-            .willReturn(
-                ResponseDefinitionBuilder.responseDefinition()
-                    .withStatus(500)
-                    .withFixedDelay(500)));
+            .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
 
     stubFor(
         post(anyUrl())
@@ -222,7 +216,7 @@ final class HttpExporterBatchIT {
   void testBatching() {
     exporter =
         new HttpExporter(
-            new SubscriptionConfig(url, 10, 1000, List.of(), null, false, 2, 1000, 10000));
+            new SubscriptionConfig(url, 10, 1000L, List.of(), null, false, 2, 1000, 10000));
     exporter.configure(testContext);
     exporter.open(controller);
 

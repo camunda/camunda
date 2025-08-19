@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.http.config;
 
+import static java.util.Optional.ofNullable;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.bohnman.squiggly.Squiggly;
 import io.camunda.exporter.http.client.ExporterHttpClientImpl;
@@ -15,7 +17,6 @@ import io.camunda.exporter.http.matcher.FilterRecordMatcher;
 import io.camunda.exporter.http.matcher.RecordMatcherImpl;
 import io.camunda.exporter.http.subscription.Batch;
 import io.camunda.exporter.http.subscription.Subscription;
-import io.camunda.exporter.http.subscription.SubscriptionConfig;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -31,39 +32,50 @@ public class SubscriptionConfigFactory {
   }
 
   private SubscriptionConfig mergeConfigs(
-      final SubscriptionConfig fileConfig, final HttpExporterConfiguration exporterConfig) {
+      final SubscriptionConfig fileConfig, final HttpExporterConfig exporterConfig) {
     final var url = exporterConfig.getUrl() != null ? exporterConfig.getUrl() : fileConfig.url();
+
+    final var optFileConfig = ofNullable(fileConfig);
+
     final var batchSize =
-        exporterConfig.getBatchSize() != null
-            ? exporterConfig.getBatchSize()
-            : fileConfig.batchSize();
+        ofNullable(exporterConfig.getBatchSize())
+            .or(() -> optFileConfig.map(SubscriptionConfig::batchSize))
+            .orElse(ConfigDefaults.DEFAULT_BATCH_SIZE);
+
     final var batchInterval =
-        exporterConfig.getBatchInterval() != null
-            ? exporterConfig.getBatchInterval()
-            : fileConfig.batchInterval();
-    final var jsonFilter =
-        exporterConfig.getJsonFilter() != null
-            ? exporterConfig.getJsonFilter()
-            : fileConfig.jsonFilter();
+        ofNullable(exporterConfig.getBatchInterval())
+            .or(() -> optFileConfig.map(SubscriptionConfig::batchInterval))
+            .orElse(ConfigDefaults.DEFAULT_BATCH_INTERVAL);
+
     final var maxRetries =
-        exporterConfig.getMaxRetries() != null
-            ? exporterConfig.getMaxRetries()
-            : fileConfig.maxRetries();
+        ofNullable(exporterConfig.getMaxRetries())
+            .or(() -> optFileConfig.map(SubscriptionConfig::maxRetries))
+            .orElse(ConfigDefaults.DEFAULT_MAX_RETRIES);
+
+    final var jsonFilter =
+        ofNullable(exporterConfig.getJsonFilter())
+            .or(() -> optFileConfig.map(SubscriptionConfig::jsonFilter))
+            .orElse(null);
+
     final var retryDelay =
-        exporterConfig.getRetryDelay() != null
-            ? exporterConfig.getRetryDelay()
-            : fileConfig.retryDelay();
+        ofNullable(exporterConfig.getRetryDelay())
+            .or(() -> optFileConfig.map(SubscriptionConfig::retryDelay))
+            .orElse(ConfigDefaults.DEFAULT_RETRY_DELAY);
+
     final var timeout =
-        exporterConfig.getTimeout() != null ? exporterConfig.getTimeout() : fileConfig.timeout();
+        ofNullable(exporterConfig.getTimeout())
+            .or(() -> optFileConfig.map(SubscriptionConfig::timeout))
+            .orElse(ConfigDefaults.DEFAULT_TIMEOUT);
+
     final var continueOnError =
-        exporterConfig.getContinueOnError() != null
-            ? exporterConfig.getContinueOnError()
-            : fileConfig.continueOnError();
+        ofNullable(exporterConfig.getContinueOnError())
+            .or(() -> optFileConfig.map(SubscriptionConfig::continueOnError))
+            .orElse(ConfigDefaults.DEFAULT_CONTINUE_ON_ERROR);
 
     final var filters =
-        exporterConfig.getFilters() != null
-            ? exporterConfig.getFilters()
-            : fileConfig != null ? fileConfig.filters() : null;
+        ofNullable(exporterConfig.getFilters())
+            .or(() -> optFileConfig.map(SubscriptionConfig::filters))
+            .orElse(null);
 
     return new SubscriptionConfig(
         url,
@@ -123,7 +135,7 @@ public class SubscriptionConfigFactory {
         config.continueOnError());
   }
 
-  public SubscriptionConfig readConfigFrom(final HttpExporterConfiguration configuration) {
+  public SubscriptionConfig readConfigFrom(final HttpExporterConfig configuration) {
     SubscriptionConfig fileConfig = null;
     if (configuration.getConfigPath() != null) {
       final var configUrl = getUrlFor(configuration.getConfigPath());

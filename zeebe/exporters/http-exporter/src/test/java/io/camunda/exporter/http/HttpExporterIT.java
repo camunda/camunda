@@ -20,7 +20,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import io.camunda.exporter.http.config.HttpExporterConfiguration;
+import io.camunda.exporter.http.config.HttpExporterConfig;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -64,10 +64,10 @@ final class HttpExporterIT {
     stubFor(post(anyUrl()).willReturn(ok()));
     url = "http://localhost:" + wireMockRule.port();
 
-    final var config = new HttpExporterConfiguration();
+    final var config = new HttpExporterConfig();
     config.setUrl(url); // Set the URL to the WireMock server
     config.setBatchSize(1);
-    config.setBatchInterval(10000); // 10 seconds
+    config.setBatchInterval(10000L); // 10 seconds
     config.setMaxRetries(3);
     config.setRetryDelay(1000L); // 1 second
     config.setTimeout(5000L); // 5 seconds
@@ -115,7 +115,7 @@ final class HttpExporterIT {
 
   @Test
   void testWithIncidentRecordAndComplexFiltering() {
-    final var config = new HttpExporterConfiguration();
+    final var config = new HttpExporterConfig();
     config.setUrl(url);
     config.setConfigPath("classpath:subscription-config-incident.json");
     testContext.setConfiguration(new ExporterTestConfiguration<>("test", config));

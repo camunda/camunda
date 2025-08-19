@@ -10,20 +10,20 @@ package io.camunda.exporter.http.config;
 import io.camunda.exporter.http.matcher.Filter;
 import java.util.List;
 
-public class HttpExporterConfiguration {
+public class HttpExporterConfig {
 
   // Path to the configuration json file for export subscriptions
   private String configPath;
 
   // These properties will override the default values in the configuration file.
   private String url;
-  private Integer batchSize = 100; // Default batch size
-  private Integer batchInterval = 10000; // Default batch interval in milliseconds
+  private Integer batchSize;
+  private Long batchInterval;
   private String jsonFilter;
-  private Integer maxRetries = 3; // Default maximum number of retries for failed requests
-  private Long retryDelay = 1000L; // Default retry delay in milliseconds
-  private Long timeout = 5000L; // Default timeout in milliseconds
-  private Boolean continueOnError = false; // Default behavior for error handling
+  private Integer maxRetries;
+  private Long retryDelay;
+  private Long timeout;
+  private Boolean continueOnError;
   private List<Filter> filters;
 
   public String getConfigPath() {
@@ -46,11 +46,11 @@ public class HttpExporterConfiguration {
     this.batchSize = batchSize;
   }
 
-  public Integer getBatchInterval() {
+  public Long getBatchInterval() {
     return batchInterval;
   }
 
-  public void setBatchInterval(final Integer batchInterval) {
+  public void setBatchInterval(final Long batchInterval) {
     this.batchInterval = batchInterval;
   }
 
