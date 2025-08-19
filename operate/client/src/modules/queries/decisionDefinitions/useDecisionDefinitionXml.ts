@@ -6,26 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  fetchDecisionDefinitionXml,
-  type DecisionDefinitionKey,
-} from 'modules/api/v2/decisionDefinitions/fetchDecisionDefinitionXml';
+import {fetchDecisionDefinitionXml} from 'modules/api/v2/decisionDefinitions/fetchDecisionDefinitionXml';
 import {genericQueryOptions} from '../genericQuery';
-
-const DECISION_DEFINITION_XML_QUERY_KEY = 'DecisionDefinitionXml';
-
-function getQueryKey(DecisionDefinitionKey: DecisionDefinitionKey) {
-  return [DECISION_DEFINITION_XML_QUERY_KEY, DecisionDefinitionKey];
-}
+import {type DecisionDefinition} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 function useDecisionDefinitionXmlOptions({
   decisionDefinitionKey,
   enabled,
 }: {
-  decisionDefinitionKey: DecisionDefinitionKey;
+  decisionDefinitionKey: DecisionDefinition['decisionDefinitionKey'];
   enabled?: boolean;
 }) {
-  const queryKey = getQueryKey(decisionDefinitionKey);
+  const queryKey = ['DecisionDefinitionXml', decisionDefinitionKey];
 
   return genericQueryOptions(
     queryKey,

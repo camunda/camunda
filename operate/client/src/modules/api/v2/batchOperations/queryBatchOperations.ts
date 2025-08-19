@@ -11,11 +11,11 @@ import {
   type QueryBatchOperationsRequestBody,
   type QueryBatchOperationsResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {type RequestResult, requestWithThrow} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
 const queryBatchOperations = async (
   payload: QueryBatchOperationsRequestBody,
-): RequestResult<QueryBatchOperationsResponseBody> => {
+) => {
   return requestWithThrow<QueryBatchOperationsResponseBody>({
     url: endpoints.queryBatchOperations.getUrl(),
     method: endpoints.queryBatchOperations.method,

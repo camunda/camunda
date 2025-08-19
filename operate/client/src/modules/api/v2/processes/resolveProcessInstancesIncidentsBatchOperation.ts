@@ -7,20 +7,20 @@
  */
 
 import {
+  type CreateIncidentResolutionBatchOperationRequestBody,
+  type CreateIncidentResolutionBatchOperationResponseBody,
   endpoints,
-  type QueryDecisionInstancesRequestBody,
-  type QueryDecisionInstancesResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 import {requestWithThrow} from 'modules/request';
 
-const searchDecisionInstances = async (
-  payload: QueryDecisionInstancesRequestBody,
+const resolveProcessInstancesIncidentsBatchOperation = async (
+  payload: CreateIncidentResolutionBatchOperationRequestBody,
 ) => {
-  return requestWithThrow<QueryDecisionInstancesResponseBody>({
-    url: endpoints.queryDecisionInstances.getUrl(),
-    method: endpoints.queryDecisionInstances.method,
+  return requestWithThrow<CreateIncidentResolutionBatchOperationResponseBody>({
+    url: endpoints.createIncidentResolutionBatchOperation.getUrl(),
+    method: endpoints.createIncidentResolutionBatchOperation.method,
     body: payload,
   });
 };
 
-export {searchDecisionInstances};
+export {resolveProcessInstancesIncidentsBatchOperation};

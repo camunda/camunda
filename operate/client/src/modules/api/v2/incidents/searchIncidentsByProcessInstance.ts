@@ -10,11 +10,11 @@ import {
   endpoints,
   type QueryIncidentsResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {type RequestResult, requestWithThrow} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
 const searchIncidentsByProcessInstance = async (payload: {
   processInstanceKey: string;
-}): RequestResult<QueryIncidentsResponseBody> => {
+}) => {
   return requestWithThrow<QueryIncidentsResponseBody>({
     url: endpoints.queryProcessInstanceIncidents.getUrl(payload),
     method: endpoints.queryProcessInstanceIncidents.method,

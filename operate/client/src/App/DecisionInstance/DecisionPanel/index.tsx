@@ -30,8 +30,8 @@ const DecisionPanel: React.FC = observer(() => {
     isError,
   } = useQuery(
     useDecisionDefinitionXmlOptions({
-      decisionDefinitionKey: decisionInstance?.decisionDefinitionId,
-      enabled: !!decisionInstance?.decisionId,
+      decisionDefinitionKey: decisionInstance?.decisionDefinitionId ?? '',
+      enabled: decisionInstance !== null,
     }),
   );
 

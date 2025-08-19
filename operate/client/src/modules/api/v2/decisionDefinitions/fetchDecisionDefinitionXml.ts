@@ -6,20 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type RequestResult, requestWithThrow} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
+import {
+  endpoints,
+  type GetDecisionDefinitionXmlResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
-type DecisionDefinitionKey = string | undefined;
-type DecisionDefinitionXmlDto = string;
-
-const fetchDecisionDefinitionXml = async (
-  DecisionDefinitionKey: DecisionDefinitionKey,
-): RequestResult<DecisionDefinitionXmlDto> => {
-  return requestWithThrow({
-    url: `/v2/decision-definitions/${DecisionDefinitionKey}/xml`,
-    method: 'GET',
+const fetchDecisionDefinitionXml = async (decisionDefinitionKey: string) => {
+  return requestWithThrow<GetDecisionDefinitionXmlResponseBody>({
+    url: endpoints.getDecisionDefinitionXml.getUrl({decisionDefinitionKey}),
+    method: endpoints.getDecisionDefinitionXml.method,
     responseType: 'text',
   });
 };
 
 export {fetchDecisionDefinitionXml};
-export type {DecisionDefinitionKey};

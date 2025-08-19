@@ -10,11 +10,9 @@ import {
   endpoints,
   type GetProcessInstanceSequenceFlowsResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {type RequestResult, requestWithThrow} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
-const fetchProcessSequenceFlows = async (
-  processInstanceKey: string,
-): RequestResult<GetProcessInstanceSequenceFlowsResponseBody> => {
+const fetchProcessSequenceFlows = async (processInstanceKey: string) => {
   return requestWithThrow<GetProcessInstanceSequenceFlowsResponseBody>({
     url: endpoints.getProcessInstanceSequenceFlows.getUrl({
       processInstanceKey: processInstanceKey,

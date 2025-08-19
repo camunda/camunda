@@ -6,19 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {mockPostRequest} from '../../mockRequest.ts';
 import {
   endpoints,
-  type ProcessDefinition,
+  type CreateIncidentResolutionBatchOperationResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {requestWithThrow} from 'modules/request';
 
-const fetchProcessDefinition = async (payload: {
-  processDefinitionKey: string;
-}) => {
-  return requestWithThrow<ProcessDefinition>({
-    url: endpoints.getProcessDefinition.getUrl(payload),
-    method: endpoints.getProcessDefinition.method,
-  });
-};
+const mockResolveProcessInstancesIncidentsBatchOperation = () =>
+  mockPostRequest<CreateIncidentResolutionBatchOperationResponseBody>(
+    endpoints.createIncidentResolutionBatchOperation.getUrl(),
+  );
 
-export {fetchProcessDefinition};
+export {mockResolveProcessInstancesIncidentsBatchOperation};

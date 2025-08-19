@@ -11,7 +11,6 @@ import {useFilters} from 'modules/hooks/useFilters';
 import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {useProcessInstanceFilters} from './useProcessInstancesFilters';
 import {type GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 
 vi.mock('modules/hooks/useFilters');
 
@@ -63,21 +62,13 @@ describe('useProcessInstanceFilters', () => {
         $or: [
           {
             state: {
-              $in: [
-                ProcessInstanceState.ACTIVE,
-                ProcessInstanceState.COMPLETED,
-                ProcessInstanceState.TERMINATED,
-              ],
+              $in: ['ACTIVE', 'COMPLETED', 'TERMINATED'],
             },
           },
           {hasIncident: true},
         ],
         state: {
-          $in: [
-            ProcessInstanceState.ACTIVE,
-            ProcessInstanceState.COMPLETED,
-            ProcessInstanceState.TERMINATED,
-          ],
+          $in: ['ACTIVE', 'COMPLETED', 'TERMINATED'],
         },
         parentProcessInstanceKey: {
           $eq: 'parent1',
@@ -120,11 +111,7 @@ describe('useProcessInstanceFilters', () => {
     const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
       filter: {
         state: {
-          $in: [
-            ProcessInstanceState.ACTIVE,
-            ProcessInstanceState.COMPLETED,
-            ProcessInstanceState.TERMINATED,
-          ],
+          $in: ['ACTIVE', 'COMPLETED', 'TERMINATED'],
         },
       },
     };
@@ -192,7 +179,7 @@ describe('useProcessInstanceFilters', () => {
           $gt: '2023-01-01T00:00:00.000Z',
         },
         state: {
-          $in: [ProcessInstanceState.ACTIVE],
+          $in: ['ACTIVE'],
         },
       },
     };

@@ -6,20 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type RequestResult, requestWithThrow} from 'modules/request';
+import {endpoints} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {requestWithThrow} from 'modules/request';
 
-type ProcessDefinitionKey = string;
-type ProcessDefinitionXmlDto = string;
-
-const fetchProcessDefinitionXml = async (
-  processDefinitionKey: ProcessDefinitionKey,
-): RequestResult<ProcessDefinitionXmlDto> => {
-  return requestWithThrow({
-    url: `/v2/process-definitions/${processDefinitionKey}/xml`,
-    method: 'GET',
+const fetchProcessDefinitionXml = async (processDefinitionKey: string) => {
+  return requestWithThrow<string>({
+    url: endpoints.getProcessDefinitionXml.getUrl({processDefinitionKey}),
+    method: endpoints.getProcessDefinitionXml.method,
     responseType: 'text',
   });
 };
 
 export {fetchProcessDefinitionXml};
-export type {ProcessDefinitionKey};

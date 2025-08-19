@@ -11,11 +11,11 @@ import {
   type CreateModificationBatchOperationRequestBody,
   type CreateModificationBatchOperationResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {type RequestResult, requestWithThrow} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
 const modifyProcessInstancesBatchOperation = async (
   payload: CreateModificationBatchOperationRequestBody,
-): RequestResult<CreateModificationBatchOperationResponseBody> => {
+) => {
   return requestWithThrow<CreateModificationBatchOperationResponseBody>({
     url: endpoints.createModificationBatchOperation.getUrl(),
     method: endpoints.createModificationBatchOperation.method,

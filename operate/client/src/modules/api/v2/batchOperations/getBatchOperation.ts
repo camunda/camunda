@@ -10,11 +10,11 @@ import {
   endpoints,
   type BatchOperation,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {type RequestResult, requestWithThrow} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
 const getBatchOperation = async (
   payload: Pick<BatchOperation, 'batchOperationKey'>,
-): RequestResult<BatchOperation> => {
+) => {
   return requestWithThrow<BatchOperation>({
     url: endpoints.getBatchOperation.getUrl(payload),
     method: endpoints.getBatchOperation.method,

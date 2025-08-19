@@ -11,11 +11,9 @@ import {
   type QueryJobsRequestBody,
   type QueryJobsResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {type RequestResult, requestWithThrow} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
-const searchJobs = async (
-  payload: QueryJobsRequestBody,
-): RequestResult<QueryJobsResponseBody> => {
+const searchJobs = async (payload: QueryJobsRequestBody) => {
   return requestWithThrow<QueryJobsResponseBody>({
     url: endpoints.queryJobs.getUrl(),
     method: endpoints.queryJobs.method,
