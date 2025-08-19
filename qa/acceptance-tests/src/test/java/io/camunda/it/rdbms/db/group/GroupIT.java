@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.group;
 
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveGroup;
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveRandomGroups;
+import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveRandomGroupsWithMembers;
 import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -165,7 +166,7 @@ public class GroupIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final GroupDbReader groupReader = rdbmsService.getGroupReader();
 
-    createAndSaveRandomGroups(rdbmsWriter, b -> b.name("John Doe"));
+    createAndSaveRandomGroupsWithMembers(rdbmsWriter, b -> b.name("John Doe"));
 
     final var searchResult =
         groupReader.search(
