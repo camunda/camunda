@@ -9,10 +9,9 @@ function processFlakyTestsData(rawData) {
       return;
     }
 
-    const testNames = flaky_tests
-        .match(/(?:[^\s(]+(?:\([^)]+\))?(?:\[\d+])?)+/g) || []
-        .map(t => t.trim())
-        .filter(Boolean);
+    const testNames = [...flaky_tests.matchAll(
+        /[^\s\[(]+(?:\([^)]*\))?(?:\[[^\]]*])?/g
+    )].map(match => match[0]);
 
     testNames.forEach(testName => {
       const parsedTest = helpers.parseTestName(testName);
@@ -35,7 +34,7 @@ function processFlakyTestsData(rawData) {
     });
   });
 
-  return { flakyTests: Array.from(testMap.values()) };
+  return Array.from(testMap.values());
 }
 
 module.exports = { processFlakyTestsData };

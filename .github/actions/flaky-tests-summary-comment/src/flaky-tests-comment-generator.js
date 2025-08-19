@@ -1,7 +1,7 @@
 const helpers = require('./helpers');
 const githubApi = require('./github-api');
 
-async function main(context, github, currentData, prNumber, branchName) {
+async function createOrUpdateComment(context, github, currentData, prNumber, branchName) {
   console.log(`[flaky-tests] Processing flaky test comment for PR #${prNumber}`);
 
   const { owner, repo } = context.repo;
@@ -15,16 +15,11 @@ async function main(context, github, currentData, prNumber, branchName) {
   console.log("Existing comment:", existingComment);
   console.log('Historical data:', historicalData);
 
-  // Step 3: Merge current and historical data
-  const mergedData = helpers.mergeFlakyData(currentData, historicalData);
+  // Step 3: Merge current and historical data, or generate first run data
+  const mergedData = !historicalData ? helpers.prepareFirstRunData(currentData) : helpers.mergeFlakyData(currentData, historicalData);
   console.log('Merged data:', JSON.stringify(mergedData, null, 2));
 
   // Step 4: Generate comment content
-  if (!mergedData || !mergedData.length) {
-    console.log('[flaky-tests] No flaky tests found. Skipping comment.');
-    return;
-  }
-
   const comment = await buildComment(mergedData, github, branchName);
   console.log('Generated comment:', comment);
 
@@ -56,6 +51,7 @@ async function buildComment(mergedData, github, branchName) {
     const testName = test.methodName || test.fullName;
     const formattedName = url ? `[**${testName}**](${url})` : `**${testName}**`;
     lines.push(`- ${formattedName} – ${icon} **${test.flakiness}% flakiness**`);
+    lines.push(`  - Jobs: \`${test.jobs.join(', ')}\``);
     lines.push(`  - Package: \`${test.packageName}\``);
     lines.push(`  - Class: ${test.className ? `\`${test.className}\`` : "-"}`);
     lines.push(`  - Occurrences: ${test.occurrences} / ${test.totalRuns}`);
@@ -89,4 +85,4 @@ async function generateTestSourceUrl(test, github, branchName) {
     return originalUrl.replace(/blob\/[^/]+/, `tree/${branchName}`);
 }
 
-module.exports = { main };
+module.exports = { createOrUpdateComment };

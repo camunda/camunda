@@ -6,11 +6,11 @@ Creates or updates a PR comment with a comprehensive summary of flaky tests acro
 
 ## Inputs
 
-|··········Input···········|······················Description·····················|····Required····|
-|--------------------------|------------------------------------------------------|----------------|
-|···`flaky-tests-data`·····|···JSON·array·containing·processed·flaky·test·data····|···true·········|
-|···`pr-number`············|···Pull·request·number·for·the·comment················|···true·········|
-|···`branch-name`··········|···Branch·name·where·the·comment·will·be·posted·······|···true·········|
+| ·······Input······· | ·····················Description····················· | ·Required· | ·Default· |
+|---------------------|-------------------------------------------------------|------------|-----------|
+| `flaky-tests-data`  | JSON array containing processed flaky test data       | true       | N/A       |
+| `pr-number`         | Pull request number for the comment                   | true       | N/A       |
+| `branch-name`       | Branch name where the comment will be posted          | true       | N/A       |
 
 ## Expected Data Structure
 
