@@ -36,4 +36,15 @@ public class CamundaClientLegacyPropertiesMapping {
   public void setLegacyPropertyNames(final List<String> legacyPropertyNames) {
     this.legacyPropertyNames = legacyPropertyNames;
   }
+
+  @Override
+  public String toString() {
+    return "CamundaClientLegacyPropertiesMapping{"
+        + "propertyName='"
+        + propertyName
+        + '\''
+        + ", legacyPropertyNames="
+        + legacyPropertyNames
+        + '}';
+  }
 }

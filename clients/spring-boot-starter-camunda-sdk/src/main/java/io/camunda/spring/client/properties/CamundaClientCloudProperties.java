@@ -17,18 +17,18 @@ package io.camunda.spring.client.properties;
 
 public class CamundaClientCloudProperties {
 
-  /** Set the region the Camunda client will connect to. */
+  /** The region the Camunda client connects to. */
   private String region;
 
-  /** Set the cluster id the Camunda client will connect to. */
+  /** The cluster ID the Camunda client connects to. */
   private String clusterId;
 
-  /** Set the port the Camunda client will connect to. */
+  /** The port the Camunda client connects to. */
   private Integer port;
 
   /**
-   * Set the domain the Camunda client will connect to. Change this to connect to a non-productive
-   * instance of Camunda Cloud.
+   * The domain the Camunda client connects to. Change this to connect to a non-production instance
+   * of Camunda Cloud.
    */
   private String domain;
 

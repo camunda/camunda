@@ -27,71 +27,67 @@ import java.util.List;
 
 public class CamundaClientJobWorkerProperties {
 
-  /** Set the type of jobs to work on. */
+  /** The type of jobs to work on. */
   private String type;
 
   /**
-   * Set the name of the worker owner. Will be generated as `${beanName}#${methodName}` as long as
-   * set to default.
+   * The name of the worker owner. If set to default, it is generated as
+   * `${beanName}#${methodName}`.
    */
   private String name;
 
-  /** Set the time for how long a job is exclusively assigned for a worker. */
+  /** The time a job remains exclusively assigned to the worker. */
   private Duration timeout;
 
-  /**
-   * Set the maximum number of jobs which will be exclusively activated for this worker at the same
-   * time.
-   */
+  /** The maximum number of jobs exclusively activated for this worker at the same time. */
   private Integer maxJobsActive;
 
-  /** Set the request timeout for activate job request used to poll for new job. */
+  /** The request timeout for the activate job request used to poll for new jobs. */
   private Duration requestTimeout;
 
-  /** Set the maximal interval between polling for new jobs. */
+  /** The maximal interval between polls for new jobs. */
   private Duration pollInterval;
 
-  /** Set whether a job should automatically be completed after the method invocation. */
+  /** Enable or disable automatic job completion after method invocation. */
   private Boolean autoComplete;
 
   /**
-   * Set a list of variable names which should be fetched on job activation. If set on defaults, it
-   * will extend the list of variables to fetch from the annotation. If set on override, it will
-   * replace the list of variables to fetch.
+   * List of variable names to fetch on job activation. When set in defaults, it extends the list of
+   * variables to fetch from the annotation. When set in an override, it replaces the list of
+   * variables to fetch.
    */
   private List<String> fetchVariables;
 
-  /** Set whether the job worker is enabled. */
+  /** Enable or disable the job worker. */
   private Boolean enabled;
 
   /**
-   * Set for which tenants the jobs worker should be registered. If set on defaults, it will extend
-   * the list of tenant ids from the annotation. Of set on override, it will replace the list of
-   * tenant ids.
+   * Sets the tenants for which the job worker is registered. When set in defaults, it extends the
+   * list of tenant IDs from the annotation. When set in override, it replaces the list of tenant
+   * IDs.
    */
   private List<String> tenantIds;
 
-  /** Set whether all variables should be fetched. Overrides `fetch-variables`. */
+  /** Sets whether all variables are fetched. Overrides `fetch-variables`. */
   private Boolean forceFetchAllVariables;
 
   /**
-   * Opt-in feature flag to enable job streaming. If set as enabled, the job worker will use a mix
-   * of streaming and polling to activate jobs. A long living stream will be opened onto which jobs
-   * will be eagerly pushed, and the polling mechanism will be used strictly to fetch jobs created
-   * <em>before</em> any streams were opened.
+   * Opt-in feature flag that enables job streaming. When enabled, the job worker uses both
+   * streaming and polling to activate jobs. A long-lived stream eagerly pushes new jobs, and
+   * polling retrieves jobs created <em>before</em> any streams were opened.
    */
   private Boolean streamEnabled;
 
   /**
-   * If streaming is enabled, sets a maximum lifetime for a given stream. Once this timeout is
-   * reached, the stream is closed, such that no more jobs are activated and received. If the worker
-   * is still open, then it will immediately open a new stream.
+   * If streaming is enabled, sets the maximum lifetime for a stream. When this timeout is reached,
+   * the stream closes, and no more jobs are activated or received. If the worker is still open, a
+   * new stream opens immediately.
    */
   private Duration streamTimeout;
 
   /**
-   * Set the maximum number of retries before an automatic response (complete, fail, bpmn error) for
-   * jobs will not be attempted anymore.
+   * The maximum number of retries before automatic responses (complete, fail, bpmn error) for jobs
+   * are no longer attempted.
    */
   private Integer maxRetries;
 

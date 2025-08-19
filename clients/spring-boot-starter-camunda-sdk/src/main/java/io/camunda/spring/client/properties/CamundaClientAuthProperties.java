@@ -25,40 +25,42 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 public class CamundaClientAuthProperties {
 
   /**
-   * Authentication method to be used. If not set, it will be detected based on the presence of
-   * username, password, client id and client secret. A default is set by `camunda.client.mode:
+   * The authentication method to use. If not set, it is detected based on the presence of a
+   * username, password, client ID, and client secret. A default is set by `camunda.client.mode:
    * saas`.
    */
   private AuthMethod method;
 
   // basic auth
   /**
-   * Username to be used for basic authentication. A default is set by `camunda.client.auth.method:
+   * The username to use for basic authentication. A default is set by `camunda.client.auth.method:
    * basic`.
    */
   private String username;
 
   /**
-   * Password to be used for basic authentication. A default is set by `camunda.client.auth.method:
-   * basic`.
+   * The password to be use for basic authentication. A default is set by
+   * `camunda.client.auth.method: basic`.
    */
   private String password;
 
   // self-managed and saas
-  /** Client id to be used when requesting access token from OAuth authorization server. */
+  /** The client ID to use when requesting an access token from the OAuth authorization server. */
   private String clientId;
 
-  /** Client secret to be used when requesting access token from OAuth authorization server. */
+  /**
+   * The client secret to use when requesting an access token from the OAuth authorization server.
+   */
   private String clientSecret;
 
   /**
-   * The authorization server's URL, from which the access token will be requested. A default is set
-   * by `camunda.client.mode: saas` and `camunda.client.auth.method: oidc`.
+   * The authorization server URL from which to request the access token. A default is set by
+   * `camunda.client.mode: saas` and `camunda.client.auth.method: oidc`.
    */
   private URI tokenUrl;
 
   /**
-   * The resource for which the access token should be valid. A default is set by
+   * The resource for which the access token must be valid. A default is set by
    * `camunda.client.mode: saas` and `camunda.client.auth.method: oidc`.
    */
   private String audience;
@@ -66,31 +68,31 @@ public class CamundaClientAuthProperties {
   /** The scopes of the access token. */
   private String scope;
 
-  /** The resource for which the access token should be valid. */
+  /** The resource for which the access token must be valid. */
   private String resource;
 
-  /** Path to keystore used for OAuth identity provider. */
+  /** The path to the keystore for the OAuth identity provider. */
   private Path keystorePath;
 
-  /** Password to keystore used for OAuth identity provider. */
+  /** The keystore password for the OAuth identity provider. */
   private String keystorePassword;
 
-  /** Keystore key password used for OAuth identity provider. */
+  /** The keystore key password for the OAuth identity provider. */
   private String keystoreKeyPassword;
 
-  /** Path to truststore used for OAuth identity provider. */
+  /** The path to the truststore for the OAuth identity provider. */
   private Path truststorePath;
 
-  /** Password to truststore used for OAuth identity provider. */
+  /** The truststore password for the OAuth identity provider. */
   private String truststorePassword;
 
-  /** The location for the credentials cache file. */
+  /** The path to the credentials cache file. */
   private String credentialsCachePath = DEFAULT_CREDENTIALS_CACHE_PATH;
 
-  /** The connection timeout of requests to the OAuth credentials provider. */
+  /** The connection timeout for requests to the OAuth credentials provider. */
   private Duration connectTimeout = DEFAULT_CONNECT_TIMEOUT;
 
-  /** The data read timeout of requests to the OAuth credentials provider. */
+  /** The data read timeout for requests to the OAuth credentials provider. */
   private Duration readTimeout = DEFAULT_READ_TIMEOUT;
 
   @NestedConfigurationProperty
