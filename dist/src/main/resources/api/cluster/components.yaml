@@ -322,6 +322,7 @@ schemas:
           - AWAIT_RELOCATION
           - UPDATE_ROUTING_STATE
           - DELETE_HISTORY
+          - PARTITION_DELETE_EXPORTER
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
