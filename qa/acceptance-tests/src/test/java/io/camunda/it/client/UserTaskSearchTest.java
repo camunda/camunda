@@ -167,6 +167,21 @@ class UserTaskSearchTest {
   }
 
   @Test
+  public void shouldReturnCountWithPageZero() {
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.elementId("form_process"))
+            .page(p -> p.limit(0))
+            .send()
+            .join();
+    // then
+    assertThat(result.items()).hasSize(0);
+    assertThat(result.page().totalItems()).isEqualTo(1);
+  }
+
+  @Test
   public void shouldUseUserTaskElementIdIfNameNotSet() {
     // when
     final var result =
