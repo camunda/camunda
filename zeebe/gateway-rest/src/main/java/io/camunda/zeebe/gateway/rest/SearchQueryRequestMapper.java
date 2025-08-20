@@ -121,7 +121,7 @@ public final class SearchQueryRequestMapper {
     return getResult(
         validate(
             violations -> {
-              if (startTime == null || endTime == null) {
+              if (StringUtils.isAnyBlank(startTime, endTime)) {
                 violations.add("The startTime and endTime must both be specified");
               }
               validateDate(startTime, "startTime", violations);

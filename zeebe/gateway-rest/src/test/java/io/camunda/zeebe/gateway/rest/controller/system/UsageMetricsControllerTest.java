@@ -211,6 +211,33 @@ public class UsageMetricsControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldYieldBadRequestIfEmptyStartAndEndTimeAreGiven() {
+    // given
+    final var expectedResponse =
+        """
+        {
+          "type":"about:blank",
+          "title":"INVALID_ARGUMENT",
+          "status":400,
+          "detail":"The startTime and endTime must both be specified.",
+          "instance":"/v2/system/usage-metrics"
+        }
+        """;
+    // when/then
+    webClient
+        .get()
+        .uri(USAGE_METRICS_URL + "?startTime=&endTime=")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  @Test
   void shouldYieldBadRequestIfNoStartTimeIsGiven() {
     // given
     final var expectedResponse =
