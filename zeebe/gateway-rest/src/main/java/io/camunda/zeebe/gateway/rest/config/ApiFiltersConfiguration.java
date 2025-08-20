@@ -39,7 +39,7 @@ public class ApiFiltersConfiguration {
 
   @ConditionalOnExpression("'${camunda.security.authentication.oidc.groupsClaim:}' != ''")
   @Bean
-  public FilterRegistrationBean<EndpointAccessErrorFilter> registerFilter(
+  public FilterRegistrationBean<EndpointAccessErrorFilter> disableGroupApiFilter(
       final ObjectMapper objectMapper) {
     final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
         new FilterRegistrationBean<>();
@@ -52,7 +52,7 @@ public class ApiFiltersConfiguration {
 
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
   @Bean
-  public FilterRegistrationBean<EndpointAccessErrorFilter> registerUsersFilter(
+  public FilterRegistrationBean<EndpointAccessErrorFilter> disableUserApiFilter(
       final ObjectMapper objectMapper) {
     final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
         new FilterRegistrationBean<>();
