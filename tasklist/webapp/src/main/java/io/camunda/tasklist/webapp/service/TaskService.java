@@ -180,12 +180,13 @@ public class TaskService {
     taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
 
     final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
-    tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
+    final var taskAfter = taskBefore.setAssignee(taskAssignee);
+    tasklistServicesAdapter.assignUserTask(taskAfter, taskAssignee);
 
     final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
-    final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
+    final var assignedTaskMetrics = getTaskMetricLabels(taskAfter, currentUsername);
     updateClaimedMetric(assignedTaskMetrics);
-    return TaskDTO.createFrom(claimedTask, objectMapper);
+    return TaskDTO.createFrom(taskAfter, objectMapper);
   }
 
   private String determineTaskAssignee(final String assignee, final String authenticatedUsername) {
