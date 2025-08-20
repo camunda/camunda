@@ -74,8 +74,9 @@ public class GatewayRestConfiguration {
    * <p><b>Constraints:</b>
    *
    * <ul>
-   *   <li>{@code maxPoolSizeMultiplier} should be &gt;= {@code corePoolSizeMultiplier}.
-   *   <li>All multipliers should be &gt; 0 (enforce if necessary).
+   *   <li>{@code corePoolSizeMultiplier} should be &gt;= 0 (0 means no core threads, only on-demand
+   *       threads).
+   *   <li>{@code maxPoolSizeMultiplier} should be &gt; 0
    * </ul>
    */
   public static class ApiExecutorConfiguration {
@@ -124,17 +125,9 @@ public class GatewayRestConfiguration {
     }
 
     public void setCorePoolSizeMultiplier(final int corePoolSizeMultiplier) {
-      if (corePoolSizeMultiplier <= 0) {
+      if (corePoolSizeMultiplier < 0) {
         throw new IllegalArgumentException(
-            "corePoolSizeMultiplier must be > 0 (was " + corePoolSizeMultiplier + ")");
-      }
-      if (corePoolSizeMultiplier > maxPoolSizeMultiplier) {
-        throw new IllegalArgumentException(
-            "corePoolSizeMultiplier ("
-                + corePoolSizeMultiplier
-                + ") cannot be greater than current maxPoolSizeMultiplier ("
-                + maxPoolSizeMultiplier
-                + ")");
+            "corePoolSizeMultiplier must be >= 0 (was " + corePoolSizeMultiplier + ")");
       }
       this.corePoolSizeMultiplier = corePoolSizeMultiplier;
     }
@@ -147,14 +140,6 @@ public class GatewayRestConfiguration {
       if (maxPoolSizeMultiplier <= 0) {
         throw new IllegalArgumentException(
             "maxPoolSizeMultiplier must be > 0 (was " + maxPoolSizeMultiplier + ")");
-      }
-      if (maxPoolSizeMultiplier < corePoolSizeMultiplier) {
-        throw new IllegalArgumentException(
-            "maxPoolSizeMultiplier ("
-                + maxPoolSizeMultiplier
-                + ") cannot be less than current corePoolSizeMultiplier ("
-                + corePoolSizeMultiplier
-                + ")");
       }
       this.maxPoolSizeMultiplier = maxPoolSizeMultiplier;
     }
