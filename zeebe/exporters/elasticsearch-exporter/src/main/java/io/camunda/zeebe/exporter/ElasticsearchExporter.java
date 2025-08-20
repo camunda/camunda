@@ -83,6 +83,7 @@ public class ElasticsearchExporter implements Exporter {
             .readMetadata()
             .map(this::deserializeExporterMetadata)
             .map(ElasticsearchExporterMetadata::getRecordCountersByValueType)
+            .filter(counters -> !counters.isEmpty())
             .map(ElasticsearchRecordCounters::new)
             .orElse(new ElasticsearchRecordCounters());
 

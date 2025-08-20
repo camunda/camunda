@@ -71,10 +71,11 @@ public class RecordCounterTest {
 
     // then the record counter should be 1
     final var counters = readMetadata();
-    assertThat(counters).describedAs("The counter is stored in the metadata").isNotEmpty();
-    assertThat(counters.get(valueType))
+    assertThat(counters)
+        .describedAs("The counter is stored in the metadata")
+        .isNotEmpty()
         .describedAs("The record counter should be 1 as only exported 1 record")
-        .isEqualTo(1);
+        .containsEntry(valueType, 1L);
   }
 
   @Test
@@ -118,10 +119,11 @@ public class RecordCounterTest {
 
     // then the record counter should be 1
     final var counters = readMetadata();
-    assertThat(counters).describedAs("The counter is stored in the metadata").isNotEmpty();
-    assertThat(counters.get(valueType))
+    assertThat(counters)
+        .describedAs("The counter is stored in the metadata")
+        .isNotEmpty()
         .describedAs("The record counter should be 1 as only exported 1 record")
-        .isEqualTo(1);
+        .containsEntry(valueType, 1L);
   }
 
   @Test
@@ -171,11 +173,12 @@ public class RecordCounterTest {
 
     // then the record counter should be 1
     final var counters = readMetadata();
-    assertThat(counters).describedAs("The counter is stored in the metadata").isNotEmpty();
-    assertThat(counters.get(valueType))
+    assertThat(counters)
+        .describedAs("The counter is stored in the metadata")
+        .isNotEmpty()
         .describedAs(
             "The record counter should be 1, as we have exported the record asynchronously")
-        .isEqualTo(1);
+        .containsEntry(valueType, 1L);
   }
 
   @Test
@@ -204,10 +207,11 @@ public class RecordCounterTest {
 
     // then the record counter should be 1
     final var counters = readMetadata();
-    assertThat(counters).describedAs("The counter is stored in the metadata").isNotEmpty();
-    assertThat(counters.get(valueType))
+    assertThat(counters)
+        .describedAs("The counter is stored in the metadata")
+        .isNotEmpty()
         .describedAs("The record counter should be 1, as we have exported the same record twice")
-        .isEqualTo(1);
+        .containsEntry(valueType, 1L);
   }
 
   @Test
@@ -234,10 +238,11 @@ public class RecordCounterTest {
 
     // then the record counter should be 2
     final var counters = readMetadata();
-    assertThat(counters).describedAs("The counter is stored in the metadata").isNotEmpty();
-    assertThat(counters.get(valueType))
+    assertThat(counters)
+        .describedAs("The counter is stored in the metadata")
+        .isNotEmpty()
         .describedAs("The record counter should be 2, as we have exported the two records")
-        .isEqualTo(2);
+        .containsEntry(valueType, 2L);
   }
 
   @Test
