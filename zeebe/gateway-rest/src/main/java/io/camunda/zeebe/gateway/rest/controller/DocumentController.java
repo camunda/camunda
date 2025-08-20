@@ -95,14 +95,13 @@ public class DocumentController {
       produces = {}) // produces arbitrary content type
   public ResponseEntity<StreamingResponseBody> getDocumentContent(
       @PathVariable final String documentId,
-      @RequestParam(required = false) final String storeId,
-      @RequestParam(required = false) final String contentHash) {
+      @RequestParam(required = false) final String storeId) {
 
     // handle the future explicitly here because a StreamingResponseBody is needed as result instead
     // of a future wrapping the stream response
     return documentServices
         .withAuthentication(authenticationProvider.getCamundaAuthentication())
-        .getDocumentContent(documentId, storeId, contentHash)
+        .getDocumentContent(documentId, storeId)
         // Any service exception that can occur is handled by the GlobalControllerExceptionHandler
         .thenApply(ResponseMapper::toDocumentContentResponse)
         .join();
@@ -123,26 +122,24 @@ public class DocumentController {
   public CompletableFuture<ResponseEntity<Object>> createDocumentLink(
       @PathVariable final String documentId,
       @RequestParam(required = false) final String storeId,
-      @RequestParam(required = false) final String contentHash,
       @RequestBody final DocumentLinkRequest linkRequest) {
 
     return RequestMapper.toDocumentLinkParams(linkRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            params -> createDocumentLink(documentId, storeId, contentHash, params));
+            params -> createDocumentLink(documentId, storeId, params));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocumentLink(
       final String documentId,
       final String storeId,
-      final String contentHash,
       final DocumentLinkParams params) {
 
     return RequestMapper.executeServiceMethod(
         () ->
             documentServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createLink(documentId, storeId, contentHash, params),
+                .createLink(documentId, storeId, params),
         ResponseMapper::toDocumentLinkResponse);
   }
 }

@@ -1077,7 +1077,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public DocumentContentGetRequest newDocumentContentGetRequest(final String documentId) {
-    return new DocumentContentGetRequestImpl(httpClient, documentId, null, null, config);
+    return new DocumentContentGetRequestImpl(httpClient, documentId, null, config);
   }
 
   @Override
@@ -1087,14 +1087,13 @@ public final class CamundaClientImpl implements CamundaClient {
         httpClient,
         documentReference.getDocumentId(),
         documentReference.getStoreId(),
-        documentReference.getContentHash(),
         config);
   }
 
   @Override
   public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(final String documentId) {
     return new CreateDocumentLinkCommandImpl(
-        documentId, null, null, jsonMapper, httpClient, config);
+        documentId, null, jsonMapper, httpClient, config);
   }
 
   @Override
@@ -1103,7 +1102,6 @@ public final class CamundaClientImpl implements CamundaClient {
     return new CreateDocumentLinkCommandImpl(
         documentReference.getDocumentId(),
         documentReference.getStoreId(),
-        documentReference.getContentHash(),
         jsonMapper,
         httpClient,
         config);

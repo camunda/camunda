@@ -126,8 +126,7 @@ public class DocumentServicesTest {
 
     // when
     final var future =
-        services.getDocumentContent(
-            "irrelevant-document-id", "irrelevant-store-id", "irrelevant-hash");
+        services.getDocumentContent("irrelevant-document-id", "irrelevant-store-id");
 
     assertThat(future.isCompletedExceptionally()).isTrue();
   }
@@ -316,7 +315,7 @@ public class DocumentServicesTest {
 
     // when
     final var actualDocumentContent =
-        services.getDocumentContent(documentId, storeId, contentHash).join();
+        services.getDocumentContent(documentId, storeId).join();
 
     // then
     assertThat(actualDocumentContent).isNotNull();

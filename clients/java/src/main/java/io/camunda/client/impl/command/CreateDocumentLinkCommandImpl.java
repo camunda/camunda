@@ -45,7 +45,6 @@ public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandS
   public CreateDocumentLinkCommandImpl(
       final String documentId,
       final String storeId,
-      final String contentHash,
       final JsonMapper jsonMapper,
       final HttpClient httpClient,
       final CamundaClientConfiguration configuration) {
@@ -55,7 +54,6 @@ public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandS
     if (storeId != null) {
       queryParams.put("storeId", storeId);
     }
-    queryParams.put("contentHash", contentHash);
     documentLinkRequest = new DocumentLinkRequest();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;

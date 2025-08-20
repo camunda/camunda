@@ -355,7 +355,6 @@ public final class ResponseMapper {
         .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
         .documentId(response.documentId())
         .storeId(response.storeId())
-        .contentHash(response.contentHash())
         .metadata(externalMetadata);
   }
 

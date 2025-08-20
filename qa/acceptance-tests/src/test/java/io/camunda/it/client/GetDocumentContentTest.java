@@ -114,8 +114,7 @@ public class GetDocumentContentTest {
             .newDocumentContentGetRequest(
                 new DocumentReferenceResponseImpl(
                     new DocumentReference()
-                        .documentId(documentReference.getDocumentId())
-                        .contentHash("foobar")))
+                        .documentId(documentReference.getDocumentId())))
             .send();
 
     // then

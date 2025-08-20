@@ -99,7 +99,6 @@ public class DocumentControllerTest extends RestControllerTest {
                       "documentId": "documentId",
                       "storeId": "default",
                       "camunda.document.type": "camunda",
-                      "contentHash": "dummy_hash",
                       "metadata": {
                         "contentType": "application/octet-stream",
                         "fileName": "file.txt",
@@ -179,7 +178,6 @@ public class DocumentControllerTest extends RestControllerTest {
                       "documentId": "documentId",
                       "storeId": "default",
                       "camunda.document.type": "camunda",
-                      "contentHash": "dummy_hash",
                       "metadata": {
                         "contentType": "application/octet-stream",
                         "fileName": "file.txt",
@@ -284,8 +282,7 @@ public class DocumentControllerTest extends RestControllerTest {
                           },
                           "camunda.document.type": "camunda",
                           "storeId": "default",
-                          "documentId": "documentId",
-                          "contentHash": "dummy_hash"
+                          "documentId": "documentId"
                         },
                         {
                           "metadata": {
@@ -298,8 +295,7 @@ public class DocumentControllerTest extends RestControllerTest {
                           },
                           "camunda.document.type": "camunda",
                           "storeId": "default",
-                          "documentId": "documentId",
-                          "contentHash": "dummy_hash"
+                          "documentId": "documentId"
                         }
                       ],
                       "failedDocuments": []
@@ -338,7 +334,7 @@ public class DocumentControllerTest extends RestControllerTest {
     // given
     final var content = new byte[] {1, 2, 3};
 
-    when(documentServices.getDocumentContent("documentId", null, null))
+    when(documentServices.getDocumentContent("documentId", null))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DocumentContentResponse(new ByteArrayInputStream(content), "application/pdf")));
@@ -375,7 +371,7 @@ public class DocumentControllerTest extends RestControllerTest {
     // given
     final var content = new byte[] {1, 2, 3};
 
-    when(documentServices.getDocumentContent("documentId", null, null))
+    when(documentServices.getDocumentContent("documentId", null))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DocumentContentResponse(new ByteArrayInputStream(content), null)));
@@ -395,7 +391,7 @@ public class DocumentControllerTest extends RestControllerTest {
   @Test
   void shouldYieldBadRequestWhenNoHashDocumentForGetDocument() {
     // given
-    when(documentServices.getDocumentContent(any(), any(), any()))
+    when(documentServices.getDocumentContent(any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapDocumentError(new DocumentHashMismatch("foo", null))));
@@ -426,7 +422,7 @@ public class DocumentControllerTest extends RestControllerTest {
   @Test
   void shouldYieldBadRequestWhenWrongHashForGetDocument() {
     // given
-    when(documentServices.getDocumentContent(any(), any(), any()))
+    when(documentServices.getDocumentContent(any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapDocumentError(new DocumentHashMismatch("foo", "barbaz"))));

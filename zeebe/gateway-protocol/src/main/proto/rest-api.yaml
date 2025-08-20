@@ -4510,15 +4510,6 @@ paths:
           description: The ID of the document store to download the document from.
           schema:
             type: string
-        - name: contentHash
-          in: query
-          required: true
-          schema:
-            type: string
-          description: >
-            The hash of the document content that was computed by the document store during upload.
-            The hash is part of the document reference that is returned when uploading a document.
-            If the client fails to provide the correct hash, the request will be rejected.
       responses:
         "200":
           description: The document was downloaded successfully.
@@ -4595,15 +4586,6 @@ paths:
           description: The ID of the document store to link the document from.
           schema:
             type: string
-        - name: contentHash
-          in: query
-          required: true
-          schema:
-            type: string
-          description: >
-            The hash of the document content that was computed by the document store during upload.
-            The hash is part of the document reference that is returned when uploading a document.
-            If the client fails to provide the correct hash, the request will be rejected.
       requestBody:
         required: false
         content:
@@ -9897,9 +9879,6 @@ components:
         documentId:
           type: string
           description: The ID of the document.
-        contentHash:
-          type: string
-          description: The hash of the document.
         metadata:
           $ref: "#/components/schemas/DocumentMetadata"
 

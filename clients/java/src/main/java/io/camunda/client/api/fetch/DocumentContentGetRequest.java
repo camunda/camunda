@@ -34,10 +34,4 @@ public interface DocumentContentGetRequest extends FinalCommandStep<InputStream>
    */
   DocumentContentGetRequest storeId(String storeId);
 
-  /**
-   * Sets the documents content hash.
-   *
-   * @param contentHash the documents content Hash
-   */
-  DocumentContentGetRequest contentHash(String contentHash);
 }
