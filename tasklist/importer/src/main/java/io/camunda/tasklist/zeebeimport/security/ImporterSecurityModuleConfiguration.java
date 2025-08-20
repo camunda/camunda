@@ -17,7 +17,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
     basePackages = "io.camunda.tasklist.zeebeimport.security",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @ConditionalOnProperty(
-    name = "camunda.tasklist.importerEnabled",
+    name = "camunda.tasklist.importer-enabled",
     havingValue = "true",
     matchIfMissing = true)
 public class ImporterSecurityModuleConfiguration {}
