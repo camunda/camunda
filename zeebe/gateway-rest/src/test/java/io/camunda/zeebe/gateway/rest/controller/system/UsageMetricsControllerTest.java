@@ -290,4 +290,33 @@ public class UsageMetricsControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
   }
+
+  @Test
+  void shouldYieldBadRequestIfStartTimeIsAfterEndTime() {
+    // given
+    final var expectedResponse =
+        """
+        {
+          "type":"about:blank",
+          "title":"INVALID_ARGUMENT",
+          "status":400,
+          "detail":"The endTime must be after startTime.",
+          "instance":"/v2/system/usage-metrics"
+        }
+        """;
+    // when/then
+    webClient
+        .get()
+        .uri(
+            USAGE_METRICS_URL
+                + "?startTime=2024-12-31T10:50:26.000Z&endTime=2024-12-30T10:50:26.000Z")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+  }
 }
