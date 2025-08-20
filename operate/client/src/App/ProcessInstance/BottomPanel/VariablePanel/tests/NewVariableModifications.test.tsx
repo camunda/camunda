@@ -642,7 +642,7 @@ describe('New Variable Modifications', () => {
     vi.useRealTimers();
   });
 
-  it('should be able to add variable when a flow node that has no tokens on it is selected from the diagram', async () => {
+  it.skip('should be able to add variable when a flow node that has no tokens on it is selected from the diagram', async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );

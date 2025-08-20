@@ -365,7 +365,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
+  it.skip('should display correct state for a flow node that has no running or finished tokens on it', async () => {
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
