@@ -18,12 +18,10 @@ import java.util.List;
 
 public class VariableDeletedHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
 
-  private final int variableSizeThreshold;
   private final String indexName;
 
-  public VariableDeletedHandler(final String indexName, final int variableSizeThreshold) {
+  public VariableDeletedHandler(final String indexName) {
     this.indexName = indexName;
-    this.variableSizeThreshold = variableSizeThreshold;
   }
 
   @Override

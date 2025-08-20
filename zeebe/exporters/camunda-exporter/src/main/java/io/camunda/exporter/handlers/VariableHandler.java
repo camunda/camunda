@@ -16,10 +16,14 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 public class VariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
 
+  private static final Set<VariableIntent> SUPPORTED_INTENTS =
+      EnumSet.of(VariableIntent.CREATED, VariableIntent.UPDATED);
   private final int variableSizeThreshold;
   private final String indexName;
 
@@ -40,7 +44,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
 
   @Override
   public boolean handlesRecord(final Record<VariableRecordValue> record) {
-    return !(record.getIntent().equals(VariableIntent.MIGRATED) || record.getIntent().equals(VariableIntent.DELETED));
+    return SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override

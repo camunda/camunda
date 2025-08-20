@@ -170,6 +170,26 @@ public class VariableHandlerTest {
   }
 
   @Test
+  void shouldDeleteEntityFromRecord() {
+    // given
+    final VariableRecordValue variableRecordValue =
+        ImmutableVariableRecordValue.builder()
+            .withName("TEST")
+            .withValue("TEST")
+            .withScopeKey(-1)
+            .build();
+
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r -> r.withIntent(VariableIntent.CREATED).withValue(variableRecordValue));
+
+    final long key = variableRecord.getKey();
+
+    System.out.println(key);
+  }
+
+  @Test
   void shouldUpdateEntityFromRecordWithFullValue() {
     // given
     final VariableRecordValue variableRecordValue =

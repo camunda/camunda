@@ -223,8 +223,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new VariableDeletedHandler(
-                indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()),
+                indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()),
             new DecisionRequirementsHandler(
                 indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
             new PostImporterQueueFromIncidentHandler(

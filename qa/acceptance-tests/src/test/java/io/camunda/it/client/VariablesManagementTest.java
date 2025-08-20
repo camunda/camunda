@@ -13,6 +13,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -104,6 +105,47 @@ public class VariablesManagementTest {
         .join();
 
     awaitSingleClusterUntilEmpty();
+  }
+
+  @Test
+  void shouldHandleCommandRejectionProperly_updateRejectionDoesNotWriteInSecondaryStorage() {
+    camundaClient
+        .newVariableCreationCommand()
+        .variable("KEY", "VALUE")
+        .clusterLevel()
+        .send()
+        .join();
+
+    awaitSingleClusterVar("KEY", -1L, "\"VALUE\"");
+    final var result = clusterVariableSearchRequest.send().join();
+
+    camundaClient
+        .newVariableDeleteCommand()
+        .key(result.items().getFirst().getVariableKey())
+        .send()
+        .join();
+
+    Assertions.assertThrows(
+        Exception.class,
+        () ->
+            camundaClient
+                .newVariableUpdateCommand()
+                .variable(result.items().getFirst().getVariableKey(), "VALUE_5")
+                .send()
+                .join());
+
+    camundaClient
+        .newVariableCreationCommand()
+        .variable("KEY_2", "VALUE_2")
+        .clusterLevel()
+        .send()
+        .join();
+
+    awaitSingleClusterVar("KEY_2", -1L, "\"VALUE_2\"");
+    final var result2 = clusterVariableSearchRequest.send().join();
+
+    assertThat(result2.items().size()).isEqualTo(1);
+    assertThat(result2.items().getFirst().getValue()).isEqualTo("\"VALUE_2\"");
   }
 
   private void awaitSingleClusterUntilEmpty() {
