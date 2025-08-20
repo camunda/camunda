@@ -15,11 +15,12 @@ import (
 
 func (w *UnixC8Run) OpenBrowser(ctx context.Context, url string) error {
 	var openBrowserCmdString string
-	if runtime.GOOS == "darwin" {
+	switch runtime.GOOS {
+	case "darwin":
 		openBrowserCmdString = "open"
-	} else if runtime.GOOS == "linux" {
+	case "linux":
 		openBrowserCmdString = "xdg-open"
-	} else {
+	default:
 		return fmt.Errorf("OpenBrowser: platform %s is not supported", runtime.GOOS)
 	}
 	openBrowserCmd := exec.CommandContext(ctx, openBrowserCmdString, url)

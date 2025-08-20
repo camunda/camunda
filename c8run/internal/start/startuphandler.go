@@ -134,9 +134,10 @@ func resolveJavaHomeAndBinary() (string, string, error) {
 		}
 		// fallback to bin/java.exe
 		if javaBinary == "" {
-			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+			switch runtime.GOOS {
+			case "linux", "darwin":
 				javaBinary = filepath.Join(javaHome, "bin", "java")
-			} else if runtime.GOOS == "windows" {
+			case "windows":
 				javaBinary = filepath.Join(javaHome, "bin", "java.exe")
 			}
 		}

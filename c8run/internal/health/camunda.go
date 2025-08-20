@@ -61,7 +61,9 @@ func isRunning(ctx context.Context, name, url string, retries int, delay time.Du
 			resp, err := client.Do(req)
 			if err == nil {
 				if resp.Body != nil {
-					resp.Body.Close()
+					if err := resp.Body.Close(); err != nil {
+						log.Error().Err(err).Msg("failed to close response body")
+					}
 				}
 
 				if resp.StatusCode >= 200 && resp.StatusCode < 400 {

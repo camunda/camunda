@@ -13,6 +13,7 @@ import (
 	"strconv"
 
 	"github.com/camunda/camunda/c8run/internal/types"
+	"github.com/rs/zerolog/log"
 )
 
 func SetEnvVars(javaHome string) error {
@@ -68,6 +69,8 @@ func AdjustJavaOpts(javaOpts string, settings types.C8RunSettings) string {
 	javaOpts = javaOpts + " -Dcamunda.security.authentication.unprotected-api=true"
 	javaOpts = javaOpts + " -Dcamunda.security.authorizations.enabled=false"
 	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity,consolidated-auth"
-	os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.Port))
+	if err := os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.Port)); err != nil {
+		log.Error().Err(err).Msg("failed to set CAMUNDA_OPERATE_ZEEBE_RESTADDRESS")
+	}
 	return javaOpts
 }

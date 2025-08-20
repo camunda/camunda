@@ -27,9 +27,10 @@ import (
 )
 
 func getC8RunPlatform() types.C8Run {
-	if runtime.GOOS == "windows" {
+	switch runtime.GOOS {
+	case "windows":
 		return &windows.WindowsC8Run{}
-	} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+	case "linux", "darwin":
 		return &unix.UnixC8Run{}
 	}
 	panic("Unsupported operating system")
@@ -201,7 +202,9 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	}
 
 	if settings.LogLevel != "" {
-		os.Setenv("ZEEBE_LOG_LEVEL", settings.LogLevel)
+		if err := os.Setenv("ZEEBE_LOG_LEVEL", settings.LogLevel); err != nil {
+			log.Error().Err(err).Msg("failed to set ZEEBE_LOG_LEVEL log level")
+		}
 	}
 
 	err = validateKeystore(settings, baseDir)
