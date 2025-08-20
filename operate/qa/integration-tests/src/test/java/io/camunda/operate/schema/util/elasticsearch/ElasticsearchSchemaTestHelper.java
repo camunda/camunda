@@ -8,6 +8,8 @@
 package io.camunda.operate.schema.util.elasticsearch;
 
 import static io.camunda.operate.schema.IndexMapping.IndexMappingProperty.createIndexMappingProperty;
+import static io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
+import static io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.NUMBERS_OF_SHARDS;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,8 +31,10 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetComponentTemplatesRequest;
 import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
 import org.elasticsearch.cluster.metadata.ComposableIndexTemplate;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -132,5 +136,50 @@ public class ElasticsearchSchemaTestHelper implements SchemaTestHelper {
     } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
+  }
+
+  @Override
+  public Map<String, String> getComponentTemplateSettings(final String componentTemplateName) {
+    final Settings settings;
+    try {
+      settings =
+          esClient
+              .cluster()
+              .getComponentTemplate(
+                  new GetComponentTemplatesRequest(componentTemplateName), RequestOptions.DEFAULT)
+              .getComponentTemplates()
+              .get(componentTemplateName)
+              .template()
+              .settings();
+    } catch (final IOException e) {
+      throw new OperateRuntimeException(e);
+    }
+    return Map.of(
+        NUMBERS_OF_REPLICA,
+        settings.get(NUMBERS_OF_REPLICA),
+        NUMBERS_OF_SHARDS,
+        settings.get(NUMBERS_OF_SHARDS));
+  }
+
+  @Override
+  public Map<String, String> getIndexTemplateSettings(final String indexTemplateName) {
+    final ComposableIndexTemplate indexTemplate;
+    try {
+      indexTemplate =
+          esClient
+              .indices()
+              .getIndexTemplate(
+                  new GetComposableIndexTemplateRequest(indexTemplateName), RequestOptions.DEFAULT)
+              .getIndexTemplates()
+              .get(indexTemplateName);
+    } catch (final IOException e) {
+      throw new OperateRuntimeException(e);
+    }
+    final Settings settings = indexTemplate.template().settings();
+    return Map.of(
+        NUMBERS_OF_REPLICA,
+        settings.get(NUMBERS_OF_REPLICA),
+        NUMBERS_OF_SHARDS,
+        settings.get(NUMBERS_OF_SHARDS));
   }
 }

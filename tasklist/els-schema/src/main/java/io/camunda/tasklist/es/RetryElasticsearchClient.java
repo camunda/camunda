@@ -65,6 +65,7 @@ import org.elasticsearch.client.indexlifecycle.PutLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.*;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.elasticsearch.cluster.metadata.ComposableIndexTemplate;
 import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
@@ -795,6 +796,26 @@ public class RetryElasticsearchClient {
         () ->
             esClient.indexLifecycle().getLifecyclePolicy(getLifecyclePolicyRequest, requestOptions),
         null);
+  }
+
+  public ComposableIndexTemplate getIndexTemplate(final String templateName) {
+    return executeWithRetries(
+        "GetIndexTemplate " + templateName,
+        () -> {
+          final var request = new GetComposableIndexTemplateRequest(templateName);
+          final var response = esClient.indices().getIndexTemplate(request, requestOptions);
+          return response.getIndexTemplates().get(templateName);
+        });
+  }
+
+  public Map<String, ComposableIndexTemplate> getIndexTemplates(final String templateNamePattern) {
+    return executeWithRetries(
+        "GetIndexTemplate " + templateNamePattern,
+        () -> {
+          final var request = new GetComposableIndexTemplateRequest(templateNamePattern);
+          final var response = esClient.indices().getIndexTemplate(request, requestOptions);
+          return response.getIndexTemplates();
+        });
   }
 
   public Map<String, IndexMapping> getIndexMappings(final String namePattern) {
