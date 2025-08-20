@@ -31,7 +31,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import java.io.InputStream;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -108,27 +107,24 @@ public class DocumentServices extends ApiServices<DocumentServices> {
               Authorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
     }
 
-    final List<Either<DocumentErrorResponse, DocumentReferenceResponse>> results =
-        new ArrayList<>();
-
-    final List<CompletableFuture<Boolean>> futures =
-        requests.stream()
-            .map(
-                request -> {
-                  final var storeRequest =
-                      new DocumentCreationRequest(
-                          request.documentId, request.contentInputStream, request.metadata);
-                  final DocumentStoreRecord documentStore = getDocumentStore(request.storeId);
-                  return documentStore
-                      .instance()
-                      .createDocument(storeRequest)
-                      .handleAsync(
-                          (response, error) ->
-                              results.add(
+    final List<CompletableFuture<Either<DocumentErrorResponse, DocumentReferenceResponse>>>
+        futures =
+            requests.stream()
+                .map(
+                    request -> {
+                      final var storeRequest =
+                          new DocumentCreationRequest(
+                              request.documentId, request.contentInputStream, request.metadata);
+                      final DocumentStoreRecord documentStore = getDocumentStore(request.storeId);
+                      return documentStore
+                          .instance()
+                          .createDocument(storeRequest)
+                          .handleAsync(
+                              (response, error) ->
                                   transformResponse(
-                                      request, response, error, documentStore.storeId())));
-                })
-            .toList();
+                                      request, response, error, documentStore.storeId()));
+                    })
+                .toList();
 
     return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
         .handleAsync(
@@ -136,7 +132,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
               if (error != null) {
                 throw ErrorMapper.mapError(error);
               }
-              return results;
+              return futures.stream().map(CompletableFuture::join).toList();
             });
   }
 
