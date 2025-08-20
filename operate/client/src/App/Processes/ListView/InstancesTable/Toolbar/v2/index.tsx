@@ -24,7 +24,7 @@ import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {buildCancelOrResolveOperationRequestBody} from './buildCancelOrResolveOperationRequestBody';
+import {buildMutationRequestBody} from './buildMutationRequestBody';
 
 type Props = {
   selectedInstancesCount: number;
@@ -108,7 +108,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         ? checkedRunningProcessInstanceIds
         : (baseFilter.ids ?? []);
 
-    const requestBody = buildCancelOrResolveOperationRequestBody(
+    const requestBody = buildMutationRequestBody(
       baseFilter,
       includeIds,
       excludedProcessInstanceIds,

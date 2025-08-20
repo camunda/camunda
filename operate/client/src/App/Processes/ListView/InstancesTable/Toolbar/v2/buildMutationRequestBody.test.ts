@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {buildCancelOrResolveOperationRequestBody} from './buildCancelOrResolveOperationRequestBody';
+import {buildMutationRequestBody} from './buildMutationRequestBody';
 import type {RequestFilters} from 'modules/utils/filter';
 import type {
   CreateCancellationBatchOperationRequestBody,
@@ -17,14 +17,14 @@ type Body =
   | CreateIncidentResolutionBatchOperationRequestBody
   | CreateCancellationBatchOperationRequestBody;
 
-describe('buildCancelOrResolveOperationRequestBody', () => {
+describe('buildMutationRequestBody', () => {
   const baseFilter: RequestFilters = {
     activityId: 'taskA',
     incidents: true,
   };
 
   it('adds processInstanceKey.$in when includeIds present', () => {
-    const body: Body = buildCancelOrResolveOperationRequestBody(
+    const body: Body = buildMutationRequestBody(
       baseFilter,
       ['1', '2'],
       [],
@@ -39,7 +39,7 @@ describe('buildCancelOrResolveOperationRequestBody', () => {
   });
 
   it('adds processInstanceKey.$notIn when excludeIds present', () => {
-    const body: Body = buildCancelOrResolveOperationRequestBody(
+    const body: Body = buildMutationRequestBody(
       baseFilter,
       [],
       ['3', '4'],
@@ -54,7 +54,7 @@ describe('buildCancelOrResolveOperationRequestBody', () => {
   });
 
   it('combines includeIds and excludeIds into processInstanceKey', () => {
-    const body: Body = buildCancelOrResolveOperationRequestBody(
+    const body: Body = buildMutationRequestBody(
       baseFilter,
       ['1', '2'],
       ['3'],
@@ -69,7 +69,7 @@ describe('buildCancelOrResolveOperationRequestBody', () => {
   });
 
   it('adds processDefinitionKey when provided', () => {
-    const body: Body = buildCancelOrResolveOperationRequestBody(
+    const body: Body = buildMutationRequestBody(
       baseFilter,
       [],
       [],
@@ -84,7 +84,7 @@ describe('buildCancelOrResolveOperationRequestBody', () => {
   });
 
   it('handles single-element arrays', () => {
-    const body: Body = buildCancelOrResolveOperationRequestBody(
+    const body: Body = buildMutationRequestBody(
       baseFilter,
       ['only'],
       ['x'],
@@ -99,12 +99,7 @@ describe('buildCancelOrResolveOperationRequestBody', () => {
   });
 
   it('omits processInstanceKey when both include/exclude lists are empty', () => {
-    const body: Body = buildCancelOrResolveOperationRequestBody(
-      baseFilter,
-      [],
-      [],
-      null,
-    );
+    const body: Body = buildMutationRequestBody(baseFilter, [], [], null);
 
     expect(body).toEqual({
       elementId: 'taskA',

@@ -13,7 +13,7 @@ import type {
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 
-const buildCancelOrResolveOperationRequestBody = (
+const buildMutationRequestBody = (
   baseFilter: RequestFilters,
   includeIds: string[],
   excludeIds: string[],
@@ -32,10 +32,10 @@ const buildCancelOrResolveOperationRequestBody = (
   }
 
   if (processDefinitionKey) {
-    requestBody.processDefinitionKey = {$eq: processDefinitionKey};
+    requestBody.processDefinitionKey = processDefinitionKey;
   }
 
   return requestBody;
 };
 
-export {buildCancelOrResolveOperationRequestBody};
+export {buildMutationRequestBody};
