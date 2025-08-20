@@ -11,6 +11,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/statistics-weekly.yml'
+      - '.ci/scripts/setup-medic-lookup.sh'
   workflow_dispatch: {}
 
 env:
