@@ -44,6 +44,7 @@ public class DeleteVariableImpl implements VariableDeleteCommandStep1 {
 
   @Override
   public CamundaFuture<DeleteVariableResponse> send() {
+    ArgumentUtil.ensureNotNull("key", key);
     final HttpCamundaFuture<DeleteVariableResponse> result = new HttpCamundaFuture<>();
     httpClient.delete("/variables/" + key, httpRequestConfig.build(), result);
     return result;

@@ -50,6 +50,8 @@ public class UpdateVariableImpl implements VariableUpdateCommandStep1 {
 
   @Override
   public CamundaFuture<UpdateVariableResponse> send() {
+    ArgumentUtil.ensureNotNull("key", key);
+    ArgumentUtil.ensureNotNull("value", updateVariableRequest.getValue());
     final HttpCamundaFuture<UpdateVariableResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
         "/variables/" + key,

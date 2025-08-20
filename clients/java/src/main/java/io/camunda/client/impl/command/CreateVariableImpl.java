@@ -51,6 +51,9 @@ public class CreateVariableImpl implements VariableCreationCommandStep1 {
 
   @Override
   public CamundaFuture<CreateVariableResponse> send() {
+    ArgumentUtil.ensureNotNullNorEmpty("name", createVariableRequest.getName());
+    ArgumentUtil.ensureNotNull("value", createVariableRequest.getValue());
+    ArgumentUtil.ensureNotNull("scope", createVariableRequest.getScope());
     final HttpCamundaFuture<CreateVariableResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/variables", jsonMapper.toJson(createVariableRequest), httpRequestConfig.build(), result);
