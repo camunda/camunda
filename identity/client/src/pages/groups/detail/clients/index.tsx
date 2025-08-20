@@ -58,8 +58,8 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"client"}
-          parentResourceTypeTranslationString={"group"}
+          childResourceTypeTranslationKey={"client"}
+          parentResourceTypeTranslationKey={"group"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

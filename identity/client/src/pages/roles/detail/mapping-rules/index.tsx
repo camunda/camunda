@@ -69,8 +69,8 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"mappingRule"}
-          parentResourceTypeTranslationString={"role"}
+          childResourceTypeTranslationKey={"mappingRule"}
+          parentResourceTypeTranslationKey={"role"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

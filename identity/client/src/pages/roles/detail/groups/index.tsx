@@ -65,8 +65,8 @@ const Groups: FC<GroupsProps> = ({ roleId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"group"}
-          parentResourceTypeTranslationString={"role"}
+          childResourceTypeTranslationKey={"group"}
+          parentResourceTypeTranslationKey={"role"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

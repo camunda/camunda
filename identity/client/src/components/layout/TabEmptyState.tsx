@@ -14,16 +14,16 @@ import { documentationHref } from "src/components/documentation";
 import useTranslate from "src/utility/localization";
 
 type TabEmptyStateProps = {
-  childResourceTypeTranslationString: string;
-  parentResourceTypeTranslationString: string;
+  childResourceTypeTranslationKey: string;
+  parentResourceTypeTranslationKey: string;
   description?: string;
   docsLinkPath?: string;
   handleClick: () => void;
 };
 
 const TabEmptyState: FC<TabEmptyStateProps> = ({
-  childResourceTypeTranslationString,
-  parentResourceTypeTranslationString,
+  childResourceTypeTranslationKey,
+  parentResourceTypeTranslationKey,
   description,
   docsLinkPath = "",
   handleClick,
@@ -31,10 +31,10 @@ const TabEmptyState: FC<TabEmptyStateProps> = ({
   const { t } = useTranslate();
 
   const childResourceTypeText = t(
-    childResourceTypeTranslationString,
+    childResourceTypeTranslationKey,
   ).toLowerCase();
   const parentResourceTypeText = t(
-    parentResourceTypeTranslationString,
+    parentResourceTypeTranslationKey,
   ).toLowerCase();
 
   return (

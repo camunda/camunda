@@ -58,7 +58,7 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <PageEmptyState
-          resourceTypeTranslationString={"mappingRule"}
+          resourceTypeTranslationKey={"mappingRule"}
           docsLinkPath=""
           handleClick={addMappingRule}
         />

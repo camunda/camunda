@@ -65,8 +65,8 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"user"}
-          parentResourceTypeTranslationString={"tenant"}
+          childResourceTypeTranslationKey={"user"}
+          parentResourceTypeTranslationKey={"tenant"}
           handleClick={openAssignModal}
           description={t("emptyStateTenantAccessDisclaimer")}
           docsLinkPath=""

@@ -64,8 +64,8 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"client"}
-          parentResourceTypeTranslationString={"tenant"}
+          childResourceTypeTranslationKey={"client"}
+          parentResourceTypeTranslationKey={"tenant"}
           handleClick={openAssignModal}
           description={t("emptyStateTenantAccessDisclaimer")}
           docsLinkPath=""

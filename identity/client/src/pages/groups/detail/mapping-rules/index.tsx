@@ -69,8 +69,8 @@ const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"mappingRule"}
-          parentResourceTypeTranslationString={"group"}
+          childResourceTypeTranslationKey={"mappingRule"}
+          parentResourceTypeTranslationKey={"group"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

@@ -64,8 +64,8 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"user"}
-          parentResourceTypeTranslationString={"group"}
+          childResourceTypeTranslationKey={"user"}
+          parentResourceTypeTranslationKey={"group"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

@@ -69,8 +69,8 @@ const MappingRules: FC<MappingRulesProps> = ({ tenantId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"mappingRule"}
-          parentResourceTypeTranslationString={"tenant"}
+          childResourceTypeTranslationKey={"mappingRule"}
+          parentResourceTypeTranslationKey={"tenant"}
           handleClick={openAssignModal}
           description={t("emptyStateTenantAccessDisclaimer")}
           docsLinkPath=""

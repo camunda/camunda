@@ -65,8 +65,8 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"group"}
-          parentResourceTypeTranslationString={"tenant"}
+          childResourceTypeTranslationKey={"group"}
+          parentResourceTypeTranslationKey={"tenant"}
           handleClick={openAssignModal}
           description={t("emptyStateTenantAccessDisclaimer")}
           docsLinkPath=""

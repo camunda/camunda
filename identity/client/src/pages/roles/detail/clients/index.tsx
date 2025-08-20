@@ -64,8 +64,8 @@ const Clients: FC<ClientsProps> = ({ roleId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"client"}
-          parentResourceTypeTranslationString={"role"}
+          childResourceTypeTranslationKey={"client"}
+          parentResourceTypeTranslationKey={"role"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

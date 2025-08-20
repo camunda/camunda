@@ -14,19 +14,19 @@ import { docsUrl } from "src/configuration";
 import useTranslate from "src/utility/localization";
 
 type PageEmptyStateProps = {
-  resourceTypeTranslationString: string;
+  resourceTypeTranslationKey: string;
   docsLinkPath?: string;
   handleClick: () => void;
 };
 
 const PageEmptyState: FC<PageEmptyStateProps> = ({
-  resourceTypeTranslationString,
+  resourceTypeTranslationKey,
   docsLinkPath = "",
   handleClick,
 }) => {
   const { t } = useTranslate();
 
-  const resourceTypeText = t(resourceTypeTranslationString).toLowerCase();
+  const resourceTypeText = t(resourceTypeTranslationKey).toLowerCase();
 
   return (
     <C3EmptyState

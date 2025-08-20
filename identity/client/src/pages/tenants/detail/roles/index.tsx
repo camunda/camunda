@@ -68,8 +68,8 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"role"}
-          parentResourceTypeTranslationString={"tenant"}
+          childResourceTypeTranslationKey={"role"}
+          parentResourceTypeTranslationKey={"tenant"}
           handleClick={openAssignModal}
           description={t("emptyStateTenantAccessDisclaimer")}
           docsLinkPath=""

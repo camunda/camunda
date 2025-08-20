@@ -65,8 +65,8 @@ const Members: FC<MembersProps> = ({ roleId }) => {
     return (
       <>
         <TabEmptyState
-          childResourceTypeTranslationString={"user"}
-          parentResourceTypeTranslationString={"role"}
+          childResourceTypeTranslationKey={"user"}
+          parentResourceTypeTranslationKey={"role"}
           handleClick={openAssignModal}
           docsLinkPath=""
         />

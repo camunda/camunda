@@ -54,7 +54,7 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <PageEmptyState
-          resourceTypeTranslationString={"tenant"}
+          resourceTypeTranslationKey={"tenant"}
           docsLinkPath=""
           handleClick={addTenant}
         />
