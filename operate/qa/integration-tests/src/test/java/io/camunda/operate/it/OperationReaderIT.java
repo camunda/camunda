@@ -8,18 +8,23 @@
 package io.camunda.operate.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 public class OperationReaderIT extends OperateSearchAbstractIT {
 
@@ -31,7 +36,7 @@ public class OperationReaderIT extends OperateSearchAbstractIT {
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private DateTimeFormatter dateTimeFormatter;
-  @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
+  @MockitoBean private PermissionsService permissionsService;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
@@ -61,12 +66,23 @@ public class OperationReaderIT extends OperateSearchAbstractIT {
   }
 
   @Test
-  public void onlyReturnOperationsStartedByUser() {
+  public void shouldReturnOperationsWhenAuthorized() {
+    when(permissionsService.getBatchOperationsWithPermission(PermissionType.READ))
+        .thenReturn(ResourcesAllowed.wildcard());
     final List<OperationDto> result =
         operationReader.getOperationsByBatchOperationId(BATCH_OPERATION_ID);
     assertThat(result)
-        .hasSize(2)
+        .hasSize(3)
         .extracting(OperationDto::getId)
-        .containsExactlyInAnyOrder(ENTITY_KEY_1, ENTITY_KEY_2);
+        .containsExactlyInAnyOrder(ENTITY_KEY_1, ENTITY_KEY_2, ENTITY_KEY_3);
+  }
+
+  @Test
+  public void shouldNotReturnOperationsWhenNoPermissions() {
+    when(permissionsService.getBatchOperationsWithPermission(PermissionType.READ))
+        .thenReturn(ResourcesAllowed.withIds(Set.of()));
+    final List<OperationDto> result =
+        operationReader.getOperationsByBatchOperationId(BATCH_OPERATION_ID);
+    assertThat(result).isEmpty();
   }
 }

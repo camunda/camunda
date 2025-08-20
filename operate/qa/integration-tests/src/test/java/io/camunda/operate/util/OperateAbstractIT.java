@@ -22,12 +22,9 @@ import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.operate.zeebe.PartitionHolder;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.reader.TenantAccess;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
@@ -70,24 +67,12 @@ public abstract class OperateAbstractIT {
 
   protected OffsetDateTime testStartTime;
 
-  @MockitoBean protected CamundaAuthenticationProvider camundaAuthenticationProvider;
-
   @MockitoBean protected TenantService tenantService;
 
   @Before
   public void before() {
     testStartTime = OffsetDateTime.now();
     mockMvc = mockMvcTestRule.getMockMvc();
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                DEFAULT_USER,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
     mockTenantResponse();
   }
 

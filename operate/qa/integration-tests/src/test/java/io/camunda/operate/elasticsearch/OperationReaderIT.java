@@ -13,6 +13,8 @@ import static io.camunda.operate.util.TestUtil.createProcessInstance;
 import static io.camunda.operate.util.TestUtil.createVariable;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -29,30 +31,29 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 
-/** Tests retrieval of operation taking into account current user name. */
+/** Tests retrieval of operation taking into account BATCH READ permissions. */
 public class OperationReaderIT extends OperateAbstractIT {
 
   private static final String QUERY_LIST_VIEW_URL = PROCESS_INSTANCE_URL;
 
   private static final Long PROCESS_KEY_DEMO_PROCESS = 42L;
-  private static final String USER_1 = "user1";
-  private static final String USER_2 = "user2";
-  private static final String USER_3 = "user3";
-  private static final String USER_4 = "user4";
   private static final String VARNAME_1 = "var1";
   private static final String VARNAME_2 = "var2";
   private static final String VARNAME_3 = "var3";
@@ -63,26 +64,24 @@ public class OperationReaderIT extends OperateAbstractIT {
   private static String processInstanceId2;
   private static String processInstanceId3;
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
+  @MockitoBean PermissionsService permissionsService;
 
   @Override
   @Before
   public void before() {
     super.before();
+    when(permissionsService.getBatchOperationsWithPermission(PermissionType.READ))
+        .thenReturn(ResourcesAllowed.wildcard());
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(ResourcesAllowed.wildcard());
+    when(permissionsService.hasPermissionForProcess(
+            any(), eq(PermissionType.READ_PROCESS_INSTANCE)))
+        .thenReturn(true);
     createData(PROCESS_KEY_DEMO_PROCESS);
   }
 
   @Test
   public void testProcessInstanceQuery() throws Exception {
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                USER_1,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
 
     final ListViewRequestDto processInstanceQueryDto = createGetAllRunningRequest();
     final MvcResult mvcResult = postRequest(queryProcessInstances(), processInstanceQueryDto);
@@ -93,27 +92,32 @@ public class OperationReaderIT extends OperateAbstractIT {
     assertThat(processInstances).hasSize(3);
     assertThat(processInstances)
         .filteredOn("id", processInstanceId1)
-        .allMatch(pi -> pi.isHasActiveOperation() && pi.getOperations().size() == 2);
+        .allMatch(pi -> pi.isHasActiveOperation() && pi.getOperations().size() == 3);
     assertThat(processInstances)
         .filteredOn("id", processInstanceId2)
-        .allMatch(pi -> pi.isHasActiveOperation() && pi.getOperations().size() == 1);
+        .allMatch(pi -> pi.isHasActiveOperation() && pi.getOperations().size() == 3);
     assertThat(processInstances)
         .filteredOn("id", processInstanceId3)
+        .allMatch(pi -> !pi.isHasActiveOperation() && pi.getOperations().size() == 2);
+  }
+
+  @Test
+  public void testProcessInstanceQueryWithNoPermission() throws Exception {
+    when(permissionsService.getBatchOperationsWithPermission(PermissionType.READ))
+        .thenReturn(ResourcesAllowed.withIds(Set.of()));
+    final ListViewRequestDto processInstanceQueryDto = createGetAllRunningRequest();
+    final MvcResult mvcResult = postRequest(queryProcessInstances(), processInstanceQueryDto);
+    final ListViewResponseDto response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+
+    final List<ListViewProcessInstanceDto> processInstances = response.getProcessInstances();
+    assertThat(processInstances).hasSize(3);
+    assertThat(processInstances)
         .allMatch(pi -> !pi.isHasActiveOperation() && pi.getOperations().size() == 0);
   }
 
   @Test
   public void testQueryIncidentsByProcessInstanceId() throws Exception {
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                USER_1,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
 
     final MvcResult mvcResult = getRequest(queryIncidentsByProcessInstanceId(processInstanceId1));
     final IncidentResponseDto response =
@@ -134,16 +138,7 @@ public class OperationReaderIT extends OperateAbstractIT {
 
   @Test
   public void testGetVariables() throws Exception {
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                USER_3,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
+
     final MvcResult mvcResult = getVariables(processInstanceId2);
     final List<VariableDto> variables =
         mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
@@ -159,22 +154,13 @@ public class OperationReaderIT extends OperateAbstractIT {
 
   @Test
   public void testQueryProcessInstanceById() throws Exception {
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                USER_4,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
+
     final MvcResult mvcResult = getRequest(queryProcessInstanceById(processInstanceId3));
     final ListViewProcessInstanceDto processInstance =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(processInstance.getOperations()).hasSize(2);
-    assertThat(processInstance.isHasActiveOperation()).isTrue();
+    assertThat(processInstance.isHasActiveOperation()).isFalse();
   }
 
   private String queryProcessInstances() {
@@ -220,24 +206,21 @@ public class OperationReaderIT extends OperateAbstractIT {
             INCIDENT_1,
             Long.valueOf(processInstanceId1),
             processDefinitionKey));
-    entities.add(
-        TestUtil.createOperationEntity(inst.getProcessInstanceKey(), INCIDENT_1, null, USER_1));
+    entities.add(TestUtil.createOperationEntity(inst.getProcessInstanceKey(), INCIDENT_1, null));
     entities.add(
         createIncident(
             IncidentState.ACTIVE,
             INCIDENT_2,
             Long.valueOf(processInstanceId1),
             processDefinitionKey));
-    entities.add(
-        TestUtil.createOperationEntity(inst.getProcessInstanceKey(), INCIDENT_2, null, USER_1));
+    entities.add(TestUtil.createOperationEntity(inst.getProcessInstanceKey(), INCIDENT_2, null));
     entities.add(
         createIncident(
             IncidentState.ACTIVE,
             INCIDENT_3,
             Long.valueOf(processInstanceId1),
             processDefinitionKey));
-    entities.add(
-        TestUtil.createOperationEntity(inst.getProcessInstanceKey(), INCIDENT_3, null, USER_2));
+    entities.add(TestUtil.createOperationEntity(inst.getProcessInstanceKey(), INCIDENT_3, null));
     entities.add(inst);
 
     inst = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
@@ -245,21 +228,22 @@ public class OperationReaderIT extends OperateAbstractIT {
     processInstanceId2 = String.valueOf(inst.getKey());
     entities.add(createVariable(processInstanceKey, processInstanceKey, VARNAME_1, "value"));
     entities.add(
-        TestUtil.createOperationEntity(inst.getProcessInstanceKey(), null, VARNAME_1, USER_1));
+        TestUtil.createOperationEntity(
+            inst.getProcessInstanceKey(), null, VARNAME_1, OperationState.COMPLETED, null, false));
     entities.add(createVariable(processInstanceKey, processInstanceKey, VARNAME_2, "value"));
-    entities.add(
-        TestUtil.createOperationEntity(inst.getProcessInstanceKey(), null, VARNAME_2, USER_3));
+    entities.add(TestUtil.createOperationEntity(inst.getProcessInstanceKey(), null, VARNAME_2));
     entities.add(createVariable(processInstanceKey, processInstanceKey, VARNAME_3, "value"));
-    entities.add(
-        TestUtil.createOperationEntity(inst.getProcessInstanceKey(), null, VARNAME_3, USER_3));
+    entities.add(TestUtil.createOperationEntity(inst.getProcessInstanceKey(), null, VARNAME_3));
     entities.add(inst);
 
     inst = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
     processInstanceId3 = String.valueOf(inst.getKey());
-    entities.add(TestUtil.createOperationEntity(inst.getProcessInstanceKey(), null, null, USER_4));
     entities.add(
         TestUtil.createOperationEntity(
-            inst.getProcessInstanceKey(), null, null, OperationState.COMPLETED, USER_4, false));
+            inst.getProcessInstanceKey(), null, null, OperationState.FAILED, null, false));
+    entities.add(
+        TestUtil.createOperationEntity(
+            inst.getProcessInstanceKey(), null, null, OperationState.COMPLETED, null, false));
     entities.add(inst);
 
     searchTestRule.persistNew(entities.toArray(new ExporterEntity[entities.size()]));
