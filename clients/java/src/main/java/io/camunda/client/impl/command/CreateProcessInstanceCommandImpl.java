@@ -30,6 +30,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.impl.util.TagUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
@@ -180,6 +181,7 @@ public final class CreateProcessInstanceCommandImpl
 
   @Override
   public CreateProcessInstanceCommandStep3 tags(final Set<String> tags) {
+    TagUtil.ensureValidTags("tags", tags);
     grpcRequestObjectBuilder.addAllTags(tags);
     httpRequestObject.setTags(tags);
     return this;
