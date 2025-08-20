@@ -68,10 +68,8 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
   public void run(final ApplicationArguments args) {
     if (brokerTopologyManager.getClusterConfiguration().clusterId().isPresent()) {
       initialized = true;
-      LOGGER.debug("The cluster ID is initialized, no listener added.");
       startPingTask();
     } else {
-      LOGGER.debug("The cluster ID is not yet initialized, waiting for cluster change.");
       brokerTopologyManager.addTopologyListener(this);
     }
   }
@@ -82,7 +80,8 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
     try {
       validateConfiguration();
       LOGGER.info(
-          "Console ping is enabled with endpoint: {}, and delay of {}.",
+          "Console ping is enabled cluster ID of {}, with endpoint: {}, and period of {}.",
+          pingConfiguration.clusterId(),
           pingConfiguration.endpoint(),
           pingConfiguration.pingPeriod());
       final var executor = createTaskExecutor();
