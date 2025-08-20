@@ -37,6 +37,12 @@
       <artifactId>archunit-junit5-engine</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
