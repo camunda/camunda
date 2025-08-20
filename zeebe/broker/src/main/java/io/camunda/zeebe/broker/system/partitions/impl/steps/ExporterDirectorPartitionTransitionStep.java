@@ -151,20 +151,20 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             }
 
             // The config might have changed after ExporterDirector has created
-            disableOrEnableExportersIfConfigChanged(exporterDescriptors, context);
+            deleteOrEnableExportersIfConfigChanged(exporterDescriptors, context);
           }
         });
     return startFuture;
   }
 
-  private void disableOrEnableExportersIfConfigChanged(
+  private void deleteOrEnableExportersIfConfigChanged(
       final Map<ExporterDescriptor, ExporterInitializationInfo> startedExporters,
       final PartitionTransitionContext context) {
     final var currentEnabledExporters = getEnabledExporterDescriptors(context);
 
     for (final var exporter : startedExporters.keySet()) {
       if (!currentEnabledExporters.containsKey(exporter)) {
-        context.getExporterDirector().disableExporter(exporter.getId());
+        context.getExporterDirector().removeExporter(exporter.getId());
       }
     }
 
