@@ -25,7 +25,6 @@ import io.camunda.optimize.rest.security.AuthenticationCookieFilter;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import io.camunda.optimize.rest.security.oauth.AudienceValidator;
 import io.camunda.optimize.rest.security.oauth.CustomClaimValidator;
-import io.camunda.optimize.rest.security.oauth.RoleValidator;
 import io.camunda.optimize.rest.security.oauth.ScopeValidator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.AuthCookieService;
@@ -37,7 +36,6 @@ import io.camunda.optimize.tomcat.CCSaasRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -82,7 +80,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   public static final String CAMUNDA_CLUSTER_ID_CLAIM_NAME = "https://camunda.com/clusterId";
-  private static final List<String> ALLOWED_ORG_ROLES = Arrays.asList("admin", "analyst", "owner");
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSaaSSecurityConfigurerAdapter.class);
   private final ClientRegistrationRepository clientRegistrationRepository;
@@ -237,11 +234,9 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                 .getUserAccessTokenAudience()
                 .orElse(""));
     final OAuth2TokenValidator<Jwt> profileValidator = new ScopeValidator("profile");
-    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
     // The default validator already contains validation for timestamp and X509 thumbprint
     final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
-        JwtValidators.createDefaultWithValidators(
-            audienceValidator, profileValidator, roleValidator);
+        JwtValidators.createDefaultWithValidators(audienceValidator, profileValidator);
     jwtDecoder.setJwtValidator(combinedValidatorWithDefaults);
     return jwtDecoder;
   }
@@ -258,11 +253,9 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
     final OAuth2TokenValidator<Jwt> clusterIdValidator =
         new CustomClaimValidator(
             CAMUNDA_CLUSTER_ID_CLAIM_NAME, getAuth0Configuration().getClusterId());
-    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
     // The default validator already contains validation for timestamp and X509 thumbprint
     final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
-        JwtValidators.createDefaultWithValidators(
-            audienceValidator, clusterIdValidator, roleValidator);
+        JwtValidators.createDefaultWithValidators(audienceValidator, clusterIdValidator);
     jwtDecoder.setJwtValidator(combinedValidatorWithDefaults);
     return jwtDecoder;
   }
