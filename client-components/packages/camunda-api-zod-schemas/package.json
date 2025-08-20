@@ -17,7 +17,11 @@
   "type": "module",
   "private": false,
   "scripts": {
-    "lint": "bash -c 'exit 0'"
+    "lint": "bash -c 'exit 0'",
+    "typecheck": "tsc"
   },
-  "packageManager": "npm@11.5.2"
+  "packageManager": "npm@11.5.2",
+  "devDependencies": {
+    "typescript": "5.9.2"
+  }
 }
