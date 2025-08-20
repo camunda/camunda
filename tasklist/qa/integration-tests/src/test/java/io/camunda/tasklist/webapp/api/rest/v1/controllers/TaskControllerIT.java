@@ -1096,7 +1096,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final var assignRequest =
           new TaskAssignRequest().setAssignee("bill_doe").setAllowOverrideAssignment(false);
 
-      setCurrentUser(CamundaAuthentication.of(b -> b.user("bob_doe")), true);
+      setCurrentUser(CamundaAuthentication.of(b -> b.clientId("bob_doe")));
 
       // when
       final var errorResult =
@@ -1409,7 +1409,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String bpmnProcessId = "simpleTestProcess";
       final String flowNodeBpmnId = "taskD_".concat(UUID.randomUUID().toString());
       final var taskId = createTask(bpmnProcessId, flowNodeBpmnId, 1).getTaskId();
-      setCurrentUser(getDefaultCurrentUser(), true);
+      setCurrentUser(CamundaAuthentication.of(b -> b.clientId(DEFAULT_USER_ID)));
 
       // when
       final var result =
@@ -1646,7 +1646,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               .setVariables(
                   List.of(
                       new VariableInputDTO().setName("object_var").setValue("{\"test\": true}")));
-      setCurrentUser(getDefaultCurrentUser(), true);
+      setCurrentUser(CamundaAuthentication.of(b -> b.clientId(DEFAULT_USER_ID)));
 
       // when
       final var errorResult =
@@ -1702,7 +1702,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               .setVariables(
                   List.of(new VariableInputDTO().setName("array_var").setValue("[30, 8, 2022]")));
 
-      setCurrentUser(CamundaAuthentication.of(b -> b.user("user_B")), true);
+      setCurrentUser(CamundaAuthentication.of(b -> b.clientId("user_B")));
 
       // when
       final var errorResult =

@@ -156,7 +156,8 @@ public class TaskService {
       allowOverrideAssignment = true;
     }
 
-    final var isApiUser = TasklistAuthenticationUtil.isApiUser();
+    final var isApiUser =
+        TasklistAuthenticationUtil.isApiUser(authenticationProvider.getCamundaAuthentication());
     if (StringUtils.isEmpty(assignee) && isApiUser) {
       throw new InvalidRequestException("Assignee must be specified");
     }
@@ -189,7 +190,9 @@ public class TaskService {
   }
 
   private String determineTaskAssignee(final String assignee, final String authenticatedUsername) {
-    return StringUtils.isEmpty(assignee) && !TasklistAuthenticationUtil.isApiUser()
+    return StringUtils.isEmpty(assignee)
+            && !TasklistAuthenticationUtil.isApiUser(
+                authenticationProvider.getCamundaAuthentication())
         ? authenticatedUsername
         : assignee;
   }
@@ -319,7 +322,7 @@ public class TaskService {
   private String[] getTaskMetricLabels(final TaskEntity task, final String username) {
     final String keyUserId;
 
-    if (TasklistAuthenticationUtil.isApiUser()) {
+    if (TasklistAuthenticationUtil.isApiUser(authenticationProvider.getCamundaAuthentication())) {
       if (task.getAssignee() != null) {
         keyUserId = task.getAssignee();
       } else {

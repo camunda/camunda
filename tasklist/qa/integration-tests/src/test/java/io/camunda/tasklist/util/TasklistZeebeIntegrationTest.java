@@ -8,15 +8,12 @@
 package io.camunda.tasklist.util;
 
 import static io.camunda.tasklist.util.TasklistZeebeIntegrationTest.DEFAULT_USER_ID;
-import static org.mockito.Mockito.mock;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.service.OrganizationService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -27,13 +24,10 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
 
   @MockitoBean protected CamundaAuthenticationProvider authenticationProvider;
 
-  private MockedStatic<TasklistAuthenticationUtil> authenticationUtil;
-
   @Override
   @BeforeEach
   public void before() {
     super.before();
-    authenticationUtil = Mockito.mockStatic(TasklistAuthenticationUtil.class);
     setDefaultCurrentUser();
   }
 
@@ -41,7 +35,6 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
   @AfterEach
   public void after() {
     setDefaultCurrentUser();
-    authenticationUtil.close();
     super.after();
   }
 
@@ -54,19 +47,17 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
   }
 
   protected void setCurrentUser(final CamundaAuthentication user) {
-    setCurrentUser(user, false);
-  }
+    final String principalName =
+        user.authenticatedUsername() != null
+            ? user.authenticatedUsername()
+            : user.authenticatedClientId();
 
-  protected void setCurrentUser(final CamundaAuthentication user, final boolean isApiUser) {
     final String organisation =
-        user.authenticatedUsername().equals(DEFAULT_USER_ID)
+        principalName.equals(DEFAULT_USER_ID)
             ? OrganizationService.DEFAULT_ORGANIZATION
             : user.authenticatedUsername() + "-org";
     Mockito.when(organizationService.getOrganizationIfPresent()).thenReturn(organisation);
 
-    final var authentication = mock(CamundaAuthentication.class);
-    Mockito.when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
-    Mockito.when(authentication.authenticatedUsername()).thenReturn(user.authenticatedUsername());
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
+    Mockito.when(authenticationProvider.getCamundaAuthentication()).thenReturn(user);
   }
 }

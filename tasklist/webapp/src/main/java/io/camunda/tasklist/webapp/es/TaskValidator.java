@@ -28,6 +28,12 @@ public class TaskValidator {
   @Autowired private CamundaAuthenticationProvider authenticationProvider;
   @Autowired private TasklistProperties tasklistProperties;
 
+  public TaskValidator(
+      CamundaAuthenticationProvider authenticationProvider, TasklistProperties tasklistProperties) {
+    this.authenticationProvider = authenticationProvider;
+    this.tasklistProperties = tasklistProperties;
+  }
+
   public void validateCanPersistDraftTaskVariables(final TaskEntity task) {
     validateTaskStateAndAssignment(task);
   }
@@ -56,7 +62,7 @@ public class TaskValidator {
   private void validateTaskStateAndAssignment(final TaskEntity task) {
     validateTaskIsActive(task);
 
-    if (TasklistAuthenticationUtil.isApiUser()) {
+    if (TasklistAuthenticationUtil.isApiUser(authenticationProvider.getCamundaAuthentication())) {
       // JWT Token/API users are allowed to complete task assigned to anyone
       return;
     }
@@ -78,7 +84,7 @@ public class TaskValidator {
       final TaskEntity taskBefore, final boolean allowOverrideAssignment) {
     validateTaskIsActive(taskBefore);
 
-    if ((TasklistAuthenticationUtil.isApiUser()
+    if ((TasklistAuthenticationUtil.isApiUser(authenticationProvider.getCamundaAuthentication())
             || tasklistProperties.getFeatureFlag().getAllowNonSelfAssignment())
         && allowOverrideAssignment) {
       // JWT Token/API users can reassign task
