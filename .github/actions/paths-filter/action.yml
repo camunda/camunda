@@ -327,10 +327,10 @@ runs:
           - optimize/util/**
           - optimize/plugins/**
 
-         optimize-frontend-change:
-           - optimize/client/**
-           - optimize/c4/**
-           - optimize/backend/src/main/resources/localization/**
+        optimize-frontend-change:
+          - optimize/client/**
+          - optimize/c4/**
+          - optimize/backend/src/main/resources/localization/**
 
   - uses: dorny/paths-filter@v3
     id: filter-client-components
