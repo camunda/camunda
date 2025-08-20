@@ -8,6 +8,7 @@
 package io.camunda.it.operate;
 
 import static io.camunda.it.util.TestHelper.deployResourceForTenant;
+import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
@@ -20,9 +21,7 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.InitializationConfiguration;
-import java.time.Duration;
 import java.util.List;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -121,16 +120,5 @@ public class OperateMultiTenancyIT {
     for (final var username : usernames) {
       client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
     }
-  }
-
-  private static void waitForProcessesToBeDeployed(
-      final CamundaClient camundaClient, final int expectedProcessDefinitions) {
-    Awaitility.await("Should processes be exported")
-        .atMost(Duration.ofSeconds(15))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () ->
-                assertThat(camundaClient.newProcessDefinitionSearchRequest().send().join().items())
-                    .hasSize(expectedProcessDefinitions));
   }
 }

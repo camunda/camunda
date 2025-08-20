@@ -312,7 +312,8 @@ public class OperationReader extends AbstractReader
 
   @Override
   public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
-    final TermQueryBuilder operationIdQ = termQuery(BATCH_OPERATION_ID, batchOperationId);
+    final QueryBuilder operationIdQ =
+        joinWithAnd(termQuery(BATCH_OPERATION_ID, batchOperationId), createUsernameQuery());
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
             .source(new SearchSourceBuilder().query(operationIdQ));

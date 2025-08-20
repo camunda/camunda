@@ -50,7 +50,6 @@ public class ProcessReaderTest {
   @Test
   public void testGetProcess() {
     final ProcessReader underTest = new ProcessReader(mockProcessStore, mockPermissionsService);
-
     when(mockProcessStore.getProcessByKey(1L)).thenReturn(new ProcessEntity());
 
     final var response = underTest.getProcess(1L);
@@ -63,11 +62,12 @@ public class ProcessReaderTest {
   @Test
   public void testGetProcessesGroupedWithDisabledPermissions() {
 
-    when(mockPermissionsService.permissionsEnabled()).thenReturn(false);
     final ProcessReader underTest = new ProcessReader(mockProcessStore, mockPermissionsService);
 
     final String tenantId = "tenantId";
     when(mockProcessStore.getProcessesGrouped(tenantId, null)).thenReturn(new HashMap<>());
+    when(mockPermissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     final ProcessRequestDto requestDto = new ProcessRequestDto();
     requestDto.setTenantId(tenantId);
@@ -75,14 +75,12 @@ public class ProcessReaderTest {
     final var response = underTest.getProcessesGrouped(requestDto);
 
     assertThat(response).isNotNull();
-    verify(mockPermissionsService, times(1)).permissionsEnabled();
     verify(mockProcessStore, times(1)).getProcessesGrouped(tenantId, null);
   }
 
   @Test
   public void testGetProcessesGroupedWithNoPermissions() {
 
-    when(mockPermissionsService.permissionsEnabled()).thenReturn(true);
     when(mockPermissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(ResourcesAllowed.withIds(Set.of()));
 
@@ -104,7 +102,6 @@ public class ProcessReaderTest {
   @Test
   public void testGetProcessesGroupedWithAllPermissions() {
 
-    when(mockPermissionsService.permissionsEnabled()).thenReturn(true);
     when(mockPermissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(ResourcesAllowed.wildcard());
 
@@ -126,7 +123,6 @@ public class ProcessReaderTest {
   @Test
   public void testGetProcessesGroupedWithSomePermissions() {
 
-    when(mockPermissionsService.permissionsEnabled()).thenReturn(true);
     final Set<String> allowedProcessIds = Set.of("p1, p2");
     when(mockPermissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
         .thenReturn(ResourcesAllowed.withIds(allowedProcessIds));

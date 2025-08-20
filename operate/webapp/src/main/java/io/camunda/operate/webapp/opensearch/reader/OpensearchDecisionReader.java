@@ -171,19 +171,15 @@ public class OpensearchDecisionReader implements DecisionReader {
   }
 
   private Query buildQuery(final String tenantId) {
-    Query decisionIdQuery = null;
-    if (permissionsService.permissionsEnabled()) {
-      final var allowed =
-          permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_DEFINITION);
-      if (allowed != null && !allowed.isAll()) {
-        decisionIdQuery = stringTerms(DecisionIndex.DECISION_ID, allowed.getIds());
-      }
-    }
+    final var allowed =
+        permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_DEFINITION);
+    final Query decisionIdQuery =
+        allowed.isAll() ? matchAll() : stringTerms(DecisionIndex.DECISION_ID, allowed.getIds());
+
     Query tenantIdQuery = null;
     if (securityConfiguration.getMultiTenancy().isChecksEnabled()) {
       tenantIdQuery = tenantId != null ? term(DecisionIndex.TENANT_ID, tenantId) : null;
     }
-    final var query = and(decisionIdQuery, tenantIdQuery);
-    return query == null ? matchAll() : query;
+    return and(decisionIdQuery, tenantIdQuery);
   }
 }

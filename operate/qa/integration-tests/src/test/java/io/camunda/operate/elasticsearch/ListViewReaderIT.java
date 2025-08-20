@@ -31,8 +31,8 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -173,9 +173,10 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
     searchContainerManager.refreshIndices("*list-view*");
   }
 
-  @Override
-  protected void runAdditionalBeforeEachSetup() throws Exception {
-    Mockito.reset(permissionsService);
+  @BeforeEach
+  public void setup() {
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
   }
 
   @Test
@@ -438,7 +439,6 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesWithPermissions() {
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(
             PermissionsService.ResourcesAllowed.withIds(Set.of(activeProcess.getBpmnProcessId())));
