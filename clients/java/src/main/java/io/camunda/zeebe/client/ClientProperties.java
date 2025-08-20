@@ -41,10 +41,8 @@ public final class ClientProperties {
   @Deprecated public static final String GATEWAY_ADDRESS = "zeebe.client.gateway.address";
 
   /**
-   * @deprecated since 8.5 for removal with 8.8, where toggling between both will not be possible
    * @see ZeebeClientBuilder#preferRestOverGrpc(boolean)
    */
-  @Deprecated
   public static final String PREFER_REST_OVER_GRPC = "zeebe.client.gateway.preferRestOverGrpc";
 
   /**

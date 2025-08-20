@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client;
 
-import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
@@ -167,6 +166,5 @@ public interface ZeebeClientConfiguration {
   /**
    * @see ZeebeClientBuilder#preferRestOverGrpc(boolean)
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   boolean preferRestOverGrpc();
 }
