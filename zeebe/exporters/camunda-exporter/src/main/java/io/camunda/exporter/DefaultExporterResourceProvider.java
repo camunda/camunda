@@ -42,8 +42,6 @@ import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHa
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MappingRuleCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.MappingRuleDeletedHandler;
-import io.camunda.exporter.handlers.MetricFromDecisionEvaluationHandler;
-import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
@@ -53,7 +51,6 @@ import io.camunda.exporter.handlers.RoleMemberAddedHandler;
 import io.camunda.exporter.handlers.RoleMemberRemovedHandler;
 import io.camunda.exporter.handlers.SequenceFlowDeletedHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
-import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
 import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
 import io.camunda.exporter.handlers.TenantDeletedHandler;
 import io.camunda.exporter.handlers.TenantEntityAddedHandler;
@@ -93,10 +90,8 @@ import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
@@ -240,10 +235,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), processCache),
-            new MetricFromProcessInstanceHandler(
-                indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
-            new TaskCompletedMetricHandler(
-                indexDescriptors.get(TasklistMetricIndex.class).getFullQualifiedName()),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
@@ -285,8 +276,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
             new MappingRuleDeletedHandler(
                 indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
-            new MetricFromDecisionEvaluationHandler(
-                indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
             new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName()),
             new MigratedVariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()),
