@@ -155,8 +155,8 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public TenantMemberDbReader tenantMemberReader() {
-    return new TenantMemberDbReader();
+  public TenantMemberDbReader tenantMemberReader(final TenantMapper tenantMapper) {
+    return new TenantMemberDbReader(tenantMapper);
   }
 
   @Bean

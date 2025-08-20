@@ -32,6 +32,32 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
+  <select id="countMembers" parameterType="io.camunda.db.rdbms.read.domain.TenantMemberDbQuery">
+    SELECT COUNT(*)
+    FROM ${prefix}TENANT_MEMBER tm
+    JOIN ${prefix}TENANT t ON t.TENANT_ID = tm.TENANT_ID
+    <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
+  </select>
+
+  <select id="searchMembers" parameterType="io.camunda.db.rdbms.read.domain.TenantMemberDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.TenantMapper.tenantMemberResultMap">
+    SELECT * FROM (
+    SELECT
+    t.TENANT_KEY,
+    t.TENANT_ID,
+    t.NAME,
+    t.DESCRIPTION,
+    tm.ENTITY_ID,
+    tm.ENTITY_TYPE
+    FROM ${prefix}TENANT_MEMBER tm
+    JOIN ${prefix}TENANT t ON t.TENANT_ID = tm.TENANT_ID
+    <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
   <sql id="searchFilter">
     <where>
       <!-- authorization filters -->
@@ -85,6 +111,14 @@
     <result column="TENANT_KEY" property="tenantKey"/>
     <result column="NAME" property="name"/>
     <result column="DESCRIPTION" property="description"/>
+  </resultMap>
+
+  <resultMap id="tenantMemberResultMap" type="io.camunda.db.rdbms.write.domain.TenantMemberDbModel">
+    <constructor>
+      <idArg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="ENTITY_ID" javaType="java.lang.String"/>
+      <arg column="ENTITY_TYPE" javaType="java.lang.String"/>
+    </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel">

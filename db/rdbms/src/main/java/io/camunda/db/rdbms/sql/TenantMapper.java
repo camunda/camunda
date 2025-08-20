@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.TenantDbQuery;
+import io.camunda.db.rdbms.read.domain.TenantMemberDbQuery;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import java.util.List;
@@ -29,4 +30,8 @@ public interface TenantMapper {
   Long count(TenantDbQuery filter);
 
   List<TenantDbModel> search(TenantDbQuery filter);
+
+  Long countMembers(TenantMemberDbQuery filter);
+
+  List<TenantMemberDbModel> searchMembers(TenantMemberDbQuery filter);
 }
