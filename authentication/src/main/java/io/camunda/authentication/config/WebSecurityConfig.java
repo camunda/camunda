@@ -38,6 +38,7 @@ import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.auth.OidcGroupsLoader;
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -58,6 +59,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
@@ -536,6 +538,21 @@ public class WebSecurityConfig {
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
   public static class OidcConfiguration {
+
+    private final SecurityConfiguration securityConfiguration;
+
+    public OidcConfiguration(final SecurityConfiguration securityConfiguration) {
+      this.securityConfiguration = securityConfiguration;
+    }
+
+    @PostConstruct
+    public void verifyOidcConfiguration() {
+      final List<ConfiguredUser> users = securityConfiguration.getInitialization().getUsers();
+      if (users != null && !users.isEmpty()) {
+        throw new IllegalStateException(
+            "Creation of initial users is not supported with `OIDC` authentication method");
+      }
+    }
 
     @Bean
     public TokenClaimsConverter tokenClaimsConverter(
