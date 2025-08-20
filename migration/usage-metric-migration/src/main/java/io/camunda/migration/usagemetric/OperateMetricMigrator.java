@@ -8,7 +8,7 @@
 package io.camunda.migration.usagemetric;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.not;
+import static io.camunda.search.clients.query.SearchQueryBuilders.match;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -22,6 +22,7 @@ import io.camunda.migration.usagemetric.client.os.OpensearchUsageMetricMigration
 import io.camunda.migration.usagemetric.util.MetricRegistry;
 import io.camunda.migration.usagemetric.util.RescheduleTask;
 import io.camunda.operate.store.MetricsStore;
+import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -30,10 +31,8 @@ import io.camunda.search.filter.Operation;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -117,7 +116,10 @@ if (event == "%s") {
     MigrationStep migrationStep = null;
     try {
       migrationStep =
-          client.readOperateMetricMigratorStep(migrationRepositoryIndex.getFullQualifiedName());
+          client.findOne(
+              migrationRepositoryIndex.getFullQualifiedName(),
+              createOperateMigratorStepSearchQuery(),
+              MigrationStep.class);
     } catch (final MigrationException e) {
       if (shouldThrowException(e)) {
         throw new MigrationException(e.getMessage(), e);
@@ -128,30 +130,15 @@ if (event == "%s") {
       return null;
     }
 
-    // only reindex documents that are older than the first usage metric entity
-    final var firstUsageMetric = getFirstZeebeMetric(usageMetricIndex);
-
-    // only reindex documents that are newer than the latest migrated metric
-    final var latestMigratedMetric = getLatestMigratedMetric(usageMetricIndex);
-
-    // operate metrics export could be slightly ahead so we subtract one minute to avoid duplicates
-    final var maxEventTime =
-        firstUsageMetric == null
-            ? OffsetDateTime.now()
-            : firstUsageMetric.getEventTime().minusMinutes(1);
     // don't reindex metrics older than two years
-    final var minEventTime =
-        latestMigratedMetric != null
-            ? latestMigratedMetric.getEventTime()
-            : maxEventTime.minusYears(2);
+    final var minEventTime = OffsetDateTime.now().minusYears(2);
 
     final var searchQuery =
         createOperateMetricSearchQuery(
             List.of(
                 MetricsStore.EVENT_PROCESS_INSTANCE_STARTED,
                 MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED),
-            minEventTime,
-            maxEventTime);
+            minEventTime);
     LOG.info("Migrating operate-metric index with search query: {}", searchQuery);
 
     try {
@@ -189,39 +176,6 @@ if (event == "%s") {
     return null;
   }
 
-  private UsageMetricsEntity getLatestMigratedMetric(final UsageMetricIndex usageMetricIndex) {
-    try {
-      final var latestMigratedMetric =
-          client.getLatestMigratedEntity(
-              usageMetricIndex.getFullQualifiedName(), term(UsageMetricIndex.PARTITION_ID, -1));
-      if (latestMigratedMetric != null) {
-        LOG.info("Latest migrated metric found: {}", latestMigratedMetric);
-      }
-      return latestMigratedMetric;
-    } catch (final IOException e) {
-      LOG.error("Failed to fetch usage metric entity", e);
-      return null;
-    }
-  }
-
-  private UsageMetricsEntity getFirstZeebeMetric(final UsageMetricIndex usageMetricIndex) {
-    try {
-      final var firstUsageMetric =
-          client.getFirstUsageMetricEntity(
-              usageMetricIndex.getFullQualifiedName(),
-              not(term(UsageMetricIndex.PARTITION_ID, -1)));
-      if (firstUsageMetric == null) {
-        LOG.info(
-            "No usage metric entity found in index {}, using current time as max event time",
-            usageMetricIndex.getFullQualifiedName());
-      }
-      return firstUsageMetric;
-    } catch (final IOException e) {
-      LOG.error("Failed to fetch usage metric entity", e);
-      return null;
-    }
-  }
-
   private <T> CompletableFuture<T> waitForCallback(
       final Supplier<T> fnCallback, final Supplier<T> fnTimeout, final long maxWaitSeconds) {
     final var future = new CompletableFuture<T>();
@@ -234,17 +188,23 @@ if (event == "%s") {
   }
 
   public SearchQuery createOperateMetricSearchQuery(
-      final List<String> events,
-      final OffsetDateTime minEventTime,
-      final OffsetDateTime maxEventTime) {
+      final List<String> events, final OffsetDateTime minEventTime) {
     final var queries = new ArrayList<SearchQuery>();
     queries.addAll(
         SearchQueryBuilders.stringOperations(MetricIndex.EVENT, List.of(Operation.in(events))));
     queries.addAll(
         SearchQueryBuilders.dateTimeOperations(
-            MetricIndex.EVENT_TIME,
-            List.of(Operation.gt(minEventTime), Operation.lt(maxEventTime))));
+            MetricIndex.EVENT_TIME, List.of(Operation.gt(minEventTime))));
     return and(queries);
+  }
+
+  public SearchQuery createOperateMigratorStepSearchQuery() {
+    return and(
+        term(MigrationRepositoryIndex.ID, UsageMetricMigrationClient.OPERATE_MIGRATOR_STEP_ID),
+        match(
+            MigrationRepositoryIndex.TYPE,
+            UsageMetricMigrationClient.OPERATE_MIGRATOR_STEP_TYPE,
+            SearchMatchQueryOperator.AND));
   }
 
   /**

@@ -8,22 +8,17 @@
 package io.camunda.migration.usagemetric.client.os;
 
 import io.camunda.migration.api.MigrationException;
-import io.camunda.migration.usagemetric.client.MigrationStep;
 import io.camunda.migration.usagemetric.client.UsageMetricMigrationClient;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.os.transformers.OpensearchTransformers;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import java.io.IOException;
-import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.OpType;
 import org.opensearch.client.opensearch._types.Refresh;
-import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.ReindexRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -53,37 +48,13 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
       client.index(
           i ->
               i.index(index)
-                  .id(OPERATE_MIGRATOR_STEP_TYPE)
-                  .document(processorStepForKey(index, taskId, completed))
+                  .id(OPERATE_MIGRATOR_STEP_ID)
+                  .document(migrationStepForKey(index, taskId, completed))
                   .refresh(Refresh.True));
 
     } catch (final IOException e) {
       throw new MigrationException(e);
     }
-  }
-
-  @Override
-  public UsageMetricsEntity getFirstUsageMetricEntity(
-      final String index, final SearchQuery searchQuery) throws IOException {
-
-    final SearchResponse<UsageMetricsEntity> response =
-        client.search(
-            b ->
-                b.index(index)
-                    .from(0)
-                    .size(1)
-                    .query(getSearchQueryTransformer().apply(searchQuery))
-                    .sort(
-                        s ->
-                            s.field(
-                                f -> f.field(UsageMetricIndex.EVENT_TIME).order(SortOrder.Asc))),
-            UsageMetricsEntity.class);
-
-    final var hits = response.hits().hits();
-    if (!hits.isEmpty()) {
-      return hits.getFirst().source();
-    }
-    return null;
   }
 
   @Override
@@ -107,14 +78,6 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
               .slices(0L)
               .build();
       final var response = client.reindex(reindexRequest);
-
-      if (!response.failures().isEmpty()) {
-        throw new MigrationException(
-            response.failures().stream()
-                .map(f -> f.cause().reason())
-                .collect(Collectors.joining(",")));
-      }
-
       return response.task();
 
     } catch (final IOException e) {
@@ -123,45 +86,42 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
   }
 
   @Override
-  public UsageMetricsEntity getLatestMigratedEntity(
-      final String index, final SearchQuery searchQuery) throws IOException {
+  public <T> T findOne(
+      final String index, final SearchQuery searchQuery, final Class<T> entityClass)
+      throws MigrationException {
 
-    final SearchResponse<UsageMetricsEntity> response =
-        client.search(
-            b ->
-                b.index(index)
-                    .from(0)
-                    .size(1)
-                    .query(getSearchQueryTransformer().apply(searchQuery))
-                    .sort(
-                        s ->
-                            s.field(
-                                f -> f.field(UsageMetricIndex.EVENT_TIME).order(SortOrder.Desc))),
-            UsageMetricsEntity.class);
-
-    final var hits = response.hits().hits();
-    if (!hits.isEmpty()) {
-      return hits.getFirst().source();
-    }
-    return null;
-  }
-
-  @Override
-  public boolean getTask(final String taskId) throws MigrationException {
     try {
-      final var response = client.tasks().get(r -> r.taskId(taskId));
-      return response.completed();
+      final SearchResponse<T> response =
+          client.search(
+              b ->
+                  b.index(index)
+                      .from(0)
+                      .size(1)
+                      .query(getSearchQueryTransformer().apply(searchQuery)),
+              entityClass);
+
+      final var hits = response.hits().hits();
+      return !hits.isEmpty() ? hits.getFirst().source() : null;
     } catch (final IOException e) {
       throw new MigrationException(e);
     }
   }
 
   @Override
-  public MigrationStep readOperateMetricMigratorStep(final String index) throws MigrationException {
+  public boolean getTask(final String taskId) throws MigrationException {
     try {
-      final var response =
-          client.get(b -> b.index(index).id(OPERATE_MIGRATOR_STEP_TYPE), MigrationStep.class);
-      return response.found() ? response.source() : null;
+      final var response = client.tasks().get(r -> r.taskId(taskId));
+      if (response.completed()) {
+        if (response.error() != null) {
+          final var cause =
+              response.error().causedBy() != null ? response.error().causedBy() : response.error();
+          throw new MigrationException(cause.type() + ": " + cause.reason());
+        } else {
+          return true;
+        }
+      } else {
+        return false;
+      }
     } catch (final IOException e) {
       throw new MigrationException(e);
     }

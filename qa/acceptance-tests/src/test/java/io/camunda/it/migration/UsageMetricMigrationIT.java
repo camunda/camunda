@@ -43,7 +43,6 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -262,30 +261,6 @@ public class UsageMetricMigrationIT {
   }
 
   @Test
-  void shouldContinueMigrationWithNewerMetrics() throws IOException {
-    // given
-    createOperateMetric(TENANT_1, NOW.minusDays(7), MetricsStore.EVENT_PROCESS_INSTANCE_STARTED);
-    createOperateMetric(TENANT_2, NOW.minusDays(7), MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED);
-    startUsageMetricMigration().join();
-    assertMetrics(1, 1, 2, null);
-
-    // when
-    cleanUpIndex(migrationRepositoryIndex.getFullQualifiedName());
-    createOperateMetric(TENANT_1, NOW.minusDays(6), MetricsStore.EVENT_PROCESS_INSTANCE_STARTED);
-    createOperateMetric(TENANT_2, NOW.minusDays(8), MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED);
-    startUsageMetricMigration().join();
-
-    // then
-    assertMetrics(
-        2,
-        1,
-        2,
-        Map.of(
-            TENANT_2, new UsageMetricsStatisticsItemImpl(0, 1, 0),
-            TENANT_1, new UsageMetricsStatisticsItemImpl(2, 0, 0)));
-  }
-
-  @Test
   void shouldNotMigrateWhenMigrationStepIsAlreadyApplied() throws IOException {
     // given
     createOperateMetric(TENANT_1, NOW.minusDays(7), MetricsStore.EVENT_PROCESS_INSTANCE_STARTED);
@@ -320,32 +295,6 @@ public class UsageMetricMigrationIT {
 
     // then
     assertMetrics(0, 0, 0, Map.of());
-  }
-
-  @Test
-  void shouldOnlyMigrateMetricsThatAreOlderThanFirstZeebeMetric() throws IOException {
-    // given
-    TestHelper.startProcessInstance(camundaClient, "service_tasks_v1");
-    waitForUsageMetrics(
-        camundaClient,
-        res -> AssertionsForClassTypes.assertThat(res.getProcessInstances()).isEqualTo(1));
-    createOperateMetric(TENANT_1, NOW.minusMinutes(2), MetricsStore.EVENT_PROCESS_INSTANCE_STARTED);
-    createOperateMetric(
-        TENANT_1, NOW.plusSeconds(1), MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED);
-
-    // when
-    startUsageMetricMigration().join();
-
-    // then
-    assertMetrics(
-        2,
-        0,
-        2,
-        Map.of(
-            "<default>",
-            new UsageMetricsStatisticsItemImpl(1, 0, 0),
-            TENANT_1,
-            new UsageMetricsStatisticsItemImpl(1, 0, 0)));
   }
 
   private static void assertMetrics(

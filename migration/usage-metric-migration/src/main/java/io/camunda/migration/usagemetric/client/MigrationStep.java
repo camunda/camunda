@@ -20,15 +20,19 @@ public record MigrationStep(
     OffsetDateTime appliedDate,
     boolean applied) {
 
-  public static final String STEP_TYPE = "usageMetricStep";
-
   public static class Builder implements ObjectBuilder<MigrationStep> {
+    private String type;
     private String content;
     private String description;
     private String version;
     private String indexName;
     private OffsetDateTime appliedDate;
     private boolean applied;
+
+    public Builder type(final String type) {
+      this.type = type;
+      return this;
+    }
 
     public Builder content(final String content) {
       this.content = content;
@@ -63,7 +67,7 @@ public record MigrationStep(
     @Override
     public MigrationStep build() {
       return new MigrationStep(
-          STEP_TYPE, content, description, version, indexName, appliedDate, applied);
+          type, content, description, version, indexName, appliedDate, applied);
     }
   }
 }

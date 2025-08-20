@@ -9,37 +9,32 @@ package io.camunda.migration.usagemetric.client;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import io.camunda.zeebe.util.VersionUtil;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
 public interface UsageMetricMigrationClient {
 
   String LANG_PAINLESS = "painless";
-  String OPERATE_MIGRATOR_STEP_TYPE = "usageMetricOperatorStep";
+  String OPERATE_MIGRATOR_STEP_ID = VersionUtil.getVersion() + "-2";
+  String OPERATE_MIGRATOR_STEP_TYPE = "usageMetricStep";
   String STEP_DESCRIPTION = "Usage Metric Migration operate reindex status";
 
   void writeOperateMetricMigratorStep(
       final String index, final String taskId, final boolean completed) throws MigrationException;
 
-  UsageMetricsEntity getFirstUsageMetricEntity(final String index, final SearchQuery searchQuery)
-      throws IOException;
-
   String reindex(
       final String src, final String dest, final SearchQuery searchQuery, final String script);
 
-  UsageMetricsEntity getLatestMigratedEntity(String index, SearchQuery searchQuery)
-      throws IOException;
+  <T> T findOne(String index, SearchQuery searchQuery, final Class<T> entityClass)
+      throws MigrationException;
 
   boolean getTask(String taskId) throws MigrationException;
 
-  MigrationStep readOperateMetricMigratorStep(final String index) throws MigrationException;
-
-  default MigrationStep processorStepForKey(
+  default MigrationStep migrationStepForKey(
       final String index, final String taskId, final boolean completed) {
     return new MigrationStep.Builder()
+        .type(OPERATE_MIGRATOR_STEP_TYPE)
         .content(taskId)
         .applied(completed)
         .indexName(index)
