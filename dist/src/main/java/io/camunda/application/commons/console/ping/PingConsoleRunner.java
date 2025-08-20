@@ -56,7 +56,6 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
       final ConsolePingConfiguration pingConfigurationProperties,
       final ManagementServices managementServices,
       final ApplicationContext applicationContext,
-      final ManagementServices managementServices,
       final BrokerTopologyManager brokerTopologyManager) {
     pingConfiguration = pingConfigurationProperties;
     this.managementServices = managementServices;
