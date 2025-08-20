@@ -218,27 +218,29 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   /**
-   * Disables an already configured exporter. No records will be exported to this exporter anymore.
-   * We will not wait for acknowledgments for this exporter, allowing the log to be compacted.
+   * Removes the given exporter if it exists. Once removed, no records will be sent to it, and
+   * acknowledgments will no longer be awaited, allowing the log to be compacted.
    *
-   * @param exporterId id of the exporter to disabled
-   * @return future which will be completed after the exporter is disabled.
+   * @param exporterId ID of the exporter to remove
+   * @return a future completed when the removal is done
    */
-  public ActorFuture<Void> disableExporter(final String exporterId) {
+  public ActorFuture<Void> removeExporter(final String exporterId) {
     if (actor.isClosed()) {
       return CompletableActorFuture.completed(null);
     }
 
-    return actor.call(() -> removeExporter(exporterId));
-  }
-
-  private void removeExporter(final String exporterId) {
-    containers.stream()
-        .filter(c -> c.getId().equals(exporterId))
-        .findFirst()
-        .ifPresentOrElse(
-            container -> removeExporter(exporterId, container),
-            () -> LOG.debug("Exporter '{}' is not found. It may be already removed.", exporterId));
+    return actor.call(
+        () -> {
+          containers.stream()
+              .filter(c -> c.getId().equals(exporterId))
+              .findFirst()
+              .ifPresentOrElse(
+                  container -> removeExporter(exporterId, container),
+                  () ->
+                      LOG.debug(
+                          "Exporter '{}' is not found. It may already be removed.", exporterId));
+          return null;
+        });
   }
 
   private void removeExporter(final String exporterId, final ExporterContainer container) {
