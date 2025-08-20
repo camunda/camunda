@@ -50,6 +50,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
   private Either<Exception, String> licensePayload;
   private final BrokerTopologyManager brokerTopologyManager;
   private final ApplicationContext applicationContext;
+  private volatile boolean initialized = false;
 
   @Autowired
   public PingConsoleRunner(
@@ -65,7 +66,17 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
 
   @Override
   public void run(final ApplicationArguments args) {
-    waitForTopologyClusterId();
+    if (brokerTopologyManager.getClusterConfiguration().clusterId().isPresent()) {
+      initialized = true;
+      LOGGER.debug("The cluster ID is initialized, no listener added.");
+      startPingTask();
+    } else {
+      LOGGER.debug("The cluster ID is not yet initialized, waiting for cluster change.");
+      brokerTopologyManager.addTopologyListener(this);
+    }
+  }
+
+  private void startPingTask() {
     licensePayload = getLicensePayload();
 
     try {
@@ -189,14 +200,15 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
     }
   }
 
-  private void waitForTopologyClusterId() {
-    while (brokerTopologyManager.getClusterConfiguration().clusterId() == null
-        || brokerTopologyManager.getClusterConfiguration().clusterId().isEmpty()) {
-      try {
-        Thread.sleep(500);
-      } catch (final InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+  @Override
+  public void completedClusterChange() {
+    if (initialized) {
+      return;
+    }
+    final var clusterIdOpt = brokerTopologyManager.getClusterConfiguration().clusterId();
+    if (clusterIdOpt.isPresent() && !clusterIdOpt.get().isBlank()) {
+      initialized = true;
+      startPingTask();
     }
   }
 
