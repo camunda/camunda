@@ -184,7 +184,6 @@ public class TaskService {
     final var taskAfter = taskBefore.setAssignee(taskAssignee);
     tasklistServicesAdapter.assignUserTask(taskAfter, taskAssignee);
 
-    final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
     final var assignedTaskMetrics = getTaskMetricLabels(taskAfter, currentUsername);
     updateClaimedMetric(assignedTaskMetrics);
     updateTaskAssignedMetric(claimedTask);
