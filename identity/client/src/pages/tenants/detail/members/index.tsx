@@ -19,6 +19,7 @@ import AssignMemberModal from "src/pages/tenants/detail/members/AssignMemberModa
 import { isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type MembersProps = {
   tenantId: string;
@@ -53,7 +54,9 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadMembers")}
+        description={t("unableToLoadResource", {
+          resourceType: t("user").toLowerCase(),
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -61,17 +64,12 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
   if (success && isAssignedUsersListEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignUsersToTenant")}
-          description={t("tenantMemberAccessDisclaimer")}
-          button={{
-            label: t("assignUser"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutTenants"),
-            href: "https://docs.camunda.io/",
-          }}
+        <TabEmptyState
+          childResourceTypeTranslationKey={"user"}
+          parentResourceTypeTranslationKey={"tenant"}
+          handleClick={openAssignModal}
+          description={t("emptyStateTenantAccessDisclaimer")}
+          docsLinkPath=""
         />
         {assignUsersModal}
       </>

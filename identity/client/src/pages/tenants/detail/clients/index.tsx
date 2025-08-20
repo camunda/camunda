@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/clients/DeleteModal";
 import AssignClientsModal from "src/pages/tenants/detail/clients/AssignClientsModal";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type ClientsProps = {
   tenantId: Tenant["tenantId"];
@@ -52,7 +53,9 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadClients")}
+        description={t("unableToLoadResource", {
+          resourceType: t("client").toLowerCase(),
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -60,17 +63,12 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
   if (success && assignedClients.length === 0)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignClientsToTenant")}
-          description={t("tenantMemberAccessDisclaimer")}
-          button={{
-            label: t("assignClient"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutTenants"),
-            href: "https://docs.camunda.io/",
-          }}
+        <TabEmptyState
+          childResourceTypeTranslationKey={"client"}
+          parentResourceTypeTranslationKey={"tenant"}
+          handleClick={openAssignModal}
+          description={t("emptyStateTenantAccessDisclaimer")}
+          docsLinkPath=""
         />
         {assignClientModal}
       </>

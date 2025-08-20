@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/roles/DeleteModal";
 import AssignRolesModal from "src/pages/groups/detail/roles/AssignRolesModal";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type RolesProps = {
   groupId: string;
@@ -56,7 +57,9 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadRoles")}
+        description={t("unableToLoadResource", {
+          resourceType: t("role").toLowerCase(),
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -64,17 +67,11 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
   if (success && isRolesListEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignRolesToGroup")}
-          description={t("roleAccessDisclaimer")}
-          button={{
-            label: t("assignRole"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutGroups"),
-            href: "https://docs.camunda.io/",
-          }}
+        <TabEmptyState
+          childResourceTypeTranslationKey={"role"}
+          parentResourceTypeTranslationKey={"group"}
+          handleClick={openAssignModal}
+          docsLinkPath=""
         />
         {assignRolesModal}
       </>

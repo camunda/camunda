@@ -105,7 +105,9 @@ export class IdentityTenantsPage {
     this.confirmAssignmentButton = this.assignUserModal.getByRole('button', {
       name: 'Assign user',
     });
-    this.usersEmptyState = page.getByText('Assign users to this Tenant');
+    this.usersEmptyState = page.getByText(
+      'No users assigned to this tenant yet',
+    );
     this.removeUserButton = (rowName) =>
       page.getByRole('row', {name: rowName}).getByLabel('Remove');
     this.userRow = (userName) =>

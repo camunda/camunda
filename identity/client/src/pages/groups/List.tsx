@@ -7,13 +7,11 @@
  */
 
 import { FC } from "react";
-import { C3EmptyState } from "@camunda/camunda-composite-components";
-import { Edit, TrashCan, Add } from "@carbon/react/icons";
+import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import { documentationHref } from "src/components/documentation";
 import { Group, searchGroups } from "src/utility/api/groups";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
@@ -21,6 +19,7 @@ import useModal, { useEntityModal } from "src/components/modal/useModal";
 import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
 import AddModal from "src/pages/groups/modals/AddModal";
+import PageEmptyState from "src/components/layout/PageEmptyState";
 
 const List: FC = () => {
   const { t } = useTranslate("groups");
@@ -45,9 +44,9 @@ const List: FC = () => {
 
   const pageHeader = (
     <PageHeader
-      title="Groups"
-      linkText="groups"
-      linkUrl=""
+      title={t("groups")}
+      linkText={t("groups").toLowerCase()}
+      docsLinkPath=""
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -56,18 +55,10 @@ const List: FC = () => {
     return (
       <Page>
         {pageHeader}
-        <C3EmptyState
-          heading={t("noGroupsCreated")}
-          description={t("startByCreatingGroup")}
-          button={{
-            label: t("createAGroup"),
-            onClick: addGroup,
-            icon: Add,
-          }}
-          link={{
-            href: documentationHref("https://docs.camunda.io/", ""),
-            label: t("learnMoreAboutGroups"),
-          }}
+        <PageEmptyState
+          resourceTypeTranslationKey={"group"}
+          docsLinkPath=""
+          handleClick={addGroup}
         />
         {addModal}
       </Page>

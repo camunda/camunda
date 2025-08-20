@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/roles/DeleteModal";
 import AssignRolesModal from "src/pages/tenants/detail/roles/AssignRolesModal";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type RolesProps = {
   tenantId: string;
@@ -56,7 +57,9 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadRoles")}
+        description={t("unableToLoadResource", {
+          resourceType: t("role").toLowerCase(),
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -64,17 +67,12 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
   if (success && isAssignedRolesListEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignRolesToTenant")}
-          description={t("tenantMemberAccessDisclaimer")}
-          button={{
-            label: t("assignRole"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutTenants"),
-            href: "https://docs.camunda.io/",
-          }}
+        <TabEmptyState
+          childResourceTypeTranslationKey={"role"}
+          parentResourceTypeTranslationKey={"tenant"}
+          handleClick={openAssignModal}
+          description={t("emptyStateTenantAccessDisclaimer")}
+          docsLinkPath=""
         />
         {assignRolesModal}
       </>

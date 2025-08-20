@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/mapping-rules/DeleteModal";
 import AssignMappingRulesModal from "src/pages/groups/detail/mapping-rules/AssignMappingRulesModal.tsx";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type MappingRulesProps = {
   groupId: string;
@@ -57,7 +58,9 @@ const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadMappingRules")}
+        description={t("unableToLoadResource", {
+          resourceType: t("mappingRule").toLowerCase(),
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -65,17 +68,11 @@ const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
   if (success && isMappingRulesListEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignMappingRulesToGroup")}
-          description={t("membersAccessDisclaimer")}
-          button={{
-            label: t("assignMappingRule"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutGroups"),
-            href: "https://docs.camunda.io/",
-          }}
+        <TabEmptyState
+          childResourceTypeTranslationKey={"mappingRule"}
+          parentResourceTypeTranslationKey={"group"}
+          handleClick={openAssignModal}
+          docsLinkPath=""
         />
         {assignMappingRulesModal}
       </>

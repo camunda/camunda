@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/clients/DeleteModal";
 import AssignClientsModal from "src/pages/groups/detail/clients/AssignClientsModal";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type ClientsProps = {
   groupId: Group["groupId"];
@@ -46,7 +47,9 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadClients")}
+        description={t("unableToLoadResource", {
+          resourceType: t("client").toLowerCase(),
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -54,17 +57,11 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
   if (success && assignedClients.length === 0)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignClientsToGroup")}
-          description={t("membersAccessDisclaimer")}
-          button={{
-            label: t("assignClient"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutGroups"),
-            href: "https://docs.camunda.io/",
-          }}
+        <TabEmptyState
+          childResourceTypeTranslationKey={"client"}
+          parentResourceTypeTranslationKey={"group"}
+          handleClick={openAssignModal}
+          docsLinkPath=""
         />
         {assignClientModal}
       </>

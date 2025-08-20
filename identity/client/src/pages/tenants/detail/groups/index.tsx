@@ -19,6 +19,7 @@ import DeleteModal from "src/pages/tenants/detail/groups/DeleteModal";
 import { isCamundaGroupsEnabled } from "src/configuration";
 import { GroupKeys } from "src/utility/api/groups";
 import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type GroupsProps = {
   tenantId: string;
@@ -53,7 +54,9 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadGroups")}
+        description={t("unableToLoadResource", {
+          resourceType: t("group").toLowerCase(),
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -61,17 +64,12 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
   if (success && isGroupsEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignGroupsToTenant")}
-          description={t("tenantMemberAccessDisclaimer")}
-          button={{
-            label: t("assignGroup"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutTenants"),
-            href: "https://docs.camunda.io/",
-          }}
+        <TabEmptyState
+          childResourceTypeTranslationKey={"group"}
+          parentResourceTypeTranslationKey={"tenant"}
+          handleClick={openAssignModal}
+          description={t("emptyStateTenantAccessDisclaimer")}
+          docsLinkPath=""
         />
         {assignGroupsModal}
       </>

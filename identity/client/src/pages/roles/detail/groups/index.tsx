@@ -19,6 +19,7 @@ import DeleteModal from "src/pages/roles/detail/groups/DeleteModal";
 import { isCamundaGroupsEnabled } from "src/configuration";
 import { GroupKeys } from "src/utility/api/groups";
 import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type GroupsProps = {
   roleId: string;
@@ -53,7 +54,9 @@ const Groups: FC<GroupsProps> = ({ roleId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadGroups")}
+        description={t("unableToLoadResource", {
+          resourceType: t("group").toLowerCase(),
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -61,17 +64,11 @@ const Groups: FC<GroupsProps> = ({ roleId }) => {
   if (success && isGroupsEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignGroupsToRole")}
-          description={t("roleMemberAccessDisclaimer")}
-          button={{
-            label: t("assignGroup"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutRoles"),
-            href: "https://docs.camunda.io/",
-          }}
+        <TabEmptyState
+          childResourceTypeTranslationKey={"group"}
+          parentResourceTypeTranslationKey={"role"}
+          handleClick={openAssignModal}
+          docsLinkPath=""
         />
         {assignGroupsModal}
       </>

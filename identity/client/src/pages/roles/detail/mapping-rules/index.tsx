@@ -16,6 +16,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/detail/mapping-rules/DeleteModal";
 import AssignMappingRulesModal from "src/pages/roles/detail/mapping-rules/AssignMappingRulesModal.tsx";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type MappingRulesProps = {
   roleId: string;
@@ -57,7 +58,9 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadMappings")}
+        description={t("unableToLoadResource", {
+          resourceType: t("mappingRule").toLowerCase(),
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -65,17 +68,11 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
   if (success && isMappingRulesListEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignMappingRulesToRole")}
-          description={t("accessDisclaimer")}
-          button={{
-            label: t("assignMapping"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutRoles"),
-            href: "https://docs.camunda.io/",
-          }}
+        <TabEmptyState
+          childResourceTypeTranslationKey={"mappingRule"}
+          parentResourceTypeTranslationKey={"role"}
+          handleClick={openAssignModal}
+          docsLinkPath=""
         />
         {assignMappingRulesModal}
       </>

@@ -19,6 +19,7 @@ import DeleteModal from "src/pages/groups/detail/members/DeleteModal";
 import { isOIDC } from "src/configuration";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 import { UserKeys } from "src/utility/api/users";
+import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type MembersProps = {
   groupId: string;
@@ -26,6 +27,7 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
+
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
     searchMembersByGroup,
     {
@@ -51,7 +53,9 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadMembers")}
+        description={t("unableToLoadResource", {
+          resourceType: t("user").toLowerCase(),
+        })}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -59,17 +63,11 @@ const Members: FC<MembersProps> = ({ groupId }) => {
   if (success && isUsersListEmpty)
     return (
       <>
-        <C3EmptyState
-          heading={t("assignUsersToGroup")}
-          description={t("membersAccessDisclaimer")}
-          button={{
-            label: t("assignUser"),
-            onClick: openAssignModal,
-          }}
-          link={{
-            label: t("learnMoreAboutGroups"),
-            href: "https://docs.camunda.io/",
-          }}
+        <TabEmptyState
+          childResourceTypeTranslationKey={"user"}
+          parentResourceTypeTranslationKey={"group"}
+          handleClick={openAssignModal}
+          docsLinkPath=""
         />
         {assignUsersModal}
       </>
