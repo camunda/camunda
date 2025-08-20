@@ -7,6 +7,7 @@
  */
 package io.camunda.it.migration;
 
+import static io.camunda.migration.usagemetric.OperateMetricMigrator.*;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.currentMultiDbDatabaseType;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,7 +21,6 @@ import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsImpl;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsItemImpl;
 import io.camunda.it.util.TestHelper;
 import io.camunda.migration.usagemetric.client.MigrationRepositoryIndex;
-import io.camunda.operate.store.MetricsStore;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -226,9 +226,9 @@ public class UsageMetricMigrationIT {
     // given
     final var minus2Days = NOW.minusDays(2);
     final var minus5Days = NOW.minusDays(5);
-    createOperateMetric(TENANT_1, minus5Days, MetricsStore.EVENT_PROCESS_INSTANCE_STARTED);
-    createOperateMetric(TENANT_2, minus2Days, MetricsStore.EVENT_PROCESS_INSTANCE_STARTED);
-    createOperateMetric(TENANT_1, minus5Days, MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED);
+    createOperateMetric(TENANT_1, minus5Days, EVENT_PROCESS_INSTANCE_STARTED);
+    createOperateMetric(TENANT_2, minus2Days, EVENT_PROCESS_INSTANCE_STARTED);
+    createOperateMetric(TENANT_1, minus5Days, EVENT_DECISION_INSTANCE_EVALUATED);
 
     // when
     startUsageMetricMigration().join();
@@ -248,7 +248,7 @@ public class UsageMetricMigrationIT {
   @Test
   void shouldNotMigrateSameMetricsTwice() throws IOException {
     // given
-    createOperateMetric(TENANT_1, NOW.minusDays(5), MetricsStore.EVENT_PROCESS_INSTANCE_STARTED);
+    createOperateMetric(TENANT_1, NOW.minusDays(5), EVENT_PROCESS_INSTANCE_STARTED);
     startUsageMetricMigration().join();
     assertMetrics(1, 0, 1, Map.of(TENANT_1, new UsageMetricsStatisticsItemImpl(1, 0, 0)));
 
@@ -263,14 +263,14 @@ public class UsageMetricMigrationIT {
   @Test
   void shouldNotMigrateWhenMigrationStepIsAlreadyApplied() throws IOException {
     // given
-    createOperateMetric(TENANT_1, NOW.minusDays(7), MetricsStore.EVENT_PROCESS_INSTANCE_STARTED);
-    createOperateMetric(TENANT_2, NOW.minusDays(7), MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED);
+    createOperateMetric(TENANT_1, NOW.minusDays(7), EVENT_PROCESS_INSTANCE_STARTED);
+    createOperateMetric(TENANT_2, NOW.minusDays(7), EVENT_DECISION_INSTANCE_EVALUATED);
     startUsageMetricMigration().join();
-    createOperateMetric(TENANT_1, NOW.minusDays(6), MetricsStore.EVENT_PROCESS_INSTANCE_STARTED);
-    createOperateMetric(TENANT_2, NOW.minusDays(8), MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED);
+    createOperateMetric(TENANT_1, NOW.minusDays(6), EVENT_PROCESS_INSTANCE_STARTED);
+    createOperateMetric(TENANT_2, NOW.minusDays(8), EVENT_DECISION_INSTANCE_EVALUATED);
 
     // when
-    createOperateMetric(TENANT_1, NOW.minusDays(6), MetricsStore.EVENT_PROCESS_INSTANCE_STARTED);
+    createOperateMetric(TENANT_1, NOW.minusDays(6), EVENT_PROCESS_INSTANCE_STARTED);
     startUsageMetricMigration().join();
 
     // then
@@ -287,8 +287,8 @@ public class UsageMetricMigrationIT {
   void shouldNotMigrateTooOldMetrics() throws IOException {
     // given
     final var olderThan2Years = NOW.minusYears(2).minusDays(1);
-    createOperateMetric(TENANT_1, olderThan2Years, MetricsStore.EVENT_PROCESS_INSTANCE_STARTED);
-    createOperateMetric(TENANT_1, olderThan2Years, MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED);
+    createOperateMetric(TENANT_1, olderThan2Years, EVENT_PROCESS_INSTANCE_STARTED);
+    createOperateMetric(TENANT_1, olderThan2Years, EVENT_DECISION_INSTANCE_EVALUATED);
 
     // when
     startUsageMetricMigration().join();

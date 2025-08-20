@@ -21,7 +21,6 @@ import io.camunda.migration.usagemetric.client.es.ElasticsearchUsageMetricMigrat
 import io.camunda.migration.usagemetric.client.os.OpensearchUsageMetricMigrationClient;
 import io.camunda.migration.usagemetric.util.MetricRegistry;
 import io.camunda.migration.usagemetric.util.RescheduleTask;
-import io.camunda.operate.store.MetricsStore;
 import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
@@ -52,6 +51,10 @@ import org.springframework.stereotype.Component;
 @Component("operate-metric-migrator")
 public class OperateMetricMigrator implements Migrator {
 
+  public static final String EVENT_PROCESS_INSTANCE_STARTED = "EVENT_PROCESS_INSTANCE_STARTED";
+  public static final String EVENT_DECISION_INSTANCE_EVALUATED =
+      "EVENT_DECISION_INSTANCE_EVALUATED";
+
   public static final String SCRIPT =
       """
 String value = ctx._source.remove("value");
@@ -68,9 +71,9 @@ if (event == "%s") {
 }
 """
           .formatted(
-              MetricsStore.EVENT_PROCESS_INSTANCE_STARTED,
+              EVENT_PROCESS_INSTANCE_STARTED,
               UsageMetricsEventType.RPI,
-              MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED,
+              EVENT_DECISION_INSTANCE_EVALUATED,
               UsageMetricsEventType.EDI);
   public static final Pattern MIGRATION_REPOSITORY_NOT_EXISTS =
       Pattern.compile(
@@ -137,9 +140,7 @@ if (event == "%s") {
 
     final var searchQuery =
         createOperateMetricSearchQuery(
-            List.of(
-                MetricsStore.EVENT_PROCESS_INSTANCE_STARTED,
-                MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED),
+            List.of(EVENT_PROCESS_INSTANCE_STARTED, EVENT_DECISION_INSTANCE_EVALUATED),
             minEventTime);
     LOG.info("Migrating operate-metric index with search query: {}", searchQuery);
 
@@ -152,17 +153,19 @@ if (event == "%s") {
               SCRIPT);
 
       LOG.info("Waiting for taskId {} completion", taskId);
+      // return null so wait continues
       final boolean completed =
-          metricRegistry.measureOperateReindexTask(
-              () ->
-                  waitForCallback(
-                          () -> {
-                            final var res = client.getTask(taskId);
-                            return res ? true : null; // return null so wait continues
-                          },
-                          () -> false,
-                          interval.getSeconds())
-                      .join());
+          Boolean.TRUE.equals(
+              metricRegistry.measureOperateReindexTask(
+                  () ->
+                      waitForCallback(
+                              () -> {
+                                final var res = client.getTask(taskId);
+                                return res ? true : null; // return null so wait continues
+                              },
+                              () -> false,
+                              interval.getSeconds())
+                          .join()));
 
       LOG.info(
           "Updating migration step for operate-metric index with taskId {} and result {}",
