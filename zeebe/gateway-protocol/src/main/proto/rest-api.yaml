@@ -6559,8 +6559,7 @@ components:
           description: The parent element instance key.
         tags:
           description: Tags associated with the process instance
-          allOf:
-            - $ref: '#/components/schemas/TagSet'
+          $ref: '#/components/schemas/TagSet'
     ProcessInstanceStateEnum:
       description: Process instance states
       enum:
@@ -10161,8 +10160,7 @@ components:
           type: string
         tags:
           description: Tags associated with the process instance
-          allOf:
-            - $ref: '#/components/schemas/TagSet'
+          $ref: '#/components/schemas/TagSet'
         operationReference:
           $ref: '#/components/schemas/OperationReference'
         startInstructions:
@@ -10282,8 +10280,7 @@ components:
           type: string
         tags:
           description: Tags associated with the newly created process instance
-          allOf:
-            - $ref: '#/components/schemas/TagSet'
+          $ref: '#/components/schemas/TagSet'
     ProcessInstanceMigrationBatchOperationRequest:
       type: object
       properties:

@@ -193,8 +193,11 @@ public final class ProcessInstanceServices
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setStartInstructionsFromRecord(request.startInstructions())
-            .setRuntimeInstructionsFromRecord(request.runtimeInstructions())
-            .setTags(request.tags());
+            .setRuntimeInstructionsFromRecord(request.runtimeInstructions());
+
+    if (request.tags() != null) {
+      brokerRequest.setTags(request.tags());
+    }
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
