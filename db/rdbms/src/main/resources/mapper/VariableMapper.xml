@@ -109,7 +109,6 @@
     <constructor>
       <idArg column="VAR_KEY" javaType="java.lang.Long"/>
       <arg column="VAR_NAME" javaType="java.lang.String"/>
-      <arg column="VAR_NAME" javaType="java.lang.String"/>
       <arg column="VAR_VALUE" javaType="java.lang.String"/>
       <arg column="VAR_FULL_VALUE" javaType="java.lang.String"/>
       <arg column="IS_PREVIEW" javaType="java.lang.Boolean"/>

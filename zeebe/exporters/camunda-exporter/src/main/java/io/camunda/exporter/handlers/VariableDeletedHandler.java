@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
-
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
@@ -58,28 +56,8 @@ public class VariableDeletedHandler implements ExportHandler<VariableEntity, Var
   @Override
   public void updateEntity(final Record<VariableRecordValue> record, final VariableEntity entity) {
     final var recordValue = record.getValue();
-
-    entity
-        .setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
-        .setKey(record.getKey())
-        .setPartitionId(record.getPartitionId())
-        .setScopeKey(recordValue.getScopeKey())
-        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
-        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
-        .setBpmnProcessId(recordValue.getBpmnProcessId())
-        .setName(recordValue.getName())
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
-        .setPosition(record.getPosition());
-
-    if (recordValue.getValue().length() > variableSizeThreshold) {
-      entity.setValue(recordValue.getValue().substring(0, variableSizeThreshold));
-      entity.setFullValue(recordValue.getValue());
-      entity.setIsPreview(true);
-    } else {
-      entity.setValue(recordValue.getValue());
-      entity.setFullValue(null);
-      entity.setIsPreview(false);
-    }
+    entity.setId(
+        VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
   }
 
   @Override

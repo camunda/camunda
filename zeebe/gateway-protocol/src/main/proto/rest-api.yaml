@@ -1430,7 +1430,7 @@ paths:
       operationId: createVariable
       summary: Create variable
       description: |
-        Create cluster level variables
+        Create a cluster-level variable.
       requestBody:
         required: true
         content:
@@ -1440,7 +1440,7 @@ paths:
       responses:
         "201":
           description: >
-            The variable creation status.
+            The variable was created successfully.
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -1451,20 +1451,13 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   /variables/{variableKey}:
-    parameters:
-      - name: variableKey
-        in: path
-        required: true
-        description: The variable key.
-        schema:
-          type: string
     patch:
       tags:
         - Variable
       operationId: updateVariable
-      summary: Update variables
+      summary: Update variable
       description: |
-        Update cluster level variables
+        Update a cluster-level variable.
       parameters:
         - name: variableKey
           in: path
@@ -1481,7 +1474,7 @@ paths:
       responses:
         "204":
           description: >
-            The variable update status.
+            The variable was updated successfully.
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -1496,11 +1489,18 @@ paths:
       operationId: deleteVariable
       summary: Delete variable
       description: |
-        Delete cluster level variables
+        Delete a cluster-level variable.
+      parameters:
+        - name: variableKey
+          in: path
+          required: true
+          description: The variable key.
+          schema:
+            type: string
       responses:
         "204":
           description: >
-            The variable creation status.
+            The variable was deleted successfully.
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -1516,6 +1516,13 @@ paths:
       summary: Get variable
       description: |
         Get the variable by the variable key.
+      parameters:
+        - name: variableKey
+          in: path
+          required: true
+          description: The variable key.
+          schema:
+              type: string
       responses:
         "200":
           description: >
@@ -5989,7 +5996,7 @@ components:
           description: The variable name to create
         value:
           type: object
-          description: The variable value; string or any JSON object
+          description: The value of the variable.
         scope:
           $ref: '#/components/schemas/VariableScope'
       required: [name, value, scope]
@@ -5999,13 +6006,11 @@ components:
       x-discriminator-value: cluster
       allOf:
         - $ref: '#/components/schemas/CreateVariableRequest'
-        - type: object
       description: Create a cluster-scoped variable.
     TenantVariableCreateRequest:
       x-discriminator-value: tenant
       allOf:
         - $ref: '#/components/schemas/CreateVariableRequest'
-        - type: object
           properties:
             tenantId:
               type: string
@@ -6017,7 +6022,7 @@ components:
       properties:
         value:
           type: object
-          description: The variable value; string or any JSON object
+          description: The value of the variable.
     VariableSearchQueryResult:
       description: Variable search query response.
       type: object

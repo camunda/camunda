@@ -39,7 +39,7 @@ public class VariablesManagementTest {
         .forEach(
             variable ->
                 camundaClient
-                    .newVariableDeleteRequest()
+                    .newVariableDeleteCommand()
                     .key(variable.getVariableKey())
                     .send()
                     .join());
@@ -55,7 +55,7 @@ public class VariablesManagementTest {
   @Test
   void shouldCreateVariable() {
     camundaClient
-        .newVariableCreationRequest()
+        .newVariableCreationCommand()
         .variable("KEY_1", "VALUE")
         .clusterLevel()
         .send()
@@ -67,7 +67,7 @@ public class VariablesManagementTest {
   @Test
   void shouldUpdateVariable() {
     camundaClient
-        .newVariableCreationRequest()
+        .newVariableCreationCommand()
         .variable("KEY_2", "VALUE")
         .clusterLevel()
         .send()
@@ -77,7 +77,7 @@ public class VariablesManagementTest {
     final var result = clusterVariableSearchRequest.send().join();
 
     camundaClient
-        .newVariableUpdateRequest()
+        .newVariableUpdateCommand()
         .variable(result.items().getFirst().getVariableKey(), "VALUE_2")
         .send()
         .join();
@@ -88,7 +88,7 @@ public class VariablesManagementTest {
   @Test
   void shouldDeleteVariable() {
     camundaClient
-        .newVariableCreationRequest()
+        .newVariableCreationCommand()
         .variable("KEY_3", "VALUE")
         .clusterLevel()
         .send()
@@ -98,7 +98,7 @@ public class VariablesManagementTest {
     final var result = clusterVariableSearchRequest.send().join();
 
     camundaClient
-        .newVariableDeleteRequest()
+        .newVariableDeleteCommand()
         .key(result.items().getFirst().getVariableKey())
         .send()
         .join();

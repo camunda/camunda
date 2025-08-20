@@ -18,7 +18,7 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.command.VariableUpdateRequestStep1;
+import io.camunda.client.api.command.VariableUpdateCommandStep1;
 import io.camunda.client.api.response.UpdateVariableResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -27,7 +27,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UpdateVariableImpl implements VariableUpdateRequestStep1 {
+public class UpdateVariableImpl implements VariableUpdateCommandStep1 {
 
   private final UpdateVariableRequest updateVariableRequest;
   private final JsonMapper jsonMapper;
@@ -60,7 +60,7 @@ public class UpdateVariableImpl implements VariableUpdateRequestStep1 {
   }
 
   @Override
-  public VariableUpdateRequestStep1 variable(final Long key, final Object value) {
+  public VariableUpdateCommandStep1 variable(final Long key, final Object value) {
     updateVariableRequest.setValue(value);
     this.key = key;
     return this;

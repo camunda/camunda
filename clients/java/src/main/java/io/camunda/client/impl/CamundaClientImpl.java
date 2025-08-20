@@ -97,9 +97,9 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
-import io.camunda.client.api.command.VariableCreationRequestStep1;
-import io.camunda.client.api.command.VariableDeleteRequestStep1;
-import io.camunda.client.api.command.VariableUpdateRequestStep1;
+import io.camunda.client.api.command.VariableCreationCommandStep1;
+import io.camunda.client.api.command.VariableDeleteCommandStep1;
+import io.camunda.client.api.command.VariableUpdateCommandStep1;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
@@ -1067,17 +1067,17 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public VariableCreationRequestStep1 newVariableCreationRequest() {
+  public VariableCreationCommandStep1 newVariableCreationCommand() {
     return new CreateVariableImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public VariableUpdateRequestStep1 newVariableUpdateRequest() {
+  public VariableUpdateCommandStep1 newVariableUpdateCommand() {
     return new UpdateVariableImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public VariableDeleteRequestStep1 newVariableDeleteRequest() {
+  public VariableDeleteCommandStep1 newVariableDeleteCommand() {
     return new DeleteVariableImpl(httpClient);
   }
 

@@ -17,7 +17,7 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.command.VariableDeleteRequestStep1;
+import io.camunda.client.api.command.VariableDeleteCommandStep1;
 import io.camunda.client.api.response.DeleteVariableResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -25,7 +25,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class DeleteVariableImpl implements VariableDeleteRequestStep1 {
+public class DeleteVariableImpl implements VariableDeleteCommandStep1 {
 
   private Long key;
   private final HttpClient httpClient;
@@ -50,7 +50,7 @@ public class DeleteVariableImpl implements VariableDeleteRequestStep1 {
   }
 
   @Override
-  public VariableDeleteRequestStep1 key(final Long key) {
+  public VariableDeleteCommandStep1 key(final Long key) {
     this.key = key;
     return this;
   }

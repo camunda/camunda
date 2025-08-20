@@ -18,7 +18,7 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.command.VariableCreationRequestStep1;
+import io.camunda.client.api.command.VariableCreationCommandStep1;
 import io.camunda.client.api.response.CreateVariableResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -29,7 +29,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class CreateVariableImpl implements VariableCreationRequestStep1 {
+public class CreateVariableImpl implements VariableCreationCommandStep1 {
 
   private CreateVariableRequest createVariableRequest;
   private final JsonMapper jsonMapper;
@@ -58,14 +58,14 @@ public class CreateVariableImpl implements VariableCreationRequestStep1 {
   }
 
   @Override
-  public VariableCreationRequestStep1 variable(final String key, final Object value) {
+  public VariableCreationCommandStep1 variable(final String key, final Object value) {
     createVariableRequest.setName(key);
     createVariableRequest.setValue(value);
     return this;
   }
 
   @Override
-  public VariableCreationRequestStep1 clusterLevel() {
+  public VariableCreationCommandStep1 clusterLevel() {
     createVariableRequest =
         new ClusterVariableCreateRequest()
             .name(createVariableRequest.getName())
