@@ -268,6 +268,7 @@ schemas:
           - UNKNOWN
           - PARTITION_DISABLE_EXPORTER
           - PARTITION_ENABLE_EXPORTER
+          - PARTITION_DELETE_EXPORTER
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
