@@ -1071,11 +1071,11 @@ jobs:
     with:
       stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}
 
-  client-components-ci:
+  client-components:
     if: needs.detect-changes.outputs.client-components-changes == 'true'
     name: "Client Components"
     needs: [ detect-changes ]
-    uses: ./.github/workflows/client-components-ci.yml
+    uses: ./.github/workflows/ci-client-components.yml
     secrets: inherit
     permissions: { }
 
@@ -1203,7 +1203,7 @@ jobs:
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - build-platform-frontend
-      - client-components-ci
+      - client-components
       - commitlint
       - detect-changes
       - docker-checks
