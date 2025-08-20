@@ -19,6 +19,7 @@ import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -69,29 +70,36 @@ public class TasklistV1ApiInternalProcessPermissionsIT {
   @BeforeAll
   public static void beforeAll(@Authenticated(ADMIN_USERNAME) final CamundaClient adminClient)
       throws Exception {
-    final var deployedProcess =
+    final var deployedProcessIds =
         adminClient
             .newDeployResourceCommand()
             .addResourceFromClasspath("process/process_start_form.bpmn")
+            .addResourceFromClasspath("process/startedByFormProcess.bpmn")
             .send()
             .join()
             .getProcesses()
-            .getFirst();
+            .stream()
+            .map(Process::getProcessDefinitionKey)
+            .toList();
 
-    await()
-        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var definition =
-                  adminClient
-                      .newProcessDefinitionSearchRequest()
-                      .filter(
-                          f -> f.processDefinitionKey(deployedProcess.getProcessDefinitionKey()))
-                      .send()
-                      .join();
-              assertThat(definition).describedAs("Wait until the definition exists").isNotNull();
-            });
+    deployedProcessIds.forEach(
+        processDefinitionKey -> {
+          await()
+              .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+              .ignoreExceptions()
+              .untilAsserted(
+                  () -> {
+                    final var definition =
+                        adminClient
+                            .newProcessDefinitionSearchRequest()
+                            .filter(f -> f.processDefinitionKey(processDefinitionKey))
+                            .send()
+                            .join();
+                    assertThat(definition)
+                        .describedAs("Wait until the definition exists")
+                        .isNotNull();
+                  });
+        });
 
     authorizedClient =
         STANDALONE_CAMUNDA
@@ -110,7 +118,7 @@ public class TasklistV1ApiInternalProcessPermissionsIT {
     final var publicEndpoints =
         TestRestTasklistClient.OBJECT_MAPPER.readValue(
             response.body(), ProcessPublicEndpointsResponse[].class);
-    assertThat(publicEndpoints).hasSize(1);
+    assertThat(publicEndpoints).hasSize(2);
   }
 
   @Test

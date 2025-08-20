@@ -48,7 +48,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
   static final TestCamundaApplication STANDALONE_CAMUNDA =
       new TestCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
 
-  private static final String PROCESS_ID = "processId";
+  private static final String PROCESS_ID = "processId2";
   private static final String ADMIN_USERNAME = "admin3";
   private static final String UNAUTHORIZED_USERNAME = "unauthorized3";
   private static long taskKey;
@@ -82,7 +82,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
                 .zeebeUserTask()
                 .endEvent()
                 .done(),
-            "process.bpmn")
+            "process2.bpmn")
         .send()
         .join();
 
