@@ -40,8 +40,14 @@ const TaskDetailsLayout: React.FC = () => {
   const {data: task, refetch} = useTask(id, {
     refetchInterval(query) {
       const {data} = query.state;
-      if (data?.state === 'COMPLETING' || data?.state === 'ASSIGNING') {
-        return 1000;
+      const POLLING_STATES: UserTask['state'][] = [
+        'CANCELING',
+        'UPDATING',
+        'COMPLETING',
+        'ASSIGNING',
+      ];
+      if (data?.state && POLLING_STATES.includes(data.state)) {
+        return 5000;
       }
 
       return false;

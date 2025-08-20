@@ -43,8 +43,14 @@ const TaskDetailsLayout: React.FC = () => {
     refetchOnReconnect: false,
     refetchInterval(query) {
       const {data} = query.state;
-      if (data?.taskState === 'COMPLETING' || data?.taskState === 'ASSIGNING') {
-        return 1000;
+      const POLLING_STATES: Task['taskState'][] = [
+        'CANCELING',
+        'UPDATING',
+        'COMPLETING',
+        'ASSIGNING',
+      ];
+      if (data?.taskState && POLLING_STATES.includes(data.taskState)) {
+        return 5000;
       }
 
       return false;

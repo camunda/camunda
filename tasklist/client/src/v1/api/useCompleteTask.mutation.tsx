@@ -79,9 +79,9 @@ function useCompleteTask() {
           const errorData = await parsedError.response.json();
 
           if (isTaskTimeoutError(errorData)) {
-            const currentTask = client.getQueryData(
+            const currentTask = client.getQueryData<Task>(
               getUseTaskQueryKey(params.taskId),
-            ) as Task;
+            );
 
             if (currentTask) {
               client.setQueryData(getUseTaskQueryKey(params.taskId), {
@@ -97,9 +97,7 @@ function useCompleteTask() {
               isDismissable: true,
             });
 
-            const task = await refetchTask(params.taskId);
-
-            return task;
+            return refetchTask(params.taskId);
           }
         }
 
@@ -108,9 +106,7 @@ function useCompleteTask() {
 
       client.invalidateQueries({queryKey: ['task']});
 
-      const task = await refetchTask(params.taskId);
-
-      return task;
+      return refetchTask(params.taskId);
     },
   });
 }

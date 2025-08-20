@@ -8,26 +8,19 @@
 
 import {z} from 'zod';
 
-const ErrorDataSchema = z.object({
-  title: z.string().optional(),
-  message: z.string().optional(),
-});
+const errorDataSchema = z.union([
+  z.object({
+    title: z.enum(['DEADLINE_EXCEEDED', 'TASK_PROCESSING_TIMEOUT']),
+  }),
+  z.object({
+    message: z.string().regex(/(DEADLINE_EXCEEDED|TASK_PROCESSING_TIMEOUT)/),
+  }),
+]);
 
-export type ErrorData = z.infer<typeof ErrorDataSchema>;
+const isTaskTimeoutError = (errorData: unknown): boolean => {
+  const {success} = errorDataSchema.safeParse(errorData);
 
-export const isTaskTimeoutError = (errorData: unknown): boolean => {
-  const parsed = ErrorDataSchema.safeParse(errorData);
-  if (!parsed.success) {
-    return false;
-  }
-
-  const {title, message} = parsed.data;
-  return (
-    title === 'DEADLINE_EXCEEDED' ||
-    title === 'TASK_PROCESSING_TIMEOUT' ||
-    !!message?.includes('TASK_PROCESSING_TIMEOUT') ||
-    !!message?.includes('DEADLINE_EXCEEDED')
-  );
+  return success;
 };
 
-export {ErrorDataSchema};
+export {isTaskTimeoutError};

@@ -100,13 +100,13 @@ function useAssignTask() {
       error.name = errorResult.data.message.title;
 
       if (isTaskTimeoutError(errorResult.data.message)) {
-        const currentTask = client.getQueryData(
+        const currentTask = client.getQueryData<Task>(
           getUseTaskQueryKey(taskId),
-        ) as Task;
+        );
         if (currentTask) {
           client.setQueryData(getUseTaskQueryKey(taskId), {
             ...currentTask,
-            taskState: 'ASSIGNING' as const,
+            taskState: 'ASSIGNING',
             assignee: null,
           });
         }
@@ -118,8 +118,7 @@ function useAssignTask() {
           isDismissable: true,
         });
 
-        const task = await refetchTask(taskId);
-        return task;
+        return refetchTask(taskId);
       }
 
       throw error;
