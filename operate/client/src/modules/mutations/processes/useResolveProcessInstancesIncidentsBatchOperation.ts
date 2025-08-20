@@ -16,6 +16,7 @@ import type {
   CreateIncidentResolutionBatchOperationResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 import {resolveProcessInstancesIncidentsBatchOperation} from 'modules/api/v2/processes/resolveProcessInstancesIncidentsBatchOperation';
+import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations';
 
 const useResolveProcessInstancesIncidentsBatchOperation = (
   options?: Partial<
@@ -34,7 +35,7 @@ const useResolveProcessInstancesIncidentsBatchOperation = (
         await resolveProcessInstancesIncidentsBatchOperation(payload);
       if (response !== null) {
         await queryClient.invalidateQueries({
-          queryKey: ['queryBatchOperations'],
+          queryKey: [BATCH_OPERATIONS_QUERY_KEY],
         });
         return response;
       }
