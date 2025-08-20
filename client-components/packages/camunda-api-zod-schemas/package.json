@@ -19,9 +19,5 @@
   "scripts": {
     "lint": "bash -c 'exit 0'"
   },
-  "engines": {
-    "node": "24.6.0",
-    "npm": "11.5.2"
-  },
   "packageManager": "npm@11.5.2"
 }
