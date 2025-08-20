@@ -13,13 +13,13 @@ const buildProcessInstanceKeyCriterion = (
   excludeIds: string[] = [],
 ): IdCriterion | undefined => {
   const criterion: IdCriterion = {};
-  if (includeIds.length) {
+  if (includeIds.length > 0) {
     criterion.$in = includeIds;
   }
-  if (excludeIds.length) {
+  if (excludeIds.length > 0) {
     criterion.$notIn = excludeIds;
   }
-  return Object.keys(criterion).length ? criterion : undefined;
+  return Object.keys(criterion).length > 0 ? criterion : undefined;
 };
 
 export {buildProcessInstanceKeyCriterion};
