@@ -30,9 +30,13 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
+import org.json.JSONException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,6 +45,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -71,7 +77,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           ProcessInstanceState.ACTIVE,
           false,
           "tenant",
-          "PI_123");
+          "PI_123",
+          Set.of("tag1", "tag2"));
 
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
@@ -87,7 +94,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "startDate": "2024-01-01T00:00:00.000Z",
             "state": "ACTIVE",
             "hasIncident": false,
-            "tenantId": "tenant"
+            "tenantId": "tenant",
+            "tags": ["tag1", "tag2"]
           }
           """;
 
@@ -107,7 +115,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "startDate": "2024-01-01T00:00:00.000Z",
                   "state": "ACTIVE",
                   "hasIncident": false,
-                  "tenantId": "tenant"
+                  "tenantId": "tenant",
+                  "tags": ["tag1", "tag2"]
                 }
               ],
               "page": {
@@ -151,6 +160,17 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .thenReturn(processInstanceServices);
   }
 
+  private static void assertJsonNonExtensible(final String expected, final byte[] actualBytes) {
+    try {
+      JSONAssert.assertEquals(
+          expected,
+          new String(Objects.requireNonNull(actualBytes), StandardCharsets.UTF_8),
+          JSONCompareMode.NON_EXTENSIBLE);
+    } catch (final JSONException e) {
+      throw new AssertionError(e);
+    }
+  }
+
   @Test
   void shouldSearchProcessInstancesWithEmptyBody() {
     // given
@@ -166,7 +186,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
   }
@@ -190,7 +211,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
   }
@@ -314,7 +336,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices)
         .search(
@@ -510,7 +533,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(PROCESS_INSTANCE_ENTITY_JSON, JsonCompareMode.STRICT);
+        .consumeWith(
+            result ->
+                assertJsonNonExtensible(PROCESS_INSTANCE_ENTITY_JSON, result.getResponseBody()));
 
     // Verify that the service was called with the valid key
     verify(processInstanceServices).getByKey(validProcesInstanceKey);
@@ -649,7 +674,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(filter).build());
@@ -685,7 +711,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     // then
     verify(processInstanceServices)
@@ -737,7 +764,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build());

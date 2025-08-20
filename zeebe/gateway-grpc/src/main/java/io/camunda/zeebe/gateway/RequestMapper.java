@@ -63,6 +63,7 @@ import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -257,7 +258,8 @@ public final class RequestMapper extends RequestUtil {
         .setVersion(grpcRequest.getVersion())
         .setTenantId(ensureTenantIdSet("CreateProcessInstance", grpcRequest.getTenantId()))
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
-        .setStartInstructions(grpcRequest.getStartInstructionsList());
+        .setStartInstructions(grpcRequest.getStartInstructionsList())
+        .setTags(Set.copyOf(grpcRequest.getTagsList()));
 
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
@@ -279,6 +281,7 @@ public final class RequestMapper extends RequestUtil {
         .setTenantId(ensureTenantIdSet("CreateProcessInstanceWithResult", request.getTenantId()))
         .setVariables(ensureJsonSet(request.getVariables()))
         .setStartInstructions(request.getStartInstructionsList())
+        .setTags(Set.copyOf(request.getTagsList()))
         .setFetchVariables(grpcRequest.getFetchVariablesList());
 
     if (request.hasOperationReference()) {

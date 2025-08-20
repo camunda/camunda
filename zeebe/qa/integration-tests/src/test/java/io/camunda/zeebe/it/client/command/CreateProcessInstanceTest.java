@@ -27,6 +27,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -127,6 +128,32 @@ public final class CreateProcessInstanceTest {
             .getFirst();
 
     assertThat(createdEvent.getValue().getVariables()).containsExactlyEntriesOf(variables);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateWithTags(final boolean useRest, final TestInfo testInfo) {
+    // given
+    deployProcesses(testInfo, useRest);
+    final Set<String> tags = Set.of("foo", "bar");
+
+    // when
+    final ProcessInstanceEvent event =
+        getCommand(client, useRest)
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .tags(tags)
+            .send()
+            .join();
+
+    // then
+    final var createdEvent =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(event.getProcessInstanceKey())
+            .getFirst();
+
+    assertThat(createdEvent.getValue().getTags()).isEqualTo(tags);
   }
 
   @ParameterizedTest

@@ -20,6 +20,7 @@ import io.camunda.client.api.response.ProcessInstanceResult;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface CreateProcessInstanceCommandStep1
     extends CommandWithCommunicationApiStep<CreateProcessInstanceCommandStep1> {
@@ -151,6 +152,70 @@ public interface CreateProcessInstanceCommandStep1
      *     it to the broker
      */
     CreateProcessInstanceWithResultCommandStep1 withResult();
+
+    /**
+     * Add tags to the process instance to be created.
+     *
+     * <p>Tags are de-duplicated. Each tag must follow this format:
+     *
+     * <ul>
+     *   <li>Start with a letter (a-z, A-Z)
+     *   <li>Subsequent characters may be letters, digits, underscore (_), minus (-), colon (:), or
+     *       period (.)
+     *   <li>Length between 1 and 100 characters
+     *   <li>Must not be {@code null} or blank
+     * </ul>
+     *
+     * At most 10 tags can be set.
+     *
+     * @param tags one or more tag values
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    CreateProcessInstanceCommandStep3 tags(String... tags);
+
+    /**
+     * Add tags to the process instance to be created.
+     *
+     * <p>Tags are de-duplicated. Each tag must follow this format:
+     *
+     * <ul>
+     *   <li>Start with a letter (a-z, A-Z)
+     *   <li>Subsequent characters may be letters, digits, underscore (_), minus (-), colon (:), or
+     *       period (.)
+     *   <li>Length between 1 and 100 characters
+     *   <li>Must not be {@code null} or blank
+     * </ul>
+     *
+     * At most 10 tags can be set.
+     *
+     * @param tags a collection of tag values
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    CreateProcessInstanceCommandStep3 tags(Iterable<String> tags);
+
+    /**
+     * Set the tags of the process instance to be created.
+     *
+     * <p>Duplicates are naturally excluded by the {@link Set} contract. Each tag must follow this
+     * format:
+     *
+     * <ul>
+     *   <li>Start with a letter (a-z, A-Z)
+     *   <li>Subsequent characters may be letters, digits, underscore (_), minus (-), colon (:), or
+     *       period (.)
+     *   <li>Length between 1 and 100 characters
+     *   <li>Must not be {@code null} or blank
+     * </ul>
+     *
+     * At most 10 tags can be set.
+     *
+     * @param tags the set of tag values to apply
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    CreateProcessInstanceCommandStep3 tags(Set<String> tags);
   }
 
   interface CreateProcessInstanceWithResultCommandStep1

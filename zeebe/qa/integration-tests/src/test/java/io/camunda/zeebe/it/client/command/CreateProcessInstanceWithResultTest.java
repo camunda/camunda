@@ -33,6 +33,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -174,6 +175,26 @@ public final class CreateProcessInstanceWithResultTest {
     assertThat(result.getBpmnProcessId()).isEqualTo(processId);
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(result.getVariablesAsMap()).containsExactly(entry("y", "bar"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateProcessInstanceAwaitResultsWithTags(
+      final boolean useRest, final TestInfo testInfo) {
+    deployProcesses(testInfo);
+    // when
+    final ProcessInstanceResult result =
+        getCommand(client, useRest)
+            .processDefinitionKey(processDefinitionKey)
+            .tags("tag1", "tag2")
+            .withResult()
+            .send()
+            .join();
+
+    // then
+    assertThat(result.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(result.getTags()).isEqualTo(Set.of("tag1", "tag2"));
   }
 
   @ParameterizedTest

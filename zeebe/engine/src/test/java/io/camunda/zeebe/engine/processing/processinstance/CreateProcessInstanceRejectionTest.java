@@ -298,7 +298,7 @@ public class CreateProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             String.format(
-                "Expected to create instance of process with tags, but tag '%s' is invalid. Tag must start with a letter (a-z, A-Z), followed by alphanumerics, underscores, minuses, colons, or periods. It must not be blank and must be 100 characters or less.",
+                "Expected to create instance of process with tags, but the tags '%s' are invalid. Tags must start with a letter (a-z, A-Z), followed by alphanumerics, underscores, minuses, colons, or periods. It must not be blank and must be 100 characters or less.",
                 invalidTag));
   }
 

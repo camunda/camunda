@@ -18,6 +18,7 @@ package io.camunda.client.api.response;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ClientException;
 import java.util.Map;
+import java.util.Set;
 
 public interface ProcessInstanceResult {
   /** Key of the process which this instance was created for */
@@ -65,4 +66,11 @@ public interface ProcessInstanceResult {
   /** Tenant identifier that owns this process instance */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/13321")
   String getTenantId();
+
+  /**
+   * Tags associated with the process instance.
+   *
+   * @return a set of tags
+   */
+  Set<String> getTags();
 }

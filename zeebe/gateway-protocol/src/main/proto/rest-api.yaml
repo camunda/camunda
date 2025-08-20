@@ -6557,6 +6557,8 @@ components:
         parentElementInstanceKey:
           type: string
           description: The parent element instance key.
+        tags:
+          $ref: '#/components/schemas/TagSet'
     ProcessInstanceStateEnum:
       description: Process instance states
       enum:
@@ -10155,6 +10157,8 @@ components:
         tenantId:
           description: The tenant ID of the process definition.
           type: string
+        tags:
+          $ref: '#/components/schemas/TagSet'
         operationReference:
           $ref: '#/components/schemas/OperationReference'
         startInstructions:
@@ -10272,6 +10276,8 @@ components:
             The unique identifier of the created process instance; to be used wherever a request
             needs a process instance key (e.g. CancelProcessInstanceRequest).
           type: string
+        tags:
+          $ref: '#/components/schemas/TagSet'
     ProcessInstanceMigrationBatchOperationRequest:
       type: object
       properties:
@@ -10873,6 +10879,20 @@ components:
       required:
         - sourceElementId
         - targetElementId
+    Tag:
+      type: string
+      description: A tag. Needs to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.
+      minLength: 1
+      maxLength: 100
+      pattern: '^[A-Za-z][A-Za-z0-9_\-:.]{0,99}$'
+      example: "business_key:1234"
+    TagSet:
+      description: List of tags
+      type: array
+      items:
+        $ref: '#/components/schemas/Tag'
+      uniqueItems: true
+      maxItems: 10
   responses:
     InternalServerError:
       description: >

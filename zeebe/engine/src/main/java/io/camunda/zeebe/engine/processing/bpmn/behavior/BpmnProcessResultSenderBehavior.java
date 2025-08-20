@@ -66,7 +66,8 @@ public final class BpmnProcessResultSenderBehavior {
         .setBpmnProcessId(context.getBpmnProcessId())
         .setVersion(context.getProcessVersion())
         .setVariables(variablesAsDocument)
-        .setTenantId(context.getTenantId());
+        .setTenantId(context.getTenantId())
+        .setTags(context.getTags());
 
     responseWriter.writeResponse(
         context.getProcessInstanceKey(),

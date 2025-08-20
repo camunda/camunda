@@ -45,6 +45,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TagUtil;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -343,17 +344,18 @@ public final class ProcessInstanceCreationCreateProcessor
                   TagUtil.MAX_NUMBER_OF_TAGS)));
     }
 
-    return tags.stream()
-        .filter(tag -> !TagUtil.isValidTag(tag))
-        .findAny()
-        .map(
-            tag ->
-                Either.left(
-                    new Rejection(
-                        RejectionType.INVALID_ARGUMENT,
-                        "Expected to create instance of process with tags, but tag '%s' is invalid. %s"
-                            .formatted(tag, TagUtil.TAG_FORMAT_DESCRIPTION))))
-        .orElse(VALID);
+    final List<String> invalidTags = tags.stream().filter(tag -> !TagUtil.isValidTag(tag)).toList();
+    if (!invalidTags.isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Expected to create instance of process with tags, but the tags '%s' are invalid. %s"
+                  .formatted(
+                      invalidTags.stream().collect(Collectors.joining("', '")),
+                      TagUtil.TAG_FORMAT_DESCRIPTION)));
+    }
+
+    return VALID;
   }
 
   private boolean doesElementBelongToAnEventBasedGateway(
