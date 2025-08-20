@@ -15,7 +15,6 @@
  */
 package io.camunda.client;
 
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.worker.JobHandler;
@@ -237,17 +236,13 @@ public interface CamundaClientBuilder {
 
   /**
    * If true, will prefer to use REST over gRPC for calls which can be done over both REST and gRPC.
-   * This is an experimental API which is present while we migrate the bulk of the API from gRPC to
-   * REST. Once done, this will also be removed.
+   * The default value is {@code true} (REST is preferred).
    *
-   * <p>NOTE: not all calls can be done over REST (or HTTP/1) yet, this is also subject to change.
+   * <p>NOTE: job streaming is only supported via gRPC
    *
    * @param preferRestOverGrpc if true, the client will use REST instead of gRPC whenever possible
-   * @deprecated since 8.5, will be removed in 8.8
    * @return this builder for chaining
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
-  @Deprecated
   CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 
   /**
