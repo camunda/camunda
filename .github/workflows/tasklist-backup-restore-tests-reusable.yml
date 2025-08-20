@@ -46,6 +46,14 @@ jobs:
           dockerfile: tasklist.Dockerfile
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
+      - uses: ./.github/actions/build-platform-docker
+        id: build-zeebe-docker
+        with:
+          repository: localhost:5000/camunda/zeebe
+          version: ${{ env.DOCKER_IMAGE_TAG }}
+          dockerfile: Dockerfile
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Run Tasklist backup restore Tests
         shell: bash
         run: ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -DskipTests=false verify | tee "${BUILD_OUTPUT_FILE_PATH}"

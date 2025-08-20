@@ -56,7 +56,8 @@ public class BackupRestoreTest {
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreTest.class);
-  private static final String TASKLIST_TEST_DOCKER_IMAGE = "localhost:5000/camunda/tasklist";
+  private static final String IMAGE_REPO = "localhost:5000/";
+  private static final String TASKLIST_TEST_DOCKER_IMAGE = IMAGE_REPO + "camunda/tasklist";
 
   @Autowired private TasklistAPICaller tasklistAPICaller;
 
@@ -137,8 +138,7 @@ public class BackupRestoreTest {
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createElsSnapshotRepository(testContext);
 
-    testContainerUtil.startZeebe(
-        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME), testContext);
+    testContainerUtil.startZeebe(IMAGE_REPO, VERSION, testContext);
     createZeebeClient(testContext.getExternalZeebeContactPoint());
   }
 

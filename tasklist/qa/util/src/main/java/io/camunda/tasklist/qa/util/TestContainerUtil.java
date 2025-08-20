@@ -483,11 +483,16 @@ public class TestContainerUtil {
     }
   }
 
-  public ZeebeContainer startZeebe(final String version, final TestContext testContext) {
+  public ZeebeContainer startZeebe(final String version, final TestContext<?> testContext) {
+    return startZeebe("", version, testContext);
+  }
+
+  public ZeebeContainer startZeebe(
+      final String host, final String version, final TestContext<?> testContext) {
     if (broker == null) {
       LOGGER.info("************ Starting Zeebe {} ************", version);
       broker =
-          new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + version))
+          new ZeebeContainer(DockerImageName.parse(host + "camunda/zeebe:" + version))
               .withNetwork(testContext.getNetwork())
               .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
               .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
