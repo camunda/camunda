@@ -81,7 +81,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
       validateConfiguration();
       LOGGER.info(
           "Console ping is enabled cluster ID of {}, with endpoint: {}, and period of {}.",
-          pingConfiguration.clusterId(),
+          brokerTopologyManager.getClusterConfiguration().clusterId().get(),
           pingConfiguration.endpoint(),
           pingConfiguration.pingPeriod());
       final var executor = createTaskExecutor();
@@ -215,7 +215,6 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
   public record ConsolePingConfiguration(
       boolean enabled,
       URI endpoint,
-      String clusterId,
       String clusterName,
       Duration pingPeriod,
       RetryConfiguration retry,

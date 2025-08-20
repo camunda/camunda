@@ -25,11 +25,13 @@ import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePing
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,10 +41,13 @@ import org.springframework.core.env.Environment;
 
 public class PingConsoleRunnerIT {
 
+  private static final BrokerTopologyManager BROKER_TOPOLOGY_MANAGER =
+      mock(BrokerTopologyManager.class);
+  private static final ClusterConfiguration BROKER_CLUSTER_CONFIGURATION =
+      mock(ClusterConfiguration.class);
   private ApplicationContext applicationContext;
   private WireMockServer wireMockServer;
   private ManagementServices managementServices;
-  private BrokerTopologyManager brokerTopologyManager;
 
   @BeforeEach
   void setup() {
@@ -50,6 +55,9 @@ public class PingConsoleRunnerIT {
     wireMockServer.start();
     configureFor("localhost", wireMockServer.port());
     stubFor(post(urlEqualTo("/ping")).willReturn(aResponse().withStatus(200).withBody("PONG")));
+    when(BROKER_TOPOLOGY_MANAGER.getClusterConfiguration())
+        .thenReturn(BROKER_CLUSTER_CONFIGURATION);
+    when(BROKER_CLUSTER_CONFIGURATION.clusterId()).thenReturn(Optional.of("test-cluster-id"));
   }
 
   @AfterEach
@@ -91,17 +99,11 @@ public class PingConsoleRunnerIT {
 
     final ConsolePingConfiguration config =
         new ConsolePingConfiguration(
-            true,
-            URI.create(mockUrl),
-            "test-cluster-id",
-            "test-cluster-name",
-            pingPeriod,
-            retryConfig,
-            null);
+            true, URI.create(mockUrl), "test-cluster-name", pingPeriod, retryConfig, null);
 
     final PingConsoleRunner pingConsoleRunner =
         new PingConsoleRunner(
-            config, managementServices, applicationContext, brokerTopologyManager);
+            config, managementServices, applicationContext, BROKER_TOPOLOGY_MANAGER);
 
     // when
     pingConsoleRunner.run(null);
