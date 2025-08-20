@@ -10,6 +10,7 @@ package io.camunda.operate.store.elasticsearch;
 import static io.camunda.operate.schema.IndexMapping.IndexMappingProperty.createIndexMappingProperty;
 import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
 import static io.camunda.operate.util.CollectionUtil.map;
+import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -23,7 +24,14 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.RetryOperation;
 import java.io.IOException;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -57,9 +65,12 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indexlifecycle.PutLifecyclePolicyRequest;
+import org.elasticsearch.client.indices.ComponentTemplatesExistRequest;
 import org.elasticsearch.client.indices.ComposableIndexTemplateExistRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
+import org.elasticsearch.client.indices.GetComponentTemplatesRequest;
+import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.GetMappingsRequest;
@@ -68,9 +79,11 @@ import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.elasticsearch.cluster.metadata.ComposableIndexTemplate;
 import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.reindex.ReindexRequest;
@@ -91,7 +104,9 @@ public class RetryElasticsearchClient {
   public static final String REFRESH_INTERVAL = "index.refresh_interval";
   public static final String NO_REFRESH = "-1";
   public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
+  public static final String NUMBERS_OF_SHARDS = "index.number_of_shards";
   public static final String NO_REPLICA = "0";
+  public static final String DEFAULT_SHARDS = "1";
   public static final int SCROLL_KEEP_ALIVE_MS = 60_000;
   public static final int DEFAULT_NUMBER_OF_RETRIES =
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
@@ -230,7 +245,7 @@ public class RetryElasticsearchClient {
                           properties.entrySet().stream()
                               .map(p -> createIndexMappingProperty(p))
                               .collect(Collectors.toSet()))
-                      .setMetaProperties(metaProperties));
+                      .setMetaProperties(ofNullable(metaProperties).orElse(Map.of())));
             }
             return mappingsMap;
           } catch (final ElasticsearchException e) {
@@ -309,7 +324,7 @@ public class RetryElasticsearchClient {
   }
 
   public boolean createOrUpdateDocument(
-      final String name, final String id, String routing, final Map source) {
+      final String name, final String id, final String routing, final Map source) {
     return executeWithRetries(
         "RetryElasticsearchClient#createOrUpdateDocument",
         () -> {
@@ -380,11 +395,16 @@ public class RetryElasticsearchClient {
             new ComposableIndexTemplateExistRequest(templatePattern), requestOptions);
   }
 
-  public boolean createComponentTemplate(final PutComponentTemplateRequest request) {
+  public boolean createComponentTemplate(
+      final PutComponentTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateComponentTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())) {
+          if (overwrite
+              || !esClient
+                  .cluster()
+                  .existsComponentTemplate(
+                      new ComponentTemplatesExistRequest(request.name()), requestOptions)) {
             return esClient
                 .cluster()
                 .putComponentTemplate(request, requestOptions)
@@ -800,5 +820,46 @@ public class RetryElasticsearchClient {
               fieldName, value));
     }
     putMapping(request);
+  }
+
+  public Settings getComponentTemplateSettings(final String componentTemplateName) {
+    return executeWithRetries(
+        "GetComponentTemplateSettings " + componentTemplateName,
+        () -> {
+          final var request = new GetComponentTemplatesRequest(componentTemplateName);
+          final var response = esClient.cluster().getComponentTemplate(request, requestOptions);
+          return response.getComponentTemplates().get(componentTemplateName).template().settings();
+        });
+  }
+
+  public ComposableIndexTemplate getIndexTemplate(final String templateName) {
+    return executeWithRetries(
+        "GetIndexTemplate " + templateName,
+        () -> {
+          final var request = new GetComposableIndexTemplateRequest(templateName);
+          final var response = esClient.indices().getIndexTemplate(request, requestOptions);
+          return response.getIndexTemplates().get(templateName);
+        });
+  }
+
+  public Map<String, ComposableIndexTemplate> getIndexTemplates(final String templateNamePattern) {
+    return executeWithRetries(
+        "GetIndexTemplate " + templateNamePattern,
+        () -> {
+          final var request = new GetComposableIndexTemplateRequest(templateNamePattern);
+          final var response = esClient.indices().getIndexTemplate(request, requestOptions);
+          return response.getIndexTemplates();
+        });
+  }
+
+  public ImmutableOpenMap<String, Settings> getIndexSettingsForIndexPattern(
+      final String indexPattern) {
+    return executeWithRetries(
+        "GetIndexSettings for indexPattern" + indexPattern,
+        () ->
+            esClient
+                .indices()
+                .getSettings(new GetSettingsRequest().indices(indexPattern), requestOptions)
+                .getIndexToSettings());
   }
 }

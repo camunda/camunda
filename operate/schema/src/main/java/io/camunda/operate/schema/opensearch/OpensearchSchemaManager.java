@@ -9,6 +9,7 @@ package io.camunda.operate.schema.opensearch;
 
 import static io.camunda.operate.schema.indices.AbstractIndexDescriptor.SCHEMA_FOLDER_OPENSEARCH;
 import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,8 +31,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -106,21 +112,14 @@ public class OpensearchSchemaManager implements SchemaManager {
   public void createDefaults() {
     final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
 
-    final String settingsTemplateName = settingsTemplateName();
+    final String settingsTemplateName = componentTemplateName();
     LOGGER.info(
         "Create default settings '{}' with {} shards and {} replicas per index.",
         settingsTemplateName,
         osConfig.getNumberOfShards(),
         osConfig.getNumberOfReplicas());
 
-    final IndexSettings settings = getDefaultIndexSettings();
-    richOpenSearchClient
-        .template()
-        .createComponentTemplateWithRetries(
-            new PutComponentTemplateRequest.Builder()
-                .name(settingsTemplateName)
-                .template(t -> t.settings(settings))
-                .build());
+    createComponentTemplate(false);
   }
 
   @Override
@@ -331,6 +330,128 @@ public class OpensearchSchemaManager implements SchemaManager {
     }
   }
 
+  @Override
+  public void updateIndexSettings() {
+    updateIndicesNumberOfReplicas();
+    updateIndexTemplateSettings();
+    updateComponentTemplateSettings();
+  }
+
+  private void createComponentTemplate(final boolean overwrite) {
+    final String settingsTemplateName = componentTemplateName();
+    final IndexSettings settings = getDefaultIndexSettings();
+    richOpenSearchClient
+        .template()
+        .createComponentTemplateWithRetries(
+            new PutComponentTemplateRequest.Builder()
+                .name(settingsTemplateName)
+                .template(t -> t.settings(settings))
+                .build(),
+            overwrite);
+  }
+
+  private void updateIndicesNumberOfReplicas() {
+    Stream.concat(indexDescriptors.stream(), templateDescriptors.stream())
+        .forEach(
+            indexDescriptor -> {
+              final var expectedReplicas =
+                  String.valueOf(
+                      operateProperties
+                          .getOpensearch()
+                          .getNumberOfReplicas(indexDescriptor.getIndexName()));
+              final var settings =
+                  richOpenSearchClient
+                      .index()
+                      .getIndexSettingsForIndexPattern(indexDescriptor.getAlias());
+              if (!settings.values().stream()
+                  .map(s -> ofNullable(s.settings().numberOfReplicas()).orElse(NO_REPLICA))
+                  .allMatch(expectedReplicas::equals)) {
+                LOGGER.info(
+                    "Updating number of replicas of {} to {}",
+                    indexDescriptor.getAlias(),
+                    expectedReplicas);
+                richOpenSearchClient
+                    .index()
+                    .setIndexSettingsFor(
+                        IndexSettings.of(b -> b.numberOfReplicas(expectedReplicas)),
+                        indexDescriptor.getAlias());
+              }
+            });
+  }
+
+  private void updateIndexTemplateSettings() {
+    final var indexTemplates =
+        richOpenSearchClient
+            .template()
+            .getIndexTemplates(operateProperties.getOpensearch().getIndexPrefix() + "*");
+    for (final var templateDescriptor : templateDescriptors) {
+      var indexTemplate = indexTemplates.get(templateDescriptor.getTemplateName());
+      if (indexTemplate == null) {
+        LOGGER.debug(
+            "Index template '{}' not found in wildcard search results by pattern. Attempting direct lookup by full template name",
+            templateDescriptor.getTemplateName());
+        indexTemplate =
+            richOpenSearchClient.template().getIndexTemplate(templateDescriptor.getTemplateName());
+      }
+      final var expectedShards =
+          String.valueOf(
+              operateProperties
+                  .getOpensearch()
+                  .getNumberOfShards(templateDescriptor.getIndexName()));
+      final var expectedReplicas =
+          String.valueOf(
+              operateProperties
+                  .getOpensearch()
+                  .getNumberOfReplicas(templateDescriptor.getIndexName()));
+
+      String actualShards = null;
+      String actualReplicas = null;
+
+      final var templateSettings = indexTemplate.template().settings();
+
+      if (templateSettings.containsKey("index")) {
+        final var indexSettingsData = templateSettings.get("index");
+        final var indexSettingsJson = indexSettingsData.toJson().asJsonObject();
+        actualShards = indexSettingsJson.getString("number_of_shards", null);
+        actualReplicas = indexSettingsJson.getString("number_of_replicas", null);
+      }
+
+      if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
+        LOGGER.info(
+            "Updating index template settings for {} to shards={}, replicas={}",
+            templateDescriptor.getTemplateName(),
+            expectedShards,
+            expectedReplicas);
+
+        // Recreate the template with updated settings
+        final String json = readTemplateJson(templateDescriptor.getSchemaClasspathFilename());
+        final PutIndexTemplateRequest indexTemplateRequest =
+            prepareIndexTemplateRequest(templateDescriptor, json);
+        putIndexTemplate(indexTemplateRequest, true);
+      }
+    }
+  }
+
+  private void updateComponentTemplateSettings() {
+    final var settings =
+        richOpenSearchClient.template().getComponentTemplateIndexSettings(componentTemplateName());
+
+    final var expectedShards =
+        String.valueOf(operateProperties.getOpensearch().getNumberOfShards());
+    final var expectedReplicas =
+        String.valueOf(operateProperties.getOpensearch().getNumberOfReplicas());
+    final var actualShards = ofNullable(settings.numberOfShards()).orElse(DEFAULT_SHARDS);
+    final var actualReplicas = ofNullable(settings.numberOfReplicas()).orElse(NO_REPLICA);
+
+    if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
+      LOGGER.info(
+          "Updating component template settings to shards={}, replicas={}",
+          expectedShards,
+          expectedReplicas);
+      createComponentTemplate(true);
+    }
+  }
+
   private IndexSettings getDefaultIndexSettings() {
     final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
     return new IndexSettings.Builder()
@@ -341,14 +462,8 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   private IndexSettings getIndexSettings(final String indexName) {
     final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
-    final var shards =
-        osConfig
-            .getNumberOfShardsForIndices()
-            .getOrDefault(indexName, osConfig.getNumberOfShards());
-    final var replicas =
-        osConfig
-            .getNumberOfReplicasForIndices()
-            .getOrDefault(indexName, osConfig.getNumberOfReplicas());
+    final var shards = osConfig.getNumberOfShards(indexName);
+    final var replicas = osConfig.getNumberOfReplicas(indexName);
 
     return new IndexSettings.Builder()
         .numberOfShards(String.valueOf(shards))
@@ -356,7 +471,7 @@ public class OpensearchSchemaManager implements SchemaManager {
         .build();
   }
 
-  private String settingsTemplateName() {
+  private String componentTemplateName() {
     final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
     return format("%s_template", osConfig.getIndexPrefix());
   }
@@ -367,31 +482,14 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   private IndexSettings templateSettings(final TemplateDescriptor indexDescriptor) {
     final var shards =
-        operateProperties
-            .getOpensearch()
-            .getNumberOfShardsForIndices()
-            .get(indexDescriptor.getIndexName());
+        String.valueOf(
+            operateProperties.getOpensearch().getNumberOfShards(indexDescriptor.getIndexName()));
 
     final var replicas =
-        operateProperties
-            .getOpensearch()
-            .getNumberOfReplicasForIndices()
-            .get(indexDescriptor.getIndexName());
+        String.valueOf(
+            operateProperties.getOpensearch().getNumberOfReplicas(indexDescriptor.getIndexName()));
 
-    if (shards != null || replicas != null) {
-      final var indexSettingsBuilder = new IndexSettings.Builder();
-
-      if (shards != null) {
-        indexSettingsBuilder.numberOfShards(shards.toString());
-      }
-
-      if (replicas != null) {
-        indexSettingsBuilder.numberOfReplicas(replicas.toString());
-      }
-
-      return indexSettingsBuilder.build();
-    }
-    return null;
+    return IndexSettings.of(b -> b.numberOfShards(shards).numberOfReplicas(replicas));
   }
 
   private void createTemplate(final TemplateDescriptor templateDescriptor) {
@@ -449,7 +547,7 @@ public class OpensearchSchemaManager implements SchemaManager {
               .name(templateDescriptor.getTemplateName())
               .indexPatterns(templateDescriptor.getIndexPattern())
               .template(template)
-              .composedOf(settingsTemplateName())
+              .composedOf(componentTemplateName())
               .build();
       return request;
     } catch (final Exception ex) {

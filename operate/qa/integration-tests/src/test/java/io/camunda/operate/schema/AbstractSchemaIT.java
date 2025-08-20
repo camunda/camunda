@@ -7,10 +7,11 @@
  */
 package io.camunda.operate.schema;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.util.SchemaTestHelper;
 import io.camunda.operate.schema.util.SearchClientTestHelper;
 import io.camunda.operate.schema.util.elasticsearch.ElasticsearchClientTestHelper;
 import io.camunda.operate.schema.util.opensearch.OpenSearchClientTestHelper;
@@ -18,19 +19,18 @@ import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContextInitializer;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.support.TestPropertySourceUtils;
 
 @SpringBootTest
 @EnableConfigurationProperties
-@DirtiesContext(classMode = ClassMode.AFTER_CLASS)
+@DirtiesContext(classMode = ClassMode.AFTER_EACH_TEST_METHOD)
 @ContextConfiguration(
     classes = {
       OperateProperties.class,
@@ -39,8 +39,7 @@ import org.springframework.test.context.support.TestPropertySourceUtils;
       RichOpenSearchClient.class,
       ElasticsearchClientTestHelper.class,
       OpenSearchClientTestHelper.class
-    },
-    initializers = AbstractSchemaIT.Initializer.class)
+    })
 public class AbstractSchemaIT {
 
   protected static final int REQUEST_RETRIES = 2;
@@ -50,33 +49,31 @@ public class AbstractSchemaIT {
 
   @Autowired protected DatabaseInfo databaseInfo;
 
+  @Autowired protected OperateProperties operateProperties;
+
+  @Autowired protected SchemaTestHelper schemaHelper;
+
   @PostConstruct
   public void configureRetries() {
     clientTestHelper.setClientRetries(REQUEST_RETRIES);
   }
 
-  protected void failIfOpensearch() {
-    if (databaseInfo.isOpensearchDb()) {
-      fail("Cannot proceed because this case is not yet implemented for OpenSearch");
-    }
+  @AfterEach
+  public void dropSchema() {
+    schemaHelper.dropSchema();
   }
 
-  protected static class Initializer
-      implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+  @BeforeEach
+  public void initializeBeforeEachTest() {
+    // randomize the schema prefix so multiple tests can run in parallel
+    // on the same Elasticsearch instance
+    final String indexPrefix =
+        RandomStringUtils.random(RANDOM_PREFIX_LENGTH, true, false).toLowerCase();
+    operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
+    operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
+  }
 
-    @Override
-    public void initialize(final ConfigurableApplicationContext applicationContext) {
-
-      // randomize the schema prefix so multiple test classes can run in parallel
-      // on the same Elasticsearch instance
-
-      final String indexPrefix =
-          RandomStringUtils.randomAlphabetic(RANDOM_PREFIX_LENGTH).toLowerCase();
-
-      TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
-          applicationContext,
-          "camunda.operate.elasticsearch.indexPrefix=" + indexPrefix,
-          "camunda.operate.opensearch.indexPrefix=" + indexPrefix);
-    }
+  protected void assumeElasticsearchTest() {
+    assumeThat(databaseInfo.isElasticsearchDb()).isTrue();
   }
 }

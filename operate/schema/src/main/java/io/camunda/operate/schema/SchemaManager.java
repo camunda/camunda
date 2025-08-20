@@ -19,6 +19,8 @@ public interface SchemaManager {
   String NO_REFRESH = "-1";
   String NUMBERS_OF_REPLICA = "index.number_of_replicas";
   String NO_REPLICA = "0";
+  String NUMBER_OF_SHARDS = "index.number_of_shards";
+  String DEFAULT_SHARDS = "1";
 
   String OPERATE_DELETE_ARCHIVED_INDICES = "operate_delete_archived_indices";
   String INDEX_LIFECYCLE_NAME = "index.lifecycle.name";
@@ -65,4 +67,6 @@ public interface SchemaManager {
   void updateSchema(Map<IndexDescriptor, Set<IndexMappingProperty>> newFields);
 
   IndexMapping getExpectedIndexFields(IndexDescriptor indexDescriptor);
+
+  void updateIndexSettings();
 }

@@ -23,6 +23,7 @@ import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
+import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.ElasticsearchHelper;
 import io.camunda.tasklist.util.ElasticsearchTestExtension;
@@ -330,6 +331,92 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
 
     // Verify all task indices (created from template) have updated replica settings
     validateTaskIndicesReplicaSettings(taskTemplate.getAlias(), modifiedNumberOfReplicas);
+  }
+
+  @Test
+  public void shouldSetShardsAndReplicasInIndexTemplateFromPerIndexConfiguration() {
+    final int numberOfReplicas = 2;
+    final int numberOfShards = 3;
+
+    tasklistProperties
+        .getElasticsearch()
+        .setNumberOfReplicasPerIndices(Map.of(TaskTemplate.INDEX_NAME, numberOfReplicas));
+    tasklistProperties
+        .getElasticsearch()
+        .setNumberOfShardsPerIndex(Map.of(TaskTemplate.INDEX_NAME, numberOfShards));
+
+    schemaManager.createSchema();
+
+    // Find the TaskTemplate from the template descriptors
+    final TemplateDescriptor taskTemplate =
+        templateDescriptors.stream()
+            .filter(template -> TaskTemplate.INDEX_NAME.equals(template.getIndexName()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("TaskTemplate not found"));
+
+    // Verify that the index template has the correct shard and replica settings
+    final var indexTemplate =
+        retryElasticsearchClient.getIndexTemplate(taskTemplate.getTemplateName());
+    final var templateSettings = indexTemplate.template().settings();
+
+    assertThat(templateSettings.get(NUMBERS_OF_SHARDS))
+        .as("Task template should have %d shards", numberOfShards)
+        .isEqualTo(String.valueOf(numberOfShards));
+
+    assertThat(templateSettings.get(NUMBERS_OF_REPLICA))
+        .as("Task template should have %d replicas", numberOfReplicas)
+        .isEqualTo(String.valueOf(numberOfReplicas));
+  }
+
+  @Test
+  public void shouldUpdateShardsAndReplicasInIndexTemplateFromPerIndexConfiguration() {
+    schemaManager.createSchema();
+
+    // Find the TaskTemplate from the template descriptors
+    final TemplateDescriptor taskTemplate =
+        templateDescriptors.stream()
+            .filter(template -> TaskTemplate.INDEX_NAME.equals(template.getIndexName()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("TaskTemplate not found"));
+
+    // Verify initial template settings before update
+    final var initialIndexTemplate =
+        retryElasticsearchClient.getIndexTemplate(taskTemplate.getTemplateName());
+    final var initialTemplateSettings = initialIndexTemplate.template().settings();
+
+    // Assert initial settings are using default values (1 shard, 0 replicas by default)
+    assertThat(initialTemplateSettings.get(NUMBERS_OF_SHARDS))
+        .as("Task template should initially have default number of shards")
+        .isEqualTo("1");
+
+    assertThat(initialTemplateSettings.get(NUMBERS_OF_REPLICA))
+        .as("Task template should initially have default number of replicas")
+        .isEqualTo("0");
+
+    final int updatedNumberOfReplicas = 2;
+    final int updateNumberOfShards = 3;
+
+    tasklistProperties
+        .getElasticsearch()
+        .setNumberOfReplicasPerIndices(Map.of(TaskTemplate.INDEX_NAME, updatedNumberOfReplicas));
+    tasklistProperties
+        .getElasticsearch()
+        .setNumberOfShardsPerIndex(Map.of(TaskTemplate.INDEX_NAME, updateNumberOfShards));
+
+    schemaManager.updateIndexSettings();
+
+    // Verify that the index template has been updated with the correct shard and replica settings
+    final var indexTemplate =
+        retryElasticsearchClient.getIndexTemplate(taskTemplate.getTemplateName());
+    final var templateSettings = indexTemplate.template().settings();
+
+    assertThat(templateSettings.get(NUMBERS_OF_SHARDS))
+        .as("Task template should have updated shards to %d", updateNumberOfShards)
+        .isEqualTo(String.valueOf(updateNumberOfShards));
+
+    assertThat(templateSettings.get(NUMBERS_OF_REPLICA))
+        .as("Task template should have updated replicas to %d", updatedNumberOfReplicas)
+        .isEqualTo(String.valueOf(updatedNumberOfReplicas));
   }
 
   private TaskEntity createSampleTaskEntity(final long taskKey) {
