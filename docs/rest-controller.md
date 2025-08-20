@@ -30,8 +30,7 @@ Define your endpoint and any required data models in the [OpenAPI description](.
    1. Key attributes relating to record keys in the engine must be of type `string` and not a number. This allows for uniform consumption on all platforms.
    2. Response codes should be as consistent as possible across endpoints. Align with response codes of similar endpoints and reuse existing response components if possible.
 3. **Security schemes synchronization**: Ensure that the `securitySchemes` section in the OpenAPI YAML file mirrors the security schemes defined in [`OpenApiResourceConfig.java`](../zeebe/gateway-rest/src/main/java/io/camunda/zeebe/gateway/rest/config/OpenApiResourceConfig.java). This helps client generators produce better boilerplate code for authentication. Any changes to the security configuration in the Java file should be reflected in the YAML specification.
-4. The OpenAPI description will be used directly to generate public reference documentation later. For optimal documentation, follow these rules:
-   1. Add a `summary` property to every API path.
+4. The OpenAPI description will be used directly to generate public reference documentation later. For optimal documentation, follow these rules:   1. Add a `summary` property to every API path.
    2. Add a `description` property to every API path and every schema property.
    3. Follow the [Camunda style guide](https://confluence.camunda.com/display/HAN/Camunda+style+guide) in all descriptive text.
    4. Follow these rules for casing:

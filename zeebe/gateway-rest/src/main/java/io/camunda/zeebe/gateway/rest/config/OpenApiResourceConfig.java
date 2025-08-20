@@ -7,27 +7,33 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.util.OpenApiYamlLoader;
 import io.camunda.zeebe.gateway.rest.util.OpenApiYamlLoader.OpenApiLoadingException;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
-import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springdoc.core.models.GroupedOpenApi;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@ConditionalOnRestGatewayEnabled
+@ConditionalOnProperty(
+    name = "camunda.rest.swagger.enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public class OpenApiResourceConfig {
 
-  public static final String BEARER_SECURITY_SCHEMA_NAME = "bearerAuth";
-  public static final SecurityScheme BEARER_SECURITY_SCHEMA =
-      new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT");
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiResourceConfig.class);
-  @Autowired private ApiDescriptionConfig.ApiDescription apiDescription;
+
+  private final OpenApiConfigurer openApiConfigurer;
+
+  public OpenApiResourceConfig(final OpenApiConfigurer openApiConfigurer) {
+    this.openApiConfigurer = openApiConfigurer;
+  }
 
   @Bean
   public GroupedOpenApi restApiV2() {
@@ -39,6 +45,15 @@ public class OpenApiResourceConfig {
   }
 
   private void customizeOpenApi(final OpenAPI openApi) {
+    // Load base OpenAPI specification from YAML
+    loadBaseOpenApiSpec(openApi);
+
+    // Set API description and configure security based on deployment type
+    openApi.info(new Info().description(openApiConfigurer.getApiDescription()));
+    openApiConfigurer.configureSecurity(openApi);
+  }
+
+  private void loadBaseOpenApiSpec(final OpenAPI openApi) {
     try {
       OpenApiYamlLoader.customizeOpenApiFromYaml(openApi, "rest-api.yaml");
     } catch (final OpenApiLoadingException e) {
@@ -46,16 +61,5 @@ public class OpenApiResourceConfig {
           "Could not load OpenAPI from rest-api.yaml, using controller-based organization: {}",
           e.getMessage());
     }
-
-    openApi
-        .info(new Info().description(getApiDescription()))
-        .getComponents()
-        .addSecuritySchemes(BEARER_SECURITY_SCHEMA_NAME, BEARER_SECURITY_SCHEMA);
-
-    openApi.addSecurityItem(new SecurityRequirement().addList(BEARER_SECURITY_SCHEMA_NAME));
-  }
-
-  private String getApiDescription() {
-    return apiDescription.getDescription();
   }
 }
