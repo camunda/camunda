@@ -15,12 +15,16 @@ import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
+import io.camunda.configuration.SecondaryStorage;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageDatabase;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
@@ -34,7 +38,9 @@ import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -86,6 +92,8 @@ public class BrokerBasedPropertiesOverride {
 
     // from camunda.data.* sections
     populateFromData(override);
+
+    populateExporter(override, "camundaExporter", "io.camunda.exporter.CamundaExporter", null);
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());
@@ -360,5 +368,52 @@ public class BrokerBasedPropertiesOverride {
           .getAzure()
           .setSasToken(SasToken.fromSasTokenConfig(sasTokenConfig).toSasTokenConfig());
     }
+  }
+
+  private void populateExporter(
+      final BrokerBasedProperties override,
+      final String exporterName,
+      final String className,
+      final String jarPath) {
+    final SecondaryStorage secondaryStorage =
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+
+    final SecondaryStorageDatabase database;
+    if (SecondaryStorageType.elasticsearch == secondaryStorage.getType()) {
+      database =
+          unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getElasticsearch();
+    } else if (SecondaryStorageType.opensearch == secondaryStorage.getType()) {
+      database = unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getOpensearch();
+    } else {
+      // RDBMS and NONE are not supported.
+      return;
+    }
+
+    /* Load camunda exporter config map */
+
+    ExporterCfg exporter = override.getExporters().get(exporterName);
+    if (exporter == null) {
+      exporter = new ExporterCfg();
+      exporter.setJarPath(jarPath);
+      exporter.setClassName(className);
+      exporter.setArgs(new LinkedHashMap<>());
+      override.getExporters().put(exporterName, exporter);
+    }
+
+    /* Override config map values */
+
+    final Map<String, Object> args = exporter.getArgs();
+    setArg(args, "connect.type", secondaryStorage.getType().name());
+    setArg(args, "connect.url", database.getUrl());
+  }
+
+  @SuppressWarnings("unchecked")
+  private void setArg(final Map<String, Object> args, final String breadcrumb, final Object value) {
+    final String[] keys = breadcrumb.split("\\.");
+    Map<String, Object> cursor = args;
+    for (int i = 0; i < keys.length - 1; i++) {
+      cursor = (Map<String, Object>) cursor.computeIfAbsent(keys[i], k -> new LinkedHashMap<>());
+    }
+    cursor.put(keys[keys.length - 1], value);
   }
 }

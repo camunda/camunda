@@ -395,8 +395,12 @@ public class TestContainerUtil {
   private void applyConfiguration(
       final GenericContainer<?> operateContainer, final TestContext testContext) {
     operateContainer
+        // ES
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
+        // OS
+        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", getElasticURL(testContext))
 
         /* these need to match the URL value even if they're not used */
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", getElasticURL(testContext))
@@ -407,7 +411,11 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
-        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
+        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
+        // OS
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_URL", getElasticURL(testContext));
     final Map<String, String> customEnvs = testContext.getOperateContainerEnvs();
     customEnvs.forEach(operateContainer::withEnv);
 
@@ -597,13 +605,19 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", testContext.getConnectionType())
         .withEnv("CAMUNDA_OPERATE_DATABASE", testContext.getConnectionType())
         .withEnv("CAMUNDA_TASKLIST_DATABASE", testContext.getConnectionType())
-        // unified config db url + compaptibility vars
+        // unified config db url + compaptibility vars (elasticsearch)
         .withEnv("CAMUNDA_DATABASE_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", getElasticURL(testContext))
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext));
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
+    // unified config db url + compaptibility vars (opensearch)
+        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", getElasticURL(testContext));
     if (testContext.getZeebeIndexPrefix() != null) {
       broker
           .withEnv(

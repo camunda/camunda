@@ -65,10 +65,9 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
 
   @Override
   protected Map<String, String> getDatabaseEnvironmentVariables(final String indexPrefix) {
+    final String dbUrl = "http://host.testcontainers.internal:9200";
+
     return Map.ofEntries(
-        Map.entry(
-            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL",
-            "http://host.testcontainers.internal:9200"),
         Map.entry(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE",
             ConnectionTypes.OPENSEARCH.name()),
@@ -82,8 +81,12 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
         Map.entry("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "opensearch"),
         Map.entry("CAMUNDA_OPERATE_DATABASE", "opensearch"),
         Map.entry("CAMUNDA_TASKLIST_DATABASE", "opensearch"),
+        // Unified Config: db url + compatibility vars
+        Map.entry("CAMUNDA_DATABASE_URL", dbUrl),
+        Map.entry("CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_URL", dbUrl),
+        Map.entry("CAMUNDA_OPERATE_OPENSEARCH_URL", dbUrl),
+        Map.entry("CAMUNDA_TASKLIST_OPENSEARCH_URL", dbUrl),
         // ---
-        Map.entry("CAMUNDA_DATABASE_URL", "http://host.testcontainers.internal:9200"),
         Map.entry("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix));
   }
 
