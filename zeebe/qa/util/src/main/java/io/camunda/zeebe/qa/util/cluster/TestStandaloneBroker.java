@@ -33,7 +33,7 @@ import org.springframework.util.unit.DataSize;
 public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker> {
 
-  private static final String RECORDING_EXPORTER_ID = "recordingExporter";
+  public static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
 
   public TestStandaloneBroker() {
