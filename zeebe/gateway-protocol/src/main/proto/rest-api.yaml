@@ -6558,11 +6558,9 @@ components:
           type: string
           description: The parent element instance key.
         tags:
-          description: List of tags that will be associated with the process instance, and will also be forwarded to job workers etc.
-          type: array
-          items:
-            type: string
-          uniqueItems: true
+          description: Tags associated with the process instance
+          allOf:
+            - $ref: '#/components/schemas/TagSet'
     ProcessInstanceStateEnum:
       description: Process instance states
       enum:
@@ -10162,11 +10160,9 @@ components:
           description: The tenant ID of the process definition.
           type: string
         tags:
-          description: List of tags that will be associated with the process instance, and will also be forwarded to job workers etc.
-          type: array
-          items:
-            type: string
-          uniqueItems: true
+          description: Tags associated with the process instance
+          allOf:
+            - $ref: '#/components/schemas/TagSet'
         operationReference:
           $ref: '#/components/schemas/OperationReference'
         startInstructions:
@@ -10285,11 +10281,9 @@ components:
             needs a process instance key (e.g. CancelProcessInstanceRequest).
           type: string
         tags:
-          description: List of tags associated with the process instance, and will also be forwarded to job workers etc.
-          type: array
-          items:
-            type: string
-          uniqueItems: true
+          description: Tags associated with the newly created process instance
+          allOf:
+            - $ref: '#/components/schemas/TagSet'
     ProcessInstanceMigrationBatchOperationRequest:
       type: object
       properties:
@@ -10891,6 +10885,20 @@ components:
       required:
         - sourceElementId
         - targetElementId
+    Tag:
+      type: string
+      description: A tag. Needs to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.
+      minLength: 1
+      maxLength: 100
+      pattern: '^[A-Za-z][A-Za-z0-9_\-:.]{0,99}$'
+      example: "business_key:1234"
+    TagSet:
+      description: List of tags
+      type: array
+      items:
+        $ref: '#/components/schemas/Tag'
+      uniqueItems: true
+      maxItems: 10
   responses:
     InternalServerError:
       description: >
