@@ -12,6 +12,7 @@ import static io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.DE
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
 import java.util.Set;
+import org.springframework.core.ResolvableType;
 
 public class Export {
   private static final String PREFIX = "camunda.data.export";
@@ -54,7 +55,7 @@ public class Export {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".skip-records",
         skipRecords,
-        new TypeReference<Set<Long>>() {},
+        ResolvableType.forClassWithGenerics(Set.class, Long.class),
         BackwardsCompatibilityMode.SUPPORTED,
         LEGACY_SKIP_RECORDS_PROPERTIES);
   }

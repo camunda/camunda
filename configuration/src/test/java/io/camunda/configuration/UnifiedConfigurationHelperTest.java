@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.ResolvableType;
 import org.springframework.core.env.Environment;
 
 class UnifiedConfigurationHelperTest {
@@ -269,7 +270,7 @@ class UnifiedConfigurationHelperTest {
         UnifiedConfigurationHelper.validateLegacyConfiguration(
             NEW_PROPERTY,
             defaultValue,
-            new TypeReference<Set<Long>>() {},
+            ResolvableType.forClassWithGenerics(Set.class, Long.class),
             mode,
             SINGLE_LEGACY_PROPERTY);
     assertThat(actual).isEqualTo(expected);
