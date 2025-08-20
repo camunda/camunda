@@ -1,0 +1,41 @@
+# description: Workflow for running Client Components tests. Does linting and basic build validation for the JS/TS client library monorepo.
+# test location: /client-components
+# called by: ci.yml
+# type: CI
+# owner: @camunda/monorepo-devops-team
+name: Client Components Jobs
+
+on:
+  workflow_call: {}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  lint:
+    name: "Lint / Client Components"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {} # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: client-components
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.6.0"
+      - name: Install dependencies
+        run: npm ci
+      - name: Linting
+        run: npm run lint
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "Client Components"

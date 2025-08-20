@@ -1,0 +1,22 @@
+{
+  "name": "@camunda/client-components",
+  "description": "Camunda JS/TS monorepo",
+  "author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
+  "type": "module",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/camunda/camunda.git"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "engines": {
+    "node": "24.6.0",
+    "npm": "11.5.2"
+  },
+  "packageManager": "npm@11.5.2"
+}

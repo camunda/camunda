@@ -1,0 +1,27 @@
+{
+  "name": "@camunda/camunda-api-zod-schemas",
+  "description": "Zod schemas and TypeScript types for Camunda 8 unified API",
+  "author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
+  "homepage": "https://github.com/camunda/camunda#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/camunda/camunda.git"
+  },
+  "bugs": {
+    "url": "https://github.com/camunda/camunda/issues"
+  },
+  "keywords": [
+    "camunda",
+    "zod"
+  ],
+  "type": "module",
+  "private": false,
+  "scripts": {
+    "lint": "bash -c 'exit 0'"
+  },
+  "engines": {
+    "node": "24.6.0",
+    "npm": "11.5.2"
+  },
+  "packageManager": "npm@11.5.2"
+}
