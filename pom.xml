@@ -66,6 +66,7 @@
     <module>zeebe/backup-stores/common</module>
     <module>zeebe/restore</module>
     <module>zeebe/topology</module>
+    <module>qa</module>
   </modules>
 
   <scm>
