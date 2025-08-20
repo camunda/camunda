@@ -60,7 +60,7 @@ class ProcessInstanceRequestValidatorTest {
     assertThat(result).isPresent();
     final ProblemDetail problem = result.get();
     assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
-    assertThat(problem.getDetail()).contains("is not valid. Tag must start with a letter");
+    assertThat(problem.getDetail()).contains("is not valid. Tags must start with a letter");
   }
 
   @Test
