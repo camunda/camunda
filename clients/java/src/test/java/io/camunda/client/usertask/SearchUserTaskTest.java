@@ -200,7 +200,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getTenantId()).isEqualTo("tenant1");
+    assertThat(request.getFilter().getTenantId().get$Eq()).isEqualTo("tenant1");
   }
 
   @Test

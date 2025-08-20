@@ -144,7 +144,14 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter tenantId(final String tenantId) {
-    filter.setTenantId(tenantId);
+    return tenantId(b -> b.eq(tenantId));
+  }
+
+  @Override
+  public UserTaskFilter tenantId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setTenantId(provideSearchRequestProperty(property));
     return this;
   }
 
