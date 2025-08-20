@@ -8,11 +8,11 @@
 package io.camunda.exporter.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.http.client.ExporterHttpClient;
 import io.camunda.exporter.http.config.HttpExporterConfig;
 import io.camunda.exporter.http.config.SubscriptionConfig;
 import io.camunda.exporter.http.config.SubscriptionConfigFactory;
 import io.camunda.exporter.http.subscription.Subscription;
+import io.camunda.exporter.http.transport.Transport;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The HttpExporter is a Zeebe Exporter that sends records to a specified HTTP endpoint in batches.
- * A {@link Subscription} uses an {@link ExporterHttpClient} to perform the HTTP requests.
+ * A {@link Subscription} uses an {@link Transport} to perform the HTTP requests.
  */
 public class HttpExporter implements Exporter {
 

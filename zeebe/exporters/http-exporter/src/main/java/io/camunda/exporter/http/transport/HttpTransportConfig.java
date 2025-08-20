@@ -5,6 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.http.subscription;
+package io.camunda.exporter.http.transport;
 
-public record BatchEntry<T>(T record, long logPosition) {}
+public record HttpTransportConfig(int maxRetries, long retryDelay, long timeout) {}

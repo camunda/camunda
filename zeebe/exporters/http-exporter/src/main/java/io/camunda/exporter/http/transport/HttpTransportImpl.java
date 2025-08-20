@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.http.client;
+package io.camunda.exporter.http.transport;
 
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
@@ -24,10 +24,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implementation of {@link ExporterHttpClient} that uses Apache HttpClient to send HTTP POST
- * requests to a specified URL with JSON payloads.
+ * Implementation of {@link Transport} that uses Apache HttpClient to send HTTP POST requests to a
+ * specified URL with JSON payloads.
  */
-public class ExporterHttpClientImpl implements ExporterHttpClient {
+public class HttpTransportImpl implements Transport<String> {
 
   private static final String CONTENT_TYPE_JSON = "application/json";
 
@@ -36,28 +36,29 @@ public class ExporterHttpClientImpl implements ExporterHttpClient {
   private final Timeout<Object> timeout;
   private final RetryPolicy<Object> retryPolicy;
 
-  public ExporterHttpClientImpl(final HttpConfig httpConfig, final CloseableHttpClient httpClient) {
+  public HttpTransportImpl(
+      final HttpTransportConfig httpTransportConfig, final CloseableHttpClient httpClient) {
     retryPolicy =
         RetryPolicy.builder()
             .handle(IOException.class, ClientProtocolException.class, RuntimeException.class)
-            .withDelay(Duration.ofMillis(httpConfig.retryDelay()))
-            .withMaxRetries(httpConfig.maxRetries())
+            .withDelay(Duration.ofMillis(httpTransportConfig.retryDelay()))
+            .withMaxRetries(httpTransportConfig.maxRetries())
             .build();
 
-    timeout = Timeout.of(Duration.ofMillis(httpConfig.timeout()));
+    timeout = Timeout.of(Duration.ofMillis(httpTransportConfig.timeout()));
     this.httpClient = httpClient;
   }
 
-  public ExporterHttpClientImpl(final HttpConfig httpConfig) {
+  public HttpTransportImpl(final HttpTransportConfig httpTransportConfig) {
     this(
-        httpConfig,
+        httpTransportConfig,
         HttpClientBuilder.create()
             .setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy())
             .build());
   }
 
   @Override
-  public void postRecords(final String url, final String json) {
+  public void send(final String url, final String json) {
     log.debug("Posting records to url: {}", url);
     sendPostRequest(url, json);
   }

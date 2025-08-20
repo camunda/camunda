@@ -5,6 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.http.client;
+package io.camunda.exporter.http.transport;
 
-public record HttpConfig(int maxRetries, long retryDelay, long timeout) {}
+import io.camunda.zeebe.util.CloseableSilently;
+
+public interface Transport<OUT> extends CloseableSilently {
+  void send(String target, OUT data);
+}

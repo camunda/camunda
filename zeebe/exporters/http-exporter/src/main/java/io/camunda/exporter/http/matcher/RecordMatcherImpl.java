@@ -9,12 +9,7 @@ package io.camunda.exporter.http.matcher;
 
 import io.camunda.zeebe.protocol.record.Record;
 
-public class RecordMatcherImpl implements RecordMatcher {
-  private final FilterRecordMatcher filterRecordMatcher;
-
-  public RecordMatcherImpl(final FilterRecordMatcher filterRecordMatcher) {
-    this.filterRecordMatcher = filterRecordMatcher;
-  }
+public record RecordMatcherImpl(FilterRecordMatcher filterRecordMatcher) implements RecordMatcher {
 
   @Override
   public boolean matches(final Record<?> record) {

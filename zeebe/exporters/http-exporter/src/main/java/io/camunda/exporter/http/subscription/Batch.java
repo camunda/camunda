@@ -10,10 +10,10 @@ package io.camunda.exporter.http.subscription;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Batch {
+public class Batch<T> {
 
   private final int size;
-  private final List<BatchEntry> entries;
+  private final List<BatchEntry<T>> entries;
   private final long flushInterval;
   private long lastTimeFlushed = System.currentTimeMillis();
   private long lastLogPosition = -1;
@@ -44,7 +44,7 @@ public class Batch {
     return System.currentTimeMillis() - lastTimeFlushed >= flushInterval;
   }
 
-  public boolean addRecord(final BatchEntry batchEntry) {
+  public boolean addRecord(final BatchEntry<T> batchEntry) {
     if (isFull()) {
       throw new IllegalStateException("Batch has too many entries. Drain first.");
     } else {
@@ -56,7 +56,7 @@ public class Batch {
     return false;
   }
 
-  public List<BatchEntry> getEntries() {
+  public List<BatchEntry<T>> getEntries() {
     return new ArrayList<>(entries);
   }
 

@@ -14,13 +14,7 @@ import java.util.List;
  * FilterRecordMatcher is used to match records against a list of filters. It checks if the record's
  * value type and intent match any of the provided filters.
  */
-public class FilterRecordMatcher {
-
-  private final List<Filter> filters;
-
-  public FilterRecordMatcher(final List<Filter> filters) {
-    this.filters = filters;
-  }
+public record FilterRecordMatcher(List<Filter> filters) {
 
   public boolean matches(final Record<?> record) {
     for (final Filter filter : filters) {

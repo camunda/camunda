@@ -7,52 +7,48 @@
  */
 package io.camunda.exporter.http.subscription;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.util.RawValue;
-import io.camunda.exporter.http.client.ExporterHttpClient;
 import io.camunda.exporter.http.matcher.RecordMatcher;
+import io.camunda.exporter.http.transport.Transport;
 import io.camunda.zeebe.protocol.record.Record;
-import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Subscription {
+public class Subscription<IN, OUT> {
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
-  private final ExporterHttpClient exporterHttpClient;
-  private final ObjectMapper objectMapper;
-  private final String url;
+  private final Transport<OUT> transport;
+  private final BatchMapper<IN, OUT> batchEntryMapper;
+  private final String target;
   private final RecordMatcher matcher;
-  private final Batch batch;
+  private final Batch<IN> batch;
   private final ReentrantLock lock = new ReentrantLock();
   private final boolean continueOnError;
 
   public Subscription(
-      final ExporterHttpClient exporterHttpClient,
-      final ObjectMapper objectMapper,
+      final Transport<OUT> transport,
+      final BatchMapper<IN, OUT> batchEntryMapper,
       final RecordMatcher matcher,
-      final String url,
-      final Batch batch,
+      final String target,
+      final Batch<IN> batch,
       final boolean continueOnError) {
-    this.exporterHttpClient = exporterHttpClient;
-    this.url = url;
+    this.transport = transport;
+    this.target = target;
     this.matcher = matcher;
-    this.objectMapper = objectMapper;
+    this.batchEntryMapper = batchEntryMapper;
     this.batch = batch;
     this.continueOnError = continueOnError;
     if (continueOnError) {
       log.warn(
           "Subscription to {} is configured to continue on error. This may lead to data loss if errors occur during export.",
-          url);
+          target);
     }
   }
 
   public Long exportRecord(final Record<?> record) {
     if (matcher.matches(record)) {
       // Record matches the filter criteria, we can add it to the batch
-      return batchRecord(new BatchEntry(toJson(record), record.getPosition()));
+      return batchRecord(batchEntryMapper.map(record));
     } else if (batch.isEmpty()) {
       // An empty batch allows us to save the exported record position
       return record.getPosition();
@@ -63,7 +59,7 @@ public class Subscription {
     }
   }
 
-  private Long batchRecord(final BatchEntry batchEntry) {
+  private Long batchRecord(final BatchEntry<IN> batchEntry) {
     lock.lock();
     try {
       return verifyAndAddToBatch(batchEntry);
@@ -72,15 +68,16 @@ public class Subscription {
     }
   }
 
-  private Long verifyAndAddToBatch(final BatchEntry batchEntry) {
+  private Long verifyAndAddToBatch(final BatchEntry<IN> batchEntry) {
     final var spaceLeft = batch.spaceLeft();
     switch (spaceLeft) {
       case 0:
         {
           // We flush the batch as it is full
-          final var logPositionPushed = flush();
+          final var logPositionFlushed = flush();
           batch.addRecord(batchEntry);
-          return logPositionPushed;
+          // We return the last log position that was flushed
+          return logPositionFlushed;
         }
       case 1:
         {
@@ -89,13 +86,20 @@ public class Subscription {
             // Flush if the record was added successfully as its full now
             return flush();
           } else {
+            // The record was not added, likely because it has an older log position
             return null;
           }
         }
       default:
         {
-          batch.addRecord(batchEntry);
-          return null;
+          // We have space left in the batch, we can add the record
+          if (batch.addRecord(batchEntry) && batch.shouldFlush()) {
+            // If the record was added successfully and the batch should flush, we flush it
+            return flush();
+          } else {
+            // We return null to indicate no flush was performed
+            return null;
+          }
         }
     }
   }
@@ -116,14 +120,15 @@ public class Subscription {
   private Long flush() {
     long lastPosition;
     try {
-      postRecords(batch.getEntries());
+      final var data = batchEntryMapper.map(batch.getEntries());
+      transport.send(target, data);
       lastPosition = batch.flush();
     } catch (final Exception e) {
       if (continueOnError) {
         lastPosition = batch.flush();
         log.debug(
             "Failed to post records to {}. Continuing with last position: {}.",
-            url,
+            target,
             lastPosition,
             e);
       } else {
@@ -133,28 +138,11 @@ public class Subscription {
     return lastPosition;
   }
 
-  private void postRecords(final List<BatchEntry> batchEntries) {
-    final var json = toJson(toRawValues(batchEntries));
-    exporterHttpClient.postRecords(url, json);
-  }
-
-  private List<RawValue> toRawValues(final List<BatchEntry> batchEntries) {
-    return batchEntries.stream().map(batchEntry -> new RawValue(batchEntry.record())).toList();
-  }
-
-  private String toJson(final Object object) {
-    try {
-      return objectMapper.writeValueAsString(object);
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public Batch getBatch() {
+  public Batch<IN> getBatch() {
     return batch;
   }
 
   public void close() {
-    exporterHttpClient.close();
+    transport.close();
   }
 }

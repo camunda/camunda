@@ -11,12 +11,13 @@ import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.bohnman.squiggly.Squiggly;
-import io.camunda.exporter.http.client.ExporterHttpClientImpl;
-import io.camunda.exporter.http.client.HttpConfig;
 import io.camunda.exporter.http.matcher.FilterRecordMatcher;
 import io.camunda.exporter.http.matcher.RecordMatcherImpl;
 import io.camunda.exporter.http.subscription.Batch;
 import io.camunda.exporter.http.subscription.Subscription;
+import io.camunda.exporter.http.transport.HttpTransportConfig;
+import io.camunda.exporter.http.transport.HttpTransportImpl;
+import io.camunda.exporter.http.transport.JsonBatchMapper;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -113,26 +114,23 @@ public class SubscriptionConfigFactory {
     }
 
     final RecordMatcherImpl recordMatcherImpl = new RecordMatcherImpl(valueTypeMatcher);
-    final Batch batch = new Batch(config.batchSize(), config.batchInterval());
+    final Batch<String> batch = new Batch<>(config.batchSize(), config.batchInterval());
 
-    final ObjectMapper subscriptionObjectMapper;
+    final ObjectMapper batchObjectMapper;
     if (config.jsonFilter() != null) {
-      subscriptionObjectMapper = Squiggly.init(objectMapper.copy(), config.jsonFilter());
+      batchObjectMapper = Squiggly.init(objectMapper.copy(), config.jsonFilter());
     } else {
-      subscriptionObjectMapper = objectMapper;
+      batchObjectMapper = objectMapper;
     }
 
     final var httpClient =
-        new ExporterHttpClientImpl(
-            new HttpConfig(config.maxRetries(), config.retryDelay(), config.timeout()));
+        new HttpTransportImpl(
+            new HttpTransportConfig(config.maxRetries(), config.retryDelay(), config.timeout()));
 
-    return new Subscription(
-        httpClient,
-        subscriptionObjectMapper,
-        recordMatcherImpl,
-        config.url(),
-        batch,
-        config.continueOnError());
+    final var mapper = new JsonBatchMapper(batchObjectMapper);
+
+    return new Subscription<>(
+        httpClient, mapper, recordMatcherImpl, config.url(), batch, config.continueOnError());
   }
 
   public SubscriptionConfig readConfigFrom(final HttpExporterConfig configuration) {
