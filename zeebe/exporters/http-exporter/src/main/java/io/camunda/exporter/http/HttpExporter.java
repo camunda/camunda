@@ -33,7 +33,7 @@ public class HttpExporter implements Exporter {
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
   private Controller controller;
   private SubscriptionConfig subscriptionConfig;
-  private Subscription subscription;
+  private Subscription<String, String> subscription;
 
   /**
    * Default constructor for the Exporter. This constructor is used when the exporter is
@@ -96,7 +96,7 @@ public class HttpExporter implements Exporter {
     log.info("Purging HTTP Exporter");
   }
 
-  protected Subscription getSubscription() {
+  protected Subscription<String, String> getSubscription() {
     return subscription;
   }
 

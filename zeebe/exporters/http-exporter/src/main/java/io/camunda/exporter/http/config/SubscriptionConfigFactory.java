@@ -106,7 +106,7 @@ public class SubscriptionConfigFactory {
     return file;
   }
 
-  public Subscription createSubscription(final SubscriptionConfig config) {
+  public Subscription<String, String> createSubscription(final SubscriptionConfig config) {
 
     FilterRecordMatcher valueTypeMatcher = null;
     if (config.filters() != null && !config.filters().isEmpty()) {
