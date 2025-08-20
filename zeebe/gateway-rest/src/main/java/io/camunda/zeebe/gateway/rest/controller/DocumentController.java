@@ -94,8 +94,7 @@ public class DocumentController {
       path = "/{documentId}",
       produces = {}) // produces arbitrary content type
   public ResponseEntity<StreamingResponseBody> getDocumentContent(
-      @PathVariable final String documentId,
-      @RequestParam(required = false) final String storeId) {
+      @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
 
     // handle the future explicitly here because a StreamingResponseBody is needed as result instead
     // of a future wrapping the stream response
@@ -131,9 +130,7 @@ public class DocumentController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocumentLink(
-      final String documentId,
-      final String storeId,
-      final DocumentLinkParams params) {
+      final String documentId, final String storeId, final DocumentLinkParams params) {
 
     return RequestMapper.executeServiceMethod(
         () ->

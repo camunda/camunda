@@ -1084,16 +1084,12 @@ public final class CamundaClientImpl implements CamundaClient {
   public DocumentContentGetRequest newDocumentContentGetRequest(
       final DocumentReferenceResponse documentReference) {
     return new DocumentContentGetRequestImpl(
-        httpClient,
-        documentReference.getDocumentId(),
-        documentReference.getStoreId(),
-        config);
+        httpClient, documentReference.getDocumentId(), documentReference.getStoreId(), config);
   }
 
   @Override
   public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(final String documentId) {
-    return new CreateDocumentLinkCommandImpl(
-        documentId, null, jsonMapper, httpClient, config);
+    return new CreateDocumentLinkCommandImpl(documentId, null, jsonMapper, httpClient, config);
   }
 
   @Override

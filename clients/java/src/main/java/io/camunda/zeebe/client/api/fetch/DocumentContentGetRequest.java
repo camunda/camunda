@@ -35,5 +35,4 @@ public interface DocumentContentGetRequest extends FinalCommandStep<InputStream>
    * @param storeId optional document store ID
    */
   DocumentContentGetRequest storeId(String storeId);
-
 }

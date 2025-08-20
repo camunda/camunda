@@ -178,9 +178,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   }
 
   public CompletableFuture<DocumentLink> createLink(
-      final String documentId,
-      final String storeId,
-      final DocumentLinkParams params) {
+      final String documentId, final String storeId, final DocumentLinkParams params) {
 
     if (!hasDocumentPermission(PermissionType.CREATE)) {
       return CompletableFuture.failedFuture(

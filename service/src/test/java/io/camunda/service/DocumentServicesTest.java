@@ -125,8 +125,7 @@ public class DocumentServicesTest {
         .thenReturn(Collections.emptySet());
 
     // when
-    final var future =
-        services.getDocumentContent("irrelevant-document-id", "irrelevant-store-id");
+    final var future = services.getDocumentContent("irrelevant-document-id", "irrelevant-store-id");
 
     assertThat(future.isCompletedExceptionally()).isTrue();
   }
@@ -314,8 +313,7 @@ public class DocumentServicesTest {
         .thenReturn(CompletableFuture.completedFuture(Either.right(documentContent)));
 
     // when
-    final var actualDocumentContent =
-        services.getDocumentContent(documentId, storeId).join();
+    final var actualDocumentContent = services.getDocumentContent(documentId, storeId).join();
 
     // then
     assertThat(actualDocumentContent).isNotNull();

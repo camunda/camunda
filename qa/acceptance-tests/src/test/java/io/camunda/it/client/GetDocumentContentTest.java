@@ -13,8 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
-import io.camunda.client.protocol.rest.DocumentReference;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.InputStream;
 import org.junit.jupiter.api.BeforeAll;

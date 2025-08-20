@@ -78,5 +78,4 @@ public class DocumentContentGetRequestImpl implements DocumentContentGetRequest 
     this.storeId = storeId;
     return this;
   }
-
 }
