@@ -40,7 +40,6 @@ import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -66,7 +65,6 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   private static final String SCHEDULED_OPERATION = SCHEDULED.toString();
   private static final String LOCKED_OPERATION = LOCKED.toString();
   @Autowired private OperationTemplate operationTemplate;
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private DateTimeFormatter dateTimeFormatter;
   @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
 
@@ -191,23 +189,6 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
         searchRequestBuilder(operationTemplate, ALL).query(query).sort(sortOptions(ID, Asc));
 
     return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
-  }
-
-  // this query will be extended
-  @Override
-  public List<BatchOperationEntity> getBatchOperations(final int pageSize) {
-    final Query query =
-        constantScore(
-            term(
-                BatchOperationTemplate.USERNAME,
-                camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername()));
-
-    final var searchRequestBuilder =
-        searchRequestBuilder(batchOperationTemplate, ALL).query(query).size(pageSize);
-
-    return richOpenSearchClient
-        .doc()
-        .searchValues(searchRequestBuilder, BatchOperationEntity.class);
   }
 
   @Override

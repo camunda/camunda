@@ -37,9 +37,7 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.io.IOException;
@@ -79,8 +77,6 @@ public class OperationReader extends AbstractReader
   private static final String LOCKED_OPERATION = LOCKED.toString();
 
   @Autowired private OperationTemplate operationTemplate;
-
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
 
   @Autowired private DateTimeFormatter dateTimeFormatter;
 
@@ -282,30 +278,6 @@ public class OperationReader extends AbstractReader
       final String message =
           String.format("Exception occurred, while obtaining operations: %s", e.getMessage());
       LOGGER.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  // this query will be extended
-  @Override
-  public List<BatchOperationEntity> getBatchOperations(final int pageSize) {
-    final String username =
-        camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername();
-    final TermQueryBuilder isOfCurrentUser = termQuery(BatchOperationTemplate.USERNAME, username);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(batchOperationTemplate, ALL)
-            .source(
-                new SearchSourceBuilder()
-                    .query(constantScoreQuery(isOfCurrentUser))
-                    .size(pageSize));
-    try {
-      return ElasticsearchUtil.mapSearchHits(
-          esClient.search(searchRequest, RequestOptions.DEFAULT).getHits().getHits(),
-          objectMapper,
-          BatchOperationEntity.class);
-    } catch (final IOException e) {
-      final String message =
-          String.format("Exception occurred, while obtaining batch operations: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }

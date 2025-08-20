@@ -288,7 +288,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
         operationReader.getOperationsByProcessInstanceKey(processInstanceKey);
     assertThat(operations).hasSize(0);
 
-    final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    final List<BatchOperationEntity> batchOperations =
+        batchOperationReader.getBatchOperations(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(1);
     assertThat(batchOperations.get(0).getEndDate()).isNotNull();
   }
@@ -309,7 +310,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(batchOperationResponse.getInstancesCount()).isEqualTo(0);
     assertThat(batchOperationResponse.getOperationsTotalCount()).isEqualTo(0);
 
-    final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    final List<BatchOperationEntity> batchOperations =
+        batchOperationReader.getBatchOperations(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(1);
     assertThat(batchOperations.get(0).getEndDate()).isNotNull();
   }
