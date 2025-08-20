@@ -46,8 +46,8 @@ public class TasklistV1ApiFormPermissionsIT {
       new TestCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
 
   private static final String PROCESS_ID = "processId";
-  private static final String ADMIN_USERNAME = "admin";
-  private static final String UNAUTHORIZED_USERNAME = "unauthorized";
+  private static final String ADMIN_USERNAME = "admin1";
+  private static final String UNAUTHORIZED_USERNAME = "unauthorized1";
   private static long processDefinitionKey;
   private static String formId;
   private static TestRestTasklistClient authorizedClient;
