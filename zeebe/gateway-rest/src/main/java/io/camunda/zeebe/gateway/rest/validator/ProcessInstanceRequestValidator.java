@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBat
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateInstruction;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.springframework.http.ProblemDetail;
 
@@ -51,7 +52,12 @@ public class ProcessInstanceRequestValidator {
           // Validate processDefinitionKey format if provided
           validateKeyFormat(request.getProcessDefinitionKey(), "processDefinitionKey", violations);
           validateOperationReference(request.getOperationReference(), violations);
+          validateTags(request.getTags(), violations);
         });
+  }
+
+  private static void validateTags(final Set<String> tags, final List<String> violations) {
+    TagsValidator.validate(tags, violations);
   }
 
   public static Optional<ProblemDetail> validateCancelProcessInstanceRequest(

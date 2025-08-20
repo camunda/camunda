@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,10 +34,55 @@ class ProcessInstanceRequestValidatorTest {
     assertThat(result).isEmpty();
   }
 
+  @Test
+  @DisplayName("Should accept valid tags")
+  void shouldAcceptValidTags() {
+    final var request = new ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionKey("123456789");
+    request.setTags(Set.of("valid-tag", "another-tag"));
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should reject invalid tags")
+  void shouldRejectInvalidTags() {
+    final var request = new ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionKey("123456789");
+    request.setTags(Set.of("1 invalid-tag", "another-tag"));
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    assertThat(result).isPresent();
+    final ProblemDetail problem = result.get();
+    assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(problem.getDetail()).contains("is not valid. Tag must start with a letter");
+  }
+
+  @Test
+  @DisplayName("Should reject invalid tags")
+  void shouldRejectTooManyTags() {
+    final var request = new ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionKey("123456789");
+    request.setTags(Set.of("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"));
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    assertThat(result).isPresent();
+    final ProblemDetail problem = result.get();
+    assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(problem.getDetail()).contains("The provided number of tags");
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {"abc", "12.34", "12abc", "", " "})
   @DisplayName("Should reject invalid processDefinitionKey formats")
-  void shouldRejectInvalidProcessDefinitionKey(String invalidKey) {
+  void shouldRejectInvalidProcessDefinitionKey(final String invalidKey) {
     final var request = new ProcessInstanceCreationInstruction();
     request.setProcessDefinitionKey(invalidKey);
 
@@ -119,7 +165,7 @@ class ProcessInstanceRequestValidatorTest {
   @ParameterizedTest
   @ValueSource(strings = {"xyz", "99.99", "99xyz", "", " "})
   @DisplayName("Should reject invalid targetProcessDefinitionKey formats in migration request")
-  void shouldRejectInvalidTargetProcessDefinitionKey(String invalidKey) {
+  void shouldRejectInvalidTargetProcessDefinitionKey(final String invalidKey) {
     final var request = new ProcessInstanceMigrationBatchOperationPlan();
     request.setTargetProcessDefinitionKey(invalidKey);
     request.setMappingInstructions(java.util.List.of());
