@@ -35,7 +35,8 @@ class ForceScaleDownBrokersTest {
   void shouldForceRemoveBrokers(final int oldClusterSize, final int newClusterSize) {
     // given
     try (final var cluster = createCluster(oldClusterSize, oldClusterSize);
-        final var camundaClient = cluster.availableGateway().newClientBuilder().build()) {
+        final var camundaClient =
+            cluster.availableGateway().newClientBuilder().preferRestOverGrpc(false).build()) {
       final var brokersToShutdown =
           IntStream.range(newClusterSize, oldClusterSize)
               .mapToObj(String::valueOf)

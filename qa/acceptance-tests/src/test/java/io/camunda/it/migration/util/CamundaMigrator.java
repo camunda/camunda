@@ -101,6 +101,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
             camundaContainer.getHost(), camundaContainer.getMappedPort(TestZeebePort.REST.port()));
     camundaClient =
         CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(false)
             .grpcAddress(
                 URI.create(
                     RPC_URL.formatted(
@@ -165,7 +166,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
 
     camunda.start();
     camunda.awaitCompleteTopology();
-    camundaClient = camunda.newClientBuilder().build();
+    camundaClient = camunda.newClientBuilder().preferRestOverGrpc(false).build();
     url = URL.formatted(camunda.host(), camunda.mappedPort(TestZeebePort.REST));
     final var uri = URI.create(url + "/");
     tasklistClient = new TestRestTasklistClient(uri);

@@ -266,6 +266,7 @@ public final class TestCluster implements CloseableSilently {
   @SuppressWarnings("resource")
   public CamundaClientBuilder newClientBuilder() {
     return CamundaClient.newClientBuilder()
+        .preferRestOverGrpc(false)
         .usePlaintext()
         .restAddress(availableGateway().restAddress())
         .grpcAddress(availableGateway().grpcAddress());
@@ -369,7 +370,7 @@ public final class TestCluster implements CloseableSilently {
    * @throws NoSuchElementException if no leader is found for the partition
    */
   public TestStandaloneBroker leaderForPartition(final int partitionId) {
-    try (final var client = newClientBuilder().build()) {
+    try (final var client = newClientBuilder().preferRestOverGrpc(false).build()) {
       final var leaderOfPartition2 =
           client.newTopologyRequest().send().join().getBrokers().stream()
               .filter(
@@ -414,7 +415,7 @@ public final class TestCluster implements CloseableSilently {
     assertThatCode(() -> node.probe(TestHealthProbe.READY))
         .as("gateway '%s' is ready", node.nodeId())
         .doesNotThrowAnyException();
-    try (final var client = node.newClientBuilder().build()) {
+    try (final var client = node.newClientBuilder().preferRestOverGrpc(false).build()) {
       TopologyAssert.assertThat(client.newTopologyRequest().send().join())
           .isComplete(clusterSize, partitionsCount, replicationFactor);
     }
@@ -424,7 +425,7 @@ public final class TestCluster implements CloseableSilently {
     assertThatCode(() -> node.probe(TestHealthProbe.READY))
         .as("gateway '%s' is ready", node.nodeId())
         .doesNotThrowAnyException();
-    try (final var client = node.newClientBuilder().build()) {
+    try (final var client = node.newClientBuilder().preferRestOverGrpc(false).build()) {
       TopologyAssert.assertThat(client.newTopologyRequest().send().join()).isHealthy();
     }
   }

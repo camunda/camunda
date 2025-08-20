@@ -189,7 +189,12 @@ final class ContainerState implements AutoCloseable {
       contactPoint = gateway.getExternalGatewayAddress();
     }
 
-    client = CamundaClient.newClientBuilder().gatewayAddress(contactPoint).usePlaintext().build();
+    client =
+        CamundaClient.newClientBuilder()
+            .gatewayAddress(contactPoint)
+            .usePlaintext()
+            .preferRestOverGrpc(false)
+            .build();
     partitionsActuator = PartitionsActuator.of(broker);
   }
 

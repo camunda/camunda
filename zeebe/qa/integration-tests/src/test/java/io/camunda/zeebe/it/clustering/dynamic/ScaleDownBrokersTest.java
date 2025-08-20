@@ -65,7 +65,7 @@ final class ScaleDownBrokersTest {
 
   @BeforeEach
   void createClient() {
-    camundaClient = cluster.availableGateway().newClientBuilder().build();
+    camundaClient = cluster.availableGateway().newClientBuilder().preferRestOverGrpc(false).build();
   }
 
   @Test

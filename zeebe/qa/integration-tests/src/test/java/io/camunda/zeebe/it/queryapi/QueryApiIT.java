@@ -206,6 +206,7 @@ final class QueryApiIT {
   private static CamundaClient createCamundaClient(final String tenant) {
     return broker
         .newClientBuilder()
+        .preferRestOverGrpc(false)
         .withInterceptors(new TestAuthorizationClientInterceptor(tenant))
         .defaultRequestTimeout(Duration.ofMinutes(1))
         .build();

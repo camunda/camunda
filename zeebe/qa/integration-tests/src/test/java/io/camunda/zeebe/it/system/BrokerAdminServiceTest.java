@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
@@ -24,9 +25,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import io.grpc.Status;
-import io.grpc.Status.Code;
-import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -115,11 +113,10 @@ public class BrokerAdminServiceTest {
           .failsWithin(Duration.ofSeconds(5))
           .withThrowableThat()
           .havingCause()
-          .withMessageContaining("UNAVAILABLE: Processing paused for partition")
-          .asInstanceOf(InstanceOfAssertFactories.throwable(StatusRuntimeException.class))
-          .extracting(StatusRuntimeException::getStatus)
-          .extracting(Status::getCode)
-          .isEqualTo(Code.UNAVAILABLE);
+          .withMessageContaining("Processing paused for partition")
+          .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+          .extracting(ProblemException::code)
+          .isEqualTo(503);
     }
   }
 

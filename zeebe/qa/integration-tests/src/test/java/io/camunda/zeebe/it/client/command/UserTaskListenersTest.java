@@ -69,7 +69,12 @@ public class UserTaskListenersTest {
 
   @BeforeEach
   void init() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(5)).build();
+    client =
+        ZEEBE
+            .newClientBuilder()
+            .preferRestOverGrpc(false)
+            .defaultRequestTimeout(Duration.ofSeconds(5))
+            .build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 

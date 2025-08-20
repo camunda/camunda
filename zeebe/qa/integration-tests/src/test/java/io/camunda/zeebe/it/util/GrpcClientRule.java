@@ -39,6 +39,7 @@ public final class GrpcClientRule extends ExternalResource {
     this(
         config -> {
           config
+              .preferRestOverGrpc(false)
               .gatewayAddress(NetUtil.toSocketAddressString(brokerRule.getGatewayAddress()))
               .usePlaintext();
           configurator.accept(config);
@@ -49,6 +50,7 @@ public final class GrpcClientRule extends ExternalResource {
     this(
         config ->
             config
+                .preferRestOverGrpc(false)
                 .gatewayAddress(NetUtil.toSocketAddressString(clusteringRule.getGatewayAddress()))
                 .usePlaintext());
   }
@@ -71,7 +73,9 @@ public final class GrpcClientRule extends ExternalResource {
   public void before() {
     startTime = System.currentTimeMillis();
     final CamundaClientBuilder builder =
-        CamundaClient.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10));
+        CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(false)
+            .defaultRequestTimeout(Duration.ofSeconds(10));
     configurator.accept(builder);
     client = builder.build();
     resourcesHelper = new ZeebeResourcesHelper(client);

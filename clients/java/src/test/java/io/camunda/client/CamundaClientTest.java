@@ -116,7 +116,7 @@ public final class CamundaClientTest {
       assertThat(configuration.getDefaultJobWorkerStreamEnabled()).isFalse();
       assertThat(configuration.getDefaultJobWorkerTenantIds())
           .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
-      assertThat(configuration.preferRestOverGrpc()).isFalse();
+      assertThat(configuration.preferRestOverGrpc()).isTrue();
     }
   }
 
