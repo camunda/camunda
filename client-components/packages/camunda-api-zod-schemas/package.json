@@ -21,7 +21,6 @@
     "build": "vite build",
     "format": "prettier --write .",
     "prepublish": "npm run build",
-    "lint": "bash -c 'exit 0'",
     "typecheck": "tsc"
   },
   "sideEffects": false,

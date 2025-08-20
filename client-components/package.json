@@ -12,13 +12,17 @@
     "packages/*"
   ],
   "scripts": {
-    "lint": "npm run lint --workspaces --if-present",
+    "lint": "eslint . && npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "format": "npm run format --workspaces --if-present",
     "build": "npm run build --workspaces --if-present"
   },
   "packageManager": "npm@11.5.2",
   "devDependencies": {
-    "prettier": "3.6.2"
+    "@eslint/js": "9.33.0",
+    "eslint": "9.33.0",
+    "globals": "16.3.0",
+    "prettier": "3.6.2",
+    "typescript-eslint": "8.40.0"
   }
 }
