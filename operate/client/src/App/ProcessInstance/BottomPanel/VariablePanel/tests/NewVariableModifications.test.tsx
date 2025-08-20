@@ -13,13 +13,8 @@ import {LastModification} from 'App/ProcessInstance/LastModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {
-  createInstance,
-  createVariable,
-  createVariableV2,
-} from 'modules/testUtils';
+import {createInstance, createVariableV2} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {useEffect, act} from 'react';
@@ -130,7 +125,6 @@ describe('New Variable Modifications', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statisticsData,
     });
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -156,7 +150,6 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
@@ -188,7 +181,6 @@ describe('New Variable Modifications', () => {
       mockProcessInstanceDeprecated,
     );
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchVariables().withSuccess([createVariable()]);
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -223,8 +215,6 @@ describe('New Variable Modifications', () => {
       mockProcessInstanceDeprecated,
     );
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -301,7 +291,6 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not create add variable modification if value field is empty or invalid', async () => {
-    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
@@ -339,7 +328,6 @@ describe('New Variable Modifications', () => {
   });
 
   it('should create add variable modification on blur and update same modification if name or value is changed', async () => {
-    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
@@ -525,7 +513,6 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not apply modification if value is the same as the last modification', async () => {
-    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
@@ -597,7 +584,6 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -629,7 +615,6 @@ describe('New Variable Modifications', () => {
     await editLastNewVariableName(user, 'test2', 1);
     await editLastNewVariableValue(user, '456', 1);
 
-    mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
@@ -710,7 +695,6 @@ describe('New Variable Modifications', () => {
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
