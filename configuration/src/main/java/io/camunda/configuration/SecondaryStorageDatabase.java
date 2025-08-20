@@ -15,6 +15,9 @@ public abstract class SecondaryStorageDatabase {
   /** Endpoint for the database configured as secondary storage. */
   private String url = "http://localhost:9200";
 
+  /** Cluster name of the secondary-storage database. */
+  private String clusterName = defaultClusterName();
+
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".url",
@@ -28,7 +31,42 @@ public abstract class SecondaryStorageDatabase {
     this.url = url;
   }
 
-  protected abstract String prefix();
+  public String getClusterName() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".cluster-name",
+        clusterName,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyClusterNameProperties());
+  }
 
-  protected abstract Set<String> legacyUrlProperties();
+  public void setClusterName(String clusterName) {
+    this.clusterName = clusterName;
+  }
+
+  private String prefix() {
+    return "camunda.data.secondary-storage." + databaseName();
+  }
+
+  private Set<String> legacyUrlProperties() {
+    return Set.of(
+        "camunda.database.url",
+        "camunda.operate." + databaseName() + ".url",
+        "camunda.tasklist." + databaseName() + ".url",
+        "zeebe.broker.exporters.camundaexporter.args.connect.url");
+  }
+
+  private Set<String> legacyClusterNameProperties() {
+    return Set.of(
+        "camunda.operate." + databaseName() + ".clusterName",
+        "camunda.tasklist." + databaseName() + ".clusterName"
+    );
+  }
+
+  private String defaultClusterName() {
+    return databaseName();
+  }
+
+  /** Name of the secondary-storage database, all lowercase. */
+  protected abstract String databaseName();
 }
