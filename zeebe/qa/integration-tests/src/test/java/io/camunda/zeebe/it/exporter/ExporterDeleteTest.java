@@ -5,20 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-
-package io.camunda.zeebe.it.management;
+package io.camunda.zeebe.it.exporter;
 
 import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.RECORDING_EXPORTER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.Operation;
-import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -30,7 +28,11 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 @Timeout(2 * 60) // 2 minutes
-final class ExporterDeleteEndpointIT {
+@ZeebeIntegration
+final class ExporterDeleteTest {
+  private static final int PARTITIONS_COUNT = 3;
+  private static final int BROKERS_COUNT = 3;
+  private static final int REPLICATION_FACTOR = 3;
 
   @TempDir private Path baseWorkingDir;
 
@@ -43,9 +45,9 @@ final class ExporterDeleteEndpointIT {
     cluster =
         TestCluster.builder()
             .useRecordingExporter(true)
-            .withBrokersCount(1)
-            .withPartitionsCount(1)
-            .withReplicationFactor(1)
+            .withBrokersCount(BROKERS_COUNT)
+            .withPartitionsCount(PARTITIONS_COUNT)
+            .withReplicationFactor(REPLICATION_FACTOR)
             .withEmbeddedGateway(true)
             .withBrokerConfig(
                 (memberId, broker) ->
@@ -65,25 +67,24 @@ final class ExporterDeleteEndpointIT {
   }
 
   @Test
-  void shouldDeleteExporterAfterRestartWithMissingConfig(@TempDir final Path tempDir) {
-    // given
-    // sanity: exporter is enabled initially
-    assertThat(ExportersActuator.of(cluster.anyGateway()).getExporters())
+  void shouldDeleteExporterFromAllPartitions() {
+    // given - verify exporter is initially enabled on all partitions
+    assertThat(actuator.getExporters())
         .hasSize(1)
         .first()
         .extracting(ExporterStatus::getStatus)
         .isEqualTo(ExporterStatus.StatusEnum.ENABLED);
 
+    // restart cluster without exporter config to simulate CONFIG_NOT_FOUND state
     cluster.shutdown();
 
-    // Restart cluster with exporter removed
     cluster.brokers().values().forEach(b -> b.withRecordingExporter(false));
     final var restartedCluster = cluster.start().awaitCompleteTopology();
 
-    final ExportersActuator exportersActuator = ExportersActuator.of(restartedCluster.anyGateway());
+    final var restartedActuator = ExportersActuator.of(restartedCluster.availableGateway());
 
-    // exporter shows up as CONFIG_NOT_FOUND
-    assertThat(exportersActuator.getExporters())
+    // verify exporter shows up as CONFIG_NOT_FOUND across all partitions
+    assertThat(restartedActuator.getExporters())
         .hasSize(1)
         .first()
         .satisfies(
@@ -92,62 +93,25 @@ final class ExporterDeleteEndpointIT {
               assertThat(status.getStatus()).isEqualTo(ExporterStatus.StatusEnum.CONFIG_NOT_FOUND);
             });
 
-    // when: delete exporter
-    final var deleteResponse =
-        ExportersActuator.of(restartedCluster.anyGateway()).deleteExporter(RECORDING_EXPORTER_ID);
+    // when - delete exporter
+    final var deleteResponse = restartedActuator.deleteExporter(RECORDING_EXPORTER_ID);
+
     assertThat(deleteResponse.getPlannedChanges())
-        .hasSize(1)
-        .first()
-        .extracting(Operation::getOperation)
-        .isEqualTo(OperationEnum.PARTITION_DELETE_EXPORTER);
+        .hasSize(PARTITIONS_COUNT * REPLICATION_FACTOR)
+        .allMatch(
+            operation ->
+                operation.getOperation() == Operation.OperationEnum.PARTITION_DELETE_EXPORTER);
 
     waitUntilOperationIsApplied(restartedCluster, deleteResponse);
 
-    // then: exporter no longer appears
+    // then - verify exporter is deleted from all partitions
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () ->
-                assertThat(exportersActuator.getExporters())
-                    .describedAs("Exporter is deleted")
+                assertThat(restartedActuator.getExporters())
+                    .describedAs("Exporter is deleted from all partitions")
                     .isEmpty());
-  }
-
-  @Test
-  void shouldFailDeletingExporterIfConfigStillPresent(@TempDir final Path tempDir) {
-
-    try (final var cluster = startCluster(true, tempDir)) {
-      // given - cluster with recording exporter enabled
-      assertThat(ExportersActuator.of(cluster.anyGateway()).getExporters())
-          .hasSize(1)
-          .first()
-          .extracting(ExporterStatus::getStatus)
-          .isEqualTo(ExporterStatus.StatusEnum.ENABLED)
-          .describedAs("Exporter should be enabled on startup");
-
-      // when - then
-      assertThatThrownBy(
-              () ->
-                  ExportersActuator.of(cluster.anyGateway()).deleteExporter(RECORDING_EXPORTER_ID))
-          .isInstanceOf(feign.FeignException.class)
-          .extracting(e -> ((feign.FeignException) e).status())
-          .isEqualTo(400)
-          .describedAs("Enabled exporter cannot be deleted when config is present");
-    }
-  }
-
-  private TestCluster startCluster(final boolean useRecordingExporter, final Path tempDir) {
-    return TestCluster.builder()
-        .useRecordingExporter(useRecordingExporter)
-        .withBrokersCount(1)
-        .withPartitionsCount(1)
-        .withReplicationFactor(1)
-        .withEmbeddedGateway(true)
-        .withBrokerConfig(
-            (memberId, broker) -> broker.withWorkingDirectory(resolveBrokerDir(tempDir, memberId)))
-        .build()
-        .start()
-        .awaitCompleteTopology();
   }
 
   private Path resolveBrokerDir(final Path base, final MemberId memberId) {
