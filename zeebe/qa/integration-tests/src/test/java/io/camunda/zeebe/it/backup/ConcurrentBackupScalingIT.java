@@ -114,8 +114,6 @@ final class ConcurrentBackupScalingIT {
   }
 
   private void configureBackup(final TestStandaloneBroker broker) {
-    final String bucketName = "some-random-bucket";
-
     broker.withBrokerConfig(
         cfg -> {
           final var backup = cfg.getData().getBackup();
