@@ -6558,7 +6558,6 @@ components:
           type: string
           description: The parent element instance key.
         tags:
-          description: Tags associated with the process instance
           $ref: '#/components/schemas/TagSet'
     ProcessInstanceStateEnum:
       description: Process instance states
@@ -10159,7 +10158,6 @@ components:
           description: The tenant ID of the process definition.
           type: string
         tags:
-          description: Tags associated with the process instance
           $ref: '#/components/schemas/TagSet'
         operationReference:
           $ref: '#/components/schemas/OperationReference'
@@ -10279,7 +10277,6 @@ components:
             needs a process instance key (e.g. CancelProcessInstanceRequest).
           type: string
         tags:
-          description: Tags associated with the newly created process instance
           $ref: '#/components/schemas/TagSet'
     ProcessInstanceMigrationBatchOperationRequest:
       type: object
