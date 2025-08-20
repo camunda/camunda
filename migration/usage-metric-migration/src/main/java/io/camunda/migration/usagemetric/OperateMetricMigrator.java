@@ -32,6 +32,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -87,10 +88,11 @@ if (event == "%s") {
     this.connectConfiguration = connectConfiguration;
     metricRegistry = new MetricRegistry(meterRegistry);
     isElasticsearch = connectConfiguration.getTypeEnum() == DatabaseType.ELASTICSEARCH;
+    final var retryConfiguration = new RetryConfiguration(); // TODO replace with real config
     client =
         isElasticsearch
-            ? new ElasticsearchUsageMetricMigrationClient(connectConfiguration)
-            : new OpensearchUsageMetricMigrationClient(connectConfiguration);
+            ? new ElasticsearchUsageMetricMigrationClient(connectConfiguration, retryConfiguration)
+            : new OpensearchUsageMetricMigrationClient(connectConfiguration, retryConfiguration);
     scheduler = Executors.newScheduledThreadPool(1);
     interval = Duration.ofMinutes(1);
   }

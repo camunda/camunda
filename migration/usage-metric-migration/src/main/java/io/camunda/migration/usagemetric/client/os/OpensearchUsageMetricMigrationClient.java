@@ -14,11 +14,15 @@ import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
+import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.OpType;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.ReindexRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -31,10 +35,16 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
       LoggerFactory.getLogger(OpensearchUsageMetricMigrationClient.class);
   private final OpenSearchClient client;
   private final OpensearchTransformers transformers;
+  private final RetryDecorator retryDecorator;
 
-  public OpensearchUsageMetricMigrationClient(final ConnectConfiguration connect) {
+  public OpensearchUsageMetricMigrationClient(
+      final ConnectConfiguration connect, final RetryConfiguration retryConfiguration) {
     client = new OpensearchConnector(connect).createClient();
     transformers = new OpensearchTransformers();
+    retryDecorator =
+        new RetryDecorator(retryConfiguration)
+            .withRetryOnException(
+                e -> e instanceof IOException || e instanceof OpenSearchException);
   }
 
   private SearchTransfomer<SearchQuery, Query> getSearchQueryTransformer() {
@@ -45,14 +55,17 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
   public void writeOperateMetricMigratorStep(
       final String index, final String taskId, final boolean completed) throws MigrationException {
     try {
-      client.index(
-          i ->
-              i.index(index)
-                  .id(OPERATE_MIGRATOR_STEP_ID)
-                  .document(migrationStepForKey(index, taskId, completed))
-                  .refresh(Refresh.True));
-
-    } catch (final IOException e) {
+      retryDecorator.decorate(
+          "Write operate metric migrator step",
+          () ->
+              client.index(
+                  i ->
+                      i.index(index)
+                          .id(OPERATE_MIGRATOR_STEP_ID)
+                          .document(migrationStepForKey(index, taskId, completed))
+                          .refresh(Refresh.True)),
+          res -> res.result() != Result.Created && res.result() != Result.Updated);
+    } catch (final Exception e) {
       throw new MigrationException(e);
     }
   }
@@ -62,11 +75,6 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
       final String src, final String dest, final SearchQuery searchQuery, final String script) {
 
     try {
-      if (!client.indices().exists(e -> e.index(src, dest)).value()) {
-        throw new MigrationException(
-            "Source %s or destination %s index does not exist".formatted(src, dest));
-      }
-
       final var reindexRequest =
           new Builder()
               .conflicts(Conflicts.Proceed)
@@ -77,10 +85,13 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
               .waitForCompletion(false)
               .slices(0L)
               .build();
-      final var response = client.reindex(reindexRequest);
+      final var response =
+          retryDecorator.decorate(
+              "Reindex operate metric index",
+              () -> client.reindex(reindexRequest),
+              res -> res.task() == null || res.failures() != null);
       return response.task();
-
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       throw new MigrationException(e);
     }
   }
@@ -92,17 +103,21 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
 
     try {
       final SearchResponse<T> response =
-          client.search(
-              b ->
-                  b.index(index)
-                      .from(0)
-                      .size(1)
-                      .query(getSearchQueryTransformer().apply(searchQuery)),
-              entityClass);
+          retryDecorator.decorate(
+              "Find one entity",
+              () ->
+                  client.search(
+                      b ->
+                          b.index(index)
+                              .from(0)
+                              .size(1)
+                              .query(getSearchQueryTransformer().apply(searchQuery)),
+                      entityClass),
+              res -> res.hits() == null || res.hits().hits().isEmpty());
 
       final var hits = response.hits().hits();
       return !hits.isEmpty() ? hits.getFirst().source() : null;
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       throw new MigrationException(e);
     }
   }
@@ -110,7 +125,9 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
   @Override
   public boolean getTask(final String taskId) throws MigrationException {
     try {
-      final var response = client.tasks().get(r -> r.taskId(taskId));
+      final var response =
+          retryDecorator.decorate(
+              "Get reindex task", () -> client.tasks().get(r -> r.taskId(taskId)), res -> false);
       if (response.completed()) {
         if (response.error() != null) {
           final var cause =
@@ -122,7 +139,7 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
       } else {
         return false;
       }
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       throw new MigrationException(e);
     }
   }
