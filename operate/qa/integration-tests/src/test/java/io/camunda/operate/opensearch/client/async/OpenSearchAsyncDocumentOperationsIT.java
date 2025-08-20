@@ -13,14 +13,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.opensearch.client.AbstractOpenSearchOperationIT;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
+import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import java.util.List;
 import org.junit.Test;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class OpenSearchAsyncDocumentOperationsIT extends AbstractOpenSearchOperationIT {
-  @Autowired OperateUserIndex operateUserIndex;
+  @Autowired UserIndex userIndex;
 
   @Autowired OperateProperties operateProperties;
 
@@ -31,8 +31,8 @@ public class OpenSearchAsyncDocumentOperationsIT extends AbstractOpenSearchOpera
 
     // when
     final var deleteByQueryRequestBuilder =
-        deleteByQueryRequestBuilder(operateUserIndex.getFullQualifiedName())
-            .query(stringTerms("userId", List.of("1")))
+        deleteByQueryRequestBuilder(userIndex.getFullQualifiedName())
+            .query(stringTerms("id", List.of("1")))
             .waitForCompletion(false)
             .slices((long) operateProperties.getOpensearch().getNumberOfShards())
             .conflicts(Conflicts.Proceed);

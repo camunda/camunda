@@ -15,7 +15,6 @@ import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
@@ -68,8 +67,6 @@ public class IndexDescriptors {
                 new ListViewTemplate(indexPrefix, isElasticsearch),
                 new MappingRuleIndex(indexPrefix, isElasticsearch),
                 new MetricIndex(indexPrefix, isElasticsearch),
-                // OperateUserIndex should be deleted once harmonized with UserIndex
-                new OperateUserIndex(indexPrefix, isElasticsearch),
                 new OperationTemplate(indexPrefix, isElasticsearch),
                 new PersistentWebSessionIndexDescriptor(indexPrefix, isElasticsearch),
                 new PostImporterQueueTemplate(indexPrefix, isElasticsearch),

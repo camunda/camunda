@@ -13,11 +13,11 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.time;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.opensearch.client.AbstractOpenSearchOperationIT;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
-import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
+import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import java.util.List;
 import org.junit.Test;
 import org.opensearch.client.opensearch._types.Conflicts;
@@ -25,7 +25,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class OpenSearchAsyncIndexOperationsIT extends AbstractOpenSearchOperationIT {
-  @Autowired OperateUserIndex operateUserIndex;
+  @Autowired UserIndex userIndex;
 
   @Autowired OperateProperties operateProperties;
 
@@ -37,9 +37,9 @@ public class OpenSearchAsyncIndexOperationsIT extends AbstractOpenSearchOperatio
 
     // when
     final String dstIndex = indexPrefix + getClass().getSimpleName().toLowerCase();
-    final Query query = stringTerms("userId", List.of(id));
+    final Query query = stringTerms("id", List.of(id));
     final var deleteByQueryRequestBuilder =
-        reindexRequestBuilder(operateUserIndex.getFullQualifiedName(), query, dstIndex)
+        reindexRequestBuilder(userIndex.getFullQualifiedName(), query, dstIndex)
             .waitForCompletion(false)
             .scroll(time(OpenSearchDocumentOperations.INTERNAL_SCROLL_KEEP_ALIVE_MS))
             .slices((long) operateProperties.getOpensearch().getNumberOfShards())
@@ -75,6 +75,6 @@ public class OpenSearchAsyncIndexOperationsIT extends AbstractOpenSearchOperatio
         richOpenSearchClient
             .doc()
             .searchUnique(searchRequestBuilder(dstIndex).query(query), UserEntity.class, id);
-    assertThat(user.getDisplayName()).isEqualTo("test");
+    assertThat(user.getName()).isEqualTo("test");
   }
 }
