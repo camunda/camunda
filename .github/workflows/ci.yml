@@ -56,6 +56,7 @@ jobs:
       stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
       rdbms-integration-tests: ${{steps.filter.outputs.rdbms-integration-tests}}
       renovate-config-changes: ${{ steps.filter.outputs.renovate-config-changes }}
+      client-components-changes: ${{ steps.filter.outputs.client-components-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -1070,6 +1071,14 @@ jobs:
     with:
       stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}
 
+  client-components:
+    if: needs.detect-changes.outputs.client-components-changes == 'true'
+    name: "Client Components"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-client-components.yml
+    secrets: inherit
+    permissions: { }
+
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
     needs: [ detect-changes ]
@@ -1194,6 +1203,7 @@ jobs:
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - build-platform-frontend
+      - client-components
       - commitlint
       - detect-changes
       - docker-checks
