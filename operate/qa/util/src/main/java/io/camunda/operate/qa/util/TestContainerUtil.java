@@ -612,7 +612,7 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
-    // unified config db url + compaptibility vars (opensearch)
+        // unified config db url + compaptibility vars (opensearch)
         .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", getElasticURL(testContext))
