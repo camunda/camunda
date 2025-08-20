@@ -14,8 +14,9 @@ import {VariablesForm} from './VariablesForm';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useQueryClient} from '@tanstack/react-query';
-import {addVariable, updateVariable} from 'modules/utils/variables';
 import {queryKeys} from 'modules/queries/queryKeys';
+import {useElementInstanceVariables} from 'modules/mutations/elementInstances/useElementInstanceVariables';
+import {variablesStore} from 'modules/stores/variables';
 
 type Props = {
   scopeId: string;
@@ -24,6 +25,7 @@ type Props = {
 const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
   const queryClient = useQueryClient();
   const {processInstanceId = ''} = useProcessInstancePageParams();
+  const mutation = useElementInstanceVariables(scopeId, processInstanceId);
 
   return (
     <ReactFinalForm<VariableFormValues>
@@ -39,53 +41,49 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
       render={(props) => <VariablesForm {...props} />}
       onSubmit={async (values, form) => {
         const {initialValues} = form.getState();
-
+        const isNewVariable = initialValues.name === '';
         const {name, value} = values;
 
-        if (name === undefined || value === undefined) {
-          return;
+        if (isNewVariable) {
+          variablesStore.setPendingItem({
+            name,
+            value,
+            hasActiveOperation: true,
+            isFirst: false,
+            sortValues: null,
+            isPreview: false,
+          });
         }
 
-        const params = {
-          id: processInstanceId,
-          name,
-          value,
-          invalidateQueries: () => {
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.variables.search(),
-            });
+        mutation.mutate(
+          {name, value},
+          {
+            onSuccess: () => {
+              notificationsStore.displayNotification({
+                kind: 'success',
+                title: isNewVariable ? 'Variable added' : 'Variable updated',
+                isDismissable: true,
+              });
+            },
+            onError: (error) => {
+              notificationsStore.displayNotification({
+                kind: 'error',
+                title: 'Variable could not be saved',
+                subtitle: error.message,
+                isDismissable: true,
+              });
+            },
+            onSettled: async () => {
+              await queryClient.invalidateQueries({
+                queryKey: queryKeys.variables.search(),
+              });
+              if (isNewVariable) {
+                variablesStore.setPendingItem(null);
+              }
+              form.reset({});
+            },
           },
-          onSuccess: () => {
-            notificationsStore.displayNotification({
-              kind: 'success',
-              title: 'Variable added',
-              isDismissable: true,
-            });
-
-            form.reset({});
-          },
-          onError: (statusCode: number) => {
-            notificationsStore.displayNotification({
-              kind: 'error',
-              title: 'Variable could not be saved',
-              subtitle:
-                statusCode === 403 ? 'You do not have permission' : undefined,
-              isDismissable: true,
-            });
-
-            form.reset({});
-          },
-        };
-
-        if (initialValues.name === '') {
-          const result = await addVariable(params);
-          if (result === 'VALIDATION_ERROR') {
-            return {name: 'Name should be unique'};
-          }
-        } else if (initialValues.name === name) {
-          updateVariable(params);
-          form.reset({});
-        }
+        );
       }}
     />
   );
