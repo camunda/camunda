@@ -70,6 +70,7 @@ public class OpensearchExporter implements Exporter {
             .readMetadata()
             .map(this::deserializeExporterMetadata)
             .map(OpensearchExporterMetadata::getRecordCountersByValueType)
+            .filter(counters -> !counters.isEmpty())
             .map(OpensearchRecordCounters::new)
             .orElse(new OpensearchRecordCounters());
 
