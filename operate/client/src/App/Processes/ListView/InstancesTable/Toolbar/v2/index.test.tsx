@@ -14,6 +14,7 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockCancelProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/cancelProcessInstancesBatchOperation';
@@ -23,15 +24,8 @@ import {tracking} from 'modules/tracking';
 
 type Props = {
   children?: React.ReactNode;
+  initialEntries?: string[];
 };
-
-vi.mock('modules/utils/filter', () => ({
-  getProcessInstancesRequestFilters: () => ({
-    activityId: 'test-activity',
-    incidents: false,
-    ids: ['1', '2'],
-  }),
-}));
 
 vi.mock('modules/tracking', () => ({
   tracking: {
@@ -45,10 +39,15 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
-const Wrapper = ({children}: Props) => {
+const Wrapper = ({
+  children,
+  initialEntries = [
+    '/processes?flowNodeId=test-activity&incidents=false&ids=1,2',
+  ],
+}: Props) => {
   return (
     <QueryClientProvider client={getMockQueryClient()}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         {children}
         <button onClick={batchModificationStore.enable}>
           Enter batch modification mode
@@ -89,6 +88,7 @@ describe('<ProcessOperations />', () => {
     processInstancesSelectionStore.reset();
     processInstancesStore.reset();
     panelStatesStore.reset();
+    variableFilterStore.reset();
   });
   it('should not display toolbar if selected instances count is 0', async () => {
     render(<Toolbar selectedInstancesCount={0} />, {wrapper: Wrapper});
