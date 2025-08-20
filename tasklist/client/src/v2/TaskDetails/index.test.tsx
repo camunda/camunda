@@ -242,14 +242,18 @@ describe('<Task />', () => {
 
   it('should complete task without variables', async () => {
     nodeMockServer.use(
-      http.get('/v2/user-tasks/:userTaskKey', () => {
-        return HttpResponse.json(
-          taskMocks.assignedTask({
-            userTaskKey: MOCK_USER_TASK_KEY,
-            formKey: undefined,
-          }),
-        );
-      }),
+      http.get(
+        '/v2/user-tasks/:userTaskKey',
+        () => {
+          return HttpResponse.json(
+            taskMocks.assignedTask({
+              userTaskKey: MOCK_USER_TASK_KEY,
+              formKey: undefined,
+            }),
+          );
+        },
+        {once: true},
+      ),
       http.get(
         '/v2/authentication/me',
         () => {
@@ -264,6 +268,14 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get('/v2/user-tasks/:userTaskKey', () => {
+        return HttpResponse.json(
+          taskMocks.completedTask({
+            userTaskKey: MOCK_USER_TASK_KEY,
+            formKey: undefined,
+          }),
+        );
+      }),
       http.post(
         '/v2/user-tasks/:userTaskKey/variables/search',
         () => {
@@ -292,27 +304,6 @@ describe('<Task />', () => {
         async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
-
-    let swapped = false;
-    nodeMockServer.events.on('response:mocked', ({request}) => {
-      if (swapped) return;
-      if (request.method === 'POST') {
-        const url = new URL(request.url);
-        if (url.pathname.endsWith('/completion')) {
-          swapped = true;
-          nodeMockServer.use(
-            http.get('/v2/user-tasks/:userTaskKey', () => {
-              return HttpResponse.json(
-                taskMocks.completedTask({
-                  userTaskKey: MOCK_USER_TASK_KEY,
-                  formKey: undefined,
-                }),
-              );
-            }),
-          );
-        }
-      }
-    });
 
     const {user} = render(<Component />, {
       wrapper: getWrapper(),
