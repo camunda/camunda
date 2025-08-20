@@ -108,12 +108,12 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         ? checkedRunningProcessInstanceIds
         : (baseFilter.ids ?? []);
 
-    const requestBody = buildMutationRequestBody(
+    const requestBody = buildMutationRequestBody({
       baseFilter,
       includeIds,
-      excludedProcessInstanceIds,
+      excludeIds: excludedProcessInstanceIds,
       processDefinitionKey,
-    );
+    });
 
     if (selectedProcessInstanceIds.length > 0) {
       processInstancesStore.markProcessInstancesWithActiveOperations({

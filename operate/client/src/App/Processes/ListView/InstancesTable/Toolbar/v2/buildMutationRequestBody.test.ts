@@ -24,12 +24,11 @@ describe('buildMutationRequestBody', () => {
   };
 
   it('adds processInstanceKey.$in when includeIds present', () => {
-    const body: Body = buildMutationRequestBody(
+    const body: Body = buildMutationRequestBody({
       baseFilter,
-      ['1', '2'],
-      [],
-      undefined,
-    );
+      includeIds: ['1', '2'],
+      excludeIds: [],
+    });
 
     expect(body).toEqual({
       elementId: 'taskA',
@@ -39,12 +38,11 @@ describe('buildMutationRequestBody', () => {
   });
 
   it('adds processInstanceKey.$notIn when excludeIds present', () => {
-    const body: Body = buildMutationRequestBody(
+    const body: Body = buildMutationRequestBody({
       baseFilter,
-      [],
-      ['3', '4'],
-      undefined,
-    );
+      includeIds: [],
+      excludeIds: ['3', '4'],
+    });
 
     expect(body).toEqual({
       elementId: 'taskA',
@@ -54,12 +52,11 @@ describe('buildMutationRequestBody', () => {
   });
 
   it('combines includeIds and excludeIds into processInstanceKey', () => {
-    const body: Body = buildMutationRequestBody(
+    const body: Body = buildMutationRequestBody({
       baseFilter,
-      ['1', '2'],
-      ['3'],
-      undefined,
-    );
+      includeIds: ['1', '2'],
+      excludeIds: ['3'],
+    });
 
     expect(body).toEqual({
       elementId: 'taskA',
@@ -69,27 +66,26 @@ describe('buildMutationRequestBody', () => {
   });
 
   it('adds processDefinitionKey when provided', () => {
-    const body: Body = buildMutationRequestBody(
+    const body: Body = buildMutationRequestBody({
       baseFilter,
-      [],
-      [],
-      '2251799813693459',
-    );
+      includeIds: [],
+      excludeIds: [],
+      processDefinitionKey: '2251799813693459',
+    });
 
     expect(body).toEqual({
       elementId: 'taskA',
       hasIncident: true,
-      processDefinitionKey: {$eq: '2251799813693459'},
+      processDefinitionKey: '2251799813693459',
     });
   });
 
   it('handles single-element arrays', () => {
-    const body: Body = buildMutationRequestBody(
+    const body: Body = buildMutationRequestBody({
       baseFilter,
-      ['only'],
-      ['x'],
-      undefined,
-    );
+      includeIds: ['only'],
+      excludeIds: ['x'],
+    });
 
     expect(body).toEqual({
       elementId: 'taskA',
@@ -99,7 +95,11 @@ describe('buildMutationRequestBody', () => {
   });
 
   it('omits processInstanceKey when both include/exclude lists are empty', () => {
-    const body: Body = buildMutationRequestBody(baseFilter, [], [], null);
+    const body: Body = buildMutationRequestBody({
+      baseFilter,
+      includeIds: [],
+      excludeIds: [],
+    });
 
     expect(body).toEqual({
       elementId: 'taskA',

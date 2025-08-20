@@ -13,12 +13,19 @@ import type {
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 
-const buildMutationRequestBody = (
-  baseFilter: RequestFilters,
-  includeIds: string[],
-  excludeIds: string[],
-  processDefinitionKey?: string | null,
-) => {
+type BuildMutationRequestBodyParams = {
+  baseFilter: RequestFilters;
+  includeIds: string[];
+  excludeIds: string[];
+  processDefinitionKey?: string;
+};
+
+const buildMutationRequestBody = ({
+  baseFilter,
+  includeIds,
+  excludeIds,
+  processDefinitionKey,
+}: BuildMutationRequestBodyParams) => {
   const requestBody:
     | CreateIncidentResolutionBatchOperationRequestBody
     | CreateCancellationBatchOperationRequestBody = {
