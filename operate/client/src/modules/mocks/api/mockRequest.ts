@@ -105,6 +105,71 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
   };
 };
 
+const mockPutRequest = function <Type extends DefaultBodyType>(url: string) {
+  return {
+    withSuccess: (
+      responseData: Type,
+      options?: {
+        mockResolverFn?: ReturnType<typeof vi.fn>;
+      },
+    ) => {
+      mockServer.use(
+        http.put(
+          url,
+          () => {
+            options?.mockResolverFn?.();
+            return HttpResponse.json(responseData);
+          },
+          {once: true},
+        ),
+      );
+    },
+    withServerError: (statusCode: number = 500) => {
+      mockServer.use(
+        http.put(
+          url,
+          () =>
+            HttpResponse.json(
+              {error: 'an error occurred'},
+              {status: statusCode},
+            ),
+          {once: true},
+        ),
+      );
+    },
+    withDelayedServerError: (statusCode: number = 500) => {
+      mockServer.use(
+        http.put(
+          url,
+          async () => {
+            await delay(100);
+            return HttpResponse.json(
+              {error: 'an error occurred'},
+              {status: statusCode},
+            );
+          },
+          {once: true},
+        ),
+      );
+    },
+    withNetworkError: () => {
+      mockServer.use(http.put(url, () => HttpResponse.error()));
+    },
+    withDelay: (responseData: Type) => {
+      mockServer.use(
+        http.put(
+          url,
+          async () => {
+            await delay(100);
+            return HttpResponse.json(responseData);
+          },
+          {once: true},
+        ),
+      );
+    },
+  };
+};
+
 const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
   return {
     /**
@@ -252,5 +317,6 @@ export {
   mockPostRequest,
   mockXmlGetRequest,
   mockDeleteRequest,
+  mockPutRequest,
   checkPollingHeader,
 };
