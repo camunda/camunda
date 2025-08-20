@@ -7,11 +7,9 @@
  */
 package io.camunda.optimize.upgrade.os;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScript;
-import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,7 +38,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.FieldValue;
-import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.RequestBase;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -53,7 +50,6 @@ import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TrackHits;
 import org.opensearch.client.opensearch.indices.AliasDefinition;
-import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsTemplateRequest;
 import org.opensearch.client.opensearch.indices.GetAliasRequest;
 import org.opensearch.client.opensearch.indices.IndexSettings;
@@ -244,25 +240,6 @@ public class SchemaUpgradeClientOS
         throw new UpgradeRuntimeException(
             String.format("Could not delete index template [%s]!", indexTemplateName), e);
       }
-    }
-  }
-
-  @Override
-  public void createIndexFromTemplate(final String indexNameWithSuffix) {
-    final CreateIndexRequest createIndexRequest =
-        CreateIndexRequest.of(c -> c.index(indexNameWithSuffix));
-    try {
-      databaseClient.createIndex(createIndexRequest);
-    } catch (final OpenSearchException e) {
-      if (e.status() == BAD_REQUEST.code()
-          && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
-        LOG.debug("Index {} from template already exists.", indexNameWithSuffix);
-      } else {
-        throw e;
-      }
-    } catch (final Exception e) {
-      throw new OptimizeRuntimeException(
-          String.format("Could not create index %s from template.", indexNameWithSuffix), e);
     }
   }
 

@@ -9,9 +9,7 @@ package io.camunda.optimize.upgrade;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
-import static org.springframework.http.HttpMethod.PUT;
 
 import com.google.common.collect.ImmutableList;
 import io.camunda.optimize.service.db.DatabaseConstants;
@@ -33,10 +31,8 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -62,86 +58,6 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
 
   private static Stream<Arguments> getSingleIndexUpdateStepScenarios() {
     return generateAllUpgradeStepScenarios(testIndexV1, testIndexV2);
-  }
-
-  @ParameterizedTest(name = "UpgradeStep of type {0} applied on templated index can be retried.")
-  @MethodSource("getTemplatedIndexUpdateStepScenarios")
-  public void templatedIndexUpdateStepIsIdempotentAndCanBeRetried(
-      final UpgradeStepType stepType,
-      final List<UpgradeStep> prepareSteps,
-      final UpgradeStep upgradeStep) {
-    updateStepIsIdempotentAndCanBeRetried(stepType, prepareSteps, upgradeStep);
-  }
-
-  private static Stream<Arguments> getTemplatedIndexUpdateStepScenarios() {
-    return generateAllUpgradeStepScenarios(
-        testIndexWithTemplateV1, testIndexWithTemplateUpdatedMappingV2);
-  }
-
-  @Test
-  public void rolledOverTemplatedIndexUpdateStepIsIdempotentAndCanBeRetried() {
-    final String indexName = testIndexWithTemplateV1.getIndexName();
-    updateStepIsIdempotentAndCanBeRetried(
-        UpgradeStepType.SCHEMA_UPDATE_INDEX,
-        () -> {
-          // given a rolled over index scenario
-          upgradeProcedure.performUpgrade(
-              UpgradePlanBuilder.createUpgradePlan()
-                  .fromVersion(FROM_VERSION)
-                  .toVersion(INTERMEDIATE_VERSION)
-                  .addUpgradeSteps(
-                      ImmutableList.of(
-                          applyLookupSkip(new CreateIndexStep(testIndexWithTemplateV1)),
-                          buildInsertTestIndexDataStep(testIndexWithTemplateV1)))
-                  .build());
-
-          getPrefixAwareClient().triggerRollover(indexName, 0);
-        },
-        applyLookupSkip(new UpdateIndexStep(testIndexWithTemplateUpdatedMappingV2)));
-
-    // then it succeeds on resume
-    final Set<String> response = getIndicesForMapping(testIndexWithTemplateUpdatedMappingV2);
-    assertThat(response)
-        .hasSize(2)
-        .allSatisfy(index -> assertThat(index).contains(getVersionedIndexName(indexName, 2)));
-  }
-
-  @Test
-  public void rolledOverTemplatedIndexUpdateStepThatIsInterruptedIsIdempotentAndCanBeRetried() {
-    final String indexName = testIndexWithTemplateV1.getIndexName();
-    updateStepIsIdempotentAndCanBeRetried(
-        UpgradeStepType.SCHEMA_UPDATE_INDEX,
-        () -> {
-          // given a rolled over index scenario
-          upgradeProcedure.performUpgrade(
-              UpgradePlanBuilder.createUpgradePlan()
-                  .fromVersion(FROM_VERSION)
-                  .toVersion(INTERMEDIATE_VERSION)
-                  .addUpgradeSteps(
-                      ImmutableList.of(
-                          applyLookupSkip(new CreateIndexStep(testIndexWithTemplateV1)),
-                          buildInsertTestIndexDataStep(testIndexWithTemplateV1)))
-                  .build());
-
-          getPrefixAwareClient().triggerRollover(indexName, 0);
-        },
-        () -> {
-          // when creating the second rolled over index fails the upgrade
-          final String targetIndexName = getVersionedIndexName(indexName, 2);
-          final HttpRequest createRolledOverIndex2Request =
-              request().withPath("/" + targetIndexName + "-000002").withMethod(PUT.name());
-          dbMockServer
-              .when(createRolledOverIndex2Request, Times.exactly(1))
-              .error(HttpError.error().withDropConnection(true));
-          return createRolledOverIndex2Request;
-        },
-        applyLookupSkip(new UpdateIndexStep(testIndexWithTemplateUpdatedMappingV2)));
-
-    // then it succeeds on resume
-    final Set<String> response = getIndicesForMapping(testIndexWithTemplateUpdatedMappingV2);
-    assertThat(response)
-        .hasSize(2)
-        .allSatisfy(index -> assertThat(index).contains(getVersionedIndexName(indexName, 2)));
   }
 
   private void updateStepIsIdempotentAndCanBeRetried(

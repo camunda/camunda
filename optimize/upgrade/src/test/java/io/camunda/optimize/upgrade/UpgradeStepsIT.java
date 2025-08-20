@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.upgrade;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX;
 import static io.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
@@ -129,39 +129,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
   }
 
   @Test
-  public void executeUpdateIndexWithAliasFromTemplateStep() {
-    // given
-    final UpgradePlan upgradePlan =
-        UpgradePlanBuilder.createUpgradePlan()
-            .fromVersion(FROM_VERSION)
-            .toVersion(TO_VERSION)
-            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(testIndexWithTemplateV1)))
-            .addUpgradeStep(
-                applyLookupSkip(new UpdateIndexStep(testIndexWithTemplateUpdatedMappingV2)))
-            .build();
-
-    // when
-    upgradeProcedure.performUpgrade(upgradePlan);
-
-    // then
-    assertThat(
-            databaseIntegrationTestExtension.indexExists(
-                getIndexNameService()
-                    .getOptimizeIndexNameWithVersion(testIndexWithTemplateUpdatedMappingV2)))
-        .isTrue();
-
-    final Map<String, ?> mappingFields;
-    try {
-      mappingFields =
-          databaseIntegrationTestExtension.getMappingFields(
-              testIndexWithUpdatedMappingV2.getIndexName());
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
-    assertThat(mappingFields).containsKey("email");
-  }
-
-  @Test
   public void
       executeUpdateIndexFromTemplateStepPreexistingIndexWasNotFromTemplateAndLackedAliasWriteIndexFlag() {
     // given
@@ -202,120 +169,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThat(mappingFields).containsKey("email");
 
     // even though not being set before the writeIndex flag is now set
-    assertThatIndexIsSetAsWriteIndex(testIndexWithUpdatedMappingV2, INDEX_SUFFIX_PRE_ROLLOVER);
-  }
-
-  @Test
-  public void
-      executeUpdateIndexFromTemplateStepPreexistingIndexWasNotFromTemplateAndHadWriteAndReadAlias() {
-    // given
-    final String aliasForIndex =
-        getIndexNameService().getOptimizeIndexAliasForIndex(testIndexV1.getIndexName());
-    final String readOnlyAliasForIndex =
-        getIndexNameService().getOptimizeIndexAliasForIndex("im-read-only");
-
-    final Map<String, Boolean> aliases =
-        Map.of(
-            aliasForIndex, true,
-            readOnlyAliasForIndex, false);
-
-    try {
-      databaseIntegrationTestExtension.createIndex(
-          getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV1),
-          aliases,
-          (DefaultIndexMappingCreator) testIndexV1);
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
-
-    final UpgradePlan upgradePlan =
-        UpgradePlanBuilder.createUpgradePlan()
-            .fromVersion(FROM_VERSION)
-            .toVersion(TO_VERSION)
-            .addUpgradeStep(
-                applyLookupSkip(new UpdateIndexStep(testIndexWithTemplateUpdatedMappingV2)))
-            .build();
-
-    // when
-    upgradeProcedure.performUpgrade(upgradePlan);
-
-    // then
-    assertThat(
-            databaseIntegrationTestExtension.indexExists(
-                getIndexNameService()
-                    .getOptimizeIndexNameWithVersion(testIndexWithTemplateUpdatedMappingV2)))
-        .isTrue();
-
-    assertThatIndexIsSetAsWriteIndex(testIndexWithTemplateUpdatedMappingV2);
-    try {
-      assertThat(databaseIntegrationTestExtension.isAliasReadOnly(readOnlyAliasForIndex)).isTrue();
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
-  }
-
-  @Test
-  public void executeUpdateIndexWithTemplateAfterRolloverStep() {
-    // given rolled over users index
-    final UpgradePlan buildIndexPlan =
-        UpgradePlanBuilder.createUpgradePlan()
-            .fromVersion(FROM_VERSION)
-            .toVersion(INTERMEDIATE_VERSION)
-            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(testIndexWithTemplateV1)))
-            .build();
-
-    upgradeProcedure.performUpgrade(buildIndexPlan);
-
-    getPrefixAwareClient().triggerRollover(testIndexWithTemplateV1.getIndexName(), 0);
-
-    final UpgradePlan upgradePlan =
-        UpgradePlanBuilder.createUpgradePlan()
-            .fromVersion(INTERMEDIATE_VERSION)
-            .toVersion(TO_VERSION)
-            .addUpgradeStep(
-                applyLookupSkip(new UpdateIndexStep(testIndexWithTemplateUpdatedMappingV2)))
-            .build();
-
-    // when update index after rollover
-    upgradeProcedure.performUpgrade(upgradePlan);
-
-    // then optimize-users write alias points to updated users index
-    final String expectedSuffixAfterRollover = "-000002";
-    final String indexAlias =
-        getIndexNameService()
-            .getOptimizeIndexAliasForIndex(testIndexWithTemplateUpdatedMappingV2.getIndexName());
-    final Map<String, Set<String>> aliasMap;
-    try {
-      aliasMap = getAliasMap(indexAlias);
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
-    final List<String> indicesWithWriteAlias =
-        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(
-            testIndexWithTemplateUpdatedMappingV2.getIndexName());
-    final Map<String, ?> mappingFields;
-    try {
-      mappingFields =
-          databaseIntegrationTestExtension.getMappingFields(
-              testIndexWithUpdatedMappingV2.getIndexName());
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
-    assertThat(mappingFields).containsKey("email");
-    assertThat(aliasMap.keySet()).hasSize(2);
-    assertThat(indicesWithWriteAlias).hasSize(1);
-    assertThat(indicesWithWriteAlias.get(0)).contains(expectedSuffixAfterRollover);
-
-    // old template is gone
-    try {
-      assertThat(
-              databaseIntegrationTestExtension.templateExists(
-                  getIndexNameService()
-                      .getOptimizeIndexTemplateNameWithVersion(testIndexWithTemplateV1)))
-          .isFalse();
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+    assertThatIndexIsSetAsWriteIndex(testIndexWithUpdatedMappingV2, INDEX_SUFFIX);
   }
 
   @Test
