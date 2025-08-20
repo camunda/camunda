@@ -16,12 +16,16 @@ import {useDisplayStatus} from 'modules/hooks/variables';
 const MAX_VARIABLES_PER_REQUEST = 50;
 const VARIABLES_SEARCH_QUERY_KEY = 'variablesSearch';
 
+function getQueryKey(processInstanceKey: string, scopeId: string | null) {
+  return [VARIABLES_SEARCH_QUERY_KEY, processInstanceKey, scopeId];
+}
+
 function useVariables(options?: {refetchInterval?: number | false}) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const scopeId = getScopeId();
   const {refetchInterval = false} = options ?? {};
   const result = useInfiniteQuery({
-    queryKey: [VARIABLES_SEARCH_QUERY_KEY, processInstanceId, scopeId],
+    queryKey: getQueryKey(processInstanceId, scopeId),
     queryFn: async ({pageParam = 0}) => {
       const {response, error} = await searchVariables({
         filter: {
@@ -74,4 +78,4 @@ function useVariables(options?: {refetchInterval?: number | false}) {
   return Object.assign(result, {displayStatus});
 }
 
-export {VARIABLES_SEARCH_QUERY_KEY, useVariables};
+export {VARIABLES_SEARCH_QUERY_KEY, useVariables, getQueryKey};
