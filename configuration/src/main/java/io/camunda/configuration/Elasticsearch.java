@@ -12,15 +12,7 @@ import java.util.Set;
 public class Elasticsearch extends SecondaryStorageDatabase {
 
   @Override
-  protected String prefix() {
-    return "camunda.data.secondary-storage.elasticsearch";
-  }
-
-  @Override
-  protected Set<String> legacyUrlProperties() {
-    return Set.of(
-        "camunda.database.url",
-        "camunda.operate.elasticsearch.url",
-        "camunda.tasklist.elasticsearch.url");
+  protected String databaseName() {
+    return "elasticsearch";
   }
 }

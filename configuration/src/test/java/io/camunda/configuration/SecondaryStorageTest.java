@@ -9,22 +9,29 @@ package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+@ActiveProfiles({"broker", "tasklist", "operate"})
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
   UnifiedConfigurationHelper.class,
   TasklistPropertiesOverride.class,
   OperatePropertiesOverride.class,
+  BrokerBasedPropertiesOverride.class,
 })
 public class SecondaryStorageTest {
 
@@ -37,28 +44,63 @@ public class SecondaryStorageTest {
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
     final TasklistProperties tasklistProperties;
+    final BrokerBasedProperties brokerBasedProperties;
 
     WithOnlyUnifiedConfigSet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties) {
+        @Autowired final TasklistProperties tasklistProperties,
+        @Autowired final BrokerBasedProperties brokerBasedProperties) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
+      this.brokerBasedProperties = brokerBasedProperties;
     }
 
-    // @Test
+    @Test
+    @SuppressWarnings("unchecked")
     void testCamundaDataSecondaryStorageType() {
       final DatabaseType expectedOperateDatabaseType = DatabaseType.Elasticsearch;
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
 
       final String expectedTasklistDatabaseType = "elasticsearch";
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
+
+      /* camundaExporter */
+
+      final ExporterCfg camundaExporter =
+          brokerBasedProperties.getExporters().get("camundaExporter");
+      assertThat(camundaExporter).isNotNull();
+
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      final Map<String, Object> connect = (Map<String, Object>) args.get("connect");
+      assertThat(connect).isNotNull();
+
+      final String type = (String) connect.get("type");
+      assertThat(type).isEqualTo("elasticsearch");
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void testCamundaDataSecondaryStorageElasticsearchUrl() {
       final String expectedUrl = "http://expected-url:4321";
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+
+      /* camundaExporter */
+
+      final ExporterCfg camundaExporter =
+          brokerBasedProperties.getExporters().get("camundaExporter");
+      assertThat(camundaExporter).isNotNull();
+
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      final Map<String, Object> connect = (Map<String, Object>) args.get("connect");
+      assertThat(connect).isNotNull();
+
+      final String url = (String) connect.get("url");
+      assertThat(url).isEqualTo(expectedUrl);
     }
   }
 
@@ -79,21 +121,40 @@ public class SecondaryStorageTest {
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
     final TasklistProperties tasklistProperties;
+    final BrokerBasedProperties brokerBasedProperties;
 
     WithNewAndLegacySet(
         @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties) {
+        @Autowired final TasklistProperties tasklistProperties,
+        @Autowired final BrokerBasedProperties brokerBasedProperties) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
+      this.brokerBasedProperties = brokerBasedProperties;
     }
 
-    // @Test
+    @Test
+    @SuppressWarnings("unchecked")
     void testCamundaDataSecondaryStorageType() {
       final DatabaseType expectedOperateDatabaseType = DatabaseType.Elasticsearch;
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
 
       final String expectedTasklistDatabaseType = "elasticsearch";
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
+
+      /* camundaExporter */
+
+      final ExporterCfg camundaExporter =
+          brokerBasedProperties.getExporters().get("camundaExporter");
+      assertThat(camundaExporter).isNotNull();
+
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      final Map<String, Object> connect = (Map<String, Object>) args.get("connect");
+      assertThat(connect).isNotNull();
+
+      final String type = (String) connect.get("type");
+      assertThat(type).isEqualTo("elasticsearch");
     }
 
     @Test
@@ -101,6 +162,21 @@ public class SecondaryStorageTest {
       final String expectedUrl = "http://matching-url:4321";
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+
+      /* camundaExporter */
+
+      final ExporterCfg camundaExporter =
+          brokerBasedProperties.getExporters().get("camundaExporter");
+      assertThat(camundaExporter).isNotNull();
+
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      final Map<String, Object> connect = (Map<String, Object>) args.get("connect");
+      assertThat(connect).isNotNull();
+
+      final String url = (String) connect.get("url");
+      assertThat(url).isEqualTo(expectedUrl);
     }
   }
 }
