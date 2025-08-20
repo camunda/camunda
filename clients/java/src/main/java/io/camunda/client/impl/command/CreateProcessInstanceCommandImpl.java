@@ -180,10 +180,7 @@ public final class CreateProcessInstanceCommandImpl
 
   @Override
   public CreateProcessInstanceCommandStep3 tags(final Set<String> tags) {
-    // For gRPC, tags support may be added in the future
     grpcRequestObjectBuilder.addAllTags(tags);
-
-    // For HTTP, use the List directly
     httpRequestObject.setTags(tags);
     return this;
   }
