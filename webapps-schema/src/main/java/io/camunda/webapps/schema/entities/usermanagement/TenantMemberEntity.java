@@ -12,10 +12,20 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public class TenantMemberEntity extends AbstractExporterEntity<TenantMemberEntity> {
 
+  private String tenantId;
   private String memberId;
   private EntityType memberType;
 
   private EntityJoinRelation join;
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public TenantMemberEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
 
   public String getMemberId() {
     return memberId;

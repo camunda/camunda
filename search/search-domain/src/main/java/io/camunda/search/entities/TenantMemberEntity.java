@@ -11,4 +11,4 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record TenantMemberEntity(String id, EntityType entityType) {}
+public record TenantMemberEntity(String tenantId, String id, EntityType entityType) {}
