@@ -10,9 +10,9 @@ package io.camunda.operate.opensearch.client;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
+import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -23,16 +23,16 @@ import org.springframework.stereotype.Component;
 public class OpensearchTestDataHelper {
   @Autowired RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired OperateUserIndex operateUserIndex;
+  @Autowired UserIndex userIndex;
 
   public void addUser(final String id, final String name, final String password) {
     final var user = new UserEntity();
-    user.setUserId(id);
-    user.setDisplayName(name);
+    user.setId(id);
+    user.setName(name);
     user.setPassword(password);
 
     final var indexRequestBuilder =
-        indexRequestBuilder(operateUserIndex.getFullQualifiedName())
+        indexRequestBuilder(userIndex.getFullQualifiedName())
             .id(id)
             .document(user)
             .refresh(Refresh.True);
