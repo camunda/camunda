@@ -100,8 +100,8 @@ public class PingConsoleRunnerIT {
             null);
 
     final PingConsoleRunner pingConsoleRunner =
-        new PingConsoleRunner(config, managementServices, applicationContext
-            , brokerTopologyManager);
+        new PingConsoleRunner(
+            config, managementServices, applicationContext, brokerTopologyManager);
 
     // when
     pingConsoleRunner.run(null);
