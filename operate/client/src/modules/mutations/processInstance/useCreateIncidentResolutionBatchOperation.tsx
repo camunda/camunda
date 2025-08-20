@@ -19,9 +19,12 @@ const useCreateIncidentResolutionBatchOperation = (
   processInstanceKey: string,
   options?: Partial<
     UseMutationOptions<CreateIncidentResolutionBatchOperationResponseBody>
-  >,
+  > & {
+    shouldSkipResultCheck?: boolean;
+  },
 ) => {
   const queryClient = useQueryClient();
+  const {shouldSkipResultCheck, ...mutationOptions} = options ?? {};
 
   return useMutation({
     mutationKey: [
@@ -39,6 +42,10 @@ const useCreateIncidentResolutionBatchOperation = (
       }
 
       const {batchOperationKey} = response;
+
+      if (shouldSkipResultCheck) {
+        return response;
+      }
 
       await queryClient.fetchQuery({
         queryKey: ['queryBatchOperations', batchOperationKey],
@@ -71,7 +78,7 @@ const useCreateIncidentResolutionBatchOperation = (
 
       return response;
     },
-    ...options,
+    ...mutationOptions,
   });
 };
 

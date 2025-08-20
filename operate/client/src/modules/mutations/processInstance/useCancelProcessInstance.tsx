@@ -17,15 +17,22 @@ import {getProcessInstanceQueryKey} from 'modules/queries/processInstance/usePro
 
 function useCancelProcessInstance(
   processInstanceKey: string,
-  options?: Partial<UseMutationOptions>,
+  options?: Partial<UseMutationOptions> & {
+    shouldSkipResultCheck?: boolean;
+  },
 ) {
   const queryClient = useQueryClient();
+  const {shouldSkipResultCheck, ...mutationOptions} = options ?? {};
 
   return useMutation({
     mutationFn: async () => {
       const response = await cancelProcessInstance(processInstanceKey);
       if (!response.ok) {
         throw new Error(response.statusText);
+      }
+
+      if (shouldSkipResultCheck) {
+        return response;
       }
 
       await queryClient.fetchQuery({
@@ -49,7 +56,7 @@ function useCancelProcessInstance(
 
       return response;
     },
-    ...options,
+    ...mutationOptions,
   });
 }
 
