@@ -74,7 +74,7 @@ public class DecisionInstanceExportHandler
     final DecisionEvaluationRecordValue value = record.getValue();
     final var state = getState(record, value, index);
     final var key = record.getKey();
-    final var id = record.getKey() + "-" + index;
+    final var id = evaluatedDecision.getDecisionEvaluationInstanceKey();
 
     return new DecisionInstanceDbModel.Builder()
         .decisionInstanceId(id)
