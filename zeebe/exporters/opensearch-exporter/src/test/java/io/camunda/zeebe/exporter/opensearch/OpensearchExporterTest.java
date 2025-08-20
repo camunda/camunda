@@ -81,6 +81,19 @@ final class OpensearchExporterTest {
   }
 
   @Test
+  void shouldNotFailOnOpenIfElasticMetadataDoesNotContainRecordCounters() {
+    // given
+    final var exporter = new OpensearchExporter();
+    exporter.configure(context);
+    final var storedMetadataAsJSON = "{\"recordCountersByValueType\":{}}";
+    final var serializedMetadata = storedMetadataAsJSON.getBytes(StandardCharsets.UTF_8);
+    controller.updateLastExportedRecordPosition(1, serializedMetadata);
+
+    // when
+    assertThatCode(() -> exporter.open(controller)).doesNotThrowAnyException();
+  }
+
+  @Test
   void shouldCreateIndexStateManagementPolicy() {
     // given
     config.retention.setEnabled(true);
