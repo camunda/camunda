@@ -43,6 +43,18 @@
       <artifactId>spring-boot-autoconfigure</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>value</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
