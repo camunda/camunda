@@ -8,11 +8,11 @@
 package io.camunda.exporter.http.subscription;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 
-public interface BatchMapper<IN, OUT> {
+public interface Transport<T> extends CloseableSilently {
+  T prepare(Record<?> record);
 
-  BatchEntry<IN> map(Record<?> record);
-
-  OUT map(List<BatchEntry<IN>> batchEntry);
+  void send(List<T> records);
 }

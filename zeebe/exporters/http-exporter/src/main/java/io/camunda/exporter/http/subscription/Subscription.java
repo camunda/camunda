@@ -8,47 +8,40 @@
 package io.camunda.exporter.http.subscription;
 
 import io.camunda.exporter.http.matcher.RecordMatcher;
-import io.camunda.exporter.http.transport.Transport;
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Subscription<IN, OUT> {
+public class Subscription<T> {
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
-  private final Transport<OUT> transport;
-  private final BatchMapper<IN, OUT> batchEntryMapper;
-  private final String target;
+  private final Transport<T> transport;
   private final RecordMatcher matcher;
-  private final Batch<IN> batch;
+  private final Batch<T> batch;
   private final ReentrantLock lock = new ReentrantLock();
   private final boolean continueOnError;
 
   public Subscription(
-      final Transport<OUT> transport,
-      final BatchMapper<IN, OUT> batchEntryMapper,
+      final Transport<T> transport,
       final RecordMatcher matcher,
-      final String target,
-      final Batch<IN> batch,
+      final Batch<T> batch,
       final boolean continueOnError) {
     this.transport = transport;
-    this.target = target;
     this.matcher = matcher;
-    this.batchEntryMapper = batchEntryMapper;
     this.batch = batch;
     this.continueOnError = continueOnError;
     if (continueOnError) {
       log.warn(
-          "Subscription to {} is configured to continue on error. This may lead to data loss if errors occur during export.",
-          target);
+          "Subscription is configured to continue on error. This may lead to data loss if errors occur during export.");
     }
   }
 
   public Long exportRecord(final Record<?> record) {
     if (matcher.matches(record)) {
       // Record matches the filter criteria, we can add it to the batch
-      return batchRecord(batchEntryMapper.map(record));
+      return batchRecord(record);
     } else if (batch.isEmpty()) {
       // An empty batch allows us to save the exported record position
       return record.getPosition();
@@ -59,30 +52,32 @@ public class Subscription<IN, OUT> {
     }
   }
 
-  private Long batchRecord(final BatchEntry<IN> batchEntry) {
+  private Long batchRecord(final Record<?> record) {
     lock.lock();
     try {
-      return verifyAndAddToBatch(batchEntry);
+      return verifyAndAddToBatch(record);
     } finally {
       lock.unlock();
     }
   }
 
-  private Long verifyAndAddToBatch(final BatchEntry<IN> batchEntry) {
+  private Long verifyAndAddToBatch(final Record<?> record) {
     final var spaceLeft = batch.spaceLeft();
+    final var recordLogPosition = record.getPosition();
+    final Supplier<T> dataSupplier = () -> transport.prepare(record);
     switch (spaceLeft) {
       case 0:
         {
           // We flush the batch as it is full
           final var logPositionFlushed = flush();
-          batch.addRecord(batchEntry);
+          batch.addRecord(recordLogPosition, dataSupplier);
           // We return the last log position that was flushed
           return logPositionFlushed;
         }
       case 1:
         {
           // We add to the batch if it has only one space left
-          if (batch.addRecord(batchEntry)) {
+          if (batch.addRecord(recordLogPosition, dataSupplier)) {
             // Flush if the record was added successfully as its full now
             return flush();
           } else {
@@ -93,7 +88,7 @@ public class Subscription<IN, OUT> {
       default:
         {
           // We have space left in the batch, we can add the record
-          if (batch.addRecord(batchEntry) && batch.shouldFlush()) {
+          if (batch.addRecord(recordLogPosition, dataSupplier) && batch.shouldFlush()) {
             // If the record was added successfully and the batch should flush, we flush it
             return flush();
           } else {
@@ -120,17 +115,12 @@ public class Subscription<IN, OUT> {
   private Long flush() {
     long lastPosition;
     try {
-      final var data = batchEntryMapper.map(batch.getEntries());
-      transport.send(target, data);
+      transport.send(batch.getEntries());
       lastPosition = batch.flush();
     } catch (final Exception e) {
       if (continueOnError) {
         lastPosition = batch.flush();
-        log.debug(
-            "Failed to post records to {}. Continuing with last position: {}.",
-            target,
-            lastPosition,
-            e);
+        log.debug("Failed to send records. Continuing with last position: {}.", lastPosition, e);
       } else {
         throw new RuntimeException(e);
       }
@@ -138,7 +128,7 @@ public class Subscription<IN, OUT> {
     return lastPosition;
   }
 
-  public Batch<IN> getBatch() {
+  public Batch<T> getBatch() {
     return batch;
   }
 

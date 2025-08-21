@@ -12,7 +12,7 @@ import io.camunda.exporter.http.config.HttpExporterConfig;
 import io.camunda.exporter.http.config.SubscriptionConfig;
 import io.camunda.exporter.http.config.SubscriptionConfigFactory;
 import io.camunda.exporter.http.subscription.Subscription;
-import io.camunda.exporter.http.transport.Transport;
+import io.camunda.exporter.http.subscription.Transport;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -33,7 +33,7 @@ public class HttpExporter implements Exporter {
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
   private Controller controller;
   private SubscriptionConfig subscriptionConfig;
-  private Subscription<String, String> subscription;
+  private Subscription<?> subscription;
 
   /**
    * Default constructor for the Exporter. This constructor is used when the exporter is
@@ -96,7 +96,7 @@ public class HttpExporter implements Exporter {
     log.info("Purging HTTP Exporter");
   }
 
-  protected Subscription<String, String> getSubscription() {
+  protected Subscription<?> getSubscription() {
     return subscription;
   }
 

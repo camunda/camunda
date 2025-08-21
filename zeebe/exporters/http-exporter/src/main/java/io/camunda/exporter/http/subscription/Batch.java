@@ -9,11 +9,12 @@ package io.camunda.exporter.http.subscription;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 public class Batch<T> {
 
   private final int size;
-  private final List<BatchEntry<T>> entries;
+  private final List<T> entries;
   private final long flushInterval;
   private long lastTimeFlushed = System.currentTimeMillis();
   private long lastLogPosition = -1;
@@ -44,19 +45,19 @@ public class Batch<T> {
     return System.currentTimeMillis() - lastTimeFlushed >= flushInterval;
   }
 
-  public boolean addRecord(final BatchEntry<T> batchEntry) {
+  public boolean addRecord(final long logPosition, final Supplier<T> entrySupplier) {
     if (isFull()) {
       throw new IllegalStateException("Batch has too many entries. Drain first.");
     } else {
-      if (lastLogPosition == -1 || batchEntry.logPosition() > lastLogPosition) {
-        lastLogPosition = batchEntry.logPosition();
-        return entries.add(batchEntry);
+      if (lastLogPosition == -1 || logPosition > lastLogPosition) {
+        lastLogPosition = logPosition;
+        return entries.add(entrySupplier.get());
       }
     }
     return false;
   }
 
-  public List<BatchEntry<T>> getEntries() {
+  public List<T> getEntries() {
     return new ArrayList<>(entries);
   }
 

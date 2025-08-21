@@ -7,4 +7,4 @@
  */
 package io.camunda.exporter.http.transport;
 
-public record HttpTransportConfig(int maxRetries, long retryDelay, long timeout) {}
+public record HttpTransportConfig(String url, int maxRetries, long retryDelay, long timeout) {}

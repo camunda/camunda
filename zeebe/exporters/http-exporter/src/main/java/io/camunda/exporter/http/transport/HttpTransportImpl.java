@@ -7,12 +7,18 @@
  */
 package io.camunda.exporter.http.transport;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.util.RawValue;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 import dev.failsafe.Timeout;
 import dev.failsafe.TimeoutExceededException;
+import io.camunda.exporter.http.subscription.Transport;
+import io.camunda.zeebe.protocol.record.Record;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -32,12 +38,18 @@ public class HttpTransportImpl implements Transport<String> {
   private static final String CONTENT_TYPE_JSON = "application/json";
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
+  private final ObjectMapper objectMapper;
   private final CloseableHttpClient httpClient;
+  private final String url;
   private final Timeout<Object> timeout;
   private final RetryPolicy<Object> retryPolicy;
 
   public HttpTransportImpl(
-      final HttpTransportConfig httpTransportConfig, final CloseableHttpClient httpClient) {
+      final ObjectMapper objectMapper, final HttpTransportConfig httpTransportConfig) {
+    this.objectMapper = objectMapper;
+
+    url = httpTransportConfig.url();
+
     retryPolicy =
         RetryPolicy.builder()
             .handle(IOException.class, ClientProtocolException.class, RuntimeException.class)
@@ -46,21 +58,22 @@ public class HttpTransportImpl implements Transport<String> {
             .build();
 
     timeout = Timeout.of(Duration.ofMillis(httpTransportConfig.timeout()));
-    this.httpClient = httpClient;
-  }
 
-  public HttpTransportImpl(final HttpTransportConfig httpTransportConfig) {
-    this(
-        httpTransportConfig,
+    httpClient =
         HttpClientBuilder.create()
             .setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy())
-            .build());
+            .build();
   }
 
   @Override
-  public void send(final String url, final String json) {
+  public String prepare(final Record<?> record) {
+    return toJson(record);
+  }
+
+  @Override
+  public void send(final List<String> records) {
     log.debug("Posting records to url: {}", url);
-    sendPostRequest(url, json);
+    sendPostRequest(url, toJson(toRawValues(records)));
   }
 
   private void sendPostRequest(final String url, final String json) {
@@ -114,6 +127,18 @@ public class HttpTransportImpl implements Transport<String> {
           statusCode,
           response.getStatusLine().getReasonPhrase());
       throw new RuntimeException("Failed to post records, status: " + statusCode);
+    }
+  }
+
+  private List<RawValue> toRawValues(final List<String> records) {
+    return records.stream().map(RawValue::new).toList();
+  }
+
+  private String toJson(final Object object) {
+    try {
+      return objectMapper.writeValueAsString(object);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
     }
   }
 

@@ -17,7 +17,6 @@ import io.camunda.exporter.http.subscription.Batch;
 import io.camunda.exporter.http.subscription.Subscription;
 import io.camunda.exporter.http.transport.HttpTransportConfig;
 import io.camunda.exporter.http.transport.HttpTransportImpl;
-import io.camunda.exporter.http.transport.JsonBatchMapper;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -106,7 +105,7 @@ public class SubscriptionConfigFactory {
     return file;
   }
 
-  public Subscription<String, String> createSubscription(final SubscriptionConfig config) {
+  public Subscription<String> createSubscription(final SubscriptionConfig config) {
 
     FilterRecordMatcher valueTypeMatcher = null;
     if (config.filters() != null && !config.filters().isEmpty()) {
@@ -125,12 +124,11 @@ public class SubscriptionConfigFactory {
 
     final var httpClient =
         new HttpTransportImpl(
-            new HttpTransportConfig(config.maxRetries(), config.retryDelay(), config.timeout()));
+            batchObjectMapper,
+            new HttpTransportConfig(
+                config.url(), config.maxRetries(), config.retryDelay(), config.timeout()));
 
-    final var mapper = new JsonBatchMapper(batchObjectMapper);
-
-    return new Subscription<>(
-        httpClient, mapper, recordMatcherImpl, config.url(), batch, config.continueOnError());
+    return new Subscription<>(httpClient, recordMatcherImpl, batch, config.continueOnError());
   }
 
   public SubscriptionConfig readConfigFrom(final HttpExporterConfig configuration) {
