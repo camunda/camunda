@@ -21,7 +21,7 @@ public abstract class DatabaseCondition implements Condition {
   public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
     final Environment environment = context.getEnvironment();
 
-    String dbType =
+    final String dbType =
         Optional.ofNullable(environment.getProperty(DATABASE_PROPERTY)).orElse("elasticsearch");
 
     return (StringUtils.isEmpty(dbType) && getDefaultIfEmpty())
