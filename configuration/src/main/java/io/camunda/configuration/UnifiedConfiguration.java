@@ -18,6 +18,6 @@ public class UnifiedConfiguration {
   @Autowired private Camunda camunda;
 
   public Camunda getCamunda() {
-    return camunda;
+    return camunda != null ? camunda : new Camunda();
   }
 }

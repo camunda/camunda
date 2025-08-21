@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.google.cloud.storage.BucketInfo;
+import io.camunda.configuration.Gcs;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
@@ -99,12 +100,15 @@ public class ClusteredBackupRestoreTest {
     // then -- restoring with one broker is successful
     try (final var restoreApp =
         new TestRestoreApp()
-            .withBrokerConfig(
-                brokerCfg -> {
-                  configureBackupStore(brokerCfg);
-                  brokerCfg.getCluster().setClusterSize(1);
-                  brokerCfg.getCluster().setPartitionsCount(3);
-                  brokerCfg.getCluster().setReplicationFactor(1);
+            .withUnifiedConfiguration(
+                cfg -> {
+                  final var backup = cfg.getCamunda().getData().getBackup();
+                  backup.getGcs().setAuth(Gcs.GcsBackupStoreAuth.NONE);
+                  backup.getGcs().setBucketName(BUCKET_NAME);
+                  backup.getGcs().setHost(GCS.externalEndpoint());
+                  cfg.getCamunda().getCluster().setSize(1);
+                  cfg.getCamunda().getCluster().setPartitionCount(3);
+                  cfg.getCamunda().getCluster().setReplicationFactor(1);
                 })
             .withBackupId(backupId)) {
 

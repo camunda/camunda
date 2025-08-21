@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -78,6 +79,7 @@ public class ScaleUpPartitionsTest {
   @AutoClose CamundaClient camundaClient;
   private ClusterActuator clusterActuator;
   private BackupActuator backupActuator;
+  private UnifiedConfiguration unifiedConfiguration;
 
   private final String containerName =
       RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
@@ -108,6 +110,7 @@ public class ScaleUpPartitionsTest {
     camundaClient = cluster.availableGateway().newClientBuilder().build();
     clusterActuator = ClusterActuator.of(cluster.availableGateway());
     backupActuator = BackupActuator.of(cluster.availableGateway());
+    unifiedConfiguration = new UnifiedConfiguration();
   }
 
   private void configureBackupStore(final BrokerBasedProperties bb) {
@@ -469,8 +472,7 @@ public class ScaleUpPartitionsTest {
       FileUtil.deleteFolderIfExists(dataFolder);
 
       Files.createDirectories(dataFolder);
-      try (final var restoreApp =
-          new TestRestoreApp(broker.brokerConfig()).withBackupId(backupId)) {
+      try (final var restoreApp = new TestRestoreApp(unifiedConfiguration).withBackupId(backupId)) {
         assertThatNoException().isThrownBy(restoreApp::start);
       }
       FileUtil.flushDirectory(dataFolder);
