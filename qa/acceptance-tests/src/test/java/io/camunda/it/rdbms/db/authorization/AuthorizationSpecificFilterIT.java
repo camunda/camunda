@@ -21,10 +21,14 @@ import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.sort.AuthorizationSort;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
@@ -71,6 +75,32 @@ public class AuthorizationSpecificFilterIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().ownerId()).isEqualTo("foo");
+  }
+
+  @ParameterizedTest
+  @CsvSource({"USER, 1", "GROUP, 0"})
+  public void shouldFindWithOwnerType(final EntityType ownerType, final int expectedCpount) {
+    createAndSaveRandomAuthorizations(rdbmsWriter);
+    createAndSaveAuthorization(
+        rdbmsWriter,
+        AuthorizationFixtures.createRandomized(
+            b ->
+                b.authorizationKey(100L)
+                    .ownerId("foo")
+                    .ownerType(EntityType.USER.name())
+                    .resourceType("TEST")));
+
+    final var searchResult =
+        authorizationReader.search(
+            new AuthorizationQuery(
+                new AuthorizationFilter.Builder()
+                    .ownerTypeToOwnerIds(Map.of(ownerType, Set.of("foo")))
+                    .build(),
+                AuthorizationSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(expectedCpount);
+    assertThat(searchResult.items()).hasSize(expectedCpount);
   }
 
   static List<AuthorizationFilter> shouldFindWithSpecificFilterParameters() {

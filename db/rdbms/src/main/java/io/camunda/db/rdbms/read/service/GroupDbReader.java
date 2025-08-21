@@ -13,9 +13,11 @@ import io.camunda.db.rdbms.sql.columns.GroupSearchColumn;
 import io.camunda.db.rdbms.write.domain.GroupDbModel;
 import io.camunda.search.clients.reader.GroupReader;
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,10 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
   @Override
   public SearchQueryResult<GroupEntity> search(
       final GroupQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    if (shouldReturnEmptyResult(query.filter())) {
+      return new SearchQueryResult.Builder<GroupEntity>().total(0).items(List.of()).build();
+    }
+
     final var dbSort = convertSort(query.sort(), GroupSearchColumn.GROUP_ID);
     final var dbQuery =
         GroupDbQuery.of(
@@ -61,5 +67,9 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
 
   private GroupEntity map(final GroupDbModel model) {
     return new GroupEntity(model.groupKey(), model.groupId(), model.name(), model.description());
+  }
+
+  private boolean shouldReturnEmptyResult(final GroupFilter filter) {
+    return filter.memberIds() != null && filter.memberIds().isEmpty();
   }
 }

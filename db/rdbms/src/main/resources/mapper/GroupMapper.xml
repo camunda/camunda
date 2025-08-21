@@ -13,37 +13,38 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.GroupDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}GROUPS g
-    <if test="filter.memberIds != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_ID = gm.GROUP_ID
-      AND gm.ENTITY_TYPE = #{filter.childMemberType}
-    </if>
-    <if test="filter.tenantId != null">
-      JOIN ${prefix}TENANT_MEMBER tm ON g.GROUP_ID = tm.ENTITY_ID AND tm.ENTITY_TYPE = 'GROUP'
-    </if>
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.GroupDbQuery"
     resultMap="io.camunda.db.rdbms.sql.GroupMapper.groupResultMap">
+SELECT
+  t.GROUP_KEY,
+    t.GROUP_ID,
+    t.NAME,
+    t.DESCRIPTION,
+    gm.GROUP_ID AS MEMBER_GROUP_ID,
+    gm.ENTITY_ID AS MEMBER_ENTITY_ID,
+    gm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
+    FROM (
     SELECT * FROM (
     SELECT
     g.GROUP_KEY,
     g.GROUP_ID,
     g.NAME,
-    g.DESCRIPTION,
-    gm.GROUP_ID AS MEMBER_GROUP_ID,
-    gm.ENTITY_ID AS MEMBER_ENTITY_ID,
-    gm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
+    g.DESCRIPTION
     FROM ${prefix}GROUPS g
-    LEFT JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_ID = gm.GROUP_ID
-    <if test="filter.tenantId != null">
-      JOIN ${prefix}TENANT_MEMBER tm ON g.GROUP_ID = tm.ENTITY_ID AND tm.ENTITY_TYPE = 'GROUP'
-    </if>
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) t
+    LEFT JOIN ${prefix}GROUP_MEMBER gm ON t.GROUP_ID = gm.GROUP_ID
+    <if test="filter.childMemberType != null">
+      AND gm.ENTITY_TYPE = #{filter.childMemberType}
+    </if>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
 
   <sql id="searchFilter">
@@ -56,14 +57,37 @@
       </foreach>
     </if>
     <if test="filter.name != null">AND g.NAME = #{filter.name}</if>
-    <if test="filter.memberIds != null">
-      AND gm.ENTITY_ID IN
+
+    <if
+      test="filter.memberIds != null and !filter.memberIds.isEmpty() and filter.childMemberType != null">
+      AND g.GROUP_ID IN ( SELECT gmf.GROUP_ID FROM ${prefix}GROUP_MEMBER gmf
+      WHERE
+      gmf.ENTITY_TYPE = #{filter.childMemberType}
+      AND gmf.ENTITY_ID IN
       <foreach collection="filter.memberIds" item="memberId" open="(" separator="," close=")">
         #{memberId}
       </foreach>
-      AND gm.ENTITY_TYPE = #{filter.childMemberType}
+      )
     </if>
-    <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
+    <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+      AND g.GROUP_ID IN ( SELECT gmt.GROUP_ID FROM ${prefix}GROUP_MEMBER gmt
+      WHERE 1=1
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" open="AND ("
+        separator=" OR " close=")">
+        <if test="values != null and !values.isEmpty()">
+          gmt.ENTITY_TYPE = #{memberType} AND gmt.ENTITY_ID IN
+          <foreach collection="values" item="value" open="(" separator=" , " close=")">
+            #{value}
+          </foreach>
+        </if>
+      </foreach>
+      )
+    </if>
+    <if test="filter.tenantId != null">
+      AND g.GROUP_ID IN ( SELECT tm.ENTITY_ID FROM ${prefix}TENANT_MEMBER tm
+      WHERE tm.ENTITY_TYPE = 'GROUP'
+      AND tm.TENANT_ID = #{filter.tenantId})
+    </if>
   </sql>
 
   <resultMap id="groupResultMap" type="io.camunda.db.rdbms.write.domain.GroupDbModel">

@@ -39,6 +39,14 @@
     RESOURCE_ID
     FROM ${prefix}AUTHORIZATIONS
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
+    <!--
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND RESOURCE_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        close=")">
+        #{resourceId}
+      </foreach>
+    </if> -->
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <!-- inner orderBy for keyset pagination -->
@@ -67,6 +75,16 @@
       AND OWNER_ID IN
       <foreach collection="filter.ownerIds" item="value" open="(" separator=", "
         close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.ownerTypeToOwnerIds != null and !filter.ownerTypeToOwnerIds.isEmpty()">
+      <foreach collection="filter.ownerTypeToOwnerIds" index="ownerType" item="values" open="AND (" separator=" OR " close=")">
+        <if test="values != null and !values.isEmpty()">
+          OWNER_TYPE = #{ownerType} AND OWNER_ID IN
+          <foreach collection="values" item="value" open="(" separator=" , " close=")">
+            #{value}
+          </foreach>
+        </if>
       </foreach>
     </if>
     <if test="filter.resourceIds != null and !filter.resourceIds.isEmpty()">
