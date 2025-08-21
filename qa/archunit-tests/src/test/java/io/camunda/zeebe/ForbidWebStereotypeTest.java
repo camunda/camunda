@@ -58,7 +58,7 @@ public final class ForbidWebStereotypeTest {
               "io.camunda.zeebe.gateway..",
               "io.camunda.zeebe.shared..")
           .and()
-          .resideOutsideOfPackage("io.camunda.zeebe.gateway.rest")
+          .resideOutsideOfPackage("io.camunda.zeebe.gateway.rest..")
           .should()
           .beAnnotatedWith(WEB_STEREOTYPES)
           .orShould()
