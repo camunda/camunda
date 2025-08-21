@@ -48,7 +48,8 @@ public final class EngineConfiguration {
   public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR = 2;
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
-  public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION = Duration.ofMinutes(5);
+  public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
+      Duration.ofMinutes(5);
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
@@ -82,7 +83,8 @@ public final class EngineConfiguration {
 
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
-  private Duration commandRedistributionMaxBackoff = DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
+  private Duration commandRedistributionMaxBackoff =
+      DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
