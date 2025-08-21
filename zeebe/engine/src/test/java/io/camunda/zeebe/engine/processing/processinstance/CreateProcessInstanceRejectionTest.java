@@ -329,4 +329,40 @@ public class CreateProcessInstanceRejectionTest {
         .hasRejectionReason(
             "Expected to create instance of process with tags, but the number of tags exceeds the limit of 10.");
   }
+
+  @Test
+  public void shouldRejectCommandIfElementIsInsideAdHocSubProcess() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .adHocSubProcess(
+                    "adHoc",
+                    adHoc -> {
+                      adHoc.task("A");
+                    })
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withStartInstruction("A")
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create instance of process with start instructions but the element with id 'A' is inside an ad-hoc subprocess. The creation of elements inside an ad-hoc subprocess is not supported.");
+  }
 }

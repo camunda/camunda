@@ -207,6 +207,7 @@ public final class ProcessInstanceCreationCreateProcessor
     return validateHasNoneStartEventOrStartInstructions(process, startInstructions)
         .flatMap(valid -> validateElementsExist(process, startInstructions))
         .flatMap(valid -> validateElementsNotInsideMultiInstance(process, startInstructions))
+        .flatMap(valid -> validateElementsNotInsideAdHocSubProcess(process, startInstructions))
         .flatMap(valid -> validateTargetsSupportedElementType(process, startInstructions))
         .flatMap(
             valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
@@ -282,6 +283,43 @@ public final class ProcessInstanceCreationCreateProcessor
       return true;
     } else {
       return hasMultiInstanceScope(flowScope);
+    }
+  }
+
+  private Either<Rejection, ?> validateElementsNotInsideAdHocSubProcess(
+      final ExecutableProcess process,
+      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+
+    return startInstructions.stream()
+        .map(ProcessInstanceCreationStartInstruction::getElementId)
+        .filter(elementId -> isElementInsideAdHocSubProcess(process, elementId))
+        .findAny()
+        .map(
+            elementId ->
+                Either.left(
+                    new Rejection(
+                        RejectionType.INVALID_ARGUMENT,
+                        "Expected to create instance of process with start instructions but the element with id '%s' is inside an ad-hoc subprocess. The creation of elements inside an ad-hoc subprocess is not supported."
+                            .formatted(elementId))))
+        .orElse(VALID);
+  }
+
+  private boolean isElementInsideAdHocSubProcess(
+      final ExecutableProcess process, final String elementId) {
+    final var element = process.getElementById(wrapString(elementId));
+    return element != null && hasAdHocSubProcessScope(element);
+  }
+
+  private boolean hasAdHocSubProcessScope(final ExecutableFlowElement flowElement) {
+    final var flowScope = flowElement.getFlowScope();
+    if (flowScope == null) {
+      return false;
+    }
+
+    if (flowScope.getElementType() == BpmnElementType.AD_HOC_SUB_PROCESS) {
+      return true;
+    } else {
+      return hasAdHocSubProcessScope(flowScope);
     }
   }
 
