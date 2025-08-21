@@ -96,7 +96,6 @@ public class GroupControllerTest {
     @Test
     void shouldReturnErrorOnUpdate() {
       // given
-      final var groupKey = 111L;
       final var groupId = "111";
       final var groupName = "updatedName";
       final var description = "updatedDescription";

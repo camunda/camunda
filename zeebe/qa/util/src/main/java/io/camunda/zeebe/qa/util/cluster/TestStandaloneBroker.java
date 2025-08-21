@@ -32,6 +32,7 @@ import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -136,6 +137,18 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // it when we override a property.
     AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
     return super.withProperty(key, value);
+  }
+
+  @Override
+  public TestStandaloneBroker withAuthenticationMethod(
+      final AuthenticationMethod authenticationMethod) {
+    // as mode is OIDC, and we have a user created by default in `TestStandaloneBroker`
+    // we need to reset the list of users to empty list as having pre-configured user in
+    // OIDC is not allowed
+    if (authenticationMethod == AuthenticationMethod.OIDC) {
+      securityConfig.getInitialization().setUsers(new ArrayList<>());
+    }
+    return super.withAuthenticationMethod(authenticationMethod);
   }
 
   @Override
