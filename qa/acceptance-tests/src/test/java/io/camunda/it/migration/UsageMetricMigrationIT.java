@@ -54,7 +54,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  *
  * <ul>
  *   <li>Start a local ES/OS instance on port 9200
- *   <li>Run the test with {@code } or
+ *   <li>Run the test with {@code -D test.integration.camunda.database.type=es} or
  *   <li>Change the {@link
  *       io.camunda.qa.util.multidb.CamundaMultiDBExtension#currentMultiDbDatabaseType()} to always
  *       return {@link DatabaseType#ES}

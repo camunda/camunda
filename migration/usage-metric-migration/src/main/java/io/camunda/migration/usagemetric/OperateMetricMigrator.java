@@ -54,7 +54,7 @@ public class OperateMetricMigrator implements Migrator {
       "EVENT_DECISION_INSTANCE_EVALUATED";
 
   public static final String SCRIPT =
-"""
+      """
 String value = ctx._source.remove("value");
 ctx._id = value;
 ctx._source.id = value;
