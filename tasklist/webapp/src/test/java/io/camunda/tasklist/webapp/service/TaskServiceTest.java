@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -41,6 +42,7 @@ import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
+import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
@@ -50,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,6 +61,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -320,18 +324,16 @@ class TaskServiceTest {
     when(tasklistProperties.getFeatureFlag())
         .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(allowNonSelfAssignment));
     final var taskId = "123";
-    final var taskBefore = mock(TaskEntity.class);
-    when(taskBefore.getAssignee()).thenReturn(currentAssignee);
+    final var taskBefore = new TaskEntity().setId(taskId).setAssignee(currentAssignee);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(user);
-    final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
-    when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
 
     // When
     final var result =
         instance.assignTask(taskId, providedAssignee, providedAllowOverrideAssignment);
 
     // Then
+    final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
     verify(taskValidator).validateCanAssign(taskBefore, expectedAllowOverrideAssignment);
     assertThat(result).isEqualTo(TaskDTO.createFrom(assignedTask, objectMapper));
   }
@@ -526,7 +528,7 @@ class TaskServiceTest {
   void assignZeebeUserTaskException() {
     // Given
     final var taskId = "123";
-    final var taskBefore = mock(TaskEntity.class);
+    final var taskBefore = new TaskEntity().setId(taskId).setAssignee("initialAssignee");
     final var providedAssignee = "expectedAssignee";
     final var providedAllowOverrideAssignment = false;
 
@@ -560,16 +562,14 @@ class TaskServiceTest {
     when(tasklistProperties.getFeatureFlag())
         .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(allowNonSelfAssignment));
     final var taskId = "123";
-    final var taskBefore = mock(TaskEntity.class);
-    when(taskBefore.getAssignee()).thenReturn(currentAssignee);
+    final var taskBefore = new TaskEntity().setId(taskId).setAssignee(currentAssignee);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(user);
-    final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
-    when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
     final var result =
         instance.assignTask(taskId, providedAssignee, providedAllowOverrideAssignment);
 
     // Then
+    final var assignedTask = new TaskEntity().setId(taskId).setAssignee(expectedAssignee);
     verify(taskValidator).validateCanAssign(taskBefore, expectedAllowOverrideAssignment);
     assertThat(result).isEqualTo(TaskDTO.createFrom(assignedTask, objectMapper));
   }
