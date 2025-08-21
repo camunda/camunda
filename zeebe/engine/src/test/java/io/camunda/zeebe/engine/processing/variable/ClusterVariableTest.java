@@ -79,4 +79,16 @@ public class ClusterVariableTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason("This variable does not exists and thus can not be deleted");
   }
+
+  @Test
+  public void createCLusterVariableWithInvalidName() {
+    final var record =
+        ENGINE_RULE.variable().expectRejection().withClusterVariable("KEY 2", "VALUE").create();
+
+    Assertions.assertThat(record)
+        .hasIntent(VariableIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Invalid Camunda variable name: 'KEY 2'. The name must not start with a digit, contain whitespace, or use any of the following characters: +-*/=><?.. Additionally, variable names cannot be any of the reserved keywords or literals: [null, true, false, function, if, then, else, for, return, between, instance, of, not, in, and, or, some, every, satisfies].");
+  }
 }

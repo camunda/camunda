@@ -19,8 +19,32 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.List;
 
 public class VariableCreateProcessor implements DistributedTypedRecordProcessor<VariableRecord> {
+
+  private static final List<String> RESERVED_NAMES =
+      List.of(
+          "null",
+          "true",
+          "false",
+          "function",
+          "if",
+          "then",
+          "else",
+          "for",
+          "return",
+          "between",
+          "instance",
+          "of",
+          "not",
+          "in",
+          "and",
+          "or",
+          "some",
+          "every",
+          "satisfies");
+  private static final String FORBIDDEN_CHARS = "+-*/=><?.";
 
   private final KeyGenerator keyGenerator;
   private final VariableBehavior variableBehavior;
@@ -50,7 +74,18 @@ public class VariableCreateProcessor implements DistributedTypedRecordProcessor<
     }
     final long key = keyGenerator.nextKey();
 
-    if (!variableBehavior.variableExists(value.getScopeKey(), value.getNameBuffer())) {
+    if (!isValidCamundaVariableName(value.getName())) {
+      final String errorMessage =
+          String.format(
+              "Invalid Camunda variable name: '%s'. "
+                  + "The name must not start with a digit, contain whitespace, or use any of the following characters: %s. "
+                  + "Additionally, variable names cannot be any of the reserved keywords or literals: %s.",
+              value.getName(), FORBIDDEN_CHARS, RESERVED_NAMES);
+      writers.rejection().appendRejection(command, RejectionType.INVALID_ARGUMENT, errorMessage);
+      writers
+          .response()
+          .writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, errorMessage);
+    } else if (!variableBehavior.variableExists(value.getScopeKey(), value.getNameBuffer())) {
       writers.state().appendFollowUpEvent(key, VariableIntent.CREATED, value);
       writers.response().writeEventOnCommand(key, VariableIntent.CREATED, value, command);
       commandDistributionBehavior.withKey(key).inQueue(value.getName()).distribute(command);
@@ -108,5 +143,23 @@ public class VariableCreateProcessor implements DistributedTypedRecordProcessor<
         yield false;
       }
     };
+  }
+
+  public static boolean isValidCamundaVariableName(final String name) {
+    if (name == null || name.isEmpty()) {
+      return false;
+    }
+    if (Character.isDigit(name.charAt(0))) {
+      return false;
+    }
+    if (name.chars().anyMatch(Character::isWhitespace)) {
+      return false;
+    }
+    for (final char c : FORBIDDEN_CHARS.toCharArray()) {
+      if (name.indexOf(c) != -1) {
+        return false;
+      }
+    }
+    return !RESERVED_NAMES.contains(name);
   }
 }
