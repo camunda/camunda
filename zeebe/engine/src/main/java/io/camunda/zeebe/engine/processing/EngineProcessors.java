@@ -269,6 +269,7 @@ public final class EngineProcessors {
 
     addVariableUpdateProcessor(
         typedRecordProcessors,
+        keyGenerator,
         bpmnBehaviors,
         writers,
         authCheckBehavior,
@@ -276,6 +277,7 @@ public final class EngineProcessors {
 
     addVariableDeleteProcessor(
         typedRecordProcessors,
+        keyGenerator,
         bpmnBehaviors,
         writers,
         authCheckBehavior,
@@ -372,6 +374,7 @@ public final class EngineProcessors {
 
   private static void addVariableDeleteProcessor(
       final TypedRecordProcessors typedRecordProcessors,
+      final KeyGenerator keyGenerator,
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior,
@@ -380,6 +383,7 @@ public final class EngineProcessors {
         ValueType.VARIABLE,
         VariableIntent.DELETE,
         new VariableDeleteProcessor(
+            keyGenerator,
             bpmnBehaviors.variableBehavior(),
             writers,
             authCheckBehavior,
@@ -388,6 +392,7 @@ public final class EngineProcessors {
 
   private static void addVariableUpdateProcessor(
       final TypedRecordProcessors typedRecordProcessors,
+      final KeyGenerator keyGenerator,
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior,
@@ -396,6 +401,7 @@ public final class EngineProcessors {
         ValueType.VARIABLE,
         VariableIntent.UPDATE,
         new VariableUpdateProcessor(
+            keyGenerator,
             bpmnBehaviors.variableBehavior(),
             writers,
             authCheckBehavior,

@@ -18,20 +18,24 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class VariableUpdateProcessor implements DistributedTypedRecordProcessor<VariableRecord> {
 
   private final VariableBehavior variableBehavior;
+  private final KeyGenerator keyGenerator;
   private final Writers writers;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public VariableUpdateProcessor(
+      final KeyGenerator keyGenerator,
       final VariableBehavior variableBehavior,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior,
       final CommandDistributionBehavior commandDistributionBehavior) {
     this.variableBehavior = variableBehavior;
+    this.keyGenerator = keyGenerator;
     this.writers = writers;
     this.authCheckBehavior = authCheckBehavior;
     this.commandDistributionBehavior = commandDistributionBehavior;
@@ -40,8 +44,7 @@ public class VariableUpdateProcessor implements DistributedTypedRecordProcessor<
   @Override
   public void processNewCommand(final TypedRecord<VariableRecord> command) {
     final var value = command.getValue();
-    final long key = command.getKey();
-    final var variablePointer = variableBehavior.getVariablePointer(key);
+    final var variablePointer = variableBehavior.getVariablePointer(value.getVariableKey());
 
     if (variablePointer == null) {
       final var errorMessage = "This variable does not exists and thus can not be updated";
@@ -54,16 +57,21 @@ public class VariableUpdateProcessor implements DistributedTypedRecordProcessor<
     }
     value.setScopeKey(variablePointer.getScope());
     value.setName(variablePointer.getName());
-    writers.state().appendFollowUpEvent(key, VariableIntent.UPDATED, value);
-    writers.response().writeEventOnCommand(key, VariableIntent.UPDATED, value, command);
-    commandDistributionBehavior.withKey(key).inQueue(value.getName()).distribute(command);
+    final long distributionKey = keyGenerator.nextKey();
+    writers.state().appendFollowUpEvent(value.getVariableKey(), VariableIntent.UPDATED, value);
+    writers
+        .response()
+        .writeEventOnCommand(value.getVariableKey(), VariableIntent.UPDATED, value, command);
+    commandDistributionBehavior
+        .withKey(distributionKey)
+        .inQueue(value.getName())
+        .distribute(command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<VariableRecord> command) {
     final var value = command.getValue();
-    final long key = command.getKey();
-    final var variablePointer = variableBehavior.getVariablePointer(key);
+    final var variablePointer = variableBehavior.getVariablePointer(value.getVariableKey());
     if (variablePointer == null) {
       final var errorMessage = "This variable does not exists and thus can not be updated";
       writers.rejection().appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -71,8 +79,10 @@ public class VariableUpdateProcessor implements DistributedTypedRecordProcessor<
     } else {
       value.setScopeKey(variablePointer.getScope());
       value.setName(variablePointer.getName());
-      writers.state().appendFollowUpEvent(key, VariableIntent.UPDATED, value);
-      writers.response().writeEventOnCommand(key, VariableIntent.UPDATED, value, command);
+      writers.state().appendFollowUpEvent(value.getVariableKey(), VariableIntent.UPDATED, value);
+      writers
+          .response()
+          .writeEventOnCommand(value.getVariableKey(), VariableIntent.UPDATED, value, command);
     }
     commandDistributionBehavior.acknowledgeCommand(command);
   }

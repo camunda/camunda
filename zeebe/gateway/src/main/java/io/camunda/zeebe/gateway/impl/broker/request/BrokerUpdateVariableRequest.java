@@ -24,7 +24,7 @@ public class BrokerUpdateVariableRequest extends BrokerExecuteCommand<VariableRe
   }
 
   public BrokerUpdateVariableRequest setKey(final long key) {
-    super.request.setKey(key);
+    requestDto.setVariableKey(key);
     return this;
   }
 

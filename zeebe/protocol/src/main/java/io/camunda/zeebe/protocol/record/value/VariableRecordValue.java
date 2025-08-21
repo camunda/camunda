@@ -30,6 +30,11 @@ import org.immutables.value.Value;
 public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated, TenantOwned {
 
   /**
+   * @return the key of the variable.
+   */
+  Long getVariableKey();
+
+  /**
    * @return the name of the variable.
    */
   String getName();

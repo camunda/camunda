@@ -44,7 +44,7 @@ public class VariableHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = VariableIntent.class,
-      names = {"MIGRATED"},
+      names = {"MIGRATED", "CREATE", "UPDATE", "DELETE"},
       mode = Mode.EXCLUDE)
   void shouldHandleRecord(final VariableIntent intent) {
     // given

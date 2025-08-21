@@ -12,11 +12,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 
-final class VariableApplier implements TypedEventApplier<VariableIntent, VariableRecord> {
+final class VariableApplierV2 implements TypedEventApplier<VariableIntent, VariableRecord> {
 
   private final MutableVariableState variableState;
 
-  public VariableApplier(final MutableVariableState variableState) {
+  public VariableApplierV2(final MutableVariableState variableState) {
     this.variableState = variableState;
   }
 
@@ -28,5 +28,8 @@ final class VariableApplier implements TypedEventApplier<VariableIntent, Variabl
         value.getProcessDefinitionKey(),
         value.getNameBuffer(),
         value.getValueBuffer());
+    if (value.getScopeKey() == -1) {
+      variableState.createVariablePointer(key, value.getScopeKey(), value.getNameBuffer());
+    }
   }
 }

@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class VariableDeleteProcessor implements DistributedTypedRecordProcessor<VariableRecord> {
 
@@ -25,12 +26,15 @@ public class VariableDeleteProcessor implements DistributedTypedRecordProcessor<
   private final Writers writers;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final KeyGenerator keyGenerator;
 
   public VariableDeleteProcessor(
+      final KeyGenerator keyGenerator,
       final VariableBehavior variableBehavior,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior,
       final CommandDistributionBehavior commandDistributionBehavior) {
+    this.keyGenerator = keyGenerator;
     this.variableBehavior = variableBehavior;
     this.writers = writers;
     this.authCheckBehavior = authCheckBehavior;
@@ -40,8 +44,7 @@ public class VariableDeleteProcessor implements DistributedTypedRecordProcessor<
   @Override
   public void processNewCommand(final TypedRecord<VariableRecord> command) {
     final var value = command.getValue();
-    final long key = command.getKey();
-    final var variablePointer = variableBehavior.getVariablePointer(key);
+    final var variablePointer = variableBehavior.getVariablePointer(value.getVariableKey());
 
     if (variablePointer == null) {
       final var errorMessage = "This variable does not exists and thus can not be deleted";
@@ -54,16 +57,21 @@ public class VariableDeleteProcessor implements DistributedTypedRecordProcessor<
     }
     value.setScopeKey(variablePointer.getScope());
     value.setName(variablePointer.getName());
-    writers.state().appendFollowUpEvent(key, VariableIntent.DELETED, value);
-    writers.response().writeEventOnCommand(key, VariableIntent.DELETED, value, command);
-    commandDistributionBehavior.withKey(key).inQueue(value.getName()).distribute(command);
+    final long distributionKey = keyGenerator.nextKey();
+    writers.state().appendFollowUpEvent(value.getVariableKey(), VariableIntent.DELETED, value);
+    writers
+        .response()
+        .writeEventOnCommand(value.getVariableKey(), VariableIntent.DELETED, value, command);
+    commandDistributionBehavior
+        .withKey(distributionKey)
+        .inQueue(value.getName())
+        .distribute(command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<VariableRecord> command) {
     final var value = command.getValue();
-    final long key = command.getKey();
-    final var variablePointer = variableBehavior.getVariablePointer(key);
+    final var variablePointer = variableBehavior.getVariablePointer(value.getVariableKey());
     if (variablePointer == null) {
       final var errorMessage = "This variable does not exists and thus can not be deleted";
       writers.rejection().appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -71,8 +79,10 @@ public class VariableDeleteProcessor implements DistributedTypedRecordProcessor<
     } else {
       value.setScopeKey(variablePointer.getScope());
       value.setName(variablePointer.getName());
-      writers.state().appendFollowUpEvent(key, VariableIntent.DELETED, value);
-      writers.response().writeEventOnCommand(key, VariableIntent.DELETED, value, command);
+      writers.state().appendFollowUpEvent(value.getVariableKey(), VariableIntent.DELETED, value);
+      writers
+          .response()
+          .writeEventOnCommand(value.getVariableKey(), VariableIntent.DELETED, value, command);
     }
     commandDistributionBehavior.acknowledgeCommand(command);
   }

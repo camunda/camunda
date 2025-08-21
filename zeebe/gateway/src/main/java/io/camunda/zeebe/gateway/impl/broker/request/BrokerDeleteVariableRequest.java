@@ -24,7 +24,7 @@ public class BrokerDeleteVariableRequest extends BrokerExecuteCommand<VariableRe
   }
 
   public BrokerDeleteVariableRequest setKey(final long key) {
-    super.request.setKey(key);
+    requestDto.setVariableKey(key);
     return this;
   }
 

@@ -10,17 +10,14 @@ package io.camunda.zeebe.engine.util.client;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.util.Random;
 import java.util.function.LongFunction;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class VariableClient {
 
-  private static final long DEFAULT_KEY = -1;
   private static final LongFunction<Record<VariableRecordValue>> SUCCESS_SUPPLIER =
       (sourceRecordPosition) ->
           RecordingExporter.variableRecords()
@@ -36,10 +33,6 @@ public final class VariableClient {
   private long key;
   private final VariableRecord variableRecord;
   private final CommandWriter writer;
-  private final String[] authorizedTenants = new String[] {TenantOwned.DEFAULT_TENANT_IDENTIFIER};
-
-  private final long requestId = new Random().nextLong();
-  private final int requestStreamId = new Random().nextInt();
 
   private LongFunction<Record<VariableRecordValue>> expectation = SUCCESS_SUPPLIER;
 
@@ -58,7 +51,7 @@ public final class VariableClient {
   }
 
   public VariableClient withKey(final long key) {
-    this.key = key;
+    variableRecord.setVariableKey(key);
     return this;
   }
 
@@ -73,38 +66,17 @@ public final class VariableClient {
   }
 
   public Record<VariableRecordValue> create() {
-    final long position =
-        writer.writeCommand(
-            DEFAULT_KEY,
-            requestStreamId,
-            requestId,
-            VariableIntent.CREATE,
-            variableRecord,
-            authorizedTenants);
+    final long position = writer.writeCommand(VariableIntent.CREATE, variableRecord);
     return expectation.apply(position);
   }
 
   public Record<VariableRecordValue> update() {
-    final long position =
-        writer.writeCommand(
-            key,
-            requestStreamId,
-            requestId,
-            VariableIntent.UPDATE,
-            variableRecord,
-            authorizedTenants);
+    final long position = writer.writeCommand(VariableIntent.UPDATE, variableRecord);
     return expectation.apply(position);
   }
 
   public Record<VariableRecordValue> delete() {
-    final long position =
-        writer.writeCommand(
-            key,
-            requestStreamId,
-            requestId,
-            VariableIntent.DELETE,
-            variableRecord,
-            authorizedTenants);
+    final long position = writer.writeCommand(VariableIntent.DELETE, variableRecord);
     return expectation.apply(position);
   }
 }

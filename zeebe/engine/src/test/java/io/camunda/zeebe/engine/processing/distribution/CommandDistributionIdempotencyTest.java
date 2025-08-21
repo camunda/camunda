@@ -53,6 +53,9 @@ import io.camunda.zeebe.engine.processing.tenant.TenantUpdateProcessor;
 import io.camunda.zeebe.engine.processing.user.UserCreateProcessor;
 import io.camunda.zeebe.engine.processing.user.UserDeleteProcessor;
 import io.camunda.zeebe.engine.processing.user.UserUpdateProcessor;
+import io.camunda.zeebe.engine.processing.variable.VariableCreateProcessor;
+import io.camunda.zeebe.engine.processing.variable.VariableDeleteProcessor;
+import io.camunda.zeebe.engine.processing.variable.VariableUpdateProcessor;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.BatchOperationClient;
@@ -75,6 +78,7 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -91,6 +95,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -682,6 +687,34 @@ public class CommandDistributionIdempotencyTest {
             MessageSubscriptionMigrateProcessor.class
           },
           {
+            "Variable.CREATE is idempotent",
+            new Scenario(
+                ValueType.VARIABLE, VariableIntent.CREATE, () -> createClusterVariable("A")),
+            VariableCreateProcessor.class
+          },
+          {
+            "Variable.UPDATE is idempotent",
+            new Scenario(
+                ValueType.VARIABLE,
+                VariableIntent.UPDATE,
+                () -> {
+                  final var variable = createClusterVariable("B");
+                  return ENGINE.variable().withKey(variable.getKey()).withValue("value_2").update();
+                }),
+            VariableUpdateProcessor.class,
+          },
+          {
+            "Variable.DELETE is idempotent",
+            new Scenario(
+                ValueType.VARIABLE,
+                VariableIntent.DELETE,
+                () -> {
+                  final var variable = createClusterVariable("C");
+                  return ENGINE.variable().withKey(variable.getKey()).delete();
+                }),
+            VariableDeleteProcessor.class,
+          },
+          {
             "Scale.SCALE_UP is idempotent",
             new Scenario(
                 ValueType.SCALE,
@@ -802,6 +835,10 @@ public class CommandDistributionIdempotencyTest {
         .withEmail("email")
         .withPassword("password")
         .create();
+  }
+
+  private static Record<VariableRecordValue> createClusterVariable(final String name) {
+    return ENGINE.variable().withClusterVariable(name, "value").create();
   }
 
   private static Record<GroupRecordValue> createGroup(final String groupId) {

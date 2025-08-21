@@ -28,7 +28,6 @@ final class VariableApplierV2 implements TypedEventApplier<VariableIntent, Varia
         value.getProcessDefinitionKey(),
         value.getNameBuffer(),
         value.getValueBuffer());
-    //
     if (value.getScopeKey() == -1) {
       variableState.createVariablePointer(key, value.getScopeKey(), value.getNameBuffer());
     }

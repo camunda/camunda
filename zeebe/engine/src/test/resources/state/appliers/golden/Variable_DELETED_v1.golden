@@ -12,24 +12,19 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 
-final class VariableApplierV2 implements TypedEventApplier<VariableIntent, VariableRecord> {
+final class VariableDeletedApplier implements TypedEventApplier<VariableIntent, VariableRecord> {
 
   private final MutableVariableState variableState;
 
-  public VariableApplierV2(final MutableVariableState variableState) {
+  public VariableDeletedApplier(final MutableVariableState variableState) {
     this.variableState = variableState;
   }
 
   @Override
   public void applyState(final long key, final VariableRecord value) {
-    variableState.setVariableLocal(
-        key,
-        value.getScopeKey(),
-        value.getProcessDefinitionKey(),
-        value.getNameBuffer(),
-        value.getValueBuffer());
+    variableState.removeVariable(value.getScopeKey(), value.getNameBuffer());
     if (value.getScopeKey() == -1) {
-      variableState.createVariablePointer(key, value.getScopeKey(), value.getNameBuffer());
+      variableState.removeVariableVariablePointer(key);
     }
   }
 }
