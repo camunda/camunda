@@ -32,4 +32,5 @@ public enum ResourceType {
   ROLE,
   DOCUMENT,
   UNKNOWN_ENUM_VALUE,
+  CLUSTER_VARIABLE,
 }

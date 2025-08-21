@@ -7541,6 +7541,7 @@ components:
         - USER
         - ROLE
         - DOCUMENT
+        - CLUSTER_VARIABLE
     OwnerTypeEnum:
       description: The type of the owner of permissions.
       enum:
