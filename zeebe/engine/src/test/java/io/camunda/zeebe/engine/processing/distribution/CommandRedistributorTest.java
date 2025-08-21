@@ -62,7 +62,11 @@ public class CommandRedistributorTest {
     routingState.initializeRoutingInfo(2);
 
     final var commandDistributionPaused = false;
-    commandRedistributor = getCommandRedistributor(commandDistributionPaused);
+    commandRedistributor =
+        getCommandRedistributor(
+            commandDistributionPaused,
+            EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL,
+            EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
 
     recordValue =
         new UserRecord()
@@ -114,7 +118,10 @@ public class CommandRedistributorTest {
         .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
   }
 
-  private CommandRedistributor getCommandRedistributor(final boolean commandDistributionPaused) {
+  private CommandRedistributor getCommandRedistributor(
+      final boolean commandDistributionPaused,
+      final Duration redistributionInterval,
+      final Duration maxBackoffDuration) {
     final var fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     final Writers writers =
         new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
@@ -134,10 +141,8 @@ public class CommandRedistributorTest {
     final var config =
         new EngineConfiguration()
             .setCommandDistributionPaused(commandDistributionPaused)
-            .setCommandRedistributionInterval(
-                Duration.ofSeconds(10)) // Use default interval for tests
-            .setCommandRedistributionMaxBackoff(
-                Duration.ofMinutes(5)); // Use default max backoff for tests
+            .setCommandRedistributionInterval(redistributionInterval)
+            .setCommandRedistributionMaxBackoff(maxBackoffDuration);
 
     return new CommandRedistributor(behavior, routingInfo, config);
   }
@@ -205,7 +210,11 @@ public class CommandRedistributorTest {
     void setUp() {
       // Simulate command distribution paused
       final var commandDistributionPaused = true;
-      commandRedistributor = getCommandRedistributor(commandDistributionPaused);
+      commandRedistributor =
+          getCommandRedistributor(
+              commandDistributionPaused,
+              EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL,
+              EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
     }
 
     @Test
@@ -225,45 +234,17 @@ public class CommandRedistributorTest {
     @BeforeEach
     void setUp() {
       // Set up routing state for configuration tests
-      routingState.setDesiredPartitions(Set.of(1, 2), 10L);
-
-      final long configTestDistributionKey = 1L;
-      final var recordValue = new UserRecord().setUserKey(1L);
-      final var record = new CommandDistributionRecord();
-      record.setPartitionId(1).setValueType(ValueType.USER).setIntent(UserIntent.CREATE);
-
-      // Add a retriable distribution
-      distributionState.addRetriableDistribution(configTestDistributionKey, 1);
-    }
-
-    @Test
-    void shouldUseConfigurableRetryInterval() {
-      // given - use a very short retry interval for testing
-      final var customInterval = Duration.ofMillis(100);
-      final var customMaxBackoff = Duration.ofMinutes(1);
-      final var redistributor =
-          createCommandRedistributorWithCustomConfig(false, customInterval, customMaxBackoff);
-
-      // when - run multiple cycles to see retry behavior
-      redistributor.runRetryCycle(); // cycle 0 - no retry (starts at 0)
-      redistributor.runRetryCycle(); // cycle 1 - should retry (bitCount(1) == 1)
-
-      // then - verify retry occurred
-      verify(mockCommandSender, times(1))
-          .sendCommand(1, ValueType.USER, UserIntent.CREATE, 1L, new UserRecord().setUserKey(1L));
+      final var customInterval = Duration.ofSeconds(2);
+      final var customMaxBackoff = Duration.ofSeconds(8); // Only 4 cycles until max backoff
+      commandRedistributor = getCommandRedistributor(false, customInterval, customMaxBackoff);
     }
 
     @Test
     void shouldUseConfigurableMaxBackoff() {
-      // given - use custom backoff values
-      final var customInterval = Duration.ofSeconds(2);
-      final var customMaxBackoff = Duration.ofSeconds(8); // Only 4 cycles until max backoff
-      final var redistributor =
-          createCommandRedistributorWithCustomConfig(false, customInterval, customMaxBackoff);
-
+      // given
       // when - run enough cycles to reach max backoff
       for (int i = 0; i < 10; i++) {
-        redistributor.runRetryCycle();
+        commandRedistributor.runRetryCycle();
       }
 
       // then - verify retries occurred based on exponential backoff and then fixed intervals
@@ -277,52 +258,9 @@ public class CommandRedistributorTest {
       // Cycle 9: no retry
 
       verify(mockCommandSender, times(4))
-          .sendCommand(1, ValueType.USER, UserIntent.CREATE, 1L, new UserRecord().setUserKey(1L));
-    }
-
-    @Test
-    void shouldRespectPausedDistributionFlag() {
-      // given - distribution is paused
-      final var redistributor =
-          createCommandRedistributorWithCustomConfig(
-              true, Duration.ofSeconds(1), Duration.ofMinutes(1));
-
-      // when - run retry cycles
-      redistributor.runRetryCycle();
-      redistributor.runRetryCycle();
-
-      // then - no retries should occur
-      verify(mockCommandSender, never())
-          .sendCommand(1, ValueType.USER, UserIntent.CREATE, 1L, new UserRecord().setUserKey(1L));
-    }
-
-    private CommandRedistributor createCommandRedistributorWithCustomConfig(
-        final boolean commandDistributionPaused,
-        final Duration redistributionInterval,
-        final Duration maxBackoffDuration) {
-      final var fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
-      final Writers writers =
-          new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
-
-      final RoutingInfo routingInfo =
-          RoutingInfo.dynamic(routingState, new StaticRoutingInfo(Set.of(1, 2), 2));
-
-      final CommandDistributionBehavior behavior =
-          new CommandDistributionBehavior(
-              distributionState,
-              writers,
-              1,
-              routingInfo,
-              mockCommandSender,
-              mockDistributionMetrics);
-
-      final var config =
-          new EngineConfiguration()
-              .setCommandDistributionPaused(commandDistributionPaused)
-              .setCommandRedistributionInterval(redistributionInterval)
-              .setCommandRedistributionMaxBackoff(maxBackoffDuration);
-
-      return new CommandRedistributor(behavior, routingInfo, config);
+          .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+      verify(mockCommandSender, times(4))
+          .sendCommand(2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
     }
   }
 }

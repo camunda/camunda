@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -201,7 +201,9 @@ public class CommandDistributionMetricsTest {
             () -> {
               // wait for retry mechanism to trigger second distribution
               // (while we intercepted the first acknowledgement)
-              engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+              engine
+                  .getClock()
+                  .addTime(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
 
               // Make sure we have two records on the target partition
               assertThat(RecordingExporter.records().withPartitionId(2).withRecordKey(key).limit(2))
