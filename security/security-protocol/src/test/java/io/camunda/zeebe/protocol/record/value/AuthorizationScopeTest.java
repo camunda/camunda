@@ -17,7 +17,7 @@ public class AuthorizationScopeTest {
   @Test
   public void shouldProvideWildcardScope() {
     // given
-    final var wildcardScope = AuthorizationScope.WILDCARD;
+    final AuthorizationScope wildcardScope = AuthorizationScope.WILDCARD;
 
     // then
     assertThat(wildcardScope.getMatcher()).isEqualTo(AuthorizationResourceMatcher.ANY);
@@ -27,10 +27,10 @@ public class AuthorizationScopeTest {
   @Test
   public void shouldDetectWildcardId() {
     // given
-    final var wildcardId = AuthorizationScope.WILDCARD_CHAR;
+    final String wildcardId = AuthorizationScope.WILDCARD_CHAR;
 
     // when
-    final var wildcardScope = AuthorizationScope.of(wildcardId);
+    final AuthorizationScope wildcardScope = AuthorizationScope.of(wildcardId);
 
     // then
     assertThat(wildcardScope.getMatcher()).isEqualTo(AuthorizationResourceMatcher.ANY);
@@ -40,10 +40,10 @@ public class AuthorizationScopeTest {
   @Test
   public void shouldProvideIdScope() {
     // given
-    final var resourceId = "resource-id";
+    final String resourceId = "resource-id";
 
     // when
-    final var idScope = AuthorizationScope.id(resourceId);
+    final AuthorizationScope idScope = AuthorizationScope.id(resourceId);
 
     // then
     assertThat(idScope.getMatcher()).isEqualTo(AuthorizationResourceMatcher.ID);
@@ -53,10 +53,10 @@ public class AuthorizationScopeTest {
   @Test
   public void shouldDetectIdScope() {
     // given
-    final var resourceId = "resource-id";
+    final String resourceId = "resource-id";
 
     // when
-    final var idScope = AuthorizationScope.of(resourceId);
+    final AuthorizationScope idScope = AuthorizationScope.of(resourceId);
 
     // then
     assertThat(idScope.getMatcher()).isEqualTo(AuthorizationResourceMatcher.ID);
@@ -66,13 +66,14 @@ public class AuthorizationScopeTest {
   @Test
   public void shouldThrowErrorForInvalidId() {
     // given
-    final var invalidResourceId = AuthorizationScope.WILDCARD_CHAR;
+    final String invalidResourceId = AuthorizationScope.WILDCARD_CHAR;
 
     // when / then
     assertThatThrownBy(() -> AuthorizationScope.id(invalidResourceId))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
-            ("Resource ID cannot be the wildcard character '%s'. For declaring WILDCARD access, please use the AuthorizationScope.WILDCARD constant.")
-                .formatted(invalidResourceId));
+            String.format(
+                "Resource ID cannot be the wildcard character '%s'. For declaring WILDCARD access, please use the AuthorizationScope.WILDCARD constant.",
+                invalidResourceId));
   }
 }
