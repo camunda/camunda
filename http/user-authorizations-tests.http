@@ -39,7 +39,7 @@ Accept: application/json
 %}
 
 ###
-# @name test-create-user-authorized
+# @name test-create-user-authorized-with-security-headers
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json
@@ -56,6 +56,61 @@ Accept: application/json
   client.test("User creation should be authorized", function () {
     client.assert(response.status === 201, "Response status is not 201");
     client.global.set("USERNAME", response.body.username);
+  });
+
+  client.test("Cache Control headers should be present", function () {
+    client.assert(response.headers.valueOf("Cache-Control"), "Cache-Control header is missing");
+    client.assert(response.headers.valueOf("Pragma"), "Pragma header is missing");
+    client.assert(response.headers.valueOf("Expires"), "Expires header is missing");
+  });
+
+  client.test("Content Security Policy header should be present", function () {
+    client.assert(response.headers.valueOf("Content-Security-Policy"), "Content-Security-Policy header is missing");
+  });
+
+  client.test("X-Content-Type-Options header should be present", function () {
+    const contentTypeOptions = response.headers.valueOf("X-Content-Type-Options");
+    client.assert(contentTypeOptions, "X-Content-Type-Options header is missing");
+    client.assert(contentTypeOptions === "nosniff", "X-Content-Type-Options should be 'nosniff'");
+  });
+
+  client.test("Cross-Origin-Embedder-Policy header should be present", function () {
+    const coep = response.headers.valueOf("Cross-Origin-Embedder-Policy");
+    client.assert(coep, "Cross-Origin-Embedder-Policy header is missing");
+    client.assert(coep === "unsafe-none" || coep === "require-corp", "Cross-Origin-Embedder-Policy should be 'unsafe-none' or 'require-corp'");
+  });
+
+  client.test("Cross-Origin-Opener-Policy header should be present", function () {
+    const coop = response.headers.valueOf("Cross-Origin-Opener-Policy");
+    client.assert(coop, "Cross-Origin-Opener-Policy header is missing");
+    client.assert(["unsafe-none", "same-origin-allow-popups", "same-origin"].includes(coop.toLowerCase()), "Cross-Origin-Opener-Policy should be 'unsafe-none', 'same-origin-allow-popups', or 'same-origin'");
+  });
+
+  client.test("Cross-Origin-Resource-Policy header should be present", function () {
+    const corp = response.headers.valueOf("Cross-Origin-Resource-Policy");
+    client.assert(corp, "Cross-Origin-Resource-Policy header is missing");
+    client.assert(["same-origin", "same-site", "cross-origin"].includes(corp.toLowerCase()), "Cross-Origin-Resource-Policy should be 'same-origin', 'same-site', or 'cross-origin'");
+  });
+
+  client.test("X-Frame-Options header should be present", function () {
+    const frameOptions = response.headers.valueOf("X-Frame-Options");
+    client.assert(frameOptions, "X-Frame-Options header is missing");
+    client.assert(frameOptions.toUpperCase() === "SAMEORIGIN" || frameOptions.toUpperCase() === "DENY", "X-Frame-Options should be 'SAMEORIGIN' or 'DENY'");
+  });
+
+  client.test("Referrer-Policy header should be present", function () {
+    const referrerPolicy = response.headers.valueOf("Referrer-Policy");
+    client.assert(referrerPolicy, "Referrer-Policy header is missing");
+    // Default is strict-origin-when-cross-origin, but could be configured differently
+    client.assert(referrerPolicy.length > 0, "Referrer-Policy should have a value");
+  });
+
+  // Optional: Permissions-Policy header (may not always be present)
+  client.test("Permissions-Policy header validation (if present)", function () {
+    const permissionsPolicy = response.headers.valueOf("Permissions-Policy");
+    if (permissionsPolicy) {
+      client.assert(permissionsPolicy.length > 0, "Permissions-Policy should have a value if present");
+    }
   });
 %}
 
