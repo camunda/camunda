@@ -8,10 +8,11 @@
 package io.camunda.operate.elasticsearch.reader;
 
 import static io.camunda.operate.store.elasticsearch.dao.Query.range;
-import static io.camunda.operate.store.elasticsearch.dao.Query.whereEquals;
-import static io.camunda.webapps.schema.descriptors.index.MetricIndex.EVENT;
-import static io.camunda.webapps.schema.descriptors.index.MetricIndex.EVENT_TIME;
-import static io.camunda.webapps.schema.descriptors.index.MetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TYPE;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_VALUE;
+import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.EDI;
+import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,10 +49,10 @@ public class MetricReaderTest {
     // When
     when(dao.searchWithAggregation(any()))
         .thenReturn(new AggregationResponse(false, List.of(), 99L));
-    final Long result = subject.retrieveProcessInstanceCount(oneHourBefore, now);
+    final Long result = subject.retrieveProcessInstanceCount(oneHourBefore, now, null);
 
     // Then
-    assertThat(99L).isEqualTo(result);
+    assertThat(result).isEqualTo(99L);
   }
 
   @Test
@@ -63,17 +64,16 @@ public class MetricReaderTest {
     // When
     when(dao.searchWithAggregation(any()))
         .thenReturn(new AggregationResponse(false, List.of(), 99L));
-    subject.retrieveProcessInstanceCount(oneHourBefore, now);
+    subject.retrieveProcessInstanceCount(oneHourBefore, now, null);
 
     // Then
     final ArgumentCaptor<Query> entityCaptor = ArgumentCaptor.forClass(Query.class);
     verify(dao).searchWithAggregation(entityCaptor.capture());
 
     final Query expected =
-        Query.whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_FINISHED)
-            .or(whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_STARTED))
+        Query.whereEquals(EVENT_TYPE, RPI.name())
             .and(range(EVENT_TIME, oneHourBefore, now))
-            .aggregate(MetricsStore.PROCESS_INSTANCES_AGG_NAME, VALUE, 1);
+            .aggregate(MetricsStore.PROCESS_INSTANCES_AGG_NAME, EVENT_VALUE);
     final Query calledValue = entityCaptor.getValue();
     assertThat(calledValue).isEqualTo(expected);
   }
@@ -86,7 +86,9 @@ public class MetricReaderTest {
     // Then
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(
-            () -> subject.retrieveProcessInstanceCount(OffsetDateTime.now(), OffsetDateTime.now()));
+            () ->
+                subject.retrieveProcessInstanceCount(
+                    OffsetDateTime.now(), OffsetDateTime.now(), null));
   }
 
   @Test
@@ -98,10 +100,10 @@ public class MetricReaderTest {
     // When
     when(dao.searchWithAggregation(any()))
         .thenReturn(new AggregationResponse(false, List.of(), 99L));
-    final Long result = subject.retrieveDecisionInstanceCount(oneHourBefore, now);
+    final Long result = subject.retrieveDecisionInstanceCount(oneHourBefore, now, null);
 
     // Then
-    assertThat(99L).isEqualTo(result);
+    assertThat(result).isEqualTo(99L);
   }
 
   @Test
@@ -113,16 +115,16 @@ public class MetricReaderTest {
     // When
     when(dao.searchWithAggregation(any()))
         .thenReturn(new AggregationResponse(false, List.of(), 99L));
-    subject.retrieveDecisionInstanceCount(oneHourBefore, now);
+    subject.retrieveDecisionInstanceCount(oneHourBefore, now, null);
 
     // Then
     final ArgumentCaptor<Query> entityCaptor = ArgumentCaptor.forClass(Query.class);
     verify(dao).searchWithAggregation(entityCaptor.capture());
 
     final Query expected =
-        Query.whereEquals(EVENT, MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED)
+        Query.whereEquals(EVENT_TYPE, EDI.name())
             .and(range(EVENT_TIME, oneHourBefore, now))
-            .aggregate(MetricsStore.DECISION_INSTANCES_AGG_NAME, VALUE, 1);
+            .aggregate(MetricsStore.DECISION_INSTANCES_AGG_NAME, EVENT_VALUE);
     final Query calledValue = entityCaptor.getValue();
     assertThat(calledValue).isEqualTo(expected);
   }
@@ -136,6 +138,7 @@ public class MetricReaderTest {
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(
             () ->
-                subject.retrieveDecisionInstanceCount(OffsetDateTime.now(), OffsetDateTime.now()));
+                subject.retrieveDecisionInstanceCount(
+                    OffsetDateTime.now(), OffsetDateTime.now(), null));
   }
 }

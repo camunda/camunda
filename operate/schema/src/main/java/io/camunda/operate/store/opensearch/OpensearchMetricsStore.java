@@ -7,15 +7,17 @@
  */
 package io.camunda.operate.store.opensearch;
 
-import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
+import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.sumAggregation;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gteLte;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.or;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static io.camunda.webapps.schema.descriptors.index.MetricIndex.EVENT;
-import static io.camunda.webapps.schema.descriptors.index.MetricIndex.EVENT_TIME;
-import static io.camunda.webapps.schema.descriptors.index.MetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TYPE;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_VALUE;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.TENANT_ID;
+import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.EDI;
+import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -23,12 +25,11 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
-import io.camunda.webapps.schema.entities.MetricEntity;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
-import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +40,14 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchMetricsStore implements MetricsStore {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchMetricsStore.class);
-  @Autowired private MetricIndex metricIndex;
+  private static final String ID_PATTERN = "%s_%s";
+
+  @Autowired private UsageMetricIndex metricIndex;
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  private AggregationResult searchWithAggregation(
+  private Long searchWithSumAggregation(
       final SearchRequest.Builder requestBuilder, final String aggregationName) {
     final Aggregate aggregate;
 
@@ -55,108 +59,105 @@ public class OpensearchMetricsStore implements MetricsStore {
               .aggregations()
               .get(aggregationName);
     } catch (final OperateRuntimeException e) {
-      return new AggregationResult(true, null, null);
+      throw new OperateRuntimeException("Opensearch client threw exception while searching", e);
     }
 
     if (aggregate == null) {
       throw new OperateRuntimeException("Search with aggregation returned no aggregation");
     }
 
-    if (!aggregate.isSterms()) {
-      throw new OperateRuntimeException("Unexpected response for aggregations");
+    if (!aggregate.isSum()) {
+      throw new OperateRuntimeException("Unexpected response for sum aggregation");
     }
 
-    final List<StringTermsBucket> buckets = aggregate.sterms().buckets().array();
-
-    final List<RichOpenSearchClient.AggregationValue> values =
-        buckets.stream()
-            .map(
-                bucket ->
-                    new RichOpenSearchClient.AggregationValue(bucket.key(), bucket.docCount()))
-            .toList();
-
-    final long sumOfOtherDocCounts =
-        aggregate.sterms().sumOtherDocCount(); // size of documents not in result
-    final long total = sumOfOtherDocCounts + values.size(); // size of result + other docs
-    return new AggregationResult(false, values, total);
+    return Math.round(aggregate.sum().value());
   }
 
   @Override
   public Long retrieveProcessInstanceCount(
-      final OffsetDateTime startTime, final OffsetDateTime endTime) {
-    final int limit = 1; // limiting to one, as we just care about the total documents number
+      final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
+    var query = and(gteLte(EVENT_TIME, startTime, endTime), term(EVENT_TYPE, RPI.name()));
+    if (tenantId != null) {
+      query = and(query, term(TENANT_ID, tenantId));
+    }
 
     final var searchRequestBuilder =
         searchRequestBuilder(metricIndex.getFullQualifiedName())
-            .query(
-                and(
-                    gteLte(EVENT_TIME, startTime, endTime),
-                    or(
-                        term(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_FINISHED),
-                        term(EVENT, EVENT_PROCESS_INSTANCE_STARTED))))
-            .aggregations(
-                PROCESS_INSTANCES_AGG_NAME, termAggregation(VALUE, limit)._toAggregation());
+            .query(query)
+            .aggregations(PROCESS_INSTANCES_AGG_NAME, sumAggregation(EVENT_VALUE)._toAggregation());
 
-    return searchWithAggregation(searchRequestBuilder, PROCESS_INSTANCES_AGG_NAME).totalDocs();
+    return searchWithSumAggregation(searchRequestBuilder, PROCESS_INSTANCES_AGG_NAME);
   }
 
   @Override
   public Long retrieveDecisionInstanceCount(
-      final OffsetDateTime startTime, final OffsetDateTime endTime) {
-    final int limit = 1; // limiting to one, as we just care about the total documents number
+      final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
+    var query = and(term(EVENT_TYPE, EDI.name()), gteLte(EVENT_TIME, startTime, endTime));
+    if (tenantId != null) {
+      query = and(query, term(TENANT_ID, tenantId));
+    }
 
     final var searchRequestBuilder =
         searchRequestBuilder(metricIndex.getFullQualifiedName())
-            .query(
-                and(
-                    term(EVENT, MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED),
-                    gteLte(EVENT_TIME, startTime, endTime)))
+            .query(query)
             .aggregations(
-                DECISION_INSTANCES_AGG_NAME, termAggregation(VALUE, limit)._toAggregation());
+                DECISION_INSTANCES_AGG_NAME, sumAggregation(EVENT_VALUE)._toAggregation());
 
-    return searchWithAggregation(searchRequestBuilder, DECISION_INSTANCES_AGG_NAME).totalDocs();
+    return searchWithSumAggregation(searchRequestBuilder, DECISION_INSTANCES_AGG_NAME);
   }
 
   @Override
   public void registerProcessInstanceStartEvent(
-      final String processInstanceKey,
+      final long key,
       final String tenantId,
+      final int partitionId,
       final OffsetDateTime timestamp,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    final MetricEntity metric =
-        createProcessInstanceStartedKey(processInstanceKey, tenantId, timestamp);
+    final UsageMetricsEntity metric =
+        createProcessInstanceStartedKey(key, tenantId, partitionId, timestamp);
     batchRequest.add(metricIndex.getFullQualifiedName(), metric);
   }
 
   @Override
   public void registerDecisionInstanceCompleteEvent(
-      final String decisionInstanceKey,
+      final long key,
       final String tenantId,
+      final int partitionId,
       final OffsetDateTime timestamp,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    final MetricEntity metric =
-        createDecisionsInstanceEvaluatedKey(decisionInstanceKey, tenantId, timestamp);
+    final UsageMetricsEntity metric =
+        createDecisionsInstanceEvaluatedKey(key, tenantId, partitionId, timestamp);
     batchRequest.add(metricIndex.getFullQualifiedName(), metric);
   }
 
-  private MetricEntity createProcessInstanceStartedKey(
-      final String processInstanceKey, final String tenantId, final OffsetDateTime timestamp) {
-    return new MetricEntity()
-        .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
-        .setValue(processInstanceKey)
+  private UsageMetricsEntity createProcessInstanceStartedKey(
+      final long key,
+      final String tenantId,
+      final int partitionId,
+      final OffsetDateTime timestamp) {
+    return new UsageMetricsEntity()
+        .setId(String.format(ID_PATTERN, key, tenantId))
+        .setEventType(RPI)
+        .setEventValue(1L)
+        .setEventTime(timestamp)
         .setTenantId(tenantId)
-        .setEventTime(timestamp);
+        .setPartitionId(partitionId);
   }
 
-  private MetricEntity createDecisionsInstanceEvaluatedKey(
-      final String decisionInstanceKey, final String tenantId, final OffsetDateTime timestamp) {
-    return new MetricEntity()
-        .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
-        .setValue(decisionInstanceKey)
+  private UsageMetricsEntity createDecisionsInstanceEvaluatedKey(
+      final long key,
+      final String tenantId,
+      final int partitionId,
+      final OffsetDateTime timestamp) {
+    return new UsageMetricsEntity()
+        .setId(String.format(ID_PATTERN, key, tenantId))
+        .setEventType(EDI)
+        .setEventValue(1L)
+        .setEventTime(timestamp)
         .setTenantId(tenantId)
-        .setEventTime(timestamp);
+        .setPartitionId(partitionId);
   }
 
   private record AggregationResult(

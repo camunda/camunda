@@ -9,12 +9,12 @@ package io.camunda.tasklist.store;
 
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.time.OffsetDateTime;
-import java.util.List;
+import java.util.Set;
 
 public interface TaskMetricsStore {
 
-  void registerTaskCompleteEvent(TaskEntity task);
+  void registerTaskAssigned(TaskEntity task);
 
-  List<String> retrieveDistinctAssigneesBetweenDates(
-      OffsetDateTime startTime, OffsetDateTime endTime);
+  Set<Long> retrieveDistinctAssigneesBetweenDates(
+      OffsetDateTime startTime, OffsetDateTime endTime, String tenantId);
 }

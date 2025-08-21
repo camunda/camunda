@@ -7,15 +7,17 @@
  */
 package io.camunda.operate.elasticsearch.writer;
 
-import static io.camunda.operate.store.MetricsStore.*;
-import static org.mockito.Mockito.*;
+import static io.camunda.operate.store.elasticsearch.ElasticsearchMetricsStore.ID_PATTERN;
+import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.EDI;
+import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchMetricsStore;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
-import io.camunda.webapps.schema.entities.MetricEntity;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,47 +30,51 @@ public class MetricWriterTest {
 
   @Mock BatchRequest batchRequest;
   @InjectMocks private MetricsStore subject = new ElasticsearchMetricsStore();
-  @Mock private MetricIndex metricIndex;
+  @Mock private UsageMetricIndex metricIndex;
 
   @Test
   public void verifyRegisterProcessEventWasCalledWithRightArgument() throws PersistenceException {
     // Given
-    final String key = "processInstanceKey";
+    final long key = 123L;
     final var now = OffsetDateTime.now();
     final String tenantId = "tenantA";
 
     // When
-    subject.registerProcessInstanceStartEvent(key, tenantId, now, batchRequest);
+    subject.registerProcessInstanceStartEvent(key, tenantId, 0, now, batchRequest);
 
     // Then
     verify(batchRequest)
         .add(
             metricIndex.getFullQualifiedName(),
-            new MetricEntity()
-                .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
-                .setValue(key)
+            new UsageMetricsEntity()
+                .setId(ID_PATTERN.formatted(key, tenantId))
+                .setEventType(RPI)
+                .setEventValue(1L)
                 .setEventTime(now)
-                .setTenantId(tenantId));
+                .setTenantId(tenantId)
+                .setPartitionId(0));
   }
 
   @Test
   public void verifyRegisterDecisionEventWasCalledWithRightArgument() throws PersistenceException {
     // Given
-    final String key = "decisionInstanceKey";
+    final long key = 123L;
     final var now = OffsetDateTime.now();
     final String tenantId = "tenantA";
 
     // When
-    subject.registerDecisionInstanceCompleteEvent(key, tenantId, now, batchRequest);
+    subject.registerDecisionInstanceCompleteEvent(key, tenantId, 0, now, batchRequest);
 
     // Then
     verify(batchRequest)
         .add(
             metricIndex.getFullQualifiedName(),
-            new MetricEntity()
-                .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
-                .setValue(key)
+            new UsageMetricsEntity()
+                .setId(ID_PATTERN.formatted(key, tenantId))
+                .setEventType(EDI)
+                .setEventValue(1L)
                 .setEventTime(now)
-                .setTenantId(tenantId));
+                .setTenantId(tenantId)
+                .setPartitionId(0));
   }
 }
