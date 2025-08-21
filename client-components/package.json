@@ -1,22 +1,30 @@
 {
-  "name": "@camunda/client-components",
-  "description": "Camunda JS/TS monorepo",
-  "author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
-  "type": "module",
-  "private": true,
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/camunda/camunda.git"
-  },
-  "workspaces": [
-    "packages/*"
-  ],
-  "scripts": {
-    "lint": "npm run lint --workspaces --if-present"
-  },
-  "engines": {
-    "node": "24.6.0",
-    "npm": "11.5.2"
-  },
-  "packageManager": "npm@11.5.2"
+	"name": "@camunda/client-components",
+	"description": "Camunda JS/TS monorepo",
+	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
+	"type": "module",
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/camunda/camunda.git"
+	},
+	"workspaces": [
+		"packages/*"
+	],
+	"scripts": {
+		"lint": "npm run lint --workspaces --if-present",
+		"typecheck": "npm run typecheck --workspaces --if-present",
+		"format": "npm run format --workspaces --if-present",
+		"build": "npm run build --workspaces --if-present",
+		"prepublishOnly": "node scripts/prepublishOnly.js",
+		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas"
+	},
+	"packageManager": "npm@11.5.2",
+	"devDependencies": {
+		"@eslint/js": "9.33.0",
+		"eslint": "9.33.0",
+		"globals": "16.3.0",
+		"prettier": "3.6.2",
+		"typescript-eslint": "8.40.0"
+	}
 }
