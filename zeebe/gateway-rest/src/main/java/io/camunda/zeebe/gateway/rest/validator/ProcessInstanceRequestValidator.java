@@ -57,7 +57,7 @@ public class ProcessInstanceRequestValidator {
   }
 
   private static void validateTags(final Set<String> tags, final List<String> violations) {
-    TagsValidator.validate(tags, violations);
+    violations.addAll(TagsValidator.validate(tags));
   }
 
   public static Optional<ProblemDetail> validateCancelProcessInstanceRequest(

@@ -30,6 +30,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PR
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.TAGS;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -95,6 +96,10 @@ public final class ProcessInstanceFilterTransformer
 
     if (filter.partitionId() != null) {
       queries.add(term(PARTITION_ID, filter.partitionId()));
+    }
+
+    if (filter.tags() != null && !filter.tags().isEmpty()) {
+      queries.add(and(filter.tags().stream().map(tag -> term(TAGS, tag)).toList()));
     }
 
     return queries;

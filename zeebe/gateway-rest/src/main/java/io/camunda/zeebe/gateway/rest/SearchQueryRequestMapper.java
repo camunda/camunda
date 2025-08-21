@@ -91,6 +91,7 @@ import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
+import io.camunda.zeebe.gateway.rest.validator.TagsValidator;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
@@ -1043,6 +1044,16 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getIncidentErrorHashCode())
           .map(mapToOperations(Integer.class))
           .ifPresent(builder::incidentErrorHashCodeOperations);
+
+      if (!CollectionUtils.isEmpty(filter.getTags())) {
+        final var tagErrors = TagsValidator.validate(filter.getTags());
+        if (tagErrors.isEmpty()) {
+          ofNullable(filter.getTags()).ifPresent(builder::tags);
+        } else {
+          validationErrors.addAll(tagErrors);
+        }
+      }
+
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFilters(filter.getVariables());

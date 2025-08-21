@@ -171,6 +171,17 @@ public final class TestHelper {
         .join();
   }
 
+  public static ProcessInstanceEvent startProcessInstanceWithTags(
+      final CamundaClient camundaClient, final String bpmnProcessId, final Set<String> tags) {
+    return camundaClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .tags(tags)
+        .send()
+        .join();
+  }
+
   public static ProcessInstanceEvent startProcessInstance(
       final CamundaClient camundaClient, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3

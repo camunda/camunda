@@ -793,4 +793,29 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     // Verify that the service was called with the valid key
     verify(processInstanceServices).callHierarchy(processInstanceKey);
   }
+
+  @Test
+  void shouldReturnBadRequestWhenTagsAreInvalid() {
+    // given
+    final var request =
+        """
+            {
+                "filter": { "tags": ["1 invalid tag", "tag2"] }
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .consumeWith(
+            result ->
+                new String(result.getResponseBody()).contains("Tags must start with a letter"));
+  }
 }
