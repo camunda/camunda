@@ -15,6 +15,6 @@ zeebe:
         validators:
           resultsOutputMaxSize: 2000
         distribution:
-          redistributionInterval: 30s
-          maxBackoffDuration: 10m
+          redistributionInterval: 60s
+          maxBackoffDuration: 20m
         maxProcessDepth: 2000
