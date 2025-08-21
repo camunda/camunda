@@ -44,6 +44,12 @@ public class Cluster {
   /** The number of nodes in the cluster. */
   private int size = 1;
 
+  /**
+   * Configure parameters for SWIM protocol which is used to propagate cluster membership #
+   * information among brokers and gateways
+   */
+  private Membership membership = new Membership();
+
   /** Configuration for the Raft protocol in the cluster. */
   private Raft raft = new Raft();
 
@@ -113,6 +119,14 @@ public class Cluster {
 
   public void setSize(final int size) {
     this.size = size;
+  }
+
+  public Membership getMembership() {
+    return membership;
+  }
+
+  public void setMembership(final Membership membership) {
+    this.membership = membership;
   }
 
   public Raft getRaft() {
