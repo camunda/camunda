@@ -30,6 +30,8 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.IndexState;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
@@ -73,6 +75,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
   private final String zeebeIndexPrefix;
+  private final Cache<String, String> lifeCyclePolicyApplied =
+      Caffeine.newBuilder().maximumSize(200).build();
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -290,6 +294,15 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   private CompletableFuture<Void> applyPolicyToIndices(
       final String policyName, final List<String> indices) {
+
+    if (indices.stream()
+        .allMatch(
+            index -> {
+              final String retentionPolicy = lifeCyclePolicyApplied.getIfPresent(index);
+              return retentionPolicy != null && retentionPolicy.equals(policyName);
+            })) {
+      return CompletableFuture.completedFuture(null);
+    }
 
     logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
 
