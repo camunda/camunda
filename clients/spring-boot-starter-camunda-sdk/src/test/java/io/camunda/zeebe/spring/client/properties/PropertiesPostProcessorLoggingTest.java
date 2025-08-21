@@ -49,7 +49,7 @@ public class PropertiesPostProcessorLoggingTest {
     void shouldLogRestOverGrpcWarning(final CapturedOutput output) {
       assertThat(output)
           .contains(
-              "No 'camunda.client.zeebe.prefer-rest-over-grpc' is set. Please set to 'true' or 'false' explicitly as the default behaviour will change in the next release.");
+              "No 'camunda.client.zeebe.prefer-rest-over-grpc' is set. Please set to 'true' or 'false' explicitly as the default behaviour will change from 'false' to 'true' in the next release.");
     }
   }
 
@@ -64,7 +64,7 @@ public class PropertiesPostProcessorLoggingTest {
     void shouldNotLogRestOverGrpcWarning(final CapturedOutput output) {
       assertThat(output)
           .doesNotContain(
-              "No 'camunda.client.zeebe.prefer-rest-over-grpc' is set. Please set to 'true' or 'false' explicitly as the default behaviour will change in the next release.");
+              "No 'camunda.client.zeebe.prefer-rest-over-grpc' is set. Please set to 'true' or 'false' explicitly as the default behaviour will change from 'false' to 'true' in the next release.");
     }
   }
 }
