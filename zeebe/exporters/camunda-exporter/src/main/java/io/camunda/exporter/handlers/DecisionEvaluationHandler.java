@@ -35,7 +35,6 @@ public class DecisionEvaluationHandler
     implements ExportHandler<DecisionInstanceEntity, DecisionEvaluationRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DecisionEvaluationHandler.class);
-  private static final String ID_PATTERN = "%s-%d";
   private final String indexName;
 
   public DecisionEvaluationHandler(final String indexName) {
@@ -59,12 +58,9 @@ public class DecisionEvaluationHandler
 
   @Override
   public List<String> generateIds(final Record<DecisionEvaluationRecordValue> record) {
-    final List<String> ids = new ArrayList<>();
-    for (int i = 1; i <= record.getValue().getEvaluatedDecisions().size(); i++) {
-      final String id = ID_PATTERN.formatted(record.getKey(), i);
-      ids.add(id);
-    }
-    return ids;
+    return record.getValue().getEvaluatedDecisions().stream()
+        .map(EvaluatedDecisionValue::getDecisionEvaluationInstanceKey)
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -80,7 +76,7 @@ public class DecisionEvaluationHandler
         getEvaluatedDecisionValueIndex(decisionEvaluation, record.getKey(), entity.getId());
 
     final EvaluatedDecisionValue decision =
-        decisionEvaluation.getEvaluatedDecisions().get(decisionIndex - 1);
+        getEvaluatedDecision(decisionEvaluation, entity.getId());
     final OffsetDateTime timestamp =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
     final DecisionInstanceState state = getState(record, decisionEvaluation, decisionIndex);
@@ -125,12 +121,25 @@ public class DecisionEvaluationHandler
     return indexName;
   }
 
+  private EvaluatedDecisionValue getEvaluatedDecision(
+      final DecisionEvaluationRecordValue decisionEvaluation, final String id) {
+    return decisionEvaluation.getEvaluatedDecisions().stream()
+        .filter(
+            evaluatedDecision ->
+                Objects.equals(evaluatedDecision.getDecisionEvaluationInstanceKey(), id))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Evaluated decision with id " + id + " not found in decision evaluation"));
+  }
+
   private int getEvaluatedDecisionValueIndex(
       final DecisionEvaluationRecordValue decisionEvaluation,
       final long key,
       final String entityId) {
     for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
-      final String id = ID_PATTERN.formatted(key, i);
+      final String id = "%s-%d".formatted(key, i);
       if (Objects.equals(entityId, id)) {
         LOGGER.debug(
             "Decision evaluation: id {} key {}, decisionId {}",
