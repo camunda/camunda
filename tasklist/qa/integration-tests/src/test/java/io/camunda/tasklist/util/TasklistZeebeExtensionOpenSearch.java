@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
-@ConditionalOnProperty(name = "camunda.tasklist.database", havingValue = "opensearch")
+@ConditionalOnProperty(name = "camunda.data.secondary-storage.type", havingValue = "opensearch")
 public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
 
   @Autowired

@@ -35,7 +35,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       "camunda.webapps.default-app = tasklist",
       TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "camunda.security.authentication.unprotected-api = true",
-      "camunda.security.authorizations.enabled = false"
+      "camunda.security.authorizations.enabled = false",
+
+        "camunda.data.secondary-storage.type=opensearch"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({"tasklist", "standalone", "test"})

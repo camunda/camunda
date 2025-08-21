@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(SCOPE_PROTOTYPE)
 @ConditionalOnProperty(
-    name = "camunda.tasklist.database",
+    name = "camunda.data.secondary-storage.type",
     havingValue = "elasticsearch",
     matchIfMissing = true)
 public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension {
