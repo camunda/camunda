@@ -43,7 +43,7 @@ class VariablesControllerTest {
   @BeforeEach
   void setUp() {
     mockMvc = MockMvcBuilders.standaloneSetup(instance).build();
-    when(tasklistPermissionServices.hasWildcardPermissionToReadProcessInstance()).thenReturn(true);
+    when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(true);
   }
 
   @Test
@@ -84,7 +84,7 @@ class VariablesControllerTest {
   @Test
   void getVariablesReturnsForbiddenWhenUserHasNoPermission() throws Exception {
     // Given
-    when(tasklistPermissionServices.hasWildcardPermissionToReadProcessInstance()).thenReturn(false);
+    when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(false);
     // When
     mockMvc
         .perform(
