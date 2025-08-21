@@ -170,6 +170,10 @@ public class GatewayBasedPropertiesOverride {
     final var network =
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withGatewayNetworkProperties();
 
-    override.getCluster().setHost(network.getHost());
+    final var gatewayCluster = override.getCluster();
+    gatewayCluster.setHost(network.getHost());
+    gatewayCluster.setAdvertisedHost(network.getAdvertisedHost());
+    gatewayCluster.setSocketSendBuffer(network.getSocketSendBuffer());
+    gatewayCluster.setSocketReceiveBuffer(network.getSocketReceiveBuffer());
   }
 }
