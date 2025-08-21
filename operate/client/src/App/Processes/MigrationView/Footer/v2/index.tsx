@@ -152,12 +152,12 @@ const Footer: React.FC = observer(() => {
                       ? batchOperationQuery.excludeIds
                       : [];
 
-                  const filter = buildMigrationBatchOperationFilter(
+                  const filter = buildMigrationBatchOperationFilter({
                     baseFilter,
                     includeIds,
                     excludeIds,
-                    sourceProcessDefinitionKey,
-                  );
+                    processDefinitionKey: sourceProcessDefinitionKey,
+                  });
 
                   migrateProcess({
                     filter,

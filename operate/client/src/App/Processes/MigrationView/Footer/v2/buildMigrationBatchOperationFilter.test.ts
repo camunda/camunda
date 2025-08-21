@@ -11,11 +11,11 @@ import type {CreateMigrationBatchOperationRequestBody} from '@vzeta/camunda-api-
 
 describe('getMigrationBatchOperationFilter', () => {
   it('should map ids to $in operator', () => {
-    const result = buildMigrationBatchOperationFilter(
-      {},
-      ['123', '456', '789'],
-      [],
-    );
+    const result = buildMigrationBatchOperationFilter({
+      baseFilter: {},
+      includeIds: ['123', '456', '789'],
+      excludeIds: [],
+    });
 
     expect(result).toEqual({
       processInstanceKey: {
@@ -25,7 +25,11 @@ describe('getMigrationBatchOperationFilter', () => {
   });
 
   it('should map excludeIds to $notIn operator', () => {
-    const result = buildMigrationBatchOperationFilter({}, [], ['111', '222']);
+    const result = buildMigrationBatchOperationFilter({
+      baseFilter: {},
+      includeIds: [],
+      excludeIds: ['111', '222'],
+    });
 
     expect(result).toEqual({
       processInstanceKey: {
@@ -35,11 +39,11 @@ describe('getMigrationBatchOperationFilter', () => {
   });
 
   it('should combine both ids and excludeIds', () => {
-    const result = buildMigrationBatchOperationFilter(
-      {},
-      ['123', '456'],
-      ['789', '000'],
-    );
+    const result = buildMigrationBatchOperationFilter({
+      baseFilter: {},
+      includeIds: ['123', '456'],
+      excludeIds: ['789', '000'],
+    });
 
     expect(result).toEqual({
       processInstanceKey: {
@@ -55,7 +59,11 @@ describe('getMigrationBatchOperationFilter', () => {
       tenantId: {$eq: 'tenant1'},
     };
 
-    const result = buildMigrationBatchOperationFilter(baseFilter, ['123'], []);
+    const result = buildMigrationBatchOperationFilter({
+      baseFilter,
+      includeIds: ['123'],
+      excludeIds: [],
+    });
 
     expect(result).toEqual({
       state: {$in: ['ACTIVE']},
@@ -74,11 +82,11 @@ describe('getMigrationBatchOperationFilter', () => {
       state: {$in: ['ACTIVE']},
     };
 
-    const result = buildMigrationBatchOperationFilter(
+    const result = buildMigrationBatchOperationFilter({
       baseFilter,
-      ['123'],
-      ['456'],
-    );
+      includeIds: ['123'],
+      excludeIds: ['456'],
+    });
     expect(result).toEqual({
       processInstanceKey: {
         $eq: '999',
@@ -97,7 +105,11 @@ describe('getMigrationBatchOperationFilter', () => {
       state: {$in: ['ACTIVE']},
     };
 
-    const result = buildMigrationBatchOperationFilter(baseFilter, [], []);
+    const result = buildMigrationBatchOperationFilter({
+      baseFilter,
+      includeIds: [],
+      excludeIds: [],
+    });
 
     expect(result).toEqual(baseFilter);
   });
@@ -108,17 +120,21 @@ describe('getMigrationBatchOperationFilter', () => {
     };
     const originalBaseFilter = {...baseFilter};
 
-    buildMigrationBatchOperationFilter(baseFilter, ['123'], []);
+    buildMigrationBatchOperationFilter({
+      baseFilter,
+      includeIds: ['123'],
+      excludeIds: [],
+    });
 
     expect(baseFilter).toEqual(originalBaseFilter);
   });
 
   it('should handle single element arrays', () => {
-    const result = buildMigrationBatchOperationFilter(
-      {},
-      ['single-id'],
-      ['single-exclude-id'],
-    );
+    const result = buildMigrationBatchOperationFilter({
+      baseFilter: {},
+      includeIds: ['single-id'],
+      excludeIds: ['single-exclude-id'],
+    });
 
     expect(result).toEqual({
       processInstanceKey: {

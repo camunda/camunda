@@ -12,12 +12,19 @@ import type {
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 
-const buildMigrationBatchOperationFilter = (
-  baseFilter: GetProcessDefinitionStatisticsRequestBody['filter'],
-  includeIds: string[],
-  excludeIds: string[],
-  processDefinitionKey?: string | null,
-): CreateMigrationBatchOperationRequestBody['filter'] => {
+type MigrationFilterOptions = {
+  baseFilter: GetProcessDefinitionStatisticsRequestBody['filter'];
+  includeIds: string[];
+  excludeIds: string[];
+  processDefinitionKey?: string | null;
+};
+
+const buildMigrationBatchOperationFilter = ({
+  baseFilter,
+  includeIds,
+  excludeIds,
+  processDefinitionKey,
+}: MigrationFilterOptions): CreateMigrationBatchOperationRequestBody['filter'] => {
   const filter: CreateMigrationBatchOperationRequestBody['filter'] = {
     ...baseFilter,
   };
@@ -38,7 +45,7 @@ const buildMigrationBatchOperationFilter = (
   }
 
   if (processDefinitionKey) {
-    filter.processDefinitionKey = {$eq: processDefinitionKey};
+    filter.processDefinitionKey = processDefinitionKey;
   }
 
   return filter;
