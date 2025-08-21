@@ -10,6 +10,8 @@ package io.camunda.exporter.tasks.archiver;
 import static io.camunda.search.schema.SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
@@ -77,6 +79,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final OpenSearchGenericClient genericClient;
   private String lastHistoricalArchiverDate = null;
   private final String zeebeIndexPrefix;
+  private final Cache<String, String> lifeCyclePolicyApplied =
+      Caffeine.newBuilder().maximumSize(200).build();
 
   public OpenSearchArchiverRepository(
       final int partitionId,
@@ -312,6 +316,14 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private CompletableFuture<Void> applyPolicyToIndices(
       final String policyName, final List<String> indices) {
 
+    if (indices.stream()
+        .allMatch(
+            index -> {
+              final String retentionPolicy = lifeCyclePolicyApplied.getIfPresent(index);
+              return retentionPolicy != null && retentionPolicy.equals(policyName);
+            })) {
+      return CompletableFuture.completedFuture(null);
+    }
     logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
 
     final var requests =
@@ -344,6 +356,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                             + ", Reason: "
                             + response.getReason()));
               }
+              lifeCyclePolicyApplied.put(index, policyName);
               return CompletableFuture.completedFuture(null);
             },
             executor);
