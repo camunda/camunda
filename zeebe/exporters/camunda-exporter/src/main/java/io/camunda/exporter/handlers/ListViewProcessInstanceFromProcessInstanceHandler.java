@@ -108,8 +108,11 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         .setProcessVersion(recordValue.getVersion())
         .setProcessName(
             getProcessName(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()))
-        .setProcessVersionTag(getVersionTag(piEntity.getProcessDefinitionKey()))
-        .setTags(recordValue.getTags());
+        .setProcessVersionTag(getVersionTag(piEntity.getProcessDefinitionKey()));
+
+    if (recordValue.getTags() != null && recordValue.getTags().size() > 0) {
+      piEntity.setTags(recordValue.getTags());
+    }
 
     final OffsetDateTime timestamp =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
