@@ -13,7 +13,7 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {TopPanel} from './TopPanel';
 import {BottomPanel} from './BottomPanel';
-import {Footer} from './Footer/v2';
+import {Footer} from './Footer';
 import {PAGE_TITLE} from 'modules/constants';
 import {MigrationSummaryNotification} from './MigrationSummaryNotification';
 import {observer} from 'mobx-react';

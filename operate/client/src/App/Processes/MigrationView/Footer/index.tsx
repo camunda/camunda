@@ -15,7 +15,7 @@ import {processesStore} from 'modules/stores/processes/processes.migration';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
-import {MigrationConfirmationModal} from '../../MigrationConfirmationModal';
+import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
