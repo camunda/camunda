@@ -330,6 +330,7 @@ public class TUMetricsMigrationIT extends MigrationTest {
 
       final MetricEntity metric =
           new MetricEntity()
+              .setEventTime(OffsetDateTime.now().minusDays(1))
               .setEvent("task_completed_by_assignee")
               .setValue(assignee)
               .setTenantId("<default>");
