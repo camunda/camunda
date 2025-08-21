@@ -392,7 +392,7 @@ public class BrokerBasedPropertiesOverride {
     /* Load camunda exporter config map */
 
     final Map<String, ExporterCfg> exporters = override.getExporters();
-    List<ExporterCfg> camundaExporters =
+    final List<ExporterCfg> camundaExporters =
         exporters.values().stream().filter(e -> e.getClassName().equals(className)).toList();
     final ExporterCfg camundaExporter;
     if (camundaExporters.isEmpty()) {
