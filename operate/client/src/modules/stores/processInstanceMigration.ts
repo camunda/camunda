@@ -11,7 +11,6 @@ import type {BatchOperationQuery} from 'modules/api/processInstances/operations'
 import {operationsStore} from './operations';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from './notifications';
-import {panelStatesStore} from './panelStates';
 
 const STEPS = {
   elementMapping: {
@@ -185,21 +184,6 @@ class ProcessInstanceMigration {
     key: State['sourceProcessDefinitionKey'],
   ) => {
     this.state.sourceProcessDefinitionKey = key;
-  };
-
-  setHasPendingRequest = () => {
-    if (!this.state.hasPendingRequest) {
-      this.state.hasPendingRequest = true;
-
-      this.disposer = when(
-        () => operationsStore.state.status === 'fetched',
-        () => {
-          panelStatesStore.expandOperationsPanel();
-          this.requestBatchProcess();
-          this.state.hasPendingRequest = false;
-        },
-      );
-    }
   };
 
   requestBatchProcess = () => {
