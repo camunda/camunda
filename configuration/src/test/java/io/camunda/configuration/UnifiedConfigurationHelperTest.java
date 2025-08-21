@@ -16,9 +16,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.ResolvableType;
 import org.springframework.core.env.Environment;
 
 class UnifiedConfigurationHelperTest {
@@ -251,6 +253,26 @@ class UnifiedConfigurationHelperTest {
     final String actual =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
             NEW_PROPERTY, defaultValue, String.class, mode, SINGLE_LEGACY_PROPERTY);
+    assertThat(actual).isEqualTo(expected);
+  }
+
+  @Test
+  void testParseLegacyPropertyIntoGenericSet() {
+    // given
+    final Set<Long> defaultValue = Collections.emptySet();
+    final BackwardsCompatibilityMode mode = SUPPORTED;
+
+    // when
+    setPropertyValues("legacy.prop1", "10,20");
+
+    final Set<Long> expected = Set.of(10L, 20L);
+    final Set<Long> actual =
+        UnifiedConfigurationHelper.validateLegacyConfiguration(
+            NEW_PROPERTY,
+            defaultValue,
+            ResolvableType.forClassWithGenerics(Set.class, Long.class),
+            mode,
+            SINGLE_LEGACY_PROPERTY);
     assertThat(actual).isEqualTo(expected);
   }
 }
