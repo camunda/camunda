@@ -17,7 +17,6 @@ import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.ReindexRequest.Builder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.tasks.GetTasksResponse;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.usagemetric.client.UsageMetricMigrationClient;
 import io.camunda.search.clients.query.SearchQuery;
@@ -28,13 +27,9 @@ import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class ElasticsearchUsageMetricMigrationClient implements UsageMetricMigrationClient {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(ElasticsearchUsageMetricMigrationClient.class);
   private final ElasticsearchClient client;
   private final ElasticsearchTransformers transformers;
   private final RetryDecorator retryDecorator;
@@ -126,11 +121,13 @@ public final class ElasticsearchUsageMetricMigrationClient implements UsageMetri
   }
 
   @Override
-  public boolean getTask(final String taskId) throws MigrationException {
+  public boolean hasTaskSuccessfullyCompleted(final String taskId) throws MigrationException {
     try {
-      final GetTasksResponse response =
+      final var response =
           retryDecorator.decorate(
-              "Get reindex task", () -> client.tasks().get(r -> r.taskId(taskId)), res -> false);
+              "Has task successfully completed",
+              () -> client.tasks().get(r -> r.taskId(taskId)),
+              res -> false);
       if (response.completed()) {
         if (response.error() != null) {
           final var cause =

@@ -29,7 +29,7 @@ public interface UsageMetricMigrationClient {
   <T> T findOne(String index, SearchQuery searchQuery, final Class<T> entityClass)
       throws MigrationException;
 
-  boolean getTask(String taskId) throws MigrationException;
+  boolean hasTaskSuccessfullyCompleted(String taskId) throws MigrationException;
 
   default MigrationStep migrationStepForKey(
       final String index, final String taskId, final boolean completed) {
