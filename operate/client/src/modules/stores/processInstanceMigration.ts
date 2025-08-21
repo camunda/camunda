@@ -6,11 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {makeAutoObservable, when, type IReactionDisposer} from 'mobx';
+import {makeAutoObservable} from 'mobx';
 import type {BatchOperationQuery} from 'modules/api/processInstances/operations';
-import {operationsStore} from './operations';
-import {tracking} from 'modules/tracking';
-import {notificationsStore} from './notifications';
 
 const STEPS = {
   elementMapping: {
@@ -49,7 +46,6 @@ const DEFAULT_STATE: State = {
 
 class ProcessInstanceMigration {
   state: State = {...DEFAULT_STATE};
-  disposer: IReactionDisposer | null = null;
 
   constructor() {
     makeAutoObservable(this);
@@ -132,7 +128,6 @@ class ProcessInstanceMigration {
   };
 
   reset = () => {
-    this.disposer?.();
     this.state = {...DEFAULT_STATE};
   };
 
@@ -184,46 +179,6 @@ class ProcessInstanceMigration {
     key: State['sourceProcessDefinitionKey'],
   ) => {
     this.state.sourceProcessDefinitionKey = key;
-  };
-
-  requestBatchProcess = () => {
-    const {batchOperationQuery} = processInstanceMigrationStore.state;
-    if (batchOperationQuery === null) {
-      return;
-    }
-
-    const {targetProcessDefinitionKey} = this.state;
-    if (targetProcessDefinitionKey === null) {
-      return;
-    }
-
-    operationsStore.applyBatchOperation({
-      operationType: 'MIGRATE_PROCESS_INSTANCE',
-      query: batchOperationQuery,
-      migrationPlan: {
-        targetProcessDefinitionKey,
-        mappingInstructions: Object.entries(
-          processInstanceMigrationStore.state.elementMapping,
-        ).map(([sourceElementId, targetElementId]) => ({
-          sourceElementId,
-          targetElementId,
-        })),
-      },
-      onSuccess: () => {
-        tracking.track({
-          eventName: 'batch-operation',
-          operationType: 'MIGRATE_PROCESS_INSTANCE',
-        });
-      },
-      onError: ({statusCode}) =>
-        notificationsStore.displayNotification({
-          kind: 'error',
-          title: 'Operation could not be created',
-          subtitle:
-            statusCode === 403 ? 'You do not have permission' : undefined,
-          isDismissable: true,
-        }),
-    });
   };
 
   resetElementMapping = () => {
