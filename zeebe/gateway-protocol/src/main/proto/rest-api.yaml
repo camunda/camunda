@@ -6460,6 +6460,8 @@ components:
           description: The process definition key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
+        tags:
+          $ref: '#/components/schemas/TagSet'
     ProcessInstanceFilter:
       description: Process instance search filter.
       allOf:
