@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.http.client.ClientHttpRequestFactorySettings.Redirects;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -56,7 +57,9 @@ public class OldRoutesRedirectionControllerIT {
   @MethodSource("redirectionTestDataProvider")
   public void testRedirections(final String path) {
     final ResponseEntity<String> response =
-        restTemplate.getForEntity(baseUrl() + path, String.class);
+        restTemplate
+            .withRedirects(Redirects.DONT_FOLLOW)
+            .getForEntity(baseUrl() + path, String.class);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(response.getHeaders().getLocation().toString())
         .isEqualTo(baseUrl() + "/operate" + path);
