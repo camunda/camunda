@@ -9,16 +9,41 @@
 import {Button, Modal} from '@carbon/react';
 import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {Container} from './styled';
+import {Container} from './styled.tsx';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
-import {MigrationConfirmationModal} from '../MigrationConfirmationModal';
+import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
+import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
+import {notificationsStore} from 'modules/stores/notifications';
+import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
+import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter.ts';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 const Footer: React.FC = observer(() => {
+  const baseFilter = useProcessInstanceFilters().filter;
+
   const navigate = useNavigate();
+
+  const {mutate: migrateProcess} = useMigrateProcessInstancesBatchOperation({
+    onSuccess: () => {
+      tracking.track({
+        eventName: 'batch-operation',
+        operationType: 'MIGRATE_PROCESS_INSTANCE',
+      });
+    },
+    onError: ({message}) =>
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Operation could not be created',
+        subtitle: message.includes('403')
+          ? 'You do not have permission'
+          : undefined,
+        isDismissable: true,
+      }),
+  });
 
   return (
     <Container orientation="horizontal" gap={5}>
@@ -107,7 +132,47 @@ const Footer: React.FC = observer(() => {
                   const {selectedTargetProcess, selectedTargetVersion} =
                     processesStore.migrationState;
 
-                  processInstanceMigrationStore.setHasPendingRequest();
+                  const {
+                    elementMapping,
+                    batchOperationQuery,
+                    targetProcessDefinitionKey,
+                    sourceProcessDefinitionKey,
+                  } = processInstanceMigrationStore.state;
+
+                  if (!batchOperationQuery || !targetProcessDefinitionKey) {
+                    return;
+                  }
+
+                  const includeIds =
+                    'ids' in batchOperationQuery
+                      ? (batchOperationQuery.ids ?? [])
+                      : [];
+                  const excludeIds =
+                    'excludeIds' in batchOperationQuery
+                      ? batchOperationQuery.excludeIds
+                      : [];
+
+                  const filter = buildMigrationBatchOperationFilter({
+                    baseFilter,
+                    includeIds,
+                    excludeIds,
+                    processDefinitionKey: sourceProcessDefinitionKey,
+                  });
+
+                  migrateProcess({
+                    filter,
+                    migrationPlan: {
+                      targetProcessDefinitionKey,
+                      mappingInstructions: Object.entries(elementMapping).map(
+                        ([sourceElementId, targetElementId]) => ({
+                          sourceElementId,
+                          targetElementId,
+                        }),
+                      ),
+                    },
+                  });
+
+                  panelStatesStore.expandOperationsPanel();
                   processInstanceMigrationStore.disable();
 
                   tracking.track({

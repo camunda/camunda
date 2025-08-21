@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {operationsStore} from './operations';
 import {processInstanceMigrationStore} from './processInstanceMigration';
 
 const SOURCE_TASK_A = 'sourceTaskA';
@@ -122,47 +121,6 @@ describe('processInstanceMigration', () => {
     processInstanceMigrationStore.clearElementMapping();
 
     expect(processInstanceMigrationStore.state.elementMapping).toEqual({});
-  });
-
-  it('should request batch process after confirm migration', async () => {
-    vi.spyOn(operationsStore, 'applyBatchOperation').mockImplementation(
-      vi.fn(),
-    );
-
-    processInstanceMigrationStore.enable();
-
-    processInstanceMigrationStore.updateElementMapping({
-      sourceId: 'startEvent',
-      targetId: 'endEvent',
-    });
-    processInstanceMigrationStore.setBatchOperationQuery({
-      active: true,
-      incidents: false,
-      ids: [],
-      excludeIds: [],
-    });
-    processInstanceMigrationStore.setTargetProcessDefinitionKey(
-      'targetProcessDefinitionKey',
-    );
-    processInstanceMigrationStore.setHasPendingRequest();
-    operationsStore.handleFetchSuccess();
-
-    expect(operationsStore.applyBatchOperation).toHaveBeenCalledWith(
-      expect.objectContaining({
-        migrationPlan: {
-          mappingInstructions: [
-            {sourceElementId: 'startEvent', targetElementId: 'endEvent'},
-          ],
-          targetProcessDefinitionKey: 'targetProcessDefinitionKey',
-        },
-        query: {
-          active: true,
-          incidents: false,
-          ids: [],
-          excludeIds: [],
-        },
-      }),
-    );
   });
 
   it('should select flow nodes on source flow node selection', () => {
