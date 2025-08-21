@@ -13,6 +13,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.MigrationTimeoutException;
+import io.camunda.migration.commons.configuration.ConfigurationType;
+import io.camunda.migration.commons.configuration.MigrationProperties;
 import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.process.ProcessMigrator;
 import io.camunda.migration.process.TestData;
@@ -26,6 +28,7 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -384,7 +387,10 @@ public class ProcessMigratorIT extends AdapterTest {
     }
     // invalid URL
     connectConfiguration.setUrl("http://localhost:3333");
-    final var migrator = new ProcessMigrator(properties, connectConfiguration, meterRegistry);
+    final var migrationProperties = new MigrationProperties();
+    migrationProperties.setMigration(Map.of(ConfigurationType.PROCESS, properties));
+    final var migrator =
+        new ProcessMigrator(migrationProperties, connectConfiguration, meterRegistry);
     properties.getRetry().setMaxRetries(2);
     properties.getRetry().setMinRetryDelay(Duration.ofSeconds(1));
 
@@ -433,9 +439,13 @@ public class ProcessMigratorIT extends AdapterTest {
     this.isElasticsearch = isElasticsearch;
     properties.setTimeout(Duration.ofSeconds(5));
 
+    final var migrationProperties = new MigrationProperties();
+    migrationProperties.setMigration(Map.of(ConfigurationType.PROCESS, properties));
     final var migrator =
         new ProcessMigrator(
-            properties, isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION, meterRegistry);
+            migrationProperties,
+            isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION,
+            meterRegistry);
     writeImportPositionToIndex(TestData.notCompletedImportPosition(1));
 
     // when - then
@@ -461,10 +471,13 @@ public class ProcessMigratorIT extends AdapterTest {
     // given
     this.isElasticsearch = isElasticsearch;
     properties.setTimeout(Duration.ofSeconds(1));
-
+    final var migrationProperties = new MigrationProperties();
+    migrationProperties.setMigration(Map.of(ConfigurationType.PROCESS, properties));
     final var migrator =
         new ProcessMigrator(
-            properties, isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION, meterRegistry);
+            migrationProperties,
+            isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION,
+            meterRegistry);
     writeImportPositionToIndex(TestData.notCompletedImportPosition(1));
 
     for (int i = 1; i < 10; i++) {
@@ -502,9 +515,13 @@ public class ProcessMigratorIT extends AdapterTest {
     properties.setImporterFinishedTimeout(Duration.ofSeconds(10));
     properties.setTimeout(Duration.ofSeconds(1));
 
+    final var migrationProperties = new MigrationProperties();
+    migrationProperties.setMigration(Map.of(ConfigurationType.PROCESS, properties));
     final var migrator =
         new ProcessMigrator(
-            properties, isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION, meterRegistry);
+            migrationProperties,
+            isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION,
+            meterRegistry);
     writeImportPositionToIndex(TestData.completedImportPosition(1));
 
     writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));

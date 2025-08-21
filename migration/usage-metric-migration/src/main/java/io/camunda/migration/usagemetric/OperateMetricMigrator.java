@@ -13,6 +13,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.ids;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.Migrator;
+import io.camunda.migration.commons.configuration.MigrationProperties;
 import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
 import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.usagemetric.client.UsageMetricMigrationClient;
@@ -29,7 +30,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
-import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -85,11 +85,13 @@ if (event == "%s") {
   private final ScheduledExecutorService scheduler;
 
   public OperateMetricMigrator(
-      final ConnectConfiguration connectConfiguration, final MeterRegistry meterRegistry) {
+      final ConnectConfiguration connectConfiguration,
+      final MeterRegistry meterRegistry,
+      final MigrationProperties properties) {
     this.connectConfiguration = connectConfiguration;
     metricRegistry = new MetricRegistry(meterRegistry);
     isElasticsearch = connectConfiguration.getTypeEnum() == DatabaseType.ELASTICSEARCH;
-    final var retryConfiguration = new RetryConfiguration(); // TODO replace with real config
+    final var retryConfiguration = properties.getMigrationConfiguration(getClass()).getRetry();
     client =
         isElasticsearch
             ? new ElasticsearchUsageMetricMigrationClient(connectConfiguration, retryConfiguration)

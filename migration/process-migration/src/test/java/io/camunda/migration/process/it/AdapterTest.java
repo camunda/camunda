@@ -21,11 +21,13 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.migration.commons.configuration.ConfigurationType;
+import io.camunda.migration.commons.configuration.MigrationConfiguration;
+import io.camunda.migration.commons.configuration.MigrationProperties;
 import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
 import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.process.ProcessMigrator;
 import io.camunda.migration.process.TestData;
-import io.camunda.migration.process.config.ProcessMigrationProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
@@ -61,7 +63,7 @@ public abstract class AdapterTest {
   protected static MigrationRepositoryIndex migrationRepositoryIndex;
   protected static ImportPositionIndex importPositionIndex;
   protected static TestData.MisconfiguredProcessIndex misconfiguredProcessIndex;
-  protected static ProcessMigrationProperties properties;
+  protected static MigrationConfiguration properties;
   protected static ElasticsearchClient esClient;
   protected static OpenSearchClient osClient;
   protected static final ConnectConfiguration ES_CONFIGURATION = new ConnectConfiguration();
@@ -86,7 +88,7 @@ public abstract class AdapterTest {
 
   @BeforeAll
   public static void configure() {
-    properties = new ProcessMigrationProperties();
+    properties = new MigrationConfiguration();
     properties.setBatchSize(5);
     properties.getRetry().setMinRetryDelay(Duration.ofMillis(100));
     properties.getRetry().setMaxRetryDelay(Duration.ofMillis(500));
@@ -100,8 +102,10 @@ public abstract class AdapterTest {
     final var osConnector = new OpensearchConnector(OS_CONFIGURATION);
     osObjectMapper = osConnector.objectMapper();
     osClient = osConnector.createClient();
-    esMigrator = new ProcessMigrator(properties, ES_CONFIGURATION, meterRegistry);
-    osMigrator = new ProcessMigrator(properties, OS_CONFIGURATION, meterRegistry);
+    final var migrationProperties = new MigrationProperties();
+    migrationProperties.setMigration(Map.of(ConfigurationType.PROCESS, properties));
+    esMigrator = new ProcessMigrator(migrationProperties, ES_CONFIGURATION, meterRegistry);
+    osMigrator = new ProcessMigrator(migrationProperties, OS_CONFIGURATION, meterRegistry);
     createIndices();
   }
 
@@ -134,8 +138,10 @@ public abstract class AdapterTest {
   public void cleanUp() throws IOException {
     properties.setBatchSize(5);
     properties.setTimeout(Duration.ofMinutes(10));
+    final var migrationProperties = new MigrationProperties();
+    migrationProperties.setMigration(Map.of(ConfigurationType.PROCESS, properties));
     if (isElasticsearch) {
-      esMigrator = new ProcessMigrator(properties, ES_CONFIGURATION, meterRegistry);
+      esMigrator = new ProcessMigrator(migrationProperties, ES_CONFIGURATION, meterRegistry);
       esClient.deleteByQuery(
           DeleteByQueryRequest.of(
               d ->
@@ -149,7 +155,7 @@ public abstract class AdapterTest {
       esClient.indices().refresh();
 
     } else {
-      osMigrator = new ProcessMigrator(properties, OS_CONFIGURATION, meterRegistry);
+      osMigrator = new ProcessMigrator(migrationProperties, OS_CONFIGURATION, meterRegistry);
       osClient.deleteByQuery(
           org.opensearch.client.opensearch.core.DeleteByQueryRequest.of(
               d ->

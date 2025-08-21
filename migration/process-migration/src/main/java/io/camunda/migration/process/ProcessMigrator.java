@@ -11,10 +11,11 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.MigrationTimeoutException;
 import io.camunda.migration.api.Migrator;
+import io.camunda.migration.commons.configuration.MigrationConfiguration;
+import io.camunda.migration.commons.configuration.MigrationProperties;
 import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.es.ElasticsearchAdapter;
 import io.camunda.migration.process.adapter.os.OpensearchAdapter;
-import io.camunda.migration.process.config.ProcessMigrationProperties;
 import io.camunda.migration.process.util.MetricRegistry;
 import io.camunda.migration.process.util.MigrationUtil;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -33,34 +34,32 @@ import java.util.concurrent.TimeUnit;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component("process-migrator")
-@EnableConfigurationProperties(ProcessMigrationProperties.class)
 public class ProcessMigrator implements Migrator {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessMigrator.class);
 
   private final Adapter adapter;
-  private final ProcessMigrationProperties properties;
+  private final MigrationConfiguration properties;
   private ScheduledFuture<?> countdownTask;
   private final ScheduledExecutorService scheduler;
   private final MetricRegistry metricRegistry;
   private final Instant timeout;
 
   public ProcessMigrator(
-      final ProcessMigrationProperties properties,
+      final MigrationProperties properties,
       final ConnectConfiguration connect,
       final MeterRegistry meterRegistry) {
-    this.properties = properties;
+    this.properties = properties.getMigrationConfiguration(getClass());
     adapter =
         connect.getTypeEnum().isElasticSearch()
-            ? new ElasticsearchAdapter(properties, connect)
-            : new OpensearchAdapter(properties, connect);
+            ? new ElasticsearchAdapter(this.properties, connect)
+            : new OpensearchAdapter(this.properties, connect);
     scheduler = Executors.newScheduledThreadPool(1);
     metricRegistry = new MetricRegistry(meterRegistry);
-    timeout = Instant.now().plus(properties.getTimeout());
+    timeout = Instant.now().plus(this.properties.getTimeout());
   }
 
   @Override
