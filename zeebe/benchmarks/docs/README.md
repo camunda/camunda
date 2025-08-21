@@ -3,10 +3,6 @@
 This folder contains information/documentation we collected during setup several benchmarks
 and Google Cloud clusters.
 
-## Setup
-
-The [setup](setup/README.md) section shortly says what to do on setting up a new Google Cloud cluster.
-
 ## Scripts
 
 The [scripts](scripts/README.md) section contains several scripts which can help on running benchmarks.
