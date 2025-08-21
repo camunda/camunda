@@ -66,26 +66,26 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
   @Override
   protected Map<String, String> getDatabaseEnvironmentVariables(final String indexPrefix) {
     final String dbUrl = "http://host.testcontainers.internal:9200";
+    final String dbType = "opensearch";
 
     return Map.ofEntries(
-        Map.entry(
-            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE",
-            ConnectionTypes.OPENSEARCH.name()),
         Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE", "1"),
         Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX", indexPrefix),
         Map.entry(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
             "io.camunda.exporter.CamundaExporter"),
         // Unified Config: db type + compatibility vars
-        Map.entry("CAMUNDA_DATABASE_TYPE", "opensearch"),
-        Map.entry("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "opensearch"),
-        Map.entry("CAMUNDA_OPERATE_DATABASE", "opensearch"),
-        Map.entry("CAMUNDA_TASKLIST_DATABASE", "opensearch"),
+        Map.entry("CAMUNDA_DATABASE_TYPE", dbType),
+        Map.entry("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", dbType),
+        Map.entry("CAMUNDA_OPERATE_DATABASE", dbType),
+        Map.entry("CAMUNDA_TASKLIST_DATABASE", dbType),
+        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", dbType),
         // Unified Config: db url + compatibility vars
         Map.entry("CAMUNDA_DATABASE_URL", dbUrl),
         Map.entry("CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_URL", dbUrl),
         Map.entry("CAMUNDA_OPERATE_OPENSEARCH_URL", dbUrl),
         Map.entry("CAMUNDA_TASKLIST_OPENSEARCH_URL", dbUrl),
+        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", dbUrl),
         // ---
         Map.entry("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix));
   }
