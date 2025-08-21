@@ -9,14 +9,14 @@ declare -A lookupTeamMedic
 # @core-features-medic
 coreFeaturesMedic="<!subteam^S08P2CU9V8W|core-features-medic>"
 lookupTeamMedic["team-core-features"]=$coreFeaturesMedic
-lookupTeamMedic["Core Features"]=coreFeaturesMedic
-lookupTeamMedic["CoreFeatures"]=coreFeaturesMedic
+lookupTeamMedic["Core Features"]=$coreFeaturesMedic
+lookupTeamMedic["CoreFeatures"]=$coreFeaturesMedic
 
 # @data-layer-medic
 dataLayerMedic="<!subteam^S08P2CSC06S|data-layer-medic>"
 lookupTeamMedic["team-data-layer"]=$dataLayerMedic
-lookupTeamMedic["Data Layer"]=dataLayerMedic
-lookupTeamMedic["DataLayer"]=dataLayerMedic
+lookupTeamMedic["Data Layer"]=$dataLayerMedic
+lookupTeamMedic["DataLayer"]=$dataLayerMedic
 
 # @identity-medic
 identityMedic="<!subteam^S053MF48SSH|identity-medic>"
