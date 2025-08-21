@@ -206,20 +206,22 @@ public class StaticEntities {
                         ownerType,
                         "*",
                         AuthorizationResourceType.RESOURCE,
-                        Set.of(
-                            PermissionType.READ,
-                            PermissionType.DELETE_PROCESS,
-                            PermissionType.DELETE_DRD)),
+                        AuthorizationResourceType.RESOURCE.getSupportedPermissionTypes().stream()
+                            .filter(p -> !p.equals(PermissionType.CREATE))
+                            .collect(Collectors.toSet())),
                     new CreateAuthorizationRequest(
                         ownerId,
                         ownerType,
                         "*",
                         AuthorizationResourceType.PROCESS_DEFINITION,
-                        Set.of(
-                            PermissionType.READ_PROCESS_DEFINITION,
-                            PermissionType.READ_PROCESS_INSTANCE,
-                            PermissionType.UPDATE_PROCESS_INSTANCE,
-                            PermissionType.DELETE_PROCESS_INSTANCE)),
+                        AuthorizationResourceType.PROCESS_DEFINITION
+                            .getSupportedPermissionTypes()
+                            .stream()
+                            .filter(
+                                s ->
+                                    !s.equals(PermissionType.READ_USER_TASK)
+                                        && !s.equals(PermissionType.UPDATE_USER_TASK))
+                            .collect(Collectors.toSet())),
                     new CreateAuthorizationRequest(
                         ownerId,
                         ownerType,
@@ -231,11 +233,8 @@ public class StaticEntities {
                         ownerType,
                         "*",
                         AuthorizationResourceType.DECISION_DEFINITION,
-                        Set.of(
-                            PermissionType.READ_DECISION_DEFINITION,
-                            PermissionType.READ_DECISION_INSTANCE,
-                            PermissionType.CREATE_DECISION_INSTANCE,
-                            PermissionType.DELETE_DECISION_INSTANCE)))),
+                        AuthorizationResourceType.DECISION_DEFINITION
+                            .getSupportedPermissionTypes()))),
             new AuthEntry(
                 audiences.getTasklist() + ":read:*",
                 List.of(
@@ -245,12 +244,6 @@ public class StaticEntities {
                         TASKLIST_RESOURCE_ID,
                         AuthorizationResourceType.COMPONENT,
                         Set.of(PermissionType.ACCESS)),
-                    new CreateAuthorizationRequest(
-                        ownerId,
-                        ownerType,
-                        "*",
-                        AuthorizationResourceType.RESOURCE,
-                        Set.of(PermissionType.READ)),
                     new CreateAuthorizationRequest(
                         ownerId,
                         ownerType,
@@ -268,12 +261,6 @@ public class StaticEntities {
                         TASKLIST_RESOURCE_ID,
                         AuthorizationResourceType.COMPONENT,
                         Set.of(PermissionType.ACCESS)),
-                    new CreateAuthorizationRequest(
-                        ownerId,
-                        ownerType,
-                        "*",
-                        AuthorizationResourceType.RESOURCE,
-                        Set.of(PermissionType.READ)),
                     new CreateAuthorizationRequest(
                         ownerId,
                         ownerType,

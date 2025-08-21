@@ -171,7 +171,11 @@ public class OidcRoleMigrationHandlerTest {
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.RESOURCE,
                 Set.of(
-                    PermissionType.READ, PermissionType.DELETE_PROCESS, PermissionType.DELETE_DRD)),
+                    PermissionType.READ,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_FORM,
+                    PermissionType.DELETE_RESOURCE)),
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
@@ -182,10 +186,13 @@ public class OidcRoleMigrationHandlerTest {
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 Set.of(
+                    PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.READ_PROCESS_DEFINITION,
                     PermissionType.READ_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE,
-                    PermissionType.UPDATE_PROCESS_INSTANCE)),
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.MODIFY_PROCESS_INSTANCE,
+                    PermissionType.CANCEL_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE)),
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
@@ -250,7 +257,6 @@ public class OidcRoleMigrationHandlerTest {
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.RESOURCE,
                 Set.of(
-                    PermissionType.READ,
                     PermissionType.CREATE,
                     PermissionType.DELETE_FORM,
                     PermissionType.DELETE_PROCESS,
@@ -489,7 +495,11 @@ public class OidcRoleMigrationHandlerTest {
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.RESOURCE,
                 Set.of(
-                    PermissionType.READ, PermissionType.DELETE_PROCESS, PermissionType.DELETE_DRD)),
+                    PermissionType.READ,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_FORM,
+                    PermissionType.DELETE_RESOURCE)),
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
@@ -500,10 +510,13 @@ public class OidcRoleMigrationHandlerTest {
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 Set.of(
+                    PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.READ_PROCESS_DEFINITION,
                     PermissionType.READ_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE,
-                    PermissionType.UPDATE_PROCESS_INSTANCE)),
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.MODIFY_PROCESS_INSTANCE,
+                    PermissionType.CANCEL_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE)),
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
@@ -568,7 +581,6 @@ public class OidcRoleMigrationHandlerTest {
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.RESOURCE,
                 Set.of(
-                    PermissionType.READ,
                     PermissionType.CREATE,
                     PermissionType.DELETE_FORM,
                     PermissionType.DELETE_PROCESS,
