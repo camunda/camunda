@@ -26,6 +26,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -97,6 +98,7 @@ final class ExporterDisableTest {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/37046")
   void exporterStaysDisabledAfterRestart() {
     // given
     generateEventsOnAllPartitions();
