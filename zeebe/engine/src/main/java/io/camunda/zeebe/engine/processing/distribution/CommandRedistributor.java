@@ -26,12 +26,14 @@ import org.slf4j.LoggerFactory;
  * partitions is unreliable.
  *
  * <p>A simple exponential backoff is used for retrying these retriable distributions. This
- * exponential backoff is configurable through the {@link EngineConfiguration}, with defaults
- * of 10 seconds and 5 minutes respectively. The backoff starts at the initial interval and doubles
- * every retry until it reaches the maximum backoff duration. This backoff is tracked for each
- * retriable distribution individually.
+ * exponential backoff is configurable through the {@link EngineConfiguration}, with defaults of 10
+ * seconds and 5 minutes respectively. The backoff starts at the initial interval and doubles every
+ * retry until it reaches the maximum backoff duration. This backoff is tracked for each retriable
+ * distribution individually.
  */
 public final class CommandRedistributor implements StreamProcessorLifecycleAware {
+
+  private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributor.class);
 
   /**
    * Specifies how often this redistributor runs, i.e. the fixed delay between runs. It is also used
@@ -44,8 +46,6 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
    * duration is reached by the exponential backoff.
    */
   private final long maxRetryCycles;
-
-  private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributor.class);
 
   private final CommandDistributionBehavior distributionBehavior;
   private final RoutingInfo routingInfo;
@@ -65,9 +65,10 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
       final EngineConfiguration config) {
     this.distributionBehavior = distributionBehavior;
     this.routingInfo = routingInfo;
-    this.isDistributionPaused = config.isCommandDistributionPaused();
-    this.commandRedistributionInterval = config.getCommandRedistributionInterval();
-    this.maxRetryCycles = config.getCommandRedistributionMaxBackoff().dividedBy(commandRedistributionInterval);
+    isDistributionPaused = config.isCommandDistributionPaused();
+    commandRedistributionInterval = config.getCommandRedistributionInterval();
+    maxRetryCycles =
+        config.getCommandRedistributionMaxBackoff().dividedBy(commandRedistributionInterval);
   }
 
   @Override
@@ -76,9 +77,7 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
       LOG.debug("Command distribution is paused, skipping retry scheduling.");
       return;
     }
-    context
-        .getScheduleService()
-        .runAtFixedRate(commandRedistributionInterval, this::runRetryCycle);
+    context.getScheduleService().runAtFixedRate(commandRedistributionInterval, this::runRetryCycle);
   }
 
   public void runRetryCycle() {
