@@ -16,6 +16,7 @@ import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.ThrowErrorResponse;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -62,9 +63,12 @@ public final class ThrowErrorTest {
     final long jobKey = activateJob(client, useRest, jobType).getKey();
 
     // when
-    getCommand(client, useRest, jobKey).errorCode(ERROR_CODE).send().join();
+    final ThrowErrorResponse response =
+        getCommand(client, useRest, jobKey).errorCode(ERROR_CODE).send().join();
 
     // then
+    assertThat(response).isNotNull().isInstanceOf(ThrowErrorResponse.class);
+
     final Record<JobRecordValue> record =
         jobRecords(JobIntent.ERROR_THROWN).withRecordKey(jobKey).getFirst();
     Assertions.assertThat(record.getValue()).hasErrorCode(ERROR_CODE).hasErrorMessage("");

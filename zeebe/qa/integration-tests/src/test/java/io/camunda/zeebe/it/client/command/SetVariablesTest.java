@@ -65,9 +65,14 @@ public final class SetVariablesTest {
     final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
 
     // when
-    getCommand(client, useRest, processInstanceKey).variables(Map.of("foo", "bar")).send().join();
+    final SetVariablesResponse response =
+        getCommand(client, useRest, processInstanceKey)
+            .variables(Map.of("foo", "bar"))
+            .send()
+            .join();
 
     // then
+    assertThat(response).isNotNull().isInstanceOf(SetVariablesResponse.class);
     ZeebeAssertHelper.assertVariableDocumentUpdated(
         (variableDocument) ->
             assertThat(variableDocument.getVariables()).containsOnly(entry("foo", "bar")));
