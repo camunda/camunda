@@ -25,9 +25,10 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation.ts';
+import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
@@ -150,13 +151,10 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
             });
           }
 
-          const processInstanceKey: {$in?: string[]; $notIn?: string[]} = {};
-          if (ids.length > 0) {
-            processInstanceKey.$in = ids;
-          }
-          if (excludedProcessInstanceIds.length > 0) {
-            processInstanceKey.$notIn = excludedProcessInstanceIds;
-          }
+          const keyCriterion = buildProcessInstanceKeyCriterion(
+            ids,
+            excludedProcessInstanceIds,
+          );
 
           batchModifyProcessInstances({
             moveInstructions: [
@@ -167,7 +165,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
             ],
             filter: {
               processDefinitionKey,
-              processInstanceKey,
+              processInstanceKey: keyCriterion,
             },
           });
 
