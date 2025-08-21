@@ -221,6 +221,12 @@
       <!-- Internal Zeebe modules -->
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-zeebe</artifactId>
+        <version>${project.version}</version>
+
+      </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-broker</artifactId>
         <version>${project.version}</version>
       </dependency>
