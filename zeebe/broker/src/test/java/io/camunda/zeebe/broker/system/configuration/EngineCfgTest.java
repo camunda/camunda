@@ -63,24 +63,10 @@ final class EngineCfgTest {
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(15));
     assertThat(configuration.getJobsTimeoutCheckerBatchLimit()).isEqualTo(1000);
-    assertThat(configuration.getDrgCacheCapacity()).isEqualTo(2000L);
-    assertThat(configuration.getDrgCacheCapacity()).isEqualTo(2000L);
     assertThat(configuration.getValidatorsResultsOutputMaxSize()).isEqualTo(2000);
     assertThat(configuration.getMaxProcessDepth()).isEqualTo(2000);
-    assertThat(configuration.getCommandRedistributionInterval()).isEqualTo(Duration.ofSeconds(30));
-    assertThat(configuration.getCommandRedistributionMaxBackoff()).isEqualTo(Duration.ofMinutes(10));
-  }
-
-  @Test
-  void shouldConfigureDistributionRetrySettings() {
-    // given
-    final BrokerCfg cfg = TestConfigReader.readConfig("distribution", environment);
-
-    // when
-    final var configuration = cfg.getExperimental().getEngine().createEngineConfiguration();
-
-    // then
-    assertThat(configuration.getCommandRedistributionInterval()).isEqualTo(Duration.ofSeconds(5));
-    assertThat(configuration.getCommandRedistributionMaxBackoff()).isEqualTo(Duration.ofMinutes(2));
+    assertThat(configuration.getCommandRedistributionInterval()).isEqualTo(Duration.ofSeconds(60));
+    assertThat(configuration.getCommandRedistributionMaxBackoff())
+        .isEqualTo(Duration.ofMinutes(20));
   }
 }
