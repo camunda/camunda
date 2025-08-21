@@ -44,6 +44,7 @@ public final class TestSearchContainers {
   public static OpensearchContainer<?> createDefaultOpensearchContainer() {
     return new OpensearchContainer<>(OPENSEARCH_IMAGE)
         .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=536870912")
+        .withEnv("action.destructive_requires_name", "false")
         .withEnv("action.auto_create_index", "true");
   }
 
