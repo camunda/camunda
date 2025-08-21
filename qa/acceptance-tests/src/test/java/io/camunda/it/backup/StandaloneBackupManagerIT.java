@@ -74,7 +74,7 @@ final class StandaloneBackupManagerIT {
       new TestStandaloneBackupManager()
           .withProperty("camunda.database.username", ADMIN_USER)
           .withProperty("camunda.database.password", ADMIN_PASSWORD)
-          .withProperty("camunda.backup.webapps.repositoryName", "els-test");
+          .withProperty("camunda.data.backup.repositoryName", "els-test");
 
   // Configure the schema manager to create indices and templates in test setup
   @TestZeebe(autoStart = false)

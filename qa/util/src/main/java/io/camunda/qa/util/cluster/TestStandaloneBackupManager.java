@@ -7,11 +7,12 @@
  */
 package io.camunda.qa.util.cluster;
 
-import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled.BACKUP_WEBAPPS_ENABLED;
+import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled.BACKUP_SECONDARY_STORAGE_ENABLED;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
@@ -24,8 +25,11 @@ public class TestStandaloneBackupManager
   private Long backupId;
 
   public TestStandaloneBackupManager() {
-    super(BackupManagerConfiguration.class, StandaloneBackupManager.class);
-    withProperty(BACKUP_WEBAPPS_ENABLED, true);
+    super(
+        BackupManagerConfiguration.class,
+        StandaloneBackupManager.class,
+        UnifiedConfiguration.class);
+    withProperty(BACKUP_SECONDARY_STORAGE_ENABLED, true);
   }
 
   @Override

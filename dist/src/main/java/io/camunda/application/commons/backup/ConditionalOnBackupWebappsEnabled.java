@@ -25,13 +25,13 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 @Documented
 @Conditional(ConditionalOnBackupWebappsEnabled.BackupWebappsEnabledAndDatabaseTypeCondition.class)
 public @interface ConditionalOnBackupWebappsEnabled {
-  String BACKUP_WEBAPPS_ENABLED = "camunda.backup.webapps.enabled";
+  String BACKUP_SECONDARY_STORAGE_ENABLED = "camunda.data.backup.secondary-storage-enabled";
 
   class BackupWebappsEnabledAndDatabaseTypeCondition implements Condition {
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final Environment env = context.getEnvironment();
-      final String backupEnabled = env.getProperty(BACKUP_WEBAPPS_ENABLED);
+      final String backupEnabled = env.getProperty(BACKUP_SECONDARY_STORAGE_ENABLED);
       return "true".equalsIgnoreCase(backupEnabled)
           && DatabaseTypeUtils.isSecondaryStorageEnabled(env);
     }
