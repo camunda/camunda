@@ -46,6 +46,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
@@ -390,6 +391,21 @@ public class TestElasticSearchRepository implements TestSearchRepository {
         throw ex;
       }
       return Optional.empty();
+    }
+  }
+
+  @Override
+  public Long getIndexTemplatePriority(final String templateName) {
+    try {
+      final var request = new GetComposableIndexTemplateRequest(templateName);
+      final var response = esClient.indices().getIndexTemplate(request, RequestOptions.DEFAULT);
+      final var templates = response.getIndexTemplates();
+      if (templates.isEmpty()) {
+        throw new IllegalStateException(templateName + " index template not found");
+      }
+      return templates.get(templateName).priority();
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
     }
   }
 

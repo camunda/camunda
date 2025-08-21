@@ -11,6 +11,7 @@ import static io.camunda.tasklist.es.RetryElasticsearchClient.DEFAULT_SHARDS;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REPLICA;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_SHARDS;
+import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +26,7 @@ import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.ElasticsearchJSONUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -197,15 +200,23 @@ public class ElasticsearchSchemaManager implements SchemaManager {
               tasklistProperties
                   .getElasticsearch()
                   .getNumberOfReplicas(templateDescriptor.getIndexName()));
+      final var expectedPriority =
+          ofNullable(tasklistProperties.getElasticsearch().getIndexTemplatePriority())
+              .map(Long::valueOf)
+              .orElse(null);
       final var actualShards = indexTemplate.template().settings().get(NUMBERS_OF_SHARDS);
       final var actualReplicas = indexTemplate.template().settings().get(NUMBERS_OF_REPLICA);
+      final var actualPriority = indexTemplate.priority();
 
-      if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
+      if (!expectedShards.equals(actualShards)
+          || !expectedReplicas.equals(actualReplicas)
+          || !Objects.equals(expectedPriority, actualPriority)) {
         LOGGER.info(
-            "Updating index template {} to shards={}, replicas={}",
+            "Updating index template {} to shards={}, replicas={}, priority={}",
             templateDescriptor.getTemplateName(),
             expectedShards,
-            expectedReplicas);
+            expectedReplicas,
+            expectedPriority);
         putIndexTemplate(prepareComposableTemplateRequest(templateDescriptor, null), true);
       }
     }
@@ -321,7 +332,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         indexDescriptor.getFullQualifiedName());
   }
 
-  private void createTemplate(final TemplateDescriptor templateDescriptor) {
+  @VisibleForTesting
+  void createTemplate(final TemplateDescriptor templateDescriptor) {
     createTemplate(templateDescriptor, null);
   }
 
@@ -367,6 +379,10 @@ public class ElasticsearchSchemaManager implements SchemaManager {
             .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
             .template(template)
             .componentTemplates(List.of(getComponentTemplateName()))
+            .priority(
+                ofNullable(tasklistProperties.getElasticsearch().getIndexTemplatePriority())
+                    .map(Long::valueOf)
+                    .orElse(null))
             .build();
     final PutComposableIndexTemplateRequest request =
         new PutComposableIndexTemplateRequest()
