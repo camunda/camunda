@@ -59,11 +59,27 @@ Details, general recommendations, and how-tos/examples of how to write them, you
 
 ## Integration test
 
-### What is an integration test
+Integration tests (ITs) cover verifies the integration of two or more units or components together.
+Details, general recommendations, and how-tos/examples of how to write them, you can find in the [integration test guide](./testing/integration.md).
 
-### When should I write an integration test
+## Acceptance test
 
-### Where should I write an integration test
+> [!Note]
+>
+> Formerly known as QA - Tests
+
+[//]: # (If people ever wonder about this note, then we can remove it.)
+
+Acceptance tests (ATs) are mostly slow, testing a complete user journey or a feature end-to-end (E2E), covering multiple or even all components at the same time in an integrated manner.
+Details, general recommendations, and how-tos/examples of how to write them, you can find in the [acceptance test guide](./testing/acceptance.md).
+
+## Reliability testing
+
+We define reliability testing as a type of software testing and practice that validates system performance and reliability. It can thus be done over time and with injection failure scenarios (injecting chaos).
+
+Details, about the current available practices, tools, and infrastructure you can find in the [reliability testing guide](testing/reliability-testing.md).
+
+## Testing Asynchronous Behavior
 
 ### Do's and Don'ts
 
@@ -97,20 +113,3 @@ successfully before running the tests.
       });
    }
 ```
-
-## Acceptance test
-
-> [!Note]
->
-> Formerly known as QA - Tests
-
-[//]: # (If people ever wonder about this note, then we can remove it.)
-
-Acceptance tests (ATs) are mostly slow, testing a complete user journey or a feature end-to-end (E2E), covering multiple or even all components at the same time in an integrated manner.
-Details, general recommendations, and how-tos/examples of how to write them, you can find in the [acceptance test guide](./testing/acceptance.md).
-
-## Reliability testing
-
-We define reliability testing as a type of software testing and practice that validates system performance and reliability. It can thus be done over time and with injection failure scenarios (injecting chaos).
-
-Details, about the current available practices, tools, and infrastructure you can find in the [reliability testing guide](testing/reliability-testing.md).
