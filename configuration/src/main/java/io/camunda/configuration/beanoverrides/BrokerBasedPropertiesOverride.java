@@ -394,22 +394,22 @@ public class BrokerBasedPropertiesOverride {
     final Map<String, ExporterCfg> exporters = override.getExporters();
     final List<ExporterCfg> camundaExporters =
         exporters.values().stream().filter(e -> e.getClassName().equals(className)).toList();
+    final ExporterCfg camundaExporter;
     if (camundaExporters.isEmpty()) {
-      final ExporterCfg camundaExporter = new ExporterCfg();
+      camundaExporter = new ExporterCfg();
       camundaExporter.setJarPath(jarPath);
       camundaExporter.setClassName(className);
       camundaExporter.setArgs(new LinkedHashMap<>());
       override.getExporters().put(exporterName, camundaExporter);
-      camundaExporters.add(camundaExporter);
+    } else {
+      camundaExporter = camundaExporters.getFirst();
     }
 
     /* Override config map values */
 
-    for(final ExporterCfg camundaExporter : camundaExporters) {
-      final Map<String, Object> args = camundaExporter.getArgs();
-      setArg(args, "connect.type", secondaryStorage.getType().name());
-      setArg(args, "connect.url", database.getUrl());
-    }
+    final Map<String, Object> args = camundaExporter.getArgs();
+    setArg(args, "connect.type", secondaryStorage.getType().name());
+    setArg(args, "connect.url", database.getUrl());
   }
 
   @SuppressWarnings("unchecked")
