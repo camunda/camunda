@@ -86,7 +86,7 @@ test.describe('Groups Clients API Tests', () => {
     });
 
     await test.step('Search Clients For Group Not Found', async () => {
-      const p = {groupId: 'invalidgroup'};
+      const p = {groupId: 'invalidGroupId'};
 
       const res = await request.post(
         buildUrl('/groups/{groupId}/clients/search', p),

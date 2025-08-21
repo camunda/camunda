@@ -106,7 +106,7 @@ test.describe('Group Roles API Tests', () => {
     });
 
     await test.step('Search Roles For Group Not Found', async () => {
-      const p = {groupId: 'invalidgroupid'};
+      const p = {groupId: 'invalidGroupId'};
 
       const res = await request.post(
         buildUrl('/groups/{groupId}/roles/search', p),

@@ -42,7 +42,7 @@ test.describe('Group Users API Tests', () => {
     await test.step('Assign User To Group Not Found', async () => {
       state['username'] = 'demo';
       const stateParams: Record<string, string> = {
-        groupId: 'invalidgroupid',
+        groupId: 'invalidGroupId',
         username: state['username'] as string,
       };
       const res = await request.put(

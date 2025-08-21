@@ -116,7 +116,7 @@ test.describe('Groups API Tests', () => {
     await test.step('Search Groups By Invalid Id', async () => {
       const body = {
         filter: {
-          groupId: 'invalidgroupid',
+          groupId: 'invalidGroupId',
         },
       };
 
