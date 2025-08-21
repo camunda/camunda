@@ -562,7 +562,7 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_DATABASE_TYPE", type)
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", type)
         .withEnv("CAMUNDA_OPERATE_DATABASE", type)
-        .withEnv("CAMUNDA_TASKLIST_DATABASE", type,
+        .withEnv("CAMUNDA_TASKLIST_DATABASE", type)
         // ---
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME", exporterClassName)
         .withEnv(
