@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class StaticEntities {
 
@@ -34,10 +35,15 @@ public class StaticEntities {
           new CreateRoleRequest(OPERATIONS_ENGINEER_ROLE_ID, "Operations Engineer", ""),
           new CreateRoleRequest(TASK_USER_ROLE_ID, "Task User", ""),
           new CreateRoleRequest(VISITOR_ROLE_ID, "Visitor", ""));
-
   public static final List<CreateAuthorizationRequest> ROLE_PERMISSIONS =
       List.of(
           // DEVELOPER
+          new CreateAuthorizationRequest(
+              DEVELOPER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.BATCH,
+              Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
           new CreateAuthorizationRequest(
               DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
@@ -54,12 +60,6 @@ public class StaticEntities {
               DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
-              AuthorizationResourceType.PROCESS_DEFINITION,
-              AuthorizationResourceType.PROCESS_DEFINITION.getSupportedPermissionTypes()),
-          new CreateAuthorizationRequest(
-              DEVELOPER_ROLE_ID,
-              AuthorizationOwnerType.ROLE,
-              "*",
               AuthorizationResourceType.DECISION_DEFINITION,
               AuthorizationResourceType.DECISION_DEFINITION.getSupportedPermissionTypes()),
           new CreateAuthorizationRequest(
@@ -69,6 +69,12 @@ public class StaticEntities {
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION
                   .getSupportedPermissionTypes()),
+          new CreateAuthorizationRequest(
+              DEVELOPER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.MESSAGE,
+              Set.of(PermissionType.READ)),
           new CreateAuthorizationRequest(
               DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
@@ -79,26 +85,21 @@ public class StaticEntities {
               DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
+              AuthorizationResourceType.PROCESS_DEFINITION,
+              AuthorizationResourceType.PROCESS_DEFINITION.getSupportedPermissionTypes()),
+          // OPERATIONS ENGINEER
+          new CreateAuthorizationRequest(
+              OPERATIONS_ENGINEER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
               AuthorizationResourceType.BATCH,
               Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
-          // OPERATIONS ENGINEER
           new CreateAuthorizationRequest(
               OPERATIONS_ENGINEER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "operate",
               AuthorizationResourceType.COMPONENT,
               AuthorizationResourceType.COMPONENT.getSupportedPermissionTypes()),
-          new CreateAuthorizationRequest(
-              OPERATIONS_ENGINEER_ROLE_ID,
-              AuthorizationOwnerType.ROLE,
-              "*",
-              AuthorizationResourceType.PROCESS_DEFINITION,
-              Set.of(
-                  PermissionType.READ_PROCESS_DEFINITION,
-                  PermissionType.READ_PROCESS_INSTANCE,
-                  PermissionType.UPDATE_PROCESS_INSTANCE,
-                  PermissionType.CREATE_PROCESS_INSTANCE,
-                  PermissionType.DELETE_PROCESS_INSTANCE)),
           new CreateAuthorizationRequest(
               OPERATIONS_ENGINEER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
@@ -116,19 +117,27 @@ public class StaticEntities {
               OPERATIONS_ENGINEER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
-              AuthorizationResourceType.RESOURCE,
-              Set.of(
-                  PermissionType.READ,
-                  PermissionType.DELETE_RESOURCE,
-                  PermissionType.DELETE_PROCESS,
-                  PermissionType.DELETE_DRD,
-                  PermissionType.DELETE_FORM)),
+              AuthorizationResourceType.MESSAGE,
+              Set.of(PermissionType.READ)),
           new CreateAuthorizationRequest(
               OPERATIONS_ENGINEER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
-              AuthorizationResourceType.BATCH,
-              Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
+              AuthorizationResourceType.RESOURCE,
+              AuthorizationResourceType.RESOURCE.getSupportedPermissionTypes().stream()
+                  .filter(p -> !p.equals(PermissionType.CREATE))
+                  .collect(Collectors.toSet())),
+          new CreateAuthorizationRequest(
+              OPERATIONS_ENGINEER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.PROCESS_DEFINITION,
+              AuthorizationResourceType.PROCESS_DEFINITION.getSupportedPermissionTypes().stream()
+                  .filter(
+                      s ->
+                          !s.equals(PermissionType.READ_USER_TASK)
+                              && !s.equals(PermissionType.UPDATE_USER_TASK))
+                  .collect(Collectors.toSet())),
           // TASK USER
           new CreateAuthorizationRequest(
               TASK_USER_ROLE_ID,
@@ -144,9 +153,15 @@ public class StaticEntities {
               Set.of(
                   PermissionType.READ_PROCESS_DEFINITION,
                   PermissionType.READ_USER_TASK,
-                  PermissionType.UPDATE_USER_TASK,
-                  PermissionType.CREATE_PROCESS_INSTANCE)),
+                  PermissionType.CREATE_PROCESS_INSTANCE,
+                  PermissionType.UPDATE_USER_TASK)),
           // VISITOR
+          new CreateAuthorizationRequest(
+              VISITOR_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.BATCH,
+              Set.of(PermissionType.READ)),
           new CreateAuthorizationRequest(
               VISITOR_ROLE_ID,
               AuthorizationOwnerType.ROLE,
@@ -159,15 +174,6 @@ public class StaticEntities {
               "tasklist",
               AuthorizationResourceType.COMPONENT,
               AuthorizationResourceType.COMPONENT.getSupportedPermissionTypes()),
-          new CreateAuthorizationRequest(
-              VISITOR_ROLE_ID,
-              AuthorizationOwnerType.ROLE,
-              "*",
-              AuthorizationResourceType.PROCESS_DEFINITION,
-              Set.of(
-                  PermissionType.READ_PROCESS_DEFINITION,
-                  PermissionType.READ_PROCESS_INSTANCE,
-                  PermissionType.READ_USER_TASK)),
           new CreateAuthorizationRequest(
               VISITOR_ROLE_ID,
               AuthorizationOwnerType.ROLE,
@@ -185,8 +191,23 @@ public class StaticEntities {
               VISITOR_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
-              AuthorizationResourceType.BATCH,
-              Set.of(PermissionType.READ)));
+              AuthorizationResourceType.MESSAGE,
+              Set.of(PermissionType.READ)),
+          new CreateAuthorizationRequest(
+              VISITOR_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.RESOURCE,
+              Set.of(PermissionType.READ)),
+          new CreateAuthorizationRequest(
+              VISITOR_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.PROCESS_DEFINITION,
+              Set.of(
+                  PermissionType.READ_PROCESS_DEFINITION,
+                  PermissionType.READ_PROCESS_INSTANCE,
+                  PermissionType.READ_USER_TASK)));
 
   public static List<CreateAuthorizationRequest> getZeebeClientPermissions(final String clientId) {
     return List.of(
