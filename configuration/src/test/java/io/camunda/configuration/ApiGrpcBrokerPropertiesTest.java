@@ -62,12 +62,6 @@ public class ApiGrpcBrokerPropertiesTest {
     }
 
     @Test
-    void shouldSetMaxMessageSize() {
-      assertThat(brokerCfg.getGateway().getNetwork().getMaxMessageSize())
-          .isEqualTo(DataSize.ofMegabytes(40));
-    }
-
-    @Test
     void shouldSetManagementThreads() {
       assertThat(brokerCfg.getGateway().getThreads().getManagementThreads()).isEqualTo(5);
     }
@@ -124,6 +118,7 @@ public class ApiGrpcBrokerPropertiesTest {
         "zeebe.broker.gateway.network.host=192.0.0.1",
         "zeebe.broker.gateway.network.port=28900",
         "zeebe.broker.gateway.network.minKeepAliveInterval=60s",
+        "zeebe.broker.network.maxMessageSize=60MB",
         "zeebe.broker.gateway.network.maxMessageSize=60MB",
         "zeebe.broker.gateway.threads.managementThreads=6",
       })
@@ -205,12 +200,6 @@ public class ApiGrpcBrokerPropertiesTest {
     void shouldSetMinKeepAliveIntervalFromNew() {
       assertThat(brokerCfg.getGateway().getNetwork().getMinKeepAliveInterval())
           .isEqualTo(Duration.ofSeconds(40));
-    }
-
-    @Test
-    void shouldSetMaxMessageSizeFromNew() {
-      assertThat(brokerCfg.getGateway().getNetwork().getMaxMessageSize())
-          .isEqualTo(DataSize.ofMegabytes(40));
     }
 
     @Test

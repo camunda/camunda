@@ -105,7 +105,6 @@ public class BrokerBasedPropertiesOverride {
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
     networkCfg.setMinKeepAliveInterval(grpc.getMinKeepAliveInterval());
-    networkCfg.setMaxMessageSize(grpc.getMaxMessageSize());
 
     populateFromSsl(override);
     populateFromInterceptors(override);
@@ -213,7 +212,19 @@ public class BrokerBasedPropertiesOverride {
     final var network =
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
 
-    override.getNetwork().setHost(network.getHost());
+    final var brokerNetwork = override.getNetwork();
+    brokerNetwork.setHost(network.getHost());
+    brokerNetwork.setAdvertisedHost(network.getAdvertisedHost());
+    brokerNetwork.setPortOffset(network.getPortOffset());
+    brokerNetwork.setMaxMessageSize(network.getMaxMessageSize());
+    brokerNetwork.setSocketSendBuffer(network.getSocketSendBuffer());
+    brokerNetwork.setSocketReceiveBuffer(network.getSocketReceiveBuffer());
+    brokerNetwork.setHeartbeatTimeout(network.getHeartbeatTimeout());
+    brokerNetwork.setHeartbeatInterval(network.getHeartbeatInterval());
+
+    final var ucNetwork =
+        unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
+    override.getGateway().getNetwork().setMaxMessageSize(ucNetwork.getMaxMessageSize());
   }
 
   private void populateFromRestFilters(final BrokerBasedProperties override) {
