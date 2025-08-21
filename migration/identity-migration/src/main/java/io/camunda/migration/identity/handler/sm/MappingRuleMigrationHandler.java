@@ -24,9 +24,11 @@ import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
 
@@ -63,34 +65,46 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
 
   @Override
   protected void process(final List<MappingRule> batch) {
-    final var mappingRules = managementIdentityClient.fetchMappingRules();
-    totalMappingRuleCount.addAndGet(mappingRules.size());
+    record ClaimKey(String name, String value) {}
+    final var mappingRuleByUniqueClaim =
+        managementIdentityClient.fetchMappingRules().stream()
+            .collect(
+                Collectors.groupingBy(rule -> new ClaimKey(rule.claimName(), rule.claimValue())));
+    totalMappingRuleCount.addAndGet(mappingRuleByUniqueClaim.size());
 
-    mappingRules.forEach(
-        mappingRule -> {
-          final var mappingRuleId = normalizeID(mappingRule.name());
-          try {
-            final var mappingRuleDTO =
-                new MappingRuleDTO(
-                    mappingRule.claimName(),
-                    mappingRule.claimValue(),
-                    mappingRule.name(),
-                    mappingRuleId);
-            retryOnBackpressure(
-                () -> mappingRuleServices.createMappingRule(mappingRuleDTO).join(),
-                "Failed to create mapping rule with ID: " + mappingRuleId);
-            createdMappingRuleCount.incrementAndGet();
-          } catch (final Exception e) {
-            if (!isConflictError(e)) {
-              throw new MigrationException(
-                  "Failed to migrate mapping rule with ID: " + mappingRuleId, e);
-            }
-            logger.debug(
-                "Mapping rule with ID '{}' already exists, skipping creation.", mappingRuleId);
-          }
-          assignRolesToMappingRule(mappingRule.appliedRoles(), mappingRuleId);
-          assignTenantsToMappingRule(mappingRule.appliedTenants(), mappingRuleId);
-        });
+    mappingRuleByUniqueClaim
+        .values()
+        .forEach(
+            mappingRulesWithSameClaim -> {
+              // Sort group by mapping rule name/id for deterministic selection of the first rule
+              mappingRulesWithSameClaim.sort(Comparator.comparing(MappingRule::name));
+              final var firstRule = mappingRulesWithSameClaim.getFirst();
+              final var mappingRuleId = normalizeID(firstRule.name());
+              try {
+                final var mappingRuleDTO =
+                    new MappingRuleDTO(
+                        firstRule.claimName(),
+                        firstRule.claimValue(),
+                        firstRule.name(),
+                        mappingRuleId);
+                retryOnBackpressure(
+                    () -> mappingRuleServices.createMappingRule(mappingRuleDTO).join(),
+                    "Failed to create mapping rule with ID: " + mappingRuleId);
+                createdMappingRuleCount.incrementAndGet();
+              } catch (final Exception e) {
+                if (!isConflictError(e)) {
+                  throw new MigrationException(
+                      "Failed to migrate mapping rule with ID: " + mappingRuleId, e);
+                }
+                logger.debug(
+                    "Mapping rule with ID '{}' already exists, skipping creation.", mappingRuleId);
+              }
+              // Assign all roles and tenants from all mappingRulesWithSameClaim members
+              mappingRulesWithSameClaim.forEach(
+                  rule -> assignRolesToMappingRule(rule.appliedRoles(), mappingRuleId));
+              mappingRulesWithSameClaim.forEach(
+                  rule -> assignTenantsToMappingRule(rule.appliedTenants(), mappingRuleId));
+            });
   }
 
   @Override

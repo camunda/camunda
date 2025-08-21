@@ -101,6 +101,19 @@ public class OidcIdentityMigrationIT {
           .withEnv("IDENTITY_MAPPING_RULES_2_RULE_TYPE", "TENANT")
           .withEnv("IDENTITY_MAPPING_RULES_2_APPLIED_TENANT_IDS_0", "tenant1")
           .withEnv("IDENTITY_MAPPING_RULES_2_APPLIED_TENANT_IDS_1", "tenant2")
+          .withEnv("IDENTITY_MAPPING_RULES_3_NAME", "Duplicate Claim Rule 1")
+          .withEnv("IDENTITY_MAPPING_RULES_3_CLAIM_NAME", "dup-claim")
+          .withEnv("IDENTITY_MAPPING_RULES_3_CLAIM_VALUE", "dup-value")
+          .withEnv("IDENTITY_MAPPING_RULES_3_OPERATOR", "EQUALS")
+          .withEnv("IDENTITY_MAPPING_RULES_3_RULE_TYPE", "ROLE")
+          .withEnv("IDENTITY_MAPPING_RULES_3_APPLIED_ROLE_NAMES_0", "Operate")
+          .withEnv("IDENTITY_MAPPING_RULES_3_APPLIED_ROLE_NAMES_1", "Tasklist")
+          .withEnv("IDENTITY_MAPPING_RULES_4_NAME", "Duplicate Claim Rule 2")
+          .withEnv("IDENTITY_MAPPING_RULES_4_CLAIM_NAME", "dup-claim")
+          .withEnv("IDENTITY_MAPPING_RULES_4_CLAIM_VALUE", "dup-value")
+          .withEnv("IDENTITY_MAPPING_RULES_4_OPERATOR", "EQUALS")
+          .withEnv("IDENTITY_MAPPING_RULES_4_RULE_TYPE", "TENANT")
+          .withEnv("IDENTITY_MAPPING_RULES_4_APPLIED_TENANT_IDS_0", "tenant2")
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8082)
@@ -352,29 +365,60 @@ public class OidcIdentityMigrationIT {
             tuple("rule_2", "Rule 2", "claim1", "value1"),
             tuple("rule_3", "Rule 3", "claim2", "value2"));
 
-    final var mappingRuleByRole =
+    final var mappingRuleByRoleOperate =
         client.newMappingRulesByRoleSearchRequest("operate").send().join();
-    assertThat(mappingRuleByRole.items())
+    assertThat(mappingRuleByRoleOperate.items())
         .extracting(MappingRule::getMappingRuleId)
         .contains("rule_2");
-    final var mappingRuleByRole2 = client.newMappingRulesByRoleSearchRequest("zeebe").send().join();
-    assertThat(mappingRuleByRole2.items())
+    final var mappingRuleByRoleZeebe =
+        client.newMappingRulesByRoleSearchRequest("zeebe").send().join();
+    assertThat(mappingRuleByRoleZeebe.items())
         .extracting(MappingRule::getMappingRuleId)
         .contains("rule_2");
-    final var mappingRuleByRole3 =
+    final var mappingRuleByRoleTasklist =
         client.newMappingRulesByRoleSearchRequest("tasklist").send().join();
-    assertThat(mappingRuleByRole3.items())
+    assertThat(mappingRuleByRoleTasklist.items())
         .extracting(MappingRule::getMappingRuleId)
         .contains("rule_2");
 
-    final var mappingRuleByTenant = searchMappingRulesInTenant(restAddress, "tenant1");
-    assertThat(mappingRuleByTenant.items())
+    final var mappingRuleByTenant1 = searchMappingRulesInTenant(restAddress, "tenant1");
+    assertThat(mappingRuleByTenant1.items())
         .extracting(MappingRuleResponse::mappingRuleId)
         .contains("rule_3");
     final var mappingRuleByTenant2 = searchMappingRulesInTenant(restAddress, "tenant2");
     assertThat(mappingRuleByTenant2.items())
         .extracting(MappingRuleResponse::mappingRuleId)
         .contains("rule_3");
+
+    // There should be a merged mapping rule for (dup-claim, dup-value)
+    assertThat(mappingRules)
+        .filteredOn(r -> r.claimName().equals("dup-claim") && r.claimValue().equals("dup-value"))
+        .hasSize(1)
+        .first()
+        .satisfies(
+            rule -> {
+              assertThat(rule.mappingRuleId()).isEqualTo("duplicate_claim_rule_1");
+              assertThat(rule.name()).isEqualTo("Duplicate Claim Rule 1");
+            });
+
+    // The merged rule should have the operate and tasklist role assigned but not zeebe
+    assertThat(mappingRuleByRoleOperate.items())
+        .extracting(MappingRule::getMappingRuleId)
+        .contains("duplicate_claim_rule_1");
+    assertThat(mappingRuleByRoleTasklist.items())
+        .extracting(MappingRule::getMappingRuleId)
+        .contains("duplicate_claim_rule_1");
+    assertThat(mappingRuleByRoleZeebe.items())
+        .extracting(MappingRule::getMappingRuleId)
+        .doesNotContain("duplicate_claim_rule_1");
+
+    // The merged rule should have tenant 1 assigned but not tenant 2
+    assertThat(mappingRuleByTenant1.items())
+        .extracting(MappingRuleResponse::mappingRuleId)
+        .doesNotContain("duplicate_claim_rule_1");
+    assertThat(mappingRuleByTenant2.items())
+        .extracting(MappingRuleResponse::mappingRuleId)
+        .contains("duplicate_claim_rule_1");
   }
 
   private static ClientRepresentation createClientRepresentation() {
