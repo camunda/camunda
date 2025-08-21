@@ -82,6 +82,21 @@
           <ignoredUnusedDeclaredDependencies>
             <dep>io.camunda:camunda-zeebe</dep>
           </ignoredUnusedDeclaredDependencies>
+          <ignoredUsedUndeclaredDependencies>
+            <dep>io.camunda:zeebe-gateway-rest</dep>
+            <dep>io.camunda:camunda-client-java</dep>
+            <dep>io.camunda:camunda-service</dep>
+            <dep>io.camunda:zeebe-protocol</dep>
+            <dep>io.camunda:zeebe-protocol-impl</dep>
+            <dep>io.camunda:camunda-security-protocol</dep>
+            <dep>io.camunda:zeebe-stream-platform</dep>
+            <dep>io.camunda:zeebe-workflow-engine</dep>
+            <dep>org.springframework:spring-beans</dep>
+            <dep>org.springframework:spring-context</dep>
+            <dep>org.springframework:spring-web</dep>
+            <dep>org.opensearch.client:opensearch-java</dep>
+            <dep>com.fasterxml.jackson.core:jackson-databind</dep>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
     </plugins>
