@@ -391,18 +391,23 @@ public class BrokerBasedPropertiesOverride {
 
     /* Load camunda exporter config map */
 
-    ExporterCfg exporter = override.getExporters().get(exporterName);
-    if (exporter == null) {
-      exporter = new ExporterCfg();
-      exporter.setJarPath(jarPath);
-      exporter.setClassName(className);
-      exporter.setArgs(new LinkedHashMap<>());
-      override.getExporters().put(exporterName, exporter);
+    final Map<String, ExporterCfg> exporters = override.getExporters();
+    List<ExporterCfg> camundaExporters =
+        exporters.values().stream().filter(e -> e.getClassName().equals(className)).toList();
+    final ExporterCfg camundaExporter;
+    if(camundaExporters.isEmpty()) {
+      camundaExporter = new ExporterCfg();
+      camundaExporter.setJarPath(jarPath);
+      camundaExporter.setClassName(className);
+      camundaExporter.setArgs(new LinkedHashMap<>());
+      override.getExporters().put(exporterName, camundaExporter);
+    } else {
+      camundaExporter = camundaExporters.getFirst();
     }
 
     /* Override config map values */
 
-    final Map<String, Object> args = exporter.getArgs();
+    final Map<String, Object> args = camundaExporter.getArgs();
     setArg(args, "connect.type", secondaryStorage.getType().name());
     setArg(args, "connect.url", database.getUrl());
   }
