@@ -18,7 +18,6 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import io.camunda.client.CamundaClient;
 import io.camunda.migration.process.ProcessMigrator;
-import io.camunda.migration.task.TaskMigrator;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.search.clients.DocumentBasedSearchClient;
@@ -220,18 +219,10 @@ public class MigrationITExtension
   }
 
   private void awaitTaskMigrationFinished() {
-    final var logger = (Logger) LoggerFactory.getLogger(TaskMigrator.class);
-    final var appender = new LogAppender();
-    appender.setContext(logger.getLoggerContext());
-    appender.start();
-    logger.addAppender(appender);
-
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> assertThat(migrationDatabaseChecks.checkIfTasksHaveBeenReindexed()).isTrue());
-
-    logger.detachAndStopAllAppenders();
   }
 
   private void ingestRecordToTriggerImporters(final CamundaClient client) {
