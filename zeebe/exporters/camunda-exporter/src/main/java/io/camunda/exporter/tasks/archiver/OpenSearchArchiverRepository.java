@@ -324,10 +324,21 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             })) {
       return CompletableFuture.completedFuture(null);
     }
-    logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
+
+    final var indicesWithoutPolicy =
+        indices.stream()
+            .filter(
+                index -> !Objects.equals(lifeCyclePolicyApplied.getIfPresent(index), policyName))
+            .toList();
+
+    logger.debug(
+        "Applying policy '{}' to {} indices: {}",
+        policyName,
+        indicesWithoutPolicy.size(),
+        indicesWithoutPolicy);
 
     final var requests =
-        indices.stream()
+        indicesWithoutPolicy.stream()
             .map(index -> applyPolicyToIndex(index, policyName))
             .toArray(CompletableFuture[]::new);
 

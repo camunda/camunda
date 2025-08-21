@@ -45,6 +45,7 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
@@ -304,12 +305,22 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       return CompletableFuture.completedFuture(null);
     }
 
-    logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
+    final var indicesWithoutPolicy =
+        indices.stream()
+            .filter(
+                index -> !Objects.equals(lifeCyclePolicyApplied.getIfPresent(index), policyName))
+            .toList();
+
+    logger.debug(
+        "Applying policy '{}' to {} indices: {}",
+        policyName,
+        indicesWithoutPolicy.size(),
+        indicesWithoutPolicy);
 
     final var settingsRequest =
         new PutIndicesSettingsRequest.Builder()
             .settings(settings -> settings.lifecycle(lifecycle -> lifecycle.name(policyName)))
-            .index(indices)
+            .index(indicesWithoutPolicy)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .build();
