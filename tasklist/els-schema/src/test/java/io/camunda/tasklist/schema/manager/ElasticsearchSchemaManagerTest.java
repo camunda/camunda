@@ -51,7 +51,7 @@ class ElasticsearchSchemaManagerTest {
   }
 
   @ParameterizedTest
-  @ValueSource(ints = {100})
+  @ValueSource(ints = {0, 100, Integer.MAX_VALUE})
   @NullSource
   void shouldSetIndexTemplatePriority(final Integer priority) throws Exception {
     // given
