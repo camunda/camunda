@@ -8,20 +8,18 @@
 package io.camunda.migration.usagemetric;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.match;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.search.clients.query.SearchQueryBuilders.ids;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.Migrator;
-import io.camunda.migration.usagemetric.client.MigrationRepositoryIndex;
-import io.camunda.migration.usagemetric.client.MigrationStep;
+import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
+import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.usagemetric.client.UsageMetricMigrationClient;
 import io.camunda.migration.usagemetric.client.es.ElasticsearchUsageMetricMigrationClient;
 import io.camunda.migration.usagemetric.client.os.OpensearchUsageMetricMigrationClient;
 import io.camunda.migration.usagemetric.util.MetricRegistry;
 import io.camunda.migration.usagemetric.util.RescheduleTask;
-import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -56,7 +54,7 @@ public class OperateMetricMigrator implements Migrator {
       "EVENT_DECISION_INSTANCE_EVALUATED";
 
   public static final String SCRIPT =
-      """
+"""
 String value = ctx._source.remove("value");
 ctx._id = value;
 ctx._source.id = value;
@@ -118,19 +116,19 @@ if (event == "%s") {
         new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), isElasticsearch);
 
     // check if migration already applied
-    MigrationStep migrationStep = null;
+    ProcessorStep migrationStep = null;
     try {
       migrationStep =
           client.findOne(
               migrationRepositoryIndex.getFullQualifiedName(),
               createOperateMigratorStepSearchQuery(),
-              MigrationStep.class);
+              ProcessorStep.class);
     } catch (final MigrationException e) {
       if (shouldThrowException(e)) {
         throw new MigrationException(e.getMessage(), e);
       }
     }
-    if (migrationStep != null && migrationStep.applied()) {
+    if (migrationStep != null && migrationStep.isApplied()) {
       LOG.info("Skipping operate metric migration, already applied: {}", migrationStep);
       return null;
     }
@@ -204,12 +202,7 @@ if (event == "%s") {
   }
 
   public SearchQuery createOperateMigratorStepSearchQuery() {
-    return and(
-        term(MigrationRepositoryIndex.ID, UsageMetricMigrationClient.OPERATE_MIGRATOR_STEP_ID),
-        match(
-            MigrationRepositoryIndex.TYPE,
-            UsageMetricMigrationClient.OPERATE_MIGRATOR_STEP_TYPE,
-            SearchMatchQueryOperator.AND));
+    return ids(UsageMetricMigrationClient.OPERATE_MIGRATOR_STEP_ID);
   }
 
   /**

@@ -13,10 +13,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.MigrationTimeoutException;
+import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.process.ProcessMigrator;
 import io.camunda.migration.process.TestData;
 import io.camunda.migration.process.adapter.Adapter;
-import io.camunda.migration.process.adapter.ProcessorStep;
 import io.camunda.migration.process.adapter.es.ElasticsearchAdapter;
 import io.camunda.migration.process.adapter.os.OpensearchAdapter;
 import io.camunda.migration.process.util.MigrationUtil;

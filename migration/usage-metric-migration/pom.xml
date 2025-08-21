@@ -63,6 +63,10 @@
       <artifactId>migration-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>migration-commons</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
     </dependency>

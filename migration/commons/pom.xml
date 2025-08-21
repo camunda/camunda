@@ -10,31 +10,28 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>zeebe-parent</artifactId>
+    <artifactId>migration</artifactId>
     <version>8.8.0-SNAPSHOT</version>
-    <relativePath>../parent/pom.xml</relativePath>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>migration</artifactId>
-  <packaging>pom</packaging>
-  <name>Migration Parent</name>
-
-  <modules>
-    <module>migration-api</module>
-    <module>commons</module>
-    <module>process-migration</module>
-    <module>identity-migration</module>
-    <module>usage-metric-migration</module>
-  </modules>
+  <groupId>io.camunda.migration</groupId>
+  <artifactId>migration-commons</artifactId>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
-    <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
-
-    <maven.javadoc.skip>false</maven.javadoc.skip>
+    <maven.compiler.target>21</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+  <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+</dependencies>
 
 </project>

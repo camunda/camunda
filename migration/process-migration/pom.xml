@@ -55,8 +55,8 @@
       <artifactId>migration-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>migration-commons</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

@@ -20,7 +20,7 @@ import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsImpl;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsItemImpl;
 import io.camunda.it.util.TestHelper;
-import io.camunda.migration.usagemetric.client.MigrationRepositoryIndex;
+import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -54,7 +54,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  *
  * <ul>
  *   <li>Start a local ES/OS instance on port 9200
- *   <li>Run the test with {@code -D test.integration.camunda.database.type=es} or
+ *   <li>Run the test with {@code } or
  *   <li>Change the {@link
  *       io.camunda.qa.util.multidb.CamundaMultiDBExtension#currentMultiDbDatabaseType()} to always
  *       return {@link DatabaseType#ES}

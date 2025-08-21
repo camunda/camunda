@@ -8,6 +8,7 @@
 package io.camunda.migration.usagemetric.client;
 
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.zeebe.util.VersionUtil;
 import java.time.OffsetDateTime;
@@ -17,7 +18,6 @@ public interface UsageMetricMigrationClient {
 
   String LANG_PAINLESS = "painless";
   String OPERATE_MIGRATOR_STEP_ID = VersionUtil.getVersion() + "-2";
-  String OPERATE_MIGRATOR_STEP_TYPE = "usageMetricStep";
   String STEP_DESCRIPTION = "Usage Metric Migration operate reindex status";
 
   void writeOperateMetricMigratorStep(
@@ -31,16 +31,15 @@ public interface UsageMetricMigrationClient {
 
   boolean getTask(String taskId) throws MigrationException;
 
-  default MigrationStep migrationStepForKey(
+  default ProcessorStep migrationStepForKey(
       final String index, final String taskId, final boolean completed) {
-    return new MigrationStep.Builder()
-        .type(OPERATE_MIGRATOR_STEP_TYPE)
-        .content(taskId)
-        .applied(completed)
-        .indexName(index)
-        .description(STEP_DESCRIPTION)
-        .version(VersionUtil.getVersion())
-        .appliedDate(OffsetDateTime.now(ZoneId.systemDefault()))
-        .build();
+    final ProcessorStep step = new ProcessorStep();
+    step.setContent(taskId);
+    step.setApplied(completed);
+    step.setIndexName(index);
+    step.setDescription(STEP_DESCRIPTION);
+    step.setVersion(VersionUtil.getVersion());
+    step.setAppliedDate(OffsetDateTime.now(ZoneId.systemDefault()));
+    return step;
   }
 }
