@@ -52,6 +52,14 @@ public class PropertiesPostProcessor implements EnvironmentPostProcessor {
     mapLegacyProperties(environment);
     mapLegacyOverrides(environment);
     processClientMode(environment);
+    createMessages(environment);
+  }
+
+  private void createMessages(final ConfigurableEnvironment environment) {
+    if (!environment.containsProperty("camunda.client.zeebe.prefer-rest-over-grpc")) {
+      log.warn(
+          "No 'camunda.client.zeebe.prefer-rest-over-grpc' is set. Please set to 'true' or 'false' explicitly as the default behaviour will change from 'false' to 'true' in the next release.");
+    }
   }
 
   private void mapLegacyOverrides(final ConfigurableEnvironment environment) {
