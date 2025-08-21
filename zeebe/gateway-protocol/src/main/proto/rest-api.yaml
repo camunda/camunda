@@ -5998,7 +5998,9 @@ components:
           type: object
           description: The value of the variable.
         scope:
-          $ref: '#/components/schemas/VariableScope'
+          description: The scope in which the variable will be created.
+          allOf:
+            - $ref: '#/components/schemas/VariableScope'
       required: [name, value, scope]
       discriminator:
         propertyName: scope
@@ -6011,11 +6013,13 @@ components:
       x-discriminator-value: tenant
       allOf:
         - $ref: '#/components/schemas/CreateVariableRequest'
+        - type: object
           properties:
             tenantId:
               type: string
               description: The tenant target for the variable
-          required: [tenantId]
+          required:
+            - tenantId
       description: Create a tenant-scoped variable.
     UpdateVariableRequest:
       type: object

@@ -8,12 +8,12 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,7 +108,7 @@ public class VariablesManagementTest {
   }
 
   @Test
-  void shouldHandleCommandRejectionProperly_updateRejectionDoesNotWriteInSecondaryStorage() {
+  void shouldHandleCommandRejectionProperlyUpdateRejectionDoesNotWriteInSecondaryStorage() {
     camundaClient
         .newVariableCreationCommand()
         .variable("KEY", "VALUE")
@@ -125,8 +125,7 @@ public class VariablesManagementTest {
         .send()
         .join();
 
-    Assertions.assertThrows(
-        Exception.class,
+    assertThatThrownBy(
         () ->
             camundaClient
                 .newVariableUpdateCommand()
