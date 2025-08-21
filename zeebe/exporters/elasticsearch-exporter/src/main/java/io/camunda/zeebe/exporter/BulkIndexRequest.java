@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -29,11 +30,14 @@ final class BulkIndexRequest implements ContentProducer {
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
           .addMixIn(Record.class, RecordSequenceMixin.class)
+          .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
   private static final String RECORD_SEQUENCE_PROPERTY = "sequence";
   private static final String RECORD_AUTHORIZATIONS_PROPERTY = "authorizations";
+  private static final String RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY =
+      "decisionEvaluationInstanceKey";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -139,4 +143,7 @@ final class BulkIndexRequest implements ContentProducer {
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
   @JsonIgnoreProperties({RECORD_AUTHORIZATIONS_PROPERTY})
   private static final class RecordSequenceMixin {}
+
+  @JsonIgnoreProperties({RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY})
+  private static final class EvaluatedDecisionMixin {}
 }

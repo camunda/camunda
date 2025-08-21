@@ -129,7 +129,9 @@ public class DecisionBehavior {
   }
 
   public Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> createDecisionEvaluationEvent(
-      final PersistedDecision decision, final DecisionEvaluationResult decisionResult) {
+      final PersistedDecision decision,
+      final DecisionEvaluationResult decisionResult,
+      final long decisionEvaluationKey) {
 
     final var decisionEvaluationEvent =
         new DecisionEvaluationRecord()
@@ -151,6 +153,7 @@ public class DecisionBehavior {
                     persistedDecision -> bufferAsString(persistedDecision.getDecisionId()),
                     DecisionInfo::new));
 
+    final var generator = new DecisionEvaluationInstanceKeyGenerator(decisionEvaluationKey);
     decisionResult
         .getEvaluatedDecisions()
         .forEach(
@@ -159,7 +162,8 @@ public class DecisionBehavior {
                     evaluatedDecision,
                     decisionKeysByDecisionId.getOrDefault(
                         evaluatedDecision.decisionId(), UNKNOWN_DECISION_INFO),
-                    decisionEvaluationEvent));
+                    decisionEvaluationEvent,
+                    generator.next()));
 
     final DecisionEvaluationIntent decisionEvaluationIntent;
     if (decisionResult.isFailure()) {
@@ -197,11 +201,13 @@ public class DecisionBehavior {
   private void addDecisionToEvaluationEvent(
       final EvaluatedDecision evaluatedDecision,
       final DecisionInfo decisionInfo,
-      final DecisionEvaluationRecord decisionEvaluationEvent) {
+      final DecisionEvaluationRecord decisionEvaluationEvent,
+      final String decisionEvaluationInstanceKey) {
 
     final var evaluatedDecisionRecord = decisionEvaluationEvent.evaluatedDecisions().add();
     evaluatedDecisionRecord
         .setDecisionId(evaluatedDecision.decisionId())
+        .setDecisionEvaluationInstanceKey(decisionEvaluationInstanceKey)
         .setDecisionName(evaluatedDecision.decisionName())
         .setDecisionKey(decisionInfo.key())
         .setDecisionVersion(decisionInfo.version())

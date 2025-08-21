@@ -9567,6 +9567,9 @@ components:
         decisionDefinitionKey:
           description: The unique key identifying the decision which was evaluate.
           type: string
+        decisionEvaluationInstanceKey:
+          description: The unique key identifying this decision evaluation instance.
+          type: string
     MatchedDecisionRuleItem:
       type: object
       description: A decision rule that matched within this decision evaluation.

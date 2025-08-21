@@ -76,6 +76,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
     evaluatedDecision =
         GatewayOuterClass.EvaluatedDecision.newBuilder()
             .setDecisionId("my-decision")
+            .setDecisionEvaluationInstanceKey("decision-instance-key")
             .setDecisionKey(DECISION_KEY)
             .setDecisionName("My Decision")
             .setDecisionVersion(1)
@@ -327,6 +328,8 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
     final EvaluatedDecision evaluatedDecisionResponse = response.getEvaluatedDecisions().get(0);
     assertThat(evaluatedDecisionResponse.getDecisionId())
         .isEqualTo(evaluatedDecision.getDecisionId());
+    assertThat(evaluatedDecisionResponse.getDecisionEvaluationInstanceKey())
+        .isEqualTo(evaluatedDecision.getDecisionEvaluationInstanceKey());
     assertThat(evaluatedDecisionResponse.getDecisionKey())
         .isEqualTo(evaluatedDecision.getDecisionKey());
     assertThat(evaluatedDecisionResponse.getDecisionName())

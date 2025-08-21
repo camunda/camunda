@@ -230,6 +230,8 @@ public final class ResponseMapper {
       final EvaluatedDecision.Builder evaluatedDecisionBuilder =
           EvaluatedDecision.newBuilder()
               .setDecisionId(intermediateDecision.getDecisionId())
+              .setDecisionEvaluationInstanceKey(
+                  intermediateDecision.getDecisionEvaluationInstanceKey())
               .setDecisionKey(intermediateDecision.getDecisionKey())
               .setDecisionName(intermediateDecision.getDecisionName())
               .setDecisionVersion(intermediateDecision.getDecisionVersion())

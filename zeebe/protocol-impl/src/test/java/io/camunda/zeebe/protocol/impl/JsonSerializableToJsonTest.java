@@ -1907,6 +1907,7 @@ final class JsonSerializableToJsonTest {
               final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
               evaluatedDecisionRecord
                   .setDecisionId("decision-id")
+                  .setDecisionEvaluationInstanceKey("decision-evaluation-instance-key")
                   .setDecisionName("decision-name")
                   .setDecisionKey(6L)
                   .setDecisionVersion(7)
@@ -2015,6 +2016,7 @@ final class JsonSerializableToJsonTest {
               final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
               evaluatedDecisionRecord
                   .setDecisionId("decision-id")
+                  .setDecisionEvaluationInstanceKey("decision-evaluation-instance-key")
                   .setDecisionName("decision-name")
                   .setDecisionKey(6L)
                   .setDecisionVersion(7)
