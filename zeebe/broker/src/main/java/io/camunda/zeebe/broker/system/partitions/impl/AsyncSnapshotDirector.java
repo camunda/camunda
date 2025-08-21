@@ -370,7 +370,7 @@ public final class AsyncSnapshotDirector extends Actor
   public void newPositionCommitted(final long currentCommitPosition) {
     actor.run(
         () -> {
-          commitPosition = currentCommitPosition;
+          commitPosition = Math.max(currentCommitPosition, commitPosition);
           final var futuresToComplete = commitAwaiters.headMap(commitPosition, true);
           futuresToComplete.forEach((k, f) -> f.complete(null));
           futuresToComplete.clear();
