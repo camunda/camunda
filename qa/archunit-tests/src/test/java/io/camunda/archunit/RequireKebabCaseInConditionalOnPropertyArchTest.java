@@ -47,8 +47,7 @@ public final class RequireKebabCaseInConditionalOnPropertyArchTest {
           .that()
           .areAnnotatedWith(ConditionalOnProperty.class)
           .should(
-              new ArchCondition<>(
-                  "Expect attributes of @ConditionalOnProperty to use kebab-case not camelCase") {
+              new ArchCondition<>("Expect attributes of @ConditionalOnProperty to use kebab-case") {
                 @Override
                 public void check(final JavaClass item, final ConditionEvents events) {
                   validateConditionalOnPropertyAnnotations(item.getAnnotations(), item, events);
@@ -61,8 +60,7 @@ public final class RequireKebabCaseInConditionalOnPropertyArchTest {
           .that()
           .areAnnotatedWith(ConditionalOnProperty.class)
           .should(
-              new ArchCondition<>(
-                  "have attributes of @ConditionalOnProperty to use kebab-case not camelCase") {
+              new ArchCondition<>("Expect attributes of @ConditionalOnProperty to use kebab-case") {
                 @Override
                 public void check(final JavaMethod item, final ConditionEvents events) {
                   validateConditionalOnPropertyAnnotations(item.getAnnotations(), item, events);
