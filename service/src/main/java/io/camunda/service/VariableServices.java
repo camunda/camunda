@@ -23,7 +23,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteVariableRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateVariableRequest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 public final class VariableServices
     extends SearchQueryService<VariableServices, VariableQuery, VariableEntity> {
