@@ -52,7 +52,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class TUMetricsMigrationTest extends MigrationTest {
+public class TUMetricsMigrationIT extends MigrationTest {
   private final ThreadLocalRandom rnd = ThreadLocalRandom.current();
   private final List<String> assignees = new ArrayList<>();
   private final Map<String, Long> documentCountPerAssignee = new HashMap<>();
