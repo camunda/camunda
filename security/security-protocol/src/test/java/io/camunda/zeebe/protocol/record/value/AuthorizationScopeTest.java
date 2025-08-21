@@ -5,13 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.protocol.impl;
+package io.camunda.zeebe.protocol.record.value;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import org.junit.jupiter.api.Test;
 
 public class AuthorizationScopeTest {
