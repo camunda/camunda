@@ -375,6 +375,59 @@ public class ModifyProcessInstanceTest {
     verifyThatElementIsCompleted(processInstanceKey, "C");
     verifyThatElementIsCompleted(processInstanceKey, "event-subprocess");
     verifyThatProcessInstanceIsCompleted(processInstanceKey);
+
+    assert false;
+  }
+
+  @Test
+  public void shouldHandleConflictingSubProcessTerminationAndChildActivation() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("A", a -> a.zeebeJobType("A"))
+                            .endEvent("sub-end"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var subProcessElementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("sub-end")
+        .terminateElement(subProcessElementInstance.getKey())
+        .modify();
+
+    // then
+    assert false;
+    // Currently, this leads to an invalid state:
+    // The end event inside the sub-process (`sub-end`) is activated, but its flow scope instance
+    // (the sub-process) has already been terminated.
+    // If you refer to the console output for this failed test you would notice the final event log
+    // is to activate the 'sub-end' element but an error is issued instead:
+    // !INVALID_STATE (`Expected flow scope instance with key '<key>' to be present in state but not
+    // found.)`
+    //
+    // This test reproduces the inconsistency, but the expected behavior is still under discussion.
+    // Possible solutions are being evaluated and will be described in the related GitHub issue.
+
   }
 
   @Test
