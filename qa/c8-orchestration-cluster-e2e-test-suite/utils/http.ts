@@ -107,13 +107,10 @@ export function buildUrl(
 ): string {
   const version: string = 'v2';
   const base = credentials.baseUrl;
-  let url = `${base}/${version}${pathTemplate}`.replace(
-    /\{(\w+)\}/g,
-    (_, k) => {
-      const v = params?.[k];
-      return v == null ? '__MISSING_PARAM__' : String(v);
-    },
-  );
+  let url = `${base}/${version}${pathTemplate}`.replace(/\{(\w+)}/g, (_, k) => {
+    const v = params?.[k];
+    return v == null ? '__MISSING_PARAM__' : String(v);
+  });
   if (query) {
     const q = Object.entries(query)
       .filter(([, v]) => v !== undefined)
@@ -128,14 +125,14 @@ export function buildUrl(
 
 export async function extractAndStoreIds(
   resp: APIResponse,
-  state: Record<string, any>,
+  state: Record<string, unknown>,
 ) {
   try {
     const ct = resp.headers()['content-type'] || '';
     if (!ct.includes('application/json')) return;
     const data = await resp.json();
 
-    const consider = (o: any) => {
+    const consider = (o: Record<string, unknown>) => {
       if (o && typeof o === 'object') {
         for (const [k, v] of Object.entries(o)) {
           if (
@@ -143,13 +140,18 @@ export async function extractAndStoreIds(
               k,
             )
           ) {
-            state[k] = v;
+            if (typeof v === 'string' || typeof v === 'number') {
+              state[k] = v;
+            }
           }
         }
       }
     };
-    Array.isArray(data) ? data.forEach(consider) : consider(data);
-
+    if (Array.isArray(data)) {
+      data.forEach(consider);
+    } else {
+      consider(data);
+    }
     const loc = resp.headers()['location'] || resp.headers()['Location'];
     if (loc) {
       const parts = String(loc).split('/').filter(Boolean);
