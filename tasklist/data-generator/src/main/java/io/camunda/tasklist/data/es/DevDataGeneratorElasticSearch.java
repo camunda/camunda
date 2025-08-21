@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("dev-data")
 @Conditional(ElasticSearchCondition.class)
-@ConditionalOnProperty(value = "camunda.tasklist.webappEnabled", matchIfMissing = true)
+@ConditionalOnProperty(value = "camunda.tasklist.webapp-enabled", matchIfMissing = true)
 @DependsOn("searchEngineSchemaInitializer")
 public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
     implements DataGenerator {
