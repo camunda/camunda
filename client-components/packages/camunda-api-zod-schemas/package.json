@@ -1,5 +1,6 @@
 {
 	"name": "@camunda/camunda-api-zod-schemas",
+	"version": "0.0.1",
 	"description": "Zod schemas and TypeScript types for Camunda 8 unified API",
 	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
 	"homepage": "https://github.com/camunda/camunda#readme",
@@ -22,8 +23,7 @@
 		"build": "vite build",
 		"format": "prettier --write .",
 		"prepublish": "npm run build",
-		"typecheck": "tsc",
-		"prepublishOnly": "npm run lint && npm run typecheck && npm run build"
+		"typecheck": "tsc"
 	},
 	"sideEffects": false,
 	"files": [

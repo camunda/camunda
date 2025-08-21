@@ -15,7 +15,9 @@
 		"lint": "npm run lint --workspaces --if-present",
 		"typecheck": "npm run typecheck --workspaces --if-present",
 		"format": "npm run format --workspaces --if-present",
-		"build": "npm run build --workspaces --if-present"
+		"build": "npm run build --workspaces --if-present",
+		"prepublishOnly": "node scripts/prepublishOnly.js",
+		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas"
 	},
 	"packageManager": "npm@11.5.2",
 	"devDependencies": {
