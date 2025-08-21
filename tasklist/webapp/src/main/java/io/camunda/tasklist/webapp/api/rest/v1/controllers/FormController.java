@@ -55,7 +55,7 @@ public class FormController extends ApiErrorController {
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
             description =
-                "A forbidden error is returned when user does not have permission read user tasks.",
+                "A forbidden error is returned when user does not have permission to read user tasks.",
             responseCode = "403",
             content =
                 @Content(

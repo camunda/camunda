@@ -221,7 +221,7 @@ public class TaskController extends ApiErrorController {
     }
 
     final var taskSupplier = getTaskSupplier(taskId);
-    if (hasAccessToTask(taskSupplier)) {
+    if (!isUserRestrictionEnabled() || hasAccessToTask(taskSupplier)) {
       return ResponseEntity.ok(taskMapper.toTaskResponse(taskSupplier.get()));
     } else {
       throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);
@@ -394,11 +394,19 @@ public class TaskController extends ApiErrorController {
         requireNonNullElse(taskCompleteRequest, new TaskCompleteRequest()).getVariables();
     final var taskSupplier = getTaskSupplier(taskId);
     checkTaskImplementation(taskSupplier);
-    if (hasAccessToTask(taskSupplier)) {
+    if (!isUserRestrictionEnabled() || hasAccessToTask(taskSupplier)) {
       final var completedTask = taskService.completeTask(taskId, variables, true);
       return ResponseEntity.ok(taskMapper.toTaskResponse(completedTask));
     } else {
       throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);
+    }
+  }
+
+  private boolean isUserRestrictionEnabled() {
+    if (tasklistProperties.getIdentity() != null) {
+      return tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled();
+    } else {
+      return false;
     }
   }
 
@@ -446,7 +454,7 @@ public class TaskController extends ApiErrorController {
     final var taskSupplier = getTaskSupplier(taskId);
     if (permissionServices.hasPermissionToUpdateUserTask(
             new TaskEntity().setBpmnProcessId(taskSupplier.get().getBpmnProcessId()))
-        && (hasAccessToTask(taskSupplier))) {
+        && (!isUserRestrictionEnabled() || hasAccessToTask(taskSupplier))) {
       variableService.persistDraftTaskVariables(taskId, saveVariablesRequest.getVariables());
     } else {
       throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);
