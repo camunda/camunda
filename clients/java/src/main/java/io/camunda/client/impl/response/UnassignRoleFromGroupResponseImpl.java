@@ -15,12 +15,9 @@
  */
 package io.camunda.client.impl.response;
 
-import io.camunda.client.api.response.DeleteResourceResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.client.api.response.UnassignRoleFromGroupResponse;
 
-public class DeleteResourceResponseImpl implements DeleteResourceResponse {
+public class UnassignRoleFromGroupResponseImpl implements UnassignRoleFromGroupResponse {
 
-  public DeleteResourceResponseImpl(final GatewayOuterClass.DeleteResourceResponse response) {}
-
-  public DeleteResourceResponseImpl(final Void nothing) {}
+  public UnassignRoleFromGroupResponseImpl(final Void nothing) {}
 }

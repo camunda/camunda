@@ -17,4 +17,7 @@ package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.UnassignUserFromGroupResponse;
 
-public class UnassignUserFromGroupResponseImpl implements UnassignUserFromGroupResponse {}
+public class UnassignUserFromGroupResponseImpl implements UnassignUserFromGroupResponse {
+
+  public UnassignUserFromGroupResponseImpl(final Void nothing) {}
+}

@@ -26,6 +26,10 @@ public final class SetVariablesResponseImpl implements SetVariablesResponse {
     key = response.getKey();
   }
 
+  public SetVariablesResponseImpl(final Void nothing) {
+    key = -1;
+  }
+
   @Override
   public long getKey() {
     return key;

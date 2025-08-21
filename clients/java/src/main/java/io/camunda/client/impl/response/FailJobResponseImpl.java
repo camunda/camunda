@@ -21,4 +21,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 public class FailJobResponseImpl implements FailJobResponse {
 
   public FailJobResponseImpl(final GatewayOuterClass.FailJobResponse response) {}
+
+  public FailJobResponseImpl(final Void nothing) {}
 }

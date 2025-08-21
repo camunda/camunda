@@ -15,12 +15,9 @@
  */
 package io.camunda.client.impl.response;
 
-import io.camunda.client.api.response.DeleteResourceResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.client.api.response.AssignRoleToMappingRuleResponse;
 
-public class DeleteResourceResponseImpl implements DeleteResourceResponse {
+public class AssignRoleToMappingRuleResponseImpl implements AssignRoleToMappingRuleResponse {
 
-  public DeleteResourceResponseImpl(final GatewayOuterClass.DeleteResourceResponse response) {}
-
-  public DeleteResourceResponseImpl(final Void nothing) {}
+  public AssignRoleToMappingRuleResponseImpl(final Void nothing) {}
 }

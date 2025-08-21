@@ -15,12 +15,9 @@
  */
 package io.camunda.client.impl.response;
 
-import io.camunda.client.api.response.DeleteResourceResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.client.api.response.UpdateUserTaskResponse;
 
-public class DeleteResourceResponseImpl implements DeleteResourceResponse {
+public class UpdateUserTaskResponseImpl implements UpdateUserTaskResponse {
 
-  public DeleteResourceResponseImpl(final GatewayOuterClass.DeleteResourceResponse response) {}
-
-  public DeleteResourceResponseImpl(final Void nothing) {}
+  public UpdateUserTaskResponseImpl(final Void nothing) {}
 }

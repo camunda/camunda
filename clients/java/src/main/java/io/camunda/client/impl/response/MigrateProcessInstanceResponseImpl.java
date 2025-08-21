@@ -22,4 +22,6 @@ public final class MigrateProcessInstanceResponseImpl implements MigrateProcessI
 
   public MigrateProcessInstanceResponseImpl(
       final GatewayOuterClass.MigrateProcessInstanceResponse response) {}
+
+  public MigrateProcessInstanceResponseImpl(final Void nothing) {}
 }

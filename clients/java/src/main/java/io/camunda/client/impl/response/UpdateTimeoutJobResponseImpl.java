@@ -21,4 +21,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 public class UpdateTimeoutJobResponseImpl implements UpdateTimeoutJobResponse {
 
   public UpdateTimeoutJobResponseImpl(final GatewayOuterClass.UpdateJobTimeoutResponse response) {}
+
+  public UpdateTimeoutJobResponseImpl(final Void nothing) {}
 }
