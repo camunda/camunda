@@ -27,6 +27,8 @@ import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
@@ -38,9 +40,7 @@ import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
@@ -70,7 +70,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
   private final String zeebeIndexPrefix;
-  private final Map<String, String> lifeCyclePolicyApplied = new HashMap<>();
+  private final Cache<String, String> lifeCyclePolicyApplied =
+      Caffeine.newBuilder().maximumSize(200).build();
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -272,9 +273,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
     if (indices.stream()
         .allMatch(
-            index ->
-                lifeCyclePolicyApplied.containsKey(index)
-                    && lifeCyclePolicyApplied.get(index).equals(policyName))) {
+            index -> {
+              final String retentionPolicy = lifeCyclePolicyApplied.getIfPresent(index);
+              return retentionPolicy != null && retentionPolicy.equals(policyName);
+            })) {
       return CompletableFuture.completedFuture(null);
     }
 
