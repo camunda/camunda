@@ -9,7 +9,7 @@
 import {Button, Modal} from '@carbon/react';
 import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {Container} from '../styled.tsx';
+import {Container} from './styled.tsx';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {useNavigate} from 'react-router-dom';
