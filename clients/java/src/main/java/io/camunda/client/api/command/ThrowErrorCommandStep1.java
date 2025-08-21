@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.command;
 
+import io.camunda.client.api.response.ThrowErrorResponse;
 import java.io.InputStream;
 import java.util.Map;
 
@@ -33,7 +34,7 @@ public interface ThrowErrorCommandStep1
   ThrowErrorCommandStep2 errorCode(String errorCode);
 
   interface ThrowErrorCommandStep2
-      extends FinalCommandStep<Void>, CommandWithVariables<ThrowErrorCommandStep2> {
+      extends FinalCommandStep<ThrowErrorResponse>, CommandWithVariables<ThrowErrorCommandStep2> {
     /**
      * Provide an error message describing the reason for the non-technical error. If the error is
      * not caught by an error catch event, this message will be a part of the raised incident.
