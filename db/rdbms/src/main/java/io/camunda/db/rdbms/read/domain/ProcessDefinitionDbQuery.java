@@ -17,6 +17,8 @@ import java.util.function.Function;
 
 public record ProcessDefinitionDbQuery(
     ProcessDefinitionFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
     DbQuerySorting<ProcessDefinitionEntity> sort,
     DbQueryPage page) {
 
@@ -31,11 +33,25 @@ public record ProcessDefinitionDbQuery(
         FilterBuilders.processDefinition().build();
 
     private ProcessDefinitionFilter filter;
+    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
+    private List<String> authorizedTenantIds = java.util.Collections.emptyList();
     private DbQuerySorting<ProcessDefinitionEntity> sort;
     private DbQueryPage page;
 
     public ProcessDefinitionDbQuery.Builder filter(final ProcessDefinitionFilter value) {
       filter = value;
+      return this;
+    }
+
+    public ProcessDefinitionDbQuery.Builder authorizedResourceIds(
+        final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public ProcessDefinitionDbQuery.Builder authorizedTenantIds(
+        final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
       return this;
     }
 
@@ -68,7 +84,10 @@ public record ProcessDefinitionDbQuery(
     public ProcessDefinitionDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new ProcessDefinitionDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      return new ProcessDefinitionDbQuery(
+          filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }
