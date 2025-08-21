@@ -7,10 +7,8 @@
  */
 package io.camunda.exporter.http.subscription;
 
-import io.camunda.exporter.http.matcher.RecordMatcher;
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,21 +61,19 @@ public class Subscription<T> {
 
   private Long verifyAndAddToBatch(final Record<?> record) {
     final var spaceLeft = batch.spaceLeft();
-    final var recordLogPosition = record.getPosition();
-    final Supplier<T> dataSupplier = () -> transport.prepare(record);
     switch (spaceLeft) {
       case 0:
         {
           // We flush the batch as it is full
           final var logPositionFlushed = flush();
-          batch.addRecord(recordLogPosition, dataSupplier);
+          batch.addRecord(record, this::prepareForTransport);
           // We return the last log position that was flushed
           return logPositionFlushed;
         }
       case 1:
         {
           // We add to the batch if it has only one space left
-          if (batch.addRecord(recordLogPosition, dataSupplier)) {
+          if (batch.addRecord(record, this::prepareForTransport)) {
             // Flush if the record was added successfully as its full now
             return flush();
           } else {
@@ -88,7 +84,7 @@ public class Subscription<T> {
       default:
         {
           // We have space left in the batch, we can add the record
-          if (batch.addRecord(recordLogPosition, dataSupplier) && batch.shouldFlush()) {
+          if (batch.addRecord(record, this::prepareForTransport) && batch.shouldFlush()) {
             // If the record was added successfully and the batch should flush, we flush it
             return flush();
           } else {
@@ -97,6 +93,10 @@ public class Subscription<T> {
           }
         }
     }
+  }
+
+  private T prepareForTransport(final Record<?> record) {
+    return transport.prepare(record);
   }
 
   public Long attemptFlush() {

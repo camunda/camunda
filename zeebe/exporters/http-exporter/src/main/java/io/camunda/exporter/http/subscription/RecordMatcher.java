@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.http.matcher;
+package io.camunda.exporter.http.subscription;
 
 import io.camunda.zeebe.protocol.record.Record;
 

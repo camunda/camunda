@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.http.matcher;
 
+import io.camunda.exporter.http.subscription.RecordMatcher;
 import io.camunda.zeebe.protocol.record.Record;
 
 public record RecordMatcherImpl(FilterRecordMatcher filterRecordMatcher) implements RecordMatcher {

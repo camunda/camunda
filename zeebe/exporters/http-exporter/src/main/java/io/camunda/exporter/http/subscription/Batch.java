@@ -7,9 +7,10 @@
  */
 package io.camunda.exporter.http.subscription;
 
+import io.camunda.zeebe.protocol.record.Record;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 public class Batch<T> {
 
@@ -45,13 +46,13 @@ public class Batch<T> {
     return System.currentTimeMillis() - lastTimeFlushed >= flushInterval;
   }
 
-  public boolean addRecord(final long logPosition, final Supplier<T> entrySupplier) {
+  public boolean addRecord(final Record<?> record, final Function<Record<?>, T> entryMapper) {
     if (isFull()) {
       throw new IllegalStateException("Batch has too many entries. Drain first.");
     } else {
-      if (lastLogPosition == -1 || logPosition > lastLogPosition) {
-        lastLogPosition = logPosition;
-        return entries.add(entrySupplier.get());
+      if (lastLogPosition == -1 || record.getPosition() > lastLogPosition) {
+        lastLogPosition = record.getPosition();
+        return entries.add(entryMapper.apply(record));
       }
     }
     return false;

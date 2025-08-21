@@ -12,7 +12,7 @@ import java.util.List;
 
 public class HttpExporterConfig {
 
-  // Path to the configuration json file for export subscriptions
+  // Path to an optional external configuration json file
   private String configPath;
 
   // These properties will override the default values in the configuration file.
