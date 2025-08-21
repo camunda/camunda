@@ -22,6 +22,7 @@ import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1.Unassign
 import io.camunda.client.api.response.UnassignRoleFromTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignRoleFromTenantResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -66,6 +67,7 @@ public final class UnassignRoleFromTenantCommandImpl
         String.format("/tenants/%s/roles/%s", tenantId, roleId),
         null,
         httpRequestConfig.build(),
+        UnassignRoleFromTenantResponseImpl::new,
         result);
     return result;
   }

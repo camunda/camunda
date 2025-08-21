@@ -22,6 +22,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignClientToGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignClientToGroupResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -67,6 +68,7 @@ public class AssignClientToGroupCommandImpl
         "/groups/" + groupId + "/clients/" + clientId,
         null, // No request body needed
         httpRequestConfig.build(),
+        AssignClientToGroupResponseImpl::new,
         result);
     return result;
   }

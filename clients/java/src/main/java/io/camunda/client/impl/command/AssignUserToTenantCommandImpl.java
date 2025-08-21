@@ -22,6 +22,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignUserToTenantResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -62,7 +63,8 @@ public final class AssignUserToTenantCommandImpl
   public CamundaFuture<AssignUserToTenantResponse> send() {
     final HttpCamundaFuture<AssignUserToTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%s/users/%s", tenantId, username);
-    httpClient.put(endpoint, null, httpRequestConfig.build(), result);
+    httpClient.put(
+        endpoint, null, httpRequestConfig.build(), AssignUserToTenantResponseImpl::new, result);
     return result;
   }
 }

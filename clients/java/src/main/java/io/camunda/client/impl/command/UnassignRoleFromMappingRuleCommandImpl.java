@@ -22,6 +22,7 @@ import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1.Una
 import io.camunda.client.api.response.UnassignRoleFromMappingRuleResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignRoleFromMappingRuleResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -67,6 +68,7 @@ public class UnassignRoleFromMappingRuleCommandImpl
         "/roles/" + roleId + "/mapping-rules/" + mappingRuleId,
         null, // No request body needed
         httpRequestConfig.build(),
+        UnassignRoleFromMappingRuleResponseImpl::new,
         result);
     return result;
   }

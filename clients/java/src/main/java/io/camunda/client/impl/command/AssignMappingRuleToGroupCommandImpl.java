@@ -22,6 +22,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignMappingRuleToGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignMappingRuleToGroupResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -67,6 +68,7 @@ public class AssignMappingRuleToGroupCommandImpl
         "/groups/" + groupId + "/mapping-rules/" + mappingRuleId,
         null,
         httpRequestConfig.build(),
+        AssignMappingRuleToGroupResponseImpl::new,
         result);
     return result;
   }

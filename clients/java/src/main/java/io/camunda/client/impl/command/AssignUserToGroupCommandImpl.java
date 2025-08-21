@@ -22,6 +22,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserToGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignUserToGroupResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -63,7 +64,11 @@ public class AssignUserToGroupCommandImpl
     ArgumentUtil.ensureNotNullNorEmpty("username", username);
     final HttpCamundaFuture<AssignUserToGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.put(
-        "/groups/" + groupId + "/users/" + username, null, httpRequestConfig.build(), result);
+        "/groups/" + groupId + "/users/" + username,
+        null,
+        httpRequestConfig.build(),
+        AssignUserToGroupResponseImpl::new,
+        result);
     return result;
   }
 }

@@ -22,6 +22,7 @@ import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1.Unassign
 import io.camunda.client.api.response.UnassignUserFromTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignUserFromTenantResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -62,7 +63,8 @@ public final class UnassignUserFromTenantCommandImpl
   public CamundaFuture<UnassignUserFromTenantResponse> send() {
     final HttpCamundaFuture<UnassignUserFromTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%s/users/%s", tenantId, username);
-    httpClient.delete(endpoint, null, httpRequestConfig.build(), result);
+    httpClient.delete(
+        endpoint, null, httpRequestConfig.build(), UnassignUserFromTenantResponseImpl::new, result);
     return result;
   }
 }

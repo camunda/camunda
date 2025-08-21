@@ -22,6 +22,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignRoleToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignRoleToTenantResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -64,7 +65,8 @@ public final class AssignRoleToTenantCommandImpl
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     final HttpCamundaFuture<AssignRoleToTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%s/roles/%s", tenantId, roleId);
-    httpClient.put(endpoint, null, httpRequestConfig.build(), result);
+    httpClient.put(
+        endpoint, null, httpRequestConfig.build(), AssignRoleToTenantResponseImpl::new, result);
     return result;
   }
 }

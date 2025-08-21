@@ -22,6 +22,7 @@ import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1.UnassignM
 import io.camunda.client.api.response.UnassignMappingRuleFromGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignMappingRuleFromGroupResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -68,6 +69,7 @@ public class UnassignMappingRuleFromGroupCommandImpl
         "/groups/" + groupId + "/mapping-rules/" + mappingRuleId,
         null,
         httpRequestConfig.build(),
+        UnassignMappingRuleFromGroupResponseImpl::new,
         result);
     return result;
   }

@@ -22,6 +22,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignRoleToGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignRoleToGroupResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -66,6 +67,7 @@ public class AssignRoleToGroupCommandImpl
         "/roles/" + roleId + "/groups/" + groupId,
         null, // No request body needed
         httpRequestConfig.build(),
+        AssignRoleToGroupResponseImpl::new,
         result);
     return result;
   }

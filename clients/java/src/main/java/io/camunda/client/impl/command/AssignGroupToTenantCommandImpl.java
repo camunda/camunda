@@ -21,6 +21,7 @@ import io.camunda.client.api.command.AssignGroupToTenantCommandStep1.AssignGroup
 import io.camunda.client.api.response.AssignGroupToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignGroupToTenantResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -65,6 +66,7 @@ public final class AssignGroupToTenantCommandImpl
         "/tenants/" + tenantId + "/groups/" + groupId,
         null, // No request body needed
         httpRequestConfig.build(),
+        AssignGroupToTenantResponseImpl::new,
         result);
     return result;
   }

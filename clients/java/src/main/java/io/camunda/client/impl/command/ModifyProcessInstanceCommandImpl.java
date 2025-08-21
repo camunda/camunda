@@ -305,6 +305,7 @@ public final class ModifyProcessInstanceCommandImpl
         "/process-instances/" + processInstanceKey + "/modification",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        ModifyProcessInstanceResponseImpl::new,
         result);
     return result;
   }

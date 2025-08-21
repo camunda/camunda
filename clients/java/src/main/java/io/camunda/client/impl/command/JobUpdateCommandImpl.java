@@ -24,6 +24,7 @@ import io.camunda.client.api.command.UpdateJobCommandStep1.UpdateJobCommandStep2
 import io.camunda.client.api.response.UpdateJobResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UpdateJobResponseImpl;
 import io.camunda.client.protocol.rest.JobUpdateRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +57,11 @@ public class JobUpdateCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
   public CamundaFuture<UpdateJobResponse> send() {
     final HttpCamundaFuture<UpdateJobResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
-        "/jobs/" + jobKey, jsonMapper.toJson(httpRequestObject), httpRequestConfig.build(), result);
+        "/jobs/" + jobKey,
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        UpdateJobResponseImpl::new,
+        result);
     return result;
   }
 

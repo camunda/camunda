@@ -265,6 +265,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
         "/jobs/" + jobKey + "/completion",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        CompleteJobResponseImpl::new,
         result);
     return result;
   }

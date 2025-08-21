@@ -93,6 +93,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
         "/process-instances/" + processInstanceKey + "/cancellation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        CancelProcessInstanceResponseImpl::new,
         result);
     return result;
   }

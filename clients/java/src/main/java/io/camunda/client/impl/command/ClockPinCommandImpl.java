@@ -22,6 +22,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.PinClockResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.PinClockResponseImpl;
 import io.camunda.client.protocol.rest.ClockPinRequest;
 import java.time.Duration;
 import java.time.Instant;
@@ -65,7 +66,12 @@ public class ClockPinCommandImpl implements ClockPinCommandStep1 {
   @Override
   public CamundaFuture<PinClockResponse> send() {
     final HttpCamundaFuture<PinClockResponse> result = new HttpCamundaFuture<>();
-    httpClient.put("/clock", jsonMapper.toJson(request), httpRequestConfig.build(), result);
+    httpClient.put(
+        "/clock",
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        PinClockResponseImpl::new,
+        result);
     return result;
   }
 }
