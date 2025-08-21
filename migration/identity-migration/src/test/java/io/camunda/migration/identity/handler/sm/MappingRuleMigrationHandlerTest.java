@@ -293,4 +293,57 @@ public class MappingRuleMigrationHandlerTest {
     verify(roleServices, times(2)).addMember(any(RoleMemberRequest.class));
     verify(tenantServices, times(3)).addMember(any(TenantMemberRequest.class));
   }
+
+  @Test
+  public void shouldMergeMappingRulesWithDuplicateClaimNameAndValue() {
+    // given
+    when(managementIdentityClient.fetchMappingRules())
+        .thenReturn(
+            List.of(
+                new MappingRule(
+                    "rule1",
+                    "claimName",
+                    "claimValue",
+                    Set.of(new Role("role1", "description1")),
+                    Set.of(new Tenant("tenant1", "tenantDescription1"))),
+                new MappingRule(
+                    "rule2",
+                    "claimName",
+                    "claimValue",
+                    Set.of(new Role("role2", "description2")),
+                    Set.of(new Tenant("tenant2", "tenantDescription2")))));
+    when(mappingRuleServices.createMappingRule(any(MappingRuleDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(roleServices.addMember(any(RoleMemberRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(tenantServices.addMember(any(TenantMemberRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    mappingRuleMigrationHandler.migrate();
+
+    // then
+    final var mappingRuleCapture = ArgumentCaptor.forClass(MappingRuleDTO.class);
+    verify(mappingRuleServices, times(1)).createMappingRule(mappingRuleCapture.capture());
+    final var mappingRuleDTO = mappingRuleCapture.getValue();
+    assertThat(mappingRuleDTO.claimName()).isEqualTo("claimName");
+    assertThat(mappingRuleDTO.claimValue()).isEqualTo("claimValue");
+    // The name and mappingRuleId should be from the first encountered MappingRule (rule1)
+    assertThat(mappingRuleDTO.name()).isEqualTo("rule1");
+    assertThat(mappingRuleDTO.mappingRuleId()).isEqualTo("rule1");
+
+    final var roleCapture = ArgumentCaptor.forClass(RoleMemberRequest.class);
+    verify(roleServices, times(2)).addMember(roleCapture.capture());
+    final var roleRequests = roleCapture.getAllValues();
+    assertThat(roleRequests)
+        .extracting(RoleMemberRequest::roleId)
+        .containsExactlyInAnyOrder("role1", "role2");
+
+    final var tenantCapture = ArgumentCaptor.forClass(TenantMemberRequest.class);
+    verify(tenantServices, times(2)).addMember(tenantCapture.capture());
+    final var tenantRequests = tenantCapture.getAllValues();
+    assertThat(tenantRequests)
+        .extracting(TenantMemberRequest::tenantId)
+        .containsExactlyInAnyOrder("tenant1", "tenant2");
+  }
 }
