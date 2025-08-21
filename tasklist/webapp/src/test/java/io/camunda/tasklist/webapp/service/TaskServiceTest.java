@@ -333,21 +333,19 @@ class TaskServiceTest {
         .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(allowNonSelfAssignment));
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
     final var taskId = "123";
-    final var taskBefore = mock(TaskEntity.class);
-    when(taskBefore.getAssignee()).thenReturn(currentAssignee);
+    final var taskBefore = new TaskEntity().setId(taskId).setAssignee(currentAssignee);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(mock(CamundaAuthentication.class));
     when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
         .thenReturn(user.authenticatedUsername());
-    final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
-    when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
 
     // When
     final var result =
         instance.assignTask(taskId, providedAssignee, providedAllowOverrideAssignment);
 
     // Then
+    final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
     verify(taskValidator).validateCanAssign(taskBefore, expectedAllowOverrideAssignment);
     assertThat(result).isEqualTo(TaskDTO.createFrom(assignedTask, objectMapper));
   }
@@ -551,7 +549,7 @@ class TaskServiceTest {
   void assignZeebeUserTaskException() {
     // Given
     final var taskId = "123";
-    final var taskBefore = mock(TaskEntity.class);
+    final var taskBefore = new TaskEntity().setId(taskId).setAssignee("initialAssignee");
     final var providedAssignee = "expectedAssignee";
     final var providedAllowOverrideAssignment = false;
 
@@ -587,19 +585,18 @@ class TaskServiceTest {
         .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(allowNonSelfAssignment));
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
     final var taskId = "123";
-    final var taskBefore = mock(TaskEntity.class);
-    when(taskBefore.getAssignee()).thenReturn(currentAssignee);
+    final var taskBefore = new TaskEntity().setId(taskId).setAssignee(currentAssignee);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(mock(CamundaAuthentication.class));
     when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
         .thenReturn(user.authenticatedUsername());
-    final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
-    when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
+
     final var result =
         instance.assignTask(taskId, providedAssignee, providedAllowOverrideAssignment);
 
     // Then
+    final var assignedTask = new TaskEntity().setId(taskId).setAssignee(expectedAssignee);
     verify(taskValidator).validateCanAssign(taskBefore, expectedAllowOverrideAssignment);
     assertThat(result).isEqualTo(TaskDTO.createFrom(assignedTask, objectMapper));
   }
