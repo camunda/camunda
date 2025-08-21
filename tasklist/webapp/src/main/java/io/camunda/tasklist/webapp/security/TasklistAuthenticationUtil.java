@@ -16,13 +16,13 @@ public final class TasklistAuthenticationUtil {
 
   public static boolean isApiUser(CamundaAuthentication authenticatedUser) {
 
-    if (authenticatedUser.authenticatedUsername() != null) {
+    if (authenticatedUser.authenticatedUsername() != null || authenticatedUser.isAnonymous()) {
       return false;
     } else if (authenticatedUser.authenticatedClientId() != null) {
       return true;
     } else {
       throw new InvalidRequestException(
-          "Expecting authentication to either have username or client id");
+          "Expecting authentication to either be anonymous, or have username or client id");
     }
   }
 }

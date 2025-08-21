@@ -214,6 +214,24 @@ public class TaskValidatorTest {
   }
 
   @Test
+  public void anonymousUserCannotCompleteAssignedTask() {
+    // given
+    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
+
+    setAnonymousUser();
+
+    // when - then
+    assertThatThrownBy(() -> instance.validateCanComplete(task))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage(
+            """
+          { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
+            "detail": "Task is not assigned to null"
+          }
+          """);
+  }
+
+  @Test
   public void apiUserShouldBeAbleToCompleteOtherPersonTask() {
     // given
     final TaskEntity task =
@@ -386,5 +404,11 @@ public class TaskValidatorTest {
 
     final var authentication = CamundaAuthentication.of(b -> b.clientId(id));
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+  }
+
+  protected void setAnonymousUser() {
+
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.anonymous());
   }
 }
