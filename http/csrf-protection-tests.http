@@ -1,0 +1,261 @@
+###
+# @no-cookie-jar
+# @name test-get-cookies
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/login
+Accept: application/json
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary3vjsrr6uBSL35R3A
+
+------WebKitFormBoundary3vjsrr6uBSL35R3A
+Content-Disposition: form-data; name="username"
+
+demo
+------WebKitFormBoundary3vjsrr6uBSL35R3A
+Content-Disposition: form-data; name="password"
+
+demo
+------WebKitFormBoundary3vjsrr6uBSL35R3A--
+
+> {%
+  client.test("Login should succeed and set cookies", function () {
+    client.assert(response.status === 204, "Login should succeed");
+
+    const setCookieHeaders = response.headers.valuesOf("Set-Cookie");
+    if (setCookieHeaders && setCookieHeaders.length > 0) {
+      let sessionCookie = null;
+      let csrfCookie = null;
+
+      setCookieHeaders.forEach(cookie => {
+        if (cookie.includes("camunda-session")) {
+          sessionCookie = cookie.split(';')[0].split('=')[1];
+        }
+        if (cookie.includes("X-CSRF-TOKEN")) {
+          csrfCookie = cookie.split(';')[0].split('=')[1];
+        }
+      });
+
+      if (sessionCookie) {
+        client.global.set("session_cookie", sessionCookie);
+        console.log("Session cookie: " + sessionCookie);
+      }
+      if (csrfCookie) {
+        client.global.set("csrf_cookie", csrfCookie);
+        console.log("CSRF cookie: " + csrfCookie);
+      }
+    }
+  });
+%}
+
+###
+# @name test-get-x-csrf-token-header
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authentication/me
+Accept: application/json
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+
+> {%
+  client.test("Authentication request should succeed and return CSRF token", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.headers.valueOf("x-csrf-token"), "CSRF token header is missing");
+    client.global.set("csrf_token", response.headers.valueOf("x-csrf-token"));
+    console.log("CSRF Token from header: " + client.global.get("csrf_token"));
+  });
+%}
+
+###
+# @name test-csrf-token-in-cookie
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authentication/me
+Accept: application/json
+
+> {%
+  client.test("CSRF token should be present in both header and cookie", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.headers.valueOf("x-csrf-token"), "CSRF token header is missing");
+
+    const setCookieHeader = response.headers.valueOf("Set-Cookie");
+    if (setCookieHeader) {
+      const hasCsrfCookie = setCookieHeader.includes("X-CSRF-TOKEN");
+      client.assert(hasCsrfCookie, "X-CSRF-TOKEN cookie should be set");
+
+      if (hasCsrfCookie) {
+        const isHttpOnly = setCookieHeader.includes("HttpOnly");
+        client.assert(isHttpOnly, "CSRF token cookie should have HttpOnly flag for security");
+      }
+    }
+  });
+%}
+
+###
+# @name test-create-user-no-auth-no-csrf
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+Content-Type: application/json
+Accept: application/json
+
+{
+  "password": "testuser123",
+  "username": "testuser",
+  "name": "Test User",
+  "email": "testuser@camunda.com"
+}
+
+> {%
+  client.test("User creation without authentication should be rejected with 401", function () {
+    client.assert(response.status === 401, "Response status should be 401");
+  });
+  client.test("Error message is correct", function () {
+    client.assert(response.body.detail === "Invalid CSRF Token 'null' was found on the request parameter '_csrf' or header 'X-CSRF-TOKEN'.", "Incorrect error message.");
+  });
+%}
+
+###
+# @name test-create-user-auth-no-csrf-token
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+Content-Type: application/json
+Accept: application/json
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+
+{
+  "password": "testuser123",
+  "username": "testuser",
+  "name": "Test User",
+  "email": "testuser@camunda.com"
+}
+
+> {%
+  client.test("User creation with auth but without CSRF token should be rejected with 401", function () {
+    client.assert(response.status === 401, "Response status should be 401");
+
+    if (response.body && typeof response.body === 'string') {
+      const bodyLower = response.body.toLowerCase();
+      client.assert(bodyLower.includes('csrf'), "Response should indicate CSRF protection");
+    }
+  });
+%}
+
+###
+# @name test-create-user-with-invalid-csrf-token
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+Content-Type: application/json
+Accept: application/json
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: invalid-token-12345
+
+{
+  "password": "testuser123",
+  "username": "testuser2",
+  "name": "Test User 2",
+  "email": "testuser2@camunda.com"
+}
+
+> {%
+  client.test("User creation with invalid CSRF token should be rejected", function () {
+    client.assert(response.status === 401, "Response status should be 401");
+    client.assert(response.body.detail === "Invalid CSRF Token 'null' was found on the request parameter '_csrf' or header 'X-CSRF-TOKEN'.", "Invalid CSRF token should be rejected");
+
+  });
+%}
+
+###
+# @name test-create-user-with-valid-csrf-token
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+Content-Type: application/json
+Accept: application/json
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+
+{
+  "password": "testuser123",
+  "username": "testuser3",
+  "name": "Test User 3",
+  "email": "testuser3@camunda.com"
+}
+
+> {%
+  client.test("User creation with valid CSRF token should pass CSRF validation", function () {
+    client.assert(response.status === 201, "Request should not be rejected for CSRF reasons");
+  });
+%}
+
+###
+# @name test-update-user-without-csrf-token
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/testuser3
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Updated Test User 3",
+  "email": "updated.testuser3@camunda.com"
+}
+
+> {%
+  client.test("User update without CSRF token should be rejected", function () {
+    client.assert(response.status === 401, "Response status is not 401");
+    client.assert(response.body.detail === "Invalid CSRF Token 'null' was found on the request parameter '_csrf' or header 'X-CSRF-TOKEN'.", "Incorrect error message");
+  });
+%}
+
+###
+# @name test-update-user-with-valid-csrf-token
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/testuser3
+Content-Type: application/json
+Accept: application/json
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+
+{
+  "name": "Updated Test User 3",
+  "email": "updated.testuser3@camunda.com"
+}
+
+> {%
+  client.test("User update with valid CSRF token should pass CSRF validation", function () {
+    client.assert(response.status === 200, "Request should not be rejected for CSRF reasons");
+  });
+%}
+
+###
+# @name test-delete-user-without-csrf-token
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/testuser3
+Accept: application/json
+
+> {%
+  client.test("User deletion without CSRF token should be rejected", function () {
+    client.assert(response.status === 401, "Response status is not 401");
+  });
+  client.test("Error message is correct", function () {
+    client.assert(response.body.detail === "Invalid CSRF Token 'null' was found on the request parameter '_csrf' or header 'X-CSRF-TOKEN'.", "Incorrect error message.");
+  });
+%}
+
+###
+# @name test-get-users-no-csrf-required
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/testuser3
+Accept: application/json
+
+> {%
+  client.test("GET request should not require CSRF token", function () {
+    client.assert(response.status !== 403, "GET request should not be rejected for CSRF reasons");
+  });
+%}
+
+###
+# @name test-unprotected-path-license
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/license
+Accept: application/json
+
+> {%
+  client.test("License endpoint should not require CSRF token", function () {
+    client.assert(response.status === 200, "License endpoint should not require CSRF token");
+  });
+%}
+
+###
+# @name test-delete-user-with-valid-csrf-token
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/testuser3
+Accept: application/json
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+
+> {%
+  client.test("User deletion with valid CSRF token should pass CSRF validation", function () {
+    client.assert(response.status === 204, "Request should not be rejected for CSRF reasons");
+  });
+%}
