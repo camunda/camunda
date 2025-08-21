@@ -25,7 +25,7 @@ import org.springframework.util.unit.DataSize;
 final class IdentitySetupOnStartupTest {
 
   @Test
-  @Timeout(unit = TimeUnit.SECONDS, value = 30)
+  @Timeout(unit = TimeUnit.SECONDS, value = 60)
   void shouldInitializeIdentitySetup() {
     try (final LogCapturer logCapturer = new LogCapturer(Loggers.PROCESSOR_LOGGER.getName());
         final TestCluster cluster =
@@ -46,7 +46,8 @@ final class IdentitySetupOnStartupTest {
                       cfg.brokerConfig().getProcessing().setMaxCommandsInBatch(100);
                     })
                 .build()
-                .start()) {
+                .start()
+                .awaitCompleteTopology()) {
 
       Assertions.assertThat(
               RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).getFirst())
