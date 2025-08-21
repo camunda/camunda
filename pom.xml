@@ -68,8 +68,10 @@
             <excludes>
               <exclude>**/target/**/*.md</exclude>
               <exclude>**/node_modules/**/*.md</exclude>
-              <exclude>tasklist/client/**/*.md</exclude>
+              <exclude>tasklist/client/**/*</exclude>
+              <exclude>operate/client/**/*</exclude>
               <exclude>optimize/client/**/*.md</exclude>
+              <exclude>client-components/**/*</exclude>
             </excludes>
             <flexmark></flexmark>
           </markdown>
