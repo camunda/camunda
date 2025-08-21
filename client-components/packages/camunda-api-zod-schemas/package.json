@@ -22,7 +22,8 @@
 		"build": "vite build",
 		"format": "prettier --write .",
 		"prepublish": "npm run build",
-		"typecheck": "tsc"
+		"typecheck": "tsc",
+		"prepublishOnly": "npm run lint && npm run typecheck && npm run build"
 	},
 	"sideEffects": false,
 	"files": [
