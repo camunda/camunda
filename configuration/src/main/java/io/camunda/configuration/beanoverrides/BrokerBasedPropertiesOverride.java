@@ -395,7 +395,7 @@ public class BrokerBasedPropertiesOverride {
     List<ExporterCfg> camundaExporters =
         exporters.values().stream().filter(e -> e.getClassName().equals(className)).toList();
     final ExporterCfg camundaExporter;
-    if(camundaExporters.isEmpty()) {
+    if (camundaExporters.isEmpty()) {
       camundaExporter = new ExporterCfg();
       camundaExporter.setJarPath(jarPath);
       camundaExporter.setClassName(className);
