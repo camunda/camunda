@@ -31,7 +31,7 @@ import org.springframework.context.annotation.Import;
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @ConditionalOnProperty(
-    name = "camunda.tasklist.webappEnabled",
+    name = "camunda.tasklist.webapp-enabled",
     havingValue = "true",
     matchIfMissing = true)
 @Import(GraphQLAnnotationsAutoConfiguration.class)
