@@ -12,6 +12,7 @@ import io.camunda.configuration.Grpc;
 import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
+import io.camunda.configuration.Membership;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
+import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg;
@@ -169,6 +171,8 @@ public class GatewayBasedPropertiesOverride {
 
   private void populateFromCluster(final GatewayBasedProperties override) {
     populateFromClusterNetwork(override);
+    populateFromMembership(override);
+
     // Rest of camunda.cluster.* sections
   }
 
@@ -238,5 +242,25 @@ public class GatewayBasedPropertiesOverride {
 
     clusterCfg.setPort(internalApi.getPort());
     Optional.ofNullable(internalApi.getAdvertisedPort()).ifPresent(clusterCfg::setAdvertisedPort);
+  }
+
+  private void populateFromMembership(final GatewayBasedProperties override) {
+    final Membership membership =
+        unifiedConfiguration
+            .getCamunda()
+            .getCluster()
+            .getMembership()
+            .withGatewayMembershipProperties();
+    final MembershipCfg membershipCfg = override.getCluster().getMembership();
+    membershipCfg.setBroadcastUpdates(membership.isBroadcastUpdates());
+    membershipCfg.setBroadcastDisputes(membership.isBroadcastDisputes());
+    membershipCfg.setNotifySuspect(membership.isNotifySuspect());
+    membershipCfg.setGossipInterval(membership.getGossipInterval());
+    membershipCfg.setGossipFanout(membership.getGossipFanout());
+    membershipCfg.setProbeInterval(membership.getProbeInterval());
+    membershipCfg.setProbeTimeout(membership.getProbeTimeout());
+    membershipCfg.setSuspectProbes(membership.getSuspectProbes());
+    membershipCfg.setFailureTimeout(membership.getFailureTimeout());
+    membershipCfg.setSyncInterval(membership.getSyncInterval());
   }
 }
