@@ -9,7 +9,6 @@ package io.camunda.tasklist.util;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.tasklist.qa.util.TestUtil;
 import java.io.IOException;
 import java.time.Instant;
