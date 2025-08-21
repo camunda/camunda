@@ -11,6 +11,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -73,6 +74,18 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
               context.getComponentHealthMonitor().registerComponent(director);
               if (targetRole == Role.LEADER) {
                 server.addCommittedEntryListener(director);
+
+                // Raft server will only notify if there is a new entry commited. If the node has
+                // just restarted or transitioned to leader, but there are no new processing records
+                // written or committed, the listener is not triggered. As a result the
+                // commitPosition in the snapshotDirector remain 0, thus preventing snapshots even
+                // if the state has changed after replaying previously committed events. Hence, set
+                // the commit position from the last record in the log stream.
+                try (final LogStreamReader logStreamReader =
+                    context.getLogStream().newLogStreamReader()) {
+                  final var commitPosition = logStreamReader.seekToEnd();
+                  director.onCommit(commitPosition);
+                }
               }
             }
           });
