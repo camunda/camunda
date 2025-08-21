@@ -9,6 +9,7 @@ package io.camunda.migration.usagemetric;
 
 import static io.camunda.migration.usagemetric.client.UsageMetricMigrationClient.TASKLIST_MIGRATOR_STEP_ID;
 import static io.camunda.migration.usagemetric.client.UsageMetricMigrationClient.TASKLIST_STEP_DESCRIPTION;
+import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.ids;
 import static io.camunda.search.clients.query.SearchQueryBuilders.wildcardQuery;
 
@@ -28,7 +29,9 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.search.filter.Operation;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
@@ -38,7 +41,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -201,6 +206,7 @@ public class TUMetricMigrator implements Migrator {
   }
 
   private String reindex() {
+    final var minEventTime = OffsetDateTime.now().minusYears(2);
     try {
       final var assignees =
           client.getAllAssigneesInMetrics(
@@ -209,7 +215,7 @@ public class TUMetricMigrator implements Migrator {
       return client.reindex(
           indexDescriptors.get(TasklistMetricIndex.class).getFullQualifiedName(),
           indexDescriptors.get(UsageMetricTUIndex.class).getFullQualifiedName(),
-          SearchQueryBuilders.matchAll(),
+          eventDateQuery(minEventTime),
           SCRIPT,
           Map.of(PARAMS_KEY, hashedAssignees));
     } catch (final IOException e) {
@@ -264,6 +270,12 @@ public class TUMetricMigrator implements Migrator {
 
   private long hashAssignee(final String assignee) {
     return Hashing.murmur3_128().hashString(assignee, StandardCharsets.UTF_8).asLong();
+  }
+
+  public SearchQuery eventDateQuery(final OffsetDateTime minEventTime) {
+    return and(
+        SearchQueryBuilders.dateTimeOperations(
+            MetricIndex.EVENT_TIME, List.of(Operation.gt(minEventTime))));
   }
 
   private SearchQuery tasklistMigratorStepQuery() {

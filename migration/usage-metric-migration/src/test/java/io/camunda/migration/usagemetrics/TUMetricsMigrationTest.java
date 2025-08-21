@@ -39,6 +39,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -271,6 +272,42 @@ public class TUMetricsMigrationTest extends MigrationTest {
                     .isThrownBy(this::runMigration)
                     .withCauseInstanceOf(CompletionException.class)
                     .withMessageContaining("Importer did not finish within the timeout of"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldNotMigrateOlderThanTwoYearMetrics(final boolean isElasticsearch) throws Exception {
+    this.isElasticsearch = isElasticsearch;
+    // given - an older metric document is present
+    final MetricEntity metric =
+        new MetricEntity()
+            .setEvent("task_completed_by_assignee")
+            .setValue("test-value")
+            .setEventTime(OffsetDateTime.now().minusYears(2).minusDays(1))
+            .setTenantId("<default>");
+
+    writeImportPositionToIndex(
+        indexFqnForClass(TasklistImportPositionIndex.class), importPosition(true, 1));
+
+    if (isElasticsearch) {
+      esClient.index(
+          idx -> idx.index(indexFqnForClass(TasklistMetricIndex.class)).document(metric));
+    } else {
+      osClient.index(
+          idx -> idx.index(indexFqnForClass(TasklistMetricIndex.class)).document(metric));
+    }
+
+    refreshIndices();
+
+    awaitRecordsArePresent(MetricEntity.class, indexFqnForClass(TasklistMetricIndex.class), 1);
+
+    // when - migration is run
+    runMigration();
+
+    // then - no data is migrated
+    refreshIndices();
+    assertThat(readRecords(UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUIndex.class)))
+        .isEmpty();
   }
 
   private void generateAssignees(final int assigneeCount) {
