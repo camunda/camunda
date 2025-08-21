@@ -31,6 +31,12 @@ inputs:
       Harbor login is automatically disabled for fork PRs.
     required: false
     default: "false"
+  minimus:
+    description: |
+      If enabled, logs into Minimus with a CI account.
+      Minimus login is automatically disabled for fork PRs.
+    required: false
+    default: "false"
   java-distribution:
     description: Java distribution to use
     required: false
@@ -150,6 +156,7 @@ runs:
         secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
+        secret/data/products/camunda/ci/github-actions POC_MINIMUS_PSW | minimus-token
   - name: Setup Java
     uses: actions/setup-java@v4
     with:
@@ -253,3 +260,13 @@ runs:
       registry: registry.camunda.cloud
       username: ${{ steps.secrets.outputs.ci-account-username }}
       password: ${{ steps.secrets.outputs.ci-account-password }}
+  - name: Logs on to Minimus
+    # Minimus login is disabled for fork PRs
+    if: >-
+      steps.is-fork.outputs.is-fork != 'true' &&
+      inputs.minimus == 'true'
+    uses: docker/login-action@v3
+    with:
+      registry: reg.mini.dev
+      username: minimus
+      password: ${{ steps.secrets.outputs.minimus-token }}
