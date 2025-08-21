@@ -89,8 +89,9 @@ public final class TestUtil {
   }
 
   public static boolean isOpenSearch() {
-    final String databaseType = Optional.ofNullable(
-        System.getProperty("camunda.data.secondary-storage.type")).orElse("elasticsearch");
+    final String databaseType =
+        Optional.ofNullable(System.getProperty("camunda.data.secondary-storage.type"))
+            .orElse("elasticsearch");
     return "opensearch".equalsIgnoreCase(databaseType);
   }
 }

@@ -16,15 +16,13 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 
 public abstract class DatabaseCondition implements Condition {
 
-  public static final String UNIFIED_CONFIGURATION_DATABASE_PROPERTY =
-      "camunda.data.secondary-storage.type";
+  public static final String DATABASE_PROPERTY = "camunda.data.secondary-storage.type";
 
   public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
     final Environment environment = context.getEnvironment();
 
-    String dbType = Optional.ofNullable(
-        environment.getProperty(UNIFIED_CONFIGURATION_DATABASE_PROPERTY))
-        .orElse("elasticsearch");
+    String dbType =
+        Optional.ofNullable(environment.getProperty(DATABASE_PROPERTY)).orElse("elasticsearch");
 
     return (StringUtils.isEmpty(dbType) && getDefaultIfEmpty())
         || getDatabase().equalsIgnoreCase(dbType);

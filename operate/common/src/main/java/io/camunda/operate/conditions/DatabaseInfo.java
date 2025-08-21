@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.conditions;
 
-import static io.camunda.operate.conditions.DatabaseCondition.UNIFIED_CONFIGURATION_DATABASE_PROPERTY;
+import static io.camunda.operate.conditions.DatabaseCondition.DATABASE_PROPERTY;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +34,7 @@ public class DatabaseInfo implements ApplicationContextAware, DisposableBean {
         LOGGER.warn("getCurrent() called on DatabaseInfo before application context has been set");
         return DEFAULT_DATABASE;
       }
-      final var code = applicationContext.getEnvironment().getProperty(
-          UNIFIED_CONFIGURATION_DATABASE_PROPERTY);
+      final var code = applicationContext.getEnvironment().getProperty(DATABASE_PROPERTY);
       current = DatabaseType.byCode(code).orElse(DEFAULT_DATABASE);
     }
     return current;
