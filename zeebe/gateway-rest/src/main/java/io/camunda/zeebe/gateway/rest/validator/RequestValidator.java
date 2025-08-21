@@ -35,15 +35,16 @@ public final class RequestValidator {
                 HttpStatus.BAD_REQUEST, problems, INVALID_ARGUMENT.name()));
   }
 
-  public static void validateDate(
+  public static OffsetDateTime validateDate(
       final String dateString, final String attributeName, final List<String> violations) {
     if (dateString != null && !dateString.isEmpty()) {
       try {
-        OffsetDateTime.parse(dateString);
+        return OffsetDateTime.parse(dateString);
       } catch (final DateTimeParseException ex) {
         violations.add(ERROR_MESSAGE_DATE_PARSING.formatted(attributeName, dateString));
       }
     }
+    return null;
   }
 
   public static boolean isEmpty(final Changeset changeset) {

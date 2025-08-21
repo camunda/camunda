@@ -121,11 +121,16 @@ public final class SearchQueryRequestMapper {
     return getResult(
         validate(
             violations -> {
-              if (startTime == null || endTime == null) {
+              if (StringUtils.isAnyBlank(startTime, endTime)) {
                 violations.add("The startTime and endTime must both be specified");
               }
-              validateDate(startTime, "startTime", violations);
-              validateDate(endTime, "endTime", violations);
+              final var startDateTime = validateDate(startTime, "startTime", violations);
+              final var endDateTime = validateDate(endTime, "endTime", violations);
+              if (startDateTime != null
+                  && endDateTime != null
+                  && endDateTime.isBefore(startDateTime)) {
+                violations.add("The endTime must be after startTime");
+              }
             }),
         () ->
             new UsageMetricsQuery.Builder()
