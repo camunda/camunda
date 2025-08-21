@@ -68,7 +68,6 @@ public class TaskMigrator implements Migrator {
         performReindexForDatedIndices();
         performReindexForMainIndex();
         performBatchUpdatesForExportedDocuments();
-        adapter.deleteLegacyMainIndex();
         LOG.info("Main index deleted");
         adapter.markMigrationAsCompleted();
         LOG.info("Task Migration completed successfully");

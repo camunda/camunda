@@ -11,7 +11,7 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 
-/* Fork of Operate's MigrationRepositoryIndex descriptor for correct prefixing */
+/* Fork of Tasklist's MigrationRepositoryIndex descriptor for correct prefixing */
 /* See https://github.com/camunda/camunda/blob/stable/8.7/tasklist/els-schema/src/main/java/io/camunda/tasklist/schema/indices/MigrationRepositoryIndex.java */
 public class MigrationRepositoryIndex extends AbstractIndexDescriptor {
 
