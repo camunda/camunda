@@ -407,6 +407,7 @@ public class BrokerBasedPropertiesOverride {
 
     /* Override config map values */
 
+    LOGGER.info("Configuring camundaExporter using Unified Configuration...");
     final Map<String, Object> args = camundaExporter.getArgs();
     setArg(args, "connect.type", secondaryStorage.getType().name());
     setArg(args, "connect.url", database.getUrl());

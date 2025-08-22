@@ -465,6 +465,8 @@ public class TestContainerUtil {
     properties.setProperty("camunda.database.type", DB_TYPE_ELASTICSEARCH);
     properties.setProperty("camunda.operate.database", DB_TYPE_ELASTICSEARCH);
     properties.setProperty("camunda.tasklist.database", DB_TYPE_ELASTICSEARCH);
+    properties.setProperty(
+        "zeebe.broker.exporters.camundaexporter.args.connect.type", DB_TYPE_ELASTICSEARCH);
 
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.host", elsHost);
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.port", String.valueOf(elsPort));
