@@ -176,12 +176,26 @@ public final class ElasticsearchUsageMetricMigrationClient implements UsageMetri
       return TaskStatus.notFound();
     }
     final JsonObject status = res.task().status().toJson().asJsonObject();
+    if (status == null) {
+      LOG.warn("Status of task with id {} is null, response {}", taskId, res);
+      return TaskStatus.notFound();
+    }
     final int created = status.getInt("created");
     final int updated = status.getInt("updated");
     final int deleted = status.getInt("deleted");
+    final int conflicts = status.getInt("version_conflicts");
+    final var failures = status.getJsonArray("failures");
     final int total = status.getInt("total");
-    return new TaskStatus(
-        taskId, true, res.completed(), res.task().description(), total, created, updated, deleted);
+    final boolean completed =
+        res.completed()
+            && (failures == null || failures.isEmpty())
+            && res.error() == null
+            && (created + updated + deleted + conflicts) >= total;
+    final var taskStatus =
+        new TaskStatus(
+            taskId, true, completed, res.task().description(), total, created, updated, deleted);
+    LOG.debug("Retrieved TaskStatus {}", taskStatus);
+    return taskStatus;
   }
 
   @Override
