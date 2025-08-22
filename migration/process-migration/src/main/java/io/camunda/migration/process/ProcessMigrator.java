@@ -110,7 +110,7 @@ public class ProcessMigrator implements Migrator {
         return false;
       } else {
         throw new MigrationTimeoutException(
-            "Process Migration timed out after " + properties.getTimeout());
+            "Process Migration timed out after " + properties.getTimeout(), true);
       }
     }
     return countdownTask == null || !countdownTask.isDone();

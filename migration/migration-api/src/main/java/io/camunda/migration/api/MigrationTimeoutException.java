@@ -8,7 +8,15 @@
 package io.camunda.migration.api;
 
 public class MigrationTimeoutException extends RuntimeException {
-  public MigrationTimeoutException(String message) {
+
+  private final boolean ignore;
+
+  public MigrationTimeoutException(final String message, final boolean ignore) {
     super(message);
+    this.ignore = ignore;
+  }
+
+  public boolean isIgnore() {
+    return ignore;
   }
 }

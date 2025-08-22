@@ -88,8 +88,11 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
   }
 
   private boolean shouldFailMigration(final Throwable e) {
-    if (e instanceof final MigrationException migrationException) {
-      return !(migrationException.getCause() instanceof MigrationTimeoutException);
+    if (e instanceof final MigrationException me) {
+      if (me.getCause() instanceof final MigrationTimeoutException tex) {
+        return !tex.isIgnore();
+      }
+      return true;
     }
     return true;
   }

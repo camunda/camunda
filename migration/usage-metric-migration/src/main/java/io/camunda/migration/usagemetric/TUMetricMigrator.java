@@ -178,7 +178,7 @@ public class TUMetricMigrator implements Migrator {
             "Importer did not finish within the timeout of {}. Aborting migration.",
             configuration.getTimeout());
         throw new MigrationTimeoutException(
-            "Importer did not finish within the timeout of " + configuration.getTimeout());
+            "Importer did not finish within the timeout of " + configuration.getTimeout(), false);
       }
     } catch (final MigrationException e) {
       LOG.error("Failed to check whether importers are done", e);
