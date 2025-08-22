@@ -20,10 +20,8 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {addVariable, getScopeId, updateVariable} from 'modules/utils/variables';
 import {useQueryClient} from '@tanstack/react-query';
-import {
-  VARIABLES_SEARCH_QUERY_KEY,
-  useVariables,
-} from 'modules/queries/variables/useVariables';
+import {useVariables} from 'modules/queries/variables/useVariables';
+import {queryKeys} from 'modules/queries/queryKeys';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -80,7 +78,7 @@ const VariablesContent: React.FC = observer(() => {
             value,
             invalidateQueries: () => {
               queryClient.invalidateQueries({
-                queryKey: [VARIABLES_SEARCH_QUERY_KEY],
+                queryKey: queryKeys.variables.search(),
               });
             },
             onSuccess: () => {
