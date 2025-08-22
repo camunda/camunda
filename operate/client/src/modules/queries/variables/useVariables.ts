@@ -12,25 +12,24 @@ import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {getScopeId} from 'modules/utils/variables';
 import {useDisplayStatus} from 'modules/hooks/variables';
+import {queryKeys} from '../queryKeys';
 
 const MAX_VARIABLES_PER_REQUEST = 50;
-const VARIABLES_SEARCH_QUERY_KEY = 'variablesSearch';
-
-function getQueryKey(processInstanceKey: string, scopeId: string | null) {
-  return [VARIABLES_SEARCH_QUERY_KEY, processInstanceKey, scopeId];
-}
 
 function useVariables(options?: {refetchInterval?: number | false}) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const scopeId = getScopeId();
+  const scopeKey = getScopeId();
   const {refetchInterval = false} = options ?? {};
   const result = useInfiniteQuery({
-    queryKey: getQueryKey(processInstanceId, scopeId),
+    queryKey: queryKeys.variables.searchWithFilter({
+      processInstanceKey: processInstanceId,
+      scopeKey,
+    }),
     queryFn: async ({pageParam = 0}) => {
       const {response, error} = await searchVariables({
         filter: {
           processInstanceKey: {$eq: processInstanceId},
-          scopeKey: {$eq: scopeId ?? undefined},
+          scopeKey: {$eq: scopeKey ?? undefined},
         },
         page: {
           from: pageParam,
@@ -78,4 +77,4 @@ function useVariables(options?: {refetchInterval?: number | false}) {
   return Object.assign(result, {displayStatus});
 }
 
-export {VARIABLES_SEARCH_QUERY_KEY, useVariables, getQueryKey};
+export {useVariables};

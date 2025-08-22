@@ -9,7 +9,6 @@
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {updateElementInstanceVariables} from 'modules/api/v2/elementInstances/updateElementInstanceVariables';
 import type {ElementInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {getQueryKey} from 'modules/queries/variables/useVariables';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {queryKeys} from 'modules/queries/queryKeys';
 
@@ -32,11 +31,12 @@ function useElementInstanceVariables(
       }
 
       await queryClient.fetchQuery({
-        queryKey: [
-          ...getQueryKey(processInstanceKey, elementInstanceKey),
-          variable.name,
-          variable.value,
-        ],
+        queryKey: queryKeys.variables.searchWithFilter({
+          processInstanceKey,
+          scopeKey: elementInstanceKey,
+          name: variable.name,
+          value: variable.value,
+        }),
         queryFn: async () => {
           const {response, error} = await searchVariables({
             filter: {
