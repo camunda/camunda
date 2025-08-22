@@ -182,7 +182,10 @@ public class IdentitySetupInitializeDefaultsTest {
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
                     .hasOnlyPermissionTypes(
-                        PermissionType.CREATE, PermissionType.UPDATE, PermissionType.DELETE));
+                        PermissionType.CREATE,
+                        PermissionType.READ,
+                        PermissionType.UPDATE,
+                        PermissionType.DELETE));
   }
 
   @Test
@@ -275,7 +278,7 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
-                    .hasNoPermissionTypes());
+                    .hasOnlyPermissionTypes(PermissionType.READ));
   }
 
   @Test
