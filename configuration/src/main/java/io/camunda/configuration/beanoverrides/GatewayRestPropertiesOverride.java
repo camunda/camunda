@@ -7,10 +7,12 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Executor;
 import io.camunda.configuration.ProcessCache;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayRestProperties;
 import io.camunda.configuration.beans.LegacyGatewayRestProperties;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.ApiExecutorConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.ProcessCacheConfiguration;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -41,6 +43,7 @@ public class GatewayRestPropertiesOverride {
     BeanUtils.copyProperties(legacyGatewayRestProperties, override);
 
     populateFromProcessCache(override);
+    populateFromExecutor(override);
 
     return override;
   }
@@ -51,5 +54,13 @@ public class GatewayRestPropertiesOverride {
     final ProcessCacheConfiguration processCacheConfiguration = override.getProcessCache();
     processCacheConfiguration.setMaxSize(processCache.getMaxSize());
     processCacheConfiguration.setExpirationIdleMillis(processCache.getExpirationIdle().toMillis());
+  }
+
+  private void populateFromExecutor(final GatewayRestProperties override) {
+    final Executor executor = unifiedConfiguration.getCamunda().getApi().getRest().getExecutor();
+    final ApiExecutorConfiguration apiExecutorConfiguration = override.getApiExecutor();
+    apiExecutorConfiguration.setCorePoolSizeMultiplier(executor.getCorePoolSizeMultiplier());
+    apiExecutorConfiguration.setMaxPoolSizeMultiplier(executor.getMaxPoolSizeMultiplier());
+    apiExecutorConfiguration.setKeepAliveSeconds(executor.getKeepAlive().getSeconds());
   }
 }
