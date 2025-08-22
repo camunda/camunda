@@ -17,7 +17,6 @@ function useElementInstanceVariables(
   processInstanceKey: ElementInstance['processInstanceKey'],
 ) {
   const queryClient = useQueryClient();
-  const VARIABLE_NOT_FOUND = 'Variable not found';
 
   return useMutation({
     mutationFn: async (variable: {name: string; value: string}) => {
@@ -52,17 +51,12 @@ function useElementInstanceVariables(
           }
 
           if (response.items.length === 0) {
-            throw new Error(VARIABLE_NOT_FOUND);
+            throw new Error('Variable not found');
           }
 
           return response;
         },
-        retry: (_, error) => {
-          if (error.message === VARIABLE_NOT_FOUND) {
-            return true;
-          }
-          return false;
-        },
+        retry: true,
         retryDelay: 1000,
       });
 
