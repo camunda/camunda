@@ -46,7 +46,6 @@ function parseComment(body) {
         }
         // methodMatch[1] is for the markdown link, methodMatch[2] for plain text
         currentTest.methodName = methodMatch[1] || methodMatch[2];
-        console.log("------> " + currentTest.methodName);
       }
 
       // Match jobs
