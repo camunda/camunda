@@ -125,7 +125,7 @@
     <version.google-sdk>26.34.0</version.google-sdk>
     <version.azure-sdk>1.2.37</version.azure-sdk>
     <version.awssdk>2.25.70</version.awssdk>
-    <version.toxiproxy>2.1.9</version.toxiproxy>
+    <version.toxiproxy>2.1.10</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.7</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
