@@ -31,6 +31,7 @@ import io.camunda.client.util.ClientRestTest;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.util.List;
 import java.util.Objects;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -39,8 +40,18 @@ public class SearchIncidentTest extends ClientRestTest {
 
   @Test
   void shouldGetIncident() {
-    // when
+    // given
     final long incidentKey = 0xC00L;
+    gatewayService.onIncidentRequest(
+        incidentKey,
+        Instancio.create(IncidentResult.class)
+            .incidentKey("1")
+            .elementInstanceKey("2")
+            .processInstanceKey("3")
+            .processDefinitionKey("4")
+            .jobKey("5"));
+
+    // when
     client.newIncidentGetRequest(incidentKey).send().join();
 
     // then

@@ -165,55 +165,6 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(request.getWorker()).isEqualTo("worker1");
   }
 
-  private static Stream<ActivateJobWithUserTaskPropsTestCase> userTaskPropertiesProvider() {
-    return Stream.of(
-        new ActivateJobWithUserTaskPropsTestCase(
-            "should activate job with all user task properties set",
-            new UserTaskProperties()
-                .action("update")
-                .assignee("tony")
-                .addCandidateGroupsItem("assistants")
-                .addCandidateUsersItem("jarvis")
-                .addCandidateUsersItem("friday")
-                .addChangedAttributesItem("assignee")
-                .dueDate("2019-04-22T00:00:00Z")
-                .followUpDate("2018-04-23T00:00:00Z")
-                .formKey("1")
-                .priority(10)
-                .userTaskKey("123"),
-            props -> {
-              assertThat(props.getAction()).isEqualTo("update");
-              assertThat(props.getAssignee()).isEqualTo("tony");
-              assertThat(props.getCandidateGroups()).containsExactly("assistants");
-              assertThat(props.getCandidateUsers()).containsExactly("jarvis", "friday");
-              assertThat(props.getChangedAttributes()).containsExactly("assignee");
-              assertThat(props.getDueDate()).isEqualTo("2019-04-22T00:00:00Z");
-              assertThat(props.getFollowUpDate()).isEqualTo("2018-04-23T00:00:00Z");
-              assertThat(props.getFormKey()).isEqualTo(1);
-              assertThat(props.getPriority()).isEqualTo(10);
-              assertThat(props.getUserTaskKey()).isEqualTo(123);
-            }),
-        new ActivateJobWithUserTaskPropsTestCase(
-            "should activate job with empty user task properties",
-            new UserTaskProperties(),
-            props -> {
-              assertThat(props.getAction()).isNull();
-              assertThat(props.getAssignee()).isNull();
-              assertThat(props.getCandidateGroups()).isEmpty();
-              assertThat(props.getCandidateUsers()).isEmpty();
-              assertThat(props.getChangedAttributes()).isEmpty();
-              assertThat(props.getDueDate()).isNull();
-              assertThat(props.getFollowUpDate()).isNull();
-              assertThat(props.getFormKey()).isNull();
-              assertThat(props.getPriority()).isNull();
-              assertThat(props.getUserTaskKey()).isNull();
-            }),
-        new ActivateJobWithUserTaskPropsTestCase(
-            "should activate job with null user task properties",
-            null,
-            props -> assertThat(props).isNull()));
-  }
-
   @ParameterizedTest
   @MethodSource("userTaskPropertiesProvider")
   public void shouldActivateJobsWithUserTaskProperties(
@@ -246,6 +197,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   void shouldSetTimeoutFromDuration() {
     // given
     final Duration timeout = Duration.ofMinutes(2);
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
 
     // when
     client
@@ -265,6 +217,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   void shouldSetFetchVariables() {
     // given
     final List<String> fetchVariables = Arrays.asList("foo", "bar", "baz");
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
 
     // when
     client
@@ -285,6 +238,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   void shouldSetFetchVariablesAsVargs() {
     // given
     final String[] fetchVariables = new String[] {"foo", "bar", "baz"};
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
 
     // when
     client
@@ -302,6 +256,9 @@ public final class ActivateJobsRestTest extends ClientRestTest {
 
   @Test
   void shouldSetDefaultValues() {
+    // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
     // when
     client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
 
@@ -333,6 +290,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   void shouldSetRequestTimeout() {
     // given
     final Duration requestTimeout = Duration.ofHours(124);
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
 
     // when
     client
@@ -369,6 +327,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   @Test
   void shouldAllowSpecifyingTenantIdsAsList() {
     // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
     client
         .newActivateJobsCommand()
         .jobType("foo")
@@ -387,6 +346,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   @Test
   void shouldAllowSpecifyingTenantIdsAsVarArgs() {
     // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
     client
         .newActivateJobsCommand()
         .jobType("foo")
@@ -405,6 +365,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   @Test
   void shouldAllowSpecifyingTenantIds() {
     // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
     client
         .newActivateJobsCommand()
         .jobType("foo")
@@ -426,6 +387,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   @Test
   void shouldNotAccumulateTenantsOnSuccessiveOpen() {
     // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
     final ActivateJobsCommandStep3 command =
         client
             .newActivateJobsCommand()
@@ -519,12 +481,64 @@ public final class ActivateJobsRestTest extends ClientRestTest {
 
   @Test
   void shouldSetDefaultWorkerNameWhenMissingInCommand() {
+    // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
     // when
     client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(1).send().join();
 
     // then
     final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
     assertThat(request.getWorker()).isEqualTo(CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR);
+  }
+
+  private static Stream<ActivateJobWithUserTaskPropsTestCase> userTaskPropertiesProvider() {
+    return Stream.of(
+        new ActivateJobWithUserTaskPropsTestCase(
+            "should activate job with all user task properties set",
+            new UserTaskProperties()
+                .action("update")
+                .assignee("tony")
+                .addCandidateGroupsItem("assistants")
+                .addCandidateUsersItem("jarvis")
+                .addCandidateUsersItem("friday")
+                .addChangedAttributesItem("assignee")
+                .dueDate("2019-04-22T00:00:00Z")
+                .followUpDate("2018-04-23T00:00:00Z")
+                .formKey("1")
+                .priority(10)
+                .userTaskKey("123"),
+            props -> {
+              assertThat(props.getAction()).isEqualTo("update");
+              assertThat(props.getAssignee()).isEqualTo("tony");
+              assertThat(props.getCandidateGroups()).containsExactly("assistants");
+              assertThat(props.getCandidateUsers()).containsExactly("jarvis", "friday");
+              assertThat(props.getChangedAttributes()).containsExactly("assignee");
+              assertThat(props.getDueDate()).isEqualTo("2019-04-22T00:00:00Z");
+              assertThat(props.getFollowUpDate()).isEqualTo("2018-04-23T00:00:00Z");
+              assertThat(props.getFormKey()).isEqualTo(1);
+              assertThat(props.getPriority()).isEqualTo(10);
+              assertThat(props.getUserTaskKey()).isEqualTo(123);
+            }),
+        new ActivateJobWithUserTaskPropsTestCase(
+            "should activate job with empty user task properties",
+            new UserTaskProperties(),
+            props -> {
+              assertThat(props.getAction()).isNull();
+              assertThat(props.getAssignee()).isNull();
+              assertThat(props.getCandidateGroups()).isEmpty();
+              assertThat(props.getCandidateUsers()).isEmpty();
+              assertThat(props.getChangedAttributes()).isEmpty();
+              assertThat(props.getDueDate()).isNull();
+              assertThat(props.getFollowUpDate()).isNull();
+              assertThat(props.getFormKey()).isNull();
+              assertThat(props.getPriority()).isNull();
+              assertThat(props.getUserTaskKey()).isNull();
+            }),
+        new ActivateJobWithUserTaskPropsTestCase(
+            "should activate job with null user task properties",
+            null,
+            props -> assertThat(props).isNull()));
   }
 
   private static final class VariablesPojo {

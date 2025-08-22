@@ -22,14 +22,16 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
+import io.camunda.client.protocol.rest.FormResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionFilter;
+import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
-import io.camunda.client.util.RestGatewayService;
 import java.util.List;
 import java.util.Objects;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class QueryProcessDefinitionTest extends ClientRestTest {
@@ -49,8 +51,12 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
 
   @Test
   void shouldGetProcessDefinitionForm() {
-    // when
+    // given
     final long processDefinitionKey = 1L;
+    gatewayService.onProcessDefinitionFormRequest(
+        processDefinitionKey, Instancio.create(FormResult.class).formKey("2"));
+
+    // when
     client.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
 
     // then
@@ -62,11 +68,17 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
 
   @Test
   public void shouldGetProcessDefinitionByKey() {
+    // given
+    final long processDefinitionKey = 123L;
+    gatewayService.onProcessDefinitionRequest(
+        processDefinitionKey,
+        Instancio.create(ProcessDefinitionResult.class).processDefinitionKey("2"));
+
     // when
-    client.newProcessDefinitionGetRequest(123L).send().join();
+    client.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
 
     // then
-    final LoggedRequest request = RestGatewayService.getLastRequest();
+    final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
     assertThat(request.getUrl()).isEqualTo("/v2/process-definitions/123");
     assertThat(request.getBodyAsString()).isEmpty();

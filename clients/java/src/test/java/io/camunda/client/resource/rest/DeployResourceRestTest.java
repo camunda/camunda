@@ -63,10 +63,14 @@ public class DeployResourceRestTest extends ClientRestTest {
   private static final String FORM_FILENAME_2 = "/form/test-form-2.form";
   private static final String DEFAULT_TENANT = "<default>";
 
+  private static final DeploymentResult DUMMY_RESPONSE =
+      new DeploymentResult().deploymentKey("1").tenantId(DEFAULT_TENANT);
+
   @Test
   public void shouldDeployResourceFromFile() {
     // given
     final String path = DeployResourceTest.class.getResource(BPMN_1_FILENAME).getPath();
+    gatewayService.onDeploymentsRequest(DUMMY_RESPONSE);
 
     // when
     client.newDeployResourceCommand().addResourceFile(path).send().join();
@@ -81,6 +85,7 @@ public class DeployResourceRestTest extends ClientRestTest {
   public void shouldDeployRequestFromClasspath() {
     // given
     final String filename = BPMN_1_FILENAME.substring(1);
+    gatewayService.onDeploymentsRequest(DUMMY_RESPONSE);
 
     // when
     client.newDeployResourceCommand().addResourceFromClasspath(filename).send().join();
@@ -96,6 +101,7 @@ public class DeployResourceRestTest extends ClientRestTest {
     // given
     final String filename = BPMN_1_FILENAME;
     final InputStream resourceAsStream = DeployResourceTest.class.getResourceAsStream(filename);
+    gatewayService.onDeploymentsRequest(DUMMY_RESPONSE);
 
     // when
     client.newDeployResourceCommand().addResourceStream(resourceAsStream, filename).send().join();
@@ -111,6 +117,7 @@ public class DeployResourceRestTest extends ClientRestTest {
     // given
     final String filename = BPMN_1_FILENAME;
     final byte[] bytes = getBytes(filename);
+    gatewayService.onDeploymentsRequest(DUMMY_RESPONSE);
 
     // when
     client.newDeployResourceCommand().addResourceBytes(bytes, filename).send().join();
@@ -126,6 +133,7 @@ public class DeployResourceRestTest extends ClientRestTest {
     // given
     final String filename = BPMN_1_FILENAME;
     final String xml = new String(getBytes(filename));
+    gatewayService.onDeploymentsRequest(DUMMY_RESPONSE);
 
     // when
     client
@@ -145,6 +153,7 @@ public class DeployResourceRestTest extends ClientRestTest {
     // given
     final String filename = BPMN_1_FILENAME;
     final String xml = new String(getBytes(filename), StandardCharsets.UTF_8);
+    gatewayService.onDeploymentsRequest(DUMMY_RESPONSE);
 
     // when
     client.newDeployResourceCommand().addResourceStringUtf8(xml, filename).send().join();
@@ -165,6 +174,7 @@ public class DeployResourceRestTest extends ClientRestTest {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, processModel);
     final byte[] expectedBytes = outStream.toByteArray();
+    gatewayService.onDeploymentsRequest(DUMMY_RESPONSE);
 
     // when
     client.newDeployResourceCommand().addProcessModel(processModel, filename).send().join();
@@ -182,6 +192,7 @@ public class DeployResourceRestTest extends ClientRestTest {
     final String tenantId = "test-tenant";
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
+    gatewayService.onDeploymentsRequest(DUMMY_RESPONSE);
 
     // when
     client

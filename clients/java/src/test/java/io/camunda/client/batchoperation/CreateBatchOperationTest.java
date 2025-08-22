@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceFilter;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
@@ -27,12 +28,17 @@ import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperation
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.util.List;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public final class CreateBatchOperationTest extends ClientRestTest {
 
   @Test
   public void shouldSendProcessInstanceCancelCommandEmptyFilter() {
+    // given
+    gatewayService.onCancelProcessInstancesRequest(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
     // when
     client
         .newCreateBatchOperationCommand()
@@ -52,6 +58,10 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
   @Test
   public void shouldSendProcessInstanceCancelCommandWithFilter() {
+    // given
+    gatewayService.onCancelProcessInstancesRequest(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
     // when
     client
         .newCreateBatchOperationCommand()
@@ -71,6 +81,10 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
   @Test
   public void shouldSendProcessInstanceMigrationCommand() {
+    // given
+    gatewayService.onMigrateProcessInstancesRequest(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
     // when
     client
         .newCreateBatchOperationCommand()
@@ -104,6 +118,10 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
   @Test
   public void shouldSendProcessInstanceModificationCommand() {
+    // given
+    gatewayService.onModifyProcessInstances(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
     // when
     client
         .newCreateBatchOperationCommand()

@@ -29,6 +29,7 @@ import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class ElementInstanceTest extends ClientRestTest {
@@ -344,8 +345,17 @@ public class ElementInstanceTest extends ClientRestTest {
 
   @Test
   public void shouldGetElementInstance() {
-    // when
+    // given
     final long elementInstanceKey = 0xC00L;
+    gatewayService.onElementInstanceRequest(
+        elementInstanceKey,
+        Instancio.create(ElementInstanceResult.class)
+            .elementInstanceKey("1")
+            .processInstanceKey("2")
+            .incidentKey("3")
+            .processDefinitionKey("4"));
+
+    // when
     client.newElementInstanceGetRequest(elementInstanceKey).send().join();
 
     // then

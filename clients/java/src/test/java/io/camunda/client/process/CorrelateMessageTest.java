@@ -20,12 +20,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.InternalClientException;
 import io.camunda.client.protocol.rest.MessageCorrelationRequest;
+import io.camunda.client.protocol.rest.MessageCorrelationResult;
 import io.camunda.client.util.ClientRestTest;
 import java.util.Collections;
 import java.util.Map;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 final class CorrelateMessageTest extends ClientRestTest {
+
+  private static final MessageCorrelationResult DUMMY_RESPONSE =
+      Instancio.create(MessageCorrelationResult.class).messageKey("1").processInstanceKey("2");
 
   @Test
   void shouldCorrelateMessageWithCorrelationKey() {
@@ -34,6 +39,7 @@ final class CorrelateMessageTest extends ClientRestTest {
     final String correlationKey = "correlationKey";
     final String tenantId = "tenant";
     final Map<String, Object> variables = Collections.singletonMap("foo", "bar");
+    gatewayService.onCorrelateMessageRequest(DUMMY_RESPONSE);
 
     // when
     client
@@ -60,6 +66,7 @@ final class CorrelateMessageTest extends ClientRestTest {
     final String messageName = "name";
     final String tenantId = "tenant";
     final Map<String, Object> variables = Collections.singletonMap("foo", "bar");
+    gatewayService.onCorrelateMessageRequest(DUMMY_RESPONSE);
 
     // when
     client

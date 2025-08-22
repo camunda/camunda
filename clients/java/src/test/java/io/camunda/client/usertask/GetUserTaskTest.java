@@ -19,19 +19,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.UserTaskResult;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class GetUserTaskTest extends ClientRestTest {
   @Test
   void shouldGetUserTask() {
-    // when
+    // given
     final long userTaskKey = 1L;
+    gatewayService.onUserTaskRequest(
+        userTaskKey,
+        Instancio.create(UserTaskResult.class)
+            .formKey("1")
+            .elementInstanceKey("2")
+            .processDefinitionKey("3")
+            .processInstanceKey("4")
+            .userTaskKey("5"));
+
+    // when
     client.newUserTaskGetRequest(userTaskKey).send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/user-tasks/" + userTaskKey);
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getUserTaskUrl(userTaskKey));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 }

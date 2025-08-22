@@ -23,14 +23,20 @@ import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.util.*;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class QueryBatchOperationTest extends ClientRestTest {
 
   @Test
   public void shouldGetBatchOperationByKey() {
+    // given
+    final String batchOperationKey = "123";
+    gatewayService.onBatchOperationRequest(
+        batchOperationKey, Instancio.create(BatchOperationResponse.class));
+
     // when
-    client.newBatchOperationGetRequest("123").send().join();
+    client.newBatchOperationGetRequest(batchOperationKey).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();

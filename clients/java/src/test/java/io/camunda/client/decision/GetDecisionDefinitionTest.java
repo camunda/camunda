@@ -19,15 +19,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.DecisionDefinitionResult;
 import io.camunda.client.util.ClientRestTest;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public final class GetDecisionDefinitionTest extends ClientRestTest {
 
   @Test
   void shouldGetDecisionDefinition() {
-    // when
+    // given
     final long decisionDefinitionKey = 1L;
+    gatewayService.onDecisionDefinitionRequest(
+        decisionDefinitionKey,
+        Instancio.create(DecisionDefinitionResult.class)
+            .decisionDefinitionKey("1")
+            .decisionRequirementsKey("3"));
+
+    // when
     client.newDecisionDefinitionGetRequest(decisionDefinitionKey).send().join();
 
     // then

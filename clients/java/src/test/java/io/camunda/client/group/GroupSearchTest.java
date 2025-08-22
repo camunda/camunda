@@ -27,7 +27,9 @@ import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.GroupUserSort;
 import io.camunda.client.api.search.sort.MappingRuleSort;
 import io.camunda.client.api.search.sort.RoleSort;
+import io.camunda.client.protocol.rest.GroupResult;
 import io.camunda.client.util.ClientRestTest;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class GroupSearchTest extends ClientRestTest {
@@ -36,6 +38,9 @@ public class GroupSearchTest extends ClientRestTest {
 
   @Test
   public void testGroupSearch() {
+    // given
+    gatewayService.onGroupRequest(GROUP_ID, Instancio.create(GroupResult.class));
+
     // when
     client.newGroupGetRequest(GROUP_ID).send().join();
 

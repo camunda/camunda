@@ -117,6 +117,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
   @Test
   public void shouldEvaluateStandaloneDecisionWithStringVariables() {
     // given
+    gatewayService.onEvaluateDecisionRequest(EVALUATE_DECISION_RESPONSE);
     client
         .newEvaluateDecisionCommand()
         .decisionKey(DECISION_KEY)
@@ -135,9 +136,11 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
   @Test
   public void shouldEvaluateStandaloneDecisionWithInputStreamVariables() {
     // given
+
     final String variables = "{\"foo\": \"bar\"}";
     final InputStream inputStream =
         new ByteArrayInputStream(variables.getBytes(StandardCharsets.UTF_8));
+    gatewayService.onEvaluateDecisionRequest(EVALUATE_DECISION_RESPONSE);
     client
         .newEvaluateDecisionCommand()
         .decisionKey(DECISION_KEY)
@@ -156,6 +159,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
   @Test
   public void shouldEvaluateStandaloneDecisionWithMapVariables() {
     // given
+    gatewayService.onEvaluateDecisionRequest(EVALUATE_DECISION_RESPONSE);
     client
         .newEvaluateDecisionCommand()
         .decisionKey(DECISION_KEY)
@@ -174,6 +178,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
   @Test
   public void shouldEvaluateStandaloneDecisionWithObjectVariables() {
     // given
+    gatewayService.onEvaluateDecisionRequest(EVALUATE_DECISION_RESPONSE);
     client
         .newEvaluateDecisionCommand()
         .decisionKey(DECISION_KEY)
@@ -194,6 +199,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     // given
     final String key = "key";
     final String value = "value";
+    gatewayService.onEvaluateDecisionRequest(EVALUATE_DECISION_RESPONSE);
     client
         .newEvaluateDecisionCommand()
         .decisionKey(DECISION_KEY)
@@ -241,6 +247,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
   public void shouldAllowSpecifyingTenantIdByDecisionId() {
     // given
     final String tenantId = "test-tenant";
+    gatewayService.onEvaluateDecisionRequest(EVALUATE_DECISION_RESPONSE);
 
     // when
     client.newEvaluateDecisionCommand().decisionId("dmn").tenantId(tenantId).send().join();
@@ -255,6 +262,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
   public void shouldAllowSpecifyingTenantIdByDecisionKey() {
     // given
     final String tenantId = "test-tenant";
+    gatewayService.onEvaluateDecisionRequest(EVALUATE_DECISION_RESPONSE);
 
     // when
     client.newEvaluateDecisionCommand().decisionKey(1L).tenantId(tenantId).send().join();
