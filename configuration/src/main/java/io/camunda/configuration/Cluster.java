@@ -47,6 +47,9 @@ public class Cluster {
   /** Configuration for the Raft protocol in the cluster. */
   private Raft raft = new Raft();
 
+  /** Monitoring configuration. */
+  private Monitoring monitoring = new Monitoring();
+
   public Metadata getMetadata() {
     return metadata;
   }
@@ -121,5 +124,13 @@ public class Cluster {
 
   public void setRaft(final Raft raft) {
     this.raft = raft;
+  }
+
+  public Monitoring getMonitoring() {
+    return monitoring;
+  }
+
+  public void setMonitoring(final Monitoring monitoring) {
+    this.monitoring = monitoring;
   }
 }

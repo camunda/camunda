@@ -172,6 +172,9 @@ public class BrokerBasedPropertiesOverride {
     populateFromClusterMetadata(override);
     populateFromClusterNetwork(override);
     // Rest of camunda.cluster.* sections
+
+    override.setExecutionMetricsExporterEnabled(
+        cluster.getMonitoring().isExecutionMetricsEnabled());
   }
 
   private void populateFromLongPolling(final BrokerBasedProperties override) {
