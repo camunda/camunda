@@ -93,7 +93,10 @@ public class BrokerBasedPropertiesOverride {
     // from camunda.data.* sections
     populateFromData(override);
 
-    populateExporter(override, "camundaExporter", "io.camunda.exporter.CamundaExporter", null);
+    if (unifiedConfiguration.getCamunda().getDisableCamundaExporter()) {
+      LOGGER.info("Default exporter camundaExporter has been disabled.");
+      populateExporter(override, "camundaExporter", "io.camunda.exporter.CamundaExporter", null);
+    }
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());
@@ -389,26 +392,27 @@ public class BrokerBasedPropertiesOverride {
       return;
     }
 
-    /* Load camunda exporter config map */
+    /* Load exporter config map */
 
-    final Map<String, ExporterCfg> exporters = override.getExporters();
-    final List<ExporterCfg> camundaExporters =
-        exporters.values().stream().filter(e -> e.getClassName().equals(className)).toList();
-    final ExporterCfg camundaExporter;
-    if (camundaExporters.isEmpty()) {
-      camundaExporter = new ExporterCfg();
-      camundaExporter.setJarPath(jarPath);
-      camundaExporter.setClassName(className);
-      camundaExporter.setArgs(new LinkedHashMap<>());
-      override.getExporters().put(exporterName, camundaExporter);
+    final List<ExporterCfg> exporters =
+        override.getExporters().values().stream()
+            .filter(e -> e.getClassName().equals(className))
+            .toList();
+
+    final ExporterCfg exporter;
+    if (exporters.isEmpty()) {
+      exporter = new ExporterCfg();
+      exporter.setJarPath(jarPath);
+      exporter.setClassName(className);
+      exporter.setArgs(new LinkedHashMap<>());
+      override.getExporters().put(exporterName, exporter);
     } else {
-      camundaExporter = camundaExporters.getFirst();
+      exporter = exporters.getFirst();
     }
 
     /* Override config map values */
 
-    LOGGER.info("Configuring camundaExporter using Unified Configuration...");
-    final Map<String, Object> args = camundaExporter.getArgs();
+    final Map<String, Object> args = exporter.getArgs();
     setArg(args, "connect.type", secondaryStorage.getType().name());
     setArg(args, "connect.url", database.getUrl());
   }

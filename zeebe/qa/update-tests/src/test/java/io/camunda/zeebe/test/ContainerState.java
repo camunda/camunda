@@ -139,6 +139,7 @@ final class ContainerState implements AutoCloseable {
             .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "64MB")
             .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
             .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
+            .withEnv("CAMUNDA_DISABLE_CAMUNDA_EXPORTER", "true")
             .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
             .withEnv(UNPROTECTED_API_ENV_VAR, "true")
             .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")

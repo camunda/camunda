@@ -22,6 +22,7 @@ public class Camunda {
   private System system = new System();
   private Data data = new Data();
   private Api api = new Api();
+  private boolean disableCamundaExporter = false;
 
   public Cluster getCluster() {
     return cluster;
@@ -53,5 +54,13 @@ public class Camunda {
 
   public void setApi(final Api api) {
     this.api = api;
+  }
+
+  public boolean getDisableCamundaExporter() {
+    return disableCamundaExporter;
+  }
+
+  public void setDisableCamundaExporter(boolean disableCamundaExporter) {
+    this.disableCamundaExporter = disableCamundaExporter;
   }
 }
