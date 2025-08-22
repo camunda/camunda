@@ -31,7 +31,7 @@ public final class CompleteUserTaskTest extends ClientRestTest {
   @Test
   void shouldCompleteUserTask() {
     // when
-    client.newUserTaskCompleteCommand(123L).send().join();
+    client.newCompleteUserTaskCommand(123L).send().join();
 
     // then
     final UserTaskCompletionRequest request =
@@ -43,7 +43,7 @@ public final class CompleteUserTaskTest extends ClientRestTest {
   @Test
   void shouldCompleteUserTaskWithAction() {
     // when
-    client.newUserTaskCompleteCommand(123L).action("foo").send().join();
+    client.newCompleteUserTaskCommand(123L).action("foo").send().join();
 
     // then
     final UserTaskCompletionRequest request =
@@ -56,7 +56,7 @@ public final class CompleteUserTaskTest extends ClientRestTest {
   void shouldCompleteUserTaskWithVariables() {
     // when
 
-    client.newUserTaskCompleteCommand(123L).variables(singletonMap("foo", "bar")).send().join();
+    client.newCompleteUserTaskCommand(123L).variables(singletonMap("foo", "bar")).send().join();
 
     // then
     final UserTaskCompletionRequest request =
@@ -73,7 +73,7 @@ public final class CompleteUserTaskTest extends ClientRestTest {
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
-    assertThatThrownBy(() -> client.newUserTaskCompleteCommand(123L).send().join())
+    assertThatThrownBy(() -> client.newCompleteUserTaskCommand(123L).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }

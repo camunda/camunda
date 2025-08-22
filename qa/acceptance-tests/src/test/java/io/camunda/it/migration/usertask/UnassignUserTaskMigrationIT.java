@@ -47,7 +47,7 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
 
     final long taskKey = USER_TASK_KEYS.get("second");
 
-    migrator.getCamundaClient().newUserTaskUnassignCommand(taskKey).send().join();
+    migrator.getCamundaClient().newUnassignUserTaskCommand(taskKey).send().join();
 
     shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
   }
@@ -77,7 +77,7 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
             PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
     final var taskKey = waitFor88CreatedTaskToBeImportedReturningId(migrator, piKey);
 
-    migrator.getCamundaClient().newUserTaskUnassignCommand(taskKey).send().join();
+    migrator.getCamundaClient().newUnassignUserTaskCommand(taskKey).send().join();
 
     shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
   }

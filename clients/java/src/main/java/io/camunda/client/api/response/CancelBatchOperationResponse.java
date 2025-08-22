@@ -13,10 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.command;
+package io.camunda.client.api.response;
 
-import io.camunda.client.api.response.ResetClockResponse;
-
-public interface ClockResetCommandStep1 extends FinalCommandStep<ResetClockResponse> {
-  // the place for new optional parameters
-}
+public interface CancelBatchOperationResponse {}

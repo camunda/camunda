@@ -239,8 +239,8 @@ final class StandaloneSchemaManagerIT {
                           .getFirst()
                           .getUserTaskKey(),
                   Objects::nonNull);
-      camundaClient.newUserTaskAssignCommand(userTaskKey).assignee("demo").send().join();
-      camundaClient.newUserTaskCompleteCommand(userTaskKey).send().join();
+      camundaClient.newAssignUserTaskCommand(userTaskKey).assignee("demo").send().join();
+      camundaClient.newCompleteUserTaskCommand(userTaskKey).send().join();
 
       // then -- process instance is completed
       Awaitility.await("process instance should be completed")

@@ -27,6 +27,7 @@ import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
 import java.lang.reflect.Modifier;
 import java.time.OffsetDateTime;
@@ -38,13 +39,18 @@ public class QueryProcessInstanceTest extends ClientRestTest {
 
   @Test
   public void shouldGetProcessInstanceByKey() {
+    // given
+    final long processInstanceKey = 123L;
+    gatewayService.onProcessInstanceRequest(processInstanceKey, new ProcessInstanceResult());
+
     // when
-    client.newProcessInstanceGetRequest(123L).send().join();
+    client.newProcessInstanceGetRequest(processInstanceKey).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
-    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/123");
+    assertThat(request.getUrl())
+        .isEqualTo(RestGatewayPaths.getProcessInstancesUrl(processInstanceKey));
     assertThat(request.getBodyAsString()).isEmpty();
   }
 
@@ -360,13 +366,18 @@ public class QueryProcessInstanceTest extends ClientRestTest {
 
   @Test
   public void shouldFetchProcessInstanceCallHierarchy() {
+    // given
+    final long processInstanceKey = 123L;
+    gatewayService.onProcessInstanceCallHierarchyRequest(processInstanceKey, new Object[0]);
+
     // when
-    client.newProcessInstanceGetCallHierarchyRequest(123L).send().join();
+    client.newProcessInstanceGetCallHierarchyRequest(processInstanceKey).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
-    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/123/call-hierarchy");
+    assertThat(request.getUrl())
+        .isEqualTo(RestGatewayPaths.getProcessInstanceCallHierarchyUrl(processInstanceKey));
     assertThat(request.getBodyAsString()).isEmpty();
   }
 

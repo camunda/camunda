@@ -487,7 +487,7 @@ public class TasklistTester {
                 flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
       }
     }
-    camundaClient.newUserTaskCompleteCommand(Long.valueOf(taskId)).variables(variables).send();
+    camundaClient.newCompleteUserTaskCommand(Long.valueOf(taskId)).variables(variables).send();
     return taskIsCompleted(flowNodeBpmnId);
   }
 

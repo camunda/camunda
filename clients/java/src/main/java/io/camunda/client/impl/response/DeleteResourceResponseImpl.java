@@ -21,4 +21,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 public class DeleteResourceResponseImpl implements DeleteResourceResponse {
 
   public DeleteResourceResponseImpl(final GatewayOuterClass.DeleteResourceResponse response) {}
+
+  public DeleteResourceResponseImpl(final Void nothing) {}
 }

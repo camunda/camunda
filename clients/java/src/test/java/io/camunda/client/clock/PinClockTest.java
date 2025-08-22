@@ -40,7 +40,7 @@ public final class PinClockTest extends ClientRestTest {
     final long timestamp = 1742461285000L;
 
     // when
-    client.newClockPinCommand().time(timestamp).send().join();
+    client.newPinClockCommand().time(timestamp).send().join();
 
     // then
     assertThat(RestGatewayService.getLastRequest())
@@ -53,7 +53,7 @@ public final class PinClockTest extends ClientRestTest {
   @Test
   void shouldRaiseIllegalArgumentExceptionWhenNegativeTimestampProvided() {
     // when / then
-    assertThatThrownBy(() -> client.newClockPinCommand().time(-1L).send().join())
+    assertThatThrownBy(() -> client.newPinClockCommand().time(-1L).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("timestamp must be not negative");
   }
@@ -66,7 +66,7 @@ public final class PinClockTest extends ClientRestTest {
   @MethodSource("validInstantValues")
   void shouldPinClockToInstant(final Instant validInstant) {
     // when
-    client.newClockPinCommand().time(validInstant).send().join();
+    client.newPinClockCommand().time(validInstant).send().join();
 
     // then
     assertThat(RestGatewayService.getLastRequest())
@@ -89,7 +89,7 @@ public final class PinClockTest extends ClientRestTest {
   void shouldRaiseIllegalArgumentExceptionWhenInvalidInstantProvided(
       final Instant invalidInstant, final String expectedMessage) {
     // when / then
-    assertThatThrownBy(() -> client.newClockPinCommand().time(invalidInstant).send().join())
+    assertThatThrownBy(() -> client.newPinClockCommand().time(invalidInstant).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(expectedMessage);
   }

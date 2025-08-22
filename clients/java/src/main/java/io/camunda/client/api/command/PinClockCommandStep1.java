@@ -18,7 +18,7 @@ package io.camunda.client.api.command;
 import io.camunda.client.api.response.PinClockResponse;
 import java.time.Instant;
 
-public interface ClockPinCommandStep1 extends FinalCommandStep<PinClockResponse> {
+public interface PinClockCommandStep1 extends FinalCommandStep<PinClockResponse> {
 
   /**
    * Specifies the exact time to which the Zeebe engine's internal clock should be pinned using an
@@ -28,7 +28,7 @@ public interface ClockPinCommandStep1 extends FinalCommandStep<PinClockResponse>
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  ClockPinCommandStep1 time(long timestamp);
+  PinClockCommandStep1 time(long timestamp);
 
   /**
    * Specifies the exact time to which the Zeebe engine's internal clock should be pinned using an
@@ -38,5 +38,5 @@ public interface ClockPinCommandStep1 extends FinalCommandStep<PinClockResponse>
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  ClockPinCommandStep1 time(Instant instant);
+  PinClockCommandStep1 time(Instant instant);
 }

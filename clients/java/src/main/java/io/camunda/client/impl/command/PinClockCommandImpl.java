@@ -17,25 +17,26 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.ClockPinCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.PinClockCommandStep1;
 import io.camunda.client.api.response.PinClockResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.PinClockResponseImpl;
 import io.camunda.client.protocol.rest.ClockPinRequest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ClockPinCommandImpl implements ClockPinCommandStep1 {
+public class PinClockCommandImpl implements PinClockCommandStep1 {
 
   private final ClockPinRequest request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public ClockPinCommandImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public PinClockCommandImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -43,14 +44,14 @@ public class ClockPinCommandImpl implements ClockPinCommandStep1 {
   }
 
   @Override
-  public ClockPinCommandStep1 time(final long timestamp) {
+  public PinClockCommandStep1 time(final long timestamp) {
     ArgumentUtil.ensureNotNegative("timestamp", timestamp);
     request.setTimestamp(timestamp);
     return this;
   }
 
   @Override
-  public ClockPinCommandStep1 time(final Instant instant) {
+  public PinClockCommandStep1 time(final Instant instant) {
     ArgumentUtil.ensureNotNull("instant", instant);
     ArgumentUtil.ensureNotBefore("instant", instant, Instant.EPOCH);
     return time(instant.toEpochMilli());
@@ -65,7 +66,12 @@ public class ClockPinCommandImpl implements ClockPinCommandStep1 {
   @Override
   public CamundaFuture<PinClockResponse> send() {
     final HttpCamundaFuture<PinClockResponse> result = new HttpCamundaFuture<>();
-    httpClient.put("/clock", jsonMapper.toJson(request), httpRequestConfig.build(), result);
+    httpClient.put(
+        "/clock",
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        PinClockResponseImpl::new,
+        result);
     return result;
   }
 }

@@ -203,20 +203,20 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   }
 
   public void completeZeebeUserTask(final long userTaskKey) {
-    camundaClient.newUserTaskCompleteCommand(userTaskKey).send().join();
+    camundaClient.newCompleteUserTaskCommand(userTaskKey).send().join();
   }
 
   public void assignUserTask(final long userTaskKey, final String assigneeId) {
-    camundaClient.newUserTaskAssignCommand(userTaskKey).assignee(assigneeId).send().join();
+    camundaClient.newAssignUserTaskCommand(userTaskKey).assignee(assigneeId).send().join();
   }
 
   public void unassignUserTask(final long userTaskKey) {
-    camundaClient.newUserTaskUnassignCommand(userTaskKey).send().join();
+    camundaClient.newUnassignUserTaskCommand(userTaskKey).send().join();
   }
 
   public void updateCandidateGroupForUserTask(final long userTaskKey, final String candidateGroup) {
     camundaClient
-        .newUserTaskUpdateCommand(userTaskKey)
+        .newUpdateUserTaskCommand(userTaskKey)
         .candidateGroups(candidateGroup)
         .send()
         .join();

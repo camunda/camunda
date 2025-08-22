@@ -358,7 +358,7 @@ final class StandaloneBackupManagerIT {
 
   private void completeUserTask(final long userTaskKey) {
     try (final var camundaClient = camunda.newClientBuilder().build()) {
-      camundaClient.newUserTaskCompleteCommand(userTaskKey).execute();
+      camundaClient.newCompleteUserTaskCommand(userTaskKey).execute();
     }
   }
 

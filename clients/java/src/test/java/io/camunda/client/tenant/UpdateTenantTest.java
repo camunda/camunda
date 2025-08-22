@@ -22,7 +22,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.TenantUpdateRequest;
+import io.camunda.client.protocol.rest.TenantUpdateResult;
 import io.camunda.client.util.ClientRestTest;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class UpdateTenantTest extends ClientRestTest {
@@ -33,6 +35,9 @@ public class UpdateTenantTest extends ClientRestTest {
 
   @Test
   void shouldUpdateTenantName() {
+    // given
+    gatewayService.onUpdateTenantRequest(TENANT_ID, Instancio.create(TenantUpdateResult.class));
+
     // when
     client.newUpdateTenantCommand(TENANT_ID).name(UPDATED_NAME).send().join();
 
@@ -43,6 +48,9 @@ public class UpdateTenantTest extends ClientRestTest {
 
   @Test
   void shouldUpdateTenantDescription() {
+    // given
+    gatewayService.onUpdateTenantRequest(TENANT_ID, Instancio.create(TenantUpdateResult.class));
+
     // when
     client.newUpdateTenantCommand(TENANT_ID).description(UPDATED_DESCRIPTION).send().join();
 
@@ -53,6 +61,9 @@ public class UpdateTenantTest extends ClientRestTest {
 
   @Test
   void shouldUpdateTenantNameAndDescription() {
+    // given
+    gatewayService.onUpdateTenantRequest(TENANT_ID, Instancio.create(TenantUpdateResult.class));
+
     // when
     client
         .newUpdateTenantCommand(TENANT_ID)

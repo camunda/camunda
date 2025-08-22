@@ -20,14 +20,26 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.util.ClientRestTest;
 import java.time.Duration;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
 
+  private static final ProcessInstanceResult DUMMY_RESPONSE =
+      Instancio.create(ProcessInstanceResult.class)
+          .processInstanceKey("1")
+          .parentProcessInstanceKey("2")
+          .parentElementInstanceKey("3")
+          .processDefinitionKey("4");
+
   @Test
   public void shouldCreateProcessInstanceByProcessInstanceKey() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newCreateInstanceCommand()
@@ -46,6 +58,9 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
 
   @Test
   public void shouldCreateProcessInstanceByBpmnProcessIdAndVersion() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newCreateInstanceCommand()
@@ -64,6 +79,9 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
 
   @Test
   public void shouldCreateProcessInstanceWithStringVariables() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newCreateInstanceCommand()
@@ -81,6 +99,9 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
 
   @Test
   public void shouldCreateProcessInstanceWithSingleVariable() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     final String key = "key";
     final String value = "value";
@@ -100,6 +121,9 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
 
   @Test
   public void shouldUseDefaultTenantId() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newCreateInstanceCommand()
@@ -120,6 +144,7 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
     // given
     final String bpmnProcessId = "testProcess";
     final String tenantId = "test-tenant";
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
 
     // when
     client
@@ -143,6 +168,7 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
     final String bpmnProcessId = "testProcess";
     final int version = 3;
     final String tenantId = "test-tenant";
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
 
     // when
     client
@@ -165,6 +191,7 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
     // given
     final Long processDefinitionKey = 1L;
     final String tenantId = "test-tenant";
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
 
     // when
     client

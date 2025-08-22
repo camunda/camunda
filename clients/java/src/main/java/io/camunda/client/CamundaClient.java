@@ -33,8 +33,6 @@ import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
-import io.camunda.client.api.command.ClockPinCommandStep1;
-import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
@@ -60,7 +58,9 @@ import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.client.api.command.PinClockCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
+import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
@@ -596,7 +596,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long userTaskKey = ..;
    *
    * camundaClient
-   *  .newUserTaskCompleteCommand(userTaskKey)
+   *  .newCompleteUserTaskCommand(userTaskKey)
    *  .variables(map)
    *  .send();
    * </pre>
@@ -610,7 +610,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  CompleteUserTaskCommandStep1 newUserTaskCompleteCommand(long userTaskKey);
+  CompleteUserTaskCommandStep1 newCompleteUserTaskCommand(long userTaskKey);
 
   /**
    * Command to assign a user task.
@@ -619,7 +619,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long userTaskKey = ..;
    *
    * camundaClient
-   *  .newUserTaskAssignCommand(userTaskKey)
+   *  .newAssignUserTaskCommand(userTaskKey)
    *  .assignee(newAssignee)
    *  .send();
    * </pre>
@@ -630,7 +630,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  AssignUserTaskCommandStep1 newUserTaskAssignCommand(long userTaskKey);
+  AssignUserTaskCommandStep1 newAssignUserTaskCommand(long userTaskKey);
 
   /**
    * Command to update a user task.
@@ -639,7 +639,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long userTaskKey = ..;
    *
    * camundaClient
-   *  .newUserTaskUpdateCommand(userTaskKey)
+   *  .newUpdateUserTaskCommand(userTaskKey)
    *  .candidateGroups(newCandidateGroups)
    *  .send();
    * </pre>
@@ -650,7 +650,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  UpdateUserTaskCommandStep1 newUserTaskUpdateCommand(long userTaskKey);
+  UpdateUserTaskCommandStep1 newUpdateUserTaskCommand(long userTaskKey);
 
   /**
    * Command to unassign a user task.
@@ -659,7 +659,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long userTaskKey = ..;
    *
    * camundaClient
-   *  .newUserTaskUnassignCommand(userTaskKey)
+   *  .newUnassignUserTaskCommand(userTaskKey)
    *  .send();
    * </pre>
    *
@@ -669,7 +669,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(long userTaskKey);
+  UnassignUserTaskCommandStep1 newUnassignUserTaskCommand(long userTaskKey);
 
   /**
    * Command to update the retries and/or the timeout of a job.
@@ -737,13 +737,13 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>{@code
    * final long pinnedTime = 1742461285000L; // Thu, Mar 20, 2025 09:01:25 GMT+0000
    * camundaClient
-   *  .newClockPinCommand()
+   *  .newPinClockCommand()
    *  .time(pinnedTime)
    *  .send();
    *
    * final Instant futureInstant = Instant.now().plus(Duration.ofDays(7));
    * camundaClient
-   *  .newClockPinCommand()
+   *  .newPinClockCommand()
    *  .time(futureInstant)
    *  .send();
    * }</pre>
@@ -754,7 +754,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command that allows setting either a timestamp or an instant
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
-  ClockPinCommandStep1 newClockPinCommand();
+  PinClockCommandStep1 newPinClockCommand();
 
   /**
    * Command to reset the Zeebe engine's internal clock to the system time.
@@ -764,7 +764,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>{@code
    * camundaClient
-   *  .newClockResetCommand()
+   *  .newResetClockCommand()
    *  .send();
    * }</pre>
    *
@@ -774,7 +774,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
-  ClockResetCommandStep1 newClockResetCommand();
+  ResetClockCommandStep1 newResetClockCommand();
 
   /**
    * Gets a process definition by key.

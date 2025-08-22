@@ -21,8 +21,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.GroupUpdateRequest;
+import io.camunda.client.protocol.rest.GroupUpdateResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class UpdateGroupTest extends ClientRestTest {
@@ -33,6 +35,9 @@ public class UpdateGroupTest extends ClientRestTest {
 
   @Test
   void shouldUpdateGroup() {
+    // given
+    gatewayService.onUpdateGroupRequest(GROUP_ID, Instancio.create(GroupUpdateResult.class));
+
     // when
     client
         .newUpdateGroupCommand(GROUP_ID)

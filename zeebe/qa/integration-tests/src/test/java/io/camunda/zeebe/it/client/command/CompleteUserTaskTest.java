@@ -45,7 +45,7 @@ class CompleteUserTaskTest {
   @Test
   void shouldCompleteUserTask() {
     // when
-    client.newUserTaskCompleteCommand(userTaskKey).send().join();
+    client.newCompleteUserTaskCommand(userTaskKey).send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskCompleted(
@@ -59,7 +59,7 @@ class CompleteUserTaskTest {
   @Test
   void shouldCompleteUserTaskWithAction() {
     // when
-    client.newUserTaskCompleteCommand(userTaskKey).action("foo").send().join();
+    client.newCompleteUserTaskCommand(userTaskKey).action("foo").send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskCompleted(
@@ -74,7 +74,7 @@ class CompleteUserTaskTest {
   void shouldCompleteUserTaskWithVariables() {
     // when
 
-    client.newUserTaskCompleteCommand(userTaskKey).variables(Map.of("foo", "bar")).send().join();
+    client.newCompleteUserTaskCommand(userTaskKey).variables(Map.of("foo", "bar")).send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskCompleted(
@@ -85,10 +85,10 @@ class CompleteUserTaskTest {
   @Test
   void shouldRejectIfJobIsAlreadyCompleted() {
     // given
-    client.newUserTaskCompleteCommand(userTaskKey).send().join();
+    client.newCompleteUserTaskCommand(userTaskKey).send().join();
 
     // when / then
-    assertThatThrownBy(() -> client.newUserTaskCompleteCommand(userTaskKey).send().join())
+    assertThatThrownBy(() -> client.newCompleteUserTaskCommand(userTaskKey).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }

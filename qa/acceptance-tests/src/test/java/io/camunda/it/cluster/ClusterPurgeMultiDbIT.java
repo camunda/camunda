@@ -167,7 +167,7 @@ public class ClusterPurgeMultiDbIT {
 
     // THEN
     assertThatChangesAreApplied(planChangeResponse);
-    assertThatEntityNotFound(() -> client.newUserTaskCompleteCommand(userTaskKey.get()).send());
+    assertThatEntityNotFound(() -> client.newCompleteUserTaskCommand(userTaskKey.get()).send());
 
     Awaitility.await("until user task query returns empty list")
         .atMost(Duration.ofSeconds(2 * TIMEOUT))

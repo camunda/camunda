@@ -22,6 +22,7 @@ import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1.Unassign
 import io.camunda.client.api.response.UnassignRoleFromClientResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignRoleFromClientResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -67,6 +68,7 @@ public class UnassignRoleFromClientCommandImpl
         "/roles/" + roleId + "/clients/" + clientId,
         null, // No request body needed
         httpRequestConfig.build(),
+        UnassignRoleFromClientResponseImpl::new,
         result);
     return result;
   }

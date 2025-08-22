@@ -17,6 +17,7 @@ import io.camunda.client.api.command.JobChangeset;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.UpdateJobResponse;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -150,9 +151,11 @@ public class UpdateJobTest {
     final var initialDeadline = job.getDeadline();
 
     // when
-    client.newUpdateJobCommand(jobKey).update(jobChangeset).send().join();
+    final UpdateJobResponse response =
+        client.newUpdateJobCommand(jobKey).update(jobChangeset).send().join();
 
     // then
+    assertThat(response).isNotNull().isInstanceOf(UpdateJobResponse.class);
     assertTimeoutIncreased(initialDeadline, jobKey, true);
     assertRetriesUpdated(jobKey, true, retries);
   }

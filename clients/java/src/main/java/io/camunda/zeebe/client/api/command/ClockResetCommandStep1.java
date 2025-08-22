@@ -19,7 +19,7 @@ import io.camunda.zeebe.client.api.response.ResetClockResponse;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
- *     io.camunda.client.api.command.ClockResetCommandStep1}
+ *     io.camunda.client.api.command.ResetClockCommandStep1}
  */
 @Deprecated
 public interface ClockResetCommandStep1 extends FinalCommandStep<ResetClockResponse> {

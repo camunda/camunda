@@ -21,7 +21,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.sort.TenantSort;
+import io.camunda.client.protocol.rest.TenantResult;
 import io.camunda.client.util.ClientRestTest;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class SearchTenantTest extends ClientRestTest {
@@ -30,6 +32,9 @@ public class SearchTenantTest extends ClientRestTest {
 
   @Test
   public void shouldSearchTenantByTenantId() {
+    // given
+    gatewayService.onTenantRequest(TENANT_ID, Instancio.create(TenantResult.class));
+
     // when
     client.newTenantGetRequest(TENANT_ID).send().join();
 

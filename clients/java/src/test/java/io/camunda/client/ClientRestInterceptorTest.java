@@ -102,7 +102,7 @@ public class ClientRestInterceptorTest {
 
     // when
     final Future<CompleteUserTaskResponse> response =
-        client.newUserTaskCompleteCommand(1234L).send();
+        client.newCompleteUserTaskCommand(1234L).send();
 
     // then
     assertThatThrownBy(() -> response.get())

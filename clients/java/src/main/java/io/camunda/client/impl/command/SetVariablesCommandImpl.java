@@ -95,6 +95,7 @@ public final class SetVariablesCommandImpl extends CommandWithVariables<SetVaria
         "/element-instances/" + elementInstanceKey + "/variables",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        SetVariablesResponseImpl::new,
         result);
     return result;
   }

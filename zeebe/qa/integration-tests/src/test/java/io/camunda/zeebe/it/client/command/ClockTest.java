@@ -58,7 +58,7 @@ class ClockTest {
   @Test
   void shouldPinClockToTimestamp() {
     // when
-    client.newClockPinCommand().time(FIXED_TIME).send().join();
+    client.newPinClockCommand().time(FIXED_TIME).send().join();
 
     // then
     assertClockPinned(c -> assertThat(c).hasTime(FIXED_TIME));
@@ -67,7 +67,7 @@ class ClockTest {
   @Test
   void shouldPinClockToInstant() {
     // when
-    client.newClockPinCommand().time(FUTURE_FIXED_INSTANT).send().join();
+    client.newPinClockCommand().time(FUTURE_FIXED_INSTANT).send().join();
 
     // then
     assertClockPinned(c -> assertThat(c).hasTime(FIXED_TIME));
@@ -76,7 +76,7 @@ class ClockTest {
   @Test
   void shouldRejectPinOperationIfNoTimestampProvided() {
     // when / then
-    assertThatThrownBy(() -> client.newClockPinCommand().send().join())
+    assertThatThrownBy(() -> client.newPinClockCommand().send().join())
         .isInstanceOf(ProblemException.class)
         .extracting(e -> (ProblemException) e)
         .satisfies(
@@ -90,7 +90,7 @@ class ClockTest {
   @Test
   void shouldResetClock() {
     // when
-    client.newClockResetCommand().send().join();
+    client.newResetClockCommand().send().join();
 
     // then
     assertClockResetted(c -> assertThat(c).hasTime(0L));
@@ -111,7 +111,7 @@ class ClockTest {
         resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess("simple_process").startEvent().endEvent().done());
 
-    client.newClockPinCommand().time(validInstant).send().join();
+    client.newPinClockCommand().time(validInstant).send().join();
 
     // when: create a process instance while clock is pinned
     final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
@@ -134,7 +134,7 @@ class ClockTest {
             Bpmn.createExecutableProcess("simple_process").startEvent().endEvent().done());
 
     // and: pin the clock to a fixed time
-    client.newClockPinCommand().time(FUTURE_FIXED_INSTANT).send().join();
+    client.newPinClockCommand().time(FUTURE_FIXED_INSTANT).send().join();
 
     // when: create a process instance while clock is pinned
     final long firstProcessInstanceKey =
@@ -153,7 +153,7 @@ class ClockTest {
         });
 
     // when: reset the clock back to the current system time
-    client.newClockResetCommand().send().join();
+    client.newResetClockCommand().send().join();
 
     // and: create a new process instance after the clock reset
     final long secondProcessInstanceKey =
@@ -176,7 +176,7 @@ class ClockTest {
     final Instant timerInstant = PAST_FIXED_INSTANT.plus(Duration.ofDays(5));
 
     // when: pin the clock to a time before the timer event
-    client.newClockPinCommand().time(PAST_FIXED_INSTANT).send().join();
+    client.newPinClockCommand().time(PAST_FIXED_INSTANT).send().join();
 
     // deploy a process with an intermediate timer event set to the past date
     final long processDefinitionKey =
@@ -201,7 +201,7 @@ class ClockTest {
                 "Timer event should be activated at the time set before the timer"));
 
     // when: pin the clock to the exact timer time
-    client.newClockPinCommand().time(timerInstant).send().join();
+    client.newPinClockCommand().time(timerInstant).send().join();
 
     // then: ensure the timer event completes when the clock is pinned to the timer time
     assertElementRecordInState(
@@ -222,7 +222,7 @@ class ClockTest {
     final Instant timerInstant = PAST_FIXED_INSTANT.plus(timerDuration);
 
     // when: pin the clock to the time in the past before the timer duration
-    client.newClockPinCommand().time(PAST_FIXED_INSTANT).send().join();
+    client.newPinClockCommand().time(PAST_FIXED_INSTANT).send().join();
 
     // deploy a process with an intermediate timer event based on duration
     final long processDefinitionKey =
@@ -247,7 +247,7 @@ class ClockTest {
                 "Timer event should be activated at the instant in the past"));
 
     // when: pin the clock to the timer's calculated completion time (instant + duration)
-    client.newClockPinCommand().time(timerInstant).send().join();
+    client.newPinClockCommand().time(timerInstant).send().join();
 
     // then: ensure the timer event completes when the clock reaches the calculated timer time
     assertElementRecordInState(
@@ -286,7 +286,7 @@ class ClockTest {
                 r.getTimestamp(), "Timer event should be activated near the current time"));
 
     // when: pin the clock to the timer date
-    client.newClockPinCommand().time(FUTURE_FIXED_INSTANT).send().join();
+    client.newPinClockCommand().time(FUTURE_FIXED_INSTANT).send().join();
 
     // then
     assertElementRecordInState(
@@ -312,7 +312,7 @@ class ClockTest {
                 .done());
 
     // when: pin the clock to the timer date
-    client.newClockPinCommand().time(FUTURE_FIXED_INSTANT).send().join();
+    client.newPinClockCommand().time(FUTURE_FIXED_INSTANT).send().join();
 
     // then
     final long processInstanceKey = getProcessInstanceKey(processDefinitionKey);
@@ -356,7 +356,7 @@ class ClockTest {
 
     // when: pin the clock to the timer date
     final Instant futureInstant = FUTURE_FIXED_INSTANT.plus(Duration.ofHours(1));
-    client.newClockPinCommand().time(futureInstant).send().join();
+    client.newPinClockCommand().time(futureInstant).send().join();
 
     // then
     assertElementRecordInState(

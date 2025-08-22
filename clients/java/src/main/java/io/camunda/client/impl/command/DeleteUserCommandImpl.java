@@ -21,6 +21,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DeleteUserResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.DeleteUserResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -47,7 +48,8 @@ public class DeleteUserCommandImpl implements DeleteUserCommandStep1 {
   public CamundaFuture<DeleteUserResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("username", username);
     final HttpCamundaFuture<DeleteUserResponse> result = new HttpCamundaFuture<>();
-    httpClient.delete("/users/" + username, httpRequestConfig.build(), result);
+    httpClient.delete(
+        "/users/" + username, httpRequestConfig.build(), DeleteUserResponseImpl::new, result);
     return result;
   }
 }

@@ -64,7 +64,7 @@ public class FilterIT {
   @Test
   void shouldFailWithSecondFilterThrowingException() {
     // when / then
-    assertThatThrownBy(() -> client.newUserTaskCompleteCommand(12345).send().join())
+    assertThatThrownBy(() -> client.newCompleteUserTaskCommand(12345).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("No user task interactions while testing");
   }

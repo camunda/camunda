@@ -19,19 +19,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.VariableResult;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class GetVariableTest extends ClientRestTest {
   @Test
   void shouldGetVariable() {
-    // when
+    // given
     final long variableKey = 1L;
+    gatewayService.onVariableRequest(
+        variableKey,
+        Instancio.create(VariableResult.class)
+            .variableKey("1")
+            .processInstanceKey("2")
+            .scopeKey("3")
+            .processInstanceKey("4"));
+
+    // when
     client.newVariableGetRequest(variableKey).send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/variables/" + variableKey);
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getVariableUrl(variableKey));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 }

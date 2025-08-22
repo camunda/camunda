@@ -128,7 +128,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
   private void handleSuccessResponse(
       final ApiEntity<HttpT> body, final int code, final String reason) {
     if (body == null) {
-      response.complete(null);
+      completeResponse(code, reason, null);
       return;
     }
 
@@ -153,8 +153,12 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       return;
     }
 
+    completeResponse(code, reason, body.response());
+  }
+
+  private void completeResponse(final int code, final String reason, final HttpT httpResponse) {
     try {
-      response.complete(transformer.transform(body.response()));
+      response.complete(transformer.transform(httpResponse));
     } catch (final Exception e) {
       response.completeExceptionally(new MalformedResponseException(code, reason, e));
     }

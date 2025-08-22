@@ -155,7 +155,7 @@ public class DataGenerator implements AutoCloseable {
           LOGGER.debug("Completing user task {}", item.getUserTaskKey());
           assertThat(
                   camundaClient
-                      .newUserTaskCompleteCommand(item.getUserTaskKey())
+                      .newCompleteUserTaskCommand(item.getUserTaskKey())
                       .send()
                       .toCompletableFuture())
               .succeedsWithin(timeout);

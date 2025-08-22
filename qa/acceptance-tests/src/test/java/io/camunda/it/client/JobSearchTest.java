@@ -110,7 +110,7 @@ public class JobSearchTest {
             .getFirst();
 
     camundaClient
-        .newUserTaskAssignCommand(userTask.getUserTaskKey())
+        .newAssignUserTaskCommand(userTask.getUserTaskKey())
         .assignee("testAssignee")
         .send();
 
@@ -134,7 +134,7 @@ public class JobSearchTest {
 
     waitForSingleUserTaskWithCreatedState();
     camundaClient
-        .newUserTaskAssignCommand(userTask.getUserTaskKey())
+        .newAssignUserTaskCommand(userTask.getUserTaskKey())
         .assignee("testAssignee")
         .send();
 
@@ -158,7 +158,7 @@ public class JobSearchTest {
 
     waitForSingleUserTaskWithCreatedState();
     camundaClient
-        .newUserTaskCompleteCommand(userTask.getUserTaskKey())
+        .newCompleteUserTaskCommand(userTask.getUserTaskKey())
         .variable("name", "test")
         .send();
 

@@ -22,6 +22,7 @@ import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1.UnassignU
 import io.camunda.client.api.response.UnassignUserFromGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignUserFromGroupResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -64,7 +65,10 @@ public class UnassignUserFromGroupCommandImpl
     ArgumentUtil.ensureNotNullNorEmpty("username", username);
     final HttpCamundaFuture<UnassignUserFromGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
-        "/groups/" + groupId + "/users/" + username, httpRequestConfig.build(), result);
+        "/groups/" + groupId + "/users/" + username,
+        httpRequestConfig.build(),
+        UnassignUserFromGroupResponseImpl::new,
+        result);
     return result;
   }
 }

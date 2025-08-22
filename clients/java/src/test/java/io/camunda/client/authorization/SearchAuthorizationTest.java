@@ -20,7 +20,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.AuthorizationResult;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class SearchAuthorizationTest extends ClientRestTest {
@@ -29,12 +32,16 @@ public class SearchAuthorizationTest extends ClientRestTest {
 
   @Test
   public void shouldSearchAuthorizationByAuthorizationKey() {
+    // given
+    gatewayService.onAuthorizationRequest(
+        AUTHORIZATION_KEY, Instancio.create(AuthorizationResult.class).authorizationKey("1"));
+
     // when
     client.newAuthorizationGetRequest(AUTHORIZATION_KEY).send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/authorizations/" + AUTHORIZATION_KEY);
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getAuthorizationUrl(AUTHORIZATION_KEY));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 

@@ -130,6 +130,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
         "/jobs/" + jobKey + "/failure",
         objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        FailJobResponseImpl::new,
         result);
     return result;
   }

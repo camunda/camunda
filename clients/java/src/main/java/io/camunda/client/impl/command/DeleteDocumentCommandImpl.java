@@ -24,6 +24,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DeleteDocumentResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.DeleteDocumentResponseImpl;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,7 +72,11 @@ public class DeleteDocumentCommandImpl implements DeleteDocumentCommandStep1 {
     }
     final HttpCamundaFuture<DeleteDocumentResponse> result = new HttpCamundaFuture<>();
     client.delete(
-        String.format("/documents/%s", documentId), queryParams, requestConfig.build(), result);
+        String.format("/documents/%s", documentId),
+        queryParams,
+        requestConfig.build(),
+        DeleteDocumentResponseImpl::new,
+        result);
     return result;
   }
 }

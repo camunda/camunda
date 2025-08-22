@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.UnassignGroupFromTenantResponse;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -62,9 +63,11 @@ class UnassignGroupFromTenantTest {
   @Test
   void shouldUnassignGroupFromTenant() {
     // when
-    client.newUnassignGroupFromTenantCommand(tenantId).groupId(groupId).send().join();
+    final UnassignGroupFromTenantResponse response =
+        client.newUnassignGroupFromTenantCommand(tenantId).groupId(groupId).send().join();
 
     // then
+    assertThat(response).isNotNull().isInstanceOf(UnassignGroupFromTenantResponse.class);
     ZeebeAssertHelper.assertGroupUnassignedFromTenant(
         tenantId,
         (tenant) -> {

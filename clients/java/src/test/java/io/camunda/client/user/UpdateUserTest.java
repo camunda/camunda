@@ -21,8 +21,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.camunda.client.protocol.rest.UserUpdateRequest;
+import io.camunda.client.protocol.rest.UserUpdateResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class UpdateUserTest extends ClientRestTest {
@@ -33,6 +35,9 @@ public class UpdateUserTest extends ClientRestTest {
 
   @Test
   void shouldUpdateUser() {
+    // given
+    gatewayService.onUpdateUserRequest(USERNAME, Instancio.create(UserUpdateResult.class));
+
     // when
     client.newUpdateUserCommand(USERNAME).name(NAME).email(EMAIL).password(PASSWORD).send().join();
 

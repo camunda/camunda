@@ -15,14 +15,16 @@
  */
 package io.camunda.client.tenant;
 
-import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.TenantCreateRequest;
+import io.camunda.client.protocol.rest.TenantCreateResult;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class CreateTenantTest extends ClientRestTest {
@@ -33,6 +35,9 @@ public class CreateTenantTest extends ClientRestTest {
 
   @Test
   void shouldCreateTenant() {
+    // given
+    gatewayService.onCreateTenantRequest(Instancio.create(TenantCreateResult.class));
+
     // when
     client
         .newCreateTenantCommand()
@@ -61,7 +66,8 @@ public class CreateTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnRequestError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants", () -> new ProblemDetail().title("Not Found").status(404));
+        RestGatewayPaths.getCreateTenantUrl(),
+        () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
@@ -73,10 +79,12 @@ public class CreateTenantTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionIfTenantAlreadyExists() {
     // given
+    gatewayService.onCreateTenantRequest(Instancio.create(TenantCreateResult.class));
     client.newCreateTenantCommand().tenantId(TENANT_ID).name(NAME).send().join();
 
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants", () -> new ProblemDetail().title("Conflict").status(409));
+        RestGatewayPaths.getCreateTenantUrl(),
+        () -> new ProblemDetail().title("Conflict").status(409));
 
     // when / then
     assertThatThrownBy(
@@ -89,7 +97,8 @@ public class CreateTenantTest extends ClientRestTest {
   void shouldHandleValidationErrorResponse() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants", () -> new ProblemDetail().title("Bad Request").status(400));
+        RestGatewayPaths.getCreateTenantUrl(),
+        () -> new ProblemDetail().title("Bad Request").status(400));
 
     // when / then
     assertThatThrownBy(

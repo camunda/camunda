@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.entry;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.MessagePublicationRequest;
+import io.camunda.client.protocol.rest.MessagePublicationResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
@@ -31,12 +32,19 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class PublishMessageRestTest extends ClientRestTest {
 
+  private static final MessagePublicationResult DUMMY_RESPONSE =
+      Instancio.create(MessagePublicationResult.class).messageKey("1");
+
   @Test
   public void shouldPublishMessage() {
+    // given
+    gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newPublishMessageCommand()
@@ -59,6 +67,9 @@ public class PublishMessageRestTest extends ClientRestTest {
 
   @Test
   public void shouldPublishMessageWithDefaultTtl() {
+    // given
+    gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);
+
     // when
     client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
 
@@ -70,6 +81,9 @@ public class PublishMessageRestTest extends ClientRestTest {
 
   @Test
   public void shouldPublishMessageWithStringVariables() {
+    // given
+    gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newPublishMessageCommand()
@@ -91,6 +105,7 @@ public class PublishMessageRestTest extends ClientRestTest {
     final String variables = "{\"foo\":\"bar\"}";
     final ByteArrayInputStream byteArrayInputStream =
         new ByteArrayInputStream(variables.getBytes());
+    gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);
 
     // when
     client
@@ -112,6 +127,7 @@ public class PublishMessageRestTest extends ClientRestTest {
     // given
     final Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
+    gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);
 
     // when
     client
@@ -130,6 +146,9 @@ public class PublishMessageRestTest extends ClientRestTest {
 
   @Test
   public void shouldPublishMessageWithObjectVariables() {
+    // given
+    gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newPublishMessageCommand()
@@ -147,6 +166,9 @@ public class PublishMessageRestTest extends ClientRestTest {
 
   @Test
   public void shouldPublishMessageWithSingleVariable() {
+    // given
+    gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);
+
     // when
     final String key = "key";
     final String value = "value";
@@ -166,6 +188,9 @@ public class PublishMessageRestTest extends ClientRestTest {
 
   @Test
   public void shouldPublishMessageWithoutCorrelationKey() {
+    // given
+    gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newPublishMessageCommand()
@@ -222,7 +247,10 @@ public class PublishMessageRestTest extends ClientRestTest {
 
   @Test
   public void shouldAllowSpecifyingTenantId() {
-    // given when
+    // given
+    gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);
+
+    // when
     client
         .newPublishMessageCommand()
         .messageName("")

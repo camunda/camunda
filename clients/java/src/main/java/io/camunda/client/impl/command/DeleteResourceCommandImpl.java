@@ -90,6 +90,7 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
         "/resources/" + resourceKey + "/deletion",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        DeleteResourceResponseImpl::new,
         result);
     return result;
   }

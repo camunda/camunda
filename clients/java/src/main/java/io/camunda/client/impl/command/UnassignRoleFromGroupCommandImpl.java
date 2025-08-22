@@ -22,6 +22,7 @@ import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1.UnassignR
 import io.camunda.client.api.response.UnassignRoleFromGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignRoleFromGroupResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -67,6 +68,7 @@ public class UnassignRoleFromGroupCommandImpl
         "/roles/" + roleId + "/groups/" + groupId,
         null, // No request body needed
         httpRequestConfig.build(),
+        UnassignRoleFromGroupResponseImpl::new,
         result);
     return result;
   }

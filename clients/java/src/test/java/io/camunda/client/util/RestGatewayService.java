@@ -15,23 +15,61 @@
  */
 package io.camunda.client.util;
 
+import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.client.protocol.rest.AuthorizationCreateResult;
+import io.camunda.client.protocol.rest.AuthorizationResult;
+import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
+import io.camunda.client.protocol.rest.BatchOperationResponse;
+import io.camunda.client.protocol.rest.DecisionDefinitionResult;
+import io.camunda.client.protocol.rest.DecisionInstanceResult;
+import io.camunda.client.protocol.rest.DecisionRequirementsResult;
 import io.camunda.client.protocol.rest.DeploymentResult;
+import io.camunda.client.protocol.rest.ElementInstanceResult;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
+import io.camunda.client.protocol.rest.FormResult;
+import io.camunda.client.protocol.rest.GroupCreateResult;
+import io.camunda.client.protocol.rest.GroupResult;
+import io.camunda.client.protocol.rest.GroupUpdateResult;
+import io.camunda.client.protocol.rest.IncidentResult;
 import io.camunda.client.protocol.rest.JobActivationResult;
+import io.camunda.client.protocol.rest.MappingRuleCreateResult;
+import io.camunda.client.protocol.rest.MessageCorrelationResult;
+import io.camunda.client.protocol.rest.MessagePublicationResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.ProcessDefinitionResult;
+import io.camunda.client.protocol.rest.ProcessInstanceResult;
+import io.camunda.client.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
+import io.camunda.client.protocol.rest.RoleCreateResult;
+import io.camunda.client.protocol.rest.RoleResult;
+import io.camunda.client.protocol.rest.RoleUpdateResult;
+import io.camunda.client.protocol.rest.SearchQueryResponse;
+import io.camunda.client.protocol.rest.SignalBroadcastResult;
+import io.camunda.client.protocol.rest.TenantCreateResult;
+import io.camunda.client.protocol.rest.TenantResult;
+import io.camunda.client.protocol.rest.TenantUpdateResult;
 import io.camunda.client.protocol.rest.TopologyResponse;
+import io.camunda.client.protocol.rest.UsageMetricsResponse;
+import io.camunda.client.protocol.rest.UserCreateResult;
+import io.camunda.client.protocol.rest.UserResult;
+import io.camunda.client.protocol.rest.UserTaskResult;
+import io.camunda.client.protocol.rest.UserUpdateResult;
+import io.camunda.client.protocol.rest.VariableResult;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
+import org.instancio.Instancio;
 
 public class RestGatewayService {
 
   private static final CamundaObjectMapper JSON_MAPPER = new CamundaObjectMapper();
+  private static final SearchQueryResponse DUMMY_SEARCH_RESULT =
+      Instancio.create(SearchQueryResponse.class);
 
   private final WireMockRuntimeInfo mockInfo;
 
@@ -42,49 +80,49 @@ public class RestGatewayService {
      * registration can simply invoke commands and send requests.
      * Otherwise, Wiremock fails if no stubs are registered but a request is sent.
      */
-    mockInfo.getWireMock().register(WireMock.any(WireMock.anyUrl()).willReturn(WireMock.ok()));
+    this.mockInfo.getWireMock().register(WireMock.any(WireMock.anyUrl()).willReturn(WireMock.ok()));
+    // Register a default search response
+    register(WireMock.post(WireMock.urlPathMatching(".*/search")), DUMMY_SEARCH_RESULT);
+    // Register an empty default statistics response
+    register(
+        WireMock.any(WireMock.urlPathMatching(".*/statistics/.*")),
+        Collections.singletonMap("items", Collections.emptyList()));
   }
 
   /**
    * Register the given response for job activation requests.
    *
-   * @param jobActivationResponse the response to provide upon a job activation request
+   * @param response the response to provide upon a job activation request
    */
-  public void onActivateJobsRequest(final JobActivationResult jobActivationResponse) {
-    mockInfo
-        .getWireMock()
-        .register(
-            WireMock.post(RestGatewayPaths.getJobActivationUrl())
-                .willReturn(WireMock.okJson(JSON_MAPPER.toJson(jobActivationResponse))));
+  public void onActivateJobsRequest(final JobActivationResult response) {
+    registerPost(RestGatewayPaths.getJobActivationUrl(), response);
   }
 
   /**
    * Register the given response for topology requests.
    *
-   * @param topologyResponse the response to provide upon a topology request
+   * @param response the response to provide upon a topology request
    */
-  public void onTopologyRequest(final TopologyResponse topologyResponse) {
-    mockInfo
-        .getWireMock()
-        .register(
-            WireMock.get(RestGatewayPaths.getTopologyUrl())
-                .willReturn(WireMock.okJson(JSON_MAPPER.toJson(topologyResponse))));
+  public void onTopologyRequest(final TopologyResponse response) {
+    registerGet(RestGatewayPaths.getTopologyUrl(), response);
   }
 
   public void onEvaluateDecisionRequest(final EvaluateDecisionResult response) {
-    mockInfo
-        .getWireMock()
-        .register(
-            WireMock.post(RestGatewayPaths.getEvaluateDecisionUrl())
-                .willReturn(WireMock.okJson(JSON_MAPPER.toJson(response))));
+    registerPost(RestGatewayPaths.getEvaluateDecisionUrl(), response);
   }
 
   public void onDeploymentsRequest(final DeploymentResult response) {
-    mockInfo
-        .getWireMock()
-        .register(
-            WireMock.post(RestGatewayPaths.getDeploymentsUrl())
-                .willReturn(WireMock.okJson(JSON_MAPPER.toJson(response))));
+    registerPost(RestGatewayPaths.getDeploymentsUrl(), response);
+  }
+
+  public void onUsageMetricsRequest(final UsageMetricsResponse response) {
+    register(
+        WireMock.get(WireMock.urlMatching(RestGatewayPaths.getUsageMetricsUrl() + ".*")), response);
+  }
+
+  public void onDecisionDefinitionRequest(
+      final long decisionDefinitionKey, final DecisionDefinitionResult response) {
+    registerGet(RestGatewayPaths.getDecisionDefinitionUrl(decisionDefinitionKey), response);
   }
 
   /**
@@ -133,5 +171,173 @@ public class RestGatewayService {
                             JSON_MAPPER.toJson(problemDetail),
                             problemDetail.getStatus() == null ? 400 : problemDetail.getStatus())
                         .withHeader("Content-Type", "application/problem+json")));
+  }
+
+  private void registerPost(final String url, final Object response) {
+    register(WireMock.post(url), response);
+  }
+
+  private void registerGet(final String url, final Object response) {
+    register(WireMock.get(url), response);
+  }
+
+  private void registerPut(final String url, final Object response) {
+    register(WireMock.put(url), response);
+  }
+
+  private void register(final MappingBuilder builder, final Object response) {
+    mockInfo
+        .getWireMock()
+        .register(builder.willReturn(WireMock.okJson(JSON_MAPPER.toJson(response))));
+  }
+
+  public void onCreateTenantRequest(final TenantCreateResult response) {
+    registerPost(RestGatewayPaths.getCreateTenantUrl(), response);
+  }
+
+  public void onCreateUserRequest(final UserCreateResult response) {
+    registerPost(RestGatewayPaths.getCreateUserUrl(), response);
+  }
+
+  public void onCorrelateMessageRequest(final MessageCorrelationResult response) {
+    registerPost(RestGatewayPaths.getMessageCorrelationUrl(), response);
+  }
+
+  public void onProcessInstanceCallHierarchyRequest(
+      final long processInstanceKey, final Object[] response) {
+    registerGet(RestGatewayPaths.getProcessInstanceCallHierarchyUrl(processInstanceKey), response);
+  }
+
+  public void onProcessInstanceRequest(
+      final long processInstanceKey, final ProcessInstanceResult response) {
+    registerGet(RestGatewayPaths.getProcessInstancesUrl(processInstanceKey), response);
+  }
+
+  public void onUpdateGroupRequest(final String groupId, final GroupUpdateResult response) {
+    registerPut(RestGatewayPaths.getGroupUrl(groupId), response);
+  }
+
+  public void onUpdateUserRequest(final String username, final UserUpdateResult response) {
+    registerPut(RestGatewayPaths.getUserUrl(username), response);
+  }
+
+  public void onProcessDefinitionFormRequest(
+      final long processDefinitionKey, final FormResult response) {
+    registerGet(RestGatewayPaths.getProcessDefinitionFormUrl(processDefinitionKey), response);
+  }
+
+  public void onProcessDefinitionRequest(
+      final long processDefinitionKey, final ProcessDefinitionResult response) {
+    registerGet(RestGatewayPaths.getProcessDefinitionUrl(processDefinitionKey), response);
+  }
+
+  public void onUserRequest(final String username, final UserResult response) {
+    registerGet(RestGatewayPaths.getUserUrl(username), response);
+  }
+
+  public void onCreateMappingRuleRequest(final MappingRuleCreateResult response) {
+    registerPost(RestGatewayPaths.getMappingRulesUrl(), response);
+  }
+
+  public void onCreateGroupRequest(final GroupCreateResult response) {
+    registerPost(RestGatewayPaths.getGroupsUrl(), response);
+  }
+
+  public void onCancelProcessInstancesRequest(final BatchOperationCreatedResult response) {
+    registerPost(RestGatewayPaths.getProcessInstancesCancelUrl(), response);
+  }
+
+  public void onMigrateProcessInstancesRequest(final BatchOperationCreatedResult response) {
+    registerPost(RestGatewayPaths.getProcessInstancesMigrateUrl(), response);
+  }
+
+  public void onModifyProcessInstances(final BatchOperationCreatedResult response) {
+    registerPost(RestGatewayPaths.getProcessInstancesModifyUrl(), response);
+  }
+
+  public void onCreateAuthorizationRequest(final AuthorizationCreateResult response) {
+    registerPost(RestGatewayPaths.getAuthorizationsUrl(), response);
+  }
+
+  public void onTenantRequest(final String tenantId, final TenantResult response) {
+    registerGet(RestGatewayPaths.getTenantUrl(tenantId), response);
+  }
+
+  public void onUpdateRoleRequest(final String roleId, final RoleUpdateResult response) {
+    registerPut(RestGatewayPaths.getRoleUrl(roleId), response);
+  }
+
+  public void onDecisionRequirementsRequest(
+      final long decisionRequirementsKey, final DecisionRequirementsResult response) {
+    registerGet(RestGatewayPaths.getDecisionRequirementsUrl(decisionRequirementsKey), response);
+  }
+
+  public void onCreateProcessInstanceRequest(final ProcessInstanceResult response) {
+    registerPost(RestGatewayPaths.getProcessInstancesUrl(), response);
+  }
+
+  public void onIncidentRequest(final long incidentKey, final IncidentResult response) {
+    registerGet(RestGatewayPaths.getIncidentUrl(incidentKey), response);
+  }
+
+  public void onUpdateTenantRequest(final String tenantId, final TenantUpdateResult response) {
+    registerPut(RestGatewayPaths.getTenantUrl(tenantId), response);
+  }
+
+  public void onDecisionInstanceRequest(
+      final String decisionInstanceId, final DecisionInstanceResult response) {
+    registerGet(RestGatewayPaths.getDecisionInstanceUrl(decisionInstanceId), response);
+  }
+
+  public void onPublishMessageRequest(final MessagePublicationResult response) {
+    registerPost(RestGatewayPaths.getMessagePublicationUrl(), response);
+  }
+
+  public void onGroupRequest(final String groupId, final GroupResult response) {
+    registerGet(RestGatewayPaths.getGroupUrl(groupId), response);
+  }
+
+  public void onUserTaskFormRequest(final long userTaskKey, final FormResult response) {
+    registerGet(RestGatewayPaths.getUserTaskFormUrl(userTaskKey), response);
+  }
+
+  public void onProcessInstanceSequenceFlowsRequest(
+      final long processInstanceKey, final ProcessInstanceSequenceFlowsQueryResult response) {
+    registerGet(RestGatewayPaths.getProcessInstanceSequenceFlowsUrl(processInstanceKey), response);
+  }
+
+  public void onBatchOperationRequest(
+      final String batchOperationKey, final BatchOperationResponse response) {
+    registerGet(RestGatewayPaths.getBatchOperationUrl(batchOperationKey), response);
+  }
+
+  public void onVariableRequest(final long variableKey, final VariableResult response) {
+    registerGet(RestGatewayPaths.getVariableUrl(variableKey), response);
+  }
+
+  public void onCreateRoleRequest(final RoleCreateResult response) {
+    registerPost(RestGatewayPaths.getRolesUrl(), response);
+  }
+
+  public void onAuthorizationRequest(
+      final long authorizationKey, final AuthorizationResult response) {
+    registerGet(RestGatewayPaths.getAuthorizationUrl(authorizationKey), response);
+  }
+
+  public void onUserTaskRequest(final long userTaskKey, final UserTaskResult response) {
+    registerGet(RestGatewayPaths.getUserTaskUrl(userTaskKey), response);
+  }
+
+  public void onElementInstanceRequest(
+      final long elementInstanceKey, final ElementInstanceResult response) {
+    registerGet(RestGatewayPaths.getElementInstanceUrl(elementInstanceKey), response);
+  }
+
+  public void onBroadcastSignalRequest(final SignalBroadcastResult response) {
+    registerPost(RestGatewayPaths.getBroadcastSignalUrl(), response);
+  }
+
+  public void onRoleRequest(final String roleId, final RoleResult response) {
+    registerGet(RestGatewayPaths.getRoleUrl(roleId), response);
   }
 }

@@ -24,12 +24,13 @@ import io.camunda.client.api.command.UpdateJobCommandStep1.UpdateJobCommandStep2
 import io.camunda.client.api.response.UpdateJobResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UpdateJobResponseImpl;
 import io.camunda.client.protocol.rest.JobUpdateRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class JobUpdateCommandImpl implements UpdateJobCommandStep1, UpdateJobCommandStep2 {
+public class UpdateJobCommandImpl implements UpdateJobCommandStep1, UpdateJobCommandStep2 {
 
   private final JobUpdateRequest httpRequestObject;
   private final HttpClient httpClient;
@@ -37,7 +38,7 @@ public class JobUpdateCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
   private final long jobKey;
   private final JsonMapper jsonMapper;
 
-  public JobUpdateCommandImpl(
+  public UpdateJobCommandImpl(
       final long jobKey, final HttpClient httpClient, final JsonMapper jsonMapper) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -56,7 +57,11 @@ public class JobUpdateCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
   public CamundaFuture<UpdateJobResponse> send() {
     final HttpCamundaFuture<UpdateJobResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
-        "/jobs/" + jobKey, jsonMapper.toJson(httpRequestObject), httpRequestConfig.build(), result);
+        "/jobs/" + jobKey,
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        UpdateJobResponseImpl::new,
+        result);
     return result;
   }
 

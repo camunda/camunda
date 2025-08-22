@@ -129,8 +129,9 @@ public final class HttpClient implements AutoCloseable {
       final String path,
       final String body,
       final RequestConfig requestConfig,
+      final JsonResponseTransformer<Void, RespT> transformer,
       final HttpCamundaFuture<RespT> result) {
-    post(path, body, requestConfig, Void.class, r -> null, result);
+    post(path, body, requestConfig, Void.class, transformer, result);
   }
 
   public <HttpT, RespT> void post(
@@ -191,6 +192,7 @@ public final class HttpClient implements AutoCloseable {
       final String path,
       final String body,
       final RequestConfig requestConfig,
+      final JsonResponseTransformer<Void, RespT> transformer,
       final HttpCamundaFuture<RespT> result) {
     sendRequest(
         Method.PUT,
@@ -199,7 +201,7 @@ public final class HttpClient implements AutoCloseable {
         body,
         requestConfig,
         Void.class,
-        r -> null,
+        transformer,
         result);
   }
 
@@ -225,8 +227,9 @@ public final class HttpClient implements AutoCloseable {
       final String path,
       final String body,
       final RequestConfig requestConfig,
+      final JsonResponseTransformer<Void, RespT> transformer,
       final HttpCamundaFuture<RespT> result) {
-    patch(path, body, requestConfig, Void.class, r -> null, result);
+    patch(path, body, requestConfig, Void.class, transformer, result);
   }
 
   public <HttpT, RespT> void patch(
@@ -248,17 +251,21 @@ public final class HttpClient implements AutoCloseable {
   }
 
   public <RespT> void delete(
-      final String path, final RequestConfig requestConfig, final HttpCamundaFuture<RespT> result) {
-    delete(path, Collections.emptyMap(), requestConfig, result);
+      final String path,
+      final RequestConfig requestConfig,
+      final JsonResponseTransformer<Void, RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    delete(path, Collections.emptyMap(), requestConfig, transformer, result);
   }
 
   public <RespT> void delete(
       final String path,
       final Map<String, String> queryParams,
       final RequestConfig requestConfig,
+      final JsonResponseTransformer<Void, RespT> transformer,
       final HttpCamundaFuture<RespT> result) {
     sendRequest(
-        Method.DELETE, path, queryParams, null, requestConfig, Void.class, r -> null, result);
+        Method.DELETE, path, queryParams, null, requestConfig, Void.class, transformer, result);
   }
 
   private <HttpT, RespT> void sendRequest(

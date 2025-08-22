@@ -21,6 +21,7 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.builder.UserTaskStateProperty;
+import io.camunda.client.protocol.rest.FormResult;
 import io.camunda.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskFilter;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
@@ -274,8 +276,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
   @Test
   void shouldReturnFormByUserTaskKey() {
-    // when
+    // given
     final long userTaskKey = 1L;
+    gatewayService.onUserTaskFormRequest(
+        userTaskKey, Instancio.create(FormResult.class).formKey("1"));
+
+    // when
     client.newUserTaskGetFormRequest(userTaskKey).send().join();
 
     // then

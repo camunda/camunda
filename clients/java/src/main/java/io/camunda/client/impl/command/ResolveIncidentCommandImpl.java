@@ -91,6 +91,7 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
         "/incidents/" + incidentKey + "/resolution",
         jsonMapper.toJson(incidentResolutionRequest),
         httpRequestConfig.build(),
+        ResolveIncidentResponseImpl::new,
         result);
     return result;
   }

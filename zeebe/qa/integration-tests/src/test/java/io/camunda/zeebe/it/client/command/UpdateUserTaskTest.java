@@ -49,7 +49,7 @@ class UpdateUserTaskTest {
   @Test
   void shouldUpdateUserTaskWithAction() {
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).action("foo").send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).action("foo").send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
@@ -59,7 +59,7 @@ class UpdateUserTaskTest {
   @Test
   void shouldUpdateUserTaskWithDueDate() {
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).dueDate(TEST_TIME).send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).dueDate(TEST_TIME).send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
@@ -69,7 +69,7 @@ class UpdateUserTaskTest {
   @Test
   void shouldUpdateUserTaskWithFollowUpDate() {
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).followUpDate(TEST_TIME).send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).followUpDate(TEST_TIME).send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
@@ -80,7 +80,7 @@ class UpdateUserTaskTest {
   void shouldUpdateUserTaskWithDueDateAndFollowUpDate() {
     // when
     client
-        .newUserTaskUpdateCommand(userTaskKey)
+        .newUpdateUserTaskCommand(userTaskKey)
         .dueDate(TEST_TIME)
         .followUpDate(TEST_TIME)
         .send()
@@ -98,7 +98,7 @@ class UpdateUserTaskTest {
   @Test
   void shouldUpdateUserTaskWithCandidateGroup() {
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).candidateGroups("foo").send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).candidateGroups("foo").send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
@@ -109,7 +109,7 @@ class UpdateUserTaskTest {
   @Test
   void shouldUpdateUserTaskWithCandidateGroups() {
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).candidateGroups("foo", "bar").send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).candidateGroups("foo", "bar").send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
@@ -121,7 +121,7 @@ class UpdateUserTaskTest {
   void shouldUpdateUserTaskWithCandidateGroupsList() {
     // when
     client
-        .newUserTaskUpdateCommand(userTaskKey)
+        .newUpdateUserTaskCommand(userTaskKey)
         .candidateGroups(List.of("foo", "bar"))
         .send()
         .join();
@@ -135,7 +135,7 @@ class UpdateUserTaskTest {
   @Test
   void shouldUpdateUserTaskWithCandidateUser() {
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).candidateUsers("foo").send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).candidateUsers("foo").send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
@@ -146,7 +146,7 @@ class UpdateUserTaskTest {
   @Test
   void shouldUpdateUserTaskWithCandidateUsers() {
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).candidateUsers("foo", "bar").send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).candidateUsers("foo", "bar").send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
@@ -158,7 +158,7 @@ class UpdateUserTaskTest {
   void shouldUpdateUserTaskWithCandidateUsersList() {
     // when
     client
-        .newUserTaskUpdateCommand(userTaskKey)
+        .newUpdateUserTaskCommand(userTaskKey)
         .candidateUsers(List.of("foo", "bar"))
         .send()
         .join();
@@ -172,10 +172,10 @@ class UpdateUserTaskTest {
   @Test
   void shouldClearUserTaskDueDate() {
     // given
-    client.newUserTaskUpdateCommand(userTaskKey).dueDate(TEST_TIME).send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).dueDate(TEST_TIME).send().join();
 
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).clearDueDate().send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).clearDueDate().send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
@@ -185,10 +185,10 @@ class UpdateUserTaskTest {
   @Test
   void shouldClearUserTaskFollowUpDate() {
     // given
-    client.newUserTaskUpdateCommand(userTaskKey).followUpDate(TEST_TIME).send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).followUpDate(TEST_TIME).send().join();
 
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).clearFollowUpDate().send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).clearFollowUpDate().send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
@@ -198,10 +198,10 @@ class UpdateUserTaskTest {
   @Test
   void shouldClearUserTaskCandidateGroups() {
     // given
-    client.newUserTaskUpdateCommand(userTaskKey).candidateGroups("foo").send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).candidateGroups("foo").send().join();
 
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).clearCandidateGroups().send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).clearCandidateGroups().send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
@@ -211,10 +211,10 @@ class UpdateUserTaskTest {
   @Test
   void shouldClearUserTaskCandidateUsers() {
     // given
-    client.newUserTaskUpdateCommand(userTaskKey).candidateUsers("foo").send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).candidateUsers("foo").send().join();
 
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).clearCandidateUsers().send().join();
+    client.newUpdateUserTaskCommand(userTaskKey).clearCandidateUsers().send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
@@ -224,7 +224,7 @@ class UpdateUserTaskTest {
   @Test
   void shouldRejectIfMissingUpdateData() {
     // when / then
-    assertThatThrownBy(() -> client.newUserTaskUpdateCommand(userTaskKey).send().join())
+    assertThatThrownBy(() -> client.newUpdateUserTaskCommand(userTaskKey).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
@@ -233,7 +233,7 @@ class UpdateUserTaskTest {
   public void shouldRejectIfMalformedDueDate() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUserTaskUpdateCommand(userTaskKey).dueDate("foo").send().join())
+            () -> client.newUpdateUserTaskCommand(userTaskKey).dueDate("foo").send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining("The provided due date 'foo' cannot be parsed as a date");
@@ -243,7 +243,7 @@ class UpdateUserTaskTest {
   public void shouldRejectIfMalformedFollowUpDate() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUserTaskUpdateCommand(userTaskKey).followUpDate("foo").send().join())
+            () -> client.newUpdateUserTaskCommand(userTaskKey).followUpDate("foo").send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining("The provided follow-up date 'foo' cannot be parsed as a date");
@@ -255,7 +255,7 @@ class UpdateUserTaskTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUserTaskUpdateCommand(userTaskKey)
+                    .newUpdateUserTaskCommand(userTaskKey)
                     .dueDate("bar")
                     .followUpDate("foo")
                     .send()

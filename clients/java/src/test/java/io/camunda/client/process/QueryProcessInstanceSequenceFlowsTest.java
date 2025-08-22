@@ -19,21 +19,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class QueryProcessInstanceSequenceFlowsTest extends ClientRestTest {
 
   @Test
   public void shouldGetProcessInstanceSequenceFlowsByKey() {
+    // given
+    final long processInstanceKey = 123L;
+    gatewayService.onProcessInstanceSequenceFlowsRequest(
+        processInstanceKey, Instancio.create(ProcessInstanceSequenceFlowsQueryResult.class));
+
     // when
-    client.newProcessInstanceSequenceFlowsRequest(123L).send().join();
+    client.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
-    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/123/sequence-flows");
+    assertThat(request.getUrl())
+        .isEqualTo(RestGatewayPaths.getProcessInstanceSequenceFlowsUrl(processInstanceKey));
     assertThat(request.getBodyAsString()).isEmpty();
   }
 }
