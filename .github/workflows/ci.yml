@@ -11,6 +11,7 @@ on:
       - main
       - stable/*
       - release-*
+      - dd-exporter-uc
   pull_request: {}
   merge_group: {}
   workflow_dispatch: {}
