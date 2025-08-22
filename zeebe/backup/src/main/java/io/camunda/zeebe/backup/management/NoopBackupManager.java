@@ -65,4 +65,10 @@ public class NoopBackupManager implements BackupManager {
     }
     LOG.warn("Attempted to update in progress backup, but cannot do it. {}", errorMessage);
   }
+
+  @Override
+  public void createFailedBackup(
+      final long checkpointId, final long checkpointPosition, final String failureReason) {
+    LOG.warn("Attempted to create failed backup, but cannot do it. {}", errorMessage);
+  }
 }

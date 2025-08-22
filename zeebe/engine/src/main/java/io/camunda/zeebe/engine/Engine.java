@@ -75,6 +75,29 @@ public class Engine implements RecordProcessor {
     this.securityConfig = securityConfig;
   }
 
+  /**
+   * Returns whether scaling is currently in progress. This can be used to determine if certain
+   * operations like checkpoint creation should be blocked.
+   *
+   * @return true if scaling is in progress, false otherwise
+   */
+  public boolean isScalingInProgress() {
+    if (processingState == null || processingState.getRoutingState() == null) {
+      return false;
+    }
+
+    final var routingState = processingState.getRoutingState();
+    if (!routingState.isInitialized()) {
+      return false;
+    }
+
+    // Scaling is in progress if desired partitions differ from current partitions
+    final var currentPartitions = routingState.currentPartitions();
+    final var desiredPartitions = routingState.desiredPartitions();
+
+    return !currentPartitions.equals(desiredPartitions);
+  }
+
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
     eventApplier = new EventAppliers();

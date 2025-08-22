@@ -140,6 +140,10 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
             context.getTypedRecordProcessorFactory(), engineCfg, context.getSecurityConfig());
     final List<RecordProcessor> recordProcessors =
         List.of(engine, context.getCheckpointProcessor());
+
+    // Set the scaling progress supplier to prevent checkpointing during scaling
+    context.getCheckpointProcessor().setScalingInProgressSupplier(engine::isScalingInProgress);
+
     final var scheduledCommandCache =
         BoundedScheduledCommandCache.ofIntent(
             new BoundedCommandCacheMetrics(context.getPartitionTransitionMeterRegistry()),

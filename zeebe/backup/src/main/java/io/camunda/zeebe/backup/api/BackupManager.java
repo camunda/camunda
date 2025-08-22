@@ -29,7 +29,7 @@ public interface BackupManager {
   /**
    * Get the status of the backup
    *
-   * @param checkpointId
+   * @param checkpointId id of the backup to get status for
    * @return backup status
    */
   ActorFuture<BackupStatus> getBackupStatus(long checkpointId);
@@ -45,7 +45,7 @@ public interface BackupManager {
   /**
    * Deletes the backup.
    *
-   * @param checkpointId
+   * @param checkpointId id of the backup to delete
    * @return future which will be completed after the backup is deleted.
    */
   ActorFuture<Void> deleteBackup(long checkpointId);
@@ -54,4 +54,15 @@ public interface BackupManager {
   ActorFuture<Void> closeAsync();
 
   void failInProgressBackup(long lastCheckpointId);
+
+  /**
+   * Creates a backup with failed status. This is used when a backup cannot be taken due to system
+   * constraints (e.g., scaling in progress) but the backup entry needs to be recorded.
+   *
+   * @param checkpointId id of the backup
+   * @param checkpointPosition position of the record until which would have been included in the
+   *     backup
+   * @param failureReason reason why the backup failed
+   */
+  void createFailedBackup(long checkpointId, long checkpointPosition, String failureReason);
 }

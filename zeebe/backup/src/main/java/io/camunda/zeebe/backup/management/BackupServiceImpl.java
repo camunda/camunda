@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.management;
 
+import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -310,5 +311,31 @@ final class BackupServiceImpl {
                       return null;
                     }));
     return availableBackupsFuture;
+  }
+
+  void createFailedBackup(
+      final BackupIdentifier backupId,
+      final long checkpointPosition,
+      final String failureReason,
+      final ConcurrencyControl executor) {
+    executor.run(
+        () -> {
+          LOG.debug(
+              "Creating failed backup {} at position {} due to: {}",
+              backupId,
+              checkpointPosition,
+              failureReason);
+
+          // Directly mark the backup as failed - this will create the backup entry with failed
+          // status
+          backupStore
+              .markFailed(backupId, failureReason)
+              .thenAccept(ignore -> LOG.trace("Successfully created failed backup {}", backupId))
+              .exceptionally(
+                  error -> {
+                    LOG.debug("Failed to create failed backup {}", backupId, error);
+                    return null;
+                  });
+        });
   }
 }

@@ -49,11 +49,16 @@ public final class CheckpointRecordsProcessor
   private final CheckpointMetrics metrics;
   private DbCheckpointState checkpointState;
   private ProcessingScheduleService executor;
+  private ScalingStatusSupplier scalingInProgressSupplier;
 
   public CheckpointRecordsProcessor(
       final BackupManager backupManager, final int partitionId, final MeterRegistry registry) {
     this.backupManager = backupManager;
     metrics = new CheckpointMetrics(registry);
+  }
+
+  public void setScalingInProgressSupplier(final ScalingStatusSupplier scalingInProgressSupplier) {
+    this.scalingInProgressSupplier = scalingInProgressSupplier;
   }
 
   @Override
@@ -63,8 +68,17 @@ public final class CheckpointRecordsProcessor
         new DbCheckpointState(
             recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
 
+    if (scalingInProgressSupplier == null) {
+      throw new IllegalStateException("Scaling in progress supplier is not initialized.");
+    }
+
     checkpointCreateProcessor =
-        new CheckpointCreateProcessor(checkpointState, backupManager, checkpointListeners, metrics);
+        new CheckpointCreateProcessor(
+            checkpointState,
+            backupManager,
+            checkpointListeners,
+            scalingInProgressSupplier,
+            metrics);
     checkpointConfirmBackupProcessor = new CheckpointConfirmBackupProcessor(checkpointState);
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(checkpointState, checkpointListeners, metrics);

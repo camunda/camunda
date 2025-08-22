@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.Backup
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
+import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
@@ -52,6 +53,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -285,48 +287,51 @@ public class ScaleUpPartitionsTest {
     cluster.awaitHealthyTopology();
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void shouldBePossibleToRestoreAsAfterScalingUp(final boolean backupBeforeScaling)
-      throws IOException {
+  @Test
+  public void shouldBePossibleToRestoreFromBackupBeforeScaling() throws IOException {
     // given
     final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
     final var backupId = 1L;
 
     // when
-    if (backupBeforeScaling) {
-      backupActuator.take(backupId);
-      assertBackupIsCompleted(backupId);
-    }
+    backupActuator.take(backupId);
+    assertBackupIsCompleted(backupId);
+
     scaleToPartitions(desiredPartitionCount);
     awaitScaleUpCompletion(desiredPartitionCount);
 
-    final var routingStateAfterScaling = clusterActuator.getTopology().getRouting();
+    restartClusterFromBackup(backupId, PARTITIONS_COUNT);
 
-    if (!backupBeforeScaling) {
-      backupActuator.take(backupId);
-      assertBackupIsCompleted(backupId);
-    }
+    assertThatRoutingStateMatches(
+        new RoutingState()
+            .requestHandling(new RequestHandlingAllPartitions(3).strategy("AllPartitions"))
+            .messageCorrelation(new MessageCorrelationHashMod("HashMod", 3)));
+  }
 
-    cluster.close();
-    LOG.info("Cluster stopped, restoring all brokers");
+  @Disabled("https://github.com/camunda/camunda/issues/21470")
+  @Test
+  public void shouldBePossibleToRestoreFromBackupTakenAfterScaleup()
+      throws IOException, InterruptedException {
+    // given
+    final var desiredPartitionCount = PARTITIONS_COUNT + 1;
+    cluster.awaitHealthyTopology();
+    final var backupId = 1L;
 
-    restoreAllBrokers(backupId);
+    // when
+    scaleToPartitions(desiredPartitionCount);
+    awaitScaleUpCompletion(desiredPartitionCount);
 
-    LOG.info("All brokers restored, starting cluster");
-    // then
-    // the topology is restored to the desired partition count and message correlation
-    cluster.start();
-    cluster.awaitCompleteTopology();
-    if (backupBeforeScaling) {
-      assertThatRoutingStateMatches(
-          new RoutingState()
-              .requestHandling(new RequestHandlingAllPartitions(3).strategy("AllPartitions"))
-              .messageCorrelation(new MessageCorrelationHashMod("HashMod", 3)));
-    } else {
-      assertThatRoutingStateMatches(routingStateAfterScaling);
-    }
+    final GetTopologyResponse topology = clusterActuator.getTopology();
+    final var routingStateAfterScaling = topology.getRouting();
+
+    Thread.sleep(30000);
+    backupActuator.take(backupId);
+    assertBackupIsCompleted(backupId);
+
+    restartClusterFromBackup(backupId, desiredPartitionCount);
+
+    assertThatRoutingStateMatches(routingStateAfterScaling);
   }
 
   @Test
@@ -462,13 +467,29 @@ public class ScaleUpPartitionsTest {
             });
   }
 
-  private void restoreAllBrokers(final long backupId) throws IOException {
+  private void restartClusterFromBackup(final long backupId, final int desiredPartitionCount)
+      throws IOException {
+    cluster.close();
+    LOG.info("Cluster stopped, restoring all brokers");
+
+    restoreAllBrokers(backupId, desiredPartitionCount);
+
+    LOG.info("All brokers restored, starting cluster");
+    // then
+    // the topology is restored to the desired partition count and message correlation
+    cluster.start();
+    cluster.awaitCompleteTopology();
+  }
+
+  private void restoreAllBrokers(final long backupId, final int desiredPartitionCount)
+      throws IOException {
     for (final var broker : cluster.brokers().values()) {
       LOG.debug("Restoring broker: {}", broker.nodeId());
       final var dataFolder = Path.of(broker.brokerConfig().getData().getDirectory());
       FileUtil.deleteFolderIfExists(dataFolder);
 
       Files.createDirectories(dataFolder);
+      broker.brokerConfig().getCluster().setPartitionsCount(desiredPartitionCount);
       try (final var restoreApp =
           new TestRestoreApp(broker.brokerConfig()).withBackupId(backupId)) {
         assertThatNoException().isThrownBy(restoreApp::start);

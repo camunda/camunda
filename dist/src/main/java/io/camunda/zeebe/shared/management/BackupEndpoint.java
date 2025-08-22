@@ -14,6 +14,7 @@ import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
@@ -198,6 +199,10 @@ public final class BackupEndpoint {
               default -> WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
             };
         message = rootError.getMessage();
+      } else if (error instanceof final BrokerRejectionException brokerRejectionException) {
+        errorCode = 409; // Conflict with concurrent scaling operation
+        message =
+            "Cannot take backup while scaling is in progress. Please retry after scaling is completed.";
       } else {
         errorCode = WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
         message = error.getMessage();
