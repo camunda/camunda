@@ -16,7 +16,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record UserTaskDbQuery(
-    UserTaskFilter filter, DbQuerySorting<UserTaskEntity> sort, DbQueryPage page) {
+    UserTaskFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
+    DbQuerySorting<UserTaskEntity> sort,
+    DbQueryPage page) {
 
   public static UserTaskDbQuery of(
       final Function<UserTaskDbQuery.Builder, ObjectBuilder<UserTaskDbQuery>> fn) {
@@ -28,6 +32,8 @@ public record UserTaskDbQuery(
     private static final UserTaskFilter EMPTY_FILTER = FilterBuilders.userTask().build();
 
     private UserTaskFilter filter;
+    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
+    private List<String> authorizedTenantIds = java.util.Collections.emptyList();
     private DbQuerySorting<UserTaskEntity> sort;
     private DbQueryPage page;
 
@@ -43,6 +49,16 @@ public record UserTaskDbQuery(
 
     public UserTaskDbQuery.Builder page(final DbQueryPage value) {
       page = value;
+      return this;
+    }
+
+    public UserTaskDbQuery.Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public UserTaskDbQuery.Builder authorizedTenantIds(final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
       return this;
     }
 
@@ -63,7 +79,9 @@ public record UserTaskDbQuery(
     public UserTaskDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new UserTaskDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      return new UserTaskDbQuery(filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }
