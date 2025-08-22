@@ -16,71 +16,45 @@
   </parent>
 
   <groupId>io.camunda.migration</groupId>
-  <artifactId>process-migration</artifactId>
-  <name>Process Migrator</name>
+  <artifactId>migration-commons</artifactId>
 
   <properties>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
-
   <dependencies>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-connect</artifactId>
-    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>webapps-schema</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.elastic.clients</groupId>
-      <artifactId>elasticsearch-java</artifactId>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.camunda.migration</groupId>
-      <artifactId>migration-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda.migration</groupId>
-      <artifactId>migration-commons</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opensearch.client</groupId>
-      <artifactId>opensearch-java</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-core</artifactId>
-    </dependency>
 
     <!-- Test -->
     <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>migration-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -90,24 +64,46 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-schema</artifactId>
+      <artifactId>camunda-schema-manager</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.opensearch</groupId>
+      <artifactId>opensearch-testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>elasticsearch</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-params</artifactId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda.migration</groupId>
-      <artifactId>migration-commons</artifactId>
-      <type>test-jar</type>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-test-util</artifactId>
-      <scope>test</scope>
+      <groupId>org.opensearch.client</groupId>
+      <artifactId>opensearch-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
     </dependency>
   </dependencies>
 
@@ -115,17 +111,15 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <!-- Need this to create the indices for ITs -->
-          <ignoredUnusedDeclaredDependencies>
-            <dep>io.camunda:operate-schema</dep>
-            <dep>org.testcontainers:junit-jupiter</dep>
-            <dep>io.camunda:zeebe-test-util</dep>
-          </ignoredUnusedDeclaredDependencies>
-        </configuration>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
-
     </plugins>
   </build>
 

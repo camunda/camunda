@@ -22,10 +22,10 @@ import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.commons.configuration.MigrationConfiguration;
+import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
+import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.process.adapter.Adapter;
-import io.camunda.migration.process.adapter.MigrationRepositoryIndex;
-import io.camunda.migration.process.adapter.ProcessorStep;
-import io.camunda.migration.process.config.ProcessMigrationProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
@@ -43,15 +43,14 @@ import java.util.stream.Collectors;
 public class ElasticsearchAdapter implements Adapter {
 
   private final ElasticsearchClient client;
-  private final ProcessMigrationProperties properties;
+  private final MigrationConfiguration properties;
   private final MigrationRepositoryIndex migrationRepositoryIndex;
   private final ProcessIndex processIndex;
   private final ImportPositionIndex importPositionIndex;
   private final RetryDecorator retryDecorator;
 
   public ElasticsearchAdapter(
-      final ProcessMigrationProperties properties,
-      final ConnectConfiguration connectConfiguration) {
+      final MigrationConfiguration properties, final ConnectConfiguration connectConfiguration) {
     this.properties = properties;
     migrationRepositoryIndex =
         new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), true);

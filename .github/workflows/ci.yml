@@ -766,7 +766,7 @@ jobs:
             module: "Zeebe"
           - group: qa-migration-integration
             name: "Migration QA"
-            maven-modules: "migration/process-migration"
+            maven-modules: "migration/process-migration,migration/usage-metric-migration"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-8-default

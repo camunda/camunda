@@ -21,6 +21,7 @@
 
   <modules>
     <module>migration-api</module>
+    <module>commons</module>
     <module>process-migration</module>
     <module>identity-migration</module>
     <module>usage-metric-migration</module>

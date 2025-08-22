@@ -13,19 +13,25 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.MigrationTimeoutException;
+import io.camunda.migration.commons.configuration.ConfigurationType;
+import io.camunda.migration.commons.configuration.MigrationProperties;
+import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
+import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.process.ProcessMigrator;
 import io.camunda.migration.process.TestData;
 import io.camunda.migration.process.adapter.Adapter;
-import io.camunda.migration.process.adapter.ProcessorStep;
 import io.camunda.migration.process.adapter.es.ElasticsearchAdapter;
 import io.camunda.migration.process.adapter.os.OpensearchAdapter;
 import io.camunda.migration.process.util.MigrationUtil;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -54,25 +60,26 @@ public class ProcessMigratorIT extends AdapterTest {
     writeProcessToIndex(entityToBeMigrated);
     writeProcessToIndex(entityNotToBeMigrated);
     writeImportPositionToIndex(TestData.completedImportPosition(1));
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 2);
+    awaitRecordsArePresent(ProcessEntity.class, indexFqnForClass(ProcessIndex.class), 2);
 
     // when
     final String migratedEntityId =
         adapter.migrate(List.of(MigrationUtil.migrate(entityToBeMigrated)));
     adapter.writeLastMigratedEntity(migratedEntityId);
-    awaitRecordsArePresent(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName(), 1);
+    awaitRecordsArePresent(
+        ProcessorStep.class, indexFqnForClass(MigrationRepositoryIndex.class), 1);
     refreshIndices();
 
     // then
     assertProcessorStepContentIsStored("1");
     final var processorRecords =
-        readRecords(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
+        readRecords(ProcessorStep.class, indexFqnForClass(MigrationRepositoryIndex.class));
     assertThat(processorRecords.size()).isEqualTo(1);
     assertThat(processorRecords.getFirst().getContent())
         .isEqualTo(String.valueOf(entityToBeMigrated.getKey()));
 
     final var processRecords =
-        readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+        readRecords(ProcessEntity.class, indexFqnForClass(ProcessIndex.class));
     assertThat(processRecords.size()).isEqualTo(2);
 
     assertThat(processRecords.stream().filter(r -> r.getKey() == 1).findFirst().get().getIsPublic())
@@ -107,14 +114,14 @@ public class ProcessMigratorIT extends AdapterTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldMigrateSuccessfully(final boolean isElasticsearch) throws IOException {
+  public void shouldMigrateSuccessfully(final boolean isElasticsearch) throws Exception {
     // given
     this.isElasticsearch = isElasticsearch;
     writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
     writeProcessToIndex(TestData.processEntityWithoutForm(2L));
     writeProcessToIndex(TestData.processEntityWithPublicFormKey(3L));
     writeImportPositionToIndex(TestData.completedImportPosition(1));
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 3);
+    awaitRecordsArePresent(ProcessEntity.class, indexFqnForClass(ProcessIndex.class), 3);
     // when
     runMigration();
     refreshIndices();
@@ -122,7 +129,7 @@ public class ProcessMigratorIT extends AdapterTest {
     // then
     assertProcessorStepContentIsStored("3");
 
-    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+    final var records = readRecords(ProcessEntity.class, indexFqnForClass(ProcessIndex.class));
     assertThat(records.size()).isEqualTo(3);
     /* Assertions for Process with FormId reference */
     assertThat(records.stream().filter(r -> r.getKey() == 1).findFirst().get().getIsPublic())
@@ -156,21 +163,21 @@ public class ProcessMigratorIT extends AdapterTest {
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   public void shouldMigrateSuccessfullyWithMultipleRounds(final boolean isElasticsearch)
-      throws IOException {
+      throws Exception {
     // given
     this.isElasticsearch = isElasticsearch;
     for (int i = 1; i <= 20; i++) {
       writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
     writeImportPositionToIndex(TestData.completedImportPosition(1));
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 20);
+    awaitRecordsArePresent(ProcessEntity.class, indexFqnForClass(ProcessIndex.class), 20);
 
     // when
     runMigration();
     refreshIndices();
 
     // then
-    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+    final var records = readRecords(ProcessEntity.class, indexFqnForClass(ProcessIndex.class));
 
     // Since the key field is marked as a keyword in ES/OS the sorting is done lexicographically
     assertProcessorStepContentIsStored("9");
@@ -183,21 +190,21 @@ public class ProcessMigratorIT extends AdapterTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldMigrateFromStoredId(final boolean isElasticsearch) throws IOException {
+  public void shouldMigrateFromStoredId(final boolean isElasticsearch) throws Exception {
     // given
     this.isElasticsearch = isElasticsearch;
     for (int i = 1; i <= 9; i++) {
       writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
     writeImportPositionToIndex(TestData.completedImportPosition(1));
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 9);
+    awaitRecordsArePresent(ProcessEntity.class, indexFqnForClass(ProcessIndex.class), 9);
     writeProcessorStepToIndex("5");
     // when
     runMigration();
     refreshIndices();
 
     // then
-    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+    final var records = readRecords(ProcessEntity.class, indexFqnForClass(ProcessIndex.class));
 
     // Since the key field is marked as a keyword in ES/OS the sorting is done lexicographically
     assertProcessorStepContentIsStored("9");
@@ -236,7 +243,7 @@ public class ProcessMigratorIT extends AdapterTest {
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   public void shouldNotMigrateWhenFinalStepIsPresent(final boolean isElasticsearch)
-      throws IOException {
+      throws Exception {
     // given
     this.isElasticsearch = isElasticsearch;
     properties.setBatchSize(1);
@@ -246,16 +253,16 @@ public class ProcessMigratorIT extends AdapterTest {
     writeProcessorStepToIndex("2");
     writeProcessToIndex(entityToBeMigrated);
     writeProcessToIndex(entityNotToBeMigrated);
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 2);
+    awaitRecordsArePresent(ProcessEntity.class, indexFqnForClass(ProcessIndex.class), 2);
 
     // when
     runMigration();
     refreshIndices();
 
     // then
-    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+    final var records = readRecords(ProcessEntity.class, indexFqnForClass(ProcessIndex.class));
     final var stepRecords =
-        readRecords(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
+        readRecords(ProcessorStep.class, indexFqnForClass(MigrationRepositoryIndex.class));
     assertThat(records.size()).isEqualTo(2);
     assertThat(records.stream().allMatch(r -> r.getIsPublic() == null)).isTrue();
     assertThat(records.stream().allMatch(r -> r.getFormId() == null)).isTrue();
@@ -267,7 +274,7 @@ public class ProcessMigratorIT extends AdapterTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldMigrateDuringCountdown(final boolean isElasticsearch) throws IOException {
+  public void shouldMigrateDuringCountdown(final boolean isElasticsearch) throws Exception {
     // given
     this.isElasticsearch = isElasticsearch;
     properties.setImporterFinishedTimeout(Duration.ofSeconds(2));
@@ -297,7 +304,7 @@ public class ProcessMigratorIT extends AdapterTest {
 
     // then
     assertProcessorStepContentIsStored("9");
-    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+    final var records = readRecords(ProcessEntity.class, indexFqnForClass(ProcessIndex.class));
     assertThat(records.size()).isEqualTo(9);
     assertThat(records.stream().allMatch(r -> r.getIsPublic().equals(Boolean.TRUE))).isTrue();
     assertThat(records.stream().allMatch(r -> r.getFormId().equals("testForm"))).isTrue();
@@ -313,12 +320,16 @@ public class ProcessMigratorIT extends AdapterTest {
         TestData.completedImportPosition(1), TestData.notCompletedImportPosition(2));
     esClient.indices().refresh();
     awaitRecordsArePresent(
-        ImportPositionEntity.class, importPositionIndex.getFullQualifiedName(), 2);
+        ImportPositionEntity.class, indexFqnForClass(ImportPositionIndex.class), 2);
     final var latch = new CountDownLatch(1);
 
     new Thread(
             () -> {
-              runMigration();
+              try {
+                runMigration();
+              } catch (final Exception e) {
+                throw new RuntimeException(e);
+              }
               latch.countDown();
             })
         .start();
@@ -329,10 +340,10 @@ public class ProcessMigratorIT extends AdapterTest {
     assertThat(latch.getCount()).isEqualTo(0);
 
     final var records =
-        readRecords(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
+        readRecords(ProcessorStep.class, indexFqnForClass(MigrationRepositoryIndex.class));
     assertThat(records).isEmpty();
     final var importPositionRecords =
-        readRecords(ImportPositionEntity.class, importPositionIndex.getFullQualifiedName());
+        readRecords(ImportPositionEntity.class, indexFqnForClass(ImportPositionIndex.class));
     assertThat(importPositionRecords.size()).isEqualTo(2);
     assertThat(importPositionRecords.stream().allMatch(ImportPositionEntity::getCompleted))
         .isTrue();
@@ -350,7 +361,7 @@ public class ProcessMigratorIT extends AdapterTest {
     writeImportPositionToIndex(TestData.completedImportPosition(1));
     refreshIndices();
     awaitRecordsArePresent(
-        ImportPositionEntity.class, importPositionIndex.getFullQualifiedName(), 1);
+        ImportPositionEntity.class, indexFqnForClass(ImportPositionIndex.class), 1);
 
     // when
     Awaitility.await()
@@ -364,7 +375,7 @@ public class ProcessMigratorIT extends AdapterTest {
 
     // then
     assertProcessorStepContentIsStored("2");
-    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+    final var records = readRecords(ProcessEntity.class, indexFqnForClass(ProcessIndex.class));
     assertThat(records.size()).isEqualTo(2);
     assertThat(records.stream().allMatch(r -> r.getIsPublic().equals(Boolean.TRUE))).isTrue();
     assertThat(records.stream().allMatch(r -> r.getFormKey().equals("camunda-forms:bpmn:testForm")))
@@ -384,9 +395,12 @@ public class ProcessMigratorIT extends AdapterTest {
     }
     // invalid URL
     connectConfiguration.setUrl("http://localhost:3333");
-    final var migrator = new ProcessMigrator(properties, connectConfiguration, meterRegistry);
     properties.getRetry().setMaxRetries(2);
     properties.getRetry().setMinRetryDelay(Duration.ofSeconds(1));
+    final var migrationProperties = new MigrationProperties();
+    migrationProperties.setMigration(Map.of(ConfigurationType.PROCESS, properties));
+    final var migrator =
+        new ProcessMigrator(migrationProperties, connectConfiguration, meterRegistry);
 
     final var ex =
         assertThatExceptionOfType(MigrationException.class).isThrownBy(migrator::call).actual();
@@ -433,23 +447,17 @@ public class ProcessMigratorIT extends AdapterTest {
     this.isElasticsearch = isElasticsearch;
     properties.setTimeout(Duration.ofSeconds(5));
 
-    final var migrator =
-        new ProcessMigrator(
-            properties, isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION, meterRegistry);
     writeImportPositionToIndex(TestData.notCompletedImportPosition(1));
 
     // when - then
-    final var maxTimeout =
-        properties.getTimeout().getSeconds()
-            + properties.getRetry().getMinRetryDelay().getSeconds()
-            + 1;
+    final var maxTimeout = properties.getTimeout().getSeconds() * 2;
     Awaitility.await()
         .atLeast(properties.getTimeout().getSeconds() - 1, TimeUnit.SECONDS)
         .atMost(maxTimeout, TimeUnit.SECONDS)
         .untilAsserted(
             () ->
                 assertThatExceptionOfType(MigrationException.class)
-                    .isThrownBy(migrator::call)
+                    .isThrownBy(this::runMigration)
                     .withCauseInstanceOf(MigrationTimeoutException.class)
                     .withMessageContaining("Process Migration timed out"));
   }
@@ -462,28 +470,25 @@ public class ProcessMigratorIT extends AdapterTest {
     this.isElasticsearch = isElasticsearch;
     properties.setTimeout(Duration.ofSeconds(1));
 
-    final var migrator =
-        new ProcessMigrator(
-            properties, isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION, meterRegistry);
     writeImportPositionToIndex(TestData.notCompletedImportPosition(1));
 
     for (int i = 1; i < 10; i++) {
       writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 9);
+    awaitRecordsArePresent(ProcessEntity.class, indexFqnForClass(ProcessIndex.class), 9);
 
     // when -  then
     Awaitility.await()
         .untilAsserted(
             () ->
                 assertThatExceptionOfType(MigrationException.class)
-                    .isThrownBy(migrator::call)
+                    .isThrownBy(this::runMigration)
                     .withCauseInstanceOf(MigrationTimeoutException.class)
                     .withMessageContaining("Process Migration timed out"));
     refreshIndices();
 
     // and
-    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+    final var records = readRecords(ProcessEntity.class, indexFqnForClass(ProcessIndex.class));
 
     assertProcessorStepContentIsStored("9");
     assertThat(records).hasSize(9);
@@ -502,15 +507,12 @@ public class ProcessMigratorIT extends AdapterTest {
     properties.setImporterFinishedTimeout(Duration.ofSeconds(10));
     properties.setTimeout(Duration.ofSeconds(1));
 
-    final var migrator =
-        new ProcessMigrator(
-            properties, isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION, meterRegistry);
     writeImportPositionToIndex(TestData.completedImportPosition(1));
 
     writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 1);
+    awaitRecordsArePresent(ProcessEntity.class, indexFqnForClass(ProcessIndex.class), 1);
 
     // when -  then
-    assertThatNoException().isThrownBy(migrator::call);
+    assertThatNoException().isThrownBy(this::runMigration);
   }
 }

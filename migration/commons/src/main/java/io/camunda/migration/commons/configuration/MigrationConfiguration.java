@@ -5,19 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.process.config;
+package io.camunda.migration.commons.configuration;
 
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.time.Duration;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "camunda.migration.process")
-public class ProcessMigrationProperties {
-
+public class MigrationConfiguration {
   private int batchSize = 20;
   private Duration importerFinishedTimeout = Duration.ofMinutes(1);
   private Duration timeout = Duration.ofHours(2);
-  private ProcessMigrationRetryConfiguration retry = new ProcessMigrationRetryConfiguration();
+  private MigrationRetryConfiguration retry = new MigrationRetryConfiguration();
 
   public int getBatchSize() {
     return batchSize;
@@ -35,11 +32,11 @@ public class ProcessMigrationProperties {
     this.importerFinishedTimeout = importerFinishedTimeout;
   }
 
-  public ProcessMigrationRetryConfiguration getRetry() {
+  public MigrationRetryConfiguration getRetry() {
     return retry;
   }
 
-  public void setRetry(final ProcessMigrationRetryConfiguration retry) {
+  public void setRetry(final MigrationRetryConfiguration retry) {
     this.retry = retry;
   }
 
@@ -51,7 +48,7 @@ public class ProcessMigrationProperties {
     this.timeout = timeout;
   }
 
-  public static class ProcessMigrationRetryConfiguration extends RetryConfiguration {
+  public static class MigrationRetryConfiguration extends RetryConfiguration {
 
     private static final int DEFAULT_MAX_RETRIES = 3;
     private static final Duration DEFAULT_MIN_RETRY_DELAY = Duration.ofSeconds(1);

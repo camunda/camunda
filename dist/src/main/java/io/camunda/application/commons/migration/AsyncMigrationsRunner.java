@@ -10,6 +10,7 @@ package io.camunda.application.commons.migration;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.MigrationTimeoutException;
 import io.camunda.migration.api.Migrator;
+import io.camunda.migration.commons.configuration.MigrationProperties;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -18,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Profile;
@@ -27,6 +29,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile({"process-migration", "usage-metric-migration"})
 @ComponentScan(basePackages = "io.camunda.application.commons.migration")
+@EnableConfigurationProperties(MigrationProperties.class)
 public class AsyncMigrationsRunner implements ApplicationRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(AsyncMigrationsRunner.class);
@@ -85,8 +88,11 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
   }
 
   private boolean shouldFailMigration(final Throwable e) {
-    if (e instanceof final MigrationException migrationException) {
-      return !(migrationException.getCause() instanceof MigrationTimeoutException);
+    if (e instanceof final MigrationException me) {
+      if (me.getCause() instanceof final MigrationTimeoutException tex) {
+        return !tex.isIgnore();
+      }
+      return true;
     }
     return true;
   }

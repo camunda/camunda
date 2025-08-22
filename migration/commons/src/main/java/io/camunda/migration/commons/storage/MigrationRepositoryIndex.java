@@ -5,11 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.process.adapter;
-
-import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+package io.camunda.migration.commons.storage;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.ComponentNames;
 
 /* Fork of Operate's MigrationRepositoryIndex descriptor for correct prefixing */
 public class MigrationRepositoryIndex extends AbstractIndexDescriptor {
@@ -35,6 +34,6 @@ public class MigrationRepositoryIndex extends AbstractIndexDescriptor {
 
   @Override
   public String getComponentName() {
-    return OPERATE.toString();
+    return ComponentNames.OPERATE.toString();
   }
 }

@@ -7,21 +7,22 @@
  */
 package io.camunda.migration.usagemetric;
 
+import static io.camunda.migration.usagemetric.client.UsageMetricMigrationClient.OPERATE_MIGRATOR_STEP_ID;
+import static io.camunda.migration.usagemetric.client.UsageMetricMigrationClient.OPERATE_STEP_DESCRIPTION;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.match;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.search.clients.query.SearchQueryBuilders.ids;
 
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.Migrator;
-import io.camunda.migration.usagemetric.client.MigrationRepositoryIndex;
-import io.camunda.migration.usagemetric.client.MigrationStep;
+import io.camunda.migration.commons.configuration.MigrationProperties;
+import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
+import io.camunda.migration.commons.storage.ProcessorStep;
+import io.camunda.migration.commons.utils.ExceptionFilter;
 import io.camunda.migration.usagemetric.client.UsageMetricMigrationClient;
 import io.camunda.migration.usagemetric.client.es.ElasticsearchUsageMetricMigrationClient;
 import io.camunda.migration.usagemetric.client.os.OpensearchUsageMetricMigrationClient;
 import io.camunda.migration.usagemetric.util.MetricRegistry;
 import io.camunda.migration.usagemetric.util.RescheduleTask;
-import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -31,7 +32,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
-import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -42,8 +42,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
-import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -75,9 +73,6 @@ if (event == "%s") {
               UsageMetricsEventType.RPI,
               EVENT_DECISION_INSTANCE_EVALUATED,
               UsageMetricsEventType.EDI);
-  public static final Pattern MIGRATION_REPOSITORY_NOT_EXISTS =
-      Pattern.compile(
-          "no such index \\[[a-zA-Z0-9\\-]+-migration-steps-repository-[0-9]+\\.[0-9]+\\.[0-9]+_]");
   private static final Logger LOG = LoggerFactory.getLogger(OperateMetricMigrator.class);
   private final UsageMetricMigrationClient client;
   private final boolean isElasticsearch;
@@ -87,16 +82,18 @@ if (event == "%s") {
   private final ScheduledExecutorService scheduler;
 
   public OperateMetricMigrator(
-      final ConnectConfiguration connectConfiguration, final MeterRegistry meterRegistry) {
+      final ConnectConfiguration connectConfiguration,
+      final MeterRegistry meterRegistry,
+      final MigrationProperties properties) {
     this.connectConfiguration = connectConfiguration;
     metricRegistry = new MetricRegistry(meterRegistry);
     isElasticsearch = connectConfiguration.getTypeEnum() == DatabaseType.ELASTICSEARCH;
-    final var retryConfiguration = new RetryConfiguration(); // TODO replace with real config
+    final var retryConfiguration = properties.getMigrationConfiguration(getClass()).getRetry();
     client =
         isElasticsearch
             ? new ElasticsearchUsageMetricMigrationClient(connectConfiguration, retryConfiguration)
             : new OpensearchUsageMetricMigrationClient(connectConfiguration, retryConfiguration);
-    scheduler = Executors.newScheduledThreadPool(1);
+    scheduler = Executors.newSingleThreadScheduledExecutor();
     interval = Duration.ofMinutes(1);
   }
 
@@ -118,19 +115,19 @@ if (event == "%s") {
         new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), isElasticsearch);
 
     // check if migration already applied
-    MigrationStep migrationStep = null;
+    ProcessorStep migrationStep = null;
     try {
       migrationStep =
           client.findOne(
               migrationRepositoryIndex.getFullQualifiedName(),
               createOperateMigratorStepSearchQuery(),
-              MigrationStep.class);
+              ProcessorStep.class);
     } catch (final MigrationException e) {
-      if (shouldThrowException(e)) {
+      if (ExceptionFilter.shouldThrowException(e)) {
         throw new MigrationException(e.getMessage(), e);
       }
     }
-    if (migrationStep != null && migrationStep.applied()) {
+    if (migrationStep != null && migrationStep.isApplied()) {
       LOG.info("Skipping operate metric migration, already applied: {}", migrationStep);
       return null;
     }
@@ -161,7 +158,9 @@ if (event == "%s") {
                       waitForCallback(
                               () -> {
                                 final var res = client.getTask(taskId);
-                                return res ? true : null; // return null so wait continues
+                                return res.completed()
+                                    ? true
+                                    : null; // return null so wait continues
                               },
                               () -> false,
                               interval.getSeconds())
@@ -171,8 +170,12 @@ if (event == "%s") {
           "Updating migration step for operate-metric index with taskId {} and result {}",
           taskId,
           completed);
-      client.writeOperateMetricMigratorStep(
-          migrationRepositoryIndex.getFullQualifiedName(), taskId, completed);
+      client.persistMigratorStep(
+          migrationRepositoryIndex.getFullQualifiedName(),
+          OPERATE_MIGRATOR_STEP_ID,
+          taskId,
+          OPERATE_STEP_DESCRIPTION,
+          completed);
 
     } catch (final Exception e) {
       LOG.error("Failed to reindex operate-metric index", e);
@@ -204,30 +207,6 @@ if (event == "%s") {
   }
 
   public SearchQuery createOperateMigratorStepSearchQuery() {
-    return and(
-        term(MigrationRepositoryIndex.ID, UsageMetricMigrationClient.OPERATE_MIGRATOR_STEP_ID),
-        match(
-            MigrationRepositoryIndex.TYPE,
-            UsageMetricMigrationClient.OPERATE_MIGRATOR_STEP_TYPE,
-            SearchMatchQueryOperator.AND));
-  }
-
-  /**
-   * Check if the exception should be rethrown or not. Throwing the exception on this stage will
-   * cause the Spring Boot application to terminate. Some exceptions can be expected when dealing
-   * with Greenfield deployments and these should be ignored.
-   *
-   * @param exception the exception to check
-   * @return true if the exception should be rethrown, false otherwise
-   */
-  private boolean shouldThrowException(final Exception exception) {
-    if (exception.getCause() instanceof final ElasticsearchException ex) {
-      return ex.error().reason() != null
-          && !MIGRATION_REPOSITORY_NOT_EXISTS.matcher(ex.error().reason()).find();
-    } else if (exception.getCause() instanceof final OpenSearchException ex) {
-      return ex.error().reason() != null
-          && !MIGRATION_REPOSITORY_NOT_EXISTS.matcher(ex.error().reason()).find();
-    }
-    return true;
+    return ids(OPERATE_MIGRATOR_STEP_ID);
   }
 }

@@ -8,10 +8,10 @@
 package io.camunda.migration.process.adapter.os;
 
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.commons.configuration.MigrationConfiguration;
+import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
+import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.process.adapter.Adapter;
-import io.camunda.migration.process.adapter.MigrationRepositoryIndex;
-import io.camunda.migration.process.adapter.ProcessorStep;
-import io.camunda.migration.process.config.ProcessMigrationProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
@@ -42,7 +42,7 @@ import org.opensearch.client.opensearch.generic.OpenSearchClientException;
 
 public class OpensearchAdapter implements Adapter {
 
-  private final ProcessMigrationProperties properties;
+  private final MigrationConfiguration properties;
   private final OpenSearchClient client;
   private final MigrationRepositoryIndex migrationRepositoryIndex;
   private final ProcessIndex processIndex;
@@ -50,8 +50,7 @@ public class OpensearchAdapter implements Adapter {
   private final RetryDecorator retryDecorator;
 
   public OpensearchAdapter(
-      final ProcessMigrationProperties properties,
-      final ConnectConfiguration connectConfiguration) {
+      final MigrationConfiguration properties, final ConnectConfiguration connectConfiguration) {
     this.properties = properties;
     migrationRepositoryIndex =
         new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), false);

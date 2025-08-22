@@ -20,7 +20,7 @@ import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsImpl;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsItemImpl;
 import io.camunda.it.util.TestHelper;
-import io.camunda.migration.usagemetric.client.MigrationRepositoryIndex;
+import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
