@@ -16,7 +16,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record FlowNodeInstanceDbQuery(
-    FlowNodeInstanceFilter filter, DbQuerySorting<FlowNodeInstanceEntity> sort, DbQueryPage page) {
+    FlowNodeInstanceFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
+    DbQuerySorting<FlowNodeInstanceEntity> sort,
+    DbQueryPage page) {
 
   public static FlowNodeInstanceDbQuery of(
       final Function<FlowNodeInstanceDbQuery.Builder, ObjectBuilder<FlowNodeInstanceDbQuery>> fn) {
@@ -29,6 +33,8 @@ public record FlowNodeInstanceDbQuery(
         FilterBuilders.flowNodeInstance().build();
 
     private FlowNodeInstanceFilter filter;
+    private List<String> authorizedResourceIds;
+    private List<String> authorizedTenantIds;
     private DbQuerySorting<FlowNodeInstanceEntity> sort;
     private DbQueryPage page;
 
@@ -44,6 +50,16 @@ public record FlowNodeInstanceDbQuery(
 
     public Builder page(final DbQueryPage value) {
       page = value;
+      return this;
+    }
+
+    public Builder authorizedResourceIds(final List<String> value) {
+      authorizedResourceIds = value;
+      return this;
+    }
+
+    public Builder authorizedTenantIds(final List<String> value) {
+      authorizedTenantIds = value;
       return this;
     }
 
@@ -64,7 +80,10 @@ public record FlowNodeInstanceDbQuery(
     public FlowNodeInstanceDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new FlowNodeInstanceDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      return new FlowNodeInstanceDbQuery(
+          filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }

@@ -52,56 +52,74 @@
   </sql>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
-    <!-- basic filters -->
-    <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
-      AND PROCESS_DEFINITION_KEY IN
-      <foreach collection="filter.processDefinitionKeys" item="value" open="(" separator=", "
-        close=")">#{value}
-      </foreach>
-    </if>
-    <if test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
-      <foreach collection="filter.processDefinitionIdOperations" item="operation">
-        AND PROCESS_DEFINITION_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-    <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
-      <foreach collection="filter.nameOperations" item="operation">
-        AND NAME <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-    <if test="filter.resourceNames != null and !filter.resourceNames.isEmpty()">
-      AND RESOURCE_NAME IN
-      <foreach collection="filter.resourceNames" item="value" open="(" separator=", " close=")">
-        #{value}
-      </foreach>
-    </if>
-    <if test="filter.versions != null and !filter.versions.isEmpty()">
-      AND VERSION IN
-      <foreach collection="filter.versions" item="value" open="(" separator=", " close=")">
-        #{value}
-      </foreach>
-    </if>
-    <if test="filter.versionTags != null and !filter.versionTags.isEmpty()">
-      AND VERSION_TAG IN
-      <foreach collection="filter.versionTags" item="value" open="(" separator=", " close=")">
-        #{value}
-      </foreach>
-    </if>
-    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
-      AND TENANT_ID IN
-      <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">
-        #{value}
-      </foreach>
-    </if>
-    <if test="filter.hasStartForm != null">
-      <if test="filter.hasStartForm == true">
-        AND FORM_ID IS NOT NULL
+    <where>
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
       </if>
-      <if test="filter.hasStartForm == false">
-        AND FORM_ID IS NULL
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
       </if>
-    </if>
+      <!-- basic filters -->
+      <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
+        AND PROCESS_DEFINITION_KEY IN
+        <foreach collection="filter.processDefinitionKeys" item="value" open="(" separator=", "
+          close=")">#{value}
+        </foreach>
+      </if>
+      <if
+        test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionIdOperations" item="operation">
+          AND PROCESS_DEFINITION_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+        <foreach collection="filter.nameOperations" item="operation">
+          AND NAME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.resourceNames != null and !filter.resourceNames.isEmpty()">
+        AND RESOURCE_NAME IN
+        <foreach collection="filter.resourceNames" item="value" open="(" separator=", " close=")">
+          #{value}
+        </foreach>
+      </if>
+      <if test="filter.versions != null and !filter.versions.isEmpty()">
+        AND VERSION IN
+        <foreach collection="filter.versions" item="value" open="(" separator=", " close=")">
+          #{value}
+        </foreach>
+      </if>
+      <if test="filter.versionTags != null and !filter.versionTags.isEmpty()">
+        AND VERSION_TAG IN
+        <foreach collection="filter.versionTags" item="value" open="(" separator=", " close=")">
+          #{value}
+        </foreach>
+      </if>
+      <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">
+          #{value}
+        </foreach>
+      </if>
+      <if test="filter.hasStartForm != null">
+        <if test="filter.hasStartForm == true">
+          AND FORM_ID IS NOT NULL
+        </if>
+        <if test="filter.hasStartForm == false">
+          AND FORM_ID IS NULL
+        </if>
+      </if>
+    </where>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessDefinitionEntity">

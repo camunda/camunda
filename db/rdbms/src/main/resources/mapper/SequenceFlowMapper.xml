@@ -22,7 +22,7 @@
   </resultMap>
 
   <select id="search"
-    parameterType="io.camunda.search.query.SequenceFlowQuery"
+    parameterType="io.camunda.db.rdbms.read.domain.SequenceFlowDbQuery"
     resultMap="SequenceFlowResultMap">
     SELECT distinct
       sf.FLOW_NODE_ID,
@@ -32,6 +32,19 @@
       sf.TENANT_ID
     FROM ${prefix}SEQUENCE_FLOW sf
     WHERE sf.PROCESS_INSTANCE_KEY = #{filter.processInstanceKey}
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND sf.PROCESS_DEFINITION_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        close=")">
+        #{resourceId}
+      </foreach>
+    </if>
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND sf.TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+    </if>
   </select>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">

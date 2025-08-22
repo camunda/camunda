@@ -7,39 +7,37 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
-import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.SequenceFlowFilter;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record ProcessInstanceDbQuery(
-    ProcessInstanceFilter filter,
+public record SequenceFlowDbQuery(
+    SequenceFlowFilter filter,
     List<String> authorizedResourceIds,
     List<String> authorizedTenantIds,
-    DbQuerySorting<ProcessInstanceEntity> sort,
+    DbQuerySorting<SequenceFlowEntity> sort,
     DbQueryPage page) {
 
-  public static ProcessInstanceDbQuery of(
-      final Function<ProcessInstanceDbQuery.Builder, ObjectBuilder<ProcessInstanceDbQuery>> fn) {
-    return fn.apply(new ProcessInstanceDbQuery.Builder()).build();
+  public static SequenceFlowDbQuery of(
+      final Function<SequenceFlowDbQuery.Builder, ObjectBuilder<SequenceFlowDbQuery>> fn) {
+    return fn.apply(new SequenceFlowDbQuery.Builder()).build();
   }
 
-  public static final class Builder implements ObjectBuilder<ProcessInstanceDbQuery> {
+  public static final class Builder implements ObjectBuilder<SequenceFlowDbQuery> {
+    private static final SequenceFlowFilter EMPTY_FILTER = FilterBuilders.sequenceFlow().build();
 
-    private static final ProcessInstanceFilter EMPTY_FILTER =
-        FilterBuilders.processInstance().build();
-
-    private ProcessInstanceFilter filter;
+    private SequenceFlowFilter filter;
     private List<String> authorizedResourceIds = Collections.emptyList();
     private List<String> authorizedTenantIds = Collections.emptyList();
-    private DbQuerySorting<ProcessInstanceEntity> sort;
+    private DbQuerySorting<SequenceFlowEntity> sort;
     private DbQueryPage page;
 
-    public Builder filter(final ProcessInstanceFilter value) {
+    public Builder filter(final SequenceFlowFilter value) {
       filter = value;
       return this;
     }
@@ -54,7 +52,7 @@ public record ProcessInstanceDbQuery(
       return this;
     }
 
-    public Builder sort(final DbQuerySorting<ProcessInstanceEntity> value) {
+    public Builder sort(final DbQuerySorting<SequenceFlowEntity> value) {
       sort = value;
       return this;
     }
@@ -65,25 +63,25 @@ public record ProcessInstanceDbQuery(
     }
 
     public Builder filter(
-        final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
-      return filter(FilterBuilders.processInstance(fn));
+        final Function<SequenceFlowFilter.Builder, ObjectBuilder<SequenceFlowFilter>> fn) {
+      return filter(FilterBuilders.sequenceFlow(fn));
     }
 
     public Builder sort(
         final Function<
-                DbQuerySorting.Builder<ProcessInstanceEntity>,
-                ObjectBuilder<DbQuerySorting<ProcessInstanceEntity>>>
+                DbQuerySorting.Builder<SequenceFlowEntity>,
+                ObjectBuilder<DbQuerySorting<SequenceFlowEntity>>>
             fn) {
       return sort(DbQuerySorting.of(fn));
     }
 
     @Override
-    public ProcessInstanceDbQuery build() {
+    public SequenceFlowDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
       authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
       authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
-      return new ProcessInstanceDbQuery(
+      return new SequenceFlowDbQuery(
           filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
