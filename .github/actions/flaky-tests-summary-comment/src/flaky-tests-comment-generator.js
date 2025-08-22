@@ -53,7 +53,7 @@ async function buildComment(mergedData, github, branchName) {
     lines.push(`- ${formattedName} – ${icon} **${test.flakiness}% flakiness**`);
     lines.push(`  - Jobs: \`${test.jobs.join(', ')}\``);
     lines.push(`  - Package: \`${test.packageName}\``);
-    lines.push(`  - Class: ${test.className ? `\`${test.className}\`` : "-"}`);
+    lines.push(`  - Class: \`${test.className ? test.className : "-"}\``);
     lines.push(`  - Occurrences: ${test.occurrences} / ${test.totalRuns}`);
     lines.push('');
   }
