@@ -265,7 +265,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     LOGGER.debug(
         "Complete user task with variables {} [user-task-key: '{}']", variables, userTaskKey.get());
-    client.newUserTaskCompleteCommand(userTaskKey.get()).variables(variables).send().join();
+    client.newCompleteUserTaskCommand(userTaskKey.get()).variables(variables).send().join();
   }
 
   @Override

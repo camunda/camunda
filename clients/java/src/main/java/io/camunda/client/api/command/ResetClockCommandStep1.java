@@ -17,6 +17,6 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.ResetClockResponse;
 
-public interface ClockResetCommandStep1 extends FinalCommandStep<ResetClockResponse> {
+public interface ResetClockCommandStep1 extends FinalCommandStep<ResetClockResponse> {
   // the place for new optional parameters
 }

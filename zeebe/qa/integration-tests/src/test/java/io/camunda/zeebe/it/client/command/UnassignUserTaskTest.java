@@ -41,10 +41,10 @@ class UnassignUserTaskTest {
   @Test
   void shouldUnassignUserTask() {
     // given
-    client.newUserTaskAssignCommand(userTaskKey).assignee("foobar").send().join();
+    client.newAssignUserTaskCommand(userTaskKey).assignee("foobar").send().join();
 
     // when
-    client.newUserTaskUnassignCommand(userTaskKey).send().join();
+    client.newUnassignUserTaskCommand(userTaskKey).send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskAssigned(

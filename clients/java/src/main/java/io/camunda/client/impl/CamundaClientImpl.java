@@ -40,8 +40,6 @@ import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.ClockPinCommandStep1;
-import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
@@ -69,7 +67,9 @@ import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.client.api.command.PinClockCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
+import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
@@ -176,8 +176,6 @@ import io.camunda.client.impl.command.AssignUserToTenantCommandImpl;
 import io.camunda.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.client.impl.command.CancelBatchOperationCommandImpl;
 import io.camunda.client.impl.command.CancelProcessInstanceCommandImpl;
-import io.camunda.client.impl.command.ClockPinCommandImpl;
-import io.camunda.client.impl.command.ClockResetCommandImpl;
 import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.client.impl.command.CreateAuthorizationCommandImpl;
@@ -201,12 +199,13 @@ import io.camunda.client.impl.command.DeleteUserCommandImpl;
 import io.camunda.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.client.impl.command.EvaluateDecisionCommandImpl;
-import io.camunda.client.impl.command.JobUpdateCommandImpl;
 import io.camunda.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.ModifyProcessInstanceCommandImpl;
+import io.camunda.client.impl.command.PinClockCommandImpl;
 import io.camunda.client.impl.command.PublishMessageCommandImpl;
+import io.camunda.client.impl.command.ResetClockCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.client.impl.command.ResumeBatchOperationCommandImpl;
 import io.camunda.client.impl.command.SetVariablesCommandImpl;
@@ -226,6 +225,7 @@ import io.camunda.client.impl.command.UnassignUserFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
+import io.camunda.client.impl.command.UpdateJobCommandImpl;
 import io.camunda.client.impl.command.UpdateRoleCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserCommandImpl;
@@ -707,28 +707,28 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public CompleteUserTaskCommandStep1 newUserTaskCompleteCommand(final long userTaskKey) {
+  public CompleteUserTaskCommandStep1 newCompleteUserTaskCommand(final long userTaskKey) {
     return new CompleteUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   @Override
-  public AssignUserTaskCommandStep1 newUserTaskAssignCommand(final long userTaskKey) {
+  public AssignUserTaskCommandStep1 newAssignUserTaskCommand(final long userTaskKey) {
     return new AssignUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   @Override
-  public UpdateUserTaskCommandStep1 newUserTaskUpdateCommand(final long userTaskKey) {
+  public UpdateUserTaskCommandStep1 newUpdateUserTaskCommand(final long userTaskKey) {
     return new UpdateUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   @Override
-  public UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(final long userTaskKey) {
+  public UnassignUserTaskCommandStep1 newUnassignUserTaskCommand(final long userTaskKey) {
     return new UnassignUserTaskCommandImpl(httpClient, userTaskKey);
   }
 
   @Override
   public UpdateJobCommandStep1 newUpdateJobCommand(final long jobKey) {
-    return new JobUpdateCommandImpl(jobKey, httpClient, jsonMapper);
+    return new UpdateJobCommandImpl(jobKey, httpClient, jsonMapper);
   }
 
   @Override
@@ -737,13 +737,13 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public ClockPinCommandStep1 newClockPinCommand() {
-    return new ClockPinCommandImpl(httpClient, jsonMapper);
+  public PinClockCommandStep1 newPinClockCommand() {
+    return new PinClockCommandImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public ClockResetCommandStep1 newClockResetCommand() {
-    return new ClockResetCommandImpl(httpClient);
+  public ResetClockCommandStep1 newResetClockCommand() {
+    return new ResetClockCommandImpl(httpClient);
   }
 
   @Override

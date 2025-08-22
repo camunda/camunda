@@ -92,7 +92,7 @@ public class UserTaskListenersTest {
 
     // when: invoke complete user task command
     final var completeUserTaskFuture =
-        client.newUserTaskCompleteCommand(userTaskKey).action(action).send();
+        client.newCompleteUserTaskCommand(userTaskKey).action(action).send();
 
     // TL job should be successfully completed with the result "denied" set correctly
     ZeebeAssertHelper.assertJobCompleted(
@@ -128,7 +128,7 @@ public class UserTaskListenersTest {
 
     // when: invoke `ASSIGN` user task command
     final var assignUserTaskFuture =
-        client.newUserTaskAssignCommand(userTaskKey).assignee(assignee).action(action).send();
+        client.newAssignUserTaskCommand(userTaskKey).assignee(assignee).action(action).send();
 
     // wait for successful `ASSIGN` user task command completion
     assertThatCode(assignUserTaskFuture::join).doesNotThrowAnyException();
@@ -158,7 +158,7 @@ public class UserTaskListenersTest {
     // when: invoke `UPDATE` user task command
     final var updateUserTaskFuture =
         client
-            .newUserTaskUpdateCommand(userTaskKey)
+            .newUpdateUserTaskCommand(userTaskKey)
             .candidateUsers("frodo", "samwise")
             .priority(88)
             .action(action)
@@ -281,7 +281,7 @@ public class UserTaskListenersTest {
 
     // when
     final var completeUserTaskFuture =
-        client.newUserTaskCompleteCommand(userTaskKey).send().toCompletableFuture();
+        client.newCompleteUserTaskCommand(userTaskKey).send().toCompletableFuture();
     waitForJobRetriesToBeExhausted(recordingHandler);
 
     // then
@@ -374,7 +374,7 @@ public class UserTaskListenersTest {
 
     // when: invoke `UPDATE` user task command
     final var updateUserTaskFuture =
-        client.newUserTaskUpdateCommand(userTaskKey).candidateUsers("user123").send();
+        client.newUpdateUserTaskCommand(userTaskKey).candidateUsers("user123").send();
 
     // then: TL job should be successfully completed with the result "denied" set correctly
     ZeebeAssertHelper.assertJobCompleted(
@@ -430,7 +430,7 @@ public class UserTaskListenersTest {
 
     // when: invoke complete user task command
     final CamundaFuture<CompleteUserTaskResponse> completeUserTaskFuture =
-        client.newUserTaskCompleteCommand(userTaskKey).send();
+        client.newCompleteUserTaskCommand(userTaskKey).send();
 
     // TL job should be successfully completed with the result "denied" set correctly
     ZeebeAssertHelper.assertJobCompleted(
@@ -485,7 +485,7 @@ public class UserTaskListenersTest {
 
     // when: invoke complete user task command
     final CamundaFuture<CompleteUserTaskResponse> completeUserTaskFuture =
-        client.newUserTaskCompleteCommand(userTaskKey).send();
+        client.newCompleteUserTaskCommand(userTaskKey).send();
 
     // TL job should be successfully completed with the result "denied" set correctly
     ZeebeAssertHelper.assertJobCompleted(
@@ -544,7 +544,7 @@ public class UserTaskListenersTest {
     // when: invoke complete user task command
 
     final CamundaFuture<AssignUserTaskResponse> assignUserTaskFuture =
-        client.newUserTaskAssignCommand(userTaskKey).assignee("john").send();
+        client.newAssignUserTaskCommand(userTaskKey).assignee("john").send();
 
     // TL job should be successfully completed with the result "denied" set correctly
     ZeebeAssertHelper.assertJobCompleted(
@@ -609,7 +609,7 @@ public class UserTaskListenersTest {
 
     // when: invoke `UPDATE` user task command
     final var updateUserTaskFuture =
-        client.newUserTaskUpdateCommand(userTaskKey).priority(55).action("escalate").send();
+        client.newUpdateUserTaskCommand(userTaskKey).priority(55).action("escalate").send();
 
     final JobResult expectedResult =
         new JobResult()
@@ -694,7 +694,7 @@ public class UserTaskListenersTest {
     // when: send an `UPDATE` command with explicit changes
     final var updateUserTaskFuture =
         client
-            .newUserTaskUpdateCommand(userTaskKey)
+            .newUpdateUserTaskCommand(userTaskKey)
             .dueDate(updatedDueDate)
             .candidateGroups("updated_group")
             .priority(99) // will be reset to the initial value by correction
@@ -771,7 +771,7 @@ public class UserTaskListenersTest {
     client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
 
     // when: invoke complete user task command
-    final var completeUserTaskFuture = client.newUserTaskCompleteCommand(userTaskKey).send();
+    final var completeUserTaskFuture = client.newCompleteUserTaskCommand(userTaskKey).send();
 
     final JobResult expectedResult =
         new JobResult()
@@ -838,7 +838,7 @@ public class UserTaskListenersTest {
     client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
 
     // when: invoke complete user task command
-    final var completeUserTaskFuture = client.newUserTaskCompleteCommand(userTaskKey).send();
+    final var completeUserTaskFuture = client.newCompleteUserTaskCommand(userTaskKey).send();
 
     final JobResult expectedResult =
         new JobResult()
@@ -953,7 +953,7 @@ public class UserTaskListenersTest {
 
     // trigger task update and wait for UPDATING event
     final var updateUserTaskFuture =
-        client.newUserTaskUpdateCommand(userTaskKey).candidateUsers("frodo", "samwise").send();
+        client.newUpdateUserTaskCommand(userTaskKey).candidateUsers("frodo", "samwise").send();
     RecordingExporter.userTaskRecords(UserTaskIntent.UPDATING).withRecordKey(userTaskKey).await();
 
     // when: cancel the process instance

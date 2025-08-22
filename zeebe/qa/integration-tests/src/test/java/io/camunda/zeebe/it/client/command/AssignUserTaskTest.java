@@ -43,7 +43,7 @@ class AssignUserTaskTest {
   @Test
   void shouldAssignUserTaskWithAssignee() {
     // when
-    client.newUserTaskAssignCommand(userTaskKey).assignee("barbar").send().join();
+    client.newAssignUserTaskCommand(userTaskKey).assignee("barbar").send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskAssigned(
@@ -57,10 +57,10 @@ class AssignUserTaskTest {
   @Test
   void shouldAssignUserTaskWithAssigneeWithImplicitAllowOverride() {
     // given
-    client.newUserTaskAssignCommand(userTaskKey).assignee("foobar").send().join();
+    client.newAssignUserTaskCommand(userTaskKey).assignee("foobar").send().join();
 
     // when
-    client.newUserTaskAssignCommand(userTaskKey).assignee("barbar").send().join();
+    client.newAssignUserTaskCommand(userTaskKey).assignee("barbar").send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskAssigned(
@@ -70,11 +70,11 @@ class AssignUserTaskTest {
   @Test
   void shouldAssignUserTaskWithAssigneeWithExplicitAllowOverride() {
     // given
-    client.newUserTaskAssignCommand(userTaskKey).assignee("foobar").send().join();
+    client.newAssignUserTaskCommand(userTaskKey).assignee("foobar").send().join();
 
     // when
     client
-        .newUserTaskAssignCommand(userTaskKey)
+        .newAssignUserTaskCommand(userTaskKey)
         .assignee("barbar")
         .allowOverride(true)
         .send()
@@ -88,7 +88,7 @@ class AssignUserTaskTest {
   @Test
   void shouldAssignUserTaskWithAssigneeAndAction() {
     // when
-    client.newUserTaskAssignCommand(userTaskKey).assignee("barbar").action("foo").send().join();
+    client.newAssignUserTaskCommand(userTaskKey).assignee("barbar").action("foo").send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskAssigned(
@@ -102,13 +102,13 @@ class AssignUserTaskTest {
   @Test
   void shouldRejectIfUserTaskIsAlreadyAssignedWithProhibitedOverride() {
     // given
-    client.newUserTaskAssignCommand(userTaskKey).assignee("foobar").send().join();
+    client.newAssignUserTaskCommand(userTaskKey).assignee("foobar").send().join();
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newUserTaskAssignCommand(userTaskKey)
+                    .newAssignUserTaskCommand(userTaskKey)
                     .assignee("barbar")
                     .allowOverride(false)
                     .send()
@@ -120,7 +120,7 @@ class AssignUserTaskTest {
   @Test
   void shouldRejectIfMissingAssignee() {
     // when / then
-    assertThatThrownBy(() -> client.newUserTaskAssignCommand(userTaskKey).send().join())
+    assertThatThrownBy(() -> client.newAssignUserTaskCommand(userTaskKey).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
@@ -129,7 +129,7 @@ class AssignUserTaskTest {
   void shouldRejectIfMissingAssigneeWithProhibitedOverride() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUserTaskAssignCommand(userTaskKey).allowOverride(false).send().join())
+            () -> client.newAssignUserTaskCommand(userTaskKey).allowOverride(false).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }

@@ -1438,7 +1438,7 @@ public class MultiTenancyIT {
 
       // when
       final Future<AssignUserTaskResponse> result =
-          clientTenantB.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send();
+          clientTenantB.newAssignUserTaskCommand(userTaskKey).assignee("Skeletor").send();
 
       // then
       assertThat(result).succeedsWithin(Duration.ofSeconds(10));
@@ -1455,7 +1455,7 @@ public class MultiTenancyIT {
 
       // when
       final Future<AssignUserTaskResponse> result =
-          skeletorClient.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send();
+          skeletorClient.newAssignUserTaskCommand(userTaskKey).assignee("Skeletor").send();
 
       // then
       assertThat(result)
@@ -1477,7 +1477,7 @@ public class MultiTenancyIT {
 
       // when
       final Future<CompleteUserTaskResponse> result =
-          clientTenantB.newUserTaskCompleteCommand(userTaskKey).send();
+          clientTenantB.newCompleteUserTaskCommand(userTaskKey).send();
 
       // then
       assertThat(result).succeedsWithin(Duration.ofSeconds(10));
@@ -1494,7 +1494,7 @@ public class MultiTenancyIT {
 
       // when
       final Future<CompleteUserTaskResponse> result =
-          invalidClient.newUserTaskCompleteCommand(userTaskKey).send();
+          invalidClient.newCompleteUserTaskCommand(userTaskKey).send();
 
       // then
       assertThat(result)
@@ -1513,11 +1513,11 @@ public class MultiTenancyIT {
       // given
       final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
       final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
-      clientTenantA.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send().join();
+      clientTenantA.newAssignUserTaskCommand(userTaskKey).assignee("Skeletor").send().join();
 
       // when
       final Future<UnassignUserTaskResponse> result =
-          clientTenantB.newUserTaskUnassignCommand(userTaskKey).send();
+          clientTenantB.newUnassignUserTaskCommand(userTaskKey).send();
 
       // then
       assertThat(result).succeedsWithin(Duration.ofSeconds(10));
@@ -1531,11 +1531,11 @@ public class MultiTenancyIT {
       // given
       final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
       final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
-      clientTenantA.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send().join();
+      clientTenantA.newAssignUserTaskCommand(userTaskKey).assignee("Skeletor").send().join();
 
       // when
       final Future<UnassignUserTaskResponse> result =
-          invalidClient.newUserTaskUnassignCommand(userTaskKey).send();
+          invalidClient.newUnassignUserTaskCommand(userTaskKey).send();
 
       // then
       assertThat(result)
@@ -1557,7 +1557,7 @@ public class MultiTenancyIT {
 
       // when
       final Future<UpdateUserTaskResponse> result =
-          clientTenantB.newUserTaskUpdateCommand(userTaskKey).candidateUsers("Skeletor").send();
+          clientTenantB.newUpdateUserTaskCommand(userTaskKey).candidateUsers("Skeletor").send();
 
       // then
       assertThat(result).succeedsWithin(Duration.ofSeconds(10));
@@ -1574,7 +1574,7 @@ public class MultiTenancyIT {
 
       // when
       final Future<UpdateUserTaskResponse> result =
-          invalidClient.newUserTaskUpdateCommand(userTaskKey).candidateUsers("Skeletor").send();
+          invalidClient.newUpdateUserTaskCommand(userTaskKey).candidateUsers("Skeletor").send();
 
       // then
       assertThat(result)

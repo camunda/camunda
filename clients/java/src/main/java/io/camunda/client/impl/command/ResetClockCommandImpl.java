@@ -16,8 +16,8 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.response.ResetClockResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -26,12 +26,12 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ClockResetCommandImpl implements ClockResetCommandStep1 {
+public class ResetClockCommandImpl implements ResetClockCommandStep1 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public ClockResetCommandImpl(final HttpClient httpClient) {
+  public ResetClockCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }

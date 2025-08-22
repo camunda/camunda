@@ -74,7 +74,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
 
     if (!isJobBasedUserTask(task)) {
       try {
-        camundaClient.newUserTaskAssignCommand(task.getKey()).assignee(assignee).send().join();
+        camundaClient.newAssignUserTaskCommand(task.getKey()).assignee(assignee).send().join();
       } catch (final ClientException exception) {
         throw new TasklistRuntimeException(getErrorMessageFromClientException(exception));
       }
@@ -90,7 +90,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
 
     if (!isJobBasedUserTask(task)) {
       try {
-        camundaClient.newUserTaskUnassignCommand(task.getKey()).send().join();
+        camundaClient.newUnassignUserTaskCommand(task.getKey()).send().join();
       } catch (final ClientException exception) {
         throw new TasklistRuntimeException(getErrorMessageFromClientException(exception));
       }
@@ -108,7 +108,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
       if (isJobBasedUserTask(task)) {
         camundaClient.newCompleteCommand(task.getKey()).variables(variables).send().join();
       } else {
-        camundaClient.newUserTaskCompleteCommand(task.getKey()).variables(variables).send().join();
+        camundaClient.newCompleteUserTaskCommand(task.getKey()).variables(variables).send().join();
       }
     } catch (final ClientException exception) {
       throw new TasklistRuntimeException(getErrorMessageFromClientException(exception));

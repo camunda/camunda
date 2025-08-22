@@ -103,7 +103,7 @@ final class IdentitySetupInitializerIT {
     // We send a clock reset command so we have a record we can limit our RecordingExporter on
     // We don't join the future, because we are unauthorized to send this command. Joining it will
     // result in an exception.
-    client.newClockResetCommand().send();
+    client.newResetClockCommand().send();
 
     assertThat(
             RecordingExporter.records()

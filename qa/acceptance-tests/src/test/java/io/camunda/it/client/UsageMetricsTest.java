@@ -296,7 +296,7 @@ public class UsageMetricsTest {
                       .getUserTaskKey();
             });
     camundaClient
-        .newUserTaskAssignCommand(userTaskKey)
+        .newAssignUserTaskCommand(userTaskKey)
         .assignee(ASSIGNEE)
         .action("assignee")
         .allowOverride(true)
@@ -319,7 +319,7 @@ public class UsageMetricsTest {
                       .orElseThrow()
                       .getUserTaskKey();
             });
-    camundaClient.newUserTaskUnassignCommand(userTaskKey).send().join();
+    camundaClient.newUnassignUserTaskCommand(userTaskKey).send().join();
   }
 
   private static void assertTaskReassigned(final CamundaClient adminClient) {

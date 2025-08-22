@@ -1425,13 +1425,13 @@ class UserTaskSearchTest {
             });
 
     camundaClient
-        .newUserTaskAssignCommand(userTaskKeyTaskAssigned)
+        .newAssignUserTaskCommand(userTaskKeyTaskAssigned)
         .assignee("demo")
         .action("assignee")
         .send()
         .join();
 
-    camundaClient.newUserTaskCompleteCommand(userTaskKeyTaskAssigned).send().join();
+    camundaClient.newCompleteUserTaskCommand(userTaskKeyTaskAssigned).send().join();
 
     Awaitility.await("should export Assigned task and Completed to ElasticSearch")
         .atMost(TIMEOUT_DATA_AVAILABILITY)

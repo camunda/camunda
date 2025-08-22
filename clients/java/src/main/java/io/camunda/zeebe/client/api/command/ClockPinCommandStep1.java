@@ -20,7 +20,7 @@ import java.time.Instant;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
- *     io.camunda.client.api.command.ClockPinCommandStep1}
+ *     io.camunda.client.api.command.PinClockCommandStep1}
  */
 @Deprecated
 public interface ClockPinCommandStep1 extends FinalCommandStep<PinClockResponse> {
