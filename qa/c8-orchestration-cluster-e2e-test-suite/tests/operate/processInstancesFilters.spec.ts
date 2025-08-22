@@ -18,7 +18,7 @@ type ProcessInstance = {processInstanceKey: number};
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
 
-test.beforeAll(async ({request}) => {
+test.beforeAll(async () => {
   await deploy([
     './resources/processWithMultipleVersions_v_1.bpmn',
     './resources/processWithAnError.bpmn',

@@ -6,15 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { expect, Locator } from '@playwright/test';
+import {expect, Locator} from '@playwright/test';
 
 /**
  * Asserts whether a Locator is in the viewport.
- * 
+ *
  * @param locator - The Playwright Locator to check
  * @param shouldBeVisible - true if expected to be in the viewport, false if expected to be out
  */
-export async function expectInViewport(locator: Locator, shouldBeVisible: boolean) {
+export async function expectInViewport(
+  locator: Locator,
+  shouldBeVisible: boolean,
+) {
   const isInViewport = await locator.evaluate((el) => {
     const rect = el.getBoundingClientRect();
     return (
