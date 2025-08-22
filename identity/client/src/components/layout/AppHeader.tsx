@@ -8,7 +8,7 @@
 
 import { C3Navigation } from "@camunda/camunda-composite-components";
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
-import { useNavigate } from "react-router";
+import { Link } from "react-router";
 import { useApi } from "src/utility/api";
 import { checkLicense, License } from "src/utility/api/headers";
 import { getAuthentication } from "src/utility/api/authentication";
@@ -19,7 +19,6 @@ import { isSaaS } from "src/configuration";
 
 const AppHeader = ({ hideNavLinks = false }) => {
   const routes = useGlobalRoutes();
-  const navigate = useNavigate();
   const { data: license } = useApi(checkLicense);
   const { data: camundaUser } = useApi(getAuthentication);
   const [isAppBarOpen, setIsAppBarOpen] = useState(false);
@@ -31,9 +30,10 @@ const AppHeader = ({ hideNavLinks = false }) => {
         name: "Identity",
         ariaLabel: "Identity",
         routeProps: {
-          href: "/",
+          to: "/",
         },
       }}
+      forwardRef={Link}
       appBar={{
         ariaLabel: "App panel",
         isOpen: isAppBarOpen,
@@ -46,7 +46,7 @@ const AppHeader = ({ hideNavLinks = false }) => {
           : routes.map((route) => ({
               ...route,
               routeProps: {
-                onClick: () => navigate(route.key),
+                to: route.key,
               },
             })),
         licenseTag: getLicenseTag(license),
