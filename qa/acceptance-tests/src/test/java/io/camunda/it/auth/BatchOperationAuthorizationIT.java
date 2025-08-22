@@ -48,7 +48,6 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 class BatchOperationAuthorizationIT {
 
   // Process IDs

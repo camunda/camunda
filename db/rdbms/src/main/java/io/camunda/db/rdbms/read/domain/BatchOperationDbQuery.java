@@ -16,7 +16,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record BatchOperationDbQuery(
-    BatchOperationFilter filter, DbQuerySorting<BatchOperationEntity> sort, DbQueryPage page) {
+    BatchOperationFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
+    DbQuerySorting<BatchOperationEntity> sort,
+    DbQueryPage page) {
 
   public static BatchOperationDbQuery of(
       final Function<BatchOperationDbQuery.Builder, ObjectBuilder<BatchOperationDbQuery>> fn) {
@@ -31,6 +35,8 @@ public record BatchOperationDbQuery(
     private BatchOperationFilter filter;
     private DbQuerySorting<BatchOperationEntity> sort;
     private DbQueryPage page;
+    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
+    private List<String> authorizedTenantIds = java.util.Collections.emptyList();
 
     public Builder filter(final BatchOperationFilter value) {
       filter = value;
@@ -60,11 +66,24 @@ public record BatchOperationDbQuery(
       return sort(DbQuerySorting.of(fn));
     }
 
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public Builder authorizedTenantIds(final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
+      return this;
+    }
+
     @Override
     public BatchOperationDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new BatchOperationDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      return new BatchOperationDbQuery(
+          filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }
