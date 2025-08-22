@@ -16,6 +16,10 @@ public interface DecisionInstanceMapper extends ProcessBasedHistoryCleanupMapper
 
   void insert(DecisionInstanceDbModel decisionInstance);
 
+  void insertInput(DecisionInstanceDbModel decisionInstance);
+
+  void insertOutput(DecisionInstanceDbModel decisionInstance);
+
   Long count(DecisionInstanceDbQuery filter);
 
   List<DecisionInstanceEntity> search(DecisionInstanceDbQuery filter);
