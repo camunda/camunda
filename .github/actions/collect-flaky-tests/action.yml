@@ -1,0 +1,98 @@
+name: 'Collect Flaky Tests'
+description: 'Collects and aggregates flaky test results from multiple CI jobs'
+
+# owner: @camunda/monorepo-devops-team
+
+inputs:
+    general-unit-tests-result:
+        description: 'Result of the general unit tests job'
+        required: true
+    general-unit-tests-flaky:
+        description: 'Flaky tests from the general unit tests job'
+        required: true
+    elasticsearch-tests-result:
+        description: 'Result of the Elasticsearch integration tests job'
+        required: true
+    elasticsearch-tests-flaky:
+        description: 'Flaky tests from the Elasticsearch integration tests job'
+        required: true
+    opensearch-tests-result:
+        description: 'Result of the OpenSearch integration tests job'
+        required: true
+    opensearch-tests-flaky:
+        description: 'Flaky tests from the OpenSearch integration tests job'
+        required: true
+    rdbms-h2-tests-result:
+        description: 'Result of the RDBMS H2 integration tests job'
+        required: true
+    rdbms-h2-tests-flaky:
+        description: 'Flaky tests from the RDBMS H2 integration tests job'
+        required: true
+    rdbms-tests-result:
+        description: 'Result of the RDBMS integration tests job'
+        required: true
+    rdbms-tests-flaky:
+        description: 'Flaky tests from the RDBMS integration tests job'
+        required: true
+    docker-checks-result:
+        description: 'Result of the Docker checks job'
+        required: true
+    docker-checks-flaky:
+        description: 'Flaky tests from the Docker checks job'
+        required: true
+    zeebe-tests-result:
+        description: 'Result of the Zeebe unit tests job'
+        required: true
+    zeebe-matrix-output-result:
+        description: 'Matrix output for Zeebe unit tests'
+        required: true
+    integration-tests-result:
+        description: 'Result of the integration tests job'
+        required: true
+    integration-matrix-output-result:
+        description: 'Matrix output for integration tests'
+        required: true
+
+
+outputs:
+  flaky_tests_data:
+    description: 'JSON array of flaky tests data'
+    value: ${{ steps.collect-results.outputs.flaky_tests_data }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Collect flaky test results
+      id: collect-results
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # Source helper functions
+        source ${{ github.action_path }}/scripts/collect-flaky-tests.sh
+
+        # Initialize flaky data array
+        flaky_data='[]'
+
+        # Collect from single jobs
+        collect_from_single_job "general-unit-tests" "${{ inputs.general-unit-tests-result }}" "${{ inputs.general-unit-tests-flaky }}"
+        collect_from_single_job "elasticsearch-integration-tests" "${{ inputs.elasticsearch-tests-result }}" "${{ inputs.elasticsearch-tests-flaky }}"
+        collect_from_single_job "opensearch-integration-tests" "${{ inputs.opensearch-tests-result }}" "${{ inputs.opensearch-tests-flaky }}"
+        collect_from_single_job "rdbms-h2-integration-tests" "${{ inputs.rdbms-h2-tests-result }}" "${{ inputs.rdbms-h2-tests-flaky }}"
+        collect_from_single_job "rdbms-integration-tests" "${{ inputs.rdbms-tests-result }}" "${{ inputs.rdbms-tests-flaky }}"
+        collect_from_single_job "docker-checks" "${{ inputs.docker-checks-result }}" "${{ inputs.docker-checks-flaky }}"
+
+        # Collect from matrix jobs
+        collect_from_matrix_job "zeebe-unit-tests" "${{ inputs.zeebe-tests-result }}" '${{ inputs.zeebe-matrix-output-result }}'
+        collect_from_matrix_job "integration-tests" "${{ inputs.integration-tests-result }}" '${{ inputs.integration-matrix-output-result }}'
+
+        # Output the collected data
+        {
+          echo "flaky_tests_data<<EOF"
+          echo "$flaky_data"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+        # Log the collected data
+        echo "Collected flaky tests data:"
+        echo "$flaky_data" | jq '.'
