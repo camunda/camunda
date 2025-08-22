@@ -33,7 +33,7 @@ public class IdentityConfigurer {
   @Profile(OperateProfileService.SSO_AUTH_PROFILE)
   @ConditionalOnProperty(
       prefix = OperateProperties.PREFIX,
-      name = "identity.resourcePermissionsEnabled",
+      name = "identity.resource-permissions-enabled",
       havingValue = "true")
   public Identity getSaaSIdentity(final OperateProperties operateProperties) {
     return new Identity(

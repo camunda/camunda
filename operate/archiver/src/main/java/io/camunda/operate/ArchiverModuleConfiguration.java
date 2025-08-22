@@ -33,7 +33,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
     basePackages = "io.camunda.operate.archiver",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @ConditionalOnProperty(
-    name = "camunda.operate.archiverEnabled",
+    name = "camunda.operate.archiver-enabled",
     havingValue = "true",
     matchIfMissing = true)
 public class ArchiverModuleConfiguration {
