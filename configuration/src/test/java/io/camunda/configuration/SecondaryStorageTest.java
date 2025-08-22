@@ -36,6 +36,18 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 })
 public class SecondaryStorageTest {
 
+  private ExporterCfg getCamundaExporter(final BrokerBasedProperties brokerBasedProperties) {
+    final List<ExporterCfg> exporters =
+        brokerBasedProperties.getExporters().values().stream()
+            .filter(e -> e.getClassName().equals("io.camunda.exporter.CamundaExporter"))
+            .toList();
+    if (exporters.isEmpty()) {
+      return null;
+    }
+
+    return exporters.get(0);
+  }
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -175,17 +187,5 @@ public class SecondaryStorageTest {
       final String url = (String) connect.get("url");
       assertThat(url).isEqualTo(expectedUrl);
     }
-  }
-
-  private ExporterCfg getCamundaExporter(BrokerBasedProperties brokerBasedProperties) {
-    List<ExporterCfg> exporters =
-        brokerBasedProperties.getExporters().values().stream()
-            .filter(e -> e.getClassName().equals("io.camunda.exporter.CamundaExporter"))
-            .toList();
-    if (exporters.isEmpty()) {
-      return null;
-    }
-
-    return exporters.get(0);
   }
 }
