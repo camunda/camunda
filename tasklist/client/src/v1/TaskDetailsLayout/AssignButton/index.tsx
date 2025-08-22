@@ -57,7 +57,7 @@ const AssignButton: React.FC<Props> = ({
   taskState,
   onAssignmentError,
 }) => {
-  const isAssigned = assignee !== null;
+  const isAssigned = assignee !== null && taskState !== 'ASSIGNING';
   const [assignmentStatus, setAssignmentStatus] = useState<AssignmentStatus>(
     () => (taskState === 'ASSIGNING' ? 'assigning' : 'off'),
   );
@@ -91,12 +91,6 @@ const AssignButton: React.FC<Props> = ({
       if (error.name === assignmentErrorMap.taskProcessingTimeout) {
         tracking.track({
           eventName: 'task-assignment-delayed-notification',
-        });
-        notificationsStore.displayNotification({
-          kind: 'info',
-          title: t('taskDetailsAssignmentDelayInfoTitle'),
-          subtitle: t('taskDetailsAssignmentDelayInfoSubtitle'),
-          isDismissable: true,
         });
         return;
       }

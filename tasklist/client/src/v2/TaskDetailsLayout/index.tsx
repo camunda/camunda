@@ -32,12 +32,28 @@ type OutletContext = {
   refetch: () => void;
   processXml: string | undefined;
 };
+const POLLING_STATES: UserTask['state'][] = [
+  'CANCELING',
+  'UPDATING',
+  'COMPLETING',
+  'ASSIGNING',
+] as const;
 
 const TaskDetailsLayout: React.FC = () => {
   const {id} = useTaskDetailsParams();
   const {t} = useTranslation();
   const {data: currentUser} = useCurrentUser();
-  const {data: task, refetch} = useTask(id);
+  const {data: task, refetch} = useTask(id, {
+    refetchInterval(query) {
+      const {data} = query.state;
+
+      if (data?.state && POLLING_STATES.includes(data.state)) {
+        return 5000;
+      }
+
+      return false;
+    },
+  });
   const isTaskCompleted = task?.state === 'COMPLETED';
   const {data: processXml, isLoading: processLoading} = useProcessDefinitionXml(
     task?.processDefinitionKey ?? '',

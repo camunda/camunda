@@ -7,12 +7,15 @@
  */
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {z} from 'zod';
+import {useTranslation} from 'react-i18next';
+import {request} from 'common/api/request';
+import {notificationsStore} from 'common/notifications/notifications.store';
+import {isTaskTimeoutError} from 'common/utils/taskErrorHandling';
 import {api} from 'v1/api';
 import {getUseTaskQueryKey} from 'v1/api/useTask.query';
-import {request} from 'common/api/request';
 import type {Task} from 'v1/api/types';
 import {buildServerErrorSchema} from 'v1/api/buildServerErrorSchema';
-import {z} from 'zod';
 
 const messageResponseSchema = z.object({
   title: z.enum([
@@ -44,6 +47,31 @@ interface AssignmentError extends Error {
 
 function useAssignTask() {
   const client = useQueryClient();
+  const {t} = useTranslation();
+
+  function refetchTask(taskId: string) {
+    return client.fetchQuery({
+      queryKey: getUseTaskQueryKey(taskId),
+      queryFn: async () => {
+        const {response, error} = await request(api.getTask(taskId));
+
+        if (response === null) {
+          throw error;
+        }
+
+        const task = (await response.json()) as Task;
+
+        if (task.taskState === 'ASSIGNING') {
+          throw new Error(t('taskErrorTaskStillAssigning'));
+        }
+
+        return task;
+      },
+      retry: true,
+      retryDelay: 1000,
+    });
+  }
+
   return useMutation<Task, AssignmentError, Task['id']>({
     mutationFn: async (taskId) => {
       const {response, error: errorResponse} = await request(
@@ -60,7 +88,7 @@ function useAssignTask() {
         });
       }
 
-      const error = new Error('Failed to complete task');
+      const error = new Error('Failed to assign task');
       const errorResult = assignmentErrorSchema.safeParse(
         await errorResponse.response.json(),
       );
@@ -70,6 +98,28 @@ function useAssignTask() {
       }
 
       error.name = errorResult.data.message.title;
+
+      if (isTaskTimeoutError(errorResult.data.message)) {
+        const currentTask = client.getQueryData<Task>(
+          getUseTaskQueryKey(taskId),
+        );
+        if (currentTask) {
+          client.setQueryData(getUseTaskQueryKey(taskId), {
+            ...currentTask,
+            taskState: 'ASSIGNING',
+            assignee: null,
+          });
+        }
+
+        notificationsStore.displayNotification({
+          kind: 'info',
+          title: t('taskDetailsAssignmentDelayInfoTitle'),
+          subtitle: t('taskDetailsAssignmentDelayInfoSubtitle'),
+          isDismissable: true,
+        });
+
+        return refetchTask(taskId);
+      }
 
       throw error;
     },

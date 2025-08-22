@@ -418,6 +418,9 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get('/v1/tasks/:taskId', () => {
+        return HttpResponse.json(taskMocks.completedTask());
+      }),
       http.post(
         '/v1/tasks/:taskId/variables/search',
         () => {

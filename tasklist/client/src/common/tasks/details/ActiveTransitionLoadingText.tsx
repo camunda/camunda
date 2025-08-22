@@ -7,15 +7,24 @@
  */
 
 import {Loading} from '@carbon/react';
-import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {useTranslation} from 'react-i18next';
-import styles from './TaskStateLoadingText.module.scss';
+import styles from './ActiveTransitionLoadingText.module.scss';
 
-type TaskStateLoadingTextProps = {taskState: UserTask['state']};
+type ActiveTransitionLoadingTextProps = {
+  taskState:
+    | 'CREATED'
+    | 'COMPLETED'
+    | 'CANCELED'
+    | 'FAILED'
+    | 'ASSIGNING'
+    | 'UPDATING'
+    | 'COMPLETING'
+    | 'CANCELING';
+};
 
-const TaskStateLoadingText: React.FC<TaskStateLoadingTextProps> = ({
-  taskState,
-}) => {
+const ActiveTransitionLoadingText: React.FC<
+  ActiveTransitionLoadingTextProps
+> = ({taskState}) => {
   const {t} = useTranslation();
 
   const statusLoadingMessage = {
@@ -41,4 +50,4 @@ const TaskStateLoadingText: React.FC<TaskStateLoadingTextProps> = ({
   );
 };
 
-export {TaskStateLoadingText};
+export {ActiveTransitionLoadingText};

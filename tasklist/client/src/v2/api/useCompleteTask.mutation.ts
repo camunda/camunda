@@ -7,27 +7,82 @@
  */
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {useTranslation} from 'react-i18next';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {request, requestErrorSchema} from 'common/api/request';
+import {notificationsStore} from 'common/notifications/notifications.store';
+import {isTaskTimeoutError} from 'common/utils/taskErrorHandling';
 import {api} from 'v2/api';
-import {request} from 'common/api/request';
-import {getUseTaskQueryKey} from './useTask.query';
-import {USE_TASKS_QUERY_KEY} from './useTasks.query';
+import {getUseTaskQueryKey} from 'v2/api/useTask.query';
+import {USE_TASKS_QUERY_KEY} from 'v2/api/useTasks.query';
 
 function useCompleteTask() {
   const client = useQueryClient();
+  const {t} = useTranslation();
+
+  function refetchTask(userTaskKey: string) {
+    return client.fetchQuery({
+      queryKey: getUseTaskQueryKey(userTaskKey),
+      queryFn: async () => {
+        const {response, error} = await request(api.getTask({userTaskKey}));
+
+        if (response === null) {
+          throw error;
+        }
+
+        const task = (await response.json()) as UserTask;
+
+        if (task.state === 'COMPLETED') {
+          return task;
+        }
+
+        throw new Error(t('taskErrorTaskNotCompleted'));
+      },
+      retry: true,
+      retryDelay: 1000,
+    });
+  }
+
   return useMutation({
-    mutationFn: async (payload: Parameters<typeof api.completeTask>[0]) => {
-      const {response, error} = await request(api.completeTask(payload));
+    mutationFn: async (params: Parameters<typeof api.completeTask>[0]) => {
+      const {error} = await request(api.completeTask(params));
 
-      if (response !== null) {
-        client.invalidateQueries({
-          queryKey: getUseTaskQueryKey(payload.userTaskKey),
-        });
-        client.invalidateQueries({queryKey: [USE_TASKS_QUERY_KEY]});
+      if (error !== null) {
+        const {data: parsedError, success} =
+          requestErrorSchema.safeParse(error);
 
-        return null;
+        if (success && parsedError.variant === 'failed-response') {
+          const errorData = await parsedError.response.json();
+
+          if (isTaskTimeoutError(errorData)) {
+            const currentTask = client.getQueryData(
+              getUseTaskQueryKey(params.userTaskKey),
+            ) as UserTask;
+
+            if (currentTask) {
+              client.setQueryData(getUseTaskQueryKey(params.userTaskKey), {
+                ...currentTask,
+                state: 'COMPLETING',
+              });
+            }
+
+            notificationsStore.displayNotification({
+              kind: 'info',
+              title: t('taskDetailsCompletionDelayInfoTitle'),
+              subtitle: t('taskDetailsCompletionDelayInfoSubtitle'),
+              isDismissable: true,
+            });
+
+            return refetchTask(params.userTaskKey);
+          }
+        }
+
+        throw error;
       }
 
-      throw error;
+      client.invalidateQueries({queryKey: [USE_TASKS_QUERY_KEY]});
+
+      return refetchTask(params.userTaskKey);
     },
   });
 }

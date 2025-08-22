@@ -6,24 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation} from '@tanstack/react-query';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {useTranslation} from 'react-i18next';
+import {request, requestErrorSchema} from 'common/api/request';
+import {notificationsStore} from 'common/notifications/notifications.store';
+import {isTaskTimeoutError} from 'common/utils/taskErrorHandling';
 import {api} from 'v1/api';
-import {request} from 'common/api/request';
 import type {Task, Variable} from 'v1/api/types';
-import {buildServerErrorSchema} from 'v1/api/buildServerErrorSchema';
-import {z} from 'zod';
+import {getUseTaskQueryKey} from 'v1/api/useTask.query';
 
-const messageResponseSchema = z.object({
-  title: z.enum([
-    'TASK_NOT_ASSIGNED',
-    'TASK_NOT_ASSIGNED_TO_CURRENT_USER',
-    'TASK_IS_NOT_ACTIVE',
-    'INVALID_STATE',
-    'TASK_PROCESSING_TIMEOUT',
-  ]),
-  detail: z.string(),
-});
-const completionErrorSchema = buildServerErrorSchema(messageResponseSchema);
 const completionErrorMap = {
   invalidState: 'INVALID_STATE',
   taskProcessingTimeout: 'TASK_PROCESSING_TIMEOUT',
@@ -50,34 +41,72 @@ type Payload = {
 };
 
 function useCompleteTask() {
+  const client = useQueryClient();
+  const {t} = useTranslation();
+
+  function refetchTask(taskId: string) {
+    return client.fetchQuery({
+      queryKey: getUseTaskQueryKey(taskId),
+      queryFn: async () => {
+        const {response, error} = await request(api.getTask(taskId));
+
+        if (response === null) {
+          throw error;
+        }
+
+        const task = (await response.json()) as Task;
+
+        if (task.taskState === 'COMPLETED') {
+          return task;
+        }
+
+        throw new Error(t('taskErrorTaskNotCompleted'));
+      },
+      retry: true,
+      retryDelay: 1000,
+    });
+  }
+
   return useMutation<Task, CompletionError, Payload>({
-    mutationFn: async (payload) => {
-      const {response, error: errorResponse} = await request(
-        api.completeTask(payload),
-      );
+    mutationFn: async (params) => {
+      const {error} = await request(api.completeTask(params));
 
-      if (response !== null) {
-        return response.json();
-      }
+      if (error !== null) {
+        const {data: parsedError, success} =
+          requestErrorSchema.safeParse(error);
 
-      if (errorResponse.variant === 'network-error') {
-        throw new Error('Unexpected network error', {
-          cause: errorResponse.networkError,
-        });
-      }
+        if (success && parsedError.variant === 'failed-response') {
+          const errorData = await parsedError.response.json();
 
-      const error = new Error('Failed to complete task');
-      const errorResult = completionErrorSchema.safeParse(
-        await errorResponse.response.json(),
-      );
+          if (isTaskTimeoutError(errorData)) {
+            const currentTask = client.getQueryData<Task>(
+              getUseTaskQueryKey(params.taskId),
+            );
 
-      if (!errorResult.success) {
+            if (currentTask) {
+              client.setQueryData(getUseTaskQueryKey(params.taskId), {
+                ...currentTask,
+                state: 'COMPLETING',
+              });
+            }
+
+            notificationsStore.displayNotification({
+              kind: 'info',
+              title: t('taskDetailsCompletionDelayInfoTitle'),
+              subtitle: t('taskDetailsCompletionDelayInfoSubtitle'),
+              isDismissable: true,
+            });
+
+            return refetchTask(params.taskId);
+          }
+        }
+
         throw error;
       }
 
-      error.name = errorResult.data.message.title;
+      client.invalidateQueries({queryKey: ['task']});
 
-      throw error;
+      return refetchTask(params.taskId);
     },
   });
 }
