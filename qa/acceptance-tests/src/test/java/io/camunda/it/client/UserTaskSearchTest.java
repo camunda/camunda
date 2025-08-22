@@ -672,7 +672,7 @@ class UserTaskSearchTest {
             .send()
             .join();
     // then
-    assertThat(result).isNull();
+    assertThat(result).hasAllNullFieldsOrProperties();
   }
 
   @Test
