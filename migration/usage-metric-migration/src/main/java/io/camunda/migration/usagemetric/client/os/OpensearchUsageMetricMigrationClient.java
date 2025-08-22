@@ -26,13 +26,9 @@ import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.ReindexRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class OpensearchUsageMetricMigrationClient implements UsageMetricMigrationClient {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(OpensearchUsageMetricMigrationClient.class);
   private final OpenSearchClient client;
   private final OpensearchTransformers transformers;
   private final RetryDecorator retryDecorator;
@@ -83,7 +79,7 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
               .script(s -> s.inline(is -> is.source(script).lang(LANG_PAINLESS)))
               .refresh(true)
               .waitForCompletion(false)
-              .slices(0L)
+              .slices(0L) // 0 means auto
               .build();
       final var response =
           retryDecorator.decorate(
@@ -123,11 +119,13 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
   }
 
   @Override
-  public boolean getTask(final String taskId) throws MigrationException {
+  public boolean hasTaskSuccessfullyCompleted(final String taskId) throws MigrationException {
     try {
       final var response =
           retryDecorator.decorate(
-              "Get reindex task", () -> client.tasks().get(r -> r.taskId(taskId)), res -> false);
+              "Has task successfully completed",
+              () -> client.tasks().get(r -> r.taskId(taskId)),
+              res -> false);
       if (response.completed()) {
         if (response.error() != null) {
           final var cause =

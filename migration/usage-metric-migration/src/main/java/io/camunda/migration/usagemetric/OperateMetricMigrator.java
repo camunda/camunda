@@ -153,14 +153,13 @@ if (event == "%s") {
               SCRIPT);
 
       LOG.info("Waiting for taskId {} completion", taskId);
-      // return null so wait continues
       final boolean completed =
           Boolean.TRUE.equals(
               metricRegistry.measureOperateReindexTask(
                   () ->
                       waitForCallback(
                               () -> {
-                                final var res = client.getTask(taskId);
+                                final var res = client.hasTaskSuccessfullyCompleted(taskId);
                                 return res ? true : null; // return null so wait continues
                               },
                               () -> false,
