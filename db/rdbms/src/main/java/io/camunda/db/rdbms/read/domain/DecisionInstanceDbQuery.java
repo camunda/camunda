@@ -16,7 +16,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record DecisionInstanceDbQuery(
-    DecisionInstanceFilter filter, DbQuerySorting<DecisionInstanceEntity> sort, DbQueryPage page) {
+    DecisionInstanceFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
+    DbQuerySorting<DecisionInstanceEntity> sort,
+    DbQueryPage page) {
 
   public static DecisionInstanceDbQuery of(
       final Function<DecisionInstanceDbQuery.Builder, ObjectBuilder<DecisionInstanceDbQuery>> fn) {
@@ -29,6 +33,8 @@ public record DecisionInstanceDbQuery(
         FilterBuilders.decisionInstance().build();
 
     private DecisionInstanceFilter filter;
+    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
+    private List<String> authorizedTenantIds = java.util.Collections.emptyList();
     private DbQuerySorting<DecisionInstanceEntity> sort;
     private DbQueryPage page;
 
@@ -60,11 +66,24 @@ public record DecisionInstanceDbQuery(
       return sort(DbQuerySorting.of(fn));
     }
 
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public Builder authorizedTenantIds(final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
+      return this;
+    }
+
     @Override
     public DecisionInstanceDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new DecisionInstanceDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      return new DecisionInstanceDbQuery(
+          filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }
