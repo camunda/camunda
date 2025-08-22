@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.util;
 
-import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.GeneratedMessage;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -85,11 +85,11 @@ import java.util.function.Supplier;
 
 public final class RecordingGatewayService extends GatewayImplBase {
 
-  private final BlockingDeque<GeneratedMessageV3> requests = new LinkedBlockingDeque<>();
+  private final BlockingDeque<GeneratedMessage> requests = new LinkedBlockingDeque<>();
 
-  private final Map<Class<? extends GeneratedMessageV3>, RequestHandler> requestHandlers =
+  private final Map<Class<? extends GeneratedMessage>, RequestHandler> requestHandlers =
       new HashMap<>();
-  private final Map<Class<? extends GeneratedMessageV3>, Supplier<Throwable>> errorHandlers =
+  private final Map<Class<? extends GeneratedMessage>, Supplier<Throwable>> errorHandlers =
       new HashMap<>();
 
   public RecordingGatewayService() {
@@ -578,7 +578,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   public void errorOnRequest(
-      final Class<? extends GeneratedMessageV3> requestClass,
+      final Class<? extends GeneratedMessage> requestClass,
       final Supplier<Exception> errorSupplier) {
     addRequestHandler(
         requestClass,
@@ -588,29 +588,29 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends GeneratedMessageV3> T getLastRequest() {
+  public <T extends GeneratedMessage> T getLastRequest() {
     return (T) requests.getLast();
   }
 
-  public <T extends GeneratedMessageV3> void addRequestHandler(
+  public <T extends GeneratedMessage> void addRequestHandler(
       final Class<T> requestClass,
-      final RequestHandler<T, ? extends GeneratedMessageV3> requestHandler) {
+      final RequestHandler<T, ? extends GeneratedMessage> requestHandler) {
     errorHandlers.remove(requestClass);
     requestHandlers.put(requestClass, requestHandler);
   }
 
   public void addRequestHandler(
-      final Class<? extends GeneratedMessageV3> requestClass, final Supplier<Throwable> thrower) {
+      final Class<? extends GeneratedMessage> requestClass, final Supplier<Throwable> thrower) {
     requestHandlers.remove(requestClass);
     errorHandlers.put(requestClass, thrower);
   }
 
   @SuppressWarnings("unchecked")
-  private <RequestT extends GeneratedMessageV3, ResponseT extends GeneratedMessageV3> void handle(
+  private <RequestT extends GeneratedMessage, ResponseT extends GeneratedMessage> void handle(
       final RequestT request, final StreamObserver<ResponseT> responseObserver) {
     requests.add(request);
     try {
-      final Class<? extends GeneratedMessageV3> requestType = request.getClass();
+      final Class<? extends GeneratedMessage> requestType = request.getClass();
       final RequestHandler<RequestT, ResponseT> requestHandler = requestHandlers.get(requestType);
       if (requestHandler != null) {
         requestHandler.handleMultiple(request).forEach(responseObserver::onNext);
@@ -629,8 +629,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   @FunctionalInterface
-  interface RequestHandler<
-      RequestT extends GeneratedMessageV3, ResponseT extends GeneratedMessageV3> {
+  interface RequestHandler<RequestT extends GeneratedMessage, ResponseT extends GeneratedMessage> {
     ResponseT handle(RequestT request) throws Exception;
 
     default Collection<ResponseT> handleMultiple(final RequestT request) throws Exception {
