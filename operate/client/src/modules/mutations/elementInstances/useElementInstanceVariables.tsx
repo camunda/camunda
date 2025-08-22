@@ -11,11 +11,7 @@ import {updateElementInstanceVariables} from 'modules/api/v2/elementInstances/up
 import type {ElementInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {getQueryKey} from 'modules/queries/variables/useVariables';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
-
-const getMutationKey = (elementInstanceKey: string) => [
-  'updateElementInstanceVariables',
-  elementInstanceKey,
-];
+import {queryKeys} from 'modules/queries/queryKeys';
 
 function useElementInstanceVariables(
   elementInstanceKey: ElementInstance['elementInstanceKey'],
@@ -25,7 +21,6 @@ function useElementInstanceVariables(
   const VARIABLE_NOT_FOUND = 'Variable not found';
 
   return useMutation({
-    mutationKey: getMutationKey(elementInstanceKey),
     mutationFn: async (variable: {name: string; value: string}) => {
       const response = await updateElementInstanceVariables(
         elementInstanceKey,
@@ -79,4 +74,4 @@ function useElementInstanceVariables(
   });
 }
 
-export {useElementInstanceVariables, getMutationKey};
+export {useElementInstanceVariables};
