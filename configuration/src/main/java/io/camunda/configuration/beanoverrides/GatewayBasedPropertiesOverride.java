@@ -168,6 +168,8 @@ public class GatewayBasedPropertiesOverride {
 
     populateFromClusterNetwork(override);
 
+    override.getCluster().setClusterName(cluster.getName());
+
     override
         .getCluster()
         .setMessageCompression(

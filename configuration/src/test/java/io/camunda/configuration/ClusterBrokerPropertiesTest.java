@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,8 @@ public class ClusterBrokerPropertiesTest {
         "camunda.cluster.partition-count=5",
         "camunda.cluster.replication-factor=3",
         "camunda.cluster.size=10",
-        "camunda.cluster.compression-algorithm=gzip"
+        "camunda.cluster.compression-algorithm=gzip",
+        "camunda.cluster.name=zeebeClusterNew"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -44,17 +46,22 @@ public class ClusterBrokerPropertiesTest {
 
     @Test
     void shouldSetClusterProperties() {
-      assertThat(brokerCfg.getCluster().getNodeId()).isEqualTo(7);
-      assertThat(brokerCfg.getCluster().getPartitionsCount()).isEqualTo(5);
-      assertThat(brokerCfg.getCluster().getReplicationFactor()).isEqualTo(3);
-      assertThat(brokerCfg.getCluster().getClusterSize()).isEqualTo(10);
-      assertThat(brokerCfg.getCluster().getMessageCompression())
-          .isEqualTo(CompressionAlgorithm.GZIP);
+      assertThat(brokerCfg.getCluster())
+          .returns(7, ClusterCfg::getNodeId)
+          .returns(5, ClusterCfg::getPartitionsCount)
+          .returns(3, ClusterCfg::getReplicationFactor)
+          .returns(10, ClusterCfg::getClusterSize)
+          .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
+          .returns("zeebeClusterNew", ClusterCfg::getClusterName);
     }
   }
 
   @Nested
-  @TestPropertySource(properties = {"zeebe.gateway.cluster.messageCompression=gzip"})
+  @TestPropertySource(
+      properties = {
+        "zeebe.gateway.cluster.messageCompression=gzip",
+        "zeebe.gateway.cluster.clusterName=zeebeClusterLegacyGateway"
+      })
   class WithOnlyGatewayLegacySet {
     final BrokerBasedProperties brokerCfg;
 
@@ -64,8 +71,9 @@ public class ClusterBrokerPropertiesTest {
 
     @Test
     void shouldNotSetClusterPropertiesFromLegacyGateway() {
-      assertThat(brokerCfg.getCluster().getMessageCompression())
-          .isEqualTo(CompressionAlgorithm.NONE);
+      assertThat(brokerCfg.getCluster())
+          .returns(CompressionAlgorithm.NONE, ClusterCfg::getMessageCompression)
+          .returns("zeebe-cluster", ClusterCfg::getClusterName);
     }
   }
 
@@ -76,7 +84,8 @@ public class ClusterBrokerPropertiesTest {
         "zeebe.broker.cluster.partitionsCount=6",
         "zeebe.broker.cluster.replicationFactor=4",
         "zeebe.broker.cluster.clusterSize=12",
-        "zeebe.broker.cluster.messageCompression=gzip"
+        "zeebe.broker.cluster.messageCompression=gzip",
+        "zeebe.broker.cluster.clusterName=zeebeClusterLegacyBroker"
       })
   class WithOnlyBrokerLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -87,12 +96,13 @@ public class ClusterBrokerPropertiesTest {
 
     @Test
     void shouldSetClusterPropertiesFromLegacyBroker() {
-      assertThat(brokerCfg.getCluster().getNodeId()).isEqualTo(11);
-      assertThat(brokerCfg.getCluster().getPartitionsCount()).isEqualTo(6);
-      assertThat(brokerCfg.getCluster().getReplicationFactor()).isEqualTo(4);
-      assertThat(brokerCfg.getCluster().getClusterSize()).isEqualTo(12);
-      assertThat(brokerCfg.getCluster().getMessageCompression())
-          .isEqualTo(CompressionAlgorithm.GZIP);
+      assertThat(brokerCfg.getCluster())
+          .returns(11, ClusterCfg::getNodeId)
+          .returns(6, ClusterCfg::getPartitionsCount)
+          .returns(4, ClusterCfg::getReplicationFactor)
+          .returns(12, ClusterCfg::getClusterSize)
+          .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
+          .returns("zeebeClusterLegacyBroker", ClusterCfg::getClusterName);
     }
   }
 
@@ -105,14 +115,17 @@ public class ClusterBrokerPropertiesTest {
         "camunda.cluster.replication-factor=5",
         "camunda.cluster.size=15",
         "camunda.cluster.compression-algorithm=gzip",
+        "camunda.cluster.name=zeebeClusterNew",
         // legacy gateway
         "zeebe.gateway.cluster.messageCompression=snappy",
+        "zeebe.gateway.cluster.clusterName=zeebeClusterLegacyGateway",
         // legacy broker
         "zeebe.broker.cluster.nodeId=99",
         "zeebe.broker.cluster.partitionsCount=99",
         "zeebe.broker.cluster.replicationFactor=99",
         "zeebe.broker.cluster.clusterSize=99",
-        "zeebe.broker.cluster.messageCompression=snappy"
+        "zeebe.broker.cluster.messageCompression=snappy",
+        "zeebe.broker.cluster.clusterName=zeebeClusterLegacyBroker"
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -123,12 +136,13 @@ public class ClusterBrokerPropertiesTest {
 
     @Test
     void shouldSetClusterPropertiesFromNew() {
-      assertThat(brokerCfg.getCluster().getNodeId()).isEqualTo(21);
-      assertThat(brokerCfg.getCluster().getPartitionsCount()).isEqualTo(8);
-      assertThat(brokerCfg.getCluster().getReplicationFactor()).isEqualTo(5);
-      assertThat(brokerCfg.getCluster().getClusterSize()).isEqualTo(15);
-      assertThat(brokerCfg.getCluster().getMessageCompression())
-          .isEqualTo(CompressionAlgorithm.GZIP);
+      assertThat(brokerCfg.getCluster())
+          .returns(21, ClusterCfg::getNodeId)
+          .returns(8, ClusterCfg::getPartitionsCount)
+          .returns(5, ClusterCfg::getReplicationFactor)
+          .returns(15, ClusterCfg::getClusterSize)
+          .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
+          .returns("zeebeClusterNew", ClusterCfg::getClusterName);
     }
   }
 }

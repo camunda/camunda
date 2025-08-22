@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_NAME;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -15,7 +17,9 @@ public class Cluster {
   private static final String PREFIX = "camunda.cluster";
 
   private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
-      Map.of("messageCompression", "zeebe.gateway.cluster.messageCompression");
+      Map.of(
+          "messageCompression", "zeebe.gateway.cluster.messageCompression",
+          "clusterName", "zeebe.gateway.cluster.clusterName");
 
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
@@ -23,7 +27,8 @@ public class Cluster {
           "partitionsCount", "zeebe.broker.cluster.partitionsCount",
           "replicationFactor", "zeebe.broker.cluster.replicationFactor",
           "clusterSize", "zeebe.broker.cluster.clusterSize",
-          "messageCompression", "zeebe.broker.cluster.messageCompression");
+          "messageCompression", "zeebe.broker.cluster.messageCompression",
+          "clusterName", "zeebe.broker.cluster.clusterName");
 
   private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
@@ -50,6 +55,9 @@ public class Cluster {
 
   /** The number of nodes in the cluster. */
   private int size = 1;
+
+  /** Set the name of the cluster */
+  private String name = DEFAULT_CLUSTER_NAME;
 
   /** Configuration for the Raft protocol in the cluster. */
   private Raft raft = new Raft();
@@ -136,6 +144,19 @@ public class Cluster {
     this.size = size;
   }
 
+  public String getName() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".name",
+        name,
+        String.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("clusterName")));
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
   public Raft getRaft() {
     return raft;
   }
@@ -174,6 +195,7 @@ public class Cluster {
     copy.partitionCount = partitionCount;
     copy.replicationFactor = replicationFactor;
     copy.size = size;
+    copy.name = name;
     copy.raft = raft;
     copy.compressionAlgorithm = compressionAlgorithm;
     copy.monitoring = monitoring;

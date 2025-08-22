@@ -168,6 +168,7 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setPartitionsCount(cluster.getPartitionCount());
     override.getCluster().setReplicationFactor(cluster.getReplicationFactor());
     override.getCluster().setClusterSize(cluster.getSize());
+    override.getCluster().setClusterName(cluster.getName());
 
     populateFromRaftProperties(override);
     populateFromClusterMetadata(override);
