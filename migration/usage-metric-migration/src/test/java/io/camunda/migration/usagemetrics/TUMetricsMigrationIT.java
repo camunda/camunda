@@ -15,6 +15,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.google.common.hash.Hashing;
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.api.MigrationTimeoutException;
 import io.camunda.migration.api.Migrator;
 import io.camunda.migration.commons.MigrationTest;
 import io.camunda.migration.commons.configuration.ConfigurationType;
@@ -44,7 +45,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -259,6 +259,7 @@ public class TUMetricsMigrationIT extends MigrationTest {
     // given - importer is not finished
     this.isElasticsearch = isElasticsearch;
     properties.getRetry().setMinRetryDelay(Duration.ofSeconds(1));
+    properties.getRetry().setRetryDelayMultiplier(1);
     properties.setTimeout(Duration.ofSeconds(5));
 
     // when - then the migration should fail with a timeout exception
@@ -270,7 +271,7 @@ public class TUMetricsMigrationIT extends MigrationTest {
             () ->
                 assertThatExceptionOfType(MigrationException.class)
                     .isThrownBy(this::runMigration)
-                    .withCauseInstanceOf(CompletionException.class)
+                    .withCauseInstanceOf(MigrationTimeoutException.class)
                     .withMessageContaining("Importer did not finish within the timeout of"));
   }
 
