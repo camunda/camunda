@@ -7,7 +7,7 @@
  */
 package io.camunda.qa.util.cluster;
 
-import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled.BACKUP_SECONDARY_STORAGE_ENABLED;
+import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled.BACKUP_WEBAPPS_ENABLED;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;
@@ -29,7 +29,7 @@ public class TestStandaloneBackupManager
         BackupManagerConfiguration.class,
         StandaloneBackupManager.class,
         UnifiedConfiguration.class);
-    withProperty(BACKUP_SECONDARY_STORAGE_ENABLED, true);
+    withProperty(BACKUP_WEBAPPS_ENABLED, true);
   }
 
   @Override

@@ -7,7 +7,7 @@
  */
 package io.camunda.application;
 
-import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled.BACKUP_SECONDARY_STORAGE_ENABLED;
+import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled.BACKUP_WEBAPPS_ENABLED;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.application.commons.backup.BackupPriorityConfiguration;
@@ -47,16 +47,16 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  * <p>Example properties:
  *
  * <pre>
- * camunda.database.indexPrefix=operate
- * camunda.database.clusterName=elasticsearch
+ * camunda.database.index-prefix=operate
+ * camunda.database.cluster-name=elasticsearch
  * camunda.database.url=https://localhost:9200
- * camunda.database.security.selfSigned=true
- * camunda.database.security.verifyHostname=false
- * camunda.database.security.certificatePath=C:/.../config/certs/http_ca.crt
+ * camunda.database.security.self-signed=true
+ * camunda.database.security.verify-hostname=false
+ * camunda.database.security.certificate-path=C:/.../config/certs/http_ca.crt
  * camunda.database.username=camunda-admin
  * camunda.database.password=camunda123
  *
- * camunda.data.backup.repositoryName=els-test
+ * camunda.data.backup.repository-name=els-test
  * *
  * </pre>
  *
@@ -95,7 +95,7 @@ public class StandaloneBackupManager implements CommandLineRunner {
             BackupManagerConfiguration.class,
             StandaloneBackupManager.class,
             UnifiedConfiguration.class)
-        .properties(BACKUP_SECONDARY_STORAGE_ENABLED + "=true")
+        .properties(BACKUP_WEBAPPS_ENABLED + "=true")
         .addCommandLineProperties(true)
         .run(args);
 

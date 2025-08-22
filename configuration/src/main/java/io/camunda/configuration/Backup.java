@@ -58,14 +58,6 @@ public class Backup {
   private Duration incompleteCheckTimeout = Duration.ofMinutes(5);
 
   /**
-   * Enable or disable secondary storage backup endpoint.
-   *
-   * <p>Note: This is an internal configuration, enabled when operate and/or tasklist webapps are
-   * enabled, and also enabled by the standalone backup application.
-   */
-  private boolean secondaryStorageEnabled = false;
-
-  /**
    * Set the backup store type. Supported values are [NONE, S3, GCS, AZURE, FILESYSTEM]. Default
    * value is NONE.
    *
@@ -135,14 +127,6 @@ public class Backup {
 
   public void setIncompleteCheckTimeout(final Duration incompleteCheckTimeout) {
     this.incompleteCheckTimeout = incompleteCheckTimeout;
-  }
-
-  public boolean isSecondaryStorageEnabled() {
-    return secondaryStorageEnabled;
-  }
-
-  public void setSecondaryStorageEnabled(final boolean secondaryStorageEnabled) {
-    this.secondaryStorageEnabled = secondaryStorageEnabled;
   }
 
   public S3 getS3() {

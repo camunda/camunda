@@ -36,12 +36,12 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
  * <pre>
  * camunda.database.type=elasticsearch
  * camunda.database.url=
- * camunda.database.security.selfSigned=
+ * camunda.database.security.self-signed=
  * camunda.database.security.enabled=
- * camunda.database.security.certificatePath=
+ * camunda.database.security.certificate-path=
  * camunda.database.username=
  * camunda.database.password=
- * camunda.database.indexPrefix=
+ * camunda.database.index-prefix=
  * </pre>
  *
  * All of those porperties can also be handed over via environment variables, e.g.
