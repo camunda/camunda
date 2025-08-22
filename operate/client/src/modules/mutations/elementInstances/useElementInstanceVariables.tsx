@@ -22,16 +22,13 @@ function useElementInstanceVariables(
 
   return useMutation({
     mutationFn: async (variable: {name: string; value: string}) => {
-      const response = await updateElementInstanceVariables(
-        elementInstanceKey,
-        {
-          variables: {[variable.name]: JSON.parse(variable.value)},
-          local: true,
-        },
-      );
+      const {error} = await updateElementInstanceVariables(elementInstanceKey, {
+        variables: {[variable.name]: JSON.parse(variable.value)},
+        local: true,
+      });
 
-      if (!response.ok) {
-        throw new Error(response.statusText);
+      if (error !== null) {
+        throw new Error(error.response?.statusText);
       }
 
       await queryClient.fetchQuery({
