@@ -123,7 +123,7 @@ jobs:
 
       - name: Upload failed test results
         uses: ./.github/actions/collect-test-artifacts
-        if: failure()
+        if: failure() || cancelled()
         with:
           name: tasklist-test-results-${{ matrix.database }}
           path: |
