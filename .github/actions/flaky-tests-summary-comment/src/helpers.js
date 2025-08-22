@@ -114,7 +114,7 @@ function mergeFlakyData(current, historical) {
         totalRuns: newTotal
       });
     }
-  })
+  });
 
   return Array.from(merged.values(), test => ({
     ...test,
