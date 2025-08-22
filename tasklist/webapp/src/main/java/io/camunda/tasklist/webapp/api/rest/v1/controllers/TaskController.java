@@ -221,7 +221,8 @@ public class TaskController extends ApiErrorController {
 
   private void checkTaskImplementation(final LazySupplier<TaskDTO> taskSupplier) {
     if (taskSupplier.get().getImplementation() != TaskImplementation.JOB_WORKER
-        && TasklistAuthenticationUtil.isApiUser()) {
+        && TasklistAuthenticationUtil.isApiUser(
+            authenticationProvider.getCamundaAuthentication())) {
       final TaskDTO task = taskSupplier.get();
       LOGGER.warn(
           "V1 API is used for task with id={} implementation={}",

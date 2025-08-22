@@ -16,7 +16,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -42,7 +41,6 @@ import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
@@ -52,7 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,7 +58,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -85,19 +81,11 @@ class TaskServiceTest {
 
   @InjectMocks private TaskService instance;
 
-  private MockedStatic<TasklistAuthenticationUtil> authenticationUtil;
-
   @BeforeEach
   public void setUp() {
-    authenticationUtil = mockStatic(TasklistAuthenticationUtil.class);
     when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     when(organizationService.getOrganizationIfPresent())
         .thenReturn(OrganizationService.DEFAULT_ORGANIZATION);
-  }
-
-  @AfterEach
-  public void tearDown() {
-    authenticationUtil.close();
   }
 
   @Test
@@ -306,14 +294,15 @@ class TaskServiceTest {
     final var userB = "userB";
     final var userAAuthentication = CamundaAuthentication.of(b -> b.user(userA));
     final var userBAuthentication = CamundaAuthentication.of(b -> b.user(userB));
+    final var userBAsClientAuthentication = CamundaAuthentication.of(b -> b.clientId(userB));
 
     return Stream.of(
-        Arguments.of(null, true, userA, userAAuthentication, false, userA, false, null),
-        Arguments.of(false, false, userA, userBAuthentication, true, userA, false, null),
-        Arguments.of(true, true, null, userBAuthentication, false, userB, false, null),
-        Arguments.of(true, true, "", userBAuthentication, false, userB, false, null),
-        Arguments.of(false, false, userA, userBAuthentication, false, userA, true, null),
-        Arguments.of(true, true, userA, userBAuthentication, false, userA, true, userB));
+        Arguments.of(null, true, userA, userAAuthentication, userA, false, null),
+        Arguments.of(false, false, userA, userBAsClientAuthentication, userA, false, null),
+        Arguments.of(true, true, null, userBAuthentication, userB, false, null),
+        Arguments.of(true, true, "", userBAuthentication, userB, false, null),
+        Arguments.of(false, false, userA, userBAuthentication, userA, true, null),
+        Arguments.of(true, true, userA, userBAuthentication, userA, true, userB));
   }
 
   @ParameterizedTest
@@ -323,7 +312,6 @@ class TaskServiceTest {
       final boolean expectedAllowOverrideAssignment,
       final String providedAssignee,
       final CamundaAuthentication user,
-      final boolean isApiUser,
       final String expectedAssignee,
       final boolean allowNonSelfAssignment,
       final String currentAssignee) {
@@ -331,15 +319,11 @@ class TaskServiceTest {
     // Given
     when(tasklistProperties.getFeatureFlag())
         .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(allowNonSelfAssignment));
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
     when(taskBefore.getAssignee()).thenReturn(currentAssignee);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
-    when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(mock(CamundaAuthentication.class));
-    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
-        .thenReturn(user.authenticatedUsername());
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
     when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
 
@@ -355,12 +339,9 @@ class TaskServiceTest {
   @Test
   public void assignTaskByApiUser() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
+    setAuthenticatedClient("userA");
+
     final var taskId = "123";
-    when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(mock(CamundaAuthentication.class));
-    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
-        .thenReturn("userA");
 
     // when - then
     verifyNoInteractions(taskStore, taskValidator);
@@ -372,12 +353,9 @@ class TaskServiceTest {
   @Test
   public void assignTaskToEmptyUser() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
+    setAuthenticatedClient("userA");
+
     final var taskId = "123";
-    when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(mock(CamundaAuthentication.class));
-    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
-        .thenReturn("userA");
 
     // when - then
     verifyNoInteractions(taskStore, taskValidator);
@@ -389,12 +367,9 @@ class TaskServiceTest {
   @Test
   public void assignTaskToInvalidTask() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
+    setAuthenticatedClient("userA");
+
     final var taskId = "123";
-    when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(mock(CamundaAuthentication.class));
-    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
-        .thenReturn("userA");
     when(taskStore.getTask(taskId))
         .thenThrow(new NotFoundException("task with id " + taskId + " was not found "));
 
@@ -578,22 +553,17 @@ class TaskServiceTest {
       final boolean expectedAllowOverrideAssignment,
       final String providedAssignee,
       final CamundaAuthentication user,
-      final boolean isApiUser,
       final String expectedAssignee,
       final boolean allowNonSelfAssignment,
       final String currentAssignee) {
     // Given
     when(tasklistProperties.getFeatureFlag())
         .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(allowNonSelfAssignment));
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
     when(taskBefore.getAssignee()).thenReturn(currentAssignee);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
-    when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(mock(CamundaAuthentication.class));
-    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
-        .thenReturn(user.authenticatedUsername());
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
     when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
     final var result =
@@ -602,5 +572,11 @@ class TaskServiceTest {
     // Then
     verify(taskValidator).validateCanAssign(taskBefore, expectedAllowOverrideAssignment);
     assertThat(result).isEqualTo(TaskDTO.createFrom(assignedTask, objectMapper));
+  }
+
+  protected void setAuthenticatedClient(String id) {
+
+    final var authentication = CamundaAuthentication.of(b -> b.clientId(id));
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
   }
 }
