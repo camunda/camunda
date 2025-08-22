@@ -17,6 +17,7 @@ import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -66,8 +67,7 @@ public class SecondaryStorageTest {
 
       /* camundaExporter */
 
-      final ExporterCfg camundaExporter =
-          brokerBasedProperties.getExporters().get("camundaExporter");
+      final ExporterCfg camundaExporter = getCamundaExporter(brokerBasedProperties);
       assertThat(camundaExporter).isNotNull();
 
       final Map<String, Object> args = camundaExporter.getArgs();
@@ -89,8 +89,7 @@ public class SecondaryStorageTest {
 
       /* camundaExporter */
 
-      final ExporterCfg camundaExporter =
-          brokerBasedProperties.getExporters().get("camundaExporter");
+      final ExporterCfg camundaExporter = getCamundaExporter(brokerBasedProperties);
       assertThat(camundaExporter).isNotNull();
 
       final Map<String, Object> args = camundaExporter.getArgs();
@@ -143,8 +142,7 @@ public class SecondaryStorageTest {
 
       /* camundaExporter */
 
-      final ExporterCfg camundaExporter =
-          brokerBasedProperties.getExporters().get("camundaExporter");
+      final ExporterCfg camundaExporter = getCamundaExporter(brokerBasedProperties);
       assertThat(camundaExporter).isNotNull();
 
       final Map<String, Object> args = camundaExporter.getArgs();
@@ -165,8 +163,7 @@ public class SecondaryStorageTest {
 
       /* camundaExporter */
 
-      final ExporterCfg camundaExporter =
-          brokerBasedProperties.getExporters().get("camundaExporter");
+      final ExporterCfg camundaExporter = getCamundaExporter(brokerBasedProperties);
       assertThat(camundaExporter).isNotNull();
 
       final Map<String, Object> args = camundaExporter.getArgs();
@@ -178,5 +175,17 @@ public class SecondaryStorageTest {
       final String url = (String) connect.get("url");
       assertThat(url).isEqualTo(expectedUrl);
     }
+  }
+
+  private ExporterCfg getCamundaExporter(BrokerBasedProperties brokerBasedProperties) {
+    List<ExporterCfg> exporters =
+        brokerBasedProperties.getExporters().values().stream()
+            .filter(e -> e.getClassName().equals("io.camunda.exporter.CamundaExporter"))
+            .toList();
+    if (exporters.isEmpty()) {
+      return null;
+    }
+
+    return exporters.get(0);
   }
 }
