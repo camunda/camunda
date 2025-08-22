@@ -116,40 +116,39 @@ public class TUMetricMigrator implements Migrator {
           return null;
         } else {
           final var status = client.getTask(taskId);
-          LOG.info("TU migration step exists {}, status {}", reindexTask, status);
-          if (status.found() && status.completed()) {
-            LOG.info("TU migration job {} already completed, nothing to do", taskId);
-            client.persistMigratorStep(
-                tasklistMigrationRepositoryIndex.getFullQualifiedName(),
-                TASKLIST_MIGRATOR_STEP_ID,
-                status.taskId(),
-                TASKLIST_STEP_DESCRIPTION,
-                true);
-            return null;
+          LOG.info("TU migration step exists status {}", status);
+          if (status.found()) {
+            if (status.completed()) {
+              LOG.info("TU migration job {} already completed, nothing to do", taskId);
+              persistStatus(status.taskId(), true);
+              return null;
+            } else {
+              LOG.info("TU migration job already running {}", status);
+            }
           } else {
-            LOG.info(
-                "TU migration job {}, is not present in secondary storage, restarting migration",
-                taskId);
+            LOG.info("TU migration job {}, is not present, restarting migration", taskId);
             taskId = reindex();
+            persistStatus(taskId, false);
           }
         }
       }
 
-      client.persistMigratorStep(
-          tasklistMigrationRepositoryIndex.getFullQualifiedName(),
-          TASKLIST_MIGRATOR_STEP_ID,
-          taskId,
-          TASKLIST_STEP_DESCRIPTION,
-          false);
-
       monitorReindexTask(taskId);
-
     } catch (final Exception e) {
       if (ExceptionFilter.shouldThrowException(e)) {
         throw new MigrationException(e.getMessage(), e);
       }
     }
     return null;
+  }
+
+  private void persistStatus(final String status, final boolean completed) {
+    client.persistMigratorStep(
+        tasklistMigrationRepositoryIndex.getFullQualifiedName(),
+        TASKLIST_MIGRATOR_STEP_ID,
+        status,
+        TASKLIST_STEP_DESCRIPTION,
+        completed);
   }
 
   private void busyWaitForImporter() throws Exception {
@@ -218,12 +217,7 @@ public class TUMetricMigrator implements Migrator {
       final var status = client.getTask(taskId);
       if (status.completed()) {
         LOG.info("Reindex task {} completed successfully", taskId);
-        client.persistMigratorStep(
-            tasklistMigrationRepositoryIndex.getFullQualifiedName(),
-            TASKLIST_MIGRATOR_STEP_ID,
-            status.taskId(),
-            TASKLIST_STEP_DESCRIPTION,
-            true);
+        persistStatus(status.taskId(), true);
         return true;
       }
     } catch (final Exception e) {
