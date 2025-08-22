@@ -7,7 +7,7 @@
  */
 
 import {Camunda8} from '@camunda8/sdk';
-import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
+import type {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY,
