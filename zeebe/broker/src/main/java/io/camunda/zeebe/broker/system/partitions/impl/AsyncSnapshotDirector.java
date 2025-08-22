@@ -20,6 +20,7 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -414,6 +415,11 @@ public final class AsyncSnapshotDirector extends Actor
         nextStep.run();
       }
     };
+  }
+
+  @VisibleForTesting
+  public long getCommitPosition() {
+    return commitPosition;
   }
 
   private static final class InProgressSnapshot {
