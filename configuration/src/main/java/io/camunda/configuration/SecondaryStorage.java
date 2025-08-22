@@ -7,7 +7,7 @@
  */
 package io.camunda.configuration;
 
-import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH;
+import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED;
 
 import java.util.Set;
 
@@ -32,14 +32,10 @@ public class SecondaryStorage {
 
   public SecondaryStorageType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".type",
-        type,
-        SecondaryStorageType.class,
-        SUPPORTED_ONLY_IF_VALUES_MATCH,
-        LEGACY_TYPE_PROPERTIES);
+        PREFIX + ".type", type, SecondaryStorageType.class, SUPPORTED, LEGACY_TYPE_PROPERTIES);
   }
 
-  public void setType(SecondaryStorageType type) {
+  public void setType(final SecondaryStorageType type) {
     this.type = type;
   }
 
@@ -47,7 +43,7 @@ public class SecondaryStorage {
     return elasticsearch;
   }
 
-  public void setElasticsearch(Elasticsearch elasticsearch) {
+  public void setElasticsearch(final Elasticsearch elasticsearch) {
     this.elasticsearch = elasticsearch;
   }
 
@@ -55,7 +51,7 @@ public class SecondaryStorage {
     return opensearch;
   }
 
-  public void setOpensearch(Opensearch opensearch) {
+  public void setOpensearch(final Opensearch opensearch) {
     this.opensearch = opensearch;
   }
 

@@ -20,11 +20,11 @@ public abstract class SecondaryStorageDatabase {
         prefix() + ".url",
         url,
         String.class,
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        BackwardsCompatibilityMode.SUPPORTED,
         legacyUrlProperties());
   }
 
-  public void setUrl(String url) {
+  public void setUrl(final String url) {
     this.url = url;
   }
 

@@ -139,7 +139,9 @@ final class ContainerState implements AutoCloseable {
             .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "64MB")
             .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
             .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
-            .withEnv("CAMUNDA_DEFAULT_EXPORTER_ENABLED", "false")
+            // Unified Config: No secondary storage + compatibility values
+            .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "none")
+            // ---
             .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
             .withEnv(UNPROTECTED_API_ENV_VAR, "true")
             .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
@@ -179,6 +181,13 @@ final class ContainerState implements AutoCloseable {
     } else {
       gateway =
           new ZeebeGatewayContainer(gatewayImage)
+              // Unified Config: No secondary storage + compatibility values
+              .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "none")
+              .withEnv("CAMUNDA_DATABASE_TYPE", "none")
+              .withEnv("CAMUNDA_OPERATE_DATABASE", "none")
+              .withEnv("CAMUNDA_TASKLIST_DATABASE", "none")
+              .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARTS_CONNECT_TYPE", "none")
+              // ---
               .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress())
               .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
               .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
