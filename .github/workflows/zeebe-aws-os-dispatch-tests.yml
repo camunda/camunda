@@ -43,24 +43,28 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
+            owner: "Data Layer"
           - group: search-client-os
             name: "Search Client AWS OS Integration Tests"
             maven-modules: "'io.camunda:camunda-search-client-connect'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
+            owner: "Core Features"
           - group: camunda-exporter
             name: "Camunda Exporter AWS OS Integration Tests"
             maven-modules: "'io.camunda:camunda-exporter'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
+            owner: "Data Layer"
           - group: camunda-qa-acceptance-tests
             name: "Camunda QA Integration Module"
             maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
             maven-build-threads: 2
             maven-test-fork-count: 2
             runs-on: aws-core-16-default
+            owner: "General"
     steps:
       - uses: actions/checkout@v4
       - name: Import secrets from Vault
@@ -149,7 +153,7 @@ jobs:
           job_name: "integration-tests/${{ matrix.group }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          user_description: ${{ matrix.owner }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

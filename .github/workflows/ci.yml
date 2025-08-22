@@ -762,7 +762,7 @@ jobs:
             runs-on: gcp-perf-core-16-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            owner: "Core Features"
+            owner: "General"
             module: "Zeebe"
           - group: qa-migration-integration
             name: "Migration QA"
