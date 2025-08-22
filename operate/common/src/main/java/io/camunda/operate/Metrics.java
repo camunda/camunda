@@ -57,6 +57,8 @@ public class Metrics {
 
   // Gauges:
   public static final String GAUGE_IMPORT_QUEUE_SIZE = OPERATE_NAMESPACE + "import.queue.size";
+  public static final String GAUGE_POST_IMPORTER_QUEUE_SIZE =
+      OPERATE_NAMESPACE + "post.importer.queue.size";
   public static final String GAUGE_BPMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.bpmn.count";
   public static final String GAUGE_DMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.dmn.count";
 
@@ -114,6 +116,10 @@ public class Metrics {
 
   public Timer getTimer(final String name, final String... tags) {
     return registry.timer(name, tags);
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return registry;
   }
 
   public Timer getHistogram(final String name, final String... tags) {
