@@ -53,5 +53,4 @@ runs:
 
           // Step 2: Generate and post the PR comment
           const { createOrUpdateComment } = require('./.github/actions/flaky-tests-summary-comment/src/flaky-tests-comment-generator');
-          console.log('[flaky-tests] Generating comment...');
           await createOrUpdateComment(context, github, processedData, ${{ inputs.pr-number }}, '${{ inputs.branch-name }}');

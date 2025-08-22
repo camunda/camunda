@@ -32,19 +32,17 @@ Creates or updates a PR comment with a comprehensive summary of flaky tests acro
 ### Example internal data structure:
 
 ```json
- {
-  "flakyTests": [
-    {
-      "packageName": "io.camunda.it.auth",
-      "className": "ProcessAuthorizationIT",
-      "methodName": "shouldReturnProcessDefinitionStartForm(CamundaClient, CamundaClient)",
-      "jobs": [
-        "elasticsearch-integration-tests"
-      ],
-      "occurrences": 1
-    }
-  ]
-}
+[
+  {
+    "packageName": "io.camunda.it.auth",
+    "className": "ProcessAuthorizationIT",
+    "methodName": "shouldReturnProcessDefinitionStartForm(CamundaClient, CamundaClient)",
+    "jobs": [
+      "elasticsearch-integration-tests"
+    ],
+    "occurrences": 1
+  }
+]
 ```
 
 ## Outputs

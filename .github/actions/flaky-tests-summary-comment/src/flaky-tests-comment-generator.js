@@ -21,7 +21,6 @@ async function createOrUpdateComment(context, github, currentData, prNumber, bra
 
   // Step 4: Generate comment content
   const comment = await buildComment(mergedData, github, branchName);
-  console.log('Generated comment:', comment);
 
   // Step 5: Create or update comment
   if (existingComment) {

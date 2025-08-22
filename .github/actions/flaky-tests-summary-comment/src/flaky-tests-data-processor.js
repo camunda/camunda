@@ -16,7 +16,6 @@ function processFlakyTestsData(rawData) {
     testNames.forEach(testName => {
       const parsedTest = helpers.parseTestName(testName);
       const key = helpers.getTestKey(parsedTest);
-      console.log(`[flaky-tests] Processing test "${key}" from job "${job}"`);
       const existingTest = testMap.get(key);
 
       if (existingTest) {
