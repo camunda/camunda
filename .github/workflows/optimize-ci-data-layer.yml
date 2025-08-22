@@ -49,7 +49,7 @@ jobs:
       backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - name: Get list of changed directories
         id: filter
         uses: ./.github/actions/paths-filter
@@ -61,7 +61,7 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
@@ -134,7 +134,7 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
@@ -214,7 +214,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
