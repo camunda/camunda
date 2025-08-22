@@ -77,6 +77,16 @@
       </if>
       <if test="filter.name != null">AND NAME = #{filter.name}</if>
 
+      <if test="filter.joinParentId != null">
+        <!-- only used for tenantMember search -->
+        AND t.TENANT_ID = #{filter.joinParentId}
+      </if>
+
+      <if test="filter.entityType != null">
+        <!-- only used for tenantMember search -->
+        AND tm.ENTITY_TYPE = #{filter.entityType}
+      </if>
+
       <if
         test="filter.memberIds != null and !filter.memberIds.isEmpty() and filter.childMemberType != null">
         AND t.TENANT_ID IN ( SELECT tmf.TENANT_ID FROM ${prefix}TENANT_MEMBER tmf
