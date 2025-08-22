@@ -110,6 +110,11 @@ public class TaskController extends ApiErrorController {
   public ResponseEntity<List<TaskSearchResponse>> searchTasks(
       @RequestBody(required = false) final TaskSearchRequest searchRequest) {
 
+    if (!permissionServices.hasWildcardPermissionToReadUserTask()) {
+      // We return an empty list here to match the behaviour of V2
+      return ResponseEntity.ok(Collections.emptyList());
+    }
+
     final var query =
         taskMapper.toTaskQuery(requireNonNullElse(searchRequest, new TaskSearchRequest()));
 
@@ -211,6 +216,10 @@ public class TaskController extends ApiErrorController {
   public ResponseEntity<TaskResponse> getTaskById(
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
           final String taskId) {
+    if (!permissionServices.hasWildcardPermissionToReadUserTask()) {
+      throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);
+    }
+
     final var taskSupplier = getTaskSupplier(taskId);
     if (!isUserRestrictionEnabled() || hasAccessToTask(taskSupplier)) {
       return ResponseEntity.ok(taskMapper.toTaskResponse(taskSupplier.get()));
@@ -478,6 +487,11 @@ public class TaskController extends ApiErrorController {
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
           final String taskId,
       @RequestBody(required = false) final VariablesSearchRequest variablesSearchRequest) {
+    if (!permissionServices.hasWildcardPermissionToReadUserTask()) {
+      // We return an empty list here to match the behaviour of V2
+      return ResponseEntity.ok(Collections.emptyList());
+    }
+
     final Map<String, Boolean> variableNamesToReturnFullValue;
     if (variablesSearchRequest != null) {
       if (CollectionUtils.isNotEmpty(variablesSearchRequest.getVariableNames())

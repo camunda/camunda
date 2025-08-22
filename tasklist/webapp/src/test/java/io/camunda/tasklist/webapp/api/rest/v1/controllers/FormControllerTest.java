@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
@@ -39,6 +40,7 @@ class FormControllerTest {
   private MockMvc mockMvc;
 
   @Mock private FormStore formStore;
+  @Mock private TasklistPermissionServices tasklistPermissionServices;
 
   @InjectMocks private FormController instance;
 
@@ -49,8 +51,14 @@ class FormControllerTest {
 
   @Nested
   class EmbeddedFormTests {
+    @BeforeEach
+    void setUp() {
+      // Mock the permission service to allow all permissions for the test
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(true);
+    }
+
     @Test
-    void getEmbeededForm() throws Exception {
+    void getEmbeddedForm() throws Exception {
       // Given
       final var formId = "userTaskForm_111";
       final var processDefinitionKey = "100001";
@@ -87,7 +95,7 @@ class FormControllerTest {
     }
 
     @Test
-    void getEmbeededFormReturnsNotFoundWhenVersionIsPassed() throws Exception {
+    void getEmbeddedFormReturnsNotFoundWhenVersionIsPassed() throws Exception {
       // Given
       final var formId = "userTaskForm_111";
       final var processDefinitionKey = "100001";
@@ -105,10 +113,34 @@ class FormControllerTest {
           .andExpect(status().isNotFound())
           .andReturn();
     }
+
+    @Test
+    void getEmbeddedFormReturnsForbiddenWhenUserIsMissingPermissions() throws Exception {
+      // Given
+      final var formId = "userTaskForm_111";
+      final var processDefinitionKey = "100001";
+
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(false);
+
+      // Then
+      mockMvc
+          .perform(
+              get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
+                  .param("processDefinitionKey", processDefinitionKey)
+                  .param("version", ""))
+          .andExpect(status().isForbidden())
+          .andReturn();
+    }
   }
 
   @Nested
   class LinkedFormTests {
+    @BeforeEach
+    void setUp() {
+      // Mock the permission service to allow all permissions for the test
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(true);
+    }
+
     @Test
     void getLinkedFormWhenVersionIsPassed() throws Exception {
       // Given

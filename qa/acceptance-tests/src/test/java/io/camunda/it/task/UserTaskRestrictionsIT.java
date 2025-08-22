@@ -108,14 +108,14 @@ public class UserTaskRestrictionsIT {
       new TestUser(
           USER1,
           "password",
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_1))));
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
 
   @UserDefinition
   private static final TestUser USER2_USER =
       new TestUser(
           USER2,
           "password",
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_1))));
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
 
   @UserDefinition
   private static final TestUser USER3_USER = new TestUser(USER3, "password", List.of());
@@ -128,7 +128,7 @@ public class UserTaskRestrictionsIT {
       new TestGroup(
           GROUP1,
           GROUP1,
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))),
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))),
           List.of(new Membership(USER3, EntityType.USER)));
 
   @GroupDefinition
@@ -136,7 +136,7 @@ public class UserTaskRestrictionsIT {
       new TestGroup(
           GROUP2,
           GROUP2,
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))),
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))),
           List.of(new Membership(USER4, EntityType.USER)));
 
   private static long processInstanceKeyCandidateUsers;

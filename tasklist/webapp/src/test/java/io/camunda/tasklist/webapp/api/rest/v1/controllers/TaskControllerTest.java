@@ -94,10 +94,44 @@ class TaskControllerTest {
 
     final var authentication = CamundaAuthentication.of(b -> b.clientId(id));
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+    when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(true);
   }
 
   @Nested
   class SearchTaskTests {
+    @Test
+    void returnsEmptyListWhenUserHasNoUserTaskPermission() throws Exception {
+      // Given
+      final var searchRequest =
+          new TaskSearchRequest()
+              .setPageSize(20)
+              .setState(TaskState.CREATED)
+              .setAssigned(true)
+              .setSearchAfter(new String[] {"123", "456"});
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(false);
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      final var result =
+          CommonUtils.OBJECT_MAPPER.readValue(
+              responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+
+      // Then
+      assertThat(result).isEmpty();
+    }
+
     @Test
     void searchTasks() throws Exception {
       // Given
@@ -370,6 +404,38 @@ class TaskControllerTest {
     }
 
     @Test
+    void returnsEmptyVariableListWhenUserHasNoUserTaskPermission() throws Exception {
+      // Given
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(false);
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  post(
+                          TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"),
+                          "untested-id")
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(
+                          CommonUtils.OBJECT_MAPPER.writeValueAsString(
+                              new VariablesSearchRequest()
+                                  .setVariableNames(new ArrayList<>(Set.of("tested")))))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      final var result =
+          CommonUtils.OBJECT_MAPPER.readValue(
+              responseAsString, new TypeReference<List<VariableSearchResponse>>() {});
+
+      // Then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
     void searchTaskVariables() throws Exception {
       // Given
       final var taskId = "778899";
@@ -584,6 +650,19 @@ class TaskControllerTest {
 
   @Nested
   class GetTaskTests {
+    @Test
+    void returnsForbiddenWhenUserHasNoUserTaskPermission() throws Exception {
+      // Given
+      when(tasklistPermissionServices.hasWildcardPermissionToReadUserTask()).thenReturn(false);
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(get(TasklistURIs.TASKS_URL_V1.concat("/untested-id")))
+              .andDo(print())
+              .andExpect(status().isForbidden());
+    }
+
     @Test
     void getTaskById() throws Exception {
       // Given
