@@ -32,6 +32,12 @@ type OutletContext = {
   refetch: () => void;
   processXml: string | undefined;
 };
+const POLLING_STATES: UserTask['state'][] = [
+  'CANCELING',
+  'UPDATING',
+  'COMPLETING',
+  'ASSIGNING',
+] as const;
 
 const TaskDetailsLayout: React.FC = () => {
   const {id} = useTaskDetailsParams();
@@ -40,12 +46,7 @@ const TaskDetailsLayout: React.FC = () => {
   const {data: task, refetch} = useTask(id, {
     refetchInterval(query) {
       const {data} = query.state;
-      const POLLING_STATES: UserTask['state'][] = [
-        'CANCELING',
-        'UPDATING',
-        'COMPLETING',
-        'ASSIGNING',
-      ];
+
       if (data?.state && POLLING_STATES.includes(data.state)) {
         return 5000;
       }
