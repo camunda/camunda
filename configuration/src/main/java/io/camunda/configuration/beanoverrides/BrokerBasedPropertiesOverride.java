@@ -93,11 +93,11 @@ public class BrokerBasedPropertiesOverride {
     // from camunda.data.* sections
     populateFromData(override);
 
-    if (unifiedConfiguration.getCamunda().getDefaultExporterEnabled()) {
-      populateExporter(override, "camundaExporter", "io.camunda.exporter.CamundaExporter", null);
-    } else {
-      LOGGER.info("Default exporter camundaExporter has been disabled.");
-    }
+    // if (unifiedConfiguration.getCamunda().getDefaultExporterEnabled()) {
+    populateExporter(override, "camundaExporter", "io.camunda.exporter.CamundaExporter", null);
+    // } else {
+    //  LOGGER.info("Default exporter camundaExporter has been disabled.");
+    // }
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());
