@@ -38,7 +38,8 @@ public class OpensearchProperties {
   private Integer connectTimeout;
 
   private boolean createSchema = true;
-  private boolean updateSchemaSettings = true;
+  // default to false to avoid breaking change in 8.7 patch version. SM users need to opt-in
+  private boolean updateSchemaSettings = false;
 
   /** Indicates whether operate does a proper health check for ES/OS clusters. */
   private boolean healthCheckEnabled = true;
