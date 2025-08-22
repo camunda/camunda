@@ -19,8 +19,20 @@ import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 
 public class RestGatewayPaths {
 
-  private static final String URL_TOPOLOGY = REST_API_PATH + "/topology";
+  private static final String URL_CLOCK_PIN = REST_API_PATH + "/clock";
+  private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
+  private static final String URL_DECISION_EVALUATION =
+      REST_API_PATH + "/decision-definitions/evaluation";
+  private static final String URL_DEPLOYMENTS_URL = REST_API_PATH + "/deployments";
+  private static final String URL_INCIDENT_RESOLUTION = REST_API_PATH + "/incidents/%s/resolution";
   private static final String URL_JOB_ACTIVATION = REST_API_PATH + "/jobs/activation";
+  private static final String URL_MESSAGE_PUBLICATION = REST_API_PATH + "/messages/publication";
+  private static final String URL_PROCESS_INSTANCE_CANCELLATION =
+      REST_API_PATH + "/process-instances/%s/cancellation";
+  private static final String URL_PROCESS_INSTANCE_CREATION = REST_API_PATH + "/process-instances";
+  private static final String URL_SIGNAL_BROADCAST = REST_API_PATH + "/signals/broadcast";
+  private static final String URL_TOPOLOGY = REST_API_PATH + "/topology";
+  private static final String URL_USAGE_METRICS = REST_API_PATH + "/system/usage-metrics";
   private static final String URL_USER_TASK_ASSIGNMENT =
       REST_API_PATH + "/user-tasks/%s/assignment";
   private static final String URL_USER_TASK_COMPLETION =
@@ -28,19 +40,6 @@ public class RestGatewayPaths {
   private static final String URL_USER_TASK_UNASSIGNMENT =
       REST_API_PATH + "/user-tasks/%s/assignee";
   private static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
-  private static final String URL_MESSAGE_PUBLICATION = REST_API_PATH + "/messages/publication";
-  private static final String URL_CLOCK_PIN = REST_API_PATH + "/clock";
-  private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
-  private static final String URL_INCIDENT_RESOLUTION = REST_API_PATH + "/incidents/%s/resolution";
-  private static final String URL_CANCEL_PROCESS =
-      REST_API_PATH + "/process-instances/%s/cancellation";
-  private static final String URL_BROADCAST_SIGNAL = REST_API_PATH + "/signals/broadcast";
-  private static final String URL_EVALUATE_DECISION =
-      REST_API_PATH + "/decision-definitions/evaluation";
-  private static final String URL_CREATE_PROCESS_INSTANCE = REST_API_PATH + "/process-instances";
-  private static final String URL_DEPLOYMENTS_URL = REST_API_PATH + "/deployments";
-  private static final String URL_AD_HOC_SUB_PROCESS_ACTIVITIES_SEARCH =
-      REST_API_PATH + "/element-instances/ad-hoc-activities/search";
 
   /**
    * @return the topology request URL
@@ -118,29 +117,29 @@ public class RestGatewayPaths {
   }
 
   public static String getCancelProcessUrl(final long processInstanceKey) {
-    return String.format(URL_CANCEL_PROCESS, processInstanceKey);
+    return String.format(URL_PROCESS_INSTANCE_CANCELLATION, processInstanceKey);
   }
 
   public static String getBroadcastSignalUrl() {
-    return URL_BROADCAST_SIGNAL;
+    return URL_SIGNAL_BROADCAST;
   }
 
   public static String getEvaluateDecisionUrl() {
-    return URL_EVALUATE_DECISION;
+    return URL_DECISION_EVALUATION;
   }
 
   /**
    * @return create process instance request URL
    */
   public static String getCreateProcessInstanceUrl() {
-    return URL_CREATE_PROCESS_INSTANCE;
+    return URL_PROCESS_INSTANCE_CREATION;
   }
 
   public static String getDeploymentsUrl() {
     return URL_DEPLOYMENTS_URL;
   }
 
-  public static String getAdHocSubProcessActivitiesSearchUrl() {
-    return URL_AD_HOC_SUB_PROCESS_ACTIVITIES_SEARCH;
+  public static String getUsageMetricsUrl() {
+    return URL_USAGE_METRICS;
   }
 }

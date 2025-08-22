@@ -24,14 +24,19 @@ import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.client.protocol.rest.JobActivationResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.SearchQueryResponse;
 import io.camunda.client.protocol.rest.TopologyResponse;
+import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import java.util.List;
 import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
+import org.instancio.Instancio;
 
 public class RestGatewayService {
 
   private static final CamundaObjectMapper JSON_MAPPER = new CamundaObjectMapper();
+  private static final SearchQueryResponse DUMMY_SEARCH_RESULT =
+      Instancio.create(SearchQueryResponse.class);
 
   private final WireMockRuntimeInfo mockInfo;
 
@@ -43,6 +48,18 @@ public class RestGatewayService {
      * Otherwise, Wiremock fails if no stubs are registered but a request is sent.
      */
     mockInfo.getWireMock().register(WireMock.any(WireMock.anyUrl()).willReturn(WireMock.ok()));
+    // Register a default search response
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.post(WireMock.urlPathMatching(".*/search"))
+                .willReturn(WireMock.okJson(JSON_MAPPER.toJson(DUMMY_SEARCH_RESULT))));
+    // Register an empty default statistics response
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.any(WireMock.urlPathMatching(".*/statistics/.*"))
+                .willReturn(WireMock.okJson("{\"items\":  []}")));
   }
 
   /**
@@ -85,6 +102,14 @@ public class RestGatewayService {
         .register(
             WireMock.post(RestGatewayPaths.getDeploymentsUrl())
                 .willReturn(WireMock.okJson(JSON_MAPPER.toJson(response))));
+  }
+
+  public void onUsageMetricsRequest(final UsageMetricsResponse usageMetricsResponse) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(WireMock.urlMatching(RestGatewayPaths.getUsageMetricsUrl() + ".*"))
+                .willReturn(WireMock.okJson(JSON_MAPPER.toJson(usageMetricsResponse))));
   }
 
   /**
