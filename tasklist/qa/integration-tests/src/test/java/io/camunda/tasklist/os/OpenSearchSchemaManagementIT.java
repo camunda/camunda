@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opensearch.client.opensearch._types.mapping.Property.Kind.Keyword;
+import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskEntity;
@@ -23,10 +24,10 @@ import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.OpenSearchTestExtension;
-import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.util.TestApplication;
+import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestIndexDescriptor;
 import io.camunda.tasklist.util.TestTemplateDescriptor;
 import io.camunda.tasklist.util.apps.schema.TestIndexDescriptorConfiguration;
@@ -38,34 +39,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
-@SpringBootTest(
-    classes = {
-      TestApplication.class,
-      TestIndexDescriptorConfiguration.class,
-      TestTemplateDescriptorConfiguration.class
-    },
-    properties = {
-      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      TasklistProperties.PREFIX + "importer.jobType = testJobType",
-      "camunda.webapps.enabled = true",
-      "camunda.webapps.default-app = tasklist",
-    },
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
+@Import({TestIndexDescriptorConfiguration.class, TestTemplateDescriptorConfiguration.class})
+@DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)
+public class OpenSearchSchemaManagementIT extends TasklistIntegrationTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchSchemaManagementIT.class);
+  @RegisterExtension @Autowired public DatabaseTestExtension databaseTestExtension;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private List<IndexDescriptor> indexDescriptors;
   @Autowired private List<TemplateDescriptor> templateDescriptors;
