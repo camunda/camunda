@@ -18,6 +18,8 @@ import java.util.function.Function;
 
 public record DecisionRequirementsDbQuery(
     DecisionRequirementsFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
     DbQuerySorting<DecisionRequirementsEntity> sort,
     DbQueryPage page,
     DecisionRequirementsQueryResultConfig resultConfig) {
@@ -38,6 +40,8 @@ public record DecisionRequirementsDbQuery(
     private DbQuerySorting<DecisionRequirementsEntity> sort;
     private DbQueryPage page;
     private DecisionRequirementsQueryResultConfig resultConfig;
+    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
+    private List<String> authorizedTenantIds = java.util.Collections.emptyList();
 
     public DecisionRequirementsDbQuery.Builder filter(final DecisionRequirementsFilter value) {
       filter = value;
@@ -61,12 +65,27 @@ public record DecisionRequirementsDbQuery(
       return this;
     }
 
+    public DecisionRequirementsDbQuery.Builder authorizedResourceIds(
+        final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public DecisionRequirementsDbQuery.Builder authorizedTenantIds(
+        final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
+      return this;
+    }
+
     @Override
     public DecisionRequirementsDbQuery build() {
       filter = Objects.requireNonNullElse(filter, DEFAULT_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
       resultConfig = Objects.requireNonNullElse(resultConfig, DEFAULT_RESULT_CONFIG);
-      return new DecisionRequirementsDbQuery(filter, sort, page, resultConfig);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      return new DecisionRequirementsDbQuery(
+          filter, authorizedResourceIds, authorizedTenantIds, sort, page, resultConfig);
     }
   }
 }
