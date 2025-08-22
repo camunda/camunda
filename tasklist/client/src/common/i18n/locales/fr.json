@@ -279,7 +279,7 @@
     "taskDetailsCompletionDelayInfoTitle": "Complétion de tâche reportée",
     "taskDetailsAssignmentDelayInfoSubtitle": "Le traitement de l'attribution de la tâche prend plus de temps que prévu. Elle sera bientôt terminée",
     "taskDetailsUnassignmentDelayInfoSubtitle": "Le traitement de la désattribution de la tâche prend plus de temps que prévu. Elle sera bientôt terminée",
-    "taskDetailsCompletionDelayInfoSubtitle": "Le traitement de l'achèvement de la tâche prend plus de temps que prévu. Elle sera bientôt terminée",
+    "taskDetailsCompletionDelayInfoSubtitle": "Le traitement de la complétion de la tâche prend plus de temps que prévu. Elle sera bientôt terminée",
     "taskErrorTaskNotCompleted": "La tâche n'est pas terminée",
     "taskErrorTaskStillAssigning": "La tâche est encore en cours d'attribution",
     "taskDetailsUnassign": "Désassigner",
