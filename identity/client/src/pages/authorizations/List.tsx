@@ -71,7 +71,7 @@ const List: FC = () => {
       <PageHeader
         title={t("authorizations")}
         linkText={t("authorizations").toLowerCase()}
-        docsLinkPath=""
+        docsLinkPath="/docs/next/components/identity/authorization/"
       />
       <TabsTitle>{t("resourceType")}</TabsTitle>
       <TabsContainer>
