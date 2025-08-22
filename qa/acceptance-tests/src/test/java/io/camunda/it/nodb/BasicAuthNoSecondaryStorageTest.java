@@ -33,7 +33,8 @@ public class BasicAuthNoSecondaryStorageTest {
         new TestStandaloneBroker()
             .withBasicAuth()
             .withAuthenticationMethod(AuthenticationMethod.BASIC)
-            .withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
+            .withProperty(
+                UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
 
     // when/then - application startup should fail with the expected exception
     assertThatThrownBy(broker::start)
