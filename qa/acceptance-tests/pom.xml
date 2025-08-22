@@ -261,6 +261,11 @@
       <artifactId>usage-metric-migration</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>migration-commons</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
