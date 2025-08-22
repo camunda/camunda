@@ -16,7 +16,6 @@ import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstan
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from 'modules/queries/queryKeys';
 import {useElementInstanceVariables} from 'modules/mutations/elementInstances/useElementInstanceVariables';
-import {variablesStore} from 'modules/stores/variables';
 
 type Props = {
   scopeId: string;
@@ -25,7 +24,10 @@ type Props = {
 const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
   const queryClient = useQueryClient();
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const mutation = useElementInstanceVariables(scopeId, processInstanceId);
+  const {mutateAsync: mutateAsyncVariables} = useElementInstanceVariables(
+    scopeId,
+    processInstanceId,
+  );
 
   return (
     <ReactFinalForm<VariableFormValues>
@@ -44,18 +46,7 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
         const isNewVariable = initialValues.name === '';
         const {name, value} = values;
 
-        if (isNewVariable) {
-          variablesStore.setPendingItem({
-            name,
-            value,
-            hasActiveOperation: true,
-            isFirst: false,
-            sortValues: null,
-            isPreview: false,
-          });
-        }
-
-        mutation.mutate(
+        await mutateAsyncVariables(
           {name, value},
           {
             onSuccess: () => {
@@ -77,9 +68,7 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
               await queryClient.invalidateQueries({
                 queryKey: queryKeys.variables.search(),
               });
-              if (isNewVariable) {
-                variablesStore.setPendingItem(null);
-              }
+
               form.reset({});
             },
           },
