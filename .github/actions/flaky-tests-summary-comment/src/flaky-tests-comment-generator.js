@@ -16,7 +16,7 @@ async function createOrUpdateComment(context, github, currentData, prNumber, bra
   console.log('Historical data:', historicalData);
 
   // Step 3: Merge current and historical data, or generate first run data
-  const mergedData = !historicalData ? helpers.prepareFirstRunData(currentData) : helpers.mergeFlakyData(currentData, historicalData);
+  const mergedData = (!historicalData || historicalData.length === 0) ? helpers.prepareFirstRunData(currentData) : helpers.mergeFlakyData(currentData, historicalData);
   console.log('Merged data:', JSON.stringify(mergedData, null, 2));
 
   // Step 4: Generate comment content
