@@ -73,9 +73,7 @@ function useAssignTask() {
               isDismissable: true,
             });
 
-            const task = await refetchTask(params.userTaskKey);
-
-            return task;
+            return refetchTask(params.userTaskKey);
           }
         }
 

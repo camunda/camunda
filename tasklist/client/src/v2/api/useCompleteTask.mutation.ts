@@ -73,9 +73,7 @@ function useCompleteTask() {
               isDismissable: true,
             });
 
-            const task = await refetchTask(params.userTaskKey);
-
-            return task;
+            return refetchTask(params.userTaskKey);
           }
         }
 
@@ -84,9 +82,7 @@ function useCompleteTask() {
 
       client.invalidateQueries({queryKey: [USE_TASKS_QUERY_KEY]});
 
-      const task = await refetchTask(params.userTaskKey);
-
-      return task;
+      return refetchTask(params.userTaskKey);
     },
   });
 }
