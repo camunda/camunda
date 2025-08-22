@@ -9,6 +9,7 @@ package io.camunda.it.tasklist.v1.form;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.READ_USER_TASK;
 import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
@@ -50,6 +51,7 @@ public class TasklistV1ApiFormPermissionsIT {
   private static final String UNAUTHORIZED_USERNAME = "unauthorized1";
   private static long processDefinitionKey;
   private static String formId;
+  private static long taskKey;
   private static TestRestTasklistClient authorizedClient;
   private static TestRestTasklistClient unauthorizedClient;
 
@@ -60,6 +62,7 @@ public class TasklistV1ApiFormPermissionsIT {
           ADMIN_USERNAME,
           List.of(
               new Permissions(AUTHORIZATION, CREATE, List.of("*")),
+              new Permissions(AUTHORIZATION, READ, List.of("*")),
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
@@ -126,6 +129,31 @@ public class TasklistV1ApiFormPermissionsIT {
                       .join()
                       .items();
               assertThat(tasks).describedAs("Wait until the task exists").hasSize(1);
+              taskKey = tasks.getFirst().getUserTaskKey();
+            });
+    await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var form = adminClient.newUserTaskGetFormRequest(taskKey).send().join();
+              assertThat(form).describedAs("Wait until the form exists").isNotNull();
+            });
+    await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var authorizations =
+                  adminClient
+                      .newAuthorizationSearchRequest()
+                      .filter(t -> t.ownerId(ADMIN_USERNAME))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(authorizations)
+                  .describedAs("Wait until the authorizations exist")
+                  .hasSize(6); // 5 created here + 1 default permission
             });
 
     authorizedClient =

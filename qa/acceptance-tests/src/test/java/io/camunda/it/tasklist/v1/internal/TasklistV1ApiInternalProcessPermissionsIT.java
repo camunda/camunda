@@ -9,6 +9,7 @@ package io.camunda.it.tasklist.v1.internal;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.PermissionType.READ_USER_TASK;
 import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
@@ -58,6 +59,7 @@ public class TasklistV1ApiInternalProcessPermissionsIT {
           ADMIN_USERNAME,
           List.of(
               new Permissions(AUTHORIZATION, CREATE, List.of("*")),
+              new Permissions(AUTHORIZATION, READ, List.of("*")),
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
@@ -94,12 +96,29 @@ public class TasklistV1ApiInternalProcessPermissionsIT {
                             .newProcessDefinitionSearchRequest()
                             .filter(f -> f.processDefinitionKey(processDefinitionKey))
                             .send()
-                            .join();
+                            .join()
+                            .items();
                     assertThat(definition)
                         .describedAs("Wait until the definition exists")
-                        .isNotNull();
+                        .hasSize(1);
                   });
         });
+    await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var authorizations =
+                  adminClient
+                      .newAuthorizationSearchRequest()
+                      .filter(t -> t.ownerId(ADMIN_USERNAME))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(authorizations)
+                  .describedAs("Wait until the authorizations exist")
+                  .hasSize(7); // 6 created here + 1 default permission
+            });
 
     authorizedClient =
         STANDALONE_CAMUNDA
