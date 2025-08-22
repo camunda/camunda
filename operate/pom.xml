@@ -85,7 +85,7 @@
     <version.grpc>1.65.1</version.grpc>
     <version.protobuf>3.25.8</version.protobuf>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
-    <zeebe-test-container.version>3.6.3</zeebe-test-container.version>
+    <zeebe-test-container.version>3.6.7</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.8</elasticsearch-test-container.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <wiremock.version>3.9.2</wiremock.version>
