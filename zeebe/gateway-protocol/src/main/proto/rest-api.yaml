@@ -8695,6 +8695,8 @@ components:
           $ref: "#/components/schemas/JobListenerEventTypeEnum"
         userTask:
           $ref: "#/components/schemas/UserTaskProperties"
+        tags:
+          $ref: "#/components/schemas/TagSet"
     UserTaskProperties:
       type: object
       description: Contains properties of a user task.

@@ -22,10 +22,11 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
@@ -129,6 +130,22 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .toList();
   }
 
+  @Override
+  public Set<String> getTags() {
+    return StreamSupport.stream(tagsProperty.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toSet());
+  }
+
+  public ProcessInstanceCreationRecord setTags(final Set<String> tags) {
+    tagsProperty.reset();
+    if (tags != null) {
+      tags.forEach(tag -> tagsProperty.add().wrap(BufferUtil.wrapString(tag)));
+    }
+    return this;
+  }
+
   public ProcessInstanceCreationRecord setVersion(final int version) {
     versionProperty.setValue(version);
     return this;
@@ -227,19 +244,6 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   public ProcessInstanceCreationRecord setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
-    return this;
-  }
-
-  @Override
-  public Set<String> getTags() {
-    final var tags = new HashSet<String>();
-    tagsProperty.forEach(e -> tags.add(e.toString()));
-    return tags;
-  }
-
-  public ProcessInstanceCreationRecord setTags(final Set<String> tags) {
-    tagsProperty.reset();
-    tags.forEach(e -> tagsProperty.add().wrap(e));
     return this;
   }
 }

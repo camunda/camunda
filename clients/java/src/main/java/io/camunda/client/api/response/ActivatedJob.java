@@ -21,6 +21,7 @@ import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.ListenerEventType;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface ActivatedJob {
 
@@ -143,4 +144,9 @@ public interface ActivatedJob {
    *     document reference list
    */
   List<DocumentReferenceResponse> getDocumentReferences(String name);
+
+  /**
+   * @return the tags associated with the job inherited from the process instance on job creation.
+   */
+  Set<String> getTags();
 }

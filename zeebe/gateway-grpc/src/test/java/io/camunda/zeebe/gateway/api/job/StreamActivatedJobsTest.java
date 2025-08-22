@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.Test;
@@ -53,6 +54,7 @@ public class StreamActivatedJobsTest extends GatewayTest {
     jobRecord.setDeadline(DEADLINE);
     final Map<String, Object> fetchedVariables = Map.of("foo", 1, "bar", 2);
     jobRecord.setVariables(MsgPackUtil.asMsgPack(fetchedVariables));
+    jobRecord.setTags(Set.of("tag1", "tag2"));
     activatedJob.setRecord(jobRecord);
 
     jobStreamer.push(activatedJob).join();
@@ -68,6 +70,7 @@ public class StreamActivatedJobsTest extends GatewayTest {
     assertThat(activatedJob.jobRecord().getJobKind()).isEqualTo(JobKind.BPMN_ELEMENT);
     assertThat(activatedJob.jobRecord().getJobListenerEventType())
         .isEqualTo(JobListenerEventType.UNSPECIFIED);
+    assertThat(activatedJob.jobRecord().getTags()).containsExactlyInAnyOrder("tag1", "tag2");
   }
 
   @Test

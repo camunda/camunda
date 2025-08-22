@@ -109,6 +109,8 @@ message ActivatedJob {
   JobKind kind = 16;
   // the listener event type of the job.
   ListenerEventType listenerEventType = 17;
+  // the list of tags
+  repeated string tags = 18;
 }
 
 message UserTaskProperties {

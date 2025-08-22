@@ -19,6 +19,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
+import java.util.Set;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -125,6 +126,27 @@ public class LongPollingActivateJobsTest {
     // then
     final var jobs = activateJobsResponse.join().getJobs();
     assertThat(jobs).hasSize(1).extracting(ActivatedJob::getWorker).contains("open");
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldActivateJobsWithTags(final boolean useRest, final TestInfo testInfo) {
+    // given
+    final int expectedJobsCount = 1;
+
+    final String jobType = "job-" + testInfo.getDisplayName();
+
+    final CamundaFuture<ActivateJobsResponse> responseFuture =
+        getCommand(client, useRest).jobType(jobType).maxJobsToActivate(expectedJobsCount).send();
+
+    // when
+    resourcesHelper.createSingleJob(jobType, Set.of("tag1", "tag2"));
+
+    // then
+    final ActivateJobsResponse response = responseFuture.join();
+    assertThat(response.getJobs()).hasSize(expectedJobsCount);
+    final var responseJob = response.getJobs().get(0);
+    assertThat(responseJob.getTags()).isEqualTo(Set.of("tag1", "tag2"));
   }
 
   private ActivateJobsCommandStep1 getCommand(final CamundaClient client, final boolean useRest) {

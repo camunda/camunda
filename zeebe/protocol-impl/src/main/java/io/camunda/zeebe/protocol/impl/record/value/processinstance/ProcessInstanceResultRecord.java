@@ -20,9 +20,11 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import java.util.HashSet;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceResultRecord extends UnifiedRecordValue
@@ -108,14 +110,17 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
 
   @Override
   public Set<String> getTags() {
-    final var tags = new HashSet<String>();
-    tagsProperty.forEach(e -> tags.add(e.toString()));
-    return tags;
+    return StreamSupport.stream(tagsProperty.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toSet());
   }
 
   public ProcessInstanceResultRecord setTags(final Set<String> tags) {
     tagsProperty.reset();
-    tags.forEach(e -> tagsProperty.add().wrap(e));
+    if (tags != null) {
+      tags.forEach(tag -> tagsProperty.add().wrap(BufferUtil.wrapString(tag)));
+    }
     return this;
   }
 

@@ -386,7 +386,8 @@ public final class ResponseMapper {
             .setKind(EnumUtil.convert(job.getJobKind(), ActivatedJob.JobKind.class))
             .setListenerEventType(
                 EnumUtil.convert(
-                    job.getJobListenerEventType(), ActivatedJob.ListenerEventType.class));
+                    job.getJobListenerEventType(), ActivatedJob.ListenerEventType.class))
+            .addAllTags(job.getTags());
 
     if (job.getJobKind().equals(io.camunda.zeebe.protocol.record.value.JobKind.TASK_LISTENER)
         && !job.getCustomHeaders().isEmpty()) {

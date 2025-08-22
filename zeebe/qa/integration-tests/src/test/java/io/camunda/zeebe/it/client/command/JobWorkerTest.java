@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiFunction;
@@ -311,6 +312,49 @@ final class JobWorkerTest {
                 JobStreamActuatorAssert.assertThat(actuator)
                     .remoteStreams()
                     .doNotHaveJobType(jobType));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideWorkerConfigurators")
+  void shouldActivateJobWithTags(
+      final BiFunction<String, JobWorkerBuilderStep3, JobWorker> configurator) {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(jobType).zeebeJobRetries("5"))
+            .done();
+    final var processDefinitionKey = client.deployProcess(process);
+    final var processInstanceKey =
+        client.createProcessInstance(processDefinitionKey, Set.of("tag1", "tag2"));
+
+    // when
+    final var jobHandler = new RecordingJobHandler();
+    final var startTime = System.currentTimeMillis();
+    final var builder =
+        client
+            .getClient()
+            .newWorker()
+            .jobType(jobType)
+            .handler(jobHandler)
+            .name("test")
+            .timeout(5000);
+    try (final var ignored = configurator.apply(jobType, builder)) {
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(1));
+    }
+
+    // then
+    final var job = jobHandler.getHandledJobs().get(0);
+    assertThat(job.getType()).isEqualTo(jobType);
+    assertThat(job.getRetries()).isEqualTo(5);
+    assertThat(job.getDeadline()).isCloseTo(startTime + 5000, Offset.offset(500L));
+    assertThat(job.getWorker()).isEqualTo("test");
+    assertThat(job.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(job.getBpmnProcessId()).isEqualTo("process");
+    assertThat(job.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(job.getElementId()).isEqualTo("task");
+    assertThat(job.getTags()).isEqualTo(Set.of("tag1", "tag2"));
   }
 
   @Nested

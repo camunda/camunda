@@ -71,6 +71,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue CHANGED_ATTRIBUTES_KEY = new StringValue("changedAttributes");
   private static final StringValue RESULT_KEY = new StringValue("result");
+  private static final StringValue TAGS = new StringValue("tags");
 
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
 
@@ -113,9 +114,10 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new ArrayProperty<>(CHANGED_ATTRIBUTES_KEY, StringValue::new);
   private final ObjectProperty<JobResult> resultProp =
       new ObjectProperty<>(RESULT_KEY, new JobResult());
+  private final ArrayProperty<StringValue> tagsProp = new ArrayProperty<>(TAGS, StringValue::new);
 
   public JobRecord() {
-    super(22);
+    super(23);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -137,7 +139,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(changedAttributesProp)
-        .declareProperty(resultProp);
+        .declareProperty(resultProp)
+        .declareProperty(tagsProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -163,6 +166,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     tenantIdProp.setValue(record.getTenantId());
     setChangedAttributes(record.getChangedAttributes());
     resultProp.getValue().wrap(record.getResult());
+
+    setTags(record.getTags());
   }
 
   public void wrap(final JobRecord record) {
@@ -308,6 +313,22 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   public JobRecord setResult(final JobResult result) {
     if (result != null) {
       resultProp.getValue().wrap(result);
+    }
+    return this;
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return StreamSupport.stream(tagsProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toSet());
+  }
+
+  public JobRecord setTags(final Set<String> tags) {
+    tagsProp.reset();
+    if (tags != null) {
+      tags.forEach(tag -> tagsProp.add().wrap(BufferUtil.wrapString(tag)));
     }
     return this;
   }
