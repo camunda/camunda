@@ -15,7 +15,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record JobDbQuery(JobFilter filter, DbQuerySorting<JobEntity> sort, DbQueryPage page) {
+public record JobDbQuery(
+    JobFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
+    DbQuerySorting<JobEntity> sort,
+    DbQueryPage page) {
 
   public static JobDbQuery of(final Function<Builder, ObjectBuilder<JobDbQuery>> fn) {
     return fn.apply(new JobDbQuery.Builder()).build();
@@ -26,11 +31,23 @@ public record JobDbQuery(JobFilter filter, DbQuerySorting<JobEntity> sort, DbQue
     private static final JobFilter EMPTY_FILTER = FilterBuilders.job().build();
 
     private JobFilter filter;
+    private List<String> authorizedResourceIds = List.of();
+    private List<String> authorizedTenantIds = List.of();
     private DbQuerySorting<JobEntity> sort;
     private DbQueryPage page;
 
     public Builder filter(final JobFilter value) {
       filter = value;
+      return this;
+    }
+
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public Builder authorizedTenantIds(final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
       return this;
     }
 
@@ -59,7 +76,9 @@ public record JobDbQuery(JobFilter filter, DbQuerySorting<JobEntity> sort, DbQue
     public JobDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new JobDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      return new JobDbQuery(filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }
