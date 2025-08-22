@@ -25,10 +25,10 @@ import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.ElasticsearchHelper;
 import io.camunda.tasklist.util.ElasticsearchTestExtension;
-import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.util.TestApplication;
+import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestIndexDescriptor;
 import io.camunda.tasklist.util.TestTemplateDescriptor;
 import io.camunda.tasklist.util.apps.schema.TestIndexDescriptorConfiguration;
@@ -40,34 +40,23 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
-@SpringBootTest(
-    classes = {
-      TestApplication.class,
-      TestIndexDescriptorConfiguration.class,
-      TestTemplateDescriptorConfiguration.class
-    },
-    properties = {
-      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      TasklistProperties.PREFIX + "importer.jobType = testJobType",
-      "camunda.webapps.enabled = true",
-      "camunda.webapps.default-app = tasklist",
-    },
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Import({TestIndexDescriptorConfiguration.class, TestTemplateDescriptorConfiguration.class})
 @DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)
-public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
+public class ElasticSearchSchemaManagementIT extends TasklistIntegrationTest {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticSearchSchemaManagementIT.class);
 
+  @RegisterExtension @Autowired public DatabaseTestExtension databaseTestExtension;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private List<IndexDescriptor> indexDescriptors;
   @Autowired private List<TemplateDescriptor> templateDescriptors;
