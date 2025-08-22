@@ -79,7 +79,7 @@
     <version.yarn>v1.22.10</version.yarn>
     <version.failsafe>2.4.4</version.failsafe>
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.awssdk>2.32.28</version.awssdk>
+    <version.awssdk>2.32.29</version.awssdk>
     <version.aws-java-sdk>1.12.788</version.aws-java-sdk>
     <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
     <version.grpc>1.65.1</version.grpc>
