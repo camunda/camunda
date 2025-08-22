@@ -44,7 +44,7 @@ const List: FC = () => {
     <PageHeader
       title={t("tenants")}
       linkText={t("tenants").toLowerCase()}
-      docsLinkPath=""
+      docsLinkPath="/docs/next/self-managed/components/orchestration-cluster/identity/manage-tenants/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
