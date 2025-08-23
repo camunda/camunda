@@ -10,6 +10,9 @@ package io.camunda.configuration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -264,6 +267,26 @@ public class UnifiedConfigurationHelper {
     }
 
     throw new IllegalArgumentException("Unsupported type: " + expectedType);
+  }
+
+  /* Helper methods */
+
+  public static ExporterCfg getCamundaExporter(final BrokerBasedProperties brokerBasedProperties) {
+    final List<ExporterCfg> exporters =
+        brokerBasedProperties.getExporters().values().stream()
+            .filter(e -> e.getClassName().equals("io.camunda.exporter.CamundaExporter"))
+            .toList();
+    if (exporters.isEmpty()) {
+      return null;
+    }
+
+    return exporters.get(0);
+  }
+
+  public static ExporterConfiguration argsToExporterConfiguration(final Map<String, Object> args) {
+    return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
+            "camundaExporter", args)
+        .instantiate(ExporterConfiguration.class);
   }
 
   /* Helper methods */
