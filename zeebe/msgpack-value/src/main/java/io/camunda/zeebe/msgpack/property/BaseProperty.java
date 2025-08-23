@@ -128,9 +128,17 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
    *
    * <p>If false, disabled sanitization of this value in the cases above.
    *
-   * @return
-   * @param <U>
-   * @param <T>
+   * <p>The chaining portion is a bit hacky, but it allows you to declare fields as:
+   *
+   * <pre>{@code
+   * private final IntegerProperty myProperty = new IntegerProperty("myProperty").sanitized();
+   * }</pre>
+   *
+   * The proper way for chaining would be to add a type param to the class that would represent the
+   * current type, but that would create quite a lot of refactoring, and this is likely good enough
+   * in most cases. Feel free to improve on this.
+   *
+   * @return itself for chaining
    */
   public <U extends BaseValue, T extends BaseProperty<U>> T sanitized() {
     isSanitized = true;
