@@ -15,7 +15,11 @@ public class SecondaryStorage {
 
   private static final String PREFIX = "camunda.data.secondary-storage";
   private static final Set<String> LEGACY_TYPE_PROPERTIES =
-      Set.of("camunda.database.type", "camunda.operate.database", "camunda.tasklist.database");
+      Set.of(
+          "camunda.database.type",
+          "camunda.operate.database",
+          "camunda.tasklist.database",
+          "zeebe.broker.exporters.camundaexporter.args.connect.type");
 
   /** Determines the type of the secondary storage database. */
   private SecondaryStorage.SecondaryStorageType type = SecondaryStorageType.elasticsearch;
