@@ -52,6 +52,9 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 
 1. Implement your new `RecordValue` interface in [protocol-impl](/zeebe/protocol-impl/src/main/java/io/camunda/zeebe/protocol/impl/record/value).
    - Make sure to add annotations for properties (or getter methods) that shouldn't be serialized to JSON.
+   - If you have any properties which should not be printed in the logs, or when we call `toString()` on the object, but you still
+     want them serialized to JSON, then simply call `#sanitized()` on the property itself after declaring it,
+     e.g. `new IntegerProperty("int").sanitized()`.
 2. Add new cases to [JsonSerializableToJsonTest](/zeebe/protocol-impl/src/test/java/io/camunda/zeebe/protocol/impl/JsonSerializableToJsonTest.java):
    - one case that provides a value for each property (as far nested as possible)
    - one case that has as few properties as possible (i.e. an empty record)
