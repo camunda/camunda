@@ -20,6 +20,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
   protected final T value;
   protected final T defaultValue;
   protected boolean isSet;
+  protected boolean isSanitized;
 
   public BaseProperty(final T value) {
     this(StringValue.EMPTY_STRING, value);
@@ -98,14 +99,38 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     valueToWrite.write(writer);
   }
 
-  public void writeJSON(final StringBuilder sb) {
+  public void writeJSON(final StringBuilder sb, final boolean maskSanitized) {
     key.writeJSON(sb);
     sb.append(":");
     if (hasValue()) {
-      resolveValue().writeJSON(sb);
+      if (maskSanitized && isSanitized) {
+        sb.append("\"***\"");
+      } else {
+        resolveValue().writeJSON(sb);
+      }
     } else {
       sb.append("\"NO VALID WRITEABLE VALUE\"");
     }
+  }
+
+  public boolean isSanitized() {
+    return isSanitized;
+  }
+
+  /**
+   * If set to true, will be replaced by '***' when writing to console or logs, i.e. when called via
+   * {@link #toString()}, or {@link #writeJSON(StringBuilder, boolean)} with the second param set to
+   * true.
+   *
+   * <p>If false, disabled sanitization of this value in the cases above.
+   *
+   * @return
+   * @param <U>
+   * @param <T>
+   */
+  public <U extends BaseValue, T extends BaseProperty<U>> T sanitized() {
+    isSanitized = true;
+    return (T) this;
   }
 
   @Override
@@ -133,7 +158,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     final StringBuilder builder = new StringBuilder();
     builder.append(key.toString());
     builder.append(" => ");
-    builder.append(value.toString());
+    builder.append(isSanitized ? "***" : value.toString());
     return builder.toString();
   }
 }
