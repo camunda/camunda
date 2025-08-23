@@ -24,8 +24,8 @@ public class AuthInfo extends UnpackedObject {
   private final EnumProperty<AuthDataFormat> formatProp =
       new EnumProperty<>("format", AuthDataFormat.class, AuthDataFormat.UNKNOWN);
 
-  private final StringProperty authDataProp = new StringProperty("authData", "");
-  private final DocumentProperty claimsProp = new DocumentProperty("claims");
+  private final StringProperty authDataProp = new StringProperty("authData", "").sanitized();
+  private final DocumentProperty claimsProp = new DocumentProperty("claims").sanitized();
 
   public AuthInfo() {
     super(3);

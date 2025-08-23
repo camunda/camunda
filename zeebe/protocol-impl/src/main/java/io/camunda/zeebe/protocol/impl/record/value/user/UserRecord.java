@@ -21,7 +21,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   private final StringProperty usernameProp = new StringProperty("username");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty emailProp = new StringProperty("email", "");
-  private final StringProperty passwordProp = new StringProperty("password", "");
+  private final StringProperty passwordProp = new StringProperty("password", "").sanitized();
 
   public UserRecord() {
     super(5);
