@@ -27,6 +27,8 @@ import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
@@ -39,6 +41,7 @@ import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
@@ -68,6 +71,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
   private final String zeebeIndexPrefix;
+  private final Cache<String, String> lifeCyclePolicyApplied =
+      Caffeine.newBuilder().maximumSize(200).build();
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -116,6 +121,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
+  // keep map
   @Override
   public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
     if (!retention.isEnabled()) {
@@ -266,17 +272,44 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private CompletableFuture<Void> applyPolicyToIndices(
       final String policyName, final List<String> indices) {
 
-    logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
+    if (indices.stream()
+        .allMatch(
+            index -> {
+              final String retentionPolicy = lifeCyclePolicyApplied.getIfPresent(index);
+              return retentionPolicy != null && retentionPolicy.equals(policyName);
+            })) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var indicesWithoutPolicy =
+        indices.stream()
+            .filter(
+                index -> !Objects.equals(lifeCyclePolicyApplied.getIfPresent(index), policyName))
+            .toList();
+
+    logger.debug(
+        "Applying policy '{}' to {} indices: {}",
+        policyName,
+        indicesWithoutPolicy.size(),
+        indicesWithoutPolicy);
 
     final var settingsRequest =
         new PutIndicesSettingsRequest.Builder()
             .settings(settings -> settings.lifecycle(lifecycle -> lifecycle.name(policyName)))
-            .index(indices)
+            .index(indicesWithoutPolicy)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .build();
 
-    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
+    return client
+        .indices()
+        .putSettings(settingsRequest)
+        .thenApplyAsync(
+            ok -> {
+              indices.forEach(indexName -> lifeCyclePolicyApplied.put(indexName, policyName));
+              return null;
+            },
+            executor);
   }
 
   private CompletableFuture<ArchiveBatch> createArchiveBatch(

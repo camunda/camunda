@@ -8,6 +8,8 @@
 package io.camunda.exporter.tasks.archiver;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
@@ -72,6 +74,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final OpenSearchGenericClient genericClient;
   private String lastHistoricalArchiverDate = null;
   private final String zeebeIndexPrefix;
+  private final Cache<String, String> lifeCyclePolicyApplied =
+      Caffeine.newBuilder().maximumSize(200).build();
 
   public OpenSearchArchiverRepository(
       final int partitionId,
@@ -282,10 +286,29 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private CompletableFuture<Void> applyPolicyToIndices(
       final String policyName, final List<String> indices) {
 
-    logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
+    if (indices.stream()
+        .allMatch(
+            index -> {
+              final String retentionPolicy = lifeCyclePolicyApplied.getIfPresent(index);
+              return retentionPolicy != null && retentionPolicy.equals(policyName);
+            })) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var indicesWithoutPolicy =
+        indices.stream()
+            .filter(
+                index -> !Objects.equals(lifeCyclePolicyApplied.getIfPresent(index), policyName))
+            .toList();
+
+    logger.debug(
+        "Applying policy '{}' to {} indices: {}",
+        policyName,
+        indicesWithoutPolicy.size(),
+        indicesWithoutPolicy);
 
     final var requests =
-        indices.stream()
+        indicesWithoutPolicy.stream()
             .map(index -> applyPolicyToIndex(index, policyName))
             .toArray(CompletableFuture[]::new);
 
@@ -314,6 +337,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                             + ", Reason: "
                             + response.getReason()));
               }
+              lifeCyclePolicyApplied.put(index, policyName);
               return CompletableFuture.completedFuture(null);
             },
             executor);
