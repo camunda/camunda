@@ -65,6 +65,7 @@ import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
+import io.camunda.client.api.command.GlobalVariableCreationRequestStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -183,6 +184,7 @@ import io.camunda.client.impl.command.CreateBatchOperationCommandImpl.CreateBatc
 import io.camunda.client.impl.command.CreateDocumentBatchCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
+import io.camunda.client.impl.command.CreateGlobalVariableImpl;
 import io.camunda.client.impl.command.CreateGroupCommandImpl;
 import io.camunda.client.impl.command.CreateMappingRuleCommandImpl;
 import io.camunda.client.impl.command.CreateProcessInstanceCommandImpl;
@@ -1053,6 +1055,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public VariableSearchRequest newVariableSearchRequest() {
     return new VariableSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public GlobalVariableCreationRequestStep1 newGlobalVariableCreationRequest() {
+    return new CreateGlobalVariableImpl(httpClient, jsonMapper);
   }
 
   @Override
