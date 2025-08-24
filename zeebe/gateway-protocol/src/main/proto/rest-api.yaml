@@ -9625,7 +9625,7 @@ components:
             - decisionDefinitionType
             - decisionDefinitionVersion
             - decisionEvaluationInstanceKey
-            - decisionInstanceKey
+            - decisionEvaluationKey
             - elementInstanceKey
             - evaluationDate
             - evaluationFailure
@@ -9682,7 +9682,7 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
-        decisionInstanceKey:
+        decisionEvaluationKey:
           type: string
           description: |
             The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionEvaluationInstanceKey` serves as the primary identifier.
@@ -9744,7 +9744,7 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
-        decisionInstanceKey:
+        decisionEvaluationKey:
           type: string
           description: The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionEvaluationInstanceKey` serves as the primary identifier.
         processDefinitionKey:
