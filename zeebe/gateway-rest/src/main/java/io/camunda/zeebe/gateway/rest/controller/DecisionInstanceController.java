@@ -46,15 +46,15 @@ public class DecisionInstanceController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @CamundaGetMapping(path = "/{decisionInstanceKey}")
+  @CamundaGetMapping(path = "/{decisionEvaluationInstanceKey}")
   public ResponseEntity<DecisionInstanceGetQueryResult> getDecisionInstanceById(
-      @PathVariable("decisionInstanceKey") final String decisionInstanceId) {
+      @PathVariable("decisionEvaluationInstanceKey") final String decisionEvaluationInstanceKey) {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceGetQueryResponse(
               decisionInstanceServices
                   .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getById(decisionInstanceId)));
+                  .getById(decisionEvaluationInstanceKey)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
