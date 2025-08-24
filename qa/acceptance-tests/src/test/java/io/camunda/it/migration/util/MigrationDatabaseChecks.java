@@ -101,16 +101,16 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
 
   public boolean checkIfTasksHaveBeenReindexed() throws IOException, InterruptedException {
     final int sourceIndexCount =
-        getCount(String.format("%s/%s-tasklist-task-8.5.0_/_count", endpoint, indexPrefix));
+        getCount(String.format("%s-tasklist-task-8.5.0_/_count", indexPrefix));
     final int targetIndexCount =
-        getCount(String.format("%s/%s-task-8.8.0_/_count", endpoint, indexPrefix));
+        getCount(String.format("%s-tasklist-task-8.8.0_/_count", indexPrefix));
     return targetIndexCount >= sourceIndexCount;
   }
 
   private int getCount(final String targetUrl) throws IOException, InterruptedException {
     final HttpRequest request =
         HttpRequest.newBuilder()
-            .uri(URI.create(targetUrl))
+            .uri(URI.create(String.format("%s/%s", endpoint, targetUrl)))
             .header("Content-Type", "application/json")
             .GET()
             .build();

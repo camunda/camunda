@@ -7,14 +7,10 @@
  */
 package io.camunda.migration.task.adapter;
 
-import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 
-import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
-import java.util.Optional;
+public class TaskLegacyIndex extends TaskTemplate {
 
-public class TaskLegacyIndex extends AbstractTemplateDescriptor {
-
-  public static final String INDEX_NAME = "task";
   public static final String INDEX_VERSION = "8.5.0";
 
   public TaskLegacyIndex(final String indexPrefix, final boolean isElasticsearch) {
@@ -22,22 +18,7 @@ public class TaskLegacyIndex extends AbstractTemplateDescriptor {
   }
 
   @Override
-  public String getIndexName() {
-    return INDEX_NAME;
-  }
-
-  @Override
-  public Optional<String> getTenantIdField() {
-    return Optional.of(TENANT_ID);
-  }
-
-  @Override
   public String getVersion() {
     return INDEX_VERSION;
-  }
-
-  @Override
-  public String getComponentName() {
-    return TASK_LIST.toString();
   }
 }
