@@ -8,7 +8,7 @@
 package io.camunda.migration.task.util;
 
 import io.camunda.migration.api.MigrationException;
-import io.camunda.migration.task.adapter.ProcessorStep;
+import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.util.VersionUtil;
@@ -188,7 +188,6 @@ public class MigrationUtils {
     step.setDescription("Task migration last migrated document ID or completion status");
 
     final var appliedDate = OffsetDateTime.now(ZoneId.systemDefault());
-    step.setCreatedDate(appliedDate);
     step.setAppliedDate(appliedDate);
 
     step.setIndexName(TaskTemplate.INDEX_NAME);

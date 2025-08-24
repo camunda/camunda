@@ -8,17 +8,21 @@
 package io.camunda.migration.task;
 
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.api.MigrationTimeoutException;
 import io.camunda.migration.api.Migrator;
+import io.camunda.migration.commons.configuration.MigrationConfiguration;
+import io.camunda.migration.commons.configuration.MigrationConfiguration.MigrationRetryConfiguration;
+import io.camunda.migration.commons.configuration.MigrationProperties;
 import io.camunda.migration.task.adapter.TaskEntityPair;
 import io.camunda.migration.task.adapter.TaskMigrationAdapter;
 import io.camunda.migration.task.adapter.es.ElasticsearchAdapter;
 import io.camunda.migration.task.adapter.os.OpensearchAdapter;
-import io.camunda.migration.task.config.TaskMigrationProperties;
 import io.camunda.migration.task.util.MigrationUtils;
 import io.camunda.migration.task.util.TaskMigrationMetricRegistry;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.zeebe.util.retry.RetryDecorator;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.List;
@@ -26,36 +30,30 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component("task-migrator")
-@EnableConfigurationProperties(TaskMigrationProperties.class)
 public class TaskMigrator implements Migrator {
   private static final Logger LOG = LoggerFactory.getLogger(TaskMigrator.class);
 
   private final TaskMigrationAdapter adapter;
-  private final TaskMigrationProperties properties;
+  private final MigrationConfiguration configuration;
   private final ScheduledExecutorService scheduler;
   private final TaskMigrationMetricRegistry metricRegistry;
 
-  // Countdown task to give the importer a bit more time to finish before starting the reindexing.
-  private ScheduledFuture<?> postImporterCompletionCountdown;
-
   public TaskMigrator(
       final ConnectConfiguration connect,
-      final TaskMigrationProperties properties,
+      final MigrationProperties properties,
       final MeterRegistry meterRegistry) {
+    configuration = properties.getMigrationConfiguration(getClass());
     adapter =
         connect.getTypeEnum().isElasticSearch()
-            ? new ElasticsearchAdapter(properties, connect)
-            : new OpensearchAdapter(properties, connect);
+            ? new ElasticsearchAdapter(configuration, connect)
+            : new OpensearchAdapter(configuration, connect);
     scheduler = Executors.newScheduledThreadPool(1);
-    this.properties = properties;
     metricRegistry = new TaskMigrationMetricRegistry(meterRegistry);
   }
 
@@ -88,43 +86,27 @@ public class TaskMigrator implements Migrator {
   }
 
   private void waitUntilReadyForReindexing() {
-    while (!importerIsFinished()) {
-      createDelay();
+    final var retryDecorator =
+        busyRetryDecorator().withRetryOnException(p -> !(p instanceof MigrationTimeoutException));
+    try {
+      retryDecorator.decorate(
+          "Wait for importer to finish", this::importerIsFinished, done -> !done);
+    } catch (final Exception e) {
+      throw new MigrationException(e);
     }
-    LOG.info("Importer has finished. Starting post importer countdown.");
-    startPostImporterCompletionCountdown();
-    while (!countdownIsDone()) {
-      createDelay();
-    }
+    LOG.info("Importer has finished.");
   }
 
   private void createDelay() {
     try {
       scheduler
           .schedule(
-              () -> {}, properties.getRetry().getMinRetryDelay().toSeconds(), TimeUnit.SECONDS)
+              () -> {}, configuration.getRetry().getMinRetryDelay().toSeconds(), TimeUnit.SECONDS)
           .get();
     } catch (final InterruptedException | ExecutionException ex) {
       Thread.currentThread().interrupt();
       LOG.error("Scheduled delay interrupted", ex);
     }
-  }
-
-  private void startPostImporterCompletionCountdown() {
-    LOG.info(
-        "Importer finished, migration will keep running for {}",
-        properties.getImporterFinishedTimeout());
-    postImporterCompletionCountdown =
-        scheduler.schedule(
-            () ->
-                LOG.info(
-                    "Importer countdown finished. If more records are present the migration will keep running."),
-            properties.getImporterFinishedTimeout().getSeconds(),
-            TimeUnit.SECONDS);
-  }
-
-  private boolean countdownIsDone() {
-    return postImporterCompletionCountdown != null && postImporterCompletionCountdown.isDone();
   }
 
   private void performReindexForDatedIndices() {
@@ -223,5 +205,14 @@ public class TaskMigrator implements Migrator {
 
   private double updatedTasksCount(final String lastMigratedTaskKey, final List<TaskEntity> tasks) {
     return tasks.stream().takeWhile(task -> !task.getId().equals(lastMigratedTaskKey)).count() + 1;
+  }
+
+  private RetryDecorator busyRetryDecorator() {
+    final var retryConfiguration = new MigrationRetryConfiguration();
+    retryConfiguration.setMaxRetries(Integer.MAX_VALUE);
+    retryConfiguration.setMinRetryDelay(configuration.getRetry().getMinRetryDelay());
+    retryConfiguration.setMaxRetryDelay(configuration.getRetry().getMaxRetryDelay());
+    retryConfiguration.setRetryDelayMultiplier(configuration.getRetry().getRetryDelayMultiplier());
+    return new RetryDecorator(retryConfiguration);
   }
 }
