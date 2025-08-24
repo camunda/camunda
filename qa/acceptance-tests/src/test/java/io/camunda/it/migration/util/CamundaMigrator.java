@@ -156,7 +156,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     }
     final Map<String, String> env = new HashMap<>();
     env.put("camunda.migration.process.importerFinishedTimeout", "PT2S");
-    env.put("camunda.migration.task.importerFinishedTimeout", "PT2S");
+    env.put("camunda.migration.tasks.importerFinishedTimeout", "PT2S");
     // Reduce importer intervals to speed up tests
     env.put("camunda.operate.importer.importPositionUpdateInterval", "200");
     env.put("camunda.operate.importer.readerBackoff", "200");
