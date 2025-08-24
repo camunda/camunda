@@ -12,6 +12,9 @@ import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEn
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
@@ -24,7 +27,14 @@ public class TestStandaloneBackupManager
   private Long backupId;
 
   public TestStandaloneBackupManager() {
-    super(BackupManagerConfiguration.class, StandaloneBackupManager.class);
+    super(
+        // Unified Configuration classes
+        UnifiedConfigurationHelper.class,
+        UnifiedConfiguration.class,
+        SearchEngineConnectPropertiesOverride.class,
+        // ---
+        BackupManagerConfiguration.class,
+        StandaloneBackupManager.class);
     withProperty(BACKUP_WEBAPPS_ENABLED, true);
   }
 

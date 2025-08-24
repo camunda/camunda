@@ -70,7 +70,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   private final ProtocolFactory factory = new ProtocolFactory();
   private int emptyBatches;
 
-  @BeforeAll
+  @BeforeAll()
   public static void beforeClass() {
     assumeTrue(TestUtil.isOpenSearch());
   }

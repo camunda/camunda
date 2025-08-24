@@ -57,14 +57,17 @@ public class ElasticsearchUpdateRegressionTest {
                 (final CreateContainerCmd cmd) -> cmd.withEntrypoint("/usr/local/zeebe/bin/schema"))
             .withNetwork(NETWORK)
             .withNetworkAliases("camunda")
+            // Unified Configuration: DB URL + compatibility
             .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-            .withEnv(
-                "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-                "io.camunda.zeebe.exporter.ElasticsearchExporter")
+            .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", esUrl)
             .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
             .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", esUrl)
             .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
             .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
+            // ---
+            .withEnv(
+                "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+                "io.camunda.zeebe.exporter.ElasticsearchExporter")
             .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", esUrl);
 
     schemaManagerContainer.start();

@@ -14,6 +14,7 @@ import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
@@ -43,6 +44,7 @@ public class StandaloneTasklist {
                 UnifiedConfigurationHelper.class,
                 TasklistPropertiesOverride.class,
                 GatewayBasedPropertiesOverride.class,
+                SearchEngineConnectPropertiesOverride.class,
                 // ---
                 CommonsModuleConfiguration.class,
                 TasklistModuleConfiguration.class,

@@ -14,9 +14,9 @@ import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.command.CreateContainerCmd;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.qa.util.cluster.TestCamundaApplication;

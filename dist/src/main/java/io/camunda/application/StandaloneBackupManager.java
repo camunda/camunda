@@ -13,7 +13,9 @@ import static java.util.Optional.ofNullable;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration.BackupWebappsProperties;
 import io.camunda.application.commons.backup.BackupPriorityConfiguration;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.backup.BackupRepository;
@@ -92,7 +94,14 @@ public class StandaloneBackupManager implements CommandLineRunner {
     MainSupport.createDefaultApplicationBuilder()
         .web(WebApplicationType.NONE)
         .logStartupInfo(true)
-        .sources(BackupManagerConfiguration.class, StandaloneBackupManager.class)
+        .sources(
+            // Unified Configuration classes
+            UnifiedConfigurationHelper.class,
+            UnifiedConfiguration.class,
+            SearchEngineConnectPropertiesOverride.class,
+            // ---
+            BackupManagerConfiguration.class,
+            StandaloneBackupManager.class)
         .properties(BACKUP_WEBAPPS_ENABLED + "=true")
         .addCommandLineProperties(true)
         .run(args);
@@ -163,7 +172,6 @@ public class StandaloneBackupManager implements CommandLineRunner {
   }
 
   @EnableConfigurationProperties({
-    SearchEngineConnectProperties.class,
     BackupWebappsProperties.class,
   })
   @ComponentScan(

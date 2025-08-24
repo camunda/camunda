@@ -119,7 +119,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

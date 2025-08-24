@@ -14,6 +14,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 
@@ -28,12 +29,15 @@ public class StandaloneBroker {
     final var standaloneBrokerApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
-                CommonsModuleConfiguration.class,
+                // Unified Configuration classes
                 UnifiedConfiguration.class,
                 UnifiedConfigurationHelper.class,
                 BrokerBasedPropertiesOverride.class,
                 ActorClockControlledPropertiesOverride.class,
                 IdleStrategyPropertiesOverride.class,
+                SearchEngineConnectPropertiesOverride.class,
+                // ---
+                CommonsModuleConfiguration.class,
                 BrokerModuleConfiguration.class)
             .profiles(Profile.BROKER.getId(), Profile.STANDALONE.getId())
             .initializers(new HealthConfigurationInitializer())
