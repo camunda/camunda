@@ -31,12 +31,12 @@ import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import io.camunda.migration.api.MigrationException;
-import io.camunda.migration.task.adapter.MigrationRepositoryIndex;
-import io.camunda.migration.task.adapter.ProcessorStep;
+import io.camunda.migration.commons.configuration.MigrationConfiguration;
+import io.camunda.migration.commons.storage.ProcessorStep;
+import io.camunda.migration.commons.storage.TasklistMigrationRepositoryIndex;
 import io.camunda.migration.task.adapter.TaskEntityPair;
 import io.camunda.migration.task.adapter.TaskLegacyIndex;
 import io.camunda.migration.task.adapter.TaskMigrationAdapter;
-import io.camunda.migration.task.config.TaskMigrationProperties;
 import io.camunda.migration.task.util.MigrationUtils;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -45,6 +45,7 @@ import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,25 +62,26 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchAdapter.class);
 
   private final ElasticsearchClient client;
-  private final TaskMigrationProperties properties;
+  private final MigrationConfiguration configuration;
   private final TaskLegacyIndex legacyIndex;
   private final TaskTemplate destinationIndex;
-  private final MigrationRepositoryIndex migrationIndex;
+  private final TasklistMigrationRepositoryIndex migrationIndex;
   private final RetryDecorator retryDecorator;
   private final TasklistImportPositionIndex importPositionIndex;
 
   public ElasticsearchAdapter(
-      final TaskMigrationProperties properties, final ConnectConfiguration connectConfiguration) {
-    this.properties = properties;
+      final MigrationConfiguration configuration, final ConnectConfiguration connectConfiguration) {
+    this.configuration = configuration;
     client = new ElasticsearchConnector(connectConfiguration).createClient();
     retryDecorator =
-        new RetryDecorator(properties.getRetry())
+        new RetryDecorator(configuration.getRetry())
             .withRetryOnException(
                 e -> e instanceof IOException || e instanceof ElasticsearchException);
 
     legacyIndex = new TaskLegacyIndex(connectConfiguration.getIndexPrefix(), true);
     destinationIndex = new TaskTemplate(connectConfiguration.getIndexPrefix(), true);
-    migrationIndex = new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), true);
+    migrationIndex =
+        new TasklistMigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), true);
     importPositionIndex =
         new TasklistImportPositionIndex(connectConfiguration.getIndexPrefix(), true);
   }
@@ -159,12 +161,10 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
 
   @Override
   public List<TaskEntityPair> nextBatch(final String lastMigratedTaskId) throws MigrationException {
-    // TODO: Should I only get tasks? That index contains more than just tasks.
-    // TODO: Yes. Maybe in a separate PR?
     final SearchRequest searchRequest =
         new SearchRequest.Builder()
             .index(destinationIndex.getFullQualifiedName())
-            .size(properties.getBatchSize())
+            .size(configuration.getBatchSize())
             .sort(s -> s.field(f -> f.field(TaskTemplate.KEY).order(SortOrder.Asc)))
             .query(q -> q.bool(getBoolQueryForTasksToUpdate(lastMigratedTaskId)))
             .build();
@@ -239,14 +239,7 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
     final BulkResponse response;
     try {
       final BulkRequest bulkRequest = bulkRequestBuilder.build();
-      response =
-          retryDecorator.decorate(
-              "Migrate task entities %s".formatted(idList),
-              () -> client.bulk(bulkRequest),
-              (res) ->
-                  res == null
-                      || res.items().isEmpty()
-                      || res.items().stream().allMatch(i -> i.error() != null));
+      response = client.bulk(bulkRequest);
     } catch (final Exception e) {
       throw new MigrationException("Failed to migrate task entities %s".formatted(idList), e);
     }
@@ -321,13 +314,13 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
                                     m ->
                                         m.match(
                                             t ->
-                                                t.field(MigrationRepositoryIndex.TYPE)
+                                                t.field(TasklistMigrationRepositoryIndex.TYPE)
                                                     .query(TASK_MIGRATION_STEP_TYPE)))
                                 .must(
                                     m ->
                                         m.term(
                                             t ->
-                                                t.field(MigrationRepositoryIndex.ID)
+                                                t.field(TasklistMigrationRepositoryIndex.ID)
                                                     .value(TASK_MIGRATION_STEP_ID)))))
             .build();
     final SearchResponse<ProcessorStep> searchResponse;
@@ -370,24 +363,26 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
                             ExistsQuery.of(
                                 e -> e.field("creationTime") // Field "creationTime" should only be
                                 // populated during creation
-                                ))));
+                                )))
+                .must(
+                    must ->
+                        must.term(
+                            term ->
+                                term.field("join")
+                                    .value(TaskJoinRelationshipType.TASK.getType()))));
   }
 
   private void reindex(final String source, final String destination) throws MigrationException {
     final ReindexRequest createMissingRequest =
         new ReindexRequest.Builder()
-            .source(
-                new Source.Builder()
-                    .index(source)
-                    .size(properties.getBatchSize()) // batch size
-                    .build())
+            .source(new Source.Builder().index(source).size(configuration.getBatchSize()).build())
             .dest(
                 new Destination.Builder()
                     .index(destination)
                     .opType(OpType.Create) // only create missing docs
                     .build())
             .conflicts(Conflicts.Proceed) // ignore version conflicts
-            .refresh(true) // refresh after indexing
+            .refresh(true)
             .build();
 
     try {
