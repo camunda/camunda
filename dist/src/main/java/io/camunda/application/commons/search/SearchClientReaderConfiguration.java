@@ -7,8 +7,8 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.reader.AuthorizationDocumentReader;

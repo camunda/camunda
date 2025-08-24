@@ -7,8 +7,8 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;

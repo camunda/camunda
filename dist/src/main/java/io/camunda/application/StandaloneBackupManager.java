@@ -11,7 +11,9 @@ import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEn
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.application.commons.backup.BackupPriorityConfiguration;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -92,6 +94,11 @@ public class StandaloneBackupManager implements CommandLineRunner {
         .web(WebApplicationType.NONE)
         .logStartupInfo(true)
         .sources(
+            // Unified Configuration classes
+            UnifiedConfigurationHelper.class,
+            UnifiedConfiguration.class,
+            SearchEngineConnectPropertiesOverride.class,
+            // ---
             BackupManagerConfiguration.class,
             StandaloneBackupManager.class,
             UnifiedConfiguration.class)
@@ -164,7 +171,9 @@ public class StandaloneBackupManager implements CommandLineRunner {
     return EnumSet.of(BackupStateDto.FAILED, BackupStateDto.INCOMPATIBLE).contains(backupStateDto);
   }
 
-  @EnableConfigurationProperties({SearchEngineConnectProperties.class})
+  @EnableConfigurationProperties({
+    SearchEngineConnectProperties.class,
+  })
   @ComponentScan(
       basePackages = "io.camunda.application.commons.backup",
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)

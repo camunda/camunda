@@ -172,6 +172,7 @@ final class StandaloneBackupManagerIT {
     setupElasticsearchUrl(camunda, esUrl);
     camunda
         .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
+        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
         .updateExporterArgs(
             CamundaExporter.class.getSimpleName(),
             args -> ((Map) args.get("connect")).put("url", esUrl));
