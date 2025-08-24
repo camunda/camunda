@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.RandomAccess;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.agrona.collections.CollectionUtil;
 
@@ -126,5 +127,28 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
 
   public int size() {
     return items.size();
+  }
+
+  public void remove(final Set<T> values) {
+    shiftDown(values);
+  }
+
+  /**
+   * Removes the specified items from the list by shifting down the remaining elements.
+   *
+   * @param itemsToRemove the set of items to be removed from the list
+   */
+  private void shiftDown(final Set<T> itemsToRemove) {
+    int current = 0;
+    for (int src = 0; src < items.size(); ++src) {
+      // If the current item is not in the itemsToRemove set, copy it to the 'current' position
+      // Otherwise, we skip the item and DON'T increment current.
+      // With this we will drop it out later when we copy the next wanted item to current.
+      if (!itemsToRemove.contains(items.get(src))) {
+        items.set(current++, items.get(src));
+      }
+    }
+    // Clear the remaining items from the list
+    items.subList(current, items.size()).clear();
   }
 }
