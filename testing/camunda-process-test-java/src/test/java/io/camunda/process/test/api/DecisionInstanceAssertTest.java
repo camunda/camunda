@@ -89,8 +89,8 @@ public class DecisionInstanceAssertTest {
     final DecisionInstanceResult basicResult =
         new DecisionInstanceResult()
             .decisionDefinitionName(NAME)
-            .decisionInstanceId(DECISION_INSTANCE_ID)
-            .decisionInstanceKey(DECISION_INSTANCE_KEY)
+            .decisionEvaluationInstanceKey(DECISION_INSTANCE_ID)
+            .decisionEvaluationKey(DECISION_INSTANCE_KEY)
             .processDefinitionKey(PROCESS_DEFINITION_KEY)
             .processInstanceKey(PROCESS_INSTANCE_KEY)
             .decisionDefinitionKey(DECISION_DEFINITION_KEY)
