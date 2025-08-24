@@ -15,7 +15,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record UserDbQuery(UserFilter filter, DbQuerySorting<UserEntity> sort, DbQueryPage page) {
+public record UserDbQuery(
+    UserFilter filter,
+    List<String> authorizedResourceIds,
+    DbQuerySorting<UserEntity> sort,
+    DbQueryPage page) {
 
   public static UserDbQuery of(final Function<Builder, ObjectBuilder<UserDbQuery>> fn) {
     return fn.apply(new Builder()).build();
@@ -28,6 +32,7 @@ public record UserDbQuery(UserFilter filter, DbQuerySorting<UserEntity> sort, Db
     private UserFilter filter;
     private DbQuerySorting<UserEntity> sort;
     private DbQueryPage page;
+    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
 
     public UserDbQuery.Builder filter(final UserFilter value) {
       filter = value;
@@ -41,6 +46,11 @@ public record UserDbQuery(UserFilter filter, DbQuerySorting<UserEntity> sort, Db
 
     public UserDbQuery.Builder page(final DbQueryPage value) {
       page = value;
+      return this;
+    }
+
+    public UserDbQuery.Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
       return this;
     }
 
@@ -60,7 +70,8 @@ public record UserDbQuery(UserFilter filter, DbQuerySorting<UserEntity> sort, Db
     public UserDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new UserDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      return new UserDbQuery(filter, authorizedResourceIds, sort, page);
     }
   }
 }
