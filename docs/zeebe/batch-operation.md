@@ -117,23 +117,21 @@ the `StreamProcessors`. It is responsible for initialing the batch operation:
      queried in pages. So each response may only contain a subset of the
      result. Therefore, the scheduler will query the secondary database multiple times until all
      items are fetched.
-   * Between the queries, the scheduler always checks again if the batch operation is still active.
-     If it was suspended or cancelled, the scheduler will stop the INIT process. In case the batch
-     operation es resumed later, the INIT process will restart again.
-   * In case an error occurs during the query, the scheduler will append a FAIL command. If the batch
-     operation has retries left, the INIT process will be restarted after an exponential backoff
-     period. If not, a FAIL_PARTITION will be distributed to the lead partition to mark this
-     partition
-     as failed.
-4. Once all items are fetched, the scheduler will split the amount of items into smaller chunks. The
-   reason behind this is that a Zeebe record is limited to 4MB size. With the itemKey being a `long`
-   value, a record can only contain 500,000 keys (minus some metadata overhead).
-5. The scheduler will now append all chunks with a `BatchOperationChunkIntent.CREATE` command to the
-   local partition
-6. Finally, the scheduler will append a `BatchOperationExecutionIntent.EXECUTE` record to start the
+   * In case an error occurs during the query, the scheduler will retry the initialization in the
+     next scheduler run after a configurable backoff period until the configured number of max retry
+     attempts is reached. If no retries attempts are left, a `BatchOperationIntent.FAIL_PARTITION`
+     will be distributed to the lead partition to mark this partition as failed.
+   * For each page of items, the scheduler will split the amount of items into smaller chunks. The
+     reason behind this is that a large record with many items would overload the exporters. After
+     the split, the scheduler checks if these chunk records still fit in the record batch of this
+     scheduler run. If yes, they are appended with a `BatchOperationChunkIntent.CREATE` command and
+     the scheduler will continue with the next page of
+     the searchResult. If not, we need another scheduler run to append the remaining chunks. For
+     this a `BatchOperationIntent.INITIALIZE` will store the last successful cursor of the
+     searchResult and start another scheduler run.
+4. Finally, if there are no more pages to fetch and all chunk records have been appended, the
+   scheduler will append a `BatchOperationExecutionIntent.EXECUTE` record to start the
    actual execution of the batch operation.
-
-** TODO document `PARTITION_FAILED` and retry behaviour once it's all merged.
 
 #### Step 2: Execution
 
