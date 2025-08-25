@@ -10,7 +10,6 @@ package io.camunda.application.commons.console.ping;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
 import io.camunda.service.ManagementServices;
@@ -55,11 +54,11 @@ public class PingConsoleRunner implements ApplicationRunner {
       final ConsolePingConfiguration pingConfigurationProperties,
       final ManagementServices managementServices,
       final ApplicationContext applicationContext,
-      final BrokerBasedConfiguration brokerConfig) {
+      final String clusterId) {
     pingConfiguration = pingConfigurationProperties;
     this.managementServices = managementServices;
     this.applicationContext = applicationContext;
-    clusterId = brokerConfig.config().getCluster().getClusterId();
+    this.clusterId = clusterId;
     licensePayload = getLicensePayload();
   }
 

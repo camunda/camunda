@@ -99,4 +99,9 @@ public class BrokerBasedConfiguration {
     final var configFactory = new ClusterConfigFactory();
     return configFactory.mapConfiguration(properties);
   }
+
+  @Bean
+  public String clusterId() {
+    return properties.getCluster().getClusterId();
+  }
 }
