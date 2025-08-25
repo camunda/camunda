@@ -64,7 +64,7 @@ class ProcessInstanceRequestValidatorTest {
   }
 
   @Test
-  @DisplayName("Should reject invalid tags")
+  @DisplayName("Should reject too many tags")
   void shouldRejectTooManyTags() {
     final var request = new ProcessInstanceCreationInstruction();
     request.setProcessDefinitionKey("123456789");
