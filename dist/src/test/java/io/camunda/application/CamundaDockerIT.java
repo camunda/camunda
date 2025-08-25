@@ -13,6 +13,11 @@ import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.command.CreateContainerCmd;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,6 +108,77 @@ public class CamundaDockerIT {
     }
   }
 
+  @Test
+  public void testStartStandaloneCamundaWithUnifiedConfiguration()
+      throws URISyntaxException, InterruptedException {
+    final ElasticsearchContainer elasticsearchContainer =
+        createContainer(this::createElasticsearchContainer);
+
+    elasticsearchContainer.start();
+
+    final GenericContainer camundaContainer =
+        createContainer(this::createUnauthenticatedUnifiedConfigCamundaContainer);
+
+    startContainer(camundaContainer);
+
+    final String host = "http://" + createCamundaContainer().getHost() + ":";
+    final String camundaEndpoint = host + camundaContainer.getMappedPort(SERVER_PORT);
+    final String grpcEndpoint = host + camundaContainer.getMappedPort(GATEWAY_GRPC_PORT);
+    final CamundaClient camundaClient =
+        new CamundaClientBuilderImpl()
+            .usePlaintext()
+            .restAddress(new URI(camundaEndpoint))
+            .grpcAddress(new URI(grpcEndpoint))
+            .build();
+
+    var resource =
+        camundaClient
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .serviceTask("test")
+                    .zeebeJobType("type")
+                    .endEvent()
+                    .done(),
+                "test.bpmn")
+            .send()
+            .join();
+
+    var instance =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .send()
+            .join();
+
+    /* Active waiting with retries every 5 seconds. */
+
+    long timeoutMillis = 2 * 60 * 1000; // 2 minutes
+    long startTime = System.currentTimeMillis();
+    do {
+      var response = camundaClient.newProcessInstanceSearchRequest().send().join();
+      if (!response.items().isEmpty()) {
+        assertThat(response.items().size()).isEqualTo(1);
+
+        var getResponse =
+            camundaClient
+                .newProcessInstanceGetRequest(instance.getProcessInstanceKey())
+                .send()
+                .join();
+        assertThat(getResponse).isNotNull();
+        break;
+      }
+
+      Thread.sleep(5 * 1000); // 5 seconds
+
+      if (System.currentTimeMillis() - startTime >= timeoutMillis) {
+        throw new RuntimeException("Test failed: operation timed out after 2 minutes");
+      }
+    } while (true);
+  }
+
   // Regression for https://github.com/camunda/camunda/issues/35520
   @Test
   public void testStartStandalonePrefixMigration() throws Exception {
@@ -161,6 +237,34 @@ public class CamundaDockerIT {
         .withNetworkAliases(ELASTICSEARCH_NETWORK_ALIAS)
         .withEnv("xpack.security.enabled", "false")
         .withExposedPorts(ELASTICSEARCH_PORT);
+  }
+
+  private GenericContainer createUnauthenticatedUnifiedConfigCamundaContainer() {
+    return new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
+        .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
+        .withNetwork(Network.SHARED)
+        .withNetworkAliases(CAMUNDA_NETWORK_ALIAS)
+        .waitingFor(
+            new HttpWaitStrategy()
+                .forPort(MANAGEMENT_PORT)
+                .forPath("/actuator/health")
+                .withReadTimeout(Duration.ofSeconds(120)))
+        .withStartupTimeout(Duration.ofSeconds(300))
+        // Unified Configuration
+        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DATABASE_TYPE)
+        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
+
+        // TODO: Remove CAMUNDA_DATABASE_URL once
+        //  https://github.com/camunda/camunda/pull/37036 is merged
+        //  as well as camunda.database.url from application.yml
+        .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl())
+        // --- end of TODO
+
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
+        // ---
+        .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "true")
+        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
   }
 
   private GenericContainer createCamundaContainer() {

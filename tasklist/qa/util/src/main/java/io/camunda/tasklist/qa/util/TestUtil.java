@@ -9,6 +9,7 @@ package io.camunda.tasklist.qa.util;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -88,6 +89,9 @@ public final class TestUtil {
   }
 
   public static boolean isOpenSearch() {
-    return "opensearch".equalsIgnoreCase(System.getProperty("camunda.tasklist.database"));
+    final String databaseType =
+        Optional.ofNullable(System.getProperty("camunda.data.secondary-storage.type"))
+            .orElse("elasticsearch");
+    return "opensearch".equalsIgnoreCase(databaseType);
   }
 }
