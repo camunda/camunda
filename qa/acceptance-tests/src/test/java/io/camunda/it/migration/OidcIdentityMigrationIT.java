@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -142,6 +143,12 @@ public class OidcIdentityMigrationIT {
     BROKER.withCamundaExporter("http://" + ELASTIC.getHttpHostAddress()).start();
   }
 
+  @AfterAll
+  static void afterAll() {
+    BROKER.stop();
+    IDENTITY.stop();
+  }
+
   @BeforeEach
   public void setup() throws Exception {
     // given
@@ -165,9 +172,12 @@ public class OidcIdentityMigrationIT {
   }
 
   @AfterEach
-  public void cleanup() {
+  public void afterEach() {
     if (migration != null) {
       migration.close();
+    }
+    if (client != null) {
+      client.close();
     }
   }
 

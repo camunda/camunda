@@ -136,6 +136,12 @@ public class SaaSIdentityMigrationIT {
     IDENTITY.start();
   }
 
+  @AfterAll
+  static void afterAll() {
+    BROKER.stop();
+    IDENTITY.stop();
+  }
+
   @BeforeEach
   public void setup(final WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
     // given
@@ -170,11 +176,6 @@ public class SaaSIdentityMigrationIT {
                 });
 
     client = BROKER.newClientBuilder().build();
-  }
-
-  @AfterAll
-  static void cleanup() {
-    IDENTITY.stop();
   }
 
   @AfterEach

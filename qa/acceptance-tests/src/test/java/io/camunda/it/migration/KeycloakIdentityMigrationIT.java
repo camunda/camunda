@@ -207,8 +207,13 @@ public class KeycloakIdentityMigrationIT {
   }
 
   @AfterEach
-  void tearDown() {
-    migration.close();
+  void afterEach() {
+    if (migration != null) {
+      migration.close();
+    }
+    if (client != null) {
+      client.close();
+    }
   }
 
   @Test
