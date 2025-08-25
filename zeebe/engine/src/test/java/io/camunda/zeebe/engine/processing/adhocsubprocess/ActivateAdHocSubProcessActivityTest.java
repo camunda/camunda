@@ -305,33 +305,33 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void shouldRejectCommandIfElementIsDuplicated() {
-    final var rejection =
-        ENGINE
-            .adHocSubProcessActivity()
-            .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
-            .withElementIds("A")
-            .withElementIds("A")
-            .expectRejection()
-            .activate();
+  public void shouldAllowDuplicateElementsActivation() {
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
+        .withElementIds("A")
+        .withElementIds("A")
+        .activate();
 
-    RecordAssert.assertThat(rejection)
-        .describedAs(
-            "Expected activation to be rejected because duplicate flow nodes are provided.")
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            "Expected to activate activities for ad-hoc sub-process with key '%s', but duplicate activities were given."
-                .formatted(adHocSubProcessInstanceKey));
+    // assert that "A" got activated twice and no rejection occurred
+    final var activatedA =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .limit(2)
+            .toList();
 
+    assertThat(activatedA)
+        .describedAs("Expected duplicate activations for the same element to be allowed")
+        .hasSize(2);
+
+    // also verify there is an ACTIVATED event for the command
     assertThat(
             RecordingExporter.adHocSubProcessInstructionRecords()
                 .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
-                .limit(2))
-        .extracting(Record::getRecordType, Record::getIntent)
-        .contains(
-            tuple(RecordType.COMMAND, AdHocSubProcessInstructionIntent.ACTIVATE),
-            tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessInstructionIntent.ACTIVATE))
-        .doesNotContain(tuple(RecordType.EVENT, AdHocSubProcessInstructionIntent.ACTIVATED));
+                .limit(record -> record.getIntent() == AdHocSubProcessInstructionIntent.ACTIVATED))
+        .extracting(Record::getIntent)
+        .contains(AdHocSubProcessInstructionIntent.ACTIVATED);
   }
 
   @Test
