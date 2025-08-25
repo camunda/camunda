@@ -52,8 +52,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class DecisionInstanceAssertTest {
 
   private static final String NAME = "name";
-  private static final String DECISION_INSTANCE_ID = "instanceId";
-  private static final String DECISION_INSTANCE_KEY = "1";
+  private static final String DECISION_EVALUATION_INSTANCE_KEY = "instanceId";
+  private static final String DECISION_EVALUATION_KEY = "1";
   private static final String PROCESS_DEFINITION_KEY = "2";
   private static final String PROCESS_INSTANCE_KEY = "3";
   private static final String DECISION_DEFINITION_KEY = "4";
@@ -80,7 +80,7 @@ public class DecisionInstanceAssertTest {
       final DecisionInstance mockedDecisionInstance) {
 
     when(camundaDataSource.findDecisionInstances(any())).thenReturn(mockedSearchResults);
-    when(camundaDataSource.getDecisionInstance(DECISION_INSTANCE_ID))
+    when(camundaDataSource.getDecisionInstance(DECISION_EVALUATION_INSTANCE_KEY))
         .thenReturn(mockedDecisionInstance);
   }
 
@@ -89,8 +89,8 @@ public class DecisionInstanceAssertTest {
     final DecisionInstanceResult basicResult =
         new DecisionInstanceResult()
             .decisionDefinitionName(NAME)
-            .decisionEvaluationInstanceKey(DECISION_INSTANCE_ID)
-            .decisionEvaluationKey(DECISION_INSTANCE_KEY)
+            .decisionEvaluationInstanceKey(DECISION_EVALUATION_INSTANCE_KEY)
+            .decisionEvaluationKey(DECISION_EVALUATION_KEY)
             .processDefinitionKey(PROCESS_DEFINITION_KEY)
             .processInstanceKey(PROCESS_INSTANCE_KEY)
             .decisionDefinitionKey(DECISION_DEFINITION_KEY)
@@ -106,8 +106,8 @@ public class DecisionInstanceAssertTest {
 
     return new DecisionInstanceImpl(
         null,
-        Integer.parseInt(DECISION_INSTANCE_KEY),
-        DECISION_INSTANCE_ID,
+        Integer.parseInt(DECISION_EVALUATION_KEY),
+        DECISION_EVALUATION_INSTANCE_KEY,
         DecisionInstanceState.EVALUATED,
         null,
         null,
@@ -222,7 +222,7 @@ public class DecisionInstanceAssertTest {
           .thenReturn(Collections.singletonList(wrongInstance))
           .thenReturn(Collections.singletonList(wrongInstance))
           .thenReturn(Collections.singletonList(correctInstance));
-      when(camundaDataSource.getDecisionInstance(DECISION_INSTANCE_ID))
+      when(camundaDataSource.getDecisionInstance(DECISION_EVALUATION_INSTANCE_KEY))
           .thenReturn(wrongInstance)
           .thenReturn(wrongInstance)
           .thenReturn(wrongInstance)
@@ -316,7 +316,7 @@ public class DecisionInstanceAssertTest {
           .thenReturn(Collections.singletonList(wrongInstance))
           .thenReturn(Collections.singletonList(wrongInstance))
           .thenReturn(Collections.singletonList(correctInstance));
-      when(camundaDataSource.getDecisionInstance(DECISION_INSTANCE_ID))
+      when(camundaDataSource.getDecisionInstance(DECISION_EVALUATION_INSTANCE_KEY))
           .thenReturn(wrongInstance)
           .thenReturn(wrongInstance)
           .thenReturn(wrongInstance)
