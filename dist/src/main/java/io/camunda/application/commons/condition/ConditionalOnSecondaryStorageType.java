@@ -36,13 +36,9 @@ public @interface ConditionalOnSecondaryStorageType {
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final var env = context.getEnvironment();
-      var strType = env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE);
-      if (strType == null) {
-        // TODO: Once we clear the legacy properties from the test envs we have, remove the case
-        //  that uses  camunda.database.type
-        strType =
-            Optional.ofNullable(env.getProperty("camunda.database.type")).orElse("elasticsearch");
-      }
+      final var strType =
+          Optional.ofNullable(env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE))
+              .orElse("elasticsearch");
 
       final var type = SecondaryStorageType.valueOf(strType.toLowerCase());
 

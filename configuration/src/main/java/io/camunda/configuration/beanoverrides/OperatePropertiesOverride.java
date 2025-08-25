@@ -12,6 +12,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
+import java.net.MalformedURLException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -38,7 +39,7 @@ public class OperatePropertiesOverride {
 
   @Bean
   @Primary
-  public OperateProperties operateProperties() {
+  public OperateProperties operateProperties() throws MalformedURLException {
     final OperateProperties override = new OperateProperties();
     BeanUtils.copyProperties(legacyOperateProperties, override);
 

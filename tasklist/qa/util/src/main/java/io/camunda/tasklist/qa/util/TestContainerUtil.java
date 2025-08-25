@@ -548,15 +548,23 @@ public class TestContainerUtil {
             : "http://%s:%s"
                 .formatted(testContext.getInternalElsHost(), testContext.getInternalElsPort());
     final var type = TestUtil.isOpenSearch() ? "opensearch" : "elasticsearch";
+    final String exporterClassName = "io.camunda.exporter.CamundaExporter";
 
     zeebeBroker
+        // Unified Configuration: DB URL + compatibility
+        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_" + type.toUpperCase() + "_URL", url)
         .withEnv("CAMUNDA_DATABASE_URL", url)
-        .withEnv("CAMUNDA_DATABASE_TYPE", type)
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
-            "io.camunda.exporter.CamundaExporter")
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", url)
+        .withEnv("CAMUNDA_OPERATE_" + type.toUpperCase() + "_URL", url)
+        .withEnv("CAMUNDA_TASKLIST_" + type.toUpperCase() + "_URL", url)
+        // Unified Configuration: DB type + compatibility
+        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", type)
+        .withEnv("CAMUNDA_DATABASE_TYPE", type)
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", type)
+        .withEnv("CAMUNDA_OPERATE_DATABASE", type)
+        .withEnv("CAMUNDA_TASKLIST_DATABASE", type)
+        // ---
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME", exporterClassName)
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_WAITPERIODBEFOREARCHIVING", "1s");
     if (testContext.getZeebeIndexPrefix() != null) {
