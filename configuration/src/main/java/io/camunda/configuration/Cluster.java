@@ -7,18 +7,30 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_NAME;
+
+import java.util.Map;
 import java.util.Set;
 
 public class Cluster {
 
   private static final String PREFIX = "camunda.cluster";
 
-  private static final String LEGACY_NODEID_PROPERTY = "zeebe.broker.cluster.nodeId";
-  private static final String LEGACY_PARTITION_COUNT_PROPERTY =
-      "zeebe.broker.cluster.partitionsCount";
-  private static final String LEGACY_REPLICATION_FACTOR_PROPERTY =
-      "zeebe.broker.cluster.replicationFactor";
-  private static final String LEGACY_SIZE_PROPERTY = "zeebe.broker.cluster.clusterSize";
+  private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
+      Map.of(
+          "messageCompression", "zeebe.gateway.cluster.messageCompression",
+          "clusterName", "zeebe.gateway.cluster.clusterName");
+
+  private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
+      Map.of(
+          "nodeId", "zeebe.broker.cluster.nodeId",
+          "partitionsCount", "zeebe.broker.cluster.partitionsCount",
+          "replicationFactor", "zeebe.broker.cluster.replicationFactor",
+          "clusterSize", "zeebe.broker.cluster.clusterSize",
+          "messageCompression", "zeebe.broker.cluster.messageCompression",
+          "clusterName", "zeebe.broker.cluster.clusterName");
+
+  private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
   /** Configuration for the distributed metadata manager in the cluster. */
   private Metadata metadata = new Metadata();
@@ -44,8 +56,25 @@ public class Cluster {
   /** The number of nodes in the cluster. */
   private int size = 1;
 
+  /** Set the name of the cluster */
+  private String name = DEFAULT_CLUSTER_NAME;
+
   /** Configuration for the Raft protocol in the cluster. */
   private Raft raft = new Raft();
+
+  /**
+   * Configure compression algorithm for all message sent between the brokers and between the broker
+   * and the gateway. Available options are NONE, GZIP and SNAPPY. This feature is useful when the
+   * network latency between the brokers is very high (for example when the brokers are deployed in
+   * different data centers). When latency is high, the network bandwidth is severely reduced. Hence
+   * enabling compression helps to improve the throughput.
+   *
+   * <p>Note: When there is no latency enabling this may have a performance impact.
+   */
+  private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
+
+  /** Monitoring configuration. */
+  private Monitoring monitoring = new Monitoring();
 
   public Metadata getMetadata() {
     return metadata;
@@ -69,7 +98,7 @@ public class Cluster {
         nodeId,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_NODEID_PROPERTY));
+        Set.of(legacyPropertiesMap.get("nodeId")));
   }
 
   public void setNodeId(final int nodeId) {
@@ -82,7 +111,7 @@ public class Cluster {
         partitionCount,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_PARTITION_COUNT_PROPERTY));
+        Set.of(legacyPropertiesMap.get("partitionsCount")));
   }
 
   public void setPartitionCount(final int partitionCount) {
@@ -95,7 +124,7 @@ public class Cluster {
         replicationFactor,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_REPLICATION_FACTOR_PROPERTY));
+        Set.of(legacyPropertiesMap.get("replicationFactor")));
   }
 
   public void setReplicationFactor(final int replicationFactor) {
@@ -108,11 +137,24 @@ public class Cluster {
         size,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_SIZE_PROPERTY));
+        Set.of(legacyPropertiesMap.get("clusterSize")));
   }
 
   public void setSize(final int size) {
     this.size = size;
+  }
+
+  public String getName() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".name",
+        name,
+        String.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("clusterName")));
+  }
+
+  public void setName(final String name) {
+    this.name = name;
   }
 
   public Raft getRaft() {
@@ -121,5 +163,61 @@ public class Cluster {
 
   public void setRaft(final Raft raft) {
     this.raft = raft;
+  }
+
+  public CompressionAlgorithm getCompressionAlgorithm() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".compression-algorithm",
+        compressionAlgorithm,
+        CompressionAlgorithm.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("messageCompression")));
+  }
+
+  public void setCompressionAlgorithm(final CompressionAlgorithm compressionAlgorithm) {
+    this.compressionAlgorithm = compressionAlgorithm;
+  }
+
+  public Monitoring getMonitoring() {
+    return monitoring;
+  }
+
+  public void setMonitoring(final Monitoring monitoring) {
+    this.monitoring = monitoring;
+  }
+
+  @Override
+  public Cluster clone() {
+    final Cluster copy = new Cluster();
+    copy.metadata = metadata;
+    copy.network = network.clone();
+    copy.nodeId = nodeId;
+    copy.partitionCount = partitionCount;
+    copy.replicationFactor = replicationFactor;
+    copy.size = size;
+    copy.name = name;
+    copy.raft = raft;
+    copy.compressionAlgorithm = compressionAlgorithm;
+    copy.monitoring = monitoring;
+
+    return copy;
+  }
+
+  public Cluster withBrokerProperties() {
+    final var copy = clone();
+    copy.legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
+    return copy;
+  }
+
+  public Cluster withGatewayProperties() {
+    final var copy = clone();
+    copy.legacyPropertiesMap = LEGACY_GATEWAY_PROPERTIES;
+    return copy;
+  }
+
+  public enum CompressionAlgorithm {
+    GZIP,
+    NONE,
+    SNAPPY
   }
 }
