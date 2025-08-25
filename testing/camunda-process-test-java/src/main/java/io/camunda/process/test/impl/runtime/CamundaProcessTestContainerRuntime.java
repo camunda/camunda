@@ -70,15 +70,18 @@ public class CamundaProcessTestContainerRuntime
   private final ConnectorsContainer connectorsContainer;
 
   private final boolean connectorsEnabled;
+  private final Duration camundaClientRequestTimeout;
 
   CamundaProcessTestContainerRuntime(
       final CamundaProcessTestRuntimeBuilder builder, final ContainerFactory containerFactory) {
     this.containerFactory = containerFactory;
-    connectorsEnabled = builder.isConnectorsEnabled();
-    network = Network.newNetwork();
 
+    network = Network.newNetwork();
     camundaContainer = createCamundaContainer(network, builder);
     connectorsContainer = createConnectorsContainer(network, builder);
+
+    connectorsEnabled = builder.isConnectorsEnabled();
+    camundaClientRequestTimeout = builder.getCamundaClientRequestTimeout();
   }
 
   /*
@@ -197,7 +200,8 @@ public class CamundaProcessTestContainerRuntime
         CamundaClient.newClientBuilder()
             .restAddress(getCamundaRestApiAddress())
             .grpcAddress(getCamundaGrpcApiAddress())
-            .usePlaintext();
+            .usePlaintext()
+            .defaultRequestTimeout(camundaClientRequestTimeout);
   }
 
   public CamundaContainer getCamundaContainer() {
