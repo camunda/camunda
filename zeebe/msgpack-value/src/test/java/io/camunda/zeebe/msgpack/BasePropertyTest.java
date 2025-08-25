@@ -41,11 +41,40 @@ final class BasePropertyTest {
     assertThat(result).isEqualTo("test-key => non-sanitized-value");
   }
 
+  @Test
+  void shouldMaskSanitizedPropertiesWhenWritingJson() {
+    // given
+    final var sb = new StringBuilder();
+    final TestProperty property = new TestProperty("non-sanitized-value").sanitized();
+
+    // when
+    property.writeJSON(sb, true);
+
+    // then
+    assertThat(property.isSanitized()).isTrue();
+    assertThat(sb).hasToString("\"test-key\":\"***\"");
+  }
+
+  @Test
+  void shouldNotMaskSanitizedPropertiesWhenWritingJson() {
+    // given
+    final var sb = new StringBuilder();
+    final TestProperty property = new TestProperty("non-sanitized-value").sanitized();
+
+    // when
+    property.writeJSON(sb, false);
+
+    // then
+    assertThat(property.isSanitized()).isTrue();
+    assertThat(sb).hasToString("\"test-key\":\"non-sanitized-value\"");
+  }
+
   private static final class TestProperty extends BaseProperty<StringValue> {
 
     private TestProperty(final String value) {
       super("test-key", new StringValue());
       this.value.wrap(value.getBytes(StandardCharsets.UTF_8));
+      isSet = true;
     }
   }
 }
