@@ -144,12 +144,17 @@ const ExistingVariableValue: React.FC<Props> = observer(
               type="text"
               id={fieldName}
               hideLabel
+              disabled={formState.submitting}
               labelText="Value"
               placeholder="Value"
               data-testid="edit-variable-value"
               buttonLabel="Open JSON editor modal"
               tooltipPosition="left"
               onIconClick={() => {
+                if (formState.submitting) {
+                  return;
+                }
+
                 setIsModalVisible(true);
                 tracking.track({
                   eventName: 'json-editor-opened',

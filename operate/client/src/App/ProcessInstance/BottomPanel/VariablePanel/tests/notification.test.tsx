@@ -7,14 +7,7 @@
  */
 
 import {VariablePanel} from '../index';
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-  within,
-} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -22,15 +15,12 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
-  createVariable,
   createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -46,6 +36,7 @@ import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockUpdateElementInstanceVariables} from 'modules/mocks/api/v2/elementInstances/updateElementInstanceVariables';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -135,10 +126,6 @@ describe('VariablePanel', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
-
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -166,8 +153,6 @@ describe('VariablePanel', () => {
   });
 
   it('should display error notification if add variable operation could not be created', async () => {
-    mockFetchVariables().withSuccess([createVariable()]);
-
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
@@ -204,8 +189,6 @@ describe('VariablePanel', () => {
       '"bar"',
     );
 
-    mockApplyOperation().withDelayedServerError();
-
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -214,16 +197,18 @@ describe('VariablePanel', () => {
       ).toBeEnabled(),
     );
 
+    mockUpdateElementInstanceVariables('instance_id').withDelayedServerError();
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+
     await user.click(
       screen.getByRole('button', {
         name: /save variable/i,
       }),
-    );
-
-    await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).queryByTestId(
-        'variable-operation-spinner',
-      ),
     );
 
     expect(
@@ -235,6 +220,7 @@ describe('VariablePanel', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       isDismissable: true,
       kind: 'error',
+      subtitle: 'Internal Server Error',
       title: 'Variable could not be saved',
     });
   });
@@ -257,7 +243,6 @@ describe('VariablePanel', () => {
       },
     ];
 
-    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
@@ -298,8 +283,6 @@ describe('VariablePanel', () => {
       '"bar"',
     );
 
-    mockApplyOperation().withDelayedServerError(403);
-
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -308,16 +291,20 @@ describe('VariablePanel', () => {
       ).toBeEnabled(),
     );
 
+    mockUpdateElementInstanceVariables('instance_id').withDelayedServerError(
+      403,
+    );
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+
     await user.click(
       screen.getByRole('button', {
         name: /save variable/i,
       }),
-    );
-
-    await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).queryByTestId(
-        'variable-operation-spinner',
-      ),
     );
 
     expect(
@@ -330,94 +317,7 @@ describe('VariablePanel', () => {
       isDismissable: true,
       kind: 'error',
       title: 'Variable could not be saved',
-      subtitle: 'You do not have permission',
+      subtitle: 'Forbidden',
     });
-  });
-
-  it('should display error notification if add variable operation fails', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
-
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /add variable/i,
-        }),
-      ).toBeEnabled(),
-    );
-
-    await user.click(
-      screen.getByRole('button', {
-        name: /add variable/i,
-      }),
-    );
-    expect(
-      screen.queryByRole('button', {
-        name: /add variable/i,
-      }),
-    ).not.toBeInTheDocument();
-
-    await user.type(
-      screen.getByRole('textbox', {
-        name: /name/i,
-      }),
-      'foo',
-    );
-    await user.type(
-      screen.getByRole('textbox', {
-        name: /value/i,
-      }),
-      '"bar"',
-    );
-
-    mockFetchVariables().withSuccess([createVariable()]);
-
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-
-    vi.runOnlyPendingTimers();
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /save variable/i,
-        }),
-      ).toBeEnabled(),
-    );
-
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockApplyOperation().withNetworkError();
-
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: /save variable/i,
-      }),
-    );
-
-    expect(
-      within(screen.getByTestId('foo')).getByTestId(
-        'variable-operation-spinner',
-      ),
-    ).toBeInTheDocument();
-
-    vi.runOnlyPendingTimers();
-
-    await waitForElementToBeRemoved(screen.queryByTestId('foo'));
-
-    expect(
-      screen.getByRole('button', {
-        name: /add variable/i,
-      }),
-    ).toBeInTheDocument();
-
-    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-      isDismissable: true,
-      kind: 'error',
-      title: 'Variable could not be saved',
-    });
-
-    vi.clearAllTimers();
-    vi.useRealTimers();
   });
 });

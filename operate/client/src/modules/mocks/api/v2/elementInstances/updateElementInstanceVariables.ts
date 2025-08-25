@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockPostRequest} from 'modules/mocks/api/mockRequest';
+import {mockPutRequest} from 'modules/mocks/api/mockRequest';
 import {
   endpoints,
   type ElementInstance,
@@ -15,7 +15,7 @@ import {
 const mockUpdateElementInstanceVariables = (
   elementInstanceKey: ElementInstance['elementInstanceKey'],
 ) =>
-  mockPostRequest(
+  mockPutRequest(
     endpoints.updateElementInstanceVariables.getUrl({
       elementInstanceKey,
     }),
