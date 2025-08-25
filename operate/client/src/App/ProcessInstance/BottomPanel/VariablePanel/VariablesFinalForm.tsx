@@ -46,32 +46,35 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
         const isNewVariable = initialValues.name === '';
         const {name, value} = values;
 
-        await mutateAsyncVariables(
-          {name, value},
-          {
-            onSuccess: () => {
-              notificationsStore.displayNotification({
-                kind: 'success',
-                title: isNewVariable ? 'Variable added' : 'Variable updated',
-                isDismissable: true,
-              });
+        try {
+          await mutateAsyncVariables(
+            {name, value},
+            {
+              onSuccess: () => {
+                notificationsStore.displayNotification({
+                  kind: 'success',
+                  title: isNewVariable ? 'Variable added' : 'Variable updated',
+                  isDismissable: true,
+                });
+              },
+              onSettled: async () => {
+                form.reset({});
+                await queryClient.invalidateQueries({
+                  queryKey: queryKeys.variables.search(),
+                });
+              },
             },
-            onError: (error) => {
-              notificationsStore.displayNotification({
-                kind: 'error',
-                title: 'Variable could not be saved',
-                subtitle: error.message,
-                isDismissable: true,
-              });
-            },
-            onSettled: async () => {
-              form.reset({});
-              await queryClient.invalidateQueries({
-                queryKey: queryKeys.variables.search(),
-              });
-            },
-          },
-        );
+          );
+        } catch (error) {
+          if (error instanceof Error) {
+            notificationsStore.displayNotification({
+              kind: 'error',
+              title: 'Variable could not be saved',
+              subtitle: error.message,
+              isDismissable: true,
+            });
+          }
+        }
       }}
     />
   );
