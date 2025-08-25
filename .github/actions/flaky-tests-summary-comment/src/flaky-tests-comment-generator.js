@@ -11,8 +11,6 @@ async function createOrUpdateComment(context, github, currentData, prNumber, bra
 
   // Step 2: Parse existing comment to extract historical data
   const historicalData = existingComment ? helpers.parseComment(existingComment.body) : null;
-
-  console.log("Existing comment:", existingComment);
   console.log('Historical data:', historicalData);
 
   // Step 3: Merge current and historical data, or generate first run data
