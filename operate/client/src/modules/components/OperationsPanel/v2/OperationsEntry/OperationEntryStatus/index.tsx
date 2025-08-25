@@ -7,12 +7,7 @@
  */
 
 import type {BatchOperationType} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {
-  CheckmarkFilled,
-  StatusContainer,
-  Text,
-  WarningFilled,
-} from 'modules/components/OperationsPanel/OperationsEntry/OperationEntryStatus/styled';
+import {CheckmarkFilled, StatusContainer, Text, WarningFilled} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
 type Props = {
