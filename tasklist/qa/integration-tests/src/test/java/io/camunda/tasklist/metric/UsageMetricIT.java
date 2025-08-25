@@ -18,12 +18,11 @@ import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.util.HashUtil;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -71,9 +70,8 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
             UsageMetricDTO.class,
             parameters);
 
-    assertThat(response.getStatusCodeValue()).isEqualTo(200);
-    assertThat(response.getBody().getAssignees()).isEqualTo(Set.of());
-    assertThat(response.getBody().getTotal()).isEqualTo(0);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(Objects.requireNonNull(response.getBody()).getTotal()).isZero();
   }
 
   @Test
@@ -91,8 +89,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
     parameters.put("endTime", now.plusSeconds(1L).format(FORMATTER));
 
-    final UsageMetricDTO expectedDto =
-        new UsageMetricDTO(Set.of(ASSIGNEE_HASH_1, ASSIGNEE_HASH_2)); // just repeat once
+    final UsageMetricDTO expectedDto = new UsageMetricDTO(2); // just repeat once
 
     Awaitility.await()
         .untilAsserted(
@@ -108,7 +105,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldReturnEmptyDataIfWrongTimeRange() throws IOException, InterruptedException {
+  public void shouldReturnEmptyDataIfWrongTimeRange() {
     final OffsetDateTime now = OffsetDateTime.now();
     insertMetricForAssignee(12L, "John Lennon", now);
     insertMetricForAssignee(23L, "Angela Merkel", now);
@@ -127,7 +124,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
             UsageMetricDTO.class,
             parameters);
 
-    final UsageMetricDTO expectedDto = new UsageMetricDTO(Set.of());
+    final UsageMetricDTO expectedDto = new UsageMetricDTO(0);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isEqualTo(expectedDto);
@@ -153,11 +150,11 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
             parameters);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody().getTotal()).isEqualTo(10_001);
+    assertThat(Objects.requireNonNull(response.getBody()).getTotal()).isEqualTo(10_001);
   }
 
   @Test
-  public void providesCompletedTasks() throws IOException, InterruptedException {
+  public void providesCompletedTasks() {
     final OffsetDateTime now = OffsetDateTime.now();
 
     // given users: joe, jane and demo
@@ -195,12 +192,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
             parameters);
 
     // then
-    final UsageMetricDTO expectedDto =
-        new UsageMetricDTO(
-            Set.of(
-                HashUtil.getStringHashValue("jane"),
-                HashUtil.getStringHashValue("demo"),
-                HashUtil.getStringHashValue("joe")));
+    final UsageMetricDTO expectedDto = new UsageMetricDTO(3);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isEqualTo(expectedDto);

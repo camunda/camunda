@@ -75,6 +75,7 @@ import org.slf4j.LoggerFactory;
 public abstract class ElasticsearchUtil {
 
   public static final String ZEEBE_INDEX_DELIMITER = "_";
+  public static final int AGGREGATION_TERMS_SIZE = 20000;
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
   public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS =
       30000; // this scroll timeout value is used for reindex and delete queries
