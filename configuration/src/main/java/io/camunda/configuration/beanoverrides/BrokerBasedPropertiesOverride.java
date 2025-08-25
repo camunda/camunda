@@ -213,7 +213,15 @@ public class BrokerBasedPropertiesOverride {
     final var network =
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
 
-    override.getNetwork().setHost(network.getHost());
+    final var brokerNetwork = override.getNetwork();
+    brokerNetwork.setHost(network.getHost());
+    brokerNetwork.setAdvertisedHost(network.getAdvertisedHost());
+    brokerNetwork.setPortOffset(network.getPortOffset());
+    brokerNetwork.setMaxMessageSize(network.getMaxMessageSize());
+    brokerNetwork.setSocketSendBuffer(network.getSocketSendBuffer());
+    brokerNetwork.setSocketReceiveBuffer(network.getSocketReceiveBuffer());
+    brokerNetwork.setHeartbeatTimeout(network.getHeartbeatTimeout());
+    brokerNetwork.setHeartbeatInterval(network.getHeartbeatInterval());
   }
 
   private void populateFromRestFilters(final BrokerBasedProperties override) {

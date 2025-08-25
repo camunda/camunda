@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.InternalApi
 import java.time.Duration;
 import org.springframework.util.unit.DataSize;
 
+// BROKER-ONLY
 public final class NetworkCfg implements ConfigurationEntry {
 
   public static final int DEFAULT_COMMAND_API_PORT = 26501;

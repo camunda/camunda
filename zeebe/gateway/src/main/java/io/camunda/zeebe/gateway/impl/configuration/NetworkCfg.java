@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.Objects;
 import org.springframework.util.unit.DataSize;
 
+// GATEWAY-ONLY
 public final class NetworkCfg {
 
   private String host;
