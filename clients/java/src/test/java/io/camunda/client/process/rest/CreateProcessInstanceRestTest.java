@@ -343,6 +343,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
   public void shouldCreateProcessInstanceWithTags() {
     // given
     final Set<String> tags = new HashSet<>(Arrays.asList("tag1", "tag2"));
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
 
     // when
     client.newCreateInstanceCommand().processDefinitionKey(123).tags(tags).send().join();
