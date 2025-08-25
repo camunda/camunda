@@ -65,11 +65,10 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
               });
             },
             onSettled: async () => {
+              form.reset({});
               await queryClient.invalidateQueries({
                 queryKey: queryKeys.variables.search(),
               });
-
-              form.reset({});
             },
           },
         );
