@@ -29,5 +29,8 @@ lookupTeamMedic["team-distributed-systems"]=$distributedSystemsMedic
 lookupTeamMedic["Distributed Systems"]=$distributedSystemsMedic
 lookupTeamMedic["DistributedSystems"]=$distributedSystemsMedic
 
+# failure in QA test
+lookupTeamMedic["QA"]="QA Acceptance Test, requires investigation"
+
 # catch all for tests without an assigned team
 lookupTeamMedic["General"]="General Test, requires investigation"
