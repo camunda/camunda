@@ -14,17 +14,19 @@ import java.util.Collection;
 public interface BackupManager {
 
   /**
-   * Takes backup with id checkpointId. The method returns immediately after triggering the backup.
-   * {@link BackupManager#getBackupStatus(long)} must be used to check if the backup is completed or
-   * not. If a completed backup with same id already exists, no new backup will be taken.
+   * Takes backup with id checkpointId using the provided partition count. The method returns
+   * immediately after triggering the backup. {@link BackupManager#getBackupStatus(long)} must be
+   * used to check if the backup is completed or not. If a completed backup with same id already
+   * exists, no new backup will be taken.
    *
    * <p>The implementation of this method should be non-blocking to not block the caller.
    *
    * @param checkpointId id of the backup
    * @param checkpointPosition position of the record until which must be included in the backup.
+   * @param partitionCount the current number of partitions to store in the backup
    * @return an ActorFuture with the result of the backup
    */
-  ActorFuture<Void> takeBackup(long checkpointId, long checkpointPosition);
+  ActorFuture<Void> takeBackup(long checkpointId, long checkpointPosition, int partitionCount);
 
   /**
    * Get the status of the backup
