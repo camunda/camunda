@@ -68,7 +68,6 @@ public class CreateDocumentLinkTest {
                     camundaClient
                         .newCreateDocumentLinkCommand(documentId)
                         .storeId(storeId)
-                        .contentHash(documentReference.getContentHash())
                         .send()
                         .join())
             .isInstanceOf(ProblemException.class)

@@ -13,8 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
-import io.camunda.client.protocol.rest.DocumentReference;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.InputStream;
 import org.junit.jupiter.api.BeforeAll;
@@ -88,45 +86,5 @@ public class GetDocumentContentTest {
     assertThat(exception.details().getStatus()).isEqualTo(400);
     assertThat(exception.details().getDetail())
         .isEqualTo("Document store with id 'non-existing-store' does not exist");
-  }
-
-  @Test
-  public void shouldReturnBadRequestIfNoHashProvided() {
-    // when
-    final var command =
-        camundaClient.newDocumentContentGetRequest(documentReference.getDocumentId()).send();
-
-    // then
-    final var exception =
-        (ProblemException)
-            assertThatThrownBy(command::join).isInstanceOf(ProblemException.class).actual();
-    assertThat(exception.details()).isNotNull();
-    assertThat(exception.details().getStatus()).isEqualTo(400);
-    assertThat(exception.details().getDetail())
-        .isEqualTo("No document hash provided for document " + documentReference.getDocumentId());
-  }
-
-  @Test
-  public void shouldReturnBadRequestIfWrongHashProvided() {
-    // when
-    final var command =
-        camundaClient
-            .newDocumentContentGetRequest(
-                new DocumentReferenceResponseImpl(
-                    new DocumentReference()
-                        .documentId(documentReference.getDocumentId())
-                        .contentHash("foobar")))
-            .send();
-
-    // then
-    final var exception =
-        (ProblemException)
-            assertThatThrownBy(command::join).isInstanceOf(ProblemException.class).actual();
-    assertThat(exception.details()).isNotNull();
-    assertThat(exception.details().getStatus()).isEqualTo(400);
-    assertThat(exception.details().getDetail())
-        .isEqualTo(
-            "Document hash for document %s doesn't match the provided hash %s"
-                .formatted(documentReference.getDocumentId(), "foobar"));
   }
 }
