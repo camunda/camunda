@@ -50,6 +50,7 @@ public class ContainerRuntimePropertiesUtilTest {
     assertThat(propertiesUtil.getConnectorsDockerImageName())
         .isEqualTo("camunda/connectors-bundle");
     assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("SNAPSHOT");
+    assertThat(propertiesUtil.getCamundaClientRequestTimeout()).hasSeconds(10);
   }
 
   @Test
@@ -304,6 +305,7 @@ public class ContainerRuntimePropertiesUtilTest {
       assertThat(propertiesUtil.getConnectorsDockerImageName())
           .isEqualTo("camunda/connectors-bundle");
       assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("8.8.3");
+      assertThat(propertiesUtil.getCamundaClientRequestTimeout()).hasHours(1);
     }
 
     @Test

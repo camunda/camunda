@@ -19,14 +19,18 @@ import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getProper
 
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Properties;
 
 public class RemoteRuntimeClientProperties {
   public static final String PROPERTY_NAME_REMOTE_CLIENT_GRPC_ADDRESS = "remote.client.grpcAddress";
   public static final String PROPERTY_NAME_REMOTE_CLIENT_REST_ADDRESS = "remote.client.restAddress";
+  public static final String PROPERTY_NAME_CAMUNDA_CLIENT_REQUEST_TIMEOUT =
+      "remote.client.requestTimeout";
 
   private final URI grpcAddress;
   private final URI restAddress;
+  private final Duration camundaClientRequestTimeout;
 
   public RemoteRuntimeClientProperties(final Properties properties) {
     grpcAddress =
@@ -54,6 +58,13 @@ public class RemoteRuntimeClientProperties {
               }
             },
             null);
+
+    camundaClientRequestTimeout =
+        getPropertyOrDefault(
+            properties,
+            PROPERTY_NAME_CAMUNDA_CLIENT_REQUEST_TIMEOUT,
+            Duration::parse,
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_CLIENT_REQUEST_TIMEOUT);
   }
 
   public URI getGrpcAddress() {
@@ -62,5 +73,9 @@ public class RemoteRuntimeClientProperties {
 
   public URI getRestAddress() {
     return restAddress;
+  }
+
+  public Duration getCamundaClientRequestTimeout() {
+    return camundaClientRequestTimeout;
   }
 }

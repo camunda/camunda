@@ -21,6 +21,7 @@ import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -97,6 +98,9 @@ public class CamundaProcessTestRuntimeBuilder {
       CamundaProcessTestRuntimeDefaults.REMOTE_CAMUNDA_MONITORING_API_ADDRESS;
   private URI remoteConnectorsRestApiAddress =
       CamundaProcessTestRuntimeDefaults.REMOTE_CONNECTORS_REST_API_ADDRESS;
+
+  private Duration camundaClientRequestTimeout =
+      CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_REQUEST_TIMEOUT;
 
   // ============ For testing =================
 
@@ -225,6 +229,11 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  public CamundaProcessTestRuntimeBuilder withCamundaClientRequestTimeout(final Duration timeout) {
+    this.camundaClientRequestTimeout = timeout;
+    return this;
+  }
+
   public CamundaProcessTestRuntimeBuilder withRemoteCamundaClientBuilderFactory(
       final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory) {
     this.remoteCamundaClientBuilderFactory = remoteCamundaClientBuilderFactory;
@@ -341,5 +350,9 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public URI getRemoteConnectorsRestApiAddress() {
     return remoteConnectorsRestApiAddress;
+  }
+
+  public Duration getCamundaClientRequestTimeout() {
+    return camundaClientRequestTimeout;
   }
 }
