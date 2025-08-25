@@ -16,6 +16,36 @@ type Props = {
   completedCount?: number;
 };
 
+const getSuccessMessage = (
+  type: BatchOperationType,
+  completedCount: number,
+): string => {
+  if (type === 'RESOLVE_INCIDENT') {
+    return `${completedCount} ${completedCount === 1 ? 'retry' : 'retries'} succeeded`;
+  }
+
+  return `${pluralSuffix(completedCount, 'instance')} succeeded`;
+};
+
+const getFailureMessage = (
+  type: BatchOperationType,
+  failedCount: number,
+  completedCount: number,
+): string => {
+  if (type === 'RESOLVE_INCIDENT') {
+    if (completedCount > 0) {
+      return `${failedCount} failed`;
+    }
+    return `${failedCount} ${failedCount === 1 ? 'retry' : 'retries'} failed`;
+  }
+
+  if (completedCount > 0) {
+    return `${failedCount} failed`;
+  }
+
+  return `${pluralSuffix(failedCount, 'instance')} failed`;
+};
+
 const OperationEntryStatus: React.FC<Props> = ({
   type,
   failedCount = 0,
@@ -26,30 +56,14 @@ const OperationEntryStatus: React.FC<Props> = ({
       {completedCount > 0 ? (
         <>
           <CheckmarkFilled />
-          <Text>
-            <>
-              {type === 'RESOLVE_INCIDENT'
-                ? `${completedCount} ${completedCount === 1 ? 'retry' : 'retries'} succeeded`
-                : `${pluralSuffix(completedCount, 'instance')} succeeded`}
-            </>
-          </Text>
+          <Text>{getSuccessMessage(type, completedCount)}</Text>
         </>
       ) : null}
       {completedCount > 0 && failedCount > 0 ? ' / ' : null}
       {failedCount ? (
         <>
           <WarningFilled />
-          <Text>
-            <>
-              {type === 'RESOLVE_INCIDENT'
-                ? completedCount > 0
-                  ? `${failedCount} failed`
-                  : `${failedCount} ${failedCount === 1 ? 'retry' : 'retries'} failed`
-                : completedCount > 0
-                  ? `${failedCount} failed`
-                  : `${pluralSuffix(failedCount, 'instance')} failed`}
-            </>
-          </Text>
+          <Text>{getFailureMessage(type, failedCount, completedCount)}</Text>
         </>
       ) : null}
     </StatusContainer>
