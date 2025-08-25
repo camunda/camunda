@@ -260,20 +260,64 @@ public class ActivateAdHocSubProcessActivityTest {
             .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
             .getFirst();
 
-    // when/then
+    // when/then: use a non-existent element to force a NOT_FOUND rejection
     assertThatThrownBy(
             () ->
                 client
                     .newActivateAdHocSubProcessActivitiesCommand(
                         String.valueOf(activatedAdHocSubProcess.getKey()))
-                    .activateElements("A", "A")
+                    .activateElements("does_not_exist")
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 400: 'Bad Request'")
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'ACTIVATE' rejected with code 'INVALID_ARGUMENT': Expected to activate activities for ad-hoc sub-process with key '%s', but duplicate activities were given."
+            "Command 'ACTIVATE' rejected with code 'NOT_FOUND': Expected to activate activities for ad-hoc sub-process with key '%s', but the given elements [does_not_exist] do not exist."
                 .formatted(activatedAdHocSubProcess.getKey()));
+  }
+
+  @Test
+  void shouldAllowDuplicateActivations(final TestInfo testInfo) {
+    // given
+    deployAndStartInstance(
+        testInfo,
+        adHocSubProcess -> {
+          adHocSubProcess.task("A");
+          adHocSubProcess.task("B");
+          adHocSubProcess.task("C");
+        });
+
+    final var activatedAdHocSubProcess =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstance.getProcessInstanceKey())
+            .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
+            .getFirst();
+
+    // when
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(
+            String.valueOf(activatedAdHocSubProcess.getKey()))
+        .activateElements("A", "A")
+        .send()
+        .join();
+
+    // then: expect two activations/completions of A and overall completion
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstance.getProcessInstanceKey())
+                .withElementId("A")
+                .limit(2)
+                .toList())
+        .hasSize(2);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstance.getProcessInstanceKey())
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .contains(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   private void deployAndStartInstance(
