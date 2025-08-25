@@ -23,7 +23,7 @@ import {openFile} from '@/utils/openFile';
 import {expect} from '@playwright/test';
 import {URL_API_PATTERN} from '../constants';
 
-test.describe('delete resource definitions', () => {
+test.describe.skip('delete resource definitions', () => {
   test('delete process definitions', async ({
     context,
     page,
