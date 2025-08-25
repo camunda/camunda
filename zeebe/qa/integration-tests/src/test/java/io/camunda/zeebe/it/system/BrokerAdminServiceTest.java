@@ -104,7 +104,7 @@ public class BrokerAdminServiceTest {
 
     // when
     final Future<?> response;
-    try (final var client = zeebe.newClientBuilder().build()) {
+    try (final var client = zeebe.newClientBuilder().preferRestOverGrpc(true).build()) {
       response =
           client.newPublishMessageCommand().messageName("test").correlationKey("test-key").send();
 
