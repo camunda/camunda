@@ -131,7 +131,7 @@ public class CamundaDockerIT {
             .grpcAddress(new URI(grpcEndpoint))
             .build();
 
-    var resource =
+    final var resource =
         camundaClient
             .newDeployResourceCommand()
             .addProcessModel(
@@ -155,14 +155,14 @@ public class CamundaDockerIT {
 
     /* Active waiting with retries every 5 seconds. */
 
-    long timeoutMillis = 2 * 60 * 1000; // 2 minutes
-    long startTime = System.currentTimeMillis();
+    final long timeoutMillis = 2 * 60 * 1000; // 2 minutes
+    final long startTime = System.currentTimeMillis();
     do {
-      var response = camundaClient.newProcessInstanceSearchRequest().send().join();
+      final var response = camundaClient.newProcessInstanceSearchRequest().send().join();
       if (!response.items().isEmpty()) {
         assertThat(response.items().size()).isEqualTo(1);
 
-        var getResponse =
+        final var getResponse =
             camundaClient
                 .newProcessInstanceGetRequest(instance.getProcessInstanceKey())
                 .send()
