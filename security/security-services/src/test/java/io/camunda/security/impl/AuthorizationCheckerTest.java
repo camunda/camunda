@@ -23,8 +23,13 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
@@ -434,6 +439,493 @@ public class AuthorizationCheckerTest {
     private enum Expected {
       ACCESS_ALLOWED,
       ACCESS_DENIED
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class CollectPermissionTypesTests {
+
+    private static final String WILDCARD_RESOURCE_ID = AuthorizationScope.WILDCARD.getResourceId();
+    private static final String RESOURCE_ID = "id";
+    private static final String OTHER_RESOURCE_ID = "other-id";
+
+    private final AtomicLong keyCounter = new AtomicLong(Protocol.encodePartitionId(1, 50));
+
+    @ParameterizedTest(name = "{index} {0}")
+    @MethodSource("collectPermissionTypesScenarios")
+    void collectPermissionTypesScenariosTest(final CollectPermissionScenario scenario) {
+      try (final var reader = new FakeAuthorizationReader()) {
+        // given
+        for (final var authorizationEntity : scenario.given()) {
+          reader.create(authorizationEntity);
+        }
+        final var checker = new AuthorizationChecker(reader);
+
+        // when
+        final var actual =
+            checker.collectPermissionTypes(
+                scenario.resourceId(), scenario.resourceType(), scenario.authentication());
+
+        // then
+        Assertions.assertThat(actual)
+            .describedAs(scenario.displayName())
+            .containsExactlyInAnyOrderElementsOf(scenario.expected());
+      }
+    }
+
+    Stream<CollectPermissionScenario> collectPermissionTypesScenarios() {
+      return Stream.of(
+          CollectPermissionScenario.displayName(
+                  "anonymous PROCESS_DEFINITION no authorizations -> empty")
+              .whenAnonymous()
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.PROCESS_DEFINITION)
+              .thenResultContains()
+              .build(),
+          CollectPermissionScenario.displayName(
+                  "anonymous PROCESS_DEFINITION unspecified authorization -> empty")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.UNSPECIFIED,
+                      "unspecified",
+                      AuthorizationResourceType.UNSPECIFIED,
+                      AuthorizationResourceMatcher.UNSPECIFIED,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
+              .whenAnonymous()
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.PROCESS_DEFINITION)
+              .thenResultContains()
+              .build(),
+          CollectPermissionScenario.displayName("user alice wildcard AUTHORIZATION READ -> {READ}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
+              .whenUser("alice")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.AUTHORIZATION)
+              .thenResultContains(PermissionType.READ)
+              .build(),
+          CollectPermissionScenario.displayName("user bob DOCUMENT specific READ -> {READ}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "bob",
+                      AuthorizationResourceType.DOCUMENT,
+                      AuthorizationResourceMatcher.ID,
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
+              .whenUser("bob")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.DOCUMENT)
+              .thenResultContains(PermissionType.READ)
+              .build(),
+          CollectPermissionScenario.displayName(
+                  "user alice PROCESS_DEFINITION wildcard READ_PROCESS_DEFINITION + specific CANCEL -> union")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.PROCESS_DEFINITION,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ_PROCESS_DEFINITION)),
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.PROCESS_DEFINITION,
+                      AuthorizationResourceMatcher.ID,
+                      RESOURCE_ID,
+                      Set.of(PermissionType.CANCEL_PROCESS_INSTANCE)))
+              .whenUser("alice")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.PROCESS_DEFINITION)
+              .thenResultContains(
+                  PermissionType.READ_PROCESS_DEFINITION, PermissionType.CANCEL_PROCESS_INSTANCE)
+              .build(),
+          CollectPermissionScenario.displayName("user alice SYSTEM duplicate READ -> {READ}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.SYSTEM,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ)),
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.SYSTEM,
+                      AuthorizationResourceMatcher.ID,
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
+              .whenUser("alice")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.SYSTEM)
+              .thenResultContains(PermissionType.READ)
+              .build(),
+          CollectPermissionScenario.displayName("user carol AUTHORIZATION mismatch -> empty")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "carol",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ID,
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
+              .whenUser("carol")
+              .accessesResource(OTHER_RESOURCE_ID, AuthorizationResourceType.AUTHORIZATION)
+              .build(),
+          CollectPermissionScenario.displayName(
+                  "user dave DOCUMENT wildcard applies to other id -> {CREATE,READ,DELETE}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "dave",
+                      AuthorizationResourceType.DOCUMENT,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)))
+              .whenUser("dave")
+              .accessesResource(OTHER_RESOURCE_ID, AuthorizationResourceType.DOCUMENT)
+              .thenResultContains(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)
+              .build(),
+          CollectPermissionScenario.displayName(
+                  "alice + groupA PROCESS_DEFINITION wildcard -> {READ_PROCESS_DEFINITION}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.GROUP,
+                      "groupA",
+                      AuthorizationResourceType.PROCESS_DEFINITION,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ_PROCESS_DEFINITION)))
+              .whenUser("alice")
+              .withGroups("groupA")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.PROCESS_DEFINITION)
+              .thenResultContains(PermissionType.READ_PROCESS_DEFINITION)
+              .build(),
+          CollectPermissionScenario.displayName(
+                  "alice + groupA AUTHORIZATION union wildcard READ + specific UPDATE -> {READ,UPDATE}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ)),
+                  authEntity(
+                      AuthorizationOwnerType.GROUP,
+                      "groupA",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ID,
+                      RESOURCE_ID,
+                      Set.of(PermissionType.UPDATE)))
+              .whenUser("alice")
+              .withGroups("groupA")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.AUTHORIZATION)
+              .thenResultContains(PermissionType.READ, PermissionType.UPDATE)
+              .build(),
+          CollectPermissionScenario.displayName(
+                  "alice AUTHORIZATION union READ+UPDATE + wildcard DELETE -> {READ,UPDATE,DELETE}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ID,
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ, PermissionType.UPDATE)),
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.DELETE)))
+              .whenUser("alice")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.AUTHORIZATION)
+              .thenResultContains(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)
+              .build(),
+          CollectPermissionScenario.displayName("erin COMPONENT wildcard ACCESS -> {ACCESS}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "erin",
+                      AuthorizationResourceType.COMPONENT,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.ACCESS)))
+              .whenUser("erin")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.COMPONENT)
+              .thenResultContains(PermissionType.ACCESS)
+              .build(),
+          CollectPermissionScenario.displayName(
+                  "frank SYSTEM wildcard READ + specific READ_USAGE_METRIC+UPDATE -> union")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "frank",
+                      AuthorizationResourceType.SYSTEM,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ)),
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "frank",
+                      AuthorizationResourceType.SYSTEM,
+                      AuthorizationResourceMatcher.ID,
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE)))
+              .whenUser("frank")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.SYSTEM)
+              .thenResultContains(
+                  PermissionType.READ, PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE)
+              .build(),
+          CollectPermissionScenario.displayName("gina PROCESS_DEFINITION mismatch -> empty")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "gina",
+                      AuthorizationResourceType.PROCESS_DEFINITION,
+                      AuthorizationResourceMatcher.ID,
+                      RESOURCE_ID,
+                      Set.of(PermissionType.UPDATE_PROCESS_INSTANCE)))
+              .whenUser("gina")
+              .accessesResource(OTHER_RESOURCE_ID, AuthorizationResourceType.PROCESS_DEFINITION)
+              .build(),
+          CollectPermissionScenario.displayName("hank DOCUMENT wildcard -> {CREATE,READ,DELETE}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "hank",
+                      AuthorizationResourceType.DOCUMENT,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)))
+              .whenUser("hank")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.DOCUMENT)
+              .thenResultContains(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)
+              .build(),
+          CollectPermissionScenario.displayName(
+                  "ivy BATCH wildcard CREATE + specific DELETE_PROCESS_DEFINITION -> union")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "ivy",
+                      AuthorizationResourceType.BATCH,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.CREATE)),
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "ivy",
+                      AuthorizationResourceType.BATCH,
+                      AuthorizationResourceMatcher.ID,
+                      RESOURCE_ID,
+                      Set.of(PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION)))
+              .whenUser("ivy")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.BATCH)
+              .thenResultContains(
+                  PermissionType.CREATE,
+                  PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION)
+              .build(),
+          CollectPermissionScenario.displayName("client clientA DOCUMENT wildcard READ -> {READ}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.CLIENT,
+                      "clientA",
+                      AuthorizationResourceType.DOCUMENT,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
+              .whenClient("clientA")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.DOCUMENT)
+              .thenResultContains(PermissionType.READ)
+              .build(),
+          CollectPermissionScenario.displayName(
+                  "combo client+role+mappingRule DOCUMENT union READ+CREATE+DELETE -> {READ,CREATE,DELETE}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.CLIENT,
+                      "comboClient",
+                      AuthorizationResourceType.DOCUMENT,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ)),
+                  authEntity(
+                      AuthorizationOwnerType.ROLE,
+                      "roleX",
+                      AuthorizationResourceType.DOCUMENT,
+                      AuthorizationResourceMatcher.ID,
+                      RESOURCE_ID,
+                      Set.of(PermissionType.CREATE)),
+                  authEntity(
+                      AuthorizationOwnerType.MAPPING_RULE,
+                      "mrCombo",
+                      AuthorizationResourceType.DOCUMENT,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.DELETE)))
+              .whenClient("comboClient")
+              .withRoles("roleX")
+              .withMappingRules("mrCombo")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.DOCUMENT)
+              .thenResultContains(PermissionType.READ, PermissionType.CREATE, PermissionType.DELETE)
+              .build());
+    }
+
+    private AuthorizationEntity authEntity(
+        final AuthorizationOwnerType ownerType,
+        final String ownerId,
+        final AuthorizationResourceType resourceType,
+        final AuthorizationResourceMatcher matcher,
+        final String resourceId,
+        final Set<PermissionType> permissionTypes) {
+      return new AuthorizationEntity(
+          keyCounter.incrementAndGet(),
+          ownerId,
+          ownerType.name(),
+          resourceType.name(),
+          matcher.value(),
+          resourceId,
+          permissionTypes);
+    }
+
+    record CollectPermissionScenario(
+        String displayName,
+        CamundaAuthentication authentication,
+        String resourceId,
+        AuthorizationResourceType resourceType,
+        List<AuthorizationEntity> given,
+        Set<PermissionType> expected) {
+
+      @Override
+      public String toString() {
+        return displayName;
+      }
+
+      static Builder displayName(final String displayName) {
+        return new Builder(displayName);
+      }
+
+      static final class Builder {
+        private final String displayName;
+        private String user;
+        private String clientId;
+        private final List<String> groupIds = new ArrayList<>();
+        private final List<String> mappingRuleIds = new ArrayList<>();
+        private final List<String> roleIds = new ArrayList<>();
+        private String requestedResourceId;
+        private AuthorizationResourceType resourceType;
+        private final List<AuthorizationEntity> givenAuthorizationEntities = new ArrayList<>();
+        private final Set<PermissionType> expected = new LinkedHashSet<>();
+
+        Builder(final String displayName) {
+          this.displayName = displayName;
+        }
+
+        Builder given(final AuthorizationEntity... authorizationEntities) {
+          if (authorizationEntities != null) {
+            givenAuthorizationEntities.addAll(Arrays.asList(authorizationEntities));
+          }
+          return this;
+        }
+
+        public Builder whenAnonymous() {
+          user = null;
+          clientId = null;
+          groupIds.clear();
+          mappingRuleIds.clear();
+          roleIds.clear();
+          return this;
+        }
+
+        Builder whenUser(final String user) {
+          this.user = user;
+          return this;
+        }
+
+        Builder whenClient(final String clientId) {
+          this.clientId = clientId;
+          return this;
+        }
+
+        Builder withGroups(final String... groupIds) {
+          if (groupIds != null) {
+            this.groupIds.addAll(Arrays.asList(groupIds));
+          }
+          return this;
+        }
+
+        public Builder withMappingRules(final String... mappingRuleIds) {
+          if (mappingRuleIds != null) {
+            this.mappingRuleIds.addAll(Arrays.asList(mappingRuleIds));
+          }
+          return this;
+        }
+
+        Builder withRoles(final String... roleIds) {
+          if (roleIds != null) {
+            this.roleIds.addAll(Arrays.asList(roleIds));
+          }
+          return this;
+        }
+
+        Builder accessesResource(
+            final String resourceId, final AuthorizationResourceType resourceType) {
+          requestedResourceId = resourceId;
+          this.resourceType = resourceType;
+          return this;
+        }
+
+        Builder thenResultContains(final PermissionType... permissionTypes) {
+          if (permissionTypes != null) {
+            expected.addAll(Arrays.asList(permissionTypes));
+          }
+          return this;
+        }
+
+        CollectPermissionScenario build() {
+          final CamundaAuthentication authentication;
+          if (user == null
+              && clientId == null
+              && groupIds.isEmpty()
+              && mappingRuleIds.isEmpty()
+              && roleIds.isEmpty()) {
+            authentication = CamundaAuthentication.anonymous();
+          } else {
+            authentication =
+                CamundaAuthentication.of(
+                    a -> {
+                      if (user != null) {
+                        a.user(user);
+                      }
+                      if (clientId != null) {
+                        a.clientId(clientId);
+                      }
+                      if (!groupIds.isEmpty()) {
+                        a.groupIds(groupIds);
+                      }
+                      if (!mappingRuleIds.isEmpty()) {
+                        a.mappingRule(mappingRuleIds);
+                      }
+                      if (!roleIds.isEmpty()) {
+                        a.roleIds(roleIds);
+                      }
+                      return a;
+                    });
+          }
+          return new CollectPermissionScenario(
+              displayName,
+              authentication,
+              requestedResourceId,
+              resourceType,
+              List.copyOf(givenAuthorizationEntities),
+              Set.copyOf(expected));
+        }
+      }
     }
   }
 }
