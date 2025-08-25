@@ -9,10 +9,7 @@ package io.camunda.security.impl;
 
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.COMPONENT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -41,29 +38,22 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mock;
 
 public class AuthorizationCheckerTest {
 
-  @Mock private AuthorizationReader authorizationReader;
   private AuthorizationChecker authorizationChecker;
 
   @BeforeEach
   public void setUp() {
-    authorizationChecker = new AuthorizationChecker(authorizationReader);
+    authorizationChecker = new AuthorizationChecker(new FakeAuthorizationReader());
   }
 
   @Test
   public void noResourceIdsReturnedWhenOwnerIdsIsEmpty() {
     // given
-    final var authentication = mock(CamundaAuthentication.class);
-    final var authorization = mock(Authorization.class);
-    final var securityContext = mock(SecurityContext.class);
-    when(securityContext.authentication()).thenReturn(authentication);
-    when(securityContext.authorization()).thenReturn(authorization);
-
-    // when
-    final var result = authorizationChecker.retrieveAuthorizedAuthorizationScopes(securityContext);
+    final var result =
+        authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            SecurityContext.of(c -> c.withAuthentication(a -> a).withAuthorization(a -> a)));
 
     // then
     assertThat(result).isEmpty();
@@ -71,12 +61,9 @@ public class AuthorizationCheckerTest {
 
   @Test
   public void noPermissionTypesReturnedWhenOwnerIdsIsEmpty() {
-    // given
-    final var authentication = mock(CamundaAuthentication.class);
-
     // when
     final var result =
-        authorizationChecker.collectPermissionTypes("foo", COMPONENT, authentication);
+        authorizationChecker.collectPermissionTypes("foo", COMPONENT, CamundaAuthentication.none());
 
     // then
     assertThat(result).isEmpty();
@@ -86,14 +73,12 @@ public class AuthorizationCheckerTest {
   public void notAuthorizedWhenOwnerIdsIsEmpty() {
     // given
     final var authScope = AuthorizationScope.id("foo");
-    final var authentication = mock(CamundaAuthentication.class);
-    final var authorization = mock(Authorization.class);
-    final var securityContext = mock(SecurityContext.class);
-    when(securityContext.authentication()).thenReturn(authentication);
-    when(securityContext.authorization()).thenReturn(authorization);
 
     // when
-    final var result = authorizationChecker.isAuthorized(authScope, securityContext);
+    final var result =
+        authorizationChecker.isAuthorized(
+            authScope,
+            SecurityContext.of(c -> c.withAuthentication(a -> a).withAuthorization(a -> a)));
 
     // then
     assertThat(result).isFalse();
@@ -103,8 +88,8 @@ public class AuthorizationCheckerTest {
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   class IsAuthorizedTests {
 
-    public final String WILDCARD_RESOURCE_ID = AuthorizationScope.WILDCARD.getResourceId();
-    public final String AUTHORIZED_USERNAME =
+    public static final String WILDCARD_RESOURCE_ID = AuthorizationScope.WILDCARD.getResourceId();
+    public static final String AUTHORIZED_USERNAME =
         io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 
     private static final String RESOURCE_ID = "id";
