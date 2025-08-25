@@ -12,15 +12,15 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.currentMultiDbD
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.application.commons.migration.MigrationFinishedEvent;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsImpl;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsItemImpl;
 import io.camunda.it.util.TestHelper;
+import io.camunda.migration.commons.configuration.MigrationProperties;
 import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
+import io.camunda.migration.usagemetric.OperateMetricMigrator;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -32,18 +32,18 @@ import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.cluster.TestUsageMetricMigrationApp;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -85,46 +85,27 @@ public class UsageMetricMigrationIT {
                       .getUsageMetrics()
                       .setExportInterval(EXPORT_INTERVAL));
 
-  private static final String PROCESS_ID = "service_tasks_v1";
   private static CamundaClient camundaClient;
   private static SearchEngineConnectProperties connectConfiguration;
   private static boolean isElasticsearch;
   private static IndexDescriptors indexDescriptors;
   private static MigrationRepositoryIndex migrationRepositoryIndex;
+  private static MetricIndex metricIndex;
+  private static ImportPositionIndex importPositionIndex;
 
-  private static void waitForUsageMetrics(
-      final CamundaClient camundaClient, final Consumer<UsageMetricsStatistics> fnRequirements) {
-    Awaitility.await("should export metrics to secondary storage")
-        .atMost(EXPORT_INTERVAL.multipliedBy(2))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () ->
-                assertThat(
-                        camundaClient
-                            .newUsageMetricsRequest(NOW.minusYears(1), NOW.plusDays(1))
-                            .send()
-                            .join())
-                    .satisfies(fnRequirements));
-  }
-
-  private CompletableFuture<Boolean> startUsageMetricMigration() {
-    final var future = new CompletableFuture<Boolean>();
-    //noinspection resource
-    new TestUsageMetricMigrationApp(connectConfiguration)
-        .withAdditionalInitializer(
-            applicationContext ->
-                applicationContext.addApplicationListener(
-                    e -> {
-                      if (e instanceof final MigrationFinishedEvent event) {
-                        future.complete(event.isSuccess());
-                      }
-                    }))
-        .start();
-    return future;
+  private void startOperateMetricMigrator() {
+    try {
+      final var operateMetricMigrator =
+          new OperateMetricMigrator(
+              connectConfiguration, new SimpleMeterRegistry(), new MigrationProperties());
+      operateMetricMigrator.call();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @BeforeAll
-  static void setup() {
+  static void setup() throws IOException {
     TestHelper.deployResource(camundaClient, "process/service_tasks_v1.bpmn");
 
     // generate older operate rPI metrics
@@ -147,9 +128,14 @@ public class UsageMetricMigrationIT {
     searchEngineClient.createIndex(migrationRepositoryIndex, new IndexConfiguration());
     searchEngineClient.close();
     indexDescriptors = new IndexDescriptors(connectConfiguration.getIndexPrefix(), isElasticsearch);
+
+    metricIndex = indexDescriptors.get(MetricIndex.class);
+    importPositionIndex =
+        new ImportPositionIndex(connectConfiguration.getIndexPrefix(), isElasticsearch);
+    createImportPosition();
   }
 
-  private <T extends IndexDescriptor> void cleanUpIndex(final String index) throws IOException {
+  private void cleanUpIndex(final String index) throws IOException {
     if (isElasticsearch) {
       try (final var client = new ElasticsearchConnector(connectConfiguration).createClient()) {
         client.deleteByQuery(d -> d.index(index).query(q -> q.matchAll(b -> b)).refresh(true));
@@ -162,24 +148,36 @@ public class UsageMetricMigrationIT {
 
   @AfterEach
   void afterEach() throws IOException {
-    cleanUpIndex(indexDescriptors.get(MetricIndex.class).getFullQualifiedName());
+    cleanUpIndex(metricIndex.getFullQualifiedName());
     cleanUpIndex(indexDescriptors.get(UsageMetricIndex.class).getFullQualifiedName());
     cleanUpIndex(migrationRepositoryIndex.getFullQualifiedName());
+  }
+
+  private static void createImportPosition() throws IOException {
+    final var entity = importPosition(true, 1);
+    if (isElasticsearch) {
+      createDocumentsES(importPositionIndex, entity);
+    } else {
+      createDocumentsOS(importPositionIndex, entity);
+    }
+  }
+
+  private static ImportPositionEntity importPosition(final boolean completed, final int partition) {
+    return new ImportPositionEntity()
+        .setId(partition + "-" + TaskTemplate.INDEX_NAME)
+        .setPartitionId(partition)
+        .setAliasName(TaskTemplate.INDEX_NAME)
+        .setIndexName(TaskTemplate.INDEX_NAME)
+        .setCompleted(completed);
   }
 
   private static void createOperateMetric(
       final String tenantId, final OffsetDateTime eventTime, final String event)
       throws IOException {
     if (isElasticsearch) {
-      final var indexDescriptors =
-          new IndexDescriptors(connectConfiguration.getIndexPrefix(), true);
-      final var metricIndex = indexDescriptors.get(MetricIndex.class);
-      createDocumentsES(metricIndex, tenantId, eventTime, event);
+      createDocumentsES(metricIndex, createMetricEntity(tenantId, eventTime, event));
     } else {
-      final var indexDescriptors =
-          new IndexDescriptors(connectConfiguration.getIndexPrefix(), false);
-      final var metricIndex = indexDescriptors.get(MetricIndex.class);
-      createDocumentsOS(metricIndex, tenantId, eventTime, event);
+      createDocumentsOS(metricIndex, createMetricEntity(tenantId, eventTime, event));
     }
   }
 
@@ -193,31 +191,23 @@ public class UsageMetricMigrationIT {
   }
 
   private static void createDocumentsES(
-      final MetricIndex metricIndex,
-      final String tenantId,
-      final OffsetDateTime eventTime,
-      final String event)
-      throws IOException {
+      final IndexDescriptor indexDescriptor, final Object document) throws IOException {
     try (final var client = new ElasticsearchConnector(connectConfiguration).createClient()) {
       client.index(
           b ->
-              b.index(metricIndex.getFullQualifiedName())
-                  .document(createMetricEntity(tenantId, eventTime, event))
+              b.index(indexDescriptor.getFullQualifiedName())
+                  .document(document)
                   .refresh(co.elastic.clients.elasticsearch._types.Refresh.True));
     }
   }
 
   private static void createDocumentsOS(
-      final MetricIndex metricIndex,
-      final String tenantId,
-      final OffsetDateTime eventTime,
-      final String event)
-      throws IOException {
+      final IndexDescriptor indexDescriptor, final Object document) throws IOException {
     final var client = new OpensearchConnector(connectConfiguration).createClient();
     client.index(
         b ->
-            b.index(metricIndex.getFullQualifiedName())
-                .document(createMetricEntity(tenantId, eventTime, event))
+            b.index(indexDescriptor.getFullQualifiedName())
+                .document(document)
                 .refresh(org.opensearch.client.opensearch._types.Refresh.True));
   }
 
@@ -231,7 +221,7 @@ public class UsageMetricMigrationIT {
     createOperateMetric(TENANT_1, minus5Days, EVENT_DECISION_INSTANCE_EVALUATED);
 
     // when
-    startUsageMetricMigration().join();
+    startOperateMetricMigrator();
 
     // then
     assertMetrics(
@@ -249,12 +239,12 @@ public class UsageMetricMigrationIT {
   void shouldNotMigrateSameMetricsTwice() throws IOException {
     // given
     createOperateMetric(TENANT_1, NOW.minusDays(5), EVENT_PROCESS_INSTANCE_STARTED);
-    startUsageMetricMigration().join();
+    startOperateMetricMigrator();
     assertMetrics(1, 0, 1, Map.of(TENANT_1, new UsageMetricsStatisticsItemImpl(1, 0, 0)));
 
     // when
     cleanUpIndex(migrationRepositoryIndex.getFullQualifiedName());
-    startUsageMetricMigration().join();
+    startOperateMetricMigrator();
 
     // then
     assertMetrics(1, 0, 1, Map.of(TENANT_1, new UsageMetricsStatisticsItemImpl(1, 0, 0)));
@@ -265,13 +255,13 @@ public class UsageMetricMigrationIT {
     // given
     createOperateMetric(TENANT_1, NOW.minusDays(7), EVENT_PROCESS_INSTANCE_STARTED);
     createOperateMetric(TENANT_2, NOW.minusDays(7), EVENT_DECISION_INSTANCE_EVALUATED);
-    startUsageMetricMigration().join();
+    startOperateMetricMigrator();
     createOperateMetric(TENANT_1, NOW.minusDays(6), EVENT_PROCESS_INSTANCE_STARTED);
     createOperateMetric(TENANT_2, NOW.minusDays(8), EVENT_DECISION_INSTANCE_EVALUATED);
 
     // when
     createOperateMetric(TENANT_1, NOW.minusDays(6), EVENT_PROCESS_INSTANCE_STARTED);
-    startUsageMetricMigration().join();
+    startOperateMetricMigrator();
 
     // then
     assertMetrics(
@@ -291,7 +281,7 @@ public class UsageMetricMigrationIT {
     createOperateMetric(TENANT_1, olderThan2Years, EVENT_DECISION_INSTANCE_EVALUATED);
 
     // when
-    startUsageMetricMigration().join();
+    startOperateMetricMigrator();
 
     // then
     assertMetrics(0, 0, 0, Map.of());
