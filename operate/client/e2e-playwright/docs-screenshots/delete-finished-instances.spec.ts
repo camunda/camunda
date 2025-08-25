@@ -24,7 +24,6 @@ import {
 } from '../mocks/processInstance';
 import {openFile} from '@/utils/openFile';
 import {URL_API_PATTERN} from '../constants';
-import type {QueryBatchOperationsResponseBody} from '@vzeta/camunda-api-zod-schemas';
 
 test.beforeEach(async ({page, commonPage, context}) => {
   await commonPage.mockClientConfig(context);
