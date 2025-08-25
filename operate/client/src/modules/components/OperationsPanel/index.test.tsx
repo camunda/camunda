@@ -13,7 +13,7 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {OperationsPanel} from './index';
-import * as CONSTANTS from '../constants';
+import * as CONSTANTS from './constants';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
 import {MemoryRouter} from 'react-router-dom';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';

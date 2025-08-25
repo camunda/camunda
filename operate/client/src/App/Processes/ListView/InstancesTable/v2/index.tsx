@@ -28,7 +28,7 @@ import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 
 import {getProcessName} from 'modules/utils/instance';
-import {Toolbar as ToolbarV2} from '../Toolbar/v2';
+import {Toolbar} from '../Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation} from 'react-router-dom';
 import {InstanceOperations} from './InstanceOperations';
@@ -98,7 +98,7 @@ const InstancesTable: React.FC = observer(() => {
         title="Process Instances"
         count={filteredProcessInstancesCount}
       />
-      <ToolbarV2
+      <Toolbar
         selectedInstancesCount={
           processInstancesSelectionStore.selectedProcessInstanceCount
         }
