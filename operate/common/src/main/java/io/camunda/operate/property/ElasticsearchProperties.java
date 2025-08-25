@@ -38,7 +38,7 @@ public class ElasticsearchProperties {
   private Integer connectTimeout;
 
   private boolean createSchema = true;
-  // default to false to avoid breaking change in 8.7 patch version. SM users need to opt-in
+  // default to false to avoid breaking change in 8.7 patch version
   private boolean updateSchemaSettings = false;
 
   /** Indicates whether operate does a proper health check for ES clusters. */

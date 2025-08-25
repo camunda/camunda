@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
@@ -104,6 +106,8 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
   @Test
   public void testReplicasUpdatedWhenUpdateSchemaSettingsIsTrue() throws Exception {
     // given
+    // First assert that indices are created with default number of replicas (0)
+    assertAllIndicesHaveNumberOfReplicas(0);
     tasklistProperties.getElasticsearch().setUpdateSchemaSettings(true);
     // Set a specific number of replicas in configuration
     final int configuredReplicas = 2;
@@ -115,20 +119,23 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
 
     // then
     // Assert that number of replicas is updated with configuration
-    assertThat(indexDescriptors).isNotEmpty();
-    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
-      final String replicasValue =
-          retryElasticsearchClient
-              .getIndexSettingsFor(indexDescriptor.getFullQualifiedName(), NUMBERS_OF_REPLICA)
-              .get(NUMBERS_OF_REPLICA);
-      assertThat(replicasValue).isEqualTo(String.valueOf(configuredReplicas));
-    }
+    assertAllIndicesHaveNumberOfReplicas(configuredReplicas);
   }
 
-  @Test
-  public void testReplicasNotUpdatedWhenUpdateSchemaSettingsIsFalse() throws Exception {
+  /**
+   * @param useDefaultConfiguration when true, relies on default configuration where
+   *     updateSchemaSettings is false; when false, explicitly sets updateSchemaSettings to false
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testReplicasNotUpdatedWhenUpdateSchemaSettingsIsFalse(
+      final boolean useDefaultConfiguration) throws Exception {
     // given
-    tasklistProperties.getElasticsearch().setUpdateSchemaSettings(false);
+    // First assert that indices are created with default number of replicas (0)
+    assertAllIndicesHaveNumberOfReplicas(0);
+    if (!useDefaultConfiguration) {
+      tasklistProperties.getElasticsearch().setUpdateSchemaSettings(false);
+    }
     // Set a specific number of replicas in configuration
     final int configuredReplicas = 3;
     tasklistProperties.getElasticsearch().setNumberOfReplicas(configuredReplicas);
@@ -138,14 +145,18 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
     schemaStartup.initializeSchemaOnDemand();
 
     // then
-    // Assert that number of replicas is updated with configuration
+    // Assert that number of replicas is not updated
+    assertAllIndicesHaveNumberOfReplicas(0);
+  }
+
+  private void assertAllIndicesHaveNumberOfReplicas(final int expectedReplicas) {
     assertThat(indexDescriptors).isNotEmpty();
-    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
+    for (final var indexDescriptor : indexDescriptors) {
       final String replicasValue =
           retryElasticsearchClient
               .getIndexSettingsFor(indexDescriptor.getFullQualifiedName(), NUMBERS_OF_REPLICA)
               .get(NUMBERS_OF_REPLICA);
-      assertThat(replicasValue).isEqualTo("0");
+      assertThat(replicasValue).isEqualTo(String.valueOf(expectedReplicas));
     }
   }
 
