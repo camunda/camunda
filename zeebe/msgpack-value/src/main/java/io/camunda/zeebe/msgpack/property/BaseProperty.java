@@ -20,6 +20,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
   protected final T value;
   protected final T defaultValue;
   protected boolean isSet;
+  protected boolean isSanitized;
 
   public BaseProperty(final T value) {
     this(StringValue.EMPTY_STRING, value);
@@ -98,14 +99,51 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     valueToWrite.write(writer);
   }
 
-  public void writeJSON(final StringBuilder sb) {
+  public void writeJSON(final StringBuilder sb, final boolean maskSanitized) {
     key.writeJSON(sb);
     sb.append(":");
     if (hasValue()) {
-      resolveValue().writeJSON(sb);
+      if (maskSanitized && isSanitized) {
+        sb.append("\"***\"");
+      } else {
+        resolveValue().writeJSON(sb);
+      }
     } else {
       sb.append("\"NO VALID WRITEABLE VALUE\"");
     }
+  }
+
+  /**
+   * Returns true if the property should be masked when printing it out (e.g. in logs or {@link
+   * #toString}).
+   *
+   * <p>If false, it means the value is <em>always</em> printed out as is, and is not considered
+   * sensitive.
+   */
+  public boolean isSanitized() {
+    return isSanitized;
+  }
+
+  /**
+   * If set to true, will be replaced by '***' when writing to console or logs, i.e. when called via
+   * {@link #toString()}, or {@link #writeJSON(StringBuilder, boolean)} with the second param set to
+   * true.
+   *
+   * <p>The chaining portion is a bit hacky, but it allows you to declare fields as:
+   *
+   * <pre>{@code
+   * private final IntegerProperty myProperty = new IntegerProperty("myProperty").sanitized();
+   * }</pre>
+   *
+   * The proper way for chaining would be to add a type param to the class that would represent the
+   * current type, but that would create quite a lot of refactoring, and this is likely good enough
+   * in most cases.
+   *
+   * @return itself for chaining
+   */
+  public <U extends BaseValue, T extends BaseProperty<U>> T sanitized() {
+    isSanitized = true;
+    return (T) this;
   }
 
   @Override
@@ -133,7 +171,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     final StringBuilder builder = new StringBuilder();
     builder.append(key.toString());
     builder.append(" => ");
-    builder.append(value.toString());
+    builder.append(isSanitized ? "***" : value.toString());
     return builder.toString();
   }
 }

@@ -72,8 +72,8 @@ public class ObjectValue extends BaseValue {
   public void writeJSON(final StringBuilder builder) {
     builder.append("{");
 
-    writeJson(builder, declaredProperties);
-    writeJson(builder, undeclaredProperties);
+    writeJson(builder, declaredProperties, false);
+    writeJson(builder, undeclaredProperties, false);
 
     builder.append("}");
   }
@@ -145,7 +145,7 @@ public class ObjectValue extends BaseValue {
   }
 
   private <T extends BaseProperty<?>> void writeJson(
-      final StringBuilder builder, final List<T> properties) {
+      final StringBuilder builder, final List<T> properties, final boolean maskSanitized) {
     for (int i = 0; i < properties.size(); i++) {
       if (i > 0) {
         builder.append(",");
@@ -154,7 +154,7 @@ public class ObjectValue extends BaseValue {
       final BaseProperty<? extends BaseValue> prop = properties.get(i);
 
       if (prop.hasValue()) {
-        prop.writeJSON(builder);
+        prop.writeJSON(builder, maskSanitized);
       }
     }
   }
@@ -207,5 +207,17 @@ public class ObjectValue extends BaseValue {
 
   public boolean isEmpty() {
     return declaredProperties.isEmpty() && undeclaredProperties.isEmpty();
+  }
+
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("{");
+
+    writeJson(builder, declaredProperties, true);
+    writeJson(builder, undeclaredProperties, true);
+
+    builder.append("}");
+    return builder.toString();
   }
 }
