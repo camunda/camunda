@@ -21,9 +21,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
@@ -38,6 +41,9 @@ import org.springframework.core.env.Environment;
 
 public class PingConsoleRunnerIT {
 
+  private final BrokerBasedConfiguration brokerBasedConfig = mock(BrokerBasedConfiguration.class);
+  private final BrokerCfg brokerCfg = mock(BrokerCfg.class);
+  private final ClusterCfg clusterCfg = mock(ClusterCfg.class);
   private ApplicationContext applicationContext;
   private WireMockServer wireMockServer;
   private ManagementServices managementServices;
@@ -84,21 +90,18 @@ public class PingConsoleRunnerIT {
     when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
     when(managementServices.isCamundaLicenseValid()).thenReturn(true);
     when(applicationContext.getEnvironment()).thenReturn(environment);
+    when(brokerBasedConfig.config()).thenReturn(brokerCfg);
+    when(brokerCfg.getCluster()).thenReturn(clusterCfg);
+    when(clusterCfg.getClusterId()).thenReturn("test-cluster-id");
     when(environment.getActiveProfiles())
         .thenReturn(new String[] {"gateway", "broker", "identity"});
 
     final ConsolePingConfiguration config =
         new ConsolePingConfiguration(
-            true,
-            URI.create(mockUrl),
-            "test-cluster-id",
-            "test-cluster-name",
-            pingPeriod,
-            retryConfig,
-            null);
+            true, URI.create(mockUrl), "test-cluster-name", pingPeriod, retryConfig, null);
 
     final PingConsoleRunner pingConsoleRunner =
-        new PingConsoleRunner(config, managementServices, applicationContext);
+        new PingConsoleRunner(config, managementServices, applicationContext, brokerBasedConfig);
 
     // when
     pingConsoleRunner.run(null);
