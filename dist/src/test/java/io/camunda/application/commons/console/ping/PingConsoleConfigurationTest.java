@@ -46,7 +46,6 @@ class PingConsoleConfigurationTest {
       new ConsolePingConfiguration(
           true,
           URI.create("http://fake-endpoint.com"),
-          "clusterId",
           "clusterName",
           Duration.ofMillis(1000),
           new RetryConfiguration(),
@@ -70,20 +69,17 @@ class PingConsoleConfigurationTest {
     // given
     final ConsolePingConfiguration consolePingConfiguration =
         new ConsolePingConfiguration(
-            true,
-            null,
-            "clusterId",
-            "clusterName",
-            Duration.ofMillis(5000),
-            new RetryConfiguration(),
-            null);
+            true, null, "clusterName", Duration.ofMillis(5000), new RetryConfiguration(), null);
 
     // then
     final IllegalArgumentException exception =
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(
                 new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                        consolePingConfiguration,
+                        MANAGEMENT_SERVICES,
+                        APPLICATION_CONTEXT,
+                        "clusterId")
                     ::validateConfiguration)
             .actual();
     assertThat(exception.getMessage()).isEqualTo("Ping endpoint must not be null.");
@@ -96,7 +92,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("123"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             new RetryConfiguration(),
@@ -107,7 +102,10 @@ class PingConsoleConfigurationTest {
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(
                 new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                        consolePingConfiguration,
+                        MANAGEMENT_SERVICES,
+                        APPLICATION_CONTEXT,
+                        "clusterId")
                     ::validateConfiguration)
             .actual();
     assertThat(exception.getMessage()).isEqualTo("Ping endpoint 123 must be a valid URI.");
@@ -120,7 +118,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            null,
             "clusterName",
             Duration.ofMillis(5000),
             new RetryConfiguration(),
@@ -131,10 +128,12 @@ class PingConsoleConfigurationTest {
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(
                 new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, null)
                     ::validateConfiguration)
             .actual();
     assertThat(exception.getMessage()).isEqualTo("Cluster ID must not be null or empty.");
+
+    // reset
   }
 
   @Test
@@ -144,7 +143,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "",
             Duration.ofMillis(5000),
             new RetryConfiguration(),
@@ -155,7 +153,10 @@ class PingConsoleConfigurationTest {
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(
                 new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                        consolePingConfiguration,
+                        MANAGEMENT_SERVICES,
+                        APPLICATION_CONTEXT,
+                        "clusterId")
                     ::validateConfiguration)
             .actual();
     assertThat(exception.getMessage()).isEqualTo("Cluster name must not be null or empty.");
@@ -168,7 +169,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(-333),
             new RetryConfiguration(),
@@ -179,7 +179,10 @@ class PingConsoleConfigurationTest {
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(
                 new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                        consolePingConfiguration,
+                        MANAGEMENT_SERVICES,
+                        APPLICATION_CONTEXT,
+                        "clusterId")
                     ::validateConfiguration)
             .actual();
     assertThat(exception.getMessage()).isEqualTo("Ping period must be greater than zero.");
@@ -195,7 +198,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             retryConfiguration,
@@ -206,7 +208,10 @@ class PingConsoleConfigurationTest {
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(
                 new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                        consolePingConfiguration,
+                        MANAGEMENT_SERVICES,
+                        APPLICATION_CONTEXT,
+                        "clusterId")
                     ::validateConfiguration)
             .actual();
     assertThat(exception.getMessage())
@@ -223,7 +228,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             retryConfiguration,
@@ -234,7 +238,10 @@ class PingConsoleConfigurationTest {
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(
                 new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                        consolePingConfiguration,
+                        MANAGEMENT_SERVICES,
+                        APPLICATION_CONTEXT,
+                        "clusterId")
                     ::validateConfiguration)
             .actual();
     assertThat(exception.getMessage())
@@ -248,7 +255,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             null,
@@ -258,7 +264,10 @@ class PingConsoleConfigurationTest {
     assertThatCode(
             () ->
                 new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT))
+                    consolePingConfiguration,
+                    MANAGEMENT_SERVICES,
+                    APPLICATION_CONTEXT,
+                    "clusterId"))
         .doesNotThrowAnyException();
   }
 
@@ -272,7 +281,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             retryConfiguration,
@@ -283,7 +291,10 @@ class PingConsoleConfigurationTest {
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(
                 new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                        consolePingConfiguration,
+                        MANAGEMENT_SERVICES,
+                        APPLICATION_CONTEXT,
+                        "clusterId")
                     ::validateConfiguration)
             .actual();
     assertThat(exception.getMessage()).isEqualTo("Max retry delay must be greater than zero.");
@@ -299,7 +310,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             retryConfiguration,
@@ -310,7 +320,10 @@ class PingConsoleConfigurationTest {
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(
                 new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                        consolePingConfiguration,
+                        MANAGEMENT_SERVICES,
+                        APPLICATION_CONTEXT,
+                        "clusterId")
                     ::validateConfiguration)
             .actual();
     assertThat(exception.getMessage()).isEqualTo("Min retry delay must be greater than zero.");
@@ -327,7 +340,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             retryConfiguration,
@@ -338,7 +350,10 @@ class PingConsoleConfigurationTest {
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(
                 new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                        consolePingConfiguration,
+                        MANAGEMENT_SERVICES,
+                        APPLICATION_CONTEXT,
+                        "clusterId")
                     ::validateConfiguration)
             .actual();
     assertThat(exception.getMessage())
@@ -352,7 +367,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             new RetryConfiguration(),
@@ -361,7 +375,10 @@ class PingConsoleConfigurationTest {
     assertThatCode(
             () ->
                 new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT))
+                    consolePingConfiguration,
+                    MANAGEMENT_SERVICES,
+                    APPLICATION_CONTEXT,
+                    "clusterId"))
         .doesNotThrowAnyException();
   }
 
@@ -372,7 +389,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             false,
             URI.create("123"),
-            "",
             null,
             Duration.ofMillis(-300),
             new RetryConfiguration(),
@@ -382,7 +398,10 @@ class PingConsoleConfigurationTest {
     assertThatCode(
             () ->
                 new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT))
+                    consolePingConfiguration,
+                    MANAGEMENT_SERVICES,
+                    APPLICATION_CONTEXT,
+                    "clusterId"))
         .doesNotThrowAnyException();
   }
 

@@ -47,15 +47,18 @@ public class PingConsoleRunner implements ApplicationRunner {
   private final ManagementServices managementServices;
   private final Either<Exception, String> licensePayload;
   private final ApplicationContext applicationContext;
+  private final String clusterId;
 
   @Autowired
   public PingConsoleRunner(
       final ConsolePingConfiguration pingConfigurationProperties,
       final ManagementServices managementServices,
-      final ApplicationContext applicationContext) {
+      final ApplicationContext applicationContext,
+      final String clusterId) {
     pingConfiguration = pingConfigurationProperties;
     this.managementServices = managementServices;
     this.applicationContext = applicationContext;
+    this.clusterId = clusterId;
     licensePayload = getLicensePayload();
   }
 
@@ -88,7 +91,7 @@ public class PingConsoleRunner implements ApplicationRunner {
       throw new IllegalArgumentException(
           String.format("Ping endpoint %s must be a valid URI.", pingConfiguration.endpoint));
     }
-    if (pingConfiguration.clusterId() == null || pingConfiguration.clusterId().isBlank()) {
+    if (clusterId == null || clusterId.isBlank()) {
       throw new IllegalArgumentException("Cluster ID must not be null or empty.");
     }
     if (pingConfiguration.clusterName() == null || pingConfiguration.clusterName().isBlank()) {
@@ -166,7 +169,7 @@ public class PingConsoleRunner implements ApplicationRunner {
     final LicensePayload payload =
         new LicensePayload(
             license,
-            pingConfiguration.clusterId(),
+            clusterId,
             pingConfiguration.clusterName(),
             VersionUtil.getVersion(),
             getActiveProfiles(),
@@ -182,7 +185,6 @@ public class PingConsoleRunner implements ApplicationRunner {
   public record ConsolePingConfiguration(
       boolean enabled,
       URI endpoint,
-      String clusterId,
       String clusterName,
       Duration pingPeriod,
       RetryConfiguration retry,
