@@ -60,10 +60,6 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     return isSet || defaultValue != null;
   }
 
-  public boolean isSet() {
-    return isSet;
-  }
-
   public StringValue getKey() {
     return key;
   }
@@ -117,6 +113,13 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     }
   }
 
+  /**
+   * Returns true if the property should be masked when printing it out (e.g. in logs or {@link
+   * #toString}).
+   *
+   * <p>If false, it means the value is <em>always</em> printed out as is, and is not considered
+   * sensitive.
+   */
   public boolean isSanitized() {
     return isSanitized;
   }
@@ -126,8 +129,6 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
    * {@link #toString()}, or {@link #writeJSON(StringBuilder, boolean)} with the second param set to
    * true.
    *
-   * <p>If false, disabled sanitization of this value in the cases above.
-   *
    * <p>The chaining portion is a bit hacky, but it allows you to declare fields as:
    *
    * <pre>{@code
@@ -136,7 +137,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
    *
    * The proper way for chaining would be to add a type param to the class that would represent the
    * current type, but that would create quite a lot of refactoring, and this is likely good enough
-   * in most cases. Feel free to improve on this.
+   * in most cases.
    *
    * @return itself for chaining
    */
