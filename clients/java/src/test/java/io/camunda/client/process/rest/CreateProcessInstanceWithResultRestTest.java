@@ -216,6 +216,7 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
     // given
     final Long processDefinitionKey = 1L;
     final Set<String> tags = new HashSet<>(Arrays.asList("tag1", "tag2"));
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
 
     // when
     client
