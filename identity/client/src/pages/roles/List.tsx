@@ -54,7 +54,7 @@ const List: FC = () => {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"role"}
-          docsLinkPath=""
+          docsLinkPath="/docs/next/components/identity/role/"
           handleClick={addRole}
         />
         {addRoleModal}
