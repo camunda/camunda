@@ -50,6 +50,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
   private int clusterSize = DEFAULT_CLUSTER_SIZE;
   private String clusterName = DEFAULT_CLUSTER_NAME;
+  private String clusterId;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private MembershipCfg membership = new MembershipCfg();
@@ -151,6 +152,14 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   public void setClusterName(final String clusterName) {
     this.clusterName = clusterName;
+  }
+
+  public String getClusterId() {
+    return clusterId;
+  }
+
+  public void setClusterId(final String clusterId) {
+    this.clusterId = clusterId;
   }
 
   public MembershipCfg getMembership() {

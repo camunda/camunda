@@ -30,7 +30,8 @@ public final class ConfigurationUtil {
   public static ClusterConfiguration getClusterConfigFrom(
       final boolean enablePartitionScaling,
       final Set<PartitionMetadata> partitionDistribution,
-      final DynamicPartitionConfig partitionConfig) {
+      final DynamicPartitionConfig partitionConfig,
+      final String clusterId) {
     final var partitionStatesByMember = new HashMap<MemberId, Map<Integer, PartitionState>>();
     for (final var partitionMetadata : partitionDistribution) {
       final var partitionId = partitionMetadata.id().id();
@@ -56,7 +57,8 @@ public final class ConfigurationUtil {
         Map.copyOf(memberStates),
         Optional.empty(),
         Optional.empty(),
-        routingState);
+        routingState,
+        Optional.ofNullable(clusterId));
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(
