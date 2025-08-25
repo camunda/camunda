@@ -18,6 +18,13 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -105,16 +112,15 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws Exception {
     // given
-    final var properties = SearchEngineConfiguration.of(b -> b);
-    properties.index().setNumberOfReplicas(10);
-    properties.index().setNumberOfShards(10);
+    config.index().setNumberOfReplicas(10);
+    config.index().setNumberOfShards(10);
 
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
             Set.of(index),
             Set.of(indexTemplate),
-            properties,
+            config,
             objectMapper);
 
     // when
@@ -132,18 +138,17 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws Exception {
     // given
-    final var properties = SearchEngineConfiguration.of(b -> b);
-    properties.index().setNumberOfReplicas(10);
-    properties.index().setNumberOfShards(10);
-    properties.index().setReplicasByIndexName(Map.of("index_name", 5));
-    properties.index().setShardsByIndexName(Map.of("index_name", 5));
+    config.index().setNumberOfReplicas(10);
+    config.index().setNumberOfShards(10);
+    config.index().setReplicasByIndexName(Map.of("index_name", 5));
+    config.index().setShardsByIndexName(Map.of("index_name", 5));
 
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
             Set.of(index),
             Set.of(indexTemplate),
-            properties,
+            config,
             objectMapper);
 
     // when
@@ -166,7 +171,7 @@ public class SchemaManagerIT {
             searchEngineClientFromConfig(config),
             Set.of(),
             Set.of(indexTemplate),
-            SearchEngineConfiguration.of(b -> b),
+            config,
             objectMapper);
 
     schemaManager.initialiseResources();
@@ -264,7 +269,7 @@ public class SchemaManagerIT {
     indices.add(index);
     indexTemplates.add(indexTemplate);
 
-    final var schemaManager =
+    var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config), indices, indexTemplates, config, objectMapper);
 
@@ -276,6 +281,10 @@ public class SchemaManagerIT {
         createTestTemplateDescriptor("new_template_name", "/mappings-added-property.json");
     indices.add(newIndex);
     indexTemplates.add(newIndexTemplate);
+
+    schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config), indices, indexTemplates, config, objectMapper);
     schemaManager.startup();
 
     // then
@@ -1214,6 +1223,166 @@ public class SchemaManagerIT {
                 retrievedTemplate.at("/index_template/template/mappings"),
                 "/mappings-added-property.json"))
         .isTrue();
+  }
+
+  @TestTemplate
+  void shouldNotTryToCreateExistingIndexTemplate(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter) {
+    // given - create first schema manager with one template and verify it's created
+    final SearchEngineClient searchEngineClient = spy(searchEngineClientFromConfig(config));
+    final var firstSchemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(), Set.of(indexTemplate), config, objectMapper);
+
+    firstSchemaManager.initialiseResources();
+
+    // verify the first template was created
+    verify(searchEngineClient, times(1)).createIndexTemplate(eq(indexTemplate), any(), eq(true));
+
+    // verify template exists in the search engine
+    assertThatNoException()
+        .isThrownBy(
+            () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
+
+    // when - reset mock and create second schema manager with existing template plus a new one
+    reset(searchEngineClient);
+
+    final var secondIndexTemplate =
+        createTestTemplateDescriptor("template_name_2", "/mappings.json");
+    final var secondSchemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            Set.of(),
+            Set.of(indexTemplate, secondIndexTemplate),
+            config,
+            objectMapper);
+
+    secondSchemaManager.initialiseResources();
+
+    // then - verify existing template was not recreated but new template was created
+    verify(searchEngineClient, never()).createIndexTemplate(eq(indexTemplate), any(), eq(true));
+    verify(searchEngineClient, times(1))
+        .createIndexTemplate(eq(secondIndexTemplate), any(), eq(true));
+
+    // verify both templates exist in the search engine
+    assertThatNoException()
+        .isThrownBy(
+            () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                searchClientAdapter.getIndexTemplateAsNode(secondIndexTemplate.getTemplateName()));
+  }
+
+  @TestTemplate
+  void shouldCreateIndexTemplateWhenRelatedIndexAlreadyExists(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given - create schema first (which creates both template and index)
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    // verify both template and index exist
+    final String existingIndexName = indexTemplate.getFullQualifiedName();
+    assertThatNoException().isThrownBy(() -> searchClientAdapter.getIndexAsNode(existingIndexName));
+    assertThatNoException()
+        .isThrownBy(
+            () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
+
+    // when - delete the index but keep the template
+    searchClientAdapter.deleteIndex(existingIndexName);
+
+    // verify index is deleted but template still exists
+    assertThatThrownBy(() -> searchClientAdapter.getIndexAsNode(existingIndexName))
+        .isInstanceOfAny(ElasticsearchException.class, OpenSearchException.class)
+        .hasMessageContaining("no such index");
+    assertThatNoException()
+        .isThrownBy(
+            () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
+
+    // recreate schema using startup
+    final SearchEngineClient searchEngineClient = spy(searchEngineClientFromConfig(config));
+    final var newSchemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(), Set.of(indexTemplate), config, objectMapper);
+
+    newSchemaManager.startup();
+
+    // then - verify both the index and template exist again
+    assertThatNoException().isThrownBy(() -> searchClientAdapter.getIndexAsNode(existingIndexName));
+
+    final var retrievedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
+    // verify that schema manager created the index (since template existed but index was missing)
+    verify(searchEngineClient, times(1)).createIndex(any(), any());
+
+    // verify template has correct mappings
+    assertThat(
+            mappingsMatch(
+                retrievedTemplate.at("/index_template/template/mappings"), "/mappings.json"))
+        .isTrue();
+
+    // verify template pattern matches the recreated index
+    assertThat(retrievedTemplate.at("/index_template/index_patterns").toString())
+        .contains(indexTemplate.getIndexPattern());
+  }
+
+  @TestTemplate
+  void shouldCreateIndexWhenRelatedIndexTemplateAlreadyExists(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given - create only the template first (without the index)
+    final SearchEngineClient searchEngineClient = searchEngineClientFromConfig(config);
+    searchEngineClient.createIndexTemplate(indexTemplate, new IndexConfiguration(), true);
+
+    // verify template exists but index doesn't exist yet
+    assertThatNoException()
+        .isThrownBy(
+            () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
+
+    final String indexName = indexTemplate.getFullQualifiedName();
+    assertThatThrownBy(() -> searchClientAdapter.getIndexAsNode(indexName))
+        .isInstanceOfAny(ElasticsearchException.class, OpenSearchException.class)
+        .hasMessageContaining("no such index");
+
+    // when - start schema manager with spy to track index creation
+    final SearchEngineClient spySearchEngineClient = spy(searchEngineClientFromConfig(config));
+    final var schemaManager =
+        new SchemaManager(
+            spySearchEngineClient, Set.of(), Set.of(indexTemplate), config, objectMapper);
+
+    schemaManager.startup();
+
+    // then - verify the index was created but template was not recreated
+    assertThatNoException().isThrownBy(() -> searchClientAdapter.getIndexAsNode(indexName));
+
+    final var retrievedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
+    // verify that schema manager did NOT recreate the template (since it already existed)
+    verify(spySearchEngineClient, never()).createIndexTemplate(any(), any(), eq(true));
+
+    // verify that schema manager DID create the index (since template existed but index was
+    // missing)
+    verify(spySearchEngineClient, times(1)).createIndex(any(), any());
+
+    // verify template has correct mappings
+    assertThat(
+            mappingsMatch(
+                retrievedTemplate.at("/index_template/template/mappings"), "/mappings.json"))
+        .isTrue();
+
+    // verify template pattern matches the created index
+    assertThat(retrievedTemplate.at("/index_template/index_patterns").toString())
+        .contains(indexTemplate.getIndexPattern());
   }
 
   private String retentionMinAge(final JsonNode policyNode) {
