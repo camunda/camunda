@@ -120,9 +120,6 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     parentProcessInstanceKeyProp.setValue(record.getParentProcessInstanceKey());
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
-
-    // TODO check the impact of this, does this inherit tags into subprocesses?
-    //    setTags(record.getTags());
   }
 
   @JsonIgnore
