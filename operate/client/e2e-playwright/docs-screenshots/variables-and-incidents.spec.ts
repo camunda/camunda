@@ -43,7 +43,7 @@ test.describe('variables and incidents', () => {
             tenantId: '<default>',
           },
         ],
-        batchOperations: [],
+        batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: {
           processInstances: [
             {

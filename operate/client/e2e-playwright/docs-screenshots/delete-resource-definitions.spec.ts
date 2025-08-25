@@ -37,7 +37,7 @@ test.describe('delete resource definitions', () => {
       URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
-        batchOperations: [],
+        batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: {
           totalCount: 0,
           processInstances: [],
@@ -123,7 +123,7 @@ test.describe('delete resource definitions', () => {
       URL_API_PATTERN,
       mockDecisionsResponses({
         groupedDecisions: mockGroupedDecisions,
-        batchOperations: [],
+        batchOperations: {items: [], page: {totalItems: 0}},
         decisionInstances: {totalCount: 0, decisionInstances: []},
         decisionXml: mockDecisionXml,
         deleteDecision: mockDeleteDecision,
