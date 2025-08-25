@@ -131,6 +131,11 @@ public interface JobRecordValue
 
   JobResultValue getResult();
 
+  /**
+   * @return the tags that were set for this job.
+   */
+  Set<String> getTags();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableJobResultValue.Builder.class)
   interface JobResultValue {

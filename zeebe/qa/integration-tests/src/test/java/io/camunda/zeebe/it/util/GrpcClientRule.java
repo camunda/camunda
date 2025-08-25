@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.netty.util.NetUtil;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
@@ -138,5 +139,9 @@ public final class GrpcClientRule extends ExternalResource {
 
   public long createProcessInstance(final long processDefinitionKey) {
     return resourcesHelper.createProcessInstance(processDefinitionKey);
+  }
+
+  public long createProcessInstance(final long processDefinitionKey, final Set<String> tags) {
+    return resourcesHelper.createProcessInstance(processDefinitionKey, "", tags);
   }
 }

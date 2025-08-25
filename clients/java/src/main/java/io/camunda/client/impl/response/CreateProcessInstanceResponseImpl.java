@@ -47,7 +47,10 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
     version = response.getProcessDefinitionVersion();
     processInstanceKey = Long.parseLong(response.getProcessInstanceKey());
     tenantId = response.getTenantId();
-    tags = response.getTags();
+    tags =
+        response.getTags() == null
+            ? Collections.emptySet()
+            : Collections.unmodifiableSet(response.getTags());
   }
 
   @Override

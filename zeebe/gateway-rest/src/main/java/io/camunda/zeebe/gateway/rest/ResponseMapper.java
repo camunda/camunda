@@ -202,7 +202,8 @@ public final class ResponseMapper {
         .tenantId(job.getTenantId())
         .kind(EnumUtil.convert(job.getJobKind(), JobKindEnum.class))
         .listenerEventType(
-            EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class));
+            EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class))
+        .tags(job.getTags());
   }
 
   private static UserTaskProperties toUserTaskProperties(final JobRecord job) {

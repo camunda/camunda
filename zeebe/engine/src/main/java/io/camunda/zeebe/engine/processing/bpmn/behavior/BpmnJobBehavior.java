@@ -441,12 +441,20 @@ public final class BpmnJobBehavior {
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setElementId(context.getElementId())
         .setElementInstanceKey(context.getElementInstanceKey())
-        .setTenantId(context.getTenantId());
+        .setTenantId(context.getTenantId())
+        .setTags(getTagsFromProcessInstance(context));
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
     jobActivationBehavior.publishWork(jobKey, jobRecord);
     jobMetrics.countJobEvent(JobAction.CREATED, jobKind, props.getType());
+  }
+
+  private Set<String> getTagsFromProcessInstance(final BpmnElementContext context) {
+    final var processInstance =
+        stateBehavior.getElementInstance(context.getProcessInstanceKey()).getValue();
+
+    return processInstance != null ? processInstance.getTags() : Collections.emptySet();
   }
 
   private DirectBuffer encodeHeaders(

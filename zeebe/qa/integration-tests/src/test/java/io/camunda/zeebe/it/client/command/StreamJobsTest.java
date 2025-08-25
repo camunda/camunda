@@ -32,8 +32,10 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.internal.AbstractStream.TransportState;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -98,7 +100,8 @@ final class StreamJobsTest {
     try {
       awaitStreamRegistered(uniqueId);
       final var processInstanceKey =
-          createProcessInstance(uniqueId, Map.of("foo", "bar", "baz", "buz"));
+          createProcessInstance(
+              uniqueId, Map.of("foo", "bar", "baz", "buz"), Set.of("tag1", "tag2"));
       processInstanceCompleted =
           RecordingExporter.processInstanceRecords()
               .withProcessInstanceKey(processInstanceKey)
@@ -120,6 +123,7 @@ final class StreamJobsTest {
               assertThat(job.getWorker()).isEqualTo("streamer");
               assertThat(job.getDeadline()).isCloseTo(initialTime + 5000, Offset.offset(500L));
               assertThat(job.getVariablesAsMap()).isEqualTo(Map.of("foo", "bar"));
+              assertThat(job.getTags()).isEqualTo(Set.of("tag1", "tag2"));
             });
   }
 
@@ -230,11 +234,17 @@ final class StreamJobsTest {
   }
 
   private long createProcessInstance(final String processId, final Map<String, Object> variables) {
+    return createProcessInstance(processId, variables, Collections.emptySet());
+  }
+
+  private long createProcessInstance(
+      final String processId, final Map<String, Object> variables, final Set<String> tags) {
     return client
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
         .variables(variables)
+        .tags(tags)
         .send()
         .join()
         .getProcessInstanceKey();

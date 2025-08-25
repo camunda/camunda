@@ -24,10 +24,12 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceRecord extends UnifiedRecordValue
@@ -253,14 +255,17 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   @Override
   public Set<String> getTags() {
-    final var tags = new HashSet<String>();
-    tagsProp.forEach(e -> tags.add(e.toString()));
-    return tags;
+    return StreamSupport.stream(tagsProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toSet());
   }
 
   public ProcessInstanceRecord setTags(final Set<String> tags) {
     tagsProp.reset();
-    tags.forEach(e -> tagsProp.add().wrap(e));
+    if (tags != null) {
+      tags.forEach(tag -> tagsProp.add().wrap(BufferUtil.wrapString(tag)));
+    }
     return this;
   }
 

@@ -34,6 +34,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private JobKind jobKind;
   private JobListenerEventType jobListenerEventType;
   private Set<String> changedAttributes;
+  private Set<String> tags;
 
   public JobRecordValueImpl() {}
 
@@ -203,6 +204,11 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   public JobResultValue getResult() {
     // Not used by importer, dummy implementation for compiler
     return null;
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return tags;
   }
 
   @Override
