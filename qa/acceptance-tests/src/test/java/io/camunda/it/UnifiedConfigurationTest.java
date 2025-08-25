@@ -5,10 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application;
+package io.camunda.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.StandaloneCamunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
@@ -39,24 +40,24 @@ import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest(
     classes = {
-      StandaloneCamunda.class,
-      // Unified Configuration classes
-      UnifiedConfiguration.class,
-      UnifiedConfigurationHelper.class,
-      TasklistPropertiesOverride.class,
-      OperatePropertiesOverride.class,
-      GatewayBasedPropertiesOverride.class,
-      BrokerBasedPropertiesOverride.class,
-      ActorClockControlledPropertiesOverride.class,
-      IdleStrategyPropertiesOverride.class
+        StandaloneCamunda.class,
+        // Unified Configuration classes
+        UnifiedConfiguration.class,
+        UnifiedConfigurationHelper.class,
+        TasklistPropertiesOverride.class,
+        OperatePropertiesOverride.class,
+        GatewayBasedPropertiesOverride.class,
+        BrokerBasedPropertiesOverride.class,
+        ActorClockControlledPropertiesOverride.class,
+        IdleStrategyPropertiesOverride.class
     })
 @TestPropertySource(
     properties = {
-      // Using opensearch because it's different than the default value
-      "camunda.data.secondary-storage.type=opensearch"
+        // Using opensearch because it's different than the default value
+        "camunda.data.secondary-storage.type=opensearch"
     })
 @ActiveProfiles({"broker", "tasklist", "operate"})
-public class UnifiedConfigurationIT {
+public class UnifiedConfigurationTest {
 
   static final String OPENSEARCH_CONTAINER_NAME = "opensearchproject/opensearch";
   static final String OPENSEARCH_CONTAINER_VERSION = "2.13.0";
@@ -73,8 +74,8 @@ public class UnifiedConfigurationIT {
   static void setup() {
     opensearchContainer =
         new GenericContainer<>(
-                DockerImageName.parse(
-                    OPENSEARCH_CONTAINER_NAME + ":" + OPENSEARCH_CONTAINER_VERSION))
+            DockerImageName.parse(
+                OPENSEARCH_CONTAINER_NAME + ":" + OPENSEARCH_CONTAINER_VERSION))
             .withExposedPorts(OPENSEARCH_DEFAULT_PORT);
     opensearchContainer.start();
   }
