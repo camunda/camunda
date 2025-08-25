@@ -99,9 +99,21 @@ jobs:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           # any of the following labels:
           labeled: component/clients, component/spring-sdk, component/camunda-process-test, component/c8-api
+      - name: Checkout team-qa-engineering repo
+        uses: actions/checkout@v5
+        with:
+          repository: camunda/team-qa-engineering
+          path: team-qa-engineering
       - id: add-to-qualityboard
         name: Add Bugs to Quality Board project
-        uses: camunda/team-qa-engineering/automation/actions/add-to-quality-board@v1
+        uses: ./team-qa-engineering/automation/actions/add-to-quality-board
         with:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-        if: contains(github.event.issue.labels.*.name, 'kind/bug')
+        if: >
+          contains(github.event.issue.labels.*.name, 'kind/bug') &&
+          (
+            github.event.action == 'opened' ||
+            github.event.action == 'reopened' ||
+            github.event.action == 'transferred' ||
+            (github.event.action == 'labeled' && github.event.label.name == 'kind/bug')
+          )
