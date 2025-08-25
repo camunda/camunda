@@ -58,10 +58,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   private static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
   private static final String PROCESS_INSTANCES_BY_KEY_URL =
       "/v2/process-instances/{processInstanceKey}";
-
   private static final String PROCESS_INSTANCE_CALL_HIERARCHY_BY_KEY_URL =
       "/v2/process-instances/{processInstanceKey}/call-hierarchy";
-
   private static final ProcessInstanceEntity PROCESS_INSTANCE_ENTITY =
       new ProcessInstanceEntity(
           123L,
@@ -79,7 +77,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           "tenant",
           "PI_123",
           Set.of("tag1", "tag2"));
-
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
             {
@@ -98,7 +95,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "tags": ["tag1", "tag2"]
           }
           """;
-
   private static final String EXPECTED_SEARCH_RESPONSE =
       """
           {
@@ -127,7 +123,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               }
           }
           """;
-
   private static final String EXPECTED_CALL_HIERARCHY =
       """
         [
@@ -139,6 +134,17 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         ]
       """;
 
+  private static final String EXPECTED_INVALID_TAGS_RESPONSE =
+      """
+      {
+        "type":"about:blank",
+        "title":"INVALID_ARGUMENT",
+        "status":400,
+        "detail":"The provided tag '1 invalid tag' is not valid. Tags must start with a letter (a-z, A-Z), followed by alphanumerics, underscores, minuses, colons, or periods. It must not be blank and must be 100 characters or less.",
+        "instance":"/v2/process-instances/search"
+      }
+      """;
+
   private static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =
       new Builder<ProcessInstanceEntity>()
           .total(1L)
@@ -146,7 +152,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           .startCursor("f")
           .endCursor("v")
           .build();
-
   @MockitoBean ProcessInstanceServices processInstanceServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -816,6 +821,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .consumeWith(
             result ->
-                new String(result.getResponseBody()).contains("Tags must start with a letter"));
+                assertJsonNonExtensible(EXPECTED_INVALID_TAGS_RESPONSE, result.getResponseBody()));
   }
 }

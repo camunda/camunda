@@ -27,7 +27,10 @@ import org.springframework.http.ProblemDetail;
 public final class RequestValidator {
 
   public static Optional<ProblemDetail> createProblemDetail(final List<String> violations) {
-    final String problems = String.join(". ", violations) + ".";
+    String problems = String.join(". ", violations);
+    if (!problems.endsWith(".")) {
+      problems = problems + ".";
+    }
     return violations.isEmpty()
         ? Optional.empty()
         : Optional.of(
