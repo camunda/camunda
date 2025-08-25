@@ -103,7 +103,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
         CamundaClient.newClientBuilder()
             .grpcAddress(grpcAddress())
             .restAddress(restAddress())
-            .preferRestOverGrpc(true);
+            .preferRestOverGrpc(false);
     final var security = gatewayConfig().getSecurity();
     final var restSSL = property("server.ssl.enabled", Boolean.class, false);
     if (security.isEnabled() || restSSL) {
