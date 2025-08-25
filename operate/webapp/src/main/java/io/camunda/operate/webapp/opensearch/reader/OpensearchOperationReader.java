@@ -12,9 +12,11 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.exists;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.longTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.lte;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.not;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.or;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_RUNTIME;
@@ -37,12 +39,13 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -66,13 +69,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   private static final String LOCKED_OPERATION = LOCKED.toString();
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private DateTimeFormatter dateTimeFormatter;
-  @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
-
-  private Query usernameQuery() {
-    return term(
-        OperationTemplate.USERNAME,
-        camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
-  }
+  @Autowired private PermissionsService permissionsService;
 
   /**
    * Request process instances, that have scheduled operations or locked but with expired locks.
@@ -109,9 +106,11 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   public Map<Long, List<OperationEntity>> getOperationsPerProcessInstanceKey(
       final List<Long> processInstanceKeys) {
     final Map<Long, List<OperationEntity>> result = new HashMap<>();
+    if (hasNoBatchOperationWildcardPermissions()) {
+      return result;
+    }
 
-    final Query query =
-        constantScore(and(longTerms(PROCESS_INSTANCE_KEY, processInstanceKeys), usernameQuery()));
+    final Query query = constantScore(and(longTerms(PROCESS_INSTANCE_KEY, processInstanceKeys)));
 
     final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL)
@@ -133,8 +132,10 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(
       final String processInstanceId) {
     final Map<Long, List<OperationEntity>> result = new HashMap<>();
-    final Query query =
-        constantScore(and(term(PROCESS_INSTANCE_KEY, processInstanceId), usernameQuery()));
+    if (hasNoBatchOperationWildcardPermissions()) {
+      return result;
+    }
+    final Query query = constantScore(and(term(PROCESS_INSTANCE_KEY, processInstanceId)));
 
     final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ONLY_RUNTIME)
@@ -155,13 +156,15 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   public Map<String, List<OperationEntity>> getUpdateOperationsPerVariableName(
       final Long processInstanceKey, final Long scopeKey) {
     final Map<String, List<OperationEntity>> result = new HashMap<>();
+    if (hasNoBatchOperationWildcardPermissions()) {
+      return result;
+    }
     final Query query =
         constantScore(
             and(
                 term(PROCESS_INSTANCE_KEY, processInstanceKey),
                 term(SCOPE_KEY, scopeKey),
-                term(TYPE, OperationType.UPDATE_VARIABLE.name()),
-                usernameQuery()));
+                term(TYPE, OperationType.UPDATE_VARIABLE.name())));
 
     final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL).query(query).sort(sortOptions(ID, Asc));
@@ -179,11 +182,12 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   @Override
   public List<OperationEntity> getOperationsByProcessInstanceKey(final Long processInstanceKey) {
+    if (hasNoBatchOperationWildcardPermissions()) {
+      return List.of();
+    }
     final Query query =
         constantScore(
-            and(
-                processInstanceKey == null ? null : term(PROCESS_INSTANCE_KEY, processInstanceKey),
-                usernameQuery()));
+            processInstanceKey == null ? null : term(PROCESS_INSTANCE_KEY, processInstanceKey));
 
     final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL).query(query).sort(sortOptions(ID, Asc));
@@ -195,7 +199,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
     final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL)
-            .query(and(term(BATCH_OPERATION_ID, batchOperationId), usernameQuery()));
+            .query(and(term(BATCH_OPERATION_ID, batchOperationId), allowedOperationsQuery()));
 
     final List<OperationEntity> operationEntities =
         richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
@@ -220,6 +224,15 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
     final List<OperationEntity> operationEntities =
         richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
     return DtoCreator.create(operationEntities, OperationDto.class);
+  }
+
+  private Query allowedOperationsQuery() {
+    final var allowed = permissionsService.getBatchOperationsWithPermission(PermissionType.READ);
+    return allowed.isAll() ? matchAll() : stringTerms(BATCH_OPERATION_ID, allowed.getIds());
+  }
+
+  private boolean hasNoBatchOperationWildcardPermissions() {
+    return !permissionsService.getBatchOperationsWithPermission(PermissionType.READ).isAll();
   }
 
   public Builder getSearchRequestByIdWithMetadata(final String batchOperationId) {

@@ -8,24 +8,28 @@
 package io.camunda.operate.webapp.opensearch.reader;
 
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.CollectionUtil.reversedView;
 import static io.camunda.operate.util.ConversionUtils.toStringArray;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.ID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Arrays;
 import java.util.List;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -37,7 +41,7 @@ import org.springframework.stereotype.Component;
 public class OpensearchBatchOperationReader implements BatchOperationReader {
   @Autowired private BatchOperationTemplate batchOperationTemplate;
 
-  @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
+  @Autowired private PermissionsService permissionsService;
 
   @Autowired
   @Qualifier("operateObjectMapper")
@@ -91,13 +95,7 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
 
     final var searchRequestBuilder =
         searchRequestBuilder(batchOperationTemplate.getAlias())
-            .query(
-                constantScore(
-                    term(
-                        BatchOperationTemplate.USERNAME,
-                        camundaAuthenticationProvider
-                            .getCamundaAuthentication()
-                            .authenticatedUsername())))
+            .query(constantScore(allowedOperationsQuery()))
             .sort(sort1, sort2)
             .size(batchOperationRequestDto.getPageSize());
 
@@ -106,5 +104,10 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
     }
 
     return searchRequestBuilder;
+  }
+
+  private Query allowedOperationsQuery() {
+    final var allowed = permissionsService.getBatchOperationsWithPermission(PermissionType.READ);
+    return allowed.isAll() ? matchAll() : stringTerms(ID, allowed.getIds());
   }
 }

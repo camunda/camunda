@@ -25,6 +25,7 @@ import static io.camunda.webapps.schema.entities.operation.OperationState.SCHEDU
 import static org.elasticsearch.client.Requests.searchRequest;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -36,10 +37,11 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -80,7 +82,7 @@ public class OperationReader extends AbstractReader
 
   @Autowired private DateTimeFormatter dateTimeFormatter;
 
-  @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
+  @Autowired private PermissionsService permissionsService;
 
   /**
    * Request process instances, that have scheduled operations or locked but with expired locks.
@@ -135,11 +137,13 @@ public class OperationReader extends AbstractReader
   public Map<Long, List<OperationEntity>> getOperationsPerProcessInstanceKey(
       final List<Long> processInstanceKeys) {
     final Map<Long, List<OperationEntity>> result = new HashMap<>();
+    if (hasNoBatchOperationWildcardPermissions()) {
+      return result;
+    }
 
     final TermsQueryBuilder processInstanceKeysQ =
         termsQuery(PROCESS_INSTANCE_KEY, processInstanceKeys);
-    final ConstantScoreQueryBuilder query =
-        constantScoreQuery(joinWithAnd(processInstanceKeysQ, createUsernameQuery()));
+    final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeysQ);
 
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(operationTemplate, ElasticsearchUtil.QueryType.ALL)
@@ -181,11 +185,13 @@ public class OperationReader extends AbstractReader
   public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(
       final String processInstanceId) {
     final Map<Long, List<OperationEntity>> result = new HashMap<>();
+    if (hasNoBatchOperationWildcardPermissions()) {
+      return result;
+    }
 
     final TermQueryBuilder processInstanceKeysQ =
         termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
-    final ConstantScoreQueryBuilder query =
-        constantScoreQuery(joinWithAnd(processInstanceKeysQ, createUsernameQuery()));
+    final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeysQ);
 
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(operationTemplate, ONLY_RUNTIME)
@@ -223,15 +229,16 @@ public class OperationReader extends AbstractReader
   public Map<String, List<OperationEntity>> getUpdateOperationsPerVariableName(
       final Long processInstanceKey, final Long scopeKey) {
     final Map<String, List<OperationEntity>> result = new HashMap<>();
+    if (hasNoBatchOperationWildcardPermissions()) {
+      return result;
+    }
 
     final TermQueryBuilder processInstanceKeyQuery =
         termQuery(PROCESS_INSTANCE_KEY, processInstanceKey);
     final TermQueryBuilder scopeKeyQuery = termQuery(SCOPE_KEY, scopeKey);
     final TermQueryBuilder operationTypeQ = termQuery(TYPE, OperationType.UPDATE_VARIABLE.name());
     final ConstantScoreQueryBuilder query =
-        constantScoreQuery(
-            joinWithAnd(
-                processInstanceKeyQuery, scopeKeyQuery, operationTypeQ, createUsernameQuery()));
+        constantScoreQuery(joinWithAnd(processInstanceKeyQuery, scopeKeyQuery, operationTypeQ));
 
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
@@ -264,11 +271,14 @@ public class OperationReader extends AbstractReader
 
   @Override
   public List<OperationEntity> getOperationsByProcessInstanceKey(final Long processInstanceKey) {
-
-    final TermQueryBuilder processInstanceQ =
-        processInstanceKey == null ? null : termQuery(PROCESS_INSTANCE_KEY, processInstanceKey);
-    final QueryBuilder query =
-        constantScoreQuery(joinWithAnd(processInstanceQ, createUsernameQuery()));
+    if (hasNoBatchOperationWildcardPermissions()) {
+      return List.of();
+    }
+    final QueryBuilder processInstanceQ =
+        processInstanceKey == null
+            ? matchAllQuery()
+            : termQuery(PROCESS_INSTANCE_KEY, processInstanceKey);
+    final QueryBuilder query = constantScoreQuery(processInstanceQ);
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
             .source(new SearchSourceBuilder().query(query).sort(ID, SortOrder.ASC));
@@ -285,7 +295,7 @@ public class OperationReader extends AbstractReader
   @Override
   public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
     final QueryBuilder operationIdQ =
-        joinWithAnd(termQuery(BATCH_OPERATION_ID, batchOperationId), createUsernameQuery());
+        joinWithAnd(termQuery(BATCH_OPERATION_ID, batchOperationId), allowedOperationsQuery());
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
             .source(new SearchSourceBuilder().query(operationIdQ));
@@ -363,9 +373,14 @@ public class OperationReader extends AbstractReader
     return searchResponse.getAggregations().get(BATCH_OPERATION_ID_AGGREGATION);
   }
 
-  private QueryBuilder createUsernameQuery() {
-    return termQuery(
-        OperationTemplate.USERNAME,
-        camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
+  private QueryBuilder allowedOperationsQuery() {
+    final var allowed = permissionsService.getBatchOperationsWithPermission(PermissionType.READ);
+    return allowed.isAll()
+        ? QueryBuilders.matchAllQuery()
+        : termsQuery(BATCH_OPERATION_ID, allowed.getIds());
+  }
+
+  private boolean hasNoBatchOperationWildcardPermissions() {
+    return !permissionsService.getBatchOperationsWithPermission(PermissionType.READ).isAll();
   }
 }
