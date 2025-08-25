@@ -108,8 +108,6 @@ camunda:
     zeebeElasticsearch:
       # Cluster name
       clusterName: elasticsearch
-      # URL
-      url: http://localhost:9200
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record
   # Tasklist configuration properties
@@ -133,8 +131,6 @@ camunda:
     zeebeElasticsearch:
       # Cluster name
       clusterName: elasticsearch
-      # Url
-      url: http://localhost:9200
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record
   security:
