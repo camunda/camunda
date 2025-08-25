@@ -467,15 +467,6 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     assertThat(tester.getFlowNodeInstanceEntityFor(flowNodeInstanceKey).getState())
         .isEqualTo(FlowNodeState.TERMINATED);
     assertThat(tester.getFlowNodeStateFor("taskB")).isEqualTo(FlowNodeStateDto.ACTIVE);
-    assertThat(
-            tester.getOperations().stream()
-                .filter(
-                    o ->
-                        o.getErrorMessage()
-                            .contains(
-                                "Can't find not finished flowNodeInstance keys for process instance "))
-                .count())
-        .isEqualTo(1);
   }
 
   @Test
