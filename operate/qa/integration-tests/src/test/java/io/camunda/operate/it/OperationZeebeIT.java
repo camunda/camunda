@@ -11,10 +11,8 @@ import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInst
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllRunningQuery;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.BatchOperationRestService.BATCH_OPERATIONS_URL;
-import static io.camunda.operate.webapp.rest.OperationRestService.OPERATION_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -578,15 +576,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private OperationDto getOperation(final String batchOperationId) throws Exception {
-    final MockHttpServletRequestBuilder getOperationRequest =
-        get(String.format(OPERATION_URL + "?batchOperationId=%s", batchOperationId));
-
-    final MvcResult mvcResult =
-        mockMvc.perform(getOperationRequest).andExpect(status().isOk()).andReturn();
-    final OperationDto[] operations =
-        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), OperationDto[].class);
-    assertThat(operations.length).isEqualTo(1);
-    return operations[0];
+    final List<OperationDto> operations =
+        operationReader.getOperationsByBatchOperationId(batchOperationId);
+    assertThat(operations).hasSize(1);
+    return operations.getFirst();
   }
 
   private void assertVariable(

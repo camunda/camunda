@@ -19,7 +19,7 @@ import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.exception.InternalAPIException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
@@ -39,7 +39,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-// Utilizes an endpoint from OperationRestService to test the error handling functionality
+// Utilizes an endpoint from ProcessInstanceRestService to test the error handling functionality
 // of the abstract InternalAPIErrorController class
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -57,7 +57,7 @@ public class InternalAPIErrorControllerIT {
   private static final String EXCEPTION_MESSAGE = "profile exception message";
   @MockitoBean DataAggregator dataAggregator;
   @Autowired private MockMvc mockMvc;
-  @MockitoBean private OperationReader operationReader;
+  @MockitoBean private ProcessInstanceReader processInstanceReader;
   @MockitoBean private OperateProfileService mockProfileService;
 
   @Autowired private ObjectMapper objectMapper;
@@ -66,7 +66,7 @@ public class InternalAPIErrorControllerIT {
 
   @Before
   public void setup() {
-    mockGetRequest = get("/api/operations").queryParam("batchOperationId", "abc");
+    mockGetRequest = get("/api/process-instances/123");
     when(mockProfileService.getMessageByProfileFor(any())).thenReturn(EXCEPTION_MESSAGE);
   }
 
@@ -74,7 +74,7 @@ public class InternalAPIErrorControllerIT {
   public void shouldReturn500ForOperateRuntimeException() throws Exception {
     final OperateRuntimeException exception = new OperateRuntimeException("runtime exception");
 
-    when(operationReader.getOperationsByBatchOperationId(any())).thenThrow(exception);
+    when(processInstanceReader.getProcessInstanceByKey(any())).thenThrow(exception);
 
     final MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
 
@@ -94,7 +94,7 @@ public class InternalAPIErrorControllerIT {
     final io.camunda.operate.store.NotFoundException exception =
         new io.camunda.operate.store.NotFoundException("not found exception");
 
-    when(operationReader.getOperationsByBatchOperationId(any())).thenThrow(exception);
+    when(processInstanceReader.getProcessInstanceByKey(any())).thenThrow(exception);
 
     final MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
 
@@ -113,7 +113,7 @@ public class InternalAPIErrorControllerIT {
     final InternalAPIException exception = new InternalAPIException("internal api exception") {};
     exception.setInstance("instanceId");
 
-    when(operationReader.getOperationsByBatchOperationId(any())).thenThrow(exception);
+    when(processInstanceReader.getProcessInstanceByKey(any())).thenThrow(exception);
 
     final MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
 
@@ -132,7 +132,7 @@ public class InternalAPIErrorControllerIT {
     final NotFoundException exception = new NotFoundException("not found exception");
     exception.setInstance("instanceId");
 
-    when(operationReader.getOperationsByBatchOperationId(any())).thenThrow(exception);
+    when(processInstanceReader.getProcessInstanceByKey(any())).thenThrow(exception);
 
     final MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
 
@@ -151,7 +151,7 @@ public class InternalAPIErrorControllerIT {
     final NotAuthorizedException exception = new NotAuthorizedException("not authorized exception");
     exception.setInstance("instanceId");
 
-    when(operationReader.getOperationsByBatchOperationId(any())).thenThrow(exception);
+    when(processInstanceReader.getProcessInstanceByKey(any())).thenThrow(exception);
 
     final MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
 
