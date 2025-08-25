@@ -47,24 +47,13 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
         const {name, value} = values;
 
         try {
-          await mutateAsyncVariables(
-            {name, value},
-            {
-              onSuccess: () => {
-                notificationsStore.displayNotification({
-                  kind: 'success',
-                  title: isNewVariable ? 'Variable added' : 'Variable updated',
-                  isDismissable: true,
-                });
-              },
-              onSettled: async () => {
-                form.reset({});
-                await queryClient.invalidateQueries({
-                  queryKey: queryKeys.variables.search(),
-                });
-              },
-            },
-          );
+          await mutateAsyncVariables({name, value});
+
+          notificationsStore.displayNotification({
+            kind: 'success',
+            title: isNewVariable ? 'Variable added' : 'Variable updated',
+            isDismissable: true,
+          });
         } catch (error) {
           if (error instanceof Error) {
             notificationsStore.displayNotification({
@@ -74,6 +63,11 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
               isDismissable: true,
             });
           }
+        } finally {
+          form.reset({});
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.variables.search(),
+          });
         }
       }}
     />
