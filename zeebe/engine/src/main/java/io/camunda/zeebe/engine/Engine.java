@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -97,6 +98,22 @@ public class Engine implements RecordProcessor {
     final var desiredPartitions = routingState.desiredPartitions();
 
     return !currentPartitions.equals(desiredPartitions);
+  }
+
+  /**
+   * Returns the current partition count from routing information. If routing state is not
+   * initialized, returns the fallback partition count.
+   *
+   * @param fallBackPartitionCount the fallback partition count to use if dynamic routing state is
+   *     not initialized
+   * @return the current partition count
+   */
+  public int getCurrentPartitionCount(final int fallBackPartitionCount) {
+    return RoutingInfo.dynamic(
+            processingState.getRoutingState(),
+            RoutingInfo.forStaticPartitions(fallBackPartitionCount))
+        .partitions()
+        .size();
   }
 
   @Override

@@ -50,6 +50,7 @@ public final class CheckpointRecordsProcessor
   private DbCheckpointState checkpointState;
   private ProcessingScheduleService executor;
   private ScalingStatusSupplier scalingInProgressSupplier;
+  private PartitionCountSupplier partitionCountSupplier;
 
   public CheckpointRecordsProcessor(
       final BackupManager backupManager, final int partitionId, final MeterRegistry registry) {
@@ -59,6 +60,16 @@ public final class CheckpointRecordsProcessor
 
   public void setScalingInProgressSupplier(final ScalingStatusSupplier scalingInProgressSupplier) {
     this.scalingInProgressSupplier = scalingInProgressSupplier;
+  }
+
+  /**
+   * Sets the supplier that provides the current partition count from routing information. This must
+   * be called before init() is called.
+   *
+   * @param partitionCountSupplier supplier that returns current partition count
+   */
+  public void setPartitionCountSupplier(final PartitionCountSupplier partitionCountSupplier) {
+    this.partitionCountSupplier = partitionCountSupplier;
   }
 
   @Override
@@ -71,6 +82,9 @@ public final class CheckpointRecordsProcessor
     if (scalingInProgressSupplier == null) {
       throw new IllegalStateException("Scaling in progress supplier is not initialized.");
     }
+    if (partitionCountSupplier == null) {
+      throw new IllegalStateException("Partition count supplier is not initialized.");
+    }
 
     checkpointCreateProcessor =
         new CheckpointCreateProcessor(
@@ -78,7 +92,9 @@ public final class CheckpointRecordsProcessor
             backupManager,
             checkpointListeners,
             scalingInProgressSupplier,
+            partitionCountSupplier,
             metrics);
+
     checkpointConfirmBackupProcessor = new CheckpointConfirmBackupProcessor(checkpointState);
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(checkpointState, checkpointListeners, metrics);

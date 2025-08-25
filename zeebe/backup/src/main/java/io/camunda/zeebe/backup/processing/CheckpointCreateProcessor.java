@@ -28,17 +28,20 @@ public final class CheckpointCreateProcessor {
   private final CheckpointMetrics metrics;
   private final ScalingStatusSupplier scalingStatusSupplier;
   private final CheckpointCreatedEventApplier checkpointCreatedApplier;
+  private final PartitionCountSupplier partitionCountSupplier;
 
   public CheckpointCreateProcessor(
       final CheckpointState checkpointState,
       final BackupManager backupManager,
       final Set<CheckpointListener> listeners,
       final ScalingStatusSupplier scalingStatusSupplier,
+      final PartitionCountSupplier partitionCountSupplier,
       final CheckpointMetrics metrics) {
     this.checkpointState = checkpointState;
     this.backupManager = backupManager;
     this.scalingStatusSupplier = scalingStatusSupplier;
     this.metrics = metrics;
+    this.partitionCountSupplier = partitionCountSupplier;
     checkpointCreatedApplier =
         new CheckpointCreatedEventApplier(checkpointState, listeners, metrics);
   }
@@ -75,7 +78,9 @@ public final class CheckpointCreateProcessor {
           checkpointPosition,
           "Cannot create checkpoint while scaling is in progress");
     } else {
-      backupManager.takeBackup(checkpointId, checkpointPosition);
+      // Get current partition count from routing information if available
+      final int currentPartitionCount = partitionCountSupplier.getCurrentPartitionCount();
+      backupManager.takeBackup(checkpointId, checkpointPosition, currentPartitionCount);
     }
 
     // Create follow-up record
