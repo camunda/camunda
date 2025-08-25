@@ -10,7 +10,6 @@ import {TableToolbar, Modal, TableBatchAction} from '@carbon/react';
 import {TableBatchActions} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useState} from 'react';
-import useOperationApply from '../useOperationApply';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
@@ -18,6 +17,14 @@ import {MigrateAction} from './MigrateAction/v2';
 import {MoveAction} from './MoveAction';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {observer} from 'mobx-react';
+import {useCancelProcessInstancesBatchOperation} from 'modules/mutations/processes/useCancelProcessInstancesBatchOperation';
+import {useResolveProcessInstancesIncidentsBatchOperation} from 'modules/mutations/processes/useResolveProcessInstancesIncidentsBatchOperation';
+import {tracking} from 'modules/tracking';
+import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
+import {processInstancesStore} from 'modules/stores/processInstances';
+import {notificationsStore} from 'modules/stores/notifications';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {buildMutationRequestBody} from './buildMutationRequestBody';
 
 type Props = {
   selectedInstancesCount: number;
@@ -34,20 +41,116 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
   const [modalMode, setModalMode] = useState<
     'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | null
   >(null);
-  const {applyBatchOperation} = useOperationApply();
+  const processDefinitionKey = useProcessDefinitionKeyContext();
 
   const closeModal = () => {
     setModalMode(null);
   };
 
+  const cancelMutation = useCancelProcessInstancesBatchOperation({
+    onSuccess: () => {
+      panelStatesStore.expandOperationsPanel();
+      tracking.track({
+        eventName: 'batch-operation',
+        operationType: 'CANCEL_PROCESS_INSTANCE',
+      });
+      processInstancesSelectionStore.reset();
+    },
+    onError: ({message}) => {
+      panelStatesStore.expandOperationsPanel();
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Operation could not be created',
+        subtitle: message.includes('403')
+          ? 'You do not have permission'
+          : undefined,
+        isDismissable: true,
+      });
+    },
+  });
+
+  const resolveMutation = useResolveProcessInstancesIncidentsBatchOperation({
+    onSuccess: () => {
+      panelStatesStore.expandOperationsPanel();
+      tracking.track({
+        eventName: 'batch-operation',
+        operationType: 'RESOLVE_INCIDENT',
+      });
+      processInstancesSelectionStore.reset();
+    },
+    onError: ({message}) => {
+      panelStatesStore.expandOperationsPanel();
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Operation could not be created',
+        subtitle: message.includes('403')
+          ? 'You do not have permission'
+          : undefined,
+        isDismissable: true,
+      });
+    },
+  });
+
   const handleApplyClick = () => {
-    closeModal();
-    if (modalMode !== null) {
-      applyBatchOperation({
+    if (modalMode === null) {
+      return;
+    }
+
+    const baseFilter = getProcessInstancesRequestFilters();
+    const {
+      selectedProcessInstanceIds,
+      excludedProcessInstanceIds,
+      checkedRunningProcessInstanceIds,
+    } = processInstancesSelectionStore;
+
+    const includeIds =
+      selectedProcessInstanceIds.length > 0
+        ? checkedRunningProcessInstanceIds
+        : (baseFilter.ids ?? []);
+
+    const requestBody = buildMutationRequestBody({
+      baseFilter,
+      includeIds,
+      excludeIds: excludedProcessInstanceIds,
+      processDefinitionKey,
+    });
+
+    if (selectedProcessInstanceIds.length > 0) {
+      processInstancesStore.markProcessInstancesWithActiveOperations({
+        ids: includeIds,
         operationType: modalMode,
-        onSuccess: panelStatesStore.expandOperationsPanel,
+      });
+    } else {
+      processInstancesStore.markProcessInstancesWithActiveOperations({
+        ids: excludedProcessInstanceIds,
+        operationType: modalMode,
+        shouldPollAllVisibleIds: true,
       });
     }
+
+    if (modalMode === 'CANCEL_PROCESS_INSTANCE') {
+      cancelMutation.mutate(requestBody, {
+        onError: () => {
+          processInstancesStore.unmarkProcessInstancesWithActiveOperations({
+            instanceIds: includeIds,
+            operationType: modalMode,
+            shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
+          });
+        },
+      });
+    } else {
+      resolveMutation.mutate(requestBody, {
+        onError: () => {
+          processInstancesStore.unmarkProcessInstancesWithActiveOperations({
+            instanceIds: includeIds,
+            operationType: modalMode,
+            shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
+          });
+        },
+      });
+    }
+
+    closeModal();
   };
 
   const handleCancelClick = () => {
@@ -121,6 +224,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
                   ? 'No running process instances selected. Please select at least one active or incident process instance to cancel.'
                   : undefined
             }
+            data-testid="cancel-batch-operation"
           >
             Cancel
           </TableBatchAction>
@@ -138,6 +242,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
                   ? 'No running process instances selected. Please select at least one active or incident process instance to retry.'
                   : undefined
             }
+            data-testid="retry-batch-operation"
           >
             Retry
           </TableBatchAction>

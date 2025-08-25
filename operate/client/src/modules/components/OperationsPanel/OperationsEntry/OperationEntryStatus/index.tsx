@@ -6,62 +6,50 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {BatchOperationType} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {CheckmarkFilled, StatusContainer, Text, WarningFilled} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
-import {type OperationLabelType} from '../';
 
 type Props = {
-  isTypeDeleteProcessOrDecision: boolean;
-  label: OperationLabelType;
-  failedOperationsCount?: number;
-  completedOperationsCount?: number;
+  type: BatchOperationType;
+  failedCount?: number;
+  completedCount?: number;
 };
 
 const OperationEntryStatus: React.FC<Props> = ({
-  label,
-  isTypeDeleteProcessOrDecision,
-  failedOperationsCount = 0,
-  completedOperationsCount = 0,
+  type,
+  failedCount = 0,
+  completedCount = 0,
 }) => {
-  const instanceDeletedText = `${pluralSuffix(
-    completedOperationsCount,
-    'instance',
-  )} deleted`;
-
-  const successText = `${completedOperationsCount} success`;
-
-  if (label === 'Delete' && !isTypeDeleteProcessOrDecision) {
-    if (failedOperationsCount) {
-      return (
-        <StatusContainer>
-          {failedOperationsCount ? (
-            <>
-              <WarningFilled />
-              <Text>{`${failedOperationsCount} fail`}</Text>
-            </>
-          ) : null}
-        </StatusContainer>
-      );
-    }
-
-    return null;
-  }
-
   return (
     <StatusContainer>
-      {completedOperationsCount ? (
+      {completedCount > 0 ? (
         <>
           <CheckmarkFilled />
           <Text>
-            {isTypeDeleteProcessOrDecision ? instanceDeletedText : successText}
+            <>
+              {type === 'RESOLVE_INCIDENT'
+                ? `${completedCount} ${completedCount === 1 ? 'retry' : 'retries'} succeeded`
+                : `${pluralSuffix(completedCount, 'instance')} succeeded`}
+            </>
           </Text>
         </>
       ) : null}
-      {completedOperationsCount && failedOperationsCount ? ' / ' : null}
-      {failedOperationsCount ? (
+      {completedCount > 0 && failedCount > 0 ? ' / ' : null}
+      {failedCount ? (
         <>
           <WarningFilled />
-          <Text>{`${failedOperationsCount} fail`}</Text>
+          <Text>
+            <>
+              {type === 'RESOLVE_INCIDENT'
+                ? completedCount > 0
+                  ? `${failedCount} failed`
+                  : `${failedCount} ${failedCount === 1 ? 'retry' : 'retries'} failed`
+                : completedCount > 0
+                  ? `${failedCount} failed`
+                  : `${pluralSuffix(failedCount, 'instance')} failed`}
+            </>
+          </Text>
         </>
       ) : null}
     </StatusContainer>

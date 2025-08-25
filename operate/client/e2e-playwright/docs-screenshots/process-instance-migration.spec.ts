@@ -42,7 +42,7 @@ test.describe('process instance migration', () => {
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';
         }),
-        batchOperations: [],
+        batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: mockOrderProcessInstances,
         statisticsV2: {
           items: [
@@ -211,14 +211,16 @@ test.describe('process instance migration', () => {
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';
         }),
-        batchOperations: [
-          {
-            ...mockMigrationOperation,
-            endDate: '2023-09-29T16:23:15.684+0000',
-            operationsFinishedCount: 1,
-          },
-        ],
-        batchOperation: mockMigrationOperation,
+        batchOperations: {
+          items: [
+            {
+              ...mockMigrationOperation,
+              endDate: '2023-09-29T16:23:15.684+0000',
+              operationsCompletedCount: 1,
+            },
+          ],
+          page: {totalItems: 1},
+        },
         processInstances: mockOrderProcessV2Instances,
         statisticsV2: {
           items: [
@@ -246,7 +248,9 @@ test.describe('process instance migration', () => {
     await expect(
       page.getByTestId('state-overlay-checkPayment-active'),
     ).toBeVisible();
-    await expect(page.getByText(mockMigrationOperation.id)).toHaveCount(1);
+    await expect(
+      page.getByText(mockMigrationOperation.batchOperationKey),
+    ).toHaveCount(1);
 
     await page.screenshot({
       path: path.join(baseDirectory, 'operations-panel.png'),

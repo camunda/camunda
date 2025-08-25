@@ -16,7 +16,9 @@ import {OperationsPanel} from './index';
 import * as CONSTANTS from './constants';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
 import {MemoryRouter} from 'react-router-dom';
-import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
+import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 vi.mock('modules/utils/localStorage', async () => {
   const actual = await vi.importActual('modules/utils/localStorage');
@@ -30,12 +32,16 @@ vi.mock('modules/utils/localStorage', async () => {
 });
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  return <MemoryRouter>{children}</MemoryRouter>;
+  return (
+    <QueryClientProvider client={getMockQueryClient()}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>
+  );
 };
 
 describe('OperationsPanel', () => {
   it('should display empty panel on mount', async () => {
-    mockFetchBatchOperations().withSuccess([]);
+    mockQueryBatchOperations().withSuccess({items: [], page: {totalItems: 0}});
 
     render(<OperationsPanel />, {wrapper: Wrapper});
 
@@ -45,7 +51,7 @@ describe('OperationsPanel', () => {
   });
 
   it('should render skeleton when loading', async () => {
-    mockFetchBatchOperations().withSuccess([]);
+    mockQueryBatchOperations().withSuccess({items: [], page: {totalItems: 0}});
 
     render(<OperationsPanel />, {wrapper: Wrapper});
 
@@ -54,10 +60,10 @@ describe('OperationsPanel', () => {
   });
 
   it('should render operation entries', async () => {
-    mockFetchBatchOperations().withSuccess([
-      mockOperationRunning,
-      mockOperationFinished,
-    ]);
+    mockQueryBatchOperations().withSuccess({
+      items: [mockOperationRunning, mockOperationFinished],
+      page: {totalItems: 2},
+    });
 
     render(<OperationsPanel />, {wrapper: Wrapper});
 
@@ -73,7 +79,7 @@ describe('OperationsPanel', () => {
     const withinSecondOperation = within(secondOperation!);
 
     expect(
-      withinFirstOperation.getByText(mockOperationRunning.id),
+      withinFirstOperation.getByText(mockOperationRunning.batchOperationKey),
     ).toBeInTheDocument();
     expect(withinFirstOperation.getByText('Retry')).toBeInTheDocument();
     expect(
@@ -81,7 +87,7 @@ describe('OperationsPanel', () => {
     ).toBeInTheDocument();
 
     expect(
-      withinSecondOperation.getByText(mockOperationFinished.id),
+      withinSecondOperation.getByText(mockOperationFinished.batchOperationKey),
     ).toBeInTheDocument();
     expect(withinSecondOperation.getByText('Cancel')).toBeInTheDocument();
     expect(
@@ -90,11 +96,7 @@ describe('OperationsPanel', () => {
   });
 
   it('should show an error message', async () => {
-    const consoleErrorMock = vi
-      .spyOn(global.console, 'error')
-      .mockImplementation(() => {});
-
-    mockFetchBatchOperations().withServerError();
+    mockQueryBatchOperations().withServerError();
     const {unmount} = render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(
@@ -103,14 +105,12 @@ describe('OperationsPanel', () => {
 
     unmount();
 
-    mockFetchBatchOperations().withNetworkError();
+    mockQueryBatchOperations().withNetworkError();
 
     render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText('Operations could not be fetched'),
     ).toBeInTheDocument();
-
-    consoleErrorMock.mockRestore();
   });
 });

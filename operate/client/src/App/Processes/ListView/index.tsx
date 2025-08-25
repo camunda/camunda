@@ -24,11 +24,9 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {reaction} from 'mobx';
 import {tracking} from 'modules/tracking';
-import {OperationsPanel} from 'modules/components/OperationsPanel/v2';
-import {OperationsPanel as OperationsPanelLegacy} from 'modules/components/OperationsPanel';
+import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
-import {IS_BATCH_OPERATIONS_V2} from 'modules/feature-flags';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -135,13 +133,7 @@ const ListView: React.FC = observer(() => {
         leftPanel={<Filters />}
         topPanel={<DiagramPanel />}
         bottomPanel={<InstancesTable />}
-        rightPanel={
-          IS_BATCH_OPERATIONS_V2 ? (
-            <OperationsPanel />
-          ) : (
-            <OperationsPanelLegacy />
-          )
-        }
+        rightPanel={<OperationsPanel />}
         frame={{
           isVisible: batchModificationStore.state.isEnabled,
           headerTitle: 'Batch Modification Mode',
