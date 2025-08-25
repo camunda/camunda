@@ -51,7 +51,7 @@ export class IdentityMappingRulesPage {
       this.mappingRulesList.getByRole('cell', {name, exact: true});
 
     this.createMappingRuleButton = page.getByRole('button', {
-      name: 'Create a mapping rule',
+      name: 'Create mapping rule',
     });
     this.editMappingRuleButton = (rowName) =>
       this.mappingRulesList
@@ -91,7 +91,7 @@ export class IdentityMappingRulesPage {
       this.createMappingRuleModal.getByRole('button', {name: 'Cancel'});
     this.createMappingRuleModalCreateButton =
       this.createMappingRuleModal.getByRole('button', {
-        name: 'Create a mapping rule',
+        name: 'Create mapping rule',
       });
 
     this.editMappingRuleModal = page.getByRole('dialog', {
@@ -148,7 +148,7 @@ export class IdentityMappingRulesPage {
         name: 'Delete mapping rule',
       });
 
-    this.emptyState = page.getByText("You don't have any mapping rules yet");
+    this.emptyState = page.getByText('No mapping rules created yet');
     this.usersNavItem = page.getByText('Users');
   }
 
