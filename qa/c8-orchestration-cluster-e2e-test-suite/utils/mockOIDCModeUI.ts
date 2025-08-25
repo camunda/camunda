@@ -24,7 +24,7 @@ export async function mockOIDCModeUI(page: Page): Promise<void> {
     }
 
     Object.keys(config).forEach((key) => {
-      if (key.includes('IS_OIDC')) {
+      if (key === 'isOidc') {
         config[key] = 'true';
       }
     });
