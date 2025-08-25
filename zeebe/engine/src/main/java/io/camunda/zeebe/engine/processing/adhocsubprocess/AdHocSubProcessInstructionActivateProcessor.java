@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue.AdHocSubProcessActivateElementInstructionValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -38,8 +37,6 @@ public class AdHocSubProcessInstructionActivateProcessor
 
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND =
       "Expected to activate activities for ad-hoc sub-process but no ad-hoc sub-process instance found with key '%s'.";
-  private static final String ERROR_MSG_DUPLICATE_ACTIVITIES =
-      "Expected to activate activities for ad-hoc sub-process with key '%s', but duplicate activities were given.";
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NO_ACTIVE =
       "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE =
@@ -102,16 +99,6 @@ public class AdHocSubProcessInstructionActivateProcessor
                   command.getValue().getAdHocSubProcessInstanceKey())
               : rejection.reason();
       writeRejectionError(command, rejection.type(), errorMessage);
-
-      return;
-    }
-
-    if (hasDuplicateElementsToActivate(command)) {
-      writeRejectionError(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          String.format(
-              ERROR_MSG_DUPLICATE_ACTIVITIES, command.getValue().getAdHocSubProcessInstanceKey()));
 
       return;
     }
@@ -184,15 +171,6 @@ public class AdHocSubProcessInstructionActivateProcessor
       final String errorMessage) {
     rejectionWriter.appendRejection(command, rejectionType, errorMessage);
     responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
-  }
-
-  private boolean hasDuplicateElementsToActivate(
-      final TypedRecord<AdHocSubProcessInstructionRecord> command) {
-    return command.getValue().getActivateElements().stream()
-            .map(AdHocSubProcessActivateElementInstructionValue::getElementId)
-            .distinct()
-            .count()
-        != command.getValue().getActivateElements().size();
   }
 
   private Either<Rejection, Void> authorize(
