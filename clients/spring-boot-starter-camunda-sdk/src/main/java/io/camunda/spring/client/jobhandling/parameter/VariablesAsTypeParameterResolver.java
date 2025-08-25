@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.jobhandling.result;
+package io.camunda.spring.client.jobhandling.parameter;
 
-import io.camunda.spring.client.bean.MethodInfo;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.worker.JobClient;
 
-public interface ResultProcessorStrategy {
+public class VariablesAsTypeParameterResolver implements ParameterResolver {
+  private final Class<?> variablesType;
 
-  @Deprecated
-  default ResultProcessor createProcessor(final Class<?> resultType) {
-    return new ResultProcessor() {};
+  public VariablesAsTypeParameterResolver(final Class<?> variablesType) {
+    this.variablesType = variablesType;
   }
 
-  default ResultProcessor createProcessor(final MethodInfo methodInfo) {
-    return createProcessor(methodInfo.getReturnType());
+  @Override
+  public Object resolve(final JobClient jobClient, final ActivatedJob job) {
+    return job.getVariablesAsType(variablesType);
   }
 }

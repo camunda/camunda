@@ -23,6 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
@@ -40,6 +41,7 @@ import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.jobhandling.parameter.DefaultParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.spring.client.jobhandling.result.DefaultResultProcessorStrategy;
+import io.camunda.spring.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy;
 import io.camunda.spring.client.jobhandling.result.ResultProcessor;
 import io.camunda.spring.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.spring.client.metrics.MetricsRecorder;
@@ -220,12 +222,15 @@ public class JobHandlerInvokingSpringBeansTest {
 
   private static List<ParameterResolver> parameterResolvers(final JobWorkerValue jobWorkerValue) {
     return JobHandlingUtil.createParameterResolvers(
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper()), jobWorkerValue);
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class)),
+        jobWorkerValue);
   }
 
   private static ResultProcessor resultProcessor(final JobWorkerValue jobWorkerValue) {
     return JobHandlingUtil.createResultProcessor(
-        new DefaultResultProcessorStrategy(), jobWorkerValue);
+        new DefaultResultProcessorStrategy(
+            mock(CamundaClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class)),
+        jobWorkerValue);
   }
 
   private static JobExceptionHandlingStrategy jobExceptionHandlingStrategy() {

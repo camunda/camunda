@@ -15,18 +15,25 @@
  */
 package io.camunda.spring.client.annotation;
 
+import static java.util.Optional.ofNullable;
+
+import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
+import io.camunda.spring.client.annotation.value.DocumentValue;
+import io.camunda.spring.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.annotation.value.VariableValue;
 import io.camunda.spring.client.bean.BeanInfo;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.spring.client.bean.ParameterInfo;
+import io.camunda.spring.client.jobhandling.DocumentContext;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
@@ -35,10 +42,24 @@ import org.slf4j.LoggerFactory;
 
 public class AnnotationUtil {
   private static final Logger LOG = LoggerFactory.getLogger(AnnotationUtil.class);
+  private static final Map<String, ParameterType> DOCUMENT_PARAMETER_TYPES =
+      Map.of(
+          List.class.getName() + "<" + DocumentReferenceResponse.class.getName() + ">",
+          ParameterType.LIST,
+          DocumentReferenceResponse.class.getName(),
+          ParameterType.SINGLE,
+          DocumentContext.class.getName(),
+          ParameterType.CONTEXT);
 
   public static boolean isVariable(final ParameterInfo parameterInfo) {
     return parameterInfo.getParameterInfo().isAnnotationPresent(Variable.class)
         || isVariableLegacy(parameterInfo);
+  }
+
+  public static boolean isDocument(final ParameterInfo parameterInfo) {
+    return parameterInfo.getParameterInfo().isAnnotationPresent(Document.class)
+        && (DOCUMENT_PARAMETER_TYPES.containsKey(
+            parameterInfo.getParameterInfo().getParameterizedType().getTypeName()));
   }
 
   public static List<ParameterInfo> getVariableParameters(final MethodInfo methodInfo) {
@@ -152,6 +173,29 @@ public class AnnotationUtil {
     return Optional.empty();
   }
 
+  public static Optional<DocumentValue> getDocumentValue(final ParameterInfo parameterInfo) {
+    if (isDocument(parameterInfo)) {
+      return Optional.of(
+          new DocumentValue(
+              getDocumentName(parameterInfo),
+              parameterInfo,
+              getDocumentOptional(parameterInfo),
+              getDocumentParameterType(parameterInfo)));
+    }
+    return Optional.empty();
+  }
+
+  private static ParameterType getDocumentParameterType(final ParameterInfo parameterInfo) {
+    return ofNullable(
+            DOCUMENT_PARAMETER_TYPES.get(
+                parameterInfo.getParameterInfo().getParameterizedType().getTypeName()))
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Unsupported parameter type for document: "
+                        + parameterInfo.getParameterInfo().getParameterizedType().getTypeName()));
+  }
+
   public static Optional<DeploymentValue> getDeploymentValue(final ClassInfo beanInfo) {
     if (isDeployment(beanInfo)) {
       final List<String> resources = new ArrayList<>();
@@ -219,6 +263,25 @@ public class AnnotationUtil {
     return param.getParameterName();
   }
 
+  private static String getDocumentName(final ParameterInfo param) {
+    if (param.getParameterInfo().isAnnotationPresent(Document.class)) {
+      final String nameFromAnnotation =
+          param.getParameterInfo().getAnnotation(Document.class).name();
+      if (StringUtils.isNotBlank(nameFromAnnotation)) {
+        LOG.trace("Extracting name {} from Document.name", nameFromAnnotation);
+        return nameFromAnnotation;
+      }
+      final String valueFromAnnotation =
+          param.getParameterInfo().getAnnotation(Document.class).value();
+      if (StringUtils.isNotBlank(valueFromAnnotation)) {
+        LOG.trace("Extracting name {} from Document.value", valueFromAnnotation);
+        return valueFromAnnotation;
+      }
+    }
+    LOG.trace("Extracting document name from parameter name");
+    return param.getParameterName();
+  }
+
   private static boolean getVariableOptional(final ParameterInfo param) {
     if (param.getParameterInfo().isAnnotationPresent(Variable.class)) {
       final boolean optional = param.getParameterInfo().getAnnotation(Variable.class).optional();
@@ -226,6 +289,16 @@ public class AnnotationUtil {
       return optional;
     }
     LOG.trace("No variable annotation found, defaulting to true");
+    return true;
+  }
+
+  private static boolean getDocumentOptional(final ParameterInfo param) {
+    if (param.getParameterInfo().isAnnotationPresent(Document.class)) {
+      final boolean optional = param.getParameterInfo().getAnnotation(Document.class).optional();
+      LOG.trace("Extracting optional flag from Document");
+      return optional;
+    }
+    LOG.trace("No document annotation found, defaulting to true");
     return true;
   }
 

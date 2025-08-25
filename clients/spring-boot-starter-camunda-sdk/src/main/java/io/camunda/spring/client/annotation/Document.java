@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.jobhandling.parameter;
+package io.camunda.spring.client.annotation;
 
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import org.springframework.core.annotation.AliasFor;
 
-public class CustomHeadersResolver implements ParameterResolver {
-  @Override
-  public Object resolve(final JobClient jobClient, final ActivatedJob job) {
-    return job.getCustomHeaders();
-  }
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Document {
+  @AliasFor("value")
+  String name() default "";
+
+  @AliasFor("name")
+  String value() default "";
+
+  boolean optional() default true;
 }
