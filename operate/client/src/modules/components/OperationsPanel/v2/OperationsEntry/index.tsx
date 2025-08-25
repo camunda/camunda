@@ -8,13 +8,7 @@
 
 import {formatDate} from 'modules/utils/date';
 import {useLoadingProgress} from './useLoadingProgress';
-import {
-  Container,
-  Details,
-  Title,
-  Header,
-  ProgressBar,
-} from 'modules/components/OperationsPanel/OperationsEntry/styled';
+import {Container, Details, Title, Header, ProgressBar} from './styled';
 import {OperationEntryStatus} from './OperationEntryStatus';
 import {Error, Tools, RetryFailed, MigrateAlt} from '@carbon/react/icons';
 import {Link} from 'modules/components/Link';
