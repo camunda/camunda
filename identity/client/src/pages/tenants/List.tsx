@@ -55,7 +55,7 @@ const List: FC = () => {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"tenant"}
-          docsLinkPath=""
+          docsLinkPath="/docs/next/self-managed/components/orchestration-cluster/identity/manage-tenants/"
           handleClick={addTenant}
         />
         {addTenantModal}
