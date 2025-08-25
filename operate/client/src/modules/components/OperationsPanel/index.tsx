@@ -30,7 +30,7 @@ const OperationsPanel: React.FC = observer(() => {
 
   const {data, isError, isLoading, isFetched, isFetching, fetchNextPage} =
     useBatchOperations({
-      sort: [{field: 'startDate', order: 'desc'}],
+      sort: [{field: 'endDate', order: 'desc'}],
     });
 
   const operations = data ?? [];
