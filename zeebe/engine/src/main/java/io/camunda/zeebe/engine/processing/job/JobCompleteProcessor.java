@@ -228,11 +228,6 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
     final var jobResult = jobRecord.getResult();
 
-    if (jobResult.isCompletionConditionFulfilled() && !jobResult.getActivateElements().isEmpty()) {
-      // reject
-      System.out.println("debug point");
-    }
-
     final AdHocSubProcessInstructionRecord instructionRecord =
         new AdHocSubProcessInstructionRecord()
             .setAdHocSubProcessInstanceKey(jobRecord.getElementInstanceKey())
