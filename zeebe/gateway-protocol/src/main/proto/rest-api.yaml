@@ -71,6 +71,20 @@ paths:
                 $ref: "#/components/schemas/TopologyResponse"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /status:
+    get:
+      tags:
+        - Cluster
+      operationId: getStatus
+      summary: Get cluster status
+      description: Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.
+      responses:
+        "204":
+          description: The cluster is healthy and has at least one partition with a healthy leader.
+        "503":
+          description: The cluster is unhealthy and does not have any partition with a healthy leader.
+
   /license:
     get:
       tags:
