@@ -28,7 +28,7 @@ public enum ConfigurationType {
     return switch (className) {
       case "ProcessMigrator" -> PROCESS;
       case "OperateMetricMigrator" -> METRICS;
-      case "TUMetricMigrator" -> TU_METRICS;
+      case "TasklistMetricMigrator" -> TU_METRICS;
       case "TaskMigrator" -> TASKS;
       default -> throw new IllegalArgumentException("Unknown class name: " + className);
     };
