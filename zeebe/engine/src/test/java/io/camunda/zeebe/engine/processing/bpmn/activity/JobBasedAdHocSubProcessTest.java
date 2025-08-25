@@ -21,9 +21,11 @@ import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
@@ -53,7 +55,12 @@ import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class JobBasedAdHocSubProcessTest {
+
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  @ClassRule
+  public static final EngineRule ENGINE_COMMAND_1 =
+      EngineRule.singlePartition().maxCommandsInBatch(1);
 
   private static final String PROCESS_ID = "process";
   private static final String AHSP_ELEMENT_ID = "ad-hoc";
@@ -893,6 +900,21 @@ public class JobBasedAdHocSubProcessTest {
     ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
   }
 
+  private void completeJob2(
+      final String jobType,
+      final boolean completionConditionFulfilled,
+      final boolean cancelRemainingInstances,
+      final JobResultActivateElement... activateElements) {
+    final var jobKey =
+        ENGINE_COMMAND_1.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
+    final var jobResult =
+        new JobResult()
+            .setActivateElements(List.of(activateElements))
+            .setCompletionConditionFulfilled(completionConditionFulfilled)
+            .setCancelRemainingInstances(cancelRemainingInstances);
+    ENGINE_COMMAND_1.job().withKey(jobKey).withResult(jobResult).complete();
+  }
+
   private JobResultActivateElement activateElement(final String elementId) {
     return new JobResultActivateElement().setElementId(elementId);
   }
@@ -925,5 +947,59 @@ public class JobBasedAdHocSubProcessTest {
               adHocSubProcess.task("C");
             });
     ENGINE.deployment().withXmlResource(process).deploy();
+  }
+
+  @Test
+  public void shouldRejectAdHocJobCompletionWhenAdHocSubProcessNotActive() {
+    // given
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            ahsp -> {
+              ahsp.serviceTask("task", t -> t.zeebeJobType(jobType));
+              ahsp.task("undefinedTask");
+            });
+    ENGINE_COMMAND_1.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        ENGINE_COMMAND_1.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var ahspInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .withElementId(AHSP_ELEMENT_ID)
+            .getFirst();
+
+    final var activatedJobs = ENGINE_COMMAND_1.jobs().withType(jobType).activate().getValue();
+    final long jobKey = activatedJobs.getJobKeys().getFirst();
+
+    final var jobResult =
+        new JobResult()
+            .setActivateElements(List.of(new JobResultActivateElement().setElementId("task")));
+    ENGINE_COMMAND_1.job().withKey(jobKey).withResult(jobResult).complete();
+
+    // when
+    ENGINE_COMMAND_1.writeRecords(
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.TERMINATE_ELEMENT, ahspInstance.getValue())
+            .key(ahspInstance.getKey()),
+        RecordToWrite.command().job(JobIntent.COMPLETE, new JobRecord()).key(jobKey));
+
+    // then
+    final var rejection =
+        ENGINE_COMMAND_1
+            .adHocSubProcessActivity()
+            .withAdHocSubProcessInstanceKey(ahspInstance.getKey())
+            .expectRejection()
+            .activate();
+
+    RecordAssert.assertThat(rejection)
+        .describedAs("Expected rejection because ad-hoc sub-process is not active.")
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active."
+                .formatted(ahspInstance.getKey()));
   }
 }
