@@ -97,7 +97,7 @@ public class DocumentParameterResolver implements ParameterResolver {
             String.format("Could not get document references for variable %s", variableName), e);
       }
       if (LOG.isDebugEnabled()) {
-        LOG.warn("Could not get document references for variable {}", variableName, e);
+        LOG.debug("Could not get document references for variable {}", variableName, e);
       } else {
         LOG.warn(
             "Could not get document references for variable {}, please enable debug log for more details",
