@@ -98,6 +98,9 @@ public final class ProcessInstanceFilterTransformer
       queries.add(term(PARTITION_ID, filter.partitionId()));
     }
 
+    // tags are store as a keyword list, so we need to match all provided tags
+    // expression: tags: [A, B] -> tags:A AND tags:B means
+    // the tags list must contain a tag that is equal to A and a tag that is equal to B
     if (filter.tags() != null && !filter.tags().isEmpty()) {
       queries.add(and(filter.tags().stream().map(tag -> term(TAGS, tag)).toList()));
     }
