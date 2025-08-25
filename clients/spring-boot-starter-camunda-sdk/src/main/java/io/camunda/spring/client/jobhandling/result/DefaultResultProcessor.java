@@ -23,7 +23,6 @@ import io.camunda.spring.client.jobhandling.result.DocumentResultProcessorFailur
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.slf4j.Logger;
@@ -99,13 +98,11 @@ public class DefaultResultProcessor implements ResultProcessor {
 
   private void handleDocumentsForResultMap(
       final Map<String, Object> result, final ActivatedJob activatedJob) {
-    final Map<String, Object> replacements = new HashMap<>();
     for (final Entry<String, Object> entry : result.entrySet()) {
       if (entry.getValue() instanceof DocumentContext) {
         handleDocumentFieldValue(entry.getKey(), entry.getValue(), activatedJob);
       }
     }
-    result.putAll(replacements);
   }
 
   private void handleDocumentFieldValue(
