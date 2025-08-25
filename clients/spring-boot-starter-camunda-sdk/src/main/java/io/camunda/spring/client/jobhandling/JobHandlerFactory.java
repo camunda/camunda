@@ -13,20 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.annotation.value;
+package io.camunda.spring.client.jobhandling;
 
-import io.camunda.spring.client.bean.BeanInfo;
+import io.camunda.client.api.worker.JobHandler;
+import java.util.Collections;
+import java.util.List;
 
-/**
- * Common type for all annotation values.
- *
- * @param <B> either {@link io.camunda.spring.client.bean.ClassInfo} or {@link
- *     io.camunda.spring.client.bean.MethodInfo}.
- */
-public interface CamundaAnnotationValue<B extends BeanInfo> {
+public interface JobHandlerFactory {
 
-  /**
-   * @return the context of this annotation.
-   */
-  B getBeanInfo();
+  JobHandler getJobHandler(JobHandlerFactoryContext context);
+
+  default String getGeneratedJobWorkerName() {
+    return null;
+  }
+
+  default String getGeneratedJobWorkerType() {
+    return null;
+  }
+
+  default boolean usesActivatedJob() {
+    return true;
+  }
+
+  default List<String> getUsedVariableNames() {
+    return Collections.emptyList();
+  }
 }

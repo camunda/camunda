@@ -15,13 +15,11 @@
  */
 package io.camunda.spring.client.configuration;
 
-import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.spring.client.annotation.processor.CamundaClientLifecycleAware;
 import io.camunda.spring.client.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.spring.client.annotation.processor.JobWorkerAnnotationProcessor;
 import io.camunda.spring.client.event.CamundaClientEventListener;
 import io.camunda.spring.client.jobhandling.JobWorkerManager;
-import java.util.List;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
@@ -44,8 +42,7 @@ public class AnnotationProcessorConfiguration {
 
   @Bean
   public JobWorkerAnnotationProcessor jobWorkerPostProcessor(
-      final JobWorkerManager jobWorkerManager,
-      final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers) {
-    return new JobWorkerAnnotationProcessor(jobWorkerManager, jobWorkerValueCustomizers);
+      final JobWorkerManager jobWorkerManager) {
+    return new JobWorkerAnnotationProcessor(jobWorkerManager);
   }
 }
