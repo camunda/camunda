@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>8.5.22</version>
+    <version>8.5.23</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -146,4 +146,8 @@
       </plugin>
     </plugins>
   </build>
+
+  <scm>
+    <tag>8.5.23</tag>
+  </scm>
 </project>
