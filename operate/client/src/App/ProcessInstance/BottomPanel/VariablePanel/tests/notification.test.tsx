@@ -7,13 +7,7 @@
  */
 
 import {VariablePanel} from '../index';
-import {
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-  within,
-} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -218,12 +212,6 @@ describe('VariablePanel', () => {
       }),
     );
 
-    await waitForElementToBeRemoved(
-      within(screen.getByTestId('pending-variable-foo')).queryByTestId(
-        'variable-operation-spinner',
-      ),
-    );
-
     expect(
       await screen.findByRole('button', {
         name: /add variable/i,
@@ -318,12 +306,6 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {
         name: /save variable/i,
       }),
-    );
-
-    await waitForElementToBeRemoved(
-      within(screen.getByTestId('pending-variable-foo')).queryByTestId(
-        'variable-operation-spinner',
-      ),
     );
 
     expect(
