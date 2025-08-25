@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.schema;
 
-import io.camunda.tasklist.exceptions.MigrationException;
-import io.camunda.tasklist.property.MigrationProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
@@ -38,10 +36,8 @@ public class SchemaStartup {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private MigrationProperties migrationProperties;
-
   @PostConstruct
-  public void initializeSchema() throws MigrationException, IOException {
+  public void initializeSchema() throws IOException {
     try {
       LOGGER.info("SchemaStartup started.");
       LOGGER.info("SchemaStartup: validate index versions.");
