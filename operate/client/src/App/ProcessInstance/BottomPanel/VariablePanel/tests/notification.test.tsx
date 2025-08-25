@@ -21,7 +21,6 @@ import {
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
-// import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';

@@ -47,7 +47,10 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
         const {name, value} = values;
 
         try {
-          await mutateAsyncVariables({name, value});
+          await mutateAsyncVariables({
+            name,
+            value: JSON.stringify(JSON.parse(value)),
+          });
 
           notificationsStore.displayNotification({
             kind: 'success',
