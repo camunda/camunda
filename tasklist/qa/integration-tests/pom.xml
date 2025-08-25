@@ -416,6 +416,7 @@
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
+      <version>${version.lucene}</version>
       <scope>test</scope>
     </dependency>
 
