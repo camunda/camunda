@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 public abstract class OpenSearchUtil {
 
   public static final String ZEEBE_INDEX_DELIMITER = "_";
+  public static final int AGGREGATION_TERMS_SIZE = 20000;
   public static final String SCROLL_KEEP_ALIVE_MS = "60000ms";
   public static final String INTERNAL_SCROLL_KEEP_ALIVE_MS =
       "30000ms"; // this scroll timeout value is used for reindex and delete q

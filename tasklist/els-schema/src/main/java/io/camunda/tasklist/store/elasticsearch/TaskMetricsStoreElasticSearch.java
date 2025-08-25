@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
+import static io.camunda.tasklist.util.ElasticsearchUtil.AGGREGATION_TERMS_SIZE;
 import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.ASSIGNEE_HASH;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.EVENT_TIME;
@@ -89,7 +90,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
     }
 
     final TermsAggregationBuilder aggregation =
-        AggregationBuilders.terms(ASSIGNEE).field(ASSIGNEE_HASH).size(Integer.MAX_VALUE);
+        AggregationBuilders.terms(ASSIGNEE).field(ASSIGNEE_HASH).size(AGGREGATION_TERMS_SIZE);
 
     final SearchSourceBuilder source =
         SearchSourceBuilder.searchSource().query(boolQuery).aggregation(aggregation);

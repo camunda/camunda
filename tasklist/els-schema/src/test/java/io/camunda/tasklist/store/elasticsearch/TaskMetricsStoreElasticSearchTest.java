@@ -9,6 +9,7 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.ASSIGNEE;
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.TU_ID_PATTERN;
+import static io.camunda.tasklist.util.ElasticsearchUtil.AGGREGATION_TERMS_SIZE;
 import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.ASSIGNEE_HASH;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.EVENT_TIME;
@@ -161,7 +162,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final BoolQueryBuilder rangeQuery =
         boolQuery().must(QueryBuilders.rangeQuery(EVENT_TIME).gte(oneHourBefore).lte(now));
     final TermsAggregationBuilder aggregation =
-        AggregationBuilders.terms(ASSIGNEE).field(ASSIGNEE_HASH).size(Integer.MAX_VALUE);
+        AggregationBuilders.terms(ASSIGNEE).field(ASSIGNEE_HASH).size(AGGREGATION_TERMS_SIZE);
 
     final SearchSourceBuilder source =
         SearchSourceBuilder.searchSource().query(rangeQuery).aggregation(aggregation);

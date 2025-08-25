@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
+import static io.camunda.tasklist.util.OpenSearchUtil.AGGREGATION_TERMS_SIZE;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.ASSIGNEE_HASH;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.EVENT_TIME;
 
@@ -108,7 +109,8 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
             .index(index.getFullQualifiedName())
             .query(query)
             .aggregations(
-                ASSIGNEE, agg -> agg.terms(ta -> ta.field(ASSIGNEE_HASH).size(Integer.MAX_VALUE)))
+                ASSIGNEE,
+                agg -> agg.terms(ta -> ta.field(ASSIGNEE_HASH).size(AGGREGATION_TERMS_SIZE)))
             .build();
 
     try {
