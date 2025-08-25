@@ -8,6 +8,8 @@
 package io.camunda.operate.elasticsearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
@@ -18,6 +20,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -175,8 +178,13 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @BeforeEach
   public void setup() {
+    when(permissionsService.getBatchOperationsWithPermission(PermissionType.READ))
+        .thenReturn(ResourcesAllowed.wildcard());
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
+        .thenReturn(ResourcesAllowed.wildcard());
+    when(permissionsService.hasPermissionForProcess(
+            any(), eq(PermissionType.READ_PROCESS_INSTANCE)))
+        .thenReturn(true);
   }
 
   @Test

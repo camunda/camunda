@@ -165,6 +165,10 @@ public class PermissionsService {
         AuthorizationResourceType.DECISION_DEFINITION, permissionType);
   }
 
+  public ResourcesAllowed getBatchOperationsWithPermission(final PermissionType permissionType) {
+    return getResourcesWithPermission(AuthorizationResourceType.BATCH, permissionType);
+  }
+
   /**
    * getResourcesWithPermission
    *

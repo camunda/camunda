@@ -17,6 +17,7 @@ import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -107,6 +108,9 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testGetProcessInstanceWithOperationsByKeyWithCorrectKey() {
+    // Given
+    when(permissionsService.getBatchOperationsWithPermission(PermissionType.READ))
+        .thenReturn(ResourcesAllowed.wildcard());
     // When
     final ListViewProcessInstanceDto processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(
@@ -115,6 +119,20 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
         .isEqualTo(String.valueOf(processInstanceData.getProcessInstanceKey()));
     assertThat(processInstance.getOperations().size()).isEqualTo(1);
     assertThat(processInstance.getOperations().get(0).getId()).isEqualTo(operationData.getId());
+  }
+
+  @Test
+  public void testGetProcessInstanceWithOperationsWithNoOperationPermission() {
+    // Given
+    when(permissionsService.getBatchOperationsWithPermission(PermissionType.READ))
+        .thenReturn(ResourcesAllowed.withIds(Set.of()));
+    // When
+    final ListViewProcessInstanceDto processInstance =
+        processInstanceReader.getProcessInstanceWithOperationsByKey(
+            processInstanceData.getProcessInstanceKey());
+    assertThat(processInstance.getId())
+        .isEqualTo(String.valueOf(processInstanceData.getProcessInstanceKey()));
+    assertThat(processInstance.getOperations()).isEmpty();
   }
 
   @Test

@@ -500,12 +500,9 @@ public abstract class TestUtil {
   }
 
   public static OperationEntity createOperationEntity(
-      final Long processInstanceKey,
-      final Long incidentKey,
-      final String varName,
-      final String username) {
+      final Long processInstanceKey, final Long incidentKey, final String varName) {
     return createOperationEntity(
-        processInstanceKey, incidentKey, varName, OperationState.SCHEDULED, username, false);
+        processInstanceKey, incidentKey, varName, OperationState.SCHEDULED, null, false);
   }
 
   public static OperationEntity createOperationEntity(
@@ -572,12 +569,11 @@ public abstract class TestUtil {
   }
 
   public static BatchOperationEntity createBatchOperationEntity(
-      final OffsetDateTime startDate, final OffsetDateTime endDate, final String username) {
+      final OffsetDateTime startDate, final OffsetDateTime endDate) {
     return new BatchOperationEntity()
         .withGeneratedId()
         .setStartDate(startDate)
         .setEndDate(endDate)
-        .setUsername(username)
         .setType(OperationType.CANCEL_PROCESS_INSTANCE);
   }
 
