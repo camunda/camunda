@@ -134,10 +134,12 @@ function prepareFirstRunData(currentData) {
 }
 
 function getTestKey(test) {
-  const methodName = test.methodName.replace(/\[([^\]]+)]\([^)]+\)/g, '$1');
-  return test.fullName
-      ? `${test.fullName}`
-      : `${test.packageName}.${test.className}.${methodName}`;
+  if (test.fullName) {
+    return `${test.fullName}`;
+  }
+
+  const methodName = test.methodName ? test.methodName.replace(/\[([^\]]+)]\([^)]+\)/g, '$1') : '';
+  return `${test.packageName}.${test.className}.${methodName}`;
 }
 
 module.exports = {

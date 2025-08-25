@@ -10,13 +10,13 @@ add_job_data() {
   local job_name="$1"
   local flaky_tests="$2"
   flaky_tests=$(echo "$flaky_tests" | xargs)
-    if [[ -n "$flaky_tests" ]]; then
-      # Escape double quotes for JSON
-      # Replace newlines with literal \n for JSON
-      escaped_flaky_tests=$(echo "$flaky_tests" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-      echo "Adding job: $job_name with flaky test: $flaky_tests"
-      flaky_data=$(echo "$flaky_data" | jq --arg job "$job_name" --arg tests "$escaped_flaky_tests" '. += [{"job": $job, "flaky_tests": $tests}]')
-    fi
+  if [[ -n "$flaky_tests" ]]; then
+    echo "Adding job: $job_name with flaky test: $flaky_tests"
+
+    # Append to flaky_data JSON array safely using jq
+    flaky_data=$(echo "${flaky_data:-[]}" | jq --arg job "$job_name" --arg tests "$flaky_tests" \
+      '. += [{"job": $job, "flaky_tests": $tests}]')
+  fi
 }
 
 # Helper function to add job data from single jobs
