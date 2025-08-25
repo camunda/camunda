@@ -11,12 +11,12 @@ import React, {useEffect, useRef} from 'react';
 import {CollapsablePanel as BaseCollapsablePanel} from 'modules/components/CollapsablePanel';
 import {observer} from 'mobx-react';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {OperationsList, EmptyMessageContainer} from '../styled';
+import {OperationsList, EmptyMessageContainer} from './styled';
 import {OperationsEntry} from './OperationsEntry';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
-import {EMPTY_MESSAGE} from '../constants';
+import {EMPTY_MESSAGE} from './constants';
 import {InlineNotification} from '@carbon/react';
-import {Skeleton} from '../Skeleton';
+import {Skeleton} from './Skeleton';
 import {useBatchOperations} from 'modules/queries/batch-operations/useBatchOperations';
 
 const OperationsPanel: React.FC = observer(() => {

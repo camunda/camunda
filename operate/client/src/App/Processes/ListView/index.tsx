@@ -24,7 +24,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {reaction} from 'mobx';
 import {tracking} from 'modules/tracking';
-import {OperationsPanel} from 'modules/components/OperationsPanel/v2';
+import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
 

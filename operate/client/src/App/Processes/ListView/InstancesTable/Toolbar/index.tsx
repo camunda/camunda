@@ -7,14 +7,14 @@
  */
 
 import {TableToolbar, Modal, TableBatchAction} from '@carbon/react';
-import {TableBatchActions} from '../styled';
+import {TableBatchActions} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useState} from 'react';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {MigrateAction} from '../MigrateAction/v2';
-import {MoveAction} from '../MoveAction';
+import {MigrateAction} from './MigrateAction/v2';
+import {MoveAction} from './MoveAction';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {observer} from 'mobx-react';
 import {useCancelProcessInstancesBatchOperation} from 'modules/mutations/processes/useCancelProcessInstancesBatchOperation';
