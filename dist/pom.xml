@@ -178,6 +178,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>task-migration</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-db-rdbms</artifactId>
     </dependency>
@@ -857,6 +862,10 @@
               <id>usage-metric-migration</id>
               <mainClass>io.camunda.application.StandaloneUsageMetricMigration</mainClass>
             </program>
+            <program>
+              <id>task-migration</id>
+              <mainClass>io.camunda.application.StandaloneTaskMigration</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -941,6 +950,7 @@
             <dep>io.camunda.migration:identity-migration</dep>
             <dep>io.camunda.migration:process-migration</dep>
             <dep>io.camunda.migration:usage-metric-migration</dep>
+            <dep>io.camunda.migration:task-migration</dep>
             <dep>io.camunda.optimize:optimize-backend</dep>
             <dep>io.camunda.optimize:optimize-webjar</dep>
           </ignoredUnusedDeclaredDependencies>
