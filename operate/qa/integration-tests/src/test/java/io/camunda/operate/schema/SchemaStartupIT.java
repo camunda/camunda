@@ -42,6 +42,8 @@ import io.camunda.operate.store.opensearch.OpensearchTaskStore;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
@@ -178,16 +180,23 @@ public class SchemaStartupIT extends AbstractSchemaIT {
         .isEqualTo(String.valueOf(updatedReplicas));
   }
 
-  @Test
-  public void shouldNotUpdateIndexSettingsWhenUpdateSchemaSettingsIsDisabled()
-      throws MigrationException {
+  /**
+   * @param useDefaultConfiguration when true, relies on default configuration where
+   *     updateSchemaSettings is false; when false, explicitly sets updateSchemaSettings to false
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldNotUpdateIndexSettingsWhenUpdateSchemaSettingsIsDisabled(
+      final boolean useDefaultConfiguration) throws MigrationException {
     // given
     final int initialReplicas = 0;
     final int attemptedUpdatedReplicas = 2;
 
     // Set initial replica count and disable schema settings update
     setNumberOfReplicas(initialReplicas);
-    setUpdateSchemaSettings(false);
+    if (!useDefaultConfiguration) {
+      setUpdateSchemaSettings(false);
+    }
     migrationProperties.setMigrationEnabled(false);
 
     // Create initial schema
