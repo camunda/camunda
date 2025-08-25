@@ -44,6 +44,6 @@ public class UsageMetricsService extends InternalAPIErrorController {
     final Set<Long> assignees =
         taskMetricsStore.retrieveDistinctAssigneesBetweenDates(
             query.getStartTime(), query.getEndTime(), query.getTenantId());
-    return new UsageMetricDTO(assignees);
+    return new UsageMetricDTO(assignees.size());
   }
 }

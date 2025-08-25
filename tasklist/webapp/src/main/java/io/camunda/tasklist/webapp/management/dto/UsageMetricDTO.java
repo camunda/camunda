@@ -7,34 +7,19 @@
  */
 package io.camunda.tasklist.webapp.management.dto;
 
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 public class UsageMetricDTO {
-  /** Uniquely assigned users */
-  private Set<Long> assignees;
 
   /** Total amount retrieved in the current search */
   private int total;
 
   public UsageMetricDTO() {
-    this.assignees = new HashSet<>();
     this.total = 0;
   }
 
-  public UsageMetricDTO(Set<Long> assignees) {
-    this.assignees = Objects.requireNonNullElseGet(assignees, HashSet::new);
-    this.total = this.assignees.size();
-  }
-
-  public Set<Long> getAssignees() {
-    return assignees;
-  }
-
-  public void setAssignees(Set<Long> assignees) {
-    this.assignees = Objects.requireNonNullElseGet(assignees, HashSet::new);
-    this.total = this.assignees.size();
+  public UsageMetricDTO(int size) {
+    this.total = size;
   }
 
   public int getTotal() {
@@ -54,16 +39,16 @@ public class UsageMetricDTO {
       return false;
     }
     final UsageMetricDTO that = (UsageMetricDTO) o;
-    return total == that.total && Objects.equals(assignees, that.assignees);
+    return total == that.total;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(assignees, total);
+    return Objects.hash(total);
   }
 
   @Override
   public String toString() {
-    return "UsageMetricDTO{" + "assignees=" + assignees + ", total=" + total + '}';
+    return "UsageMetricDTO{" + "total=" + total + '}';
   }
 }
