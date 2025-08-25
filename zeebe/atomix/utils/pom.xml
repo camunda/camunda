@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-atomix-parent</artifactId>
-    <version>8.5.23</version>
+    <version>8.5.24-SNAPSHOT</version>
   </parent>
 
   <artifactId>zeebe-atomix-utils</artifactId>
