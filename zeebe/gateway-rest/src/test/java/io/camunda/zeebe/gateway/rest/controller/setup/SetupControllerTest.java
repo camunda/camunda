@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.RoleServices;
@@ -45,8 +44,7 @@ import org.springframework.test.json.JsonCompareMode;
 class SetupControllerTest extends RestControllerTest {
   private static final String BASE_PATH = "/v2/setup";
   private static final String USER_PATH = BASE_PATH + "/user";
-  private static final Pattern ID_PATTERN =
-      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @MockitoBean private UserServices userServices;
   @MockitoBean private RoleServices roleServices;
@@ -64,7 +62,7 @@ class SetupControllerTest extends RestControllerTest {
     when(roleServices.withAuthentication(anonymousAuthentication)).thenReturn(roleServices);
     when(securityConfiguration.getAuthentication().getMethod())
         .thenReturn(AuthenticationMethod.BASIC);
-    when(securityConfiguration.getInitialization().getIdentifierPattern()).thenReturn(ID_PATTERN);
+    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @ParameterizedTest
@@ -338,7 +336,7 @@ class SetupControllerTest extends RestControllerTest {
               "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-            .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, USER_PATH));
+            .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, USER_PATH));
     verifyNoInteractions(userServices);
   }
 

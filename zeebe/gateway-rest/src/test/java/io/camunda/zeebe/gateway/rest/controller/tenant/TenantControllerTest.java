@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -57,8 +57,7 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 public class TenantControllerTest {
 
   private static final String TENANT_BASE_URL = "/v2/tenants";
-  private static final Pattern ID_PATTERN =
-      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @Nested
   @WebMvcTest(TenantController.class)
@@ -69,7 +68,7 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private InitializationConfiguration initializationConfiguration;
+    @MockitoBean private SecurityConfiguration securityConfiguration;
 
     @BeforeEach
     void setup() {
@@ -77,7 +76,7 @@ public class TenantControllerTest {
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
       when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(tenantServices);
-      when(initializationConfiguration.getIdentifierPattern()).thenReturn(ID_PATTERN);
+      when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
     }
 
     @ParameterizedTest
@@ -224,7 +223,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, TENANT_BASE_URL),
+                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, TENANT_BASE_URL),
               JsonCompareMode.STRICT);
 
       // then
@@ -478,7 +477,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, uri),
+                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -515,7 +514,7 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, InitializationConfiguration.DEFAULT_ID_REGEX, uri),
+                  .formatted(entityIdName, SecurityConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -577,7 +576,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, uri),
+                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -615,7 +614,7 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, InitializationConfiguration.DEFAULT_ID_REGEX, uri),
+                  .formatted(entityIdName, SecurityConfiguration.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -663,7 +662,7 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private InitializationConfiguration initializationConfiguration;
+    @MockitoBean private SecurityConfiguration securityConfiguration;
 
     @ParameterizedTest
     @MethodSource("tenantControllerRequests")

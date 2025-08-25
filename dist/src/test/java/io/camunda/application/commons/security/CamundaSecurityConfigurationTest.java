@@ -56,7 +56,7 @@ public class CamundaSecurityConfigurationTest {
 
   @Test
   public void shouldFailToStartWhenIdPatternIsInvalid() {
-    final var idPatternProperty = "camunda.security.initialization.identifierRegex";
+    final var idPatternProperty = "camunda.security.id-validation-pattern";
     final var idPatternValue = "[|";
     System.setProperty(idPatternProperty, idPatternValue);
 
@@ -80,7 +80,7 @@ public class CamundaSecurityConfigurationTest {
 
   @Test
   public void shouldFailToStartWhenIdPatternAllowsWildcardCharacter() {
-    final var idPatternProperty = "camunda.security.initialization.identifierRegex";
+    final var idPatternProperty = "camunda.security.id-validation-pattern";
     final var idPatternValue = "^[a-zA-Z0-9_@.+*-]+$";
     System.setProperty(idPatternProperty, idPatternValue);
 

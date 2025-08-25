@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
@@ -37,12 +37,11 @@ import org.springframework.test.json.JsonCompareMode;
 public class MappingRuleControllerTest extends RestControllerTest {
 
   private static final String MAPPING_RULES_PATH = "/v2/mapping-rules";
-  private static final Pattern ID_PATTERN =
-      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean private InitializationConfiguration initializationConfiguration;
+  @MockitoBean private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   void setup() {
@@ -50,7 +49,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(mappingRuleServices);
-    when(initializationConfiguration.getIdentifierPattern()).thenReturn(ID_PATTERN);
+    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @ParameterizedTest
@@ -276,7 +275,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
               "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-            .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, MAPPING_RULES_PATH));
+            .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, MAPPING_RULES_PATH));
     verifyNoInteractions(mappingRuleServices);
   }
 

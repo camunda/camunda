@@ -74,7 +74,7 @@ public class SetupController {
     }
 
     return RequestMapper.toUserRequest(
-            request, securityConfiguration.getInitialization().getIdentifierPattern())
+            request, securityConfiguration.getCompiledIdValidationPattern())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             dto ->

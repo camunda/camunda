@@ -21,7 +21,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
@@ -61,8 +61,7 @@ public class UserQueryControllerTest extends RestControllerTest {
               }
           }""";
   private static final String USERS_SEARCH_URL = "/v2/users/search";
-  private static final Pattern ID_PATTERN =
-      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   private static final SearchQueryResult<UserEntity> SEARCH_QUERY_RESULT =
       new Builder<UserEntity>()
@@ -76,7 +75,7 @@ public class UserQueryControllerTest extends RestControllerTest {
   @MockitoBean RoleServices roleServices;
   @MockitoBean PasswordEncoder passwordEncoder;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean private InitializationConfiguration initializationConfiguration;
+  @MockitoBean private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   void setup() {
@@ -84,7 +83,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(userServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userServices);
-    when(initializationConfiguration.getIdentifierPattern()).thenReturn(ID_PATTERN);
+    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test

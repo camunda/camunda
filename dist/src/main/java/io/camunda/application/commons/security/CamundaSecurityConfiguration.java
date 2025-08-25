@@ -67,19 +67,18 @@ public class CamundaSecurityConfiguration {
                   true));
     }
 
-    final var initializationCfg = camundaSecurityProperties.getInitialization();
-    final var idRegex = initializationCfg.getIdentifierRegex();
+    final var idRegex = camundaSecurityProperties.getIdValidationPattern();
     try {
-      final var idPattern = initializationCfg.getIdentifierPattern();
+      final var idPattern = camundaSecurityProperties.getCompiledIdValidationPattern();
       if (idPattern != null && idPattern.matcher(AuthorizationScope.WILDCARD_CHAR).matches()) {
         throw new IllegalStateException(
             "The configured identifier pattern (%s=%s) allows the asterisk ('*') which is a reserved character. Please use a different pattern."
-                .formatted("camunda.security.initialization.identifierRegex", idRegex));
+                .formatted("camunda.security.id-validation-pattern", idRegex));
       }
     } catch (final PatternSyntaxException regEx) {
       throw new IllegalStateException(
           "The configured identifier pattern (%s=%s) is invalid. Please use a different pattern."
-              .formatted("camunda.security.initialization.identifierRegex", idRegex));
+              .formatted("camunda.security.id-validation-pattern", idRegex));
     }
   }
 
