@@ -49,7 +49,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public static final String DEFAULT_MAPPING_RULE_ID = "default";
   public static final String DEFAULT_MAPPING_RULE_CLAIM_NAME = "client_id";
   public static final String DEFAULT_MAPPING_RULE_CLAIM_VALUE = "default";
-  private static final String RECORDING_EXPORTER_ID = "recordingExporter";
+  public static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
   private final CamundaSecurityProperties securityConfig;
 

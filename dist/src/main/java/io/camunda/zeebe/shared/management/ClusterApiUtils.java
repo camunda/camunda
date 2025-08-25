@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
@@ -211,6 +212,12 @@ final class ClusterApiUtils {
               .brokerId(Integer.parseInt(enableExporterOperation.memberId().id()))
               .partitionId(enableExporterOperation.partitionId())
               .exporterId(enableExporterOperation.exporterId());
+      case final PartitionDeleteExporterOperation deleteExporterOperation ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_DELETE_EXPORTER)
+              .brokerId(Integer.parseInt(deleteExporterOperation.memberId().id()))
+              .partitionId(deleteExporterOperation.partitionId())
+              .exporterId(deleteExporterOperation.exporterId());
       case final PartitionBootstrapOperation bootstrapOperation ->
           new Operation()
               .operation(OperationEnum.PARTITION_BOOTSTRAP)
@@ -454,6 +461,12 @@ final class ClusterApiUtils {
                   .brokerId(Integer.parseInt(enableExporterOperation.memberId().id()))
                   .partitionId(enableExporterOperation.partitionId())
                   .exporterId(enableExporterOperation.exporterId());
+          case final PartitionDeleteExporterOperation deleteExporterOperation ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_DELETE_EXPORTER)
+                  .brokerId(Integer.parseInt(deleteExporterOperation.memberId().id()))
+                  .partitionId(deleteExporterOperation.partitionId())
+                  .exporterId(deleteExporterOperation.exporterId());
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);
