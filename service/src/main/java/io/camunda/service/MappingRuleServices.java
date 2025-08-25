@@ -37,8 +37,9 @@ public class MappingRuleServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MappingRuleSearchClient mappingRuleSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.mappingRuleSearchClient = mappingRuleSearchClient;
   }
 
@@ -56,7 +57,11 @@ public class MappingRuleServices
   @Override
   public MappingRuleServices withAuthentication(final CamundaAuthentication authentication) {
     return new MappingRuleServices(
-        brokerClient, securityContextProvider, mappingRuleSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        mappingRuleSearchClient,
+        authentication,
+        executorProvider);
   }
 
   public CompletableFuture<MappingRuleRecord> createMappingRule(final MappingRuleDTO request) {

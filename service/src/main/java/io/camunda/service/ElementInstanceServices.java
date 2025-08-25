@@ -39,8 +39,9 @@ public final class ElementInstanceServices
       final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final ProcessCache processCache,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
     this.processCache = processCache;
   }
@@ -52,7 +53,8 @@ public final class ElementInstanceServices
         securityContextProvider,
         flowNodeInstanceSearchClient,
         processCache,
-        authentication);
+        authentication,
+        executorProvider);
   }
 
   @Override
