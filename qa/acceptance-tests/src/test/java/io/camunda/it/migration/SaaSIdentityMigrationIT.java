@@ -174,6 +174,7 @@ public class SaaSIdentityMigrationIT {
 
   @AfterAll
   static void cleanup() {
+    BROKER.stop();
     IDENTITY.stop();
   }
 
