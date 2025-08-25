@@ -36,15 +36,6 @@ public class DecisionRestService extends InternalAPIErrorController {
   @Autowired private PermissionsService permissionsService;
   @Autowired private BatchOperationWriter batchOperationWriter;
 
-  @Operation(summary = "Get decision DMN XML")
-  @GetMapping(path = "/{id}/xml")
-  public String getDecisionDiagram(
-      @ValidLongId @PathVariable("id") final String decisionDefinitionId) {
-    final Long decisionDefinitionKey = Long.valueOf(decisionDefinitionId);
-    checkIdentityReadPermission(decisionDefinitionKey);
-    return decisionReader.getDiagram(decisionDefinitionKey);
-  }
-
   @Operation(summary = "List decisions grouped by decisionId")
   @GetMapping(path = "/grouped")
   @Deprecated

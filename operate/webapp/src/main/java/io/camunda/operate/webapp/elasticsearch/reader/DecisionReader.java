@@ -8,8 +8,6 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_REQUIREMENTS_KEY;
-import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.XML;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
@@ -64,59 +62,6 @@ public class DecisionReader extends AbstractReader
   private DecisionDefinitionEntity fromSearchHit(final String processString) {
     return ElasticsearchUtil.fromSearchHit(
         processString, objectMapper, DecisionDefinitionEntity.class);
-  }
-
-  /**
-   * Gets the DMN diagram XML as a string.
-   *
-   * @param decisionDefinitionKey
-   * @return
-   */
-  @Override
-  public String getDiagram(final Long decisionDefinitionKey) {
-    // get decisionRequirementsId
-    SearchRequest searchRequest =
-        new SearchRequest(decisionIndex.getAlias())
-            .source(
-                new SearchSourceBuilder()
-                    .query(idsQuery().addIds(decisionDefinitionKey.toString())));
-    try {
-      SearchResponse response = tenantAwareClient.search(searchRequest);
-      if (response.getHits().getTotalHits().value == 0) {
-        throw new NotFoundException("No decision definition found for id " + decisionDefinitionKey);
-      }
-      final Object key =
-          response.getHits().getHits()[0].getSourceAsMap().get(DECISION_REQUIREMENTS_KEY);
-      // key is either Integer or Long depending on value
-      final Long decisionRequirementsId = Long.valueOf(String.valueOf(key));
-
-      // get XML
-      searchRequest =
-          new SearchRequest(decisionRequirementsIndex.getAlias())
-              .source(
-                  new SearchSourceBuilder()
-                      .query(idsQuery().addIds(String.valueOf(decisionRequirementsId)))
-                      .fetchSource(XML, null));
-
-      response = tenantAwareClient.search(searchRequest);
-
-      if (response.getHits().getTotalHits().value == 1) {
-        final Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
-        return (String) result.get(XML);
-      } else if (response.getHits().getTotalHits().value > 1) {
-        throw new NotFoundException(
-            String.format("Could not find unique DRD with id '%s'.", decisionRequirementsId));
-      } else {
-        throw new NotFoundException(
-            String.format("Could not find DRD with id '%s'.", decisionRequirementsId));
-      }
-    } catch (final IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining the decision diagram: %s", e.getMessage());
-      LOGGER.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
   }
 
   /**
