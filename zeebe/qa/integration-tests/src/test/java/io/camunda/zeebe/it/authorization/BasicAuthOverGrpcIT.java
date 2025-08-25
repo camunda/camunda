@@ -52,7 +52,11 @@ public class BasicAuthOverGrpcIT {
 
   @BeforeEach
   void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
+    broker
+        .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
+        .withProperty(
+            "camunda.data.secondary-storage.elasticsearch.url",
+            "http://" + CONTAINER.getHttpHostAddress());
     broker.start();
 
     final var defaultUsername = "demo";
