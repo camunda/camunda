@@ -96,20 +96,6 @@ public class AuthInfo extends UnpackedObject {
     return getClaims();
   }
 
-  @Override
-  public String toString() {
-    return "AuthInfo{"
-        + "format="
-        + getFormat()
-        + ", "
-        + "authData="
-        + (authDataProp.isSet() ? "***" : "<unset|default>")
-        + ", "
-        + "claims="
-        + (claimsProp.isSet() ? "***" : "<unset|default>")
-        + '}';
-  }
-
   public enum AuthDataFormat {
     UNKNOWN((short) 0),
     JWT((short) 1);

@@ -51,35 +51,22 @@ final class AuthInfoTest {
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/35177")
-  void shouldSanitizeClaimsAndTokenOnToString() {
-    // given
-    final AuthInfo authInfo = new AuthInfo();
-    final Map<String, Object> authInfoMap = Map.of("key", "mySecretClaim");
-    authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
-    authInfo.setClaims(authInfoMap);
-
-    // when
-    final var authInfoString = authInfo.toString();
-
-    // then
-    assertThat(authInfoString)
-        .isEqualTo("AuthInfo{format=JWT, authData=<unset|default>, claims=***}");
-  }
-
-  @RegressionTest("https://github.com/camunda/camunda/issues/35177")
-  void shouldSanitizeTokenOnToString() {
+  void shouldSanitizeOnToString() {
     // given
     final AuthInfo authInfo = new AuthInfo();
     final String token = "token";
     authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
     authInfo.setAuthData(token);
+    authInfo.setClaims(Map.of("key", "value"));
 
     // when
     final var authInfoString = authInfo.toString();
 
     // then
     assertThat(authInfoString)
-        .isEqualTo("AuthInfo{format=JWT, authData=***, claims=<unset|default>}");
+        .isEqualTo(
+            """
+        {"format":"JWT","authData":"***","claims":"***"}""");
   }
 
   private void encodeDecode(final AuthInfo authInfo) {
