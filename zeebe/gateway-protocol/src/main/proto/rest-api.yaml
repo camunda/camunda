@@ -2591,7 +2591,7 @@ paths:
         - name: decisionEvaluationInstanceKey
           in: path
           required: true
-          description: The assigned key of the decision instance, which acts as a unique identifier for this decision instance.
+          description: The assigned key of the evaluated decision instance, which acts as a unique identifier for this decision instance.
           schema:
             type: string
       responses:
@@ -2610,7 +2610,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           description: >
-            The decision instance with the given ID was not found.
+            The decision instance with the given key was not found.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -9716,7 +9716,7 @@ components:
       properties:
         decisionEvaluationInstanceKey:
           type: string
-          description: The key of the decision instance.
+          description: The key of the evaluated decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationDate:
