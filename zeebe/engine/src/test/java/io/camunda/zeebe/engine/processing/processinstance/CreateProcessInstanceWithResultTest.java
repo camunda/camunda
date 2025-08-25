@@ -66,6 +66,7 @@ public final class CreateProcessInstanceWithResultTest {
             .withResult()
             .withRequestId(1L)
             .withRequestStreamId(1)
+            .withTags(Set.of("tag1", "tag2"))
             .create();
 
     // then
@@ -75,6 +76,7 @@ public final class CreateProcessInstanceWithResultTest {
     assertThat(response.getVariables()).containsExactly(Map.entry("x", "foo"));
     assertThat(response.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(response.getBpmnProcessId()).isEqualTo("PROCESS");
+    assertThat(response.getTags()).isEqualTo(Set.of("tag1", "tag2"));
   }
 
   @Test

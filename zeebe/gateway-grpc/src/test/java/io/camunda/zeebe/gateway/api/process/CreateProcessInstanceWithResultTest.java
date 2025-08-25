@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.HashSet;
 import java.util.List;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -35,7 +36,8 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
         CreateProcessInstanceWithResultRequest.newBuilder()
             .setRequest(
                 CreateProcessInstanceRequest.newBuilder()
-                    .setProcessDefinitionKey(stub.getProcessDefinitionKey()))
+                    .setProcessDefinitionKey(stub.getProcessDefinitionKey())
+                    .addAllTags(stub.getTags()))
             .addAllFetchVariables(List.of("x"))
             .build();
 
@@ -55,6 +57,7 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
     assertThat(brokerRequestValue.fetchVariables().iterator().next().getValue())
         .isEqualTo(wrapString("x"));
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(brokerRequestValue.getTags()).isEqualTo(stub.getTags());
   }
 
   @Test
@@ -67,7 +70,8 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
         CreateProcessInstanceWithResultRequest.newBuilder()
             .setRequest(
                 CreateProcessInstanceRequest.newBuilder()
-                    .setProcessDefinitionKey(stub.getProcessDefinitionKey()))
+                    .setProcessDefinitionKey(stub.getProcessDefinitionKey())
+                    .addAllTags(stub.getTags()))
             .build();
 
     // when
@@ -80,6 +84,7 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
     assertThat(response.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
     assertThat(response.getProcessInstanceKey()).isEqualTo(stub.getProcessInstanceKey());
     assertThat(response.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(new HashSet(response.getTagsList())).isEqualTo(stub.getTags());
   }
 
   @Test

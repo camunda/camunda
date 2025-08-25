@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 
 public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
@@ -29,10 +30,10 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   private long processInstanceKey;
   private String tenantId;
 
-  private BpmnEventType bpmnEventType;
-  private List<List<Long>> elementInstancePath;
-  private List<Long> processDefinitionPath;
-  private List<Integer> callingElementPath;
+  private final BpmnEventType bpmnEventType;
+  private final List<List<Long>> elementInstancePath;
+  private final List<Long> processDefinitionPath;
+  private final List<Integer> callingElementPath;
 
   public ZeebeProcessInstanceDataDto() {
     bpmnEventType = BpmnEventType.UNSPECIFIED;
@@ -113,6 +114,11 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   @Override
   public List<Integer> getCallingElementPath() {
     return callingElementPath;
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return Set.of();
   }
 
   public void setParentElementInstanceKey(final long parentElementInstanceKey) {

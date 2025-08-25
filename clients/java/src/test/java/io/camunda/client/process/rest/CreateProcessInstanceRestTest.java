@@ -32,8 +32,11 @@ import io.camunda.client.util.RestGatewayPaths;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
@@ -334,6 +337,21 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getTenantId()).isEqualTo(customTenantId);
     assertThat(request.getProcessDefinitionKey()).isEqualTo(String.valueOf(processDefinitionKey));
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithTags() {
+    // given
+    final Set<String> tags = new HashSet<>(Arrays.asList("tag1", "tag2"));
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client.newCreateInstanceCommand().processDefinitionKey(123).tags(tags).send().join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    Assertions.assertThat(request.getTags()).isEqualTo(tags);
   }
 
   public static class VariableDocument {

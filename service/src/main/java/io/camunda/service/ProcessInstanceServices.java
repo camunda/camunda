@@ -54,6 +54,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -194,6 +195,10 @@ public final class ProcessInstanceServices
             .setStartInstructionsFromRecord(request.startInstructions())
             .setRuntimeInstructionsFromRecord(request.runtimeInstructions());
 
+    if (request.tags() != null) {
+      brokerRequest.setTags(request.tags());
+    }
+
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
@@ -210,7 +215,8 @@ public final class ProcessInstanceServices
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setInstructions(request.startInstructions())
-            .setFetchVariables(request.fetchVariables());
+            .setFetchVariables(request.fetchVariables())
+            .setTags(request.tags());
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
@@ -341,7 +347,8 @@ public final class ProcessInstanceServices
       Long operationReference,
       List<ProcessInstanceCreationStartInstruction> startInstructions,
       List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions,
-      List<String> fetchVariables) {}
+      List<String> fetchVariables,
+      Set<String> tags) {}
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
 

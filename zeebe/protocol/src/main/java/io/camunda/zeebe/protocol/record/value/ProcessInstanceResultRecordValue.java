@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
+import java.util.Set;
 import org.immutables.value.Value;
 
 /**
@@ -49,4 +50,9 @@ public interface ProcessInstanceResultRecordValue
    */
   @Override
   long getProcessInstanceKey();
+
+  /**
+   * @return the set of tags of the process instance
+   */
+  Set<String> getTags();
 }
