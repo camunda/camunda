@@ -10,6 +10,7 @@ package io.camunda.application.commons.console.ping;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
 import io.camunda.service.ManagementServices;
@@ -47,15 +48,18 @@ public class PingConsoleRunner implements ApplicationRunner {
   private final ManagementServices managementServices;
   private final Either<Exception, String> licensePayload;
   private final ApplicationContext applicationContext;
+  private final String clusterId;
 
   @Autowired
   public PingConsoleRunner(
       final ConsolePingConfiguration pingConfigurationProperties,
       final ManagementServices managementServices,
-      final ApplicationContext applicationContext) {
+      final ApplicationContext applicationContext,
+      final BrokerBasedConfiguration brokerConfig) {
     pingConfiguration = pingConfigurationProperties;
     this.managementServices = managementServices;
     this.applicationContext = applicationContext;
+    clusterId = brokerConfig.config().getCluster().getClusterId();
     licensePayload = getLicensePayload();
   }
 
@@ -88,7 +92,7 @@ public class PingConsoleRunner implements ApplicationRunner {
       throw new IllegalArgumentException(
           String.format("Ping endpoint %s must be a valid URI.", pingConfiguration.endpoint));
     }
-    if (pingConfiguration.clusterId() == null || pingConfiguration.clusterId().isBlank()) {
+    if (clusterId == null || clusterId.isBlank()) {
       throw new IllegalArgumentException("Cluster ID must not be null or empty.");
     }
     if (pingConfiguration.clusterName() == null || pingConfiguration.clusterName().isBlank()) {
@@ -166,7 +170,7 @@ public class PingConsoleRunner implements ApplicationRunner {
     final LicensePayload payload =
         new LicensePayload(
             license,
-            pingConfiguration.clusterId(),
+            clusterId,
             pingConfiguration.clusterName(),
             VersionUtil.getVersion(),
             getActiveProfiles(),
@@ -182,7 +186,6 @@ public class PingConsoleRunner implements ApplicationRunner {
   public record ConsolePingConfiguration(
       boolean enabled,
       URI endpoint,
-      String clusterId,
       String clusterName,
       Duration pingPeriod,
       RetryConfiguration retry,
