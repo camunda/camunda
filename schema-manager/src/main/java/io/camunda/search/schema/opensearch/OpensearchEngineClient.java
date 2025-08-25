@@ -253,7 +253,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
           String.format(
               "Failed to search documents in the import position index for partition [%s]",
               partitionId);
-      LOG.error(errMsg, e);
+      LOG.warn(errMsg, e);
       return false;
     }
   }
