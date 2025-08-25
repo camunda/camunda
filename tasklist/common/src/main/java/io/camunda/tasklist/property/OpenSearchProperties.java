@@ -38,7 +38,8 @@ public class OpenSearchProperties {
   private Integer connectTimeout;
 
   private boolean createSchema = true;
-  private boolean updateSchemaSettings = true;
+  // default to false to avoid breaking change in 8.7 patch version
+  private boolean updateSchemaSettings = false;
 
   private String url;
   private String username;
