@@ -8,12 +8,11 @@
 package io.camunda.application;
 
 import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled.BACKUP_WEBAPPS_ENABLED;
-import static java.util.Optional.ofNullable;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration.BackupWebappsProperties;
 import io.camunda.application.commons.backup.BackupPriorityConfiguration;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.backup.BackupRepository;
@@ -21,6 +20,7 @@ import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
@@ -34,7 +34,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeExceptionMapper;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -48,16 +47,16 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  * <p>Example properties:
  *
  * <pre>
- * camunda.database.indexPrefix=operate
- * camunda.database.clusterName=elasticsearch
+ * camunda.database.index-prefix=operate
+ * camunda.database.cluster-name=elasticsearch
  * camunda.database.url=https://localhost:9200
- * camunda.database.security.selfSigned=true
- * camunda.database.security.verifyHostname=false
- * camunda.database.security.certificatePath=C:/.../config/certs/http_ca.crt
+ * camunda.database.security.self-signed=true
+ * camunda.database.security.verify-hostname=false
+ * camunda.database.security.certificate-path=C:/.../config/certs/http_ca.crt
  * camunda.database.username=camunda-admin
  * camunda.database.password=camunda123
  *
- * camunda.backup.webapps.repositoryName=els-test
+ * camunda.data.backup.repository-name=els-test
  * *
  * </pre>
  *
@@ -92,7 +91,10 @@ public class StandaloneBackupManager implements CommandLineRunner {
     MainSupport.createDefaultApplicationBuilder()
         .web(WebApplicationType.NONE)
         .logStartupInfo(true)
-        .sources(BackupManagerConfiguration.class, StandaloneBackupManager.class)
+        .sources(
+            BackupManagerConfiguration.class,
+            StandaloneBackupManager.class,
+            UnifiedConfiguration.class)
         .properties(BACKUP_WEBAPPS_ENABLED + "=true")
         .addCommandLineProperties(true)
         .run(args);
@@ -162,10 +164,7 @@ public class StandaloneBackupManager implements CommandLineRunner {
     return EnumSet.of(BackupStateDto.FAILED, BackupStateDto.INCOMPATIBLE).contains(backupStateDto);
   }
 
-  @EnableConfigurationProperties({
-    SearchEngineConnectProperties.class,
-    BackupWebappsProperties.class,
-  })
+  @EnableConfigurationProperties({SearchEngineConnectProperties.class})
   @ComponentScan(
       basePackages = "io.camunda.application.commons.backup",
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
@@ -203,47 +202,15 @@ public class StandaloneBackupManager implements CommandLineRunner {
           connectConfiguration.getTypeEnum().isElasticSearch());
     }
 
-    @ConfigurationProperties("camunda.backup.webapps")
-    public static final class BackupWebappsProperties implements BackupRepositoryProps {
-
-      private String repositoryName;
-
-      private int snapshotTimeout;
-
-      private Long incompleteCheckTimeoutInSeconds;
-
-      @Override
-      public String version() {
-        return VersionUtil.getVersion();
-      }
-
-      @Override
-      public String repositoryName() {
-        return repositoryName;
-      }
-
-      @Override
-      public int snapshotTimeout() {
-        return snapshotTimeout;
-      }
-
-      @Override
-      public Long incompleteCheckTimeoutInSeconds() {
-        return ofNullable(incompleteCheckTimeoutInSeconds)
-            .orElseGet(BackupRepositoryProps.EMPTY::incompleteCheckTimeoutInSeconds);
-      }
-
-      public void setRepositoryName(final String repositoryName) {
-        this.repositoryName = repositoryName;
-      }
-
-      public void setSnapshotTimeout(final int snapshotTimeout) {
-        this.snapshotTimeout = snapshotTimeout;
-      }
-
-      public void setIncompleteCheckTimeoutInSeconds(final Long incompleteCheckTimeoutInSeconds) {
-        this.incompleteCheckTimeoutInSeconds = incompleteCheckTimeoutInSeconds;
-      }
+    @Bean
+    public BackupRepositoryProps standaloneBackupRepositoryProps(
+        final UnifiedConfiguration unifiedConfiguration) {
+      final var backupConfiguration = unifiedConfiguration.getCamunda().getData().getBackup();
+      return new BackupRepositoryPropsRecord(
+          VersionUtil.getVersion(),
+          backupConfiguration.getRepositoryName(),
+          backupConfiguration.getSnapshotTimeout(),
+          backupConfiguration.getIncompleteCheckTimeout().getSeconds());
     }
   }
 }
