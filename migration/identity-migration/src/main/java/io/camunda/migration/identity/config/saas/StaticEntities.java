@@ -81,6 +81,12 @@ public class StaticEntities {
               "*",
               AuthorizationResourceType.BATCH,
               Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
+          new CreateAuthorizationRequest(
+              DEVELOPER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.MESSAGE,
+              Set.of(PermissionType.READ)),
           // OPERATIONS ENGINEER
           new CreateAuthorizationRequest(
               OPERATIONS_ENGINEER_ROLE_ID,
@@ -94,10 +100,12 @@ public class StaticEntities {
               "*",
               AuthorizationResourceType.PROCESS_DEFINITION,
               Set.of(
+                  PermissionType.CREATE_PROCESS_INSTANCE,
                   PermissionType.READ_PROCESS_DEFINITION,
                   PermissionType.READ_PROCESS_INSTANCE,
                   PermissionType.UPDATE_PROCESS_INSTANCE,
-                  PermissionType.CREATE_PROCESS_INSTANCE,
+                  PermissionType.MODIFY_PROCESS_INSTANCE,
+                  PermissionType.CANCEL_PROCESS_INSTANCE,
                   PermissionType.DELETE_PROCESS_INSTANCE)),
           new CreateAuthorizationRequest(
               OPERATIONS_ENGINEER_ROLE_ID,
@@ -129,6 +137,12 @@ public class StaticEntities {
               "*",
               AuthorizationResourceType.BATCH,
               Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
+          new CreateAuthorizationRequest(
+              OPERATIONS_ENGINEER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.MESSAGE,
+              Set.of(PermissionType.READ)),
           // TASK USER
           new CreateAuthorizationRequest(
               TASK_USER_ROLE_ID,
@@ -186,6 +200,18 @@ public class StaticEntities {
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.BATCH,
+              Set.of(PermissionType.READ)),
+          new CreateAuthorizationRequest(
+              VISITOR_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.MESSAGE,
+              Set.of(PermissionType.READ)),
+          new CreateAuthorizationRequest(
+              VISITOR_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.RESOURCE,
               Set.of(PermissionType.READ)));
 
   public static List<CreateAuthorizationRequest> getZeebeClientPermissions(final String clientId) {
