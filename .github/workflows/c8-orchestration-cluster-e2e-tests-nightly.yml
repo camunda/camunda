@@ -102,8 +102,11 @@ jobs:
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Clean install dependencies
+        shell: bash
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Import Secrets
