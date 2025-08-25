@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -25,33 +26,26 @@ import org.slf4j.LoggerFactory;
  * partitions is unreliable.
  *
  * <p>A simple exponential backoff is used for retrying these retriable distributions. This
- * exponential backoff is statically configured to start of at 10 seconds {@link
- * #COMMAND_REDISTRIBUTION_INTERVAL} until it reaches a maximum of 5 minutes {@link
- * #RETRY_MAX_BACKOFF_DURATION}, doubling every time. This backoff is tracked for each retriable
+ * exponential backoff is configurable through the {@link EngineConfiguration}, with defaults of 10
+ * seconds and 5 minutes respectively. The backoff starts at the initial interval and doubles every
+ * retry until it reaches the maximum backoff duration. This backoff is tracked for each retriable
  * distribution individually.
  */
 public final class CommandRedistributor implements StreamProcessorLifecycleAware {
+
+  private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributor.class);
 
   /**
    * Specifies how often this redistributor runs, i.e. the fixed delay between runs. It is also used
    * to specify the initial interval for retrying a specific retriable distribution.
    */
-  public static final Duration COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
+  private final Duration commandRedistributionInterval;
 
   /**
-   * Specifies the maximum backoff interval for retrying a specific retriable distribution, i.e. the
-   * maximum delay between two retries of the same retriable distribution.
+   * This calculated value specifies the maximum number of retry cycles until the maximum backoff
+   * duration is reached by the exponential backoff.
    */
-  private static final Duration RETRY_MAX_BACKOFF_DURATION = Duration.ofMinutes(5);
-
-  /**
-   * This calculated value specifies the maximum number of retry cycles until the {@link
-   * #RETRY_MAX_BACKOFF_DURATION} is reached by the exponential backoff.
-   */
-  private static final long MAX_RETRY_CYCLES =
-      RETRY_MAX_BACKOFF_DURATION.dividedBy(COMMAND_REDISTRIBUTION_INTERVAL);
-
-  private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributor.class);
+  private final long maxRetryCycles;
 
   private final CommandDistributionBehavior distributionBehavior;
   private final RoutingInfo routingInfo;
@@ -68,10 +62,13 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
   public CommandRedistributor(
       final CommandDistributionBehavior distributionBehavior,
       final RoutingInfo routingInfo,
-      final boolean isDistributionPaused) {
+      final EngineConfiguration config) {
     this.distributionBehavior = distributionBehavior;
     this.routingInfo = routingInfo;
-    this.isDistributionPaused = isDistributionPaused;
+    isDistributionPaused = config.isCommandDistributionPaused();
+    commandRedistributionInterval = config.getCommandRedistributionInterval();
+    maxRetryCycles =
+        config.getCommandRedistributionMaxBackoff().dividedBy(commandRedistributionInterval);
   }
 
   @Override
@@ -80,9 +77,7 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
       LOG.debug("Command distribution is paused, skipping retry scheduling.");
       return;
     }
-    context
-        .getScheduleService()
-        .runAtFixedRate(COMMAND_REDISTRIBUTION_INTERVAL, this::runRetryCycle);
+    context.getScheduleService().runAtFixedRate(commandRedistributionInterval, this::runRetryCycle);
   }
 
   public void runRetryCycle() {
@@ -101,7 +96,7 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
           final var retriable = RetriableDistribution.from(distributionKey, record);
           final Long retryCycle = updateRetryCycle(retriable);
 
-          if (retriable.shouldRetryNow(retryCycle)) {
+          if (retriable.shouldRetryNow(retryCycle, maxRetryCycles)) {
             retryDistribution(retriable, record, retryCycle);
           }
 
@@ -140,16 +135,16 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
      *
      * <p>The number of cycles is used to implement a simple exponential backoff.
      */
-    private boolean shouldRetryNow(final Long retryCycle) {
-      // retryCycles starts off at 0, ensuring that we wait between COMMAND_REDISTRIBUTION_INTERVAL
-      // and 2 * COMMAND_REDISTRIBUTION_INTERVAL before retrying distribution.
+    private boolean shouldRetryNow(final Long retryCycle, final long maxRetryCycles) {
+      // retryCycles starts off at 0, ensuring that we wait between commandRedistributionInterval
+      // and 2 * commandRedistributionInterval before retrying distribution.
 
-      if (retryCycle >= MAX_RETRY_CYCLES) {
-        // Retry in intervals of RETRY_MAX_BACKOFF_DURATION
-        return retryCycle % MAX_RETRY_CYCLES == 0;
+      if (retryCycle >= maxRetryCycles) {
+        // Retry in intervals of retryMaxBackoffDuration
+        return retryCycle % maxRetryCycles == 0;
       } else {
-        // Retry in intervals of COMMAND_REDISTRIBUTION_INTERVAL
-        // The interval is doubling until we reached RETRY_MAX_BACKOFF_DURATION
+        // Retry in intervals of commandRedistributionInterval
+        // The interval is doubling until we reached retryMaxBackoffDuration
         return Long.bitCount(retryCycle) == 1;
       }
     }

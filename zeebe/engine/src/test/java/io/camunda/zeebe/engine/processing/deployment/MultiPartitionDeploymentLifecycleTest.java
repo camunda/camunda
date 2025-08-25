@@ -11,7 +11,7 @@ import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -190,12 +190,14 @@ public class MultiPartitionDeploymentLifecycleTest {
         .await();
 
     // first one is skipped
-    engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+    engine.getClock().addTime(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
     Awaitility.await()
         .untilAsserted(
             () -> {
               // continue to add time to the clock until the deployment is re-distributed
-              engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+              engine
+                  .getClock()
+                  .addTime(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
               // todo: could benefit from RecordingExporter without
               assertThat(
                       RecordingExporter.records()
@@ -243,12 +245,14 @@ public class MultiPartitionDeploymentLifecycleTest {
         .await();
 
     // first one is skipped
-    engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+    engine.getClock().addTime(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
     Awaitility.await()
         .untilAsserted(
             () -> {
               // continue to add time to the clock until the deployment is re-distributed
-              engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+              engine
+                  .getClock()
+                  .addTime(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
               // todo: could benefit from RecordingExporter without
               assertThat(
                       RecordingExporter.records()
