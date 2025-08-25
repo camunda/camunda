@@ -17,11 +17,14 @@ permissions:
 
 jobs:
   validate-branch:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       base: ${{ steps.detect-base.outputs.base }}
     steps:
       - name: Check if branch exists
+        shell: bash
         run: |
           echo "Checking if branch '${{ github.event.inputs.branch }}' exists..."
           branch_name="${{ github.event.inputs.branch }}"
@@ -40,6 +43,7 @@ jobs:
 
       - name: Detect base branch
         id: detect-base
+        shell: bash
         run: |
           branch="${{ github.event.inputs.branch }}"
           echo "Detecting base branch for input branch: $branch"
@@ -55,10 +59,13 @@ jobs:
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
   c8-orchestration-cluster-e2e-tests:
+    permissions:
+      contents: read
     needs: validate-branch
     runs-on: ubuntu-latest
     steps:
       - name: Print input and base branch
+        shell: bash
         run: |
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
@@ -68,6 +75,7 @@ jobs:
           ref: ${{ github.event.inputs.branch }} # Use the branch selected by the user
 
       - name: Set NON_STANDALONE variable
+        shell: bash
         run: |
           base="${{ needs.validate-branch.outputs.base }}"
           if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
@@ -77,6 +85,7 @@ jobs:
           fi
 
       - name: Start Camunda
+        shell: bash
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             DATABASE=elasticsearch docker compose up -d operate tasklist
@@ -86,11 +95,13 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers
+        shell: bash
         run: docker ps -a
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Wait for services to be ready
         id: wait-for-services
+        shell: bash
         run: |
           echo "Checking if services are up..."
           ready=false
@@ -135,6 +146,7 @@ jobs:
 
       - name: Print Docker logs before failing
         if: failure()
+        shell: bash
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             docker compose logs tasklist
@@ -151,8 +163,11 @@ jobs:
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci --verbose
+      - name: Clean install dependencies
+        shell: bash
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Import Secrets
