@@ -49,7 +49,8 @@ import org.springframework.test.context.TestPropertySource;
       "camunda.data.secondary-storage.type=opensearch",
       "camunda.database.type=opensearch",
       "camunda.tasklist.database=opensearch",
-      "camunda.operate.database=opensearch"
+      "camunda.operate.database=opensearch",
+      "zeebe.broker.exporters.camundaexporter.args.connect.type=opensearch"
     })
 public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
 

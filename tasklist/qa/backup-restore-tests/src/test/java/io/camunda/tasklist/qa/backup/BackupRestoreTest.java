@@ -103,14 +103,18 @@ public class BackupRestoreTest {
       startElsApps();
     }
 
+    final String dbType = TestUtil.isOpenSearch() ? "opensearch" : "elasticsearch";
+
     tasklistContainer =
         testContainerUtil
             .createTasklistContainer(TASKLIST_TEST_DOCKER_IMAGE, VERSION, testContext)
             .withLogConsumer(new Slf4jLogConsumer(LOGGER))
+            // Unified Configuration: DB type + compatibility
+            .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", dbType)
+            .withEnv("CAMUNDA_TASKLIST_DATABASE", dbType)
+            // Unified Configuration: DB URL + compatibility
+            // ---
             .withEnv("CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME", REPOSITORY_NAME)
-            .withEnv(
-                "CAMUNDA_TASKLIST_DATABASE",
-                TestUtil.isOpenSearch() ? "opensearch" : "elasticsearch")
             .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", INDEX_PREFIX)
             .withEnv(
                 TestUtil.isOpenSearch()

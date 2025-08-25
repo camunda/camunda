@@ -5,12 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.condition;
+package io.camunda.configuration.conditions;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
-
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType.OnSecondaryStorageTypeCondition;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType.OnSecondaryStorageTypeCondition;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -37,7 +35,7 @@ public @interface ConditionalOnSecondaryStorageType {
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final var env = context.getEnvironment();
       final var strType =
-          Optional.ofNullable(env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE))
+          Optional.ofNullable(env.getProperty("camunda.data.secondary-storage.type"))
               .orElse("elasticsearch");
 
       final var type = SecondaryStorageType.valueOf(strType.toLowerCase());

@@ -17,6 +17,7 @@ import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOver
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
@@ -32,15 +33,18 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
 
   public TestStandaloneGateway() {
     super(
-        GatewayModuleConfiguration.class,
-        CommonsModuleConfiguration.class,
+        // Unified Configuration classes
         UnifiedConfiguration.class,
         UnifiedConfigurationHelper.class,
         TasklistPropertiesOverride.class,
         OperatePropertiesOverride.class,
         BrokerBasedPropertiesOverride.class,
         ActorClockControlledPropertiesOverride.class,
-        IdleStrategyPropertiesOverride.class);
+        IdleStrategyPropertiesOverride.class,
+        SearchEngineConnectPropertiesOverride.class,
+        // ---
+        GatewayModuleConfiguration.class,
+        CommonsModuleConfiguration.class);
     config = new GatewayBasedProperties();
 
     config.getNetwork().setHost("0.0.0.0");

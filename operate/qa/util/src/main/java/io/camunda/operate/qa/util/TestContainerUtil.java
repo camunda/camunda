@@ -549,6 +549,11 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", "Demo")
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com");
 
+      if (testContext.getDatabaseType() != null) {
+        final String dbType = testContext.getDatabaseType().toLowerCase();
+        broker.withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", dbType);
+      }
+
       if (testContext.getPartitionCount() != null) {
         broker.withEnv(
             "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT",
