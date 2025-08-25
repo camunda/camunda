@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -23,8 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class TenantRequestValidatorTest {
 
-  private static final Pattern ID_PATTERN =
-      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @ParameterizedTest
   @MethodSource("validTenantIds")

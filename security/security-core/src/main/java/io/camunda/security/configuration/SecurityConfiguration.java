@@ -8,8 +8,12 @@
 package io.camunda.security.configuration;
 
 import io.camunda.security.configuration.headers.HeaderConfiguration;
+import java.util.regex.Pattern;
 
 public class SecurityConfiguration {
+
+  /** 1 or more alphanumeric characters, '_', '@', '.', '+', or '-'. */
+  public static final String DEFAULT_ID_REGEX = "^[a-zA-Z0-9_@.+-]+$";
 
   private AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
@@ -18,6 +22,9 @@ public class SecurityConfiguration {
   private CsrfConfiguration csrf = new CsrfConfiguration();
   private HeaderConfiguration httpHeaders = new HeaderConfiguration();
   private SaasConfiguration saas = new SaasConfiguration();
+
+  private String idValidationPattern = DEFAULT_ID_REGEX;
+  private Pattern compiledIdValidationPattern;
 
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
@@ -77,5 +84,20 @@ public class SecurityConfiguration {
 
   public void setCsrf(final CsrfConfiguration csrf) {
     this.csrf = csrf;
+  }
+
+  public String getIdValidationPattern() {
+    return idValidationPattern;
+  }
+
+  public void setIdValidationPattern(final String idValidationPattern) {
+    this.idValidationPattern = idValidationPattern;
+  }
+
+  public Pattern getCompiledIdValidationPattern() {
+    if (compiledIdValidationPattern == null) {
+      compiledIdValidationPattern = Pattern.compile(idValidationPattern);
+    }
+    return compiledIdValidationPattern;
   }
 }

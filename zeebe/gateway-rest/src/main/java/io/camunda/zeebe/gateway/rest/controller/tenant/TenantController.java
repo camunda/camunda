@@ -15,7 +15,7 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -65,7 +65,7 @@ public class TenantController {
   private final GroupServices groupServices;
   private final RoleServices roleServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final InitializationConfiguration initializationConfiguration;
+  private final SecurityConfiguration securityConfiguration;
 
   public TenantController(
       final TenantServices tenantServices,
@@ -74,21 +74,21 @@ public class TenantController {
       final GroupServices groupServices,
       final RoleServices roleServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final InitializationConfiguration initializationConfiguration) {
+      final SecurityConfiguration securityConfiguration) {
     this.tenantServices = tenantServices;
     this.userServices = userServices;
     this.mappingRuleServices = mappingRuleServices;
     this.groupServices = groupServices;
     this.roleServices = roleServices;
     this.authenticationProvider = authenticationProvider;
-    this.initializationConfiguration = initializationConfiguration;
+    this.securityConfiguration = securityConfiguration;
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createTenant(
       @RequestBody final TenantCreateRequest createTenantRequest) {
     return RequestMapper.toTenantCreateDto(
-            createTenantRequest, initializationConfiguration.getIdentifierPattern())
+            createTenantRequest, securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createTenant);
   }
 
@@ -127,7 +127,10 @@ public class TenantController {
   public CompletableFuture<ResponseEntity<Object>> assignUserToTenant(
       @PathVariable final String tenantId, @PathVariable final String username) {
     return RequestMapper.toTenantMemberRequest(
-            tenantId, username, EntityType.USER, initializationConfiguration.getIdentifierPattern())
+            tenantId,
+            username,
+            EntityType.USER,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -149,7 +152,7 @@ public class TenantController {
             tenantId,
             clientId,
             EntityType.CLIENT,
-            initializationConfiguration.getIdentifierPattern())
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -160,7 +163,7 @@ public class TenantController {
             tenantId,
             mappingRuleId,
             EntityType.MAPPING_RULE,
-            initializationConfiguration.getIdentifierPattern())
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -168,7 +171,10 @@ public class TenantController {
   public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
       @PathVariable final String tenantId, @PathVariable final String groupId) {
     return RequestMapper.toTenantMemberRequest(
-            tenantId, groupId, EntityType.GROUP, initializationConfiguration.getIdentifierPattern())
+            tenantId,
+            groupId,
+            EntityType.GROUP,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -176,7 +182,10 @@ public class TenantController {
   public CompletableFuture<ResponseEntity<Object>> assignRoleToTenant(
       @PathVariable final String tenantId, @PathVariable final String roleId) {
     return RequestMapper.toTenantMemberRequest(
-            tenantId, roleId, EntityType.ROLE, initializationConfiguration.getIdentifierPattern())
+            tenantId,
+            roleId,
+            EntityType.ROLE,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -194,7 +203,10 @@ public class TenantController {
   public CompletableFuture<ResponseEntity<Object>> unassignUserFromTenant(
       @PathVariable final String tenantId, @PathVariable final String username) {
     return RequestMapper.toTenantMemberRequest(
-            tenantId, username, EntityType.USER, initializationConfiguration.getIdentifierPattern())
+            tenantId,
+            username,
+            EntityType.USER,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
@@ -205,7 +217,7 @@ public class TenantController {
             tenantId,
             clientId,
             EntityType.CLIENT,
-            initializationConfiguration.getIdentifierPattern())
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
@@ -227,7 +239,7 @@ public class TenantController {
             tenantId,
             mappingRuleId,
             EntityType.MAPPING_RULE,
-            initializationConfiguration.getIdentifierPattern())
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
@@ -235,7 +247,10 @@ public class TenantController {
   public CompletableFuture<ResponseEntity<Object>> unassignGroupFromTenant(
       @PathVariable final String tenantId, @PathVariable final String groupId) {
     return RequestMapper.toTenantMemberRequest(
-            tenantId, groupId, EntityType.GROUP, initializationConfiguration.getIdentifierPattern())
+            tenantId,
+            groupId,
+            EntityType.GROUP,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
@@ -243,7 +258,10 @@ public class TenantController {
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromTenant(
       @PathVariable final String tenantId, @PathVariable final String roleId) {
     return RequestMapper.toTenantMemberRequest(
-            tenantId, roleId, EntityType.ROLE, initializationConfiguration.getIdentifierPattern())
+            tenantId,
+            roleId,
+            EntityType.ROLE,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 

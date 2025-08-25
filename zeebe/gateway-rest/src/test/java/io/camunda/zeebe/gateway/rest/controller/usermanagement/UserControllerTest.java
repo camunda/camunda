@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.service.exception.ErrorMapper;
@@ -48,8 +48,7 @@ import org.springframework.test.json.JsonCompareMode;
 public class UserControllerTest {
 
   private static final String USER_BASE_URL = "/v2/users";
-  private static final Pattern ID_PATTERN =
-      Pattern.compile(InitializationConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @Nested
   @WebMvcTest(UserController.class)
@@ -58,7 +57,7 @@ public class UserControllerTest {
 
     @MockitoBean private UserServices userServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private InitializationConfiguration initializationConfiguration;
+    @MockitoBean private SecurityConfiguration securityConfiguration;
 
     @BeforeEach
     void setup() {
@@ -66,7 +65,7 @@ public class UserControllerTest {
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
       when(userServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(userServices);
-      when(initializationConfiguration.getIdentifierPattern()).thenReturn(ID_PATTERN);
+      when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
     }
 
     @ParameterizedTest
@@ -329,7 +328,7 @@ public class UserControllerTest {
               "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-              .formatted(InitializationConfiguration.DEFAULT_ID_REGEX, USER_BASE_URL));
+              .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, USER_BASE_URL));
       verifyNoInteractions(userServices);
     }
 

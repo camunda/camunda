@@ -15,7 +15,7 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -60,26 +60,26 @@ public class GroupController {
   private final MappingRuleServices mappingRuleServices;
   private final RoleServices roleServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final InitializationConfiguration initializationConfiguration;
+  private final SecurityConfiguration securityConfiguration;
 
   public GroupController(
       final GroupServices groupServices,
       final MappingRuleServices mappingRuleServices,
       final RoleServices roleServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final InitializationConfiguration initializationConfiguration) {
+      final SecurityConfiguration securityConfiguration) {
     this.groupServices = groupServices;
     this.mappingRuleServices = mappingRuleServices;
     this.roleServices = roleServices;
     this.authenticationProvider = authenticationProvider;
-    this.initializationConfiguration = initializationConfiguration;
+    this.securityConfiguration = securityConfiguration;
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createGroup(
       @RequestBody final GroupCreateRequest createGroupRequest) {
     return RequestMapper.toGroupCreateRequest(
-            createGroupRequest, initializationConfiguration.getIdentifierPattern())
+            createGroupRequest, securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createGroup);
   }
 
@@ -88,7 +88,7 @@ public class GroupController {
       @PathVariable final String groupId,
       @RequestBody final GroupUpdateRequest groupUpdateRequest) {
     return RequestMapper.toGroupUpdateRequest(
-            groupUpdateRequest, groupId, initializationConfiguration.getIdentifierPattern())
+            groupUpdateRequest, groupId, securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateGroup);
   }
 
@@ -105,7 +105,10 @@ public class GroupController {
   public CompletableFuture<ResponseEntity<Object>> assignUserToGroup(
       @PathVariable final String groupId, @PathVariable final String username) {
     return RequestMapper.toGroupMemberRequest(
-            groupId, username, EntityType.USER, initializationConfiguration.getIdentifierPattern())
+            groupId,
+            username,
+            EntityType.USER,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
@@ -116,7 +119,7 @@ public class GroupController {
             groupId,
             clientId,
             EntityType.CLIENT,
-            initializationConfiguration.getIdentifierPattern())
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
@@ -127,7 +130,7 @@ public class GroupController {
             groupId,
             mappingRuleId,
             EntityType.MAPPING_RULE,
-            initializationConfiguration.getIdentifierPattern())
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
@@ -135,7 +138,10 @@ public class GroupController {
   public CompletableFuture<ResponseEntity<Object>> unassignUserFromGroup(
       @PathVariable final String groupId, @PathVariable final String username) {
     return RequestMapper.toGroupMemberRequest(
-            groupId, username, EntityType.USER, initializationConfiguration.getIdentifierPattern())
+            groupId,
+            username,
+            EntityType.USER,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
@@ -146,7 +152,7 @@ public class GroupController {
             groupId,
             clientId,
             EntityType.CLIENT,
-            initializationConfiguration.getIdentifierPattern())
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
@@ -157,7 +163,7 @@ public class GroupController {
             groupId,
             mappingRuleId,
             EntityType.MAPPING_RULE,
-            initializationConfiguration.getIdentifierPattern())
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
