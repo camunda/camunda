@@ -169,7 +169,12 @@ public class KeycloakIdentityMigrationIT {
 
   @BeforeAll
   static void init() {
-    BROKER.withCamundaExporter("http://" + ELASTIC.getHttpHostAddress()).start();
+    BROKER
+        .withCamundaExporter("http://" + ELASTIC.getHttpHostAddress())
+        .withProperty(
+            "camunda.data.secondary-storage.elasticsearch.url",
+            "http://" + ELASTIC.getHttpHostAddress())
+        .start();
 
     IDENTITY
         .withEnv(

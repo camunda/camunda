@@ -120,7 +120,12 @@ public class MultiTenancyIT {
 
   @BeforeAll
   static void init() {
-    BROKER.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress()).start();
+    BROKER
+        .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
+        .withProperty(
+            "camunda.data.secondary-storage.elasticsearch.url",
+            "http://" + CONTAINER.getHttpHostAddress())
+        .start();
 
     // We can do the setup with any user. We pick user A for convenience.
     try (final var client = createCamundaClient(USER_TENANT_A)) {
