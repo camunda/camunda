@@ -124,7 +124,12 @@ public class SaaSIdentityMigrationIT {
 
   @BeforeAll
   static void init(final WireMockRuntimeInfo wmRuntimeInfo) {
-    BROKER.withCamundaExporter("http://" + ELASTIC.getHttpHostAddress()).start();
+    BROKER
+        .withCamundaExporter("http://" + ELASTIC.getHttpHostAddress())
+        .withProperty(
+            "camunda.data.secondary-storage.elasticsearch.url",
+            "http://" + ELASTIC.getHttpHostAddress())
+        .start();
 
     org.testcontainers.Testcontainers.exposeHostPorts(wmRuntimeInfo.getHttpPort());
     IDENTITY.withEnv(
