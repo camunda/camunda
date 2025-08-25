@@ -82,8 +82,8 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
       <EntityList
         data={roles?.items}
         headers={[
-          { header: t("roleId"), key: "roleId" },
-          { header: t("roleName"), key: "name" },
+          { header: t("roleId"), key: "roleId", isSortable: true },
+          { header: t("roleName"), key: "name", isSortable: true },
         ]}
         loading={loading}
         addEntityLabel={t("assignRole")}
