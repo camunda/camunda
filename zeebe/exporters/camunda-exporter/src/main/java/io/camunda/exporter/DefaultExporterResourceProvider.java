@@ -63,6 +63,7 @@ import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
+import io.camunda.exporter.handlers.VariableDeletedHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
@@ -216,6 +217,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new VariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
+            new VariableDeletedHandler(
+                indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()),
             new DecisionRequirementsHandler(
                 indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
             new PostImporterQueueFromIncidentHandler(

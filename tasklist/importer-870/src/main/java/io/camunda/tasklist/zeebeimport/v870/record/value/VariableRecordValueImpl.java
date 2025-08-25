@@ -13,6 +13,7 @@ import java.util.Objects;
 
 public class VariableRecordValueImpl extends RecordValueImpl implements VariableRecordValue {
 
+  private Long variableKey;
   private String name;
   private String value;
   private long scopeKey;
@@ -20,6 +21,11 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   private long processDefinitionKey;
   private String bpmnProcessId;
   private String tenantId;
+
+  @Override
+  public Long getVariableKey() {
+    return variableKey;
+  }
 
   @Override
   public String getName() {

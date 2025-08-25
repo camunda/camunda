@@ -57,6 +57,18 @@ public class VariableWriter {
                 vendorDatabaseProperties.charColumnMaxBytes())));
   }
 
+  public void delete(final VariableDbModel variable) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.VARIABLE,
+            WriteStatementType.DELETE,
+            variable.variableKey(),
+            "io.camunda.db.rdbms.sql.VariableMapper.delete",
+            variable.truncateValue(
+                vendorDatabaseProperties.variableValuePreviewSize(),
+                vendorDatabaseProperties.charColumnMaxBytes())));
+  }
+
   public void scheduleForHistoryCleanup(
       final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
     executionQueue.executeInQueue(

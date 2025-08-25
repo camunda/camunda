@@ -61,6 +61,16 @@ public final class MsgPackUtil {
     return builder.done();
   }
 
+  public static DirectBuffer asMsgPack(final Object object) {
+    final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+    try {
+      final byte[] msgPackBytes = objectMapper.writeValueAsBytes(object);
+      return new UnsafeBuffer(msgPackBytes);
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public static DirectBuffer asMsgPack(final Map<String, Object> map) {
     final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 

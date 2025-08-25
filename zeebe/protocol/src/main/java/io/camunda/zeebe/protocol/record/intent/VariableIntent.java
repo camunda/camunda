@@ -16,9 +16,13 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum VariableIntent implements Intent {
-  CREATED((short) 0),
-  UPDATED((short) 1),
-  MIGRATED((short) 2);
+  CREATE((short) 0),
+  CREATED((short) 1),
+  UPDATE((short) 2),
+  UPDATED((short) 3),
+  DELETE((short) 4),
+  DELETED((short) 5),
+  MIGRATED((short) 6);
 
   private final short value;
 
@@ -33,16 +37,36 @@ public enum VariableIntent implements Intent {
 
   @Override
   public boolean isEvent() {
-    return true;
+    switch (this) {
+      case CREATE:
+      case UPDATE:
+      case DELETE:
+        return false;
+      case CREATED:
+      case UPDATED:
+      case DELETED:
+      case MIGRATED:
+        return true;
+      default:
+        throw new IllegalArgumentException(name() + "is neither a command not an event");
+    }
   }
 
   public static Intent from(final short value) {
     switch (value) {
       case 0:
-        return CREATED;
+        return CREATE;
       case 1:
-        return UPDATED;
+        return CREATED;
       case 2:
+        return UPDATE;
+      case 3:
+        return UPDATED;
+      case 4:
+        return DELETE;
+      case 5:
+        return DELETED;
+      case 6:
         return MIGRATED;
       default:
         return Intent.UNKNOWN;

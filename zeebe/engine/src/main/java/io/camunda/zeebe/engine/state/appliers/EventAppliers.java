@@ -201,8 +201,13 @@ public final class EventAppliers implements EventApplier {
   private void registerVariableEventAppliers(final MutableProcessingState state) {
     final var variableState = state.getVariableState();
     final var variableApplier = new VariableApplier(variableState);
+    final var variableApplierv2 = new VariableApplierV2(variableState);
+    final var variableDeletedApplier = new VariableDeletedApplier(variableState);
     register(VariableIntent.CREATED, variableApplier);
+    register(VariableIntent.CREATED, 2, variableApplierv2);
     register(VariableIntent.UPDATED, variableApplier);
+    register(VariableIntent.UPDATED, 2, variableApplierv2);
+    register(VariableIntent.DELETED, variableDeletedApplier);
     register(VariableIntent.MIGRATED, new VariableMigratedApplier());
     register(VariableDocumentIntent.UPDATING, new VariableDocumentUpdatingApplier(variableState));
     register(VariableDocumentIntent.UPDATED, new VariableDocumentUpdatedApplier(variableState));
