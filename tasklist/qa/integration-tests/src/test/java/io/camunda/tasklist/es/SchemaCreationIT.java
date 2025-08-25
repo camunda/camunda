@@ -7,10 +7,13 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
 import static io.camunda.tasklist.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestSchemaStartup;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
@@ -27,8 +30,12 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class SchemaCreationIT extends TasklistIntegrationTest {
 
   @RegisterExtension @Autowired public DatabaseTestExtension databaseTestExtension;
@@ -36,6 +43,9 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
   @Autowired private List<IndexDescriptor> indexDescriptors;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
   @Autowired private NoSqlHelper noSqlHelper;
+  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
+  @Autowired private TestSchemaStartup schemaStartup;
 
   @BeforeAll
   public static void beforeClass() {
@@ -90,6 +100,63 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
 
     for (final IndexDescriptor indexDescriptor : strictMappingIndices) {
       assertThatIndexHasDynamicMappingOf(indexDescriptor, "strict");
+    }
+  }
+
+  @Test
+  public void testReplicasUpdatedWhenUpdateSchemaSettingsIsTrue() throws Exception {
+    // given
+    // First assert that indices are created with default number of replicas (0)
+    assertAllIndicesHaveNumberOfReplicas(0);
+    tasklistProperties.getElasticsearch().setUpdateSchemaSettings(true);
+    // Set a specific number of replicas in configuration
+    final int configuredReplicas = 2;
+    tasklistProperties.getElasticsearch().setNumberOfReplicas(configuredReplicas);
+
+    // when
+    // Schema startup should update the settings (trigger schema creation/update)
+    schemaStartup.initializeSchemaOnDemand();
+
+    // then
+    // Assert that number of replicas is updated with configuration
+    assertAllIndicesHaveNumberOfReplicas(configuredReplicas);
+  }
+
+  /**
+   * @param useDefaultConfiguration when true, relies on default configuration where
+   *     updateSchemaSettings is false; when false, explicitly sets updateSchemaSettings to false
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testReplicasNotUpdatedWhenUpdateSchemaSettingsIsFalse(
+      final boolean useDefaultConfiguration) throws Exception {
+    // given
+    // First assert that indices are created with default number of replicas (0)
+    assertAllIndicesHaveNumberOfReplicas(0);
+    if (!useDefaultConfiguration) {
+      tasklistProperties.getElasticsearch().setUpdateSchemaSettings(false);
+    }
+    // Set a specific number of replicas in configuration
+    final int configuredReplicas = 3;
+    tasklistProperties.getElasticsearch().setNumberOfReplicas(configuredReplicas);
+
+    // when
+    // Schema startup should update the settings (trigger schema creation/update)
+    schemaStartup.initializeSchemaOnDemand();
+
+    // then
+    // Assert that number of replicas is not updated
+    assertAllIndicesHaveNumberOfReplicas(0);
+  }
+
+  private void assertAllIndicesHaveNumberOfReplicas(final int expectedReplicas) {
+    assertThat(indexDescriptors).isNotEmpty();
+    for (final var indexDescriptor : indexDescriptors) {
+      final String replicasValue =
+          retryElasticsearchClient
+              .getIndexSettingsFor(indexDescriptor.getFullQualifiedName(), NUMBERS_OF_REPLICA)
+              .get(NUMBERS_OF_REPLICA);
+      assertThat(replicasValue).isEqualTo(String.valueOf(expectedReplicas));
     }
   }
 
