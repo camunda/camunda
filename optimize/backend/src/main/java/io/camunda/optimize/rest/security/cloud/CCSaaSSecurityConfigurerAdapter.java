@@ -25,6 +25,7 @@ import io.camunda.optimize.rest.security.AuthenticationCookieFilter;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import io.camunda.optimize.rest.security.oauth.AudienceValidator;
 import io.camunda.optimize.rest.security.oauth.CustomClaimValidator;
+import io.camunda.optimize.rest.security.oauth.RoleValidator;
 import io.camunda.optimize.rest.security.oauth.ScopeValidator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.AuthCookieService;
@@ -36,6 +37,7 @@ import io.camunda.optimize.tomcat.CCSaasRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,6 +59,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
@@ -65,6 +69,7 @@ import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -80,6 +85,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   public static final String CAMUNDA_CLUSTER_ID_CLAIM_NAME = "https://camunda.com/clusterId";
+  private static final List<String> ALLOWED_ORG_ROLES = Arrays.asList("admin", "analyst", "owner");
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSaaSSecurityConfigurerAdapter.class);
   private final ClientRegistrationRepository clientRegistrationRepository;
@@ -220,24 +226,20 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
         configurationService, new AuthorizationRequestCookieValueMapper());
   }
 
+  @Bean
+  public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory() {
+    final var decoderFactory = new OidcIdTokenDecoderFactory();
+    decoderFactory.setJwtValidatorFactory(clientRegistration -> createWebappJwtValidators());
+    return decoderFactory;
+  }
+
   @SuppressWarnings("unchecked")
   private JwtDecoder jwtDecoder() {
     final NimbusJwtDecoder jwtDecoder =
         NimbusJwtDecoder.withJwkSetUri(
                 configurationService.getOptimizeApiConfiguration().getJwtSetUri())
             .build();
-    final OAuth2TokenValidator<Jwt> audienceValidator =
-        new AudienceValidator(
-            configurationService
-                .getAuthConfiguration()
-                .getCloudAuthConfiguration()
-                .getUserAccessTokenAudience()
-                .orElse(""));
-    final OAuth2TokenValidator<Jwt> profileValidator = new ScopeValidator("profile");
-    // The default validator already contains validation for timestamp and X509 thumbprint
-    final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
-        JwtValidators.createDefaultWithValidators(audienceValidator, profileValidator);
-    jwtDecoder.setJwtValidator(combinedValidatorWithDefaults);
+    jwtDecoder.setJwtValidator(createWebappJwtValidators());
     return jwtDecoder;
   }
 
@@ -248,16 +250,41 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
         NimbusJwtDecoder.withJwkSetUri(
                 configurationService.getOptimizeApiConfiguration().getJwtSetUri())
             .build();
+    jwtDecoder.setJwtValidator(createPublicApiJwtValidators());
+    return jwtDecoder;
+  }
+
+  /**
+   * Creates JWT validators for webapp endpoints (both oauth2Login and oauth2ResourceServer).
+   * Includes audience, scope, and role validation for comprehensive security.
+   */
+  private OAuth2TokenValidator<Jwt> createWebappJwtValidators() {
+    final OAuth2TokenValidator<Jwt> audienceValidator =
+        new AudienceValidator(
+            configurationService
+                .getAuthConfiguration()
+                .getCloudAuthConfiguration()
+                .getUserAccessTokenAudience()
+                .orElse(""));
+    final OAuth2TokenValidator<Jwt> profileValidator = new ScopeValidator("profile");
+    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
+
+    return JwtValidators.createDefaultWithValidators(
+        audienceValidator, profileValidator, roleValidator);
+  }
+
+  /**
+   * Creates JWT validators for public API endpoints. Includes audience and cluster ID validation
+   * for API access control.
+   */
+  private OAuth2TokenValidator<Jwt> createPublicApiJwtValidators() {
     final OAuth2TokenValidator<Jwt> audienceValidator =
         new AudienceValidator(getAuth0Configuration().getAudience());
     final OAuth2TokenValidator<Jwt> clusterIdValidator =
         new CustomClaimValidator(
             CAMUNDA_CLUSTER_ID_CLAIM_NAME, getAuth0Configuration().getClusterId());
-    // The default validator already contains validation for timestamp and X509 thumbprint
-    final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
-        JwtValidators.createDefaultWithValidators(audienceValidator, clusterIdValidator);
-    jwtDecoder.setJwtValidator(combinedValidatorWithDefaults);
-    return jwtDecoder;
+
+    return JwtValidators.createDefaultWithValidators(audienceValidator, clusterIdValidator);
   }
 
   private AuthenticationSuccessHandler getAuthenticationSuccessHandler() {
