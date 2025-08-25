@@ -57,8 +57,8 @@ public class DecisionInstanceImpl implements DecisionInstance {
   public DecisionInstanceImpl(final DecisionInstanceResult item, final JsonMapper jsonMapper) {
     this(
         jsonMapper,
-        Long.parseLong(item.getDecisionInstanceKey()),
-        item.getDecisionInstanceId(),
+        Long.parseLong(item.getDecisionEvaluationKey()),
+        item.getDecisionEvaluationInstanceKey(),
         toDecisionInstanceState(item.getState()),
         item.getEvaluationDate(),
         item.getEvaluationFailure(),
@@ -80,8 +80,8 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final DecisionInstanceGetQueryResult item, final JsonMapper jsonMapper) {
     this(
         jsonMapper,
-        Long.parseLong(item.getDecisionInstanceKey()),
-        item.getDecisionInstanceId(),
+        Long.parseLong(item.getDecisionEvaluationKey()),
+        item.getDecisionEvaluationInstanceKey(),
         toDecisionInstanceState(item.getState()),
         item.getEvaluationDate(),
         item.getEvaluationFailure(),

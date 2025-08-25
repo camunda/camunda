@@ -33,14 +33,16 @@ public class DecisionInstanceGetRequestImpl implements DecisionInstanceGetReques
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final String decisionInstanceId;
+  private final String decisionEvaluationInstanceKey;
 
   public DecisionInstanceGetRequestImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final String decisionInstanceId) {
+      final HttpClient httpClient,
+      final JsonMapper jsonMapper,
+      final String decisionEvaluationInstanceKey) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
-    this.decisionInstanceId = decisionInstanceId;
+    this.decisionEvaluationInstanceKey = decisionEvaluationInstanceKey;
   }
 
   @Override
@@ -53,7 +55,7 @@ public class DecisionInstanceGetRequestImpl implements DecisionInstanceGetReques
   public CamundaFuture<DecisionInstance> send() {
     final HttpCamundaFuture<DecisionInstance> result = new HttpCamundaFuture<>();
     httpClient.get(
-        String.format("/decision-instances/%s", decisionInstanceId),
+        String.format("/decision-instances/%s", decisionEvaluationInstanceKey),
         httpRequestConfig.build(),
         DecisionInstanceGetQueryResult.class,
         resp -> new DecisionInstanceImpl(resp, jsonMapper),

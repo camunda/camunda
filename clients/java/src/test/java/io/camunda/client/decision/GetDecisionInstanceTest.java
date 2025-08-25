@@ -33,7 +33,7 @@ public final class GetDecisionInstanceTest extends ClientRestTest {
     gatewayService.onDecisionInstanceRequest(
         decisionInstanceId,
         Instancio.create(DecisionInstanceResult.class)
-            .decisionInstanceKey("1")
+            .decisionEvaluationKey("1")
             .decisionDefinitionKey("2")
             .elementInstanceKey("3")
             .processDefinitionKey("4")

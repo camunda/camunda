@@ -52,8 +52,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           {
                "items": [
                    {
-                       "decisionInstanceKey": "123",
-                       "decisionInstanceId": "123-1",
+                       "decisionEvaluationKey": "123",
+                       "decisionEvaluationInstanceKey": "123-1",
                        "state": "EVALUATED",
                        "evaluationDate": "2024-06-05T08:29:15.027Z",
                        "processDefinitionKey": "2251799813688736",
@@ -248,8 +248,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .json(
             """
                 {
-                     "decisionInstanceId": "123-1",
-                     "decisionInstanceKey": "123",
+                     "decisionEvaluationInstanceKey": "123-1",
+                     "decisionEvaluationKey": "123",
                      "state": "EVALUATED",
                      "evaluationDate": "2024-06-05T08:29:15.027Z",
                      "processDefinitionKey": "2251799813688736",

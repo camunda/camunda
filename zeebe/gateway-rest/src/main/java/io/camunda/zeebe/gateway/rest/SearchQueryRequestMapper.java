@@ -614,10 +614,10 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.decisionInstance();
 
     if (filter != null) {
-      ofNullable(filter.getDecisionInstanceKey())
+      ofNullable(filter.getDecisionEvaluationKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::decisionInstanceKeys);
-      ofNullable(filter.getDecisionInstanceId()).ifPresent(builder::decisionInstanceIds);
+      ofNullable(filter.getDecisionEvaluationInstanceKey()).ifPresent(builder::decisionInstanceIds);
       ofNullable(filter.getState())
           .map(s -> convertEnum(s, DecisionInstanceState.class))
           .ifPresent(builder::states);
@@ -657,8 +657,8 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case DECISION_INSTANCE_KEY -> builder.decisionInstanceKey();
-        case DECISION_INSTANCE_ID -> builder.decisionInstanceId();
+        case DECISION_EVALUATION_KEY -> builder.decisionInstanceKey();
+        case DECISION_EVALUATION_INSTANCE_KEY -> builder.decisionInstanceId();
         case STATE -> builder.state();
         case EVALUATION_DATE -> builder.evaluationDate();
         case EVALUATION_FAILURE -> builder.evaluationFailure();

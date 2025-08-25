@@ -63,7 +63,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     // then
     final DecisionInstanceSearchQuery request =
         gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
-    assertThat(request.getFilter().getDecisionInstanceKey()).isEqualTo("1");
+    assertThat(request.getFilter().getDecisionEvaluationKey()).isEqualTo("1");
     assertThat(request.getFilter().getState()).isEqualTo(DecisionInstanceStateEnum.FAILED);
     assertThat(request.getFilter().getEvaluationFailure()).isEqualTo("ef");
     assertThat(request.getFilter().getDecisionDefinitionType())

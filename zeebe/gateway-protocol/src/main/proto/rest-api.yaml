@@ -2579,7 +2579,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /decision-instances/{decisionInstanceId}:
+  /decision-instances/{decisionEvaluationInstanceKey}:
     get:
       tags:
         - Decision instance
@@ -2588,10 +2588,10 @@ paths:
       description: |
         Returns a decision instance.
       parameters:
-        - name: decisionInstanceId
+        - name: decisionEvaluationInstanceKey
           in: path
           required: true
-          description: The assigned ID of the decision instance, which acts as a unique identifier for this decision instance.
+          description: The assigned key of the evaluated decision instance, which acts as a unique identifier for this decision instance.
           schema:
             type: string
       responses:
@@ -2610,7 +2610,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           description: >
-            The decision instance with the given ID was not found.
+            The decision instance with the given key was not found.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -9628,8 +9628,8 @@ components:
             - decisionDefinitionName
             - decisionDefinitionType
             - decisionDefinitionVersion
-            - decisionInstanceId
-            - decisionInstanceKey
+            - decisionEvaluationInstanceKey
+            - decisionEvaluationKey
             - elementInstanceKey
             - evaluationDate
             - evaluationFailure
@@ -9659,9 +9659,9 @@ components:
       description: Decision instance search filter.
       type: object
       properties:
-        decisionInstanceId:
+        decisionEvaluationInstanceKey:
           type: string
-          description: The ID of the decision instance.
+          description: The key of the evaluated decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationFailure:
@@ -9686,10 +9686,10 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
-        decisionInstanceKey:
+        decisionEvaluationKey:
           type: string
           description: |
-            The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+            The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionEvaluationInstanceKey` serves as the primary identifier.
         processDefinitionKey:
           type: string
           description: The key of the process definition.
@@ -9718,9 +9718,9 @@ components:
     DecisionInstanceResult:
       type: object
       properties:
-        decisionInstanceId:
+        decisionEvaluationInstanceKey:
           type: string
-          description: The ID of the decision instance.
+          description: The key of the evaluated decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationDate:
@@ -9748,9 +9748,9 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
-        decisionInstanceKey:
+        decisionEvaluationKey:
           type: string
-          description: The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+          description: The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionEvaluationInstanceKey` serves as the primary identifier.
         processDefinitionKey:
           type: string
           description: The key of the process definition.
