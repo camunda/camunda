@@ -136,6 +136,7 @@ public class OidcNoSecondaryStorageTest {
     defaultClient =
         CamundaClient.newClientBuilder()
             .grpcAddress(broker.grpcAddress())
+            .restAddress(broker.restAddress())
             .usePlaintext()
             .defaultRequestTimeout(Duration.ofSeconds(15))
             .credentialsProvider(
@@ -154,6 +155,7 @@ public class OidcNoSecondaryStorageTest {
 
     serviceClient =
         CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(false)
             .grpcAddress(broker.grpcAddress())
             .usePlaintext()
             .defaultRequestTimeout(Duration.ofSeconds(15))

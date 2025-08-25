@@ -86,6 +86,7 @@ public abstract class TasklistZeebeExtension
 
     client =
         CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(false)
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .restAddress(
                 getURIFromString(

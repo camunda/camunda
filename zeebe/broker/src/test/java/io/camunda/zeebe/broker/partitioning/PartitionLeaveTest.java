@@ -69,6 +69,7 @@ final class PartitionLeaveTest {
 
     try (final var client =
         CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(false)
             .usePlaintext()
             .gatewayAddress("localhost:" + broker0.getConfig().getGateway().getNetwork().getPort())
             .build()) {
@@ -124,6 +125,7 @@ final class PartitionLeaveTest {
 
     try (final var client =
         CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(false)
             .usePlaintext()
             .gatewayAddress("localhost:" + broker0.getConfig().getGateway().getNetwork().getPort())
             .build()) {
@@ -183,6 +185,7 @@ final class PartitionLeaveTest {
 
     try (final var client =
         CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(false)
             .usePlaintext()
             .gatewayAddress("localhost:" + broker0.getConfig().getGateway().getNetwork().getPort())
             .build()) {

@@ -47,12 +47,15 @@ public final class CredentialsTest {
   private final RecordingInterceptor recordingInterceptor = new RecordingInterceptor();
   private final RecordingGatewayService gatewayService = new RecordingGatewayService();
   private CamundaClient client;
+  private final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
   @Before
   public void setUp() {
     serverRule
         .getServiceRegistry()
         .addService(ServerInterceptors.intercept(gatewayService, recordingInterceptor));
+
+    builder.preferRestOverGrpc(false);
   }
 
   @After
@@ -69,7 +72,6 @@ public final class CredentialsTest {
   public void shouldAddTokenToCallHeaders() {
     // given
     final String bearerToken = "Bearer someToken";
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
     builder
         .usePlaintext()
@@ -97,8 +99,6 @@ public final class CredentialsTest {
   @Test
   public void shouldRetryRequest() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-
     recordingInterceptor.setInterceptAction(
         (call, headers) -> {
           recordingInterceptor.reset();
@@ -135,7 +135,6 @@ public final class CredentialsTest {
   public void shouldRetryMoreThanOnce() {
     // given
     final int retries = 2;
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
     recordingInterceptor.setInterceptAction((call, headers) -> call.close(Status.UNKNOWN, headers));
 
@@ -155,6 +154,7 @@ public final class CredentialsTest {
                 return true;
               }
             });
+
     builder.usePlaintext().credentialsProvider(provider);
     client = new CamundaClientImpl(builder, serverRule.getChannel());
 
@@ -169,7 +169,6 @@ public final class CredentialsTest {
   @Test
   public void shouldNotChangeHeadersWithNoProvider() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.usePlaintext();
     client = new CamundaClientImpl(builder, serverRule.getChannel());
 
@@ -183,8 +182,6 @@ public final class CredentialsTest {
   @Test
   public void shouldCredentialsProviderRunFromGRPCThreadPool() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-
     final AtomicReference<String> credentialsProviderThreadReference = new AtomicReference<>();
     builder
         .usePlaintext()

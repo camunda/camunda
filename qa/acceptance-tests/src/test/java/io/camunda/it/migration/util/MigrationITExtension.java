@@ -122,6 +122,7 @@ public class MigrationITExtension
 
     migrator.update(envOverrides);
     awaitExporterReadiness();
+    awaitDemoUserIsPresent();
 
     /* Ingest an 8.8 Record in order to trigger importers empty batch counting */
     ingestRecordToTriggerImporters(migrator.getCamundaClient());
@@ -129,6 +130,13 @@ public class MigrationITExtension
     awaitImportersFinished();
 
     awaitProcessMigrationFinished();
+  }
+
+  private void awaitDemoUserIsPresent() {
+    Awaitility.await("Await Demo user is present")
+        .timeout(Duration.ofMinutes(1))
+        .pollInterval(Duration.ofSeconds(1))
+        .until(() -> migrationDatabaseChecks.checkDemoUserIsPresent());
   }
 
   private boolean isNestedClass(final Class<?> currentClass) {

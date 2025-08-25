@@ -46,6 +46,7 @@ public final class RestoreTest {
       new GrpcClientRule(
           config ->
               config
+                  .preferRestOverGrpc(false)
                   .gatewayAddress(NetUtil.toSocketAddressString(clusteringRule.getGatewayAddress()))
                   .defaultRequestTimeout(Duration.ofMinutes(1))
                   .usePlaintext());

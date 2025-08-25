@@ -31,7 +31,8 @@ final class ClientCancelPendingCommandTest {
   private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withUnauthenticatedAccess().withUnauthenticatedAccess();
 
-  @AutoClose private final CamundaClient client = ZEEBE.newClientBuilder().build();
+  @AutoClose
+  private final CamundaClient client = ZEEBE.newClientBuilder().preferRestOverGrpc(false).build();
 
   @Test
   void shouldCancelCommandOnFutureCancellation() {

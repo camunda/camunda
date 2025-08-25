@@ -23,12 +23,14 @@ public final class ZeebeContainerUtil {
     final ZeebeGatewayNode<?> gateway = cluster.getAvailableGateway();
 
     return CamundaClient.newClientBuilder()
+        .preferRestOverGrpc(false)
         .usePlaintext()
         .gatewayAddress(gateway.getExternalGatewayAddress());
   }
 
   public static CamundaClientBuilder newClientBuilder(final ContainerEngine containerEngine) {
     return CamundaClient.newClientBuilder()
+        .preferRestOverGrpc(false)
         .usePlaintext()
         .gatewayAddress(containerEngine.getGatewayAddress());
   }

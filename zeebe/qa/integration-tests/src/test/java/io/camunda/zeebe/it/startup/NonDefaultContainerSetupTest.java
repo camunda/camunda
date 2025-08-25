@@ -95,6 +95,7 @@ public class NonDefaultContainerSetupTest {
       final ProcessInstanceResult result;
       try (final CamundaClient client =
           CamundaClient.newClientBuilder()
+              .preferRestOverGrpc(false)
               .usePlaintext()
               .gatewayAddress(gateway.getExternalGatewayAddress())
               .build()) {

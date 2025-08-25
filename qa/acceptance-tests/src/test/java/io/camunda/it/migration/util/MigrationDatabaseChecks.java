@@ -99,6 +99,21 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
     return totalDocs > 0;
   }
 
+  public boolean checkDemoUserIsPresent() throws IOException, InterruptedException {
+    final String targetUrl =
+        String.format("%s/%s-camunda-user-8.8.0_/_doc/demo", endpoint, indexPrefix);
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(targetUrl))
+            .header("Content-Type", "application/json")
+            .GET()
+            .build();
+
+    LOGGER.info("Checking if demo user is present");
+    final var response = httpClient.send(request, BodyHandlers.ofString());
+    return response.statusCode() == 200;
+  }
+
   @Override
   public void close() {
     cleanup(indexPrefix);

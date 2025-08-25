@@ -34,7 +34,11 @@ public class OperationReferenceTest {
 
   @AutoClose
   private final CamundaClient client =
-      zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofMinutes(2)).build();
+      zeebe
+          .newClientBuilder()
+          .preferRestOverGrpc(false)
+          .defaultRequestTimeout(Duration.ofMinutes(2))
+          .build();
 
   @SuppressWarnings("unused")
   static void initTestStandaloneBroker() {

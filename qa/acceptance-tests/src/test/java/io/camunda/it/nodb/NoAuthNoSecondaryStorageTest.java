@@ -42,7 +42,7 @@ public class NoAuthNoSecondaryStorageTest {
 
   @BeforeEach
   void beforeEach() {
-    camundaClient = broker.newClientBuilder().build();
+    camundaClient = broker.newClientBuilder().preferRestOverGrpc(false).build();
   }
 
   @Test

@@ -50,7 +50,12 @@ public class FilterIT {
 
   @BeforeEach
   void initClient() {
-    client = cluster.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client =
+        cluster
+            .newClientBuilder()
+            .preferRestOverGrpc(false)
+            .defaultRequestTimeout(Duration.ofSeconds(15))
+            .build();
   }
 
   @Test

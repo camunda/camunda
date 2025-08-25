@@ -69,6 +69,6 @@ public class CamundaClientConfigurationDefaultPropertiesTest {
     assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
     assertThat(configuration.getOverrideAuthority()).isNull();
     assertThat(configuration.getRestAddress()).isEqualTo(new URI("http://0.0.0.0:8080"));
-    assertThat(configuration.preferRestOverGrpc()).isFalse();
+    assertThat(configuration.preferRestOverGrpc()).isTrue();
   }
 }

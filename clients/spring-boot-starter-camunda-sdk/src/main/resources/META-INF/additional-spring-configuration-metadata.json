@@ -175,7 +175,7 @@
     },
     {
       "name": "camunda.client.prefer-rest-over-grpc",
-      "defaultValue": false
+      "defaultValue": true
     },
     {
       "name": "camunda.client.max-message-size",

@@ -81,7 +81,7 @@ public final class CamundaClientBuilderImpl
   public static final URI DEFAULT_REST_ADDRESS = getURIFromString("http://0.0.0.0:8080");
   public static final String DEFAULT_JOB_WORKER_NAME_VAR = "default";
   public static final Duration DEFAULT_MESSAGE_TTL = Duration.ofHours(1);
-  public static final boolean DEFAULT_PREFER_REST_OVER_GRPC = false;
+  public static final boolean DEFAULT_PREFER_REST_OVER_GRPC = true;
   public static final int DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS = 1;
   public static final int DEFAULT_MAX_MESSAGE_SIZE = 5 * ONE_MB;
   public static final int DEFAULT_MAX_METADATA_SIZE = 16 * ONE_KB;

@@ -95,6 +95,9 @@ final class ContainerClusterSmokeIT {
   private CamundaClient createCamundaClient() {
     // increased request timeout as container tests might be less responsive when emulation is
     // involved e.g. emulation of ARM64
-    return newClientBuilder(cluster).defaultRequestTimeout(Duration.ofMinutes(2)).build();
+    return newClientBuilder(cluster)
+        .preferRestOverGrpc(false)
+        .defaultRequestTimeout(Duration.ofMinutes(2))
+        .build();
   }
 }

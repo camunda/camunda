@@ -100,7 +100,10 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
   /** Returns a new pre-configured client builder for this gateway */
   default CamundaClientBuilder newClientBuilder() {
     final var builder =
-        CamundaClient.newClientBuilder().grpcAddress(grpcAddress()).restAddress(restAddress());
+        CamundaClient.newClientBuilder()
+            .grpcAddress(grpcAddress())
+            .restAddress(restAddress())
+            .preferRestOverGrpc(false);
     final var security = gatewayConfig().getSecurity();
     final var restSSL = property("server.ssl.enabled", Boolean.class, false);
     if (security.isEnabled() || restSSL) {

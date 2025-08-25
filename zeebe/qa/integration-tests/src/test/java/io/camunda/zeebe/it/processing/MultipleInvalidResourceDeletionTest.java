@@ -36,7 +36,7 @@ public class MultipleInvalidResourceDeletionTest {
 
   @BeforeEach
   void beforeEach() {
-    client = zeebe.newClientBuilder().build();
+    client = zeebe.newClientBuilder().preferRestOverGrpc(false).build();
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/16429")
