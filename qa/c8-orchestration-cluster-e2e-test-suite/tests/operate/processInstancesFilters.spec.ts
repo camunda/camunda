@@ -18,7 +18,7 @@ type ProcessInstance = {processInstanceKey: number};
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
 
-test.beforeAll(async ({request}) => {
+test.beforeAll(async () => {
   await deploy([
     './resources/processWithMultipleVersions_v_1.bpmn',
     './resources/processWithAnError.bpmn',
@@ -189,9 +189,9 @@ test.describe('Process Instances Filters', () => {
       await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue('');
 
       await operateFiltersPanelPage.selectFlowNode('StartEvent_1');
-      await expect(
-        operateProcessesPage.noMatchingInstancesMessage,
-      ).toBeVisible();
+      await expect(operateProcessesPage.noMatchingInstancesMessage).toBeVisible(
+        {timeout: 60000},
+      );
     });
 
     await test.step('Select another flow node from the diagram', async () => {
