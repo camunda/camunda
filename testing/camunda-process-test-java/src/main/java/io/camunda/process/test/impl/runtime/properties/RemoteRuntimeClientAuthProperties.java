@@ -96,33 +96,31 @@ public class RemoteRuntimeClientAuthProperties {
             v -> AuthMethod.valueOf(v.toLowerCase()),
             AuthMethod.none);
 
-    username = getPropertyOrDefault(properties, PROPERTY_NAME_USERNAME, null);
+    username = getPropertyOrNull(properties, PROPERTY_NAME_USERNAME);
 
-    password = getPropertyOrDefault(properties, PROPERTY_NAME_PASSWORD, null);
+    password = getPropertyOrNull(properties, PROPERTY_NAME_PASSWORD);
 
-    clientId = getPropertyOrDefault(properties, PROPERTY_NAME_CLIENT_ID, null);
+    clientId = getPropertyOrNull(properties, PROPERTY_NAME_CLIENT_ID);
 
-    clientSecret = getPropertyOrDefault(properties, PROPERTY_NAME_CLIENT_SECRET, null);
+    clientSecret = getPropertyOrNull(properties, PROPERTY_NAME_CLIENT_SECRET);
 
-    tokenUrl = getPropertyOrDefault(properties, PROPERTY_NAME_TOKEN_URL, URI::create, null);
+    tokenUrl = getPropertyOrNull(properties, PROPERTY_NAME_TOKEN_URL, URI::create);
 
-    audience = getPropertyOrDefault(properties, PROPERTY_NAME_AUDIENCE, null);
+    audience = getPropertyOrNull(properties, PROPERTY_NAME_AUDIENCE);
 
-    scope = getPropertyOrDefault(properties, PROPERTY_NAME_SCOPE, null);
+    scope = getPropertyOrNull(properties, PROPERTY_NAME_SCOPE);
 
-    resource = getPropertyOrDefault(properties, PROPERTY_NAME_RESOURCE, null);
+    resource = getPropertyOrNull(properties, PROPERTY_NAME_RESOURCE);
 
-    keystorePath = getPropertyOrDefault(properties, PROPERTY_NAME_KEYSTORE_PATH, Paths::get, null);
+    keystorePath = getPropertyOrNull(properties, PROPERTY_NAME_KEYSTORE_PATH, Paths::get);
 
-    keystorePassword = getPropertyOrDefault(properties, PROPERTY_NAME_KEYSTORE_PASSWORD, null);
+    keystorePassword = getPropertyOrNull(properties, PROPERTY_NAME_KEYSTORE_PASSWORD);
 
-    keystoreKeyPassword =
-        getPropertyOrDefault(properties, PROPERTY_NAME_KEYSTORE_KEY_PASSWORD, null);
+    keystoreKeyPassword = getPropertyOrNull(properties, PROPERTY_NAME_KEYSTORE_KEY_PASSWORD);
 
-    truststorePath =
-        getPropertyOrDefault(properties, PROPERTY_NAME_TRUSTSTORE_PATH, Paths::get, null);
+    truststorePath = getPropertyOrNull(properties, PROPERTY_NAME_TRUSTSTORE_PATH, Paths::get);
 
-    truststorePassword = getPropertyOrDefault(properties, PROPERTY_NAME_TRUSTSTORE_PASSWORD, null);
+    truststorePassword = getPropertyOrNull(properties, PROPERTY_NAME_TRUSTSTORE_PASSWORD);
 
     credentialsCachePath =
         getPropertyOrDefault(
