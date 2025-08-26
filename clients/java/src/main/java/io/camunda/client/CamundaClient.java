@@ -64,6 +64,7 @@ import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
+import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
@@ -206,6 +207,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return the request where you must call {@code send()}
    */
   TopologyRequestStep1 newTopologyRequest();
+
+  /**
+   * Request the current cluster status. Can be used to check if the cluster is healthy (has at
+   * least one partition with a healthy leader).
+   *
+   * <pre>
+   * boolean isHealthy = camundaClient
+   *  .newStatusRequest()
+   *  .send()
+   *  .join()
+   *  .isHealthy();
+   * </pre>
+   *
+   * @return the request where you must call {@code send()}
+   */
+  StatusRequestStep1 newStatusRequest();
 
   /**
    * @return the client's configuration
