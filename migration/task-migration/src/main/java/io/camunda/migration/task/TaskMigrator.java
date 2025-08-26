@@ -15,6 +15,7 @@ import io.camunda.migration.commons.configuration.MigrationConfiguration.Migrati
 import io.camunda.migration.commons.configuration.MigrationProperties;
 import io.camunda.migration.task.adapter.TaskEntityPair;
 import io.camunda.migration.task.adapter.TaskMigrationAdapter;
+import io.camunda.migration.task.adapter.TaskWithIndex;
 import io.camunda.migration.task.adapter.es.ElasticsearchAdapter;
 import io.camunda.migration.task.adapter.os.OpensearchAdapter;
 import io.camunda.migration.task.util.MigrationUtils;
@@ -63,10 +64,9 @@ public class TaskMigrator implements Migrator {
       if (migrationIsNeeded()) {
         LOG.info("Task Migration started");
         waitUntilReadyForReindexing();
-        performReindexForDatedIndices();
         performReindexForMainIndex();
+        performReindexForDatedIndices();
         performBatchUpdatesForExportedDocuments();
-        LOG.info("Main index deleted");
         adapter.markMigrationAsCompleted();
         LOG.info("Task Migration completed successfully");
       } else {
@@ -82,7 +82,7 @@ public class TaskMigrator implements Migrator {
   }
 
   private boolean migrationIsNeeded() {
-    return !adapter.migrationIndexExists() || !adapter.migrationIsCompleted();
+    return adapter.migrationIndexExists() && !adapter.migrationIsCompleted();
   }
 
   private void waitUntilReadyForReindexing() {
@@ -147,7 +147,7 @@ public class TaskMigrator implements Migrator {
     String lastMigratedTaskId = adapter.getLastMigratedTaskId();
     List<TaskEntityPair> taskPairs = adapter.nextBatch(lastMigratedTaskId);
     while (!taskPairs.isEmpty()) {
-      final List<TaskEntity> tasksToUpdate =
+      final List<TaskWithIndex> tasksToUpdate =
           taskPairs.stream().map(this::calculateUpdatedTask).toList();
       final String currentLastMigratedTaskId =
           metricRegistry.measureTaskUpdateRoundDuration(() -> updateBatch(tasksToUpdate));
@@ -162,20 +162,23 @@ public class TaskMigrator implements Migrator {
     }
   }
 
-  private TaskEntity calculateUpdatedTask(final TaskEntityPair taskPair) {
+  private TaskWithIndex calculateUpdatedTask(final TaskEntityPair taskPair) {
     final TaskEntity sourceTask = taskPair.source();
-    final TaskEntity targetTask = taskPair.target();
+    final TaskEntity targetTask = taskPair.target().task();
     try {
-      return metricRegistry.measureTaskConsolidationDuration(
-          () -> MigrationUtils.consolidate(sourceTask, targetTask));
+      return new TaskWithIndex(
+          taskPair.target().index(),
+          metricRegistry.measureTaskConsolidationDuration(
+              () -> MigrationUtils.consolidate(sourceTask, targetTask)));
     } catch (final Exception e) {
       LOG.warn("Failed to register transform duration for task with ID {}", sourceTask.getId(), e);
-      return MigrationUtils.consolidate(sourceTask, targetTask);
+      return new TaskWithIndex(
+          taskPair.target().index(), MigrationUtils.consolidate(sourceTask, targetTask));
     }
   }
 
-  private String updateBatch(final List<TaskEntity> tasks) {
-    final String lastMigratedTaskKey = adapter.updateInNewMainIndex(tasks);
+  private String updateBatch(final List<TaskWithIndex> tasksWithIndex) {
+    final String lastMigratedTaskKey = adapter.updateAcrossAllIndices(tasksWithIndex);
     if (lastMigratedTaskKey != null) {
       adapter.writeLastMigratedTaskId(lastMigratedTaskKey);
     }
@@ -203,8 +206,12 @@ public class TaskMigrator implements Migrator {
     }
   }
 
-  private double updatedTasksCount(final String lastMigratedTaskKey, final List<TaskEntity> tasks) {
-    return tasks.stream().takeWhile(task -> !task.getId().equals(lastMigratedTaskKey)).count() + 1;
+  private double updatedTasksCount(
+      final String lastMigratedTaskKey, final List<TaskWithIndex> tasksWithIndex) {
+    return tasksWithIndex.stream()
+            .takeWhile(taskWithIndex -> !taskWithIndex.task().getId().equals(lastMigratedTaskKey))
+            .count()
+        + 1;
   }
 
   private RetryDecorator busyRetryDecorator() {

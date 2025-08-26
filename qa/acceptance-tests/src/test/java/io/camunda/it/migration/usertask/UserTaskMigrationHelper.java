@@ -7,11 +7,15 @@
  */
 package io.camunda.it.migration.usertask;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Fail.fail;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.it.migration.util.CamundaMigrator;
+import io.camunda.migration.task.adapter.TaskLegacyIndex;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
@@ -28,6 +32,7 @@ import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -67,6 +72,25 @@ public abstract class UserTaskMigrationHelper {
         startProcessInstance(migrator.getCamundaClient(), jobWorkerProcessDefinitionKey);
     taskKey = waitForTaskToBeImportedReturningId(migrator, processInstanceKey);
     USER_TASK_KEYS.put("third", taskKey);
+  }
+
+  static void completeUserTaskAndWaitForArchiving(
+      final CamundaMigrator migrator, final long taskKey, final int waitPeriodSeconds) {
+    try {
+      final var res =
+          migrator.request(
+              b ->
+                  b.POST(HttpRequest.BodyPublishers.noBody())
+                      .uri(
+                          URI.create(
+                              migrator.getWebappsUrl()
+                                  + "/user-tasks/%s/completion".formatted(taskKey))),
+              BodyHandlers.discarding());
+      assertThat(res.statusCode()).isEqualTo(204);
+    } catch (final Exception e) {
+      fail("Failed to complete user task with key %d".formatted(taskKey), e);
+    }
+    waitFor87TaskToBeArchived(migrator, taskKey, waitPeriodSeconds);
   }
 
   protected static long deployProcess(
@@ -170,5 +194,31 @@ public abstract class UserTaskMigrationHelper {
             });
 
     return userTaskKey.get();
+  }
+
+  private static void waitFor87TaskToBeArchived(
+      final CamundaMigrator migrator, final long taskKey, final int waitPeriodSeconds) {
+
+    final var legacyIndex =
+        new TaskLegacyIndex(migrator.getIndexPrefix(), migrator.isElasticsearch());
+
+    final var request =
+        SearchQueryRequest.of(
+            s ->
+                s.query(SearchQueryBuilders.term(TaskTemplate.KEY, taskKey))
+                    .index(legacyIndex.getFullQualifiedName()));
+
+    Awaitility.await("Wait for task to be archived")
+        .pollInterval(Duration.ofSeconds(1))
+        .atMost(Duration.ofSeconds(waitPeriodSeconds))
+        .until(
+            () -> {
+              final Optional<Long> taskId =
+                  migrator.getSearchClient().search(request, TaskEntity.class).hits().stream()
+                      .findFirst()
+                      .map(SearchQueryHit::source)
+                      .map(TaskEntity::getKey);
+              return taskId.isEmpty();
+            });
   }
 }
