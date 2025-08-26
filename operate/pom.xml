@@ -95,7 +95,7 @@
     <version.elasticsearch7>7.17.29</version.elasticsearch7>
     <version.elasticsearch>8.9.2</version.elasticsearch>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
-    <version.lucene>8.11.4</version.lucene>
+    <version.lucene>8.11.3</version.lucene>
     <version.error-prone>2.25.0</version.error-prone>
     <version.guava>33.0.0-jre</version.guava>
     <version.android-json>0.0.20131108.vaadin1</version.android-json>
