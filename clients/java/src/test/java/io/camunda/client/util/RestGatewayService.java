@@ -340,4 +340,25 @@ public class RestGatewayService {
   public void onRoleRequest(final String roleId, final RoleResult response) {
     registerGet(RestGatewayPaths.getRoleUrl(roleId), response);
   }
+
+  public void onStatusRequestHealthy() {
+    onStatusRequest(204);
+  }
+
+  public void onStatusRequestUnhealthy() {
+    onStatusRequest(503);
+  }
+
+  /**
+   * Register a status response with a custom HTTP status code.
+   *
+   * @param statusCode the HTTP status code to return for status requests
+   */
+  public void onStatusRequest(final int statusCode) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(RestGatewayPaths.getStatusUrl())
+                .willReturn(WireMock.aResponse().withStatus(statusCode)));
+  }
 }
