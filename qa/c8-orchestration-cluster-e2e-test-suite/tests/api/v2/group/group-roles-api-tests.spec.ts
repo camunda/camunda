@@ -137,7 +137,7 @@ test.describe('Group Roles API Tests', () => {
     });
 
     await test.step('Search Roles For Group After Deletion', async () => {
-      await sleep(5000);
+      await sleep(20000);
       const p = {groupId: state['groupId'] as string};
 
       const res = await request.post(
