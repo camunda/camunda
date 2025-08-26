@@ -26,7 +26,7 @@ public class Data {
   private Backup backup = new Backup();
 
   /** This section allows configuring export. */
-  private final Export export = new Export();
+  private Export export = new Export();
 
   /** This section allows to configure Zeebe's secondary storage. */
   private SecondaryStorage secondaryStorage = new SecondaryStorage();
@@ -64,7 +64,7 @@ public class Data {
     return export;
   }
 
-  public void setExport(Export export) {
+  public void setExport(final Export export) {
     this.export = export;
   }
 
