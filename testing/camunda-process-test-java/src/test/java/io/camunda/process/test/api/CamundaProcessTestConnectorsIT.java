@@ -44,6 +44,7 @@ public class CamundaProcessTestConnectorsIT {
           .withConnectorsSecret(
               "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness");
 
+
   // to be injected
   private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
