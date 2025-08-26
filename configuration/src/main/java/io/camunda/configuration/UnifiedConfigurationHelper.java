@@ -10,8 +10,13 @@ package io.camunda.configuration;
 import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
 import io.camunda.configuration.RocksDb.AccessMetricsKind;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.io.File;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -72,8 +77,12 @@ public class UnifiedConfigurationHelper {
       final String strValue = environment.getProperty(legacyProperty);
       final T legacyValue = parseLegacyValue(strValue, expectedType);
 
+      LOGGER.debug("Parsing legacy property '" + legacyProperty + "' -> '" + legacyValue + "'");
       if (legacyValue != null) {
         legacyValues.add(legacyValue);
+        LOGGER.debug("Parsed actual value: '" + legacyValue + "'");
+      } else {
+        LOGGER.debug("Parsed null object");
       }
     }
 
@@ -201,6 +210,7 @@ public class UnifiedConfigurationHelper {
   private static boolean legacyConfigPresent(final Set<String> legacyProperties) {
     for (final String legacyProperty : legacyProperties) {
       if (environment.containsProperty(legacyProperty)) {
+        LOGGER.debug("Found legacy property '{}'", legacyProperty);
         return true;
       }
     }
@@ -232,6 +242,26 @@ public class UnifiedConfigurationHelper {
       case "SecondaryStorageType" -> (T) SecondaryStorageType.valueOf(strValue.toLowerCase());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
+  }
+
+  /* Helper methods */
+
+  public static ExporterCfg getCamundaExporter(final BrokerBasedProperties brokerBasedProperties) {
+    final List<ExporterCfg> exporters =
+        brokerBasedProperties.getExporters().values().stream()
+            .filter(e -> e.getClassName().equals("io.camunda.exporter.CamundaExporter"))
+            .toList();
+    if (exporters.isEmpty()) {
+      return null;
+    }
+
+    return exporters.get(0);
+  }
+
+  public static ExporterConfiguration argsToExporterConfiguration(final Map<String, Object> args) {
+    return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
+            "camundaExporter", args)
+        .instantiate(ExporterConfiguration.class);
   }
 
   /* Setters used by tests to inject the mock objects */
