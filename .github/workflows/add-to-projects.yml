@@ -100,8 +100,9 @@ jobs:
           # any of the following labels:
           labeled: component/clients, component/spring-sdk, component/camunda-process-test, component/c8-api
       - id: add-to-qualityboard
-        name: Add Bugs to Quality Board project
-        uses: camunda/team-qa-engineering/automation/actions/add-to-quality-board@v1
+        name: Add to Quality Board project
+        uses: actions/add-to-project@v1.0.2
         with:
+          project-url: https://github.com/orgs/camunda/projects/187
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-        if: contains(github.event.issue.labels.*.name, 'kind/bug')
+          labeled: kind/bug
