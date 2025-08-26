@@ -17,11 +17,11 @@ import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 
 type Props = {
   type: 'from' | 'to';
-  onChange?: () => void;
   labelText: string;
+  onChange?: () => void;
 };
 
-const TimeInput: React.FC<Props> = ({type, labelText}) => {
+const TimeInput: React.FC<Props> = ({type, labelText, onChange}) => {
   return (
     <Field
       name={`${type}Time`}
@@ -31,7 +31,7 @@ const TimeInput: React.FC<Props> = ({type, labelText}) => {
         validateTimeRange,
       )}
     >
-      {({input, onChange, meta}) => {
+      {({input, meta}) => {
         return (
           <TextInput
             defaultValue={input.value}
