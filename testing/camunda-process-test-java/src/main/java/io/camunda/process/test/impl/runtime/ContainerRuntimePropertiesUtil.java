@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime;
 
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
@@ -24,6 +25,7 @@ import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeProperties;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -39,7 +41,6 @@ public final class ContainerRuntimePropertiesUtil {
   public static final String USER_RUNTIME_PROPERTIES_FILE = "camunda-container-runtime.properties";
 
   public static final String PROPERTY_NAME_RUNTIME_MODE = "runtimeMode";
-
   public static final String PROPERTY_NAME_ELASTICSEARCH_VERSION = "elasticsearch.version";
 
   private static final String BASE_DIR = "/";
@@ -193,7 +194,19 @@ public final class ContainerRuntimePropertiesUtil {
     return remoteRuntimeProperties.getRemoteClientProperties().getRestAddress();
   }
 
+  public Duration getCamundaClientRequestTimeout() {
+    return remoteRuntimeProperties.getRemoteClientProperties().getRequestTimeout();
+  }
+
   public CamundaProcessTestRuntimeMode getRuntimeMode() {
     return runtimeMode;
+  }
+
+  public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
+    return remoteRuntimeProperties.getRemoteClientProperties().getClientBuilderFactory();
+  }
+
+  public RemoteRuntimeProperties getRemoteRuntimeProperties() {
+    return remoteRuntimeProperties;
   }
 }

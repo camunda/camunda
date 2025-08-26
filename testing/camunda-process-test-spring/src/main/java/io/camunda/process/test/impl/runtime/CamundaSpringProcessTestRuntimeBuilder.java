@@ -36,6 +36,9 @@ public class CamundaSpringProcessTestRuntimeBuilder {
     final CamundaProcessTestRuntimeMode runtimeMode = runtimeConfiguration.getRuntimeMode();
     runtimeBuilder.withRuntimeMode(runtimeMode);
 
+    runtimeBuilder.withCamundaClientRequestTimeout(
+        runtimeConfiguration.getRemote().getClient().getRequestTimeout());
+
     if (runtimeMode == CamundaProcessTestRuntimeMode.MANAGED || runtimeMode == null) {
       configureManagedRuntime(runtimeBuilder, runtimeConfiguration);
 
@@ -92,6 +95,8 @@ public class CamundaSpringProcessTestRuntimeBuilder {
         runtimeConfiguration.getRemote().getClient();
 
     final CamundaClientBuilder clientBuilder = createCamundaClientBuilder(remoteClientProperties);
+    clientBuilder.defaultRequestTimeout(
+        runtimeConfiguration.getRemote().getClient().getRequestTimeout());
 
     if (remoteClientProperties.getRestAddress() != null) {
       clientBuilder.restAddress(remoteClientProperties.getRestAddress());

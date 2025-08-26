@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.coverage.ProcessCoverage;
 import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -494,6 +495,29 @@ public class CamundaProcessTestExtension
   public CamundaProcessTestExtension withRemoteConnectorsRestApiAddress(
       final URI remoteConnectorsRestApiAddress) {
     runtimeBuilder.withRemoteConnectorsRestApiAddress(remoteConnectorsRestApiAddress);
+    return this;
+  }
+
+  /**
+   * Provide a custom credentials provider for a remote Camunda runtime.
+   *
+   * @param credentialsProvider the credentials provider for the remote runtime.
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withRemoteCamundaClientCredentialsProvider(
+      final CredentialsProvider credentialsProvider) {
+    runtimeBuilder.withCredentialsProvider(credentialsProvider);
+    return this;
+  }
+
+  /**
+   * Configure the request timeout for the Camunda Client
+   *
+   * @param requestTimeout time to wait before the request times out
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withClientRequestTimeout(final Duration requestTimeout) {
+    runtimeBuilder.withCamundaClientRequestTimeout(requestTimeout);
     return this;
   }
 
