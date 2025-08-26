@@ -40,12 +40,17 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class SecondaryStorageTest {
   private static final String EXPECTED_CLUSTER_NAME = "sample-cluster";
 
+  private static final String EXPECTED_USERNAME = "testUsername";
+  private static final String EXPECTED_PASSWORD = "testPassword";
+
   @Nested
   @TestPropertySource(
       properties = {
         "camunda.data.secondary-storage.type=elasticsearch",
         "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
-        "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME
+        "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
+        "camunda.data.secondary-storage.elasticsearch.username=" + EXPECTED_USERNAME,
+        "camunda.data.secondary-storage.elasticsearch.password=" + EXPECTED_PASSWORD
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -71,6 +76,8 @@ public class SecondaryStorageTest {
 
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(operateProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
+      assertThat(operateProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(operateProperties.getElasticsearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
     }
@@ -82,6 +89,8 @@ public class SecondaryStorageTest {
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(tasklistProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
+      assertThat(tasklistProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
 
     @Test
@@ -98,6 +107,8 @@ public class SecondaryStorageTest {
           UnifiedConfigurationHelper.argsToExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
+      assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
+      assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
 
     @Test
@@ -120,7 +131,16 @@ public class SecondaryStorageTest {
         "camunda.database.url=http://matching-url:4321",
         "camunda.tasklist.elasticsearch.url=http://matching-url:4321",
         "camunda.operate.elasticsearch.url=http://matching-url:4321",
-
+        // username
+        "camunda.data.secondary-storage.elasticsearch.username=" + EXPECTED_USERNAME,
+        "camunda.database.username=" + EXPECTED_USERNAME,
+        "camunda.operate.elasticsearch.username=" + EXPECTED_USERNAME,
+        "camunda.tasklist.elasticsearch.username=" + EXPECTED_USERNAME,
+        // password
+        "camunda.data.secondary-storage.elasticsearch.password=" + EXPECTED_PASSWORD,
+        "camunda.database.password=" + EXPECTED_PASSWORD,
+        "camunda.operate.elasticsearch.password=" + EXPECTED_PASSWORD,
+        "camunda.tasklist.elasticsearch.password=" + EXPECTED_PASSWORD,
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
         //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
         //  the className is also configured.
@@ -157,6 +177,8 @@ public class SecondaryStorageTest {
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(operateProperties.getElasticsearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(operateProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
+      assertThat(operateProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
 
     @Test
@@ -166,6 +188,8 @@ public class SecondaryStorageTest {
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(tasklistProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
+      assertThat(tasklistProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(tasklistProperties.getElasticsearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
     }
@@ -184,6 +208,8 @@ public class SecondaryStorageTest {
           UnifiedConfigurationHelper.argsToExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
+      assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
+      assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(exporterConfiguration.getConnect().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
     }
@@ -193,6 +219,8 @@ public class SecondaryStorageTest {
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo("elasticsearch");
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://matching-url:4321");
       assertThat(searchEngineConnectProperties.getClusterName()).isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(searchEngineConnectProperties.getUsername()).isEqualTo(EXPECTED_USERNAME);
+      assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
   }
 }

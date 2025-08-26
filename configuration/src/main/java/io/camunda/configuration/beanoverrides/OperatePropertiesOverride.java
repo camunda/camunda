@@ -56,10 +56,8 @@ public class OperatePropertiesOverride {
 
     if (SecondaryStorageType.elasticsearch.equals(database.getType())) {
       populateFromElasticsearch(override, database);
-      override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
     } else if (SecondaryStorageType.opensearch == database.getType()) {
       populateFromOpensearch(override, database);
-      override.getOpensearch().setClusterName(database.getOpensearch().getClusterName());
     }
 
     return override;
@@ -79,7 +77,9 @@ public class OperatePropertiesOverride {
       final OperateProperties override, final SecondaryStorage database) {
     override.setDatabase(DatabaseType.Elasticsearch);
     override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
-    override.getZeebeElasticsearch().setUrl(database.getElasticsearch().getUrl());
+    override.getElasticsearch().setUsername(database.getElasticsearch().getUsername());
+    override.getElasticsearch().setPassword(database.getElasticsearch().getPassword());
+    override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
 
     populateFromSecurity(
         database.getElasticsearch().getSecurity(),
@@ -91,7 +91,9 @@ public class OperatePropertiesOverride {
       final OperateProperties override, final SecondaryStorage database) {
     override.setDatabase(DatabaseType.Opensearch);
     override.getOpensearch().setUrl(database.getOpensearch().getUrl());
-    override.getZeebeOpensearch().setUrl(database.getOpensearch().getUrl());
+    override.getOpensearch().setUsername(database.getOpensearch().getUsername());
+    override.getOpensearch().setPassword(database.getOpensearch().getPassword());
+    override.getOpensearch().setClusterName(database.getOpensearch().getClusterName());
 
     populateFromSecurity(
         database.getOpensearch().getSecurity(),

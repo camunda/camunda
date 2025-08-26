@@ -466,6 +466,8 @@ public class BrokerBasedPropertiesOverride {
       setArg(args, "connect.security.verifyHostname", database.getSecurity().isVerifyHostname());
       setArg(args, "connect.security.selfSigned", database.getSecurity().isSelfSigned());
     }
+    setArg(args, "connect.username", database.getUsername());
+    setArg(args, "connect.password", database.getPassword());
   }
 
   @SuppressWarnings("unchecked")

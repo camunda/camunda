@@ -97,7 +97,9 @@ public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
               "camunda.tasklist.zeebeOpensearch.username=elastic",
               "camunda.tasklist.zeebeOpensearch.password=elastic",
               "camunda.tasklist.zeebeOpensearch.clusterName=docker-cluster",
-              "camunda.tasklist.zeebeOpensearch.prefix=zeebe-record")
+              "camunda.tasklist.zeebeOpensearch.prefix=zeebe-record",
+              "camunda.data.secondary-storage.opensearch.username=elastic",
+              "camunda.data.secondary-storage.opensearch.password=elastic")
           .applyTo(applicationContext.getEnvironment());
     }
   }
