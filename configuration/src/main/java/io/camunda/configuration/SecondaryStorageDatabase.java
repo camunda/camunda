@@ -28,7 +28,18 @@ public abstract class SecondaryStorageDatabase {
     this.url = url;
   }
 
-  protected abstract String prefix();
+  private String prefix() {
+    return "camunda.data.secondary-storage." + databaseName().toLowerCase();
+  }
 
-  protected abstract Set<String> legacyUrlProperties();
+  private Set<String> legacyUrlProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.url",
+        "camunda.operate." + dbName + ".url",
+        "camunda.tasklist." + dbName + ".url",
+        "zeebe.broker.exporters.camundaexporter.args.connect.url");
+  }
+
+  protected abstract String databaseName();
 }
