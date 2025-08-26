@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
@@ -123,6 +124,35 @@ public final class HttpClient implements AutoCloseable {
       final HttpCamundaFuture<RespT> result) {
     sendRequest(
         Method.GET, path, queryParams, null, requestConfig, responseType, transformer, result);
+  }
+
+  public <RespT> void get(
+      final String path,
+      final RequestConfig requestConfig,
+      final Predicate<Integer> successPredicate,
+      final StatusCodeTransformer<RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    get(path, Collections.emptyMap(), requestConfig, successPredicate, transformer, result);
+  }
+
+  public <RespT> void get(
+      final String path,
+      final Map<String, String> queryParams,
+      final RequestConfig requestConfig,
+      final Predicate<Integer> successPredicate,
+      final StatusCodeTransformer<RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    sendRequest(
+        Method.GET,
+        path,
+        queryParams,
+        null,
+        requestConfig,
+        MAX_RETRY_ATTEMPTS,
+        successPredicate,
+        transformer,
+        result,
+        null);
   }
 
   public <RespT> void post(
@@ -345,6 +375,63 @@ public final class HttpClient implements AutoCloseable {
         client.execute(
             SimpleRequestProducer.create(request),
             new ApiResponseConsumer<>(entityConsumer),
+            apiCallback.get()));
+  }
+
+  private <RespT> void sendRequest(
+      final Method httpMethod,
+      final String path,
+      final Map<String, String> queryParams,
+      final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
+      final RequestConfig requestConfig,
+      final int maxRetries,
+      final Predicate<Integer> successPredicate,
+      final StatusCodeTransformer<RespT> transformer,
+      final HttpCamundaFuture<RespT> result,
+      final StatusCodeBasedApiCallback<RespT> callback) {
+    final AtomicReference<StatusCodeBasedApiCallback<RespT>> apiCallback =
+        new AtomicReference<>(callback);
+    // Create retry action to re-execute the same request
+    final Runnable retryAction =
+        () -> {
+          if (result.isCancelled()) {
+            return;
+          }
+          sendRequest(
+              httpMethod,
+              path,
+              queryParams,
+              body,
+              requestConfig,
+              maxRetries,
+              successPredicate,
+              transformer,
+              result,
+              apiCallback.get());
+        };
+
+    final SimpleHttpRequest request =
+        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path));
+    if (request == null) {
+      return;
+    }
+    request.setConfig(requestConfig);
+
+    if (apiCallback.get() == null) {
+      apiCallback.set(
+          new StatusCodeBasedApiCallback<>(
+              result,
+              transformer,
+              successPredicate,
+              credentialsProvider::shouldRetryRequest,
+              retryAction,
+              maxRetries));
+    }
+
+    result.transportFuture(
+        client.execute(
+            SimpleRequestProducer.create(request),
+            new ApiResponseConsumer<>(new VoidEntityConsumer(maxMessageSize)),
             apiCallback.get()));
   }
 
