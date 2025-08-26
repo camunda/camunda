@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime;
 
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
@@ -194,10 +195,14 @@ public final class ContainerRuntimePropertiesUtil {
   }
 
   public Duration getCamundaClientRequestTimeout() {
-    return remoteRuntimeProperties.getRemoteClientProperties().getCamundaClientRequestTimeout();
+    return remoteRuntimeProperties.getRemoteClientProperties().getRequestTimeout();
   }
 
   public CamundaProcessTestRuntimeMode getRuntimeMode() {
     return runtimeMode;
+  }
+
+  public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
+    return remoteRuntimeProperties.getRemoteClientProperties().getClientBuilderFactory();
   }
 }
