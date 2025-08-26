@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 public class UnifiedConfigurationHelper {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
-  private static final ConversionService CONVERSATION_SERVICE = new ApplicationConversionService();
+  private static final ConversionService CONVERSION_SERVICE = new ApplicationConversionService();
 
   private static Environment environment;
 
@@ -248,7 +248,7 @@ public class UnifiedConfigurationHelper {
 
     // simple types
     if (generics.length == 0) {
-      return (T) CONVERSATION_SERVICE.convert(strValue, rawClass);
+      return (T) CONVERSION_SERVICE.convert(strValue, rawClass);
     }
 
     // generic types
@@ -256,7 +256,7 @@ public class UnifiedConfigurationHelper {
       final TypeDescriptor targetType =
           TypeDescriptor.collection(rawClass, TypeDescriptor.valueOf(generics[0].resolve()));
       return (T)
-          CONVERSATION_SERVICE.convert(strValue, TypeDescriptor.valueOf(String.class), targetType);
+          CONVERSION_SERVICE.convert(strValue, TypeDescriptor.valueOf(String.class), targetType);
     }
 
     throw new IllegalArgumentException("Unsupported type: " + expectedType);

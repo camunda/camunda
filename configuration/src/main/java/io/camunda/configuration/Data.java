@@ -64,6 +64,10 @@ public class Data {
     return export;
   }
 
+  public void setExport(Export export) {
+    this.export = export;
+  }
+
   public SecondaryStorage getSecondaryStorage() {
     return secondaryStorage;
   }
