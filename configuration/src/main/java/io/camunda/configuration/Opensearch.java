@@ -7,21 +7,10 @@
  */
 package io.camunda.configuration;
 
-import java.util.Set;
-
 public class Opensearch extends SecondaryStorageDatabase {
 
   @Override
-  protected String prefix() {
-    return "camunda.data.secondary-storage.opensearch";
-  }
-
-  @Override
-  protected Set<String> legacyUrlProperties() {
-    return Set.of(
-        "camunda.database.url",
-        "camunda.operate.opensearch.url",
-        "camunda.tasklist.opensearch.url",
-        "zeebe.broker.exporters.camundaexporter.args.connect.url");
+  protected String databaseName() {
+    return "opensearch";
   }
 }
