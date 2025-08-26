@@ -25,11 +25,11 @@ const AutoSubmit: React.FC<Props> = ({fieldsToSkipTimeout = []}) => {
     },
   });
   const shouldSkipTimeout = fieldsToSkipTimeout
-    .map((field) => dirtyFields[field])
+    .map((field) => dirtyFields?.[field])
     .some((field) => field);
 
   const isDirty =
-    Object.entries(dirtyFields).filter(([, value]) => value).length > 0;
+    Object.entries(dirtyFields || {}).filter(([, value]) => value).length > 0;
 
   useEffect(() => {
     if (isDirty && shouldSkipTimeout) {
