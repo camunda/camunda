@@ -104,7 +104,10 @@ test.describe('delete finished instances', () => {
       URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
-        batchOperations: [mockNewDeleteOperation, ...mockBatchOperations],
+        batchOperations: {
+          ...mockBatchOperations,
+          items: [mockNewDeleteOperation, ...mockBatchOperations.items],
+        },
         processInstances: processInstancesMock,
         statisticsV2: mockStatisticsV2,
         processXml: openFile(

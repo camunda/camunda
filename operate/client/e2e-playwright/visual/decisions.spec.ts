@@ -44,7 +44,7 @@ test.describe('decisions page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        batchOperations: [],
+        batchOperations: {items: [], page: {totalItems: 0}},
         groupedDecisions: mockGroupedDecisions,
         decisionXml: '',
         decisionInstances: {
