@@ -89,4 +89,30 @@ final class ContainerStateAssert
 
     return myself;
   }
+
+  // Sometimes a snapshot is created at position 0, because of migration. So we accept either no
+  // snapshot or a snapshot at position 0.
+  public ContainerStateAssert hasNoSnapshotAvailableOrHasSnapshotAtPosition0(
+      final int partitionId) {
+    final Map<Integer, PartitionStatus> partitions = actual.getPartitionsActuator().query();
+    final PartitionStatus partitionStatus = partitions.get(partitionId);
+    if (partitionStatus == null) {
+      failWithMessage(
+          "expected partitions query to return info about partition %d, but got %s",
+          partitionId, partitions.keySet());
+      return myself;
+    }
+
+    // the IDE is unaware that if null, failWithMessage will throw and we won't reach here, so
+    // disable the warning
+    final var hasNoSnapshot =
+        partitionStatus.snapshotId() == null || partitionStatus.snapshotId().isBlank();
+    final var hasSnapshotWithPosition0 =
+        !hasNoSnapshot && partitionStatus.processedPositionInSnapshot() == 0;
+
+    if (!hasNoSnapshot && !hasSnapshotWithPosition0) {
+      failWithMessage("expected to have no snapshot, but got %s", partitionStatus.snapshotId());
+    }
+    return myself;
+  }
 }

@@ -46,7 +46,7 @@ final class NoSnapshotTest {
     state.withNetwork(network).withOldBroker().start(true);
     final long processInstanceKey = testCase.setUp(state.client());
     final long key = testCase.runBefore(state);
-    assertThat(state).hasNoSnapshotAvailable(1);
+    assertThat(state).hasNoSnapshotAvailableOrHasSnapshotAtPosition0(1);
 
     // when
     state.close();
