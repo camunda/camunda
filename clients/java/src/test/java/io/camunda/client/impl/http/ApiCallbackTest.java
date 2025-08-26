@@ -29,20 +29,22 @@ class ApiCallbackTest {
 
   public static final int DEFAULT_REMAINING_RETRIES = 2;
   private CompletableFuture<String> response;
-  private JsonResponseTransformer<String, String> transformer;
+  private JsonResponseAndStatusCodeTransformer<String, String> transformer;
   private Predicate<StatusCode> retryPredicate;
+  private Predicate<Integer> successPredicate;
   private Runnable retryAction;
   private ApiCallback<String, String> apiCallback;
 
   @BeforeEach
   void setUp() {
     response = new CompletableFuture<>();
-    transformer = mock(JsonResponseTransformer.class);
+    transformer = mock(JsonResponseAndStatusCodeTransformer.class);
     retryPredicate = mock(Predicate.class);
+    successPredicate = mock(Predicate.class);
     retryAction = mock(Runnable.class);
     apiCallback =
         new ApiCallback<>(
-            response, transformer, retryPredicate, retryAction, DEFAULT_REMAINING_RETRIES);
+            response, transformer, null, retryPredicate, retryAction, DEFAULT_REMAINING_RETRIES);
   }
 
   @Test
@@ -129,6 +131,89 @@ class ApiCallbackTest {
 
     // Final attempt - should complete exceptionally, no further retry
     apiCallback.completed(apiResponse);
+    assertThat(response.isCompletedExceptionally()).isTrue();
+  }
+
+  @Test
+  void shouldUseStatusCodeTransformerWhenNoResponseBody() throws Exception {
+    // given
+    when(successPredicate.test(503)).thenReturn(true);
+    when(transformer.transform(null, 503)).thenReturn("DOWN");
+
+    apiCallback =
+        new ApiCallback<>(
+            response,
+            transformer,
+            successPredicate,
+            retryPredicate,
+            retryAction,
+            DEFAULT_REMAINING_RETRIES);
+
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(503);
+    when(apiResponse.entity()).thenReturn(null);
+
+    // when
+    apiCallback.completed(apiResponse);
+
+    // then
+    assertThat(response.isCompletedExceptionally()).isFalse();
+    assertThat(response.get()).isEqualTo("DOWN");
+    verify(transformer).transform(null, 503);
+  }
+
+  @Test
+  void shouldRetryWithStatusCodeTransformerWhenRetryPredicateIsTrue() {
+    // given
+    when(successPredicate.test(500)).thenReturn(false);
+    when(retryPredicate.test(any())).thenReturn(true);
+
+    apiCallback =
+        new ApiCallback<>(
+            response,
+            transformer,
+            successPredicate,
+            retryPredicate,
+            retryAction,
+            DEFAULT_REMAINING_RETRIES);
+
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(500);
+    when(apiResponse.entity()).thenReturn(null);
+
+    // when
+    apiCallback.completed(apiResponse);
+
+    // then
+    verify(retryAction, times(1)).run();
+    assertThat(response.isCompletedExceptionally()).isFalse();
+  }
+
+  @Test
+  void shouldFailWithStatusCodeTransformerWhenRetryPredicateIsFalse() {
+    // given
+    when(successPredicate.test(400)).thenReturn(false);
+    when(retryPredicate.test(any())).thenReturn(false);
+
+    apiCallback =
+        new ApiCallback<>(
+            response,
+            transformer,
+            successPredicate,
+            retryPredicate,
+            retryAction,
+            DEFAULT_REMAINING_RETRIES);
+
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(400);
+    when(apiResponse.getReasonPhrase()).thenReturn("Bad Request");
+    when(apiResponse.entity()).thenReturn(null);
+
+    // when
+    apiCallback.completed(apiResponse);
+
+    // then
+    verifyNoInteractions(retryAction);
     assertThat(response.isCompletedExceptionally()).isTrue();
   }
 }
