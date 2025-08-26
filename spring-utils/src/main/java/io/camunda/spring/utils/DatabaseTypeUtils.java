@@ -19,12 +19,10 @@ public final class DatabaseTypeUtils {
   private DatabaseTypeUtils() {}
 
   public static boolean isSecondaryStorageEnabled(final Environment env) {
-    String dbType = env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE);
-    if (dbType == null) {
-      dbType =
-          Optional.ofNullable(env.getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE))
-              .orElse("elasticsearch");
-    }
+    final String dbType =
+        Optional.ofNullable(env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE))
+            .orElse("elasticsearch");
+
     return !"none".equalsIgnoreCase(dbType);
   }
 }

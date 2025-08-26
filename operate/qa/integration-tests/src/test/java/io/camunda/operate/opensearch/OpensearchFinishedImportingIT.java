@@ -9,7 +9,6 @@ package io.camunda.operate.opensearch;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import io.camunda.operate.conditions.DatabaseCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
@@ -45,7 +44,13 @@ import org.springframework.test.context.TestPropertySource;
  * run -p 9200:9200 -p 9600:9600 -e "discovery.type=single-node" -e "plugins.security.disabled=true"
  * -e "OPENSEARCH_INITIAL_ADMIN_PASSWORD=APassword321?" opensearchproject/opensearch:latest
  */
-@TestPropertySource(properties = DatabaseCondition.DATABASE_PROPERTY + "=opensearch")
+@TestPropertySource(
+    properties = {
+      "camunda.data.secondary-storage.type=opensearch",
+      "camunda.database.type=opensearch",
+      "camunda.tasklist.database=opensearch",
+      "camunda.operate.database=opensearch"
+    })
 public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
 
   private static final OpensearchExporter EXPORTER = new OpensearchExporter();
