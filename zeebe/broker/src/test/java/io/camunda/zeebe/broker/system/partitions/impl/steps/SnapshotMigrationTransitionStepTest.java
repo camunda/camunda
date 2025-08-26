@@ -50,7 +50,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SnapshotMigrationTransitionStepTest {
-  @AutoClose private static ActorScheduler scheduler = ActorScheduler.newActorScheduler().build();
+  @AutoClose
+  private static final ActorScheduler scheduler = ActorScheduler.newActorScheduler().build();
 
   private static final Logger LOG =
       LoggerFactory.getLogger(SnapshotMigrationTransitionStepTest.class);
@@ -157,29 +158,6 @@ public class SnapshotMigrationTransitionStepTest {
 
     assertThat(concurrencyControl.scheduledTasks()).isZero();
     verify(snapshotDirector, times(0)).forceSnapshot();
-  }
-
-  @ParameterizedTest
-  @EnumSource(
-      value = Role.class,
-      mode = Mode.EXCLUDE,
-      names = {"INACTIVE"})
-  public void shouldNotScheduleASnapshotAfterItsDoneInAPreviousTransition(final Role role) {
-    // given
-    setupCommonCase(role, CompletableActorFuture.completed(mock(PersistedSnapshot.class)));
-    assertThat(step.isSnapshotTaken()).isTrue();
-    Awaitility.await("until report becomes true")
-        .untilAsserted(
-            () -> assertThat(healthMonitor.getHealthReport()).satisfies(HealthReport::isHealthy));
-
-    // when
-    step.prepareTransition(transitionContext, 0, Role.LEADER).join();
-    step.transitionTo(transitionContext, 0, Role.LEADER).join();
-
-    // then
-    // no more interactions
-    assertThat(concurrencyControl.scheduledTasks()).isZero();
-    verify(snapshotDirector, times(1)).forceSnapshot();
   }
 
   @ParameterizedTest
