@@ -23,7 +23,6 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.Backup
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
-import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
@@ -48,12 +47,12 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -309,27 +308,33 @@ public class ScaleUpPartitionsTest {
             .messageCorrelation(new MessageCorrelationHashMod("HashMod", 3)));
   }
 
-  @Disabled("https://github.com/camunda/camunda/issues/21470")
   @Test
   public void shouldBePossibleToRestoreFromBackupTakenAfterScaleup()
       throws IOException, InterruptedException {
     // given
     final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
-    final var backupId = 1L;
+    final AtomicLong backupId = new AtomicLong();
 
     // when
     scaleToPartitions(desiredPartitionCount);
     awaitScaleUpCompletion(desiredPartitionCount);
 
-    final GetTopologyResponse topology = clusterActuator.getTopology();
-    final var routingStateAfterScaling = topology.getRouting();
+    final var routingStateAfterScaling = clusterActuator.getTopology().getRouting();
 
-    Thread.sleep(30000);
-    backupActuator.take(backupId);
-    assertBackupIsCompleted(backupId);
+    // TODO: Remove awaitility after fixing the bug https://github.com/camunda/camunda/issues/37004
+    Awaitility.await()
+        .atMost(Duration.ofMinutes(1))
+        .pollInterval(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThatNoException()
+                    .isThrownBy(() -> backupActuator.take(backupId.incrementAndGet())));
 
-    restartClusterFromBackup(backupId, desiredPartitionCount);
+    final var successfulBackupId = backupId.get();
+    assertBackupIsCompleted(successfulBackupId);
+
+    restartClusterFromBackup(successfulBackupId, desiredPartitionCount);
 
     assertThatRoutingStateMatches(routingStateAfterScaling);
   }
@@ -478,7 +483,11 @@ public class ScaleUpPartitionsTest {
     // then
     // the topology is restored to the desired partition count and message correlation
     cluster.start();
-    cluster.awaitCompleteTopology();
+    cluster.awaitCompleteTopology(
+        cluster.brokers().size(),
+        desiredPartitionCount,
+        cluster.replicationFactor(),
+        Duration.ofMinutes(2));
   }
 
   private void restoreAllBrokers(final long backupId, final int desiredPartitionCount)
