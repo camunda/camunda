@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -240,7 +241,17 @@ public class Engine implements RecordProcessor {
       writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
       writers
           .response()
-          .writeRejectionOnCommand(record, RejectionType.PROCESSING_ERROR, errorMessage);
+          .writeRejectionOnCommand(
+              record,
+              RejectionType.PROCESSING_ERROR,
+              """
+                Expected to process command %d (%s.%s) without errors, but unexpected error occurred. \
+                Check your broker logs (partition %d), or ask your operator, for more details."""
+                  .formatted(
+                      Protocol.encodePartitionId(record.getPartitionId(), record.getKey()),
+                      record.getValueType(),
+                      record.getIntent(),
+                      record.getPartitionId()));
     }
     errorRecord.initErrorRecord(processingException, record.getPosition());
 
