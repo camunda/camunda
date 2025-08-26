@@ -2,14 +2,22 @@ testcontainers:
   elasticsearch: "docker.elastic.co/elasticsearch/elasticsearch:8.16.6"
   opensearch: "opensearchproject/opensearch:2.5.0"
 
+# Unified Configuration
+camunda:
+  data:
+    secondary-storage:
+      type: 'elasticsearch'
+      elasticsearch:
+        url: 'http://localhost:9200'
+        cluster-name: 'docker-cluster'
+# ---
+
 camunda.operate:
   username: demo
   password: demo
   backup:
     repositoryName: repoName
   elasticsearch:
-    clusterName: docker-cluster
-    url: http://localhost:9200
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   zeebe:
     gatewayAddress: localhost:26500

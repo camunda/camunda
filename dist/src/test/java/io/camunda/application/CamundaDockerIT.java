@@ -30,14 +30,19 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 @EnabledIfSystemProperty(named = "camunda.docker.test.enabled", matches = "true")
 public class CamundaDockerIT {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CamundaDockerIT.class);
 
   private static final int SERVER_PORT = 8080;
   private static final int MANAGEMENT_PORT = 9600;
@@ -122,7 +127,7 @@ public class CamundaDockerIT {
 
     camundaContainer.start();
 
-    final String host = "http://" + createCamundaContainer().getHost() + ":";
+    final String host = "http://" + camundaContainer.getHost() + ":";
     final String camundaEndpoint = host + camundaContainer.getMappedPort(SERVER_PORT);
     final CamundaClient camundaClient =
         new CamundaClientBuilderImpl()
@@ -178,6 +183,7 @@ public class CamundaDockerIT {
     // create camunda container with only StandalonePrefixMigration app
     final var prefixMigrationContainer =
         new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
+            .withLogConsumer(new Slf4jLogConsumer(LOGGER))
             .withCreateContainerCmdModifier(
                 (final CreateContainerCmd cmd) ->
                     cmd.withEntrypoint("/usr/local/camunda/bin/prefix-migration"))
@@ -188,8 +194,7 @@ public class CamundaDockerIT {
             // Unified Configuration
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
-            // ---
-            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", "some-prefix");
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEX_PREFIX", "some-prefix");
 
     // when - then the container should start without errors
     startContainer(createContainer(() -> prefixMigrationContainer));
@@ -222,6 +227,7 @@ public class CamundaDockerIT {
 
   private GenericContainer createUnauthenticatedUnifiedConfigCamundaContainer() {
     return new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
+        .withLogConsumer(new Slf4jLogConsumer(LOGGER))
         .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
         .withNetwork(Network.SHARED)
         .withNetworkAliases(CAMUNDA_NETWORK_ALIAS)
@@ -234,6 +240,8 @@ public class CamundaDockerIT {
         // Unified Configuration
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
         // ---
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
@@ -241,6 +249,7 @@ public class CamundaDockerIT {
 
   private GenericContainer createCamundaContainer() {
     return new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
+        .withLogConsumer(new Slf4jLogConsumer(LOGGER))
         .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
         .withNetwork(Network.SHARED)
         .withNetworkAliases(CAMUNDA_NETWORK_ALIAS)
@@ -261,6 +270,8 @@ public class CamundaDockerIT {
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)
         // ---
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
         .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", gatewayAddress())
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
   }

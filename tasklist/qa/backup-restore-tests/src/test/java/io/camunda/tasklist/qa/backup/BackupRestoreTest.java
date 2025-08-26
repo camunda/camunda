@@ -111,15 +111,14 @@ public class BackupRestoreTest {
             // Unified Configuration: DB type + compatibility
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", dbType)
             .withEnv("CAMUNDA_TASKLIST_DATABASE", dbType)
-            // Unified Configuration: DB URL + compatibility
-            // ---
-            .withEnv("CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME", REPOSITORY_NAME)
-            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", INDEX_PREFIX)
+            // Unified Configuration: index prefix
             .withEnv(
                 TestUtil.isOpenSearch()
-                    ? "CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX"
-                    : "CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX",
+                    ? "CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX"
+                    : "CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX",
                 INDEX_PREFIX)
+            // ---
+            .withEnv("CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME", REPOSITORY_NAME)
             .withEnv("CAMUNDA_TASKLIST_CSRF_PREVENTION_ENABLED", "false")
             .withEnv("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED", "true")
             .withEnv("CAMUNDA_TASKLIST_IMPORTERENABLED", "false")

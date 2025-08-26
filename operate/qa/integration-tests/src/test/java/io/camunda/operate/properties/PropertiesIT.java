@@ -8,8 +8,10 @@
 package io.camunda.operate.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
@@ -27,12 +29,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
+      // Unified Configuration classes
+      UnifiedConfigurationHelper.class,
+      OperatePropertiesOverride.class,
+      UnifiedConfiguration.class,
+      // ---
       TestApplicationWithNoBeans.class,
       DatabaseInfo.class,
-      OperatePropertiesOverride.class,
-      CamundaSecurityProperties.class,
-      UnifiedConfiguration.class,
-      UnifiedConfigurationHelper.class
+      CamundaSecurityProperties.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles({"test-properties", "operate", "standalone"})
@@ -40,10 +44,17 @@ public class PropertiesIT {
 
   @Autowired private OperateProperties operateProperties;
   @Autowired private SecurityConfiguration securityConfiguration;
+  @Autowired private UnifiedConfiguration unifiedConfiguration;
 
   @Test
   // TODO extend for new properties
   public void testProperties() {
+    // The file application-test-properties.yml only has data related to Elasticsearch.
+    assumeTrue(
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()
+            == SecondaryStorageType.elasticsearch,
+        "Skipping because DB is not Elasticsearch");
+
     assertThat(operateProperties.getImporter().isStartLoadingDataOnStartup()).isFalse();
     assertThat(operateProperties.getBatchOperationMaxSize()).isEqualTo(500);
     assertThat(operateProperties.getElasticsearch().getClusterName()).isEqualTo("clusterName");
