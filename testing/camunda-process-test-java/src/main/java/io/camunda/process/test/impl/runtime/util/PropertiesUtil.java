@@ -30,6 +30,18 @@ public class PropertiesUtil {
   private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{.*}");
 
   /**
+   * Reads a property and returns null if it doesn't exist or the value is a placeholder.
+   *
+   * @param properties the properties object containing the property
+   * @param propertyName the property key
+   * @return the property value or the default
+   */
+  public static String getPropertyOrNull(final Properties properties, final String propertyName) {
+
+    return getPropertyOrDefault(properties, propertyName, null);
+  }
+
+  /**
    * Reads a property and returns a default if it doesn't exist or the value is a placeholder.
    *
    * @param properties the properties object containing the property
@@ -49,6 +61,32 @@ public class PropertiesUtil {
     }
   }
 
+  /**
+   * Reads and transforms a property to a specific type. Returns null if it doesn't exist, the value
+   * is a placeholder or the conversion failed.
+   *
+   * @param properties the properties object containing the property
+   * @param propertyName the property key
+   * @param converter a mapping function converting the value from a String to another type
+   * @return the property value or the default
+   */
+  public static <T> T getPropertyOrNull(
+      final Properties properties, final String propertyName, final Function<String, T> converter) {
+
+    return getPropertyOrDefault(properties, propertyName, converter, null);
+  }
+
+  /**
+   * Reads and transforms a property to a specific type. Returns a default value if it doesn't exist
+   * or the value is a placeholder. This method will propagate any exceptions thrown by the
+   * converter to the caller.
+   *
+   * @param properties the properties object containing the property
+   * @param propertyName the property key
+   * @param converter a mapping function converting the value from a String to another type
+   * @param defaultValue if the property doesn't exist.
+   * @return the property value or the default
+   */
   public static <T> T getPropertyOrDefault(
       final Properties properties,
       final String propertyName,

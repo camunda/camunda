@@ -15,24 +15,21 @@
  */
 package io.camunda.process.test.impl.runtime.properties;
 
-import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
+import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrNull;
 
 import java.util.Properties;
 
 public class RemoteRuntimeClientCloudProperties {
-  public static final String PROPERTY_NAME_REGION =
-      "remote.client.cloud.region";
-  public static final String PROPERTY_NAME_CLUSTER_ID =
-      "remote.client.cloud.clusterId";
+  public static final String PROPERTY_NAME_REGION = "remote.client.cloud.region";
+  public static final String PROPERTY_NAME_CLUSTER_ID = "remote.client.cloud.clusterId";
 
   private final String region;
   private final String clusterId;
 
   public RemoteRuntimeClientCloudProperties(final Properties properties) {
-    region = getPropertyOrDefault(properties, PROPERTY_NAME_REGION, null);
+    region = getPropertyOrNull(properties, PROPERTY_NAME_REGION);
 
-    clusterId =
-        getPropertyOrDefault(properties, PROPERTY_NAME_CLUSTER_ID, null);
+    clusterId = getPropertyOrNull(properties, PROPERTY_NAME_CLUSTER_ID);
   }
 
   public String getRegion() {

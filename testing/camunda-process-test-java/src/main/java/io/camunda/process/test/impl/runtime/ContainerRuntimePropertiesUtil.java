@@ -205,4 +205,8 @@ public final class ContainerRuntimePropertiesUtil {
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
     return remoteRuntimeProperties.getRemoteClientProperties().getClientBuilderFactory();
   }
+
+  public RemoteRuntimeProperties getRemoteRuntimeProperties() {
+    return remoteRuntimeProperties;
+  }
 }
