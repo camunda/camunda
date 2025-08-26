@@ -30,6 +30,7 @@ import co.elastic.clients.elasticsearch.core.reindex.Destination;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.UpdateAliasesRequest;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.commons.configuration.MigrationConfiguration;
 import io.camunda.migration.commons.storage.ProcessorStep;
@@ -37,6 +38,7 @@ import io.camunda.migration.commons.storage.TasklistMigrationRepositoryIndex;
 import io.camunda.migration.task.adapter.TaskEntityPair;
 import io.camunda.migration.task.adapter.TaskLegacyIndex;
 import io.camunda.migration.task.adapter.TaskMigrationAdapter;
+import io.camunda.migration.task.adapter.TaskWithIndex;
 import io.camunda.migration.task.util.MigrationUtils;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -109,19 +111,24 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
   @Override
   public List<String> getLegacyDatedIndices() {
     try {
-      final var aliasIndices = client.indices().getAlias(g -> g.name(legacyIndex.getAlias()));
+      final var aliasIndices =
+          retryDecorator.decorate(
+              "Fetching legacy dated indices",
+              () -> client.indices().getAlias(g -> g.name(legacyIndex.getAlias())),
+              response -> !response.result().containsKey(legacyIndex.getFullQualifiedName()));
       return aliasIndices.result().keySet().stream()
           .filter(indexName -> !indexName.equals(legacyIndex.getFullQualifiedName()))
           .toList();
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       throw new MigrationException("Could not get the legacy dated indices", e);
     }
   }
 
   @Override
   public void reindexLegacyDatedIndex(final String legacyDatedIndex) throws MigrationException {
-    final String destination = MigrationUtils.generateNewIndexNameFromLegacy(legacyDatedIndex);
-    reindex(legacyDatedIndex, destination);
+    final String newDatedIndex = MigrationUtils.generateNewIndexNameFromLegacy(legacyDatedIndex);
+    reindex(legacyDatedIndex, newDatedIndex);
+    updateIndexAlias(newDatedIndex);
   }
 
   @Override
@@ -163,7 +170,7 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
   public List<TaskEntityPair> nextBatch(final String lastMigratedTaskId) throws MigrationException {
     final SearchRequest searchRequest =
         new SearchRequest.Builder()
-            .index(destinationIndex.getFullQualifiedName())
+            .index(destinationIndex.getAlias())
             .size(configuration.getBatchSize())
             .sort(s -> s.field(f -> f.field(TaskTemplate.KEY).order(SortOrder.Asc)))
             .query(q -> q.bool(getBoolQueryForTasksToUpdate(lastMigratedTaskId)))
@@ -179,8 +186,16 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
       throw new MigrationException("Failed to fetch next task batch", e);
     }
 
-    final var tasksToUpdate =
-        searchResponse.hits().hits().stream().map(Hit::source).filter(Objects::nonNull).toList();
+    final List<TaskWithIndex> tasksToUpdate =
+        searchResponse.hits().hits().stream()
+            .filter(Objects::nonNull)
+            .map(
+                hit -> {
+                  final String index = hit.index();
+                  final TaskEntity task = hit.source();
+                  return new TaskWithIndex(index, task);
+                })
+            .toList();
 
     final var sourceIndexSearchRequest =
         new SearchRequest.Builder()
@@ -194,7 +209,10 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
                                     v ->
                                         v.value(
                                             tasksToUpdate.stream()
-                                                .map(task -> FieldValue.of(task.getKey()))
+                                                .map(
+                                                    taskWithIndex ->
+                                                        FieldValue.of(
+                                                            taskWithIndex.task().getKey()))
                                                 .toList())) // The list of values to match
                         ))
             .build();
@@ -214,14 +232,14 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
 
     final List<TaskEntityPair> taskEntityPairs = new ArrayList<>();
 
-    for (final var taskToUpdate : tasksToUpdate) {
-      final var originalTask = originalTasksByKey.get(taskToUpdate.getKey());
+    for (final var taskWithIndex : tasksToUpdate) {
+      final var originalTask = originalTasksByKey.get(taskWithIndex.task().getKey());
       if (originalTask == null) {
         LOG.error(
             "Could not find original task for key: {}. Manual update is required",
-            taskToUpdate.getKey());
+            taskWithIndex.task().getKey());
       } else {
-        taskEntityPairs.add(new TaskEntityPair(originalTask, taskToUpdate));
+        taskEntityPairs.add(new TaskEntityPair(originalTask, taskWithIndex));
       }
     }
 
@@ -229,13 +247,15 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
   }
 
   @Override
-  public String updateInNewMainIndex(final List<TaskEntity> tasks) throws MigrationException {
-    if (tasks == null || tasks.isEmpty()) {
+  public String updateAcrossAllIndices(final List<TaskWithIndex> tasksWithIndex)
+      throws MigrationException {
+    if (tasksWithIndex == null || tasksWithIndex.isEmpty()) {
       return null;
     }
     final BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-    final var idList = tasks.stream().map(TaskEntity::getId).toList();
-    tasks.forEach(entity -> addEntityToBulkRequest(entity, bulkRequestBuilder));
+    final var idList =
+        tasksWithIndex.stream().map(taskWithIndex -> taskWithIndex.task().getId()).toList();
+    tasksWithIndex.forEach(entity -> addEntityToBulkRequest(entity, bulkRequestBuilder));
     final BulkResponse response;
     try {
       final BulkRequest bulkRequest = bulkRequestBuilder.build();
@@ -388,19 +408,40 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
     try {
       client.reindex(createMissingRequest);
     } catch (final IOException e) {
-      throw new RuntimeException(e);
+      throw new MigrationException(e);
+    }
+  }
+
+  private void updateIndexAlias(final String newDatedIndex) throws MigrationException {
+    final UpdateAliasesRequest indicesAliasesRequest =
+        UpdateAliasesRequest.of(
+            u ->
+                u.actions(
+                    a ->
+                        a.add(
+                            t ->
+                                t.index(newDatedIndex)
+                                    .isWriteIndex(false)
+                                    .aliases(destinationIndex.getAlias()))));
+
+    try {
+      client.indices().updateAliases(indicesAliasesRequest);
+    } catch (final Exception e) {
+      throw new MigrationException(
+          "Failed to disable writes for legacy index: %s".formatted(newDatedIndex), e);
     }
   }
 
   private void addEntityToBulkRequest(
-      final TaskEntity entity, final BulkRequest.Builder bulkRequest) {
+      final TaskWithIndex taskWithIndex, final BulkRequest.Builder bulkRequest) {
     bulkRequest.operations(
         op ->
             op.update(
                 e ->
-                    e.index(destinationIndex.getFullQualifiedName())
-                        .id(entity.getId())
-                        .action(act -> act.doc(MigrationUtils.getUpdateMap(entity)))));
+                    e.index(taskWithIndex.index())
+                        .id(taskWithIndex.task().getId())
+                        .action(
+                            act -> act.doc(MigrationUtils.getUpdateMap(taskWithIndex.task())))));
   }
 
   private String getLastUpdatedTaskId(final List<BulkResponseItem> items) {
