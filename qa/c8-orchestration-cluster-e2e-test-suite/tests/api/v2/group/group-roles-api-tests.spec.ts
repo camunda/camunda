@@ -136,7 +136,7 @@ test.describe('Group Roles API Tests', () => {
       expect(res.status()).toBe(204);
     });
 
-    test('Search Roles For Group After Deletion', async ({request}) => {
+    await test.step('Search Roles For Group After Deletion', async () => {
       await expect(async () => {
         const p = {groupId: state['groupId'] as string};
 
