@@ -178,6 +178,10 @@ public class MultiDbConfigurator {
 
     final Map<String, Object> opensearchProperties = new HashMap<>();
 
+    /* Credentials from Unified Config */
+    opensearchProperties.put("camunda.data.secondary-storage.opensearch.username", userName);
+    opensearchProperties.put("camunda.data.secondary-storage.opensearch.password", userPassword);
+
     /* Tasklist */
     opensearchProperties.put("camunda.tasklist.opensearch.indexPrefix", indexPrefix);
     opensearchProperties.put("camunda.tasklist.zeebeOpensearch.prefix", zeebeIndexPrefix());
