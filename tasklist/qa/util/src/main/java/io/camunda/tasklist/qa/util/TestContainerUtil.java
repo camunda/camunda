@@ -573,11 +573,9 @@ public class TestContainerUtil {
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_WAITPERIODBEFOREARCHIVING", "1s");
     if (testContext.getZeebeIndexPrefix() != null) {
-      zeebeBroker
-          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testContext.getZeebeIndexPrefix())
-          .withEnv(
-              "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX",
-              testContext.getZeebeIndexPrefix());
+      zeebeBroker.withEnv(
+          "CAMUNDA_DATA_SECONDARY_STORAGE_" + type.toUpperCase() + "_INDEX_PREFIX",
+          testContext.getZeebeIndexPrefix());
     }
   }
 
