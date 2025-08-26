@@ -9,11 +9,4 @@ package io.camunda.migration.task.adapter;
 
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 
-public record TaskEntityPair(TaskEntity source, TaskWithIndex target) {
-
-  public TaskEntityPair {
-    if (source == null || target == null) {
-      throw new IllegalArgumentException("Neither source nor target can be null");
-    }
-  }
-}
+public record TaskWithIndex(String index, TaskEntity task) {}

@@ -80,7 +80,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     final String internalUrl =
         databaseUrl.replaceAll("elasticsearch|opensearch|localhost", "internal.host");
     final Map<String, String> env =
-        databaseType.equals(DatabaseType.ES) || databaseType.equals(DatabaseType.LOCAL)
+        usesElasticsearch() || databaseType.equals(DatabaseType.LOCAL)
             ? elasticsearchConfiguration87(internalUrl)
             : opensearchConfiguration87(internalUrl);
     if (envOverrides != null) {
@@ -117,6 +117,13 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
       throw new RuntimeException(e);
     }
 
+    searchClients =
+        usesElasticsearch()
+            ? SearchClientsUtil.createLowLevelElasticsearchSearchClient(
+                getConnectConfiguration(databaseType))
+            : SearchClientsUtil.createLowLevelOpensearchSearchClient(
+                getConnectConfiguration(databaseType));
+
     return this;
   }
 
@@ -147,7 +154,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
             .withWorkingDirectory(zeebeDataPath.resolve("usr/local/zeebe"));
 
     final var multiDbConfigurator = new MultiDbConfigurator(camunda);
-    if (databaseType.equals(DatabaseType.ES) || databaseType.equals(DatabaseType.LOCAL)) {
+    if (usesElasticsearch() || databaseType.equals(DatabaseType.LOCAL)) {
       multiDbConfigurator.configureElasticsearchSupportIncludingOldExporter(
           databaseUrl, indexPrefix);
     } else {
@@ -174,7 +181,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     tasklistClient = new TestRestTasklistClient(uri);
     operateClient = new TestRestOperateClient(uri, "demo", "demo");
     searchClients =
-        databaseType.equals(DatabaseType.ES)
+        usesElasticsearch()
             ? SearchClientsUtil.createLowLevelElasticsearchSearchClient(
                 getConnectConfiguration(databaseType))
             : SearchClientsUtil.createLowLevelOpensearchSearchClient(
@@ -298,5 +305,13 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
       connectConfiguration.setPassword(OS_PASSWORD);
     }
     return connectConfiguration;
+  }
+
+  public String getIndexPrefix() {
+    return indexPrefix;
+  }
+
+  public boolean usesElasticsearch() {
+    return databaseType.equals(DatabaseType.ES);
   }
 }

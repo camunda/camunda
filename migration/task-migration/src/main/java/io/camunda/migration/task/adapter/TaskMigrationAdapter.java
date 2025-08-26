@@ -9,7 +9,6 @@ package io.camunda.migration.task.adapter;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
-import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.util.List;
@@ -41,7 +40,7 @@ public interface TaskMigrationAdapter {
 
   List<TaskEntityPair> nextBatch(final String lastMigratedTaskId) throws MigrationException;
 
-  String updateInNewMainIndex(List<TaskEntity> tasks) throws MigrationException;
+  String updateAcrossAllIndices(List<TaskWithIndex> tasksWithIndex) throws MigrationException;
 
   Set<ImportPositionEntity> getImportPositions() throws MigrationException;
 

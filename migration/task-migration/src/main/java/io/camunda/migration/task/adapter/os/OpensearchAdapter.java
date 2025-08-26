@@ -16,6 +16,7 @@ import io.camunda.migration.commons.storage.TasklistMigrationRepositoryIndex;
 import io.camunda.migration.task.adapter.TaskEntityPair;
 import io.camunda.migration.task.adapter.TaskLegacyIndex;
 import io.camunda.migration.task.adapter.TaskMigrationAdapter;
+import io.camunda.migration.task.adapter.TaskWithIndex;
 import io.camunda.migration.task.util.MigrationUtils;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
@@ -55,6 +56,7 @@ import org.opensearch.client.opensearch.core.reindex.Destination;
 import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
+import org.opensearch.client.opensearch.indices.UpdateAliasesRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,8 +123,9 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
 
   @Override
   public void reindexLegacyDatedIndex(final String legacyDatedIndex) throws MigrationException {
-    final String destination = MigrationUtils.generateNewIndexNameFromLegacy(legacyDatedIndex);
-    reindex(legacyDatedIndex, destination);
+    final String newDatedIndex = MigrationUtils.generateNewIndexNameFromLegacy(legacyDatedIndex);
+    reindex(legacyDatedIndex, newDatedIndex);
+    disableWritesForNewDatedIndex(newDatedIndex);
   }
 
   @Override
@@ -164,7 +167,7 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   public List<TaskEntityPair> nextBatch(final String lastMigratedTaskId) throws MigrationException {
     final SearchRequest searchRequest =
         new SearchRequest.Builder()
-            .index(destinationIndex.getFullQualifiedName())
+            .index(destinationIndex.getAlias())
             .size(configuration.getBatchSize())
             .sort(s -> s.field(f -> f.field(TaskTemplate.KEY).order(SortOrder.Asc)))
             .query(q -> q.bool(getBoolQueryForTasksToUpdate(lastMigratedTaskId)))
@@ -180,8 +183,16 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
       throw new MigrationException("Failed to fetch next task batch", e);
     }
 
-    final var tasksToUpdate =
-        searchResponse.hits().hits().stream().map(Hit::source).filter(Objects::nonNull).toList();
+    final List<TaskWithIndex> tasksToUpdate =
+        searchResponse.hits().hits().stream()
+            .filter(Objects::nonNull)
+            .map(
+                hit -> {
+                  final String index = hit.index();
+                  final TaskEntity task = hit.source();
+                  return new TaskWithIndex(index, task);
+                })
+            .toList();
 
     final var sourceIndexSearchRequest =
         new SearchRequest.Builder()
@@ -195,7 +206,10 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
                                     v ->
                                         v.value(
                                             tasksToUpdate.stream()
-                                                .map(task -> FieldValue.of(task.getKey()))
+                                                .map(
+                                                    taskWithIndex ->
+                                                        FieldValue.of(
+                                                            taskWithIndex.task().getKey()))
                                                 .toList())) // The list of values to match
                         ))
             .build();
@@ -215,14 +229,14 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
 
     final List<TaskEntityPair> taskEntityPairs = new ArrayList<>();
 
-    for (final var taskToUpdate : tasksToUpdate) {
-      final var originalTask = originalTasksByKey.get(taskToUpdate.getKey());
+    for (final var taskWithIndex : tasksToUpdate) {
+      final var originalTask = originalTasksByKey.get(taskWithIndex.task().getKey());
       if (originalTask == null) {
         LOG.error(
             "Could not find original task for key: {}. Manual update is required",
-            taskToUpdate.getKey());
+            taskWithIndex.task().getKey());
       } else {
-        taskEntityPairs.add(new TaskEntityPair(originalTask, taskToUpdate));
+        taskEntityPairs.add(new TaskEntityPair(originalTask, taskWithIndex));
       }
     }
 
@@ -230,12 +244,12 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   }
 
   @Override
-  public String updateInNewMainIndex(final List<TaskEntity> tasks) throws MigrationException {
+  public String updateAcrossAllIndices(final List<TaskWithIndex> tasks) throws MigrationException {
     if (tasks == null || tasks.isEmpty()) {
       return null;
     }
     final BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-    final var idList = tasks.stream().map(TaskEntity::getId).toList();
+    final var idList = tasks.stream().map(taskWithIndex -> taskWithIndex.task().getId()).toList();
     tasks.forEach(entity -> addEntityToBulkRequest(entity, bulkRequestBuilder));
     final BulkResponse response;
     try {
@@ -391,19 +405,39 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
     try {
       client.reindex(createMissingRequest);
     } catch (final IOException e) {
-      throw new RuntimeException(e);
+      throw new MigrationException(e);
+    }
+  }
+
+  private void disableWritesForNewDatedIndex(final String newDatedIndex) throws MigrationException {
+    final UpdateAliasesRequest indicesAliasesRequest =
+        UpdateAliasesRequest.of(
+            u ->
+                u.actions(
+                    a ->
+                        a.add(
+                            t ->
+                                t.index(newDatedIndex)
+                                    .isWriteIndex(false)
+                                    .aliases(destinationIndex.getAlias()))));
+
+    try {
+      client.indices().updateAliases(indicesAliasesRequest);
+    } catch (final Exception e) {
+      throw new MigrationException(
+          "Failed to disable writes for legacy index: %s".formatted(newDatedIndex), e);
     }
   }
 
   private void addEntityToBulkRequest(
-      final TaskEntity entity, final BulkRequest.Builder bulkRequest) {
+      final TaskWithIndex taskWithIndex, final BulkRequest.Builder bulkRequest) {
     bulkRequest.operations(
         op ->
             op.update(
                 e ->
-                    e.index(destinationIndex.getFullQualifiedName())
-                        .id(entity.getId())
-                        .document(MigrationUtils.getUpdateMap(entity))));
+                    e.index(taskWithIndex.index())
+                        .id(taskWithIndex.task().getId())
+                        .document(MigrationUtils.getUpdateMap(taskWithIndex.task()))));
   }
 
   private String getLastUpdatedTaskId(final List<BulkResponseItem> items) {

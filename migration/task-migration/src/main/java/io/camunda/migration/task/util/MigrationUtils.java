@@ -110,8 +110,7 @@ public class MigrationUtils {
       updateMap.put(TaskTemplate.CANDIDATE_USERS, entity.getCandidateUsers());
     }
     if (entity.getCustomHeaders() != null) {
-      updateMap.put(
-          TaskTemplate.CUSTOM_HEADERS, entity.getCustomHeaders()); // TODO: Verify via tests
+      updateMap.put(TaskTemplate.CUSTOM_HEADERS, entity.getCustomHeaders());
     }
     if (entity.getPriority() != null) {
       updateMap.put(TaskTemplate.PRIORITY, entity.getPriority());
@@ -120,8 +119,7 @@ public class MigrationUtils {
       updateMap.put(TaskTemplate.ACTION, entity.getAction());
     }
     if (entity.getChangedAttributes() != null) {
-      updateMap.put(
-          TaskTemplate.CHANGED_ATTRIBUTES, entity.getChangedAttributes()); // TODO: Verify via tests
+      updateMap.put(TaskTemplate.CHANGED_ATTRIBUTES, entity.getChangedAttributes());
     }
 
     if (entity.getFormId() != null) {
@@ -169,7 +167,7 @@ public class MigrationUtils {
       updateMap.put(TaskTemplate.PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
     }
     if (entity.getJoin() != null) {
-      updateMap.put(TaskTemplate.JOIN_FIELD_NAME, entity.getJoin()); // TODO: Verify via tests
+      updateMap.put(TaskTemplate.JOIN_FIELD_NAME, entity.getJoin());
     }
     return updateMap;
   }
