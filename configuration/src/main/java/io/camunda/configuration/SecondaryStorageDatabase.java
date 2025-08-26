@@ -20,6 +20,12 @@ public abstract class SecondaryStorageDatabase {
 
   private Security security = new Security(databaseName());
 
+  /** Username for the database configured as secondary storage. */
+  private String username = "";
+
+  /** Password for the database configured as secondary storage. */
+  private String password = "";
+
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".url",
@@ -31,6 +37,32 @@ public abstract class SecondaryStorageDatabase {
 
   public void setUrl(final String url) {
     this.url = url;
+  }
+
+  public String getUsername() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".username",
+        username,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyUsernameProperties());
+  }
+
+  public void setUsername(final String username) {
+    this.username = username;
+  }
+
+  public String getPassword() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".password",
+        password,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyPasswordProperties());
+  }
+
+  public void setPassword(final String password) {
+    this.password = password;
   }
 
   public Security getSecurity() {
@@ -74,6 +106,24 @@ public abstract class SecondaryStorageDatabase {
         "camunda.operate." + dbName + ".clusterName",
         "camunda.tasklist." + dbName + ".clusterName",
         "zeebe.broker.exporters.camundaexporter.args.connect.clusterName");
+  }
+
+  private Set<String> legacyUsernameProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.username",
+        "camunda.operate." + dbName + ".username",
+        "camunda.tasklist." + dbName + ".username",
+        "zeebe.broker.exporters.camundaexporter.args.connect.username");
+  }
+
+  private Set<String> legacyPasswordProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.password",
+        "camunda.operate." + dbName + ".password",
+        "camunda.tasklist." + dbName + ".password",
+        "zeebe.broker.exporters.camundaexporter.args.connect.password");
   }
 
   protected abstract String databaseName();

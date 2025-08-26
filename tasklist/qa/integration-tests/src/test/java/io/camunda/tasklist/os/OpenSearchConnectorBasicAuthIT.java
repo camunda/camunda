@@ -109,6 +109,10 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
               "camunda.database.url=" + osUrl,
               "camunda.tasklist.opensearch.url=" + osUrl,
               "camunda.operate.opensearch.url=" + osUrl,
+              // Unified config
+              "camunda.data.secondary-storage.opensearch.username=opensearch",
+              "camunda.data.secondary-storage.opensearch.password=changeme",
+
               // ---
 
               "camunda.tasklist.opensearch.username=opensearch",

@@ -62,6 +62,9 @@ public class SearchEngineConnectPropertiesOverride {
 
     populateFromSecurity(override);
 
+    override.setUsername(database.getUsername());
+    override.setPassword(database.getPassword());
+
     return override;
   }
 

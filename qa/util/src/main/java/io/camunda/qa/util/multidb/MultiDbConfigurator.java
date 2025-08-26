@@ -213,6 +213,10 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.database.retention.minimumAge", "0s");
     opensearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
 
+    /* Unified Config */
+    opensearchProperties.put("camunda.data.secondary-storage.opensearch.username", userName);
+    opensearchProperties.put("camunda.data.secondary-storage.opensearch.password", userPassword);
+
     testApplication.withAdditionalProperties(opensearchProperties);
 
     testApplication.withExporter(
