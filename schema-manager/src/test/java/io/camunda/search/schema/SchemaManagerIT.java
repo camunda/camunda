@@ -1144,6 +1144,11 @@ public class SchemaManagerIT {
     var retrievedTemplate =
         searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
     assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(50);
+    // capture initial replica/shard
+    final int initialReplicas =
+        retrievedTemplate.at("/index_template/template/settings/index/number_of_replicas").asInt();
+    final int initialShards =
+        retrievedTemplate.at("/index_template/template/settings/index/number_of_shards").asInt();
 
     // when - update template settings with new priority via startup
     config.index().setTemplatePriority(200);
@@ -1153,6 +1158,53 @@ public class SchemaManagerIT {
     // then - verify priority was updated
     retrievedTemplate = searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
     assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(200);
+    // and shards/replicas untouched
+    assertThat(
+            retrievedTemplate
+                .at("/index_template/template/settings/index/number_of_replicas")
+                .asInt())
+        .isEqualTo(initialReplicas);
+    assertThat(
+            retrievedTemplate
+                .at("/index_template/template/settings/index/number_of_shards")
+                .asInt())
+        .isEqualTo(initialShards);
+  }
+
+  @TestTemplate
+  void shouldNotUpdateIndexTemplateSettingsWhenUnchanged(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    config.index().setTemplatePriority(75);
+    config.index().setNumberOfShards(2);
+    config.index().setNumberOfReplicas(1);
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    final var templateName = indexTemplate.getTemplateName();
+    final var initialTemplate = searchClientAdapter.getIndexTemplateAsNode(templateName);
+    final var initialSettingsJson =
+        initialTemplate.at("/index_template/template/settings").toString();
+    final var initialPriorityNode = initialTemplate.at("/index_template/priority");
+
+    // when - run startup again without any config or mapping changes
+    schemaManager.startup();
+
+    // then - settings & priority stay identical
+    final var secondTemplate = searchClientAdapter.getIndexTemplateAsNode(templateName);
+    assertThat(secondTemplate.at("/index_template/template/settings").toString())
+        .isEqualTo(initialSettingsJson);
+    final var secondPriorityNode = secondTemplate.at("/index_template/priority");
+    assertThat(secondPriorityNode.asInt()).isEqualTo(initialPriorityNode.asInt());
   }
 
   @TestTemplate
@@ -1176,15 +1228,29 @@ public class SchemaManagerIT {
     var retrievedTemplate =
         searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
     assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(50);
+    final int initialReplicas =
+        retrievedTemplate.at("/index_template/template/settings/index/number_of_replicas").asInt();
+    final int initialShards =
+        retrievedTemplate.at("/index_template/template/settings/index/number_of_shards").asInt();
 
     // when - unset template priority setting
     config.index().setTemplatePriority(null);
 
     schemaManager.startup();
 
-    // then - verify priority was updated
+    // then - verify priority is removed & other settings untouched
     retrievedTemplate = searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
     assertThat(retrievedTemplate.at("/index_template/priority").isMissingNode()).isTrue();
+    assertThat(
+            retrievedTemplate
+                .at("/index_template/template/settings/index/number_of_replicas")
+                .asInt())
+        .isEqualTo(initialReplicas);
+    assertThat(
+            retrievedTemplate
+                .at("/index_template/template/settings/index/number_of_shards")
+                .asInt())
+        .isEqualTo(initialShards);
   }
 
   @TestTemplate
