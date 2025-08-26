@@ -20,6 +20,7 @@ import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,7 @@ public class UnifiedConfigurationHelper {
   private static final ConversionService CONVERSION_SERVICE = new ApplicationConversionService();
 
   private static Environment environment;
+  private static ConfigurableEnvironment configurableEnvironment;
 
   public UnifiedConfigurationHelper(@Autowired final Environment environment) {
     // We need to pin the environment object statically so that it can be used to perform the

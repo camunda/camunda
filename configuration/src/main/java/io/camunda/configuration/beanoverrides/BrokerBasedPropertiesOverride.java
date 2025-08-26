@@ -446,6 +446,19 @@ public class BrokerBasedPropertiesOverride {
     final Map<String, Object> args = exporter.getArgs();
     setArg(args, "connect.type", secondaryStorage.getType().name());
     setArg(args, "connect.url", database.getUrl());
+    setArg(args, "connect.clusterName", database.getClusterName());
+
+    // Add security configuration mapping
+    if (database.getSecurity() != null) {
+      setArg(args, "connect.security.enabled", database.getSecurity().isEnabled());
+      setArg(args, "connect.security.certificatePath", database.getSecurity().getCertificatePath());
+      setArg(args, "connect.security.verifyHostname", database.getSecurity().isVerifyHostname());
+      setArg(args, "connect.security.selfSigned", database.getSecurity().isSelfSigned());
+    }
+    setArg(args, "connect.username", database.getUsername());
+    setArg(args, "connect.password", database.getPassword());
+
+    setArg(args, "connect.indexPrefix", database.getIndexPrefix());
   }
 
   @SuppressWarnings("unchecked")
