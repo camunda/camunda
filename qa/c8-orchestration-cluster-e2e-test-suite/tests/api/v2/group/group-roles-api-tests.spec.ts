@@ -136,22 +136,26 @@ test.describe('Group Roles API Tests', () => {
       expect(res.status()).toBe(204);
     });
 
-    await test.step('Search Roles For Group After Deletion', async () => {
-      await sleep(20000);
-      const p = {groupId: state['groupId'] as string};
+    test('Search Roles For Group After Deletion', async ({request}) => {
+      await expect(async () => {
+        const p = {groupId: state['groupId'] as string};
 
-      const res = await request.post(
-        buildUrl('/groups/{groupId}/roles/search', p),
-        {
-          headers: jsonHeaders(),
-          data: {},
-        },
-      );
+        const res = await request.post(
+          buildUrl('/groups/{groupId}/roles/search', p),
+          {
+            headers: jsonHeaders(),
+            data: {},
+          },
+        );
 
-      expect(res.status()).toBe(200);
-      const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      expect(json.page.totalItems).toBe(0);
+        expect(res.status()).toBe(200);
+        const json = await res.json();
+        assertRequiredFields(json, paginatedResponseFields);
+        expect(json.page.totalItems).toBe(0);
+      }).toPass({
+        intervals: [5_000, 10_000, 15_000],
+        timeout: 30_000,
+      });
     });
 
     await test.step('Unassign Role From Group Unauthorized', async () => {

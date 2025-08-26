@@ -45,51 +45,67 @@ export class IdentityMappingRulesPage {
       name: 'Create a mapping rule',
     });
     this.editMappingRuleButton = (rowName) =>
-      this.mappingRulesList.getByRole('row', {name: rowName}).getByLabel('Edit');
+      this.mappingRulesList
+        .getByRole('row', {name: rowName})
+        .getByLabel('Edit');
     this.deleteMappingRuleButton = (rowName) =>
-      this.mappingRulesList.getByRole('row', {name: rowName}).getByLabel('Delete');
+      this.mappingRulesList
+        .getByRole('row', {name: rowName})
+        .getByLabel('Delete');
 
     this.createMappingRuleModal = page.getByRole('dialog', {
       name: 'Create new mapping rule',
     });
-    this.closeCreateMappingRuleModal = this.createMappingRuleModal.getByRole('button', {
-      name: 'Close',
-    });
-    this.createMappingRuleIdField = this.createMappingRuleModal.getByRole('textbox', {
-      name: 'Mapping rule ID',
-    });
-    this.createMappingRuleNameField = this.createMappingRuleModal.getByRole('textbox', {
-      name: 'Mapping rule name',
-    });
-    this.createMappingRuleClaimNameField = this.createMappingRuleModal.getByRole(
-      'textbox',
-      {name: 'Claim name'},
-    );
-    this.createMappingRuleClaimValueField = this.createMappingRuleModal.getByRole(
-      'textbox',
-      {name: 'Claim value'},
-    );
-    this.createMappingRuleModalCancelButton = this.createMappingRuleModal.getByRole(
+    this.closeCreateMappingRuleModal = this.createMappingRuleModal.getByRole(
       'button',
-      {name: 'Cancel'},
+      {
+        name: 'Close',
+      },
     );
-    this.createMappingRuleModalCreateButton = this.createMappingRuleModal.getByRole(
-      'button',
-      {name: 'Create a mapping rule'},
+    this.createMappingRuleIdField = this.createMappingRuleModal.getByRole(
+      'textbox',
+      {
+        name: 'Mapping rule ID',
+      },
     );
+    this.createMappingRuleNameField = this.createMappingRuleModal.getByRole(
+      'textbox',
+      {
+        name: 'Mapping rule name',
+      },
+    );
+    this.createMappingRuleClaimNameField =
+      this.createMappingRuleModal.getByRole('textbox', {name: 'Claim name'});
+    this.createMappingRuleClaimValueField =
+      this.createMappingRuleModal.getByRole('textbox', {name: 'Claim value'});
+    this.createMappingRuleModalCancelButton =
+      this.createMappingRuleModal.getByRole('button', {name: 'Cancel'});
+    this.createMappingRuleModalCreateButton =
+      this.createMappingRuleModal.getByRole('button', {
+        name: 'Create a mapping rule',
+      });
 
     this.editMappingRuleModal = page.getByRole('dialog', {
       name: 'Edit mapping rule',
     });
-    this.closeEditMappingRuleModal = this.editMappingRuleModal.getByRole('button', {
-      name: 'Close',
-    });
-    this.editMappingRuleIdField = this.editMappingRuleModal.getByRole('textbox', {
-      name: 'Mapping rule ID',
-    });
-    this.editMappingRuleNameField = this.editMappingRuleModal.getByRole('textbox', {
-      name: 'Mapping rule name',
-    });
+    this.closeEditMappingRuleModal = this.editMappingRuleModal.getByRole(
+      'button',
+      {
+        name: 'Close',
+      },
+    );
+    this.editMappingRuleIdField = this.editMappingRuleModal.getByRole(
+      'textbox',
+      {
+        name: 'Mapping rule ID',
+      },
+    );
+    this.editMappingRuleNameField = this.editMappingRuleModal.getByRole(
+      'textbox',
+      {
+        name: 'Mapping rule name',
+      },
+    );
     this.editMappingRuleClaimNameField = this.editMappingRuleModal.getByRole(
       'textbox',
       {name: 'Claim name'},
@@ -110,17 +126,18 @@ export class IdentityMappingRulesPage {
     this.deleteMappingRuleModal = page.getByRole('dialog', {
       name: 'Delete mapping rule',
     });
-    this.closeDeleteMappingRuleModal = this.deleteMappingRuleModal.getByRole('button', {
-      name: 'Close',
-    });
-    this.deleteMappingRuleModalCancelButton = this.deleteMappingRuleModal.getByRole(
+    this.closeDeleteMappingRuleModal = this.deleteMappingRuleModal.getByRole(
       'button',
-      {name: 'Cancel'},
+      {
+        name: 'Close',
+      },
     );
-    this.deleteMappingRuleModalDeleteButton = this.deleteMappingRuleModal.getByRole(
-      'button',
-      {name: 'Delete mapping rule'},
-    );
+    this.deleteMappingRuleModalCancelButton =
+      this.deleteMappingRuleModal.getByRole('button', {name: 'Cancel'});
+    this.deleteMappingRuleModalDeleteButton =
+      this.deleteMappingRuleModal.getByRole('button', {
+        name: 'Delete mapping rule',
+      });
 
     this.emptyState = page.getByText("You don't have any mapping rules yet");
     this.usersNavItem = page.getByText('Users');
