@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import java.net.URI;
 import java.time.Duration;
@@ -84,4 +85,7 @@ public class CamundaProcessTestRuntimeDefaults {
 
   public static final Duration CAMUNDA_CLIENT_REQUEST_TIMEOUT =
       PROPERTIES_UTIL.getCamundaClientRequestTimeout();
+
+  public static final CamundaClientBuilderFactory CAMUNDA_CLIENT_BUILDER_FACTORY =
+      PROPERTIES_UTIL.getCamundaClientBuilderFactory();
 }
