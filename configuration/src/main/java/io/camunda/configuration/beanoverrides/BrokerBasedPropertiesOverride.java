@@ -19,6 +19,9 @@ import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
+import io.camunda.configuration.SecondaryStorage;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageDatabase;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -26,6 +29,7 @@ import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
@@ -42,7 +46,9 @@ import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -60,6 +66,8 @@ import org.springframework.context.annotation.Profile;
 public class BrokerBasedPropertiesOverride {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerBasedPropertiesOverride.class);
+  private static final String CAMUNDA_EXPORTER_CLASS_NAME = "io.camunda.exporter.CamundaExporter";
+  private static final String CAMUNDA_EXPORTER_NAME = "camundaExporter";
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
@@ -94,6 +102,8 @@ public class BrokerBasedPropertiesOverride {
 
     // from camunda.data.* sections
     populateFromData(override);
+
+    populateCamundaExporter(override);
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());
@@ -397,5 +407,54 @@ public class BrokerBasedPropertiesOverride {
     filesystemBackupStoreConfig.setBasePath(filesystem.getBasePath());
 
     override.getData().getBackup().setFilesystem(filesystemBackupStoreConfig);
+  }
+
+  private void populateCamundaExporter(final BrokerBasedProperties override) {
+    final SecondaryStorage secondaryStorage =
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+
+    final SecondaryStorageDatabase database;
+    if (SecondaryStorageType.elasticsearch == secondaryStorage.getType()) {
+      database =
+          unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getElasticsearch();
+    } else if (SecondaryStorageType.opensearch == secondaryStorage.getType()) {
+      database = unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getOpensearch();
+    } else {
+      // RDBMS and NONE are not supported.
+      return;
+    }
+
+    /* Load exporter config map */
+
+    final List<ExporterCfg> exporters =
+        override.getExporters().values().stream()
+            .filter(e -> e.getClassName().equals(CAMUNDA_EXPORTER_CLASS_NAME))
+            .toList();
+
+    final ExporterCfg exporter;
+    if (exporters.isEmpty()) {
+      exporter = new ExporterCfg();
+      exporter.setClassName(CAMUNDA_EXPORTER_CLASS_NAME);
+      exporter.setArgs(new LinkedHashMap<>());
+      override.getExporters().put(CAMUNDA_EXPORTER_NAME, exporter);
+    } else {
+      exporter = exporters.getFirst();
+    }
+
+    /* Override config map values */
+
+    final Map<String, Object> args = exporter.getArgs();
+    setArg(args, "connect.type", secondaryStorage.getType().name());
+    setArg(args, "connect.url", database.getUrl());
+  }
+
+  @SuppressWarnings("unchecked")
+  private void setArg(final Map<String, Object> args, final String breadcrumb, final Object value) {
+    final String[] keys = breadcrumb.split("\\.");
+    Map<String, Object> cursor = args;
+    for (int i = 0; i < keys.length - 1; i++) {
+      cursor = (Map<String, Object>) cursor.computeIfAbsent(keys[i], k -> new LinkedHashMap<>());
+    }
+    cursor.put(keys[keys.length - 1], value);
   }
 }
