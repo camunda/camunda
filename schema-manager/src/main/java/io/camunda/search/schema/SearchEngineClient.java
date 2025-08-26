@@ -48,7 +48,7 @@ public interface SearchEngineClient extends CloseableSilently {
 
   void updateIndexTemplateSettings(
       final IndexTemplateDescriptor indexTemplateDescriptor,
-      final IndexConfiguration currentSettings);
+      final IndexConfiguration configuredSettings);
 
   void deleteIndex(final String indexName);
 
