@@ -89,16 +89,10 @@ public class PingConsoleRunnerIT {
 
     final ConsolePingConfiguration config =
         new ConsolePingConfiguration(
-            true,
-            URI.create(mockUrl),
-            "test-cluster-id",
-            "test-cluster-name",
-            pingPeriod,
-            retryConfig,
-            null);
+            true, URI.create(mockUrl), "test-cluster-name", pingPeriod, retryConfig, null);
 
     final PingConsoleRunner pingConsoleRunner =
-        new PingConsoleRunner(config, managementServices, applicationContext);
+        new PingConsoleRunner(config, managementServices, applicationContext, "test-cluster-id");
 
     // when
     pingConsoleRunner.run(null);
