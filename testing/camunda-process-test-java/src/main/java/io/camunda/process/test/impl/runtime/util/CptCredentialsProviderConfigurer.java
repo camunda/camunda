@@ -21,11 +21,17 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientAuthProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientAuthProperties.AuthMethod;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientProperties;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,22 +45,23 @@ import org.slf4j.LoggerFactory;
 public class CptCredentialsProviderConfigurer {
   private static final Logger LOG = LoggerFactory.getLogger(CptCredentialsProviderConfigurer.class);
 
+  private static final Map<AuthMethod, Function<RemoteRuntimeClientProperties, CredentialsProvider>>
+      PROVIDERS = new HashMap<>();
+
+  static {
+    PROVIDERS.put(
+        AuthMethod.basic, CptCredentialsProviderConfigurer::buildBasicAuthCredentialsProvider);
+    PROVIDERS.put(AuthMethod.oidc, CptCredentialsProviderConfigurer::buildOAuthCredentialsProvider);
+    PROVIDERS.put(AuthMethod.none, cp -> new NoopCredentialsProvider());
+  }
+
   public static CredentialsProvider configure(
       final RemoteRuntimeClientProperties clientProperties) {
     final AuthMethod authMethod = clientProperties.getAuthProperties().getMethod();
 
-    if (authMethod == null) {
-      return new NoopCredentialsProvider();
-    }
-
-    switch (authMethod) {
-      case basic:
-        return buildBasicAuthCredentialsProvider(clientProperties);
-      case oidc:
-        return buildOAuthCredentialsProvider(clientProperties);
-      default:
-        return new NoopCredentialsProvider();
-    }
+    return PROVIDERS
+        .getOrDefault(authMethod, cp -> new NoopCredentialsProvider())
+        .apply(clientProperties);
   }
 
   private static CredentialsProvider buildBasicAuthCredentialsProvider(
@@ -68,17 +75,7 @@ public class CptCredentialsProviderConfigurer {
             .username(username)
             .password(password);
 
-    try {
-      return builder.build();
-    } catch (final Exception e) {
-      LOG.warn(
-          "Failed to configure basic credential provider, falling back to use no authentication, cause: {}",
-          e.getMessage());
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(e.getMessage(), e);
-      }
-      return new NoopCredentialsProvider();
-    }
+    return build(builder::build, "basic");
   }
 
   private static CredentialsProvider buildOAuthCredentialsProvider(
@@ -109,15 +106,19 @@ public class CptCredentialsProviderConfigurer {
                 clientProperties.getAuthProperties().getClientAssertionKeystoreKeyPassword());
 
     maybeConfigureIdentityProviderSSLConfig(credBuilder, clientProperties);
+    return build(credBuilder::build, "oidc");
+  }
+
+  private static CredentialsProvider build(
+      Supplier<CredentialsProvider> builder, String providerName) {
     try {
-      return credBuilder.build();
+      return builder.get();
     } catch (final Exception e) {
       LOG.warn(
-          "Failed to configure oidc credential provider, falling back to use no authentication, cause: {}",
+          "Failed to configure {} credential provider, falling back to no authentication. Cause: {}",
+          providerName,
           e.getMessage());
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(e.getMessage(), e);
-      }
+      LOG.debug("Detailed error:", e);
       return new NoopCredentialsProvider();
     }
   }
@@ -125,26 +126,41 @@ public class CptCredentialsProviderConfigurer {
   private static void maybeConfigureIdentityProviderSSLConfig(
       final OAuthCredentialsProviderBuilder builder,
       final RemoteRuntimeClientProperties clientProperties) {
-    if (clientProperties.getAuthProperties().getKeystorePath() != null) {
-      final Path keyStore = clientProperties.getAuthProperties().getKeystorePath();
-      if (Files.exists(keyStore)) {
-        LOG.debug("Using keystore {}", keyStore);
-        builder.keystorePath(keyStore);
-        builder.keystorePassword(clientProperties.getAuthProperties().getKeystorePassword());
-        builder.keystoreKeyPassword(clientProperties.getAuthProperties().getKeystoreKeyPassword());
-      } else {
-        LOG.debug("Keystore {} not found", keyStore);
-      }
-    }
 
-    if (clientProperties.getAuthProperties().getTruststorePath() != null) {
-      final Path trustStore = clientProperties.getAuthProperties().getTruststorePath();
-      if (Files.exists(trustStore)) {
-        LOG.debug("Using truststore {}", trustStore);
-        builder.truststorePath(trustStore);
-        builder.truststorePassword(clientProperties.getAuthProperties().getTruststorePassword());
+    final RemoteRuntimeClientAuthProperties auth = clientProperties.getAuthProperties();
+
+    configureStore(
+        auth.getKeystorePath(),
+        builder::keystorePath,
+        builder::keystorePassword,
+        auth.getKeystorePassword(),
+        "keystore");
+    configureStore(
+        auth.getTruststorePath(),
+        builder::truststorePath,
+        builder::truststorePassword,
+        auth.getTruststorePassword(),
+        "truststore");
+
+    if (auth.getKeystorePath() != null) {
+      builder.keystoreKeyPassword(auth.getKeystoreKeyPassword());
+    }
+  }
+
+  private static void configureStore(
+      Path path,
+      Consumer<Path> pathSetter,
+      Consumer<String> passwordSetter,
+      String password,
+      String label) {
+
+    if (path != null) {
+      if (Files.exists(path)) {
+        LOG.debug("Using {} {}", label, path);
+        pathSetter.accept(path);
+        passwordSetter.accept(password);
       } else {
-        LOG.debug("Truststore {} not found", trustStore);
+        LOG.debug("{} {} not found", label, path);
       }
     }
   }

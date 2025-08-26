@@ -17,11 +17,9 @@ package io.camunda.process.test.impl.configuration;
 
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
@@ -47,10 +45,6 @@ public class LegacyCamundaProcessTestRuntimeConfiguration {
   private Map<String, String> connectorsSecrets = Collections.emptyMap();
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
-
-  @Value("camunda-client.request-timeout")
-  private Duration camundaClientRequestTimeout =
-      CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_REQUEST_TIMEOUT;
 
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
 
@@ -140,13 +134,5 @@ public class LegacyCamundaProcessTestRuntimeConfiguration {
 
   public void setRemote(final RemoteConfiguration remote) {
     this.remote = remote;
-  }
-
-  public Duration getCamundaClientRequestTimeout() {
-    return camundaClientRequestTimeout;
-  }
-
-  public void setCamundaClientRequestTimeout(final Duration camundaClientRequestTimeout) {
-    this.camundaClientRequestTimeout = camundaClientRequestTimeout;
   }
 }

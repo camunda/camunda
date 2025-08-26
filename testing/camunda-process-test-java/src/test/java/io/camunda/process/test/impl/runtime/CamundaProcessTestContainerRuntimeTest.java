@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -224,6 +225,7 @@ public class CamundaProcessTestContainerRuntimeTest {
         .withConnectorsSecrets(connectorSecrets)
         .withConnectorsSecret(additionalConnectorSecretKey, additionalConnectorSecretValue)
         .withConnectorsLogger("custom-logger")
+        .withCamundaClientRequestTimeout(Duration.ofHours(1))
         .build();
 
     // then

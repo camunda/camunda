@@ -19,6 +19,7 @@ import static io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder.DEFAU
 import static io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder.DEFAULT_CREDENTIALS_CACHE_PATH;
 import static io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder.DEFAULT_READ_TIMEOUT;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
+import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrNull;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -28,37 +29,26 @@ import java.util.Properties;
 
 public class RemoteRuntimeClientAuthProperties {
   public static final String PROPERTY_NAME_METHOD = "remote.client.auth.method";
-  public static final String PROPERTY_NAME_USERNAME =
-      "remote.client.auth.username";
-  public static final String PROPERTY_NAME_PASSWORD =
-      "remote.client.auth.password";
-  public static final String PROPERTY_NAME_CLIENT_ID =
-      "remote.client.auth.clientId";
-  public static final String PROPERTY_NAME_CLIENT_SECRET =
-      "remote.client.auth.clientSecret";
-  public static final String PROPERTY_NAME_TOKEN_URL =
-      "remote.client.auth.tokenUrl";
-  public static final String PROPERTY_NAME_AUDIENCE =
-      "remote.client.auth.audience";
+  public static final String PROPERTY_NAME_USERNAME = "remote.client.auth.username";
+  public static final String PROPERTY_NAME_PASSWORD = "remote.client.auth.password";
+  public static final String PROPERTY_NAME_CLIENT_ID = "remote.client.auth.clientId";
+  public static final String PROPERTY_NAME_CLIENT_SECRET = "remote.client.auth.clientSecret";
+  public static final String PROPERTY_NAME_TOKEN_URL = "remote.client.auth.tokenUrl";
+  public static final String PROPERTY_NAME_AUDIENCE = "remote.client.auth.audience";
   public static final String PROPERTY_NAME_SCOPE = "remote.client.auth.scope";
-  public static final String PROPERTY_NAME_RESOURCE =
-      "remote.client.auth.resource";
-  public static final String PROPERTY_NAME_KEYSTORE_PATH =
-      "remote.client.auth.keystorePath";
+  public static final String PROPERTY_NAME_RESOURCE = "remote.client.auth.resource";
+  public static final String PROPERTY_NAME_KEYSTORE_PATH = "remote.client.auth.keystorePath";
   public static final String PROPERTY_NAME_KEYSTORE_PASSWORD =
       "remote.client.auth.keystorePassword";
   public static final String PROPERTY_NAME_KEYSTORE_KEY_PASSWORD =
       "remote.client.auth.keystoreKeyPassword";
-  public static final String PROPERTY_NAME_TRUSTSTORE_PATH =
-      "remote.client.auth.truststorePath";
+  public static final String PROPERTY_NAME_TRUSTSTORE_PATH = "remote.client.auth.truststorePath";
   public static final String PROPERTY_NAME_TRUSTSTORE_PASSWORD =
       "remote.client.auth.truststorePassword";
   public static final String PROPERTY_NAME_CREDENTIALS_CACHE_PATH =
       "remote.client.auth.credentialsCachePath";
-  public static final String PROPERTY_NAME_CONNECT_TIMEOUT =
-      "remote.client.auth.connectTimeout";
-  public static final String PROPERTY_NAME_READ_TIMEOUT =
-      "remote.client.auth.readTimeout";
+  public static final String PROPERTY_NAME_CONNECT_TIMEOUT = "remote.client.auth.connectTimeout";
+  public static final String PROPERTY_NAME_READ_TIMEOUT = "remote.client.auth.readTimeout";
 
   public static final String PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_PATH =
       "remote.client.auth.clientAssertion.keystorePath";
@@ -66,9 +56,8 @@ public class RemoteRuntimeClientAuthProperties {
       "remote.client.auth.clientAssertion.keystorePassword";
   public static final String PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_KEY_ALIAS =
       "remote.client.auth.clientAssertion.keystoreKeyAlias";
-  public static final String
-      PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD =
-          "remote.client.auth.clientAssertion.keystoreKeyPassword";
+  public static final String PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD =
+      "remote.client.auth.clientAssertion.keystoreKeyPassword";
 
   private final AuthMethod method;
 
@@ -105,7 +94,7 @@ public class RemoteRuntimeClientAuthProperties {
             properties,
             PROPERTY_NAME_METHOD,
             v -> AuthMethod.valueOf(v.toLowerCase()),
-            null);
+            AuthMethod.none);
 
     username = getPropertyOrDefault(properties, PROPERTY_NAME_USERNAME, null);
 
@@ -113,12 +102,9 @@ public class RemoteRuntimeClientAuthProperties {
 
     clientId = getPropertyOrDefault(properties, PROPERTY_NAME_CLIENT_ID, null);
 
-    clientSecret =
-        getPropertyOrDefault(properties, PROPERTY_NAME_CLIENT_SECRET, null);
+    clientSecret = getPropertyOrDefault(properties, PROPERTY_NAME_CLIENT_SECRET, null);
 
-    tokenUrl =
-        getPropertyOrDefault(
-            properties, PROPERTY_NAME_TOKEN_URL, URI::create, null);
+    tokenUrl = getPropertyOrDefault(properties, PROPERTY_NAME_TOKEN_URL, URI::create, null);
 
     audience = getPropertyOrDefault(properties, PROPERTY_NAME_AUDIENCE, null);
 
@@ -126,65 +112,59 @@ public class RemoteRuntimeClientAuthProperties {
 
     resource = getPropertyOrDefault(properties, PROPERTY_NAME_RESOURCE, null);
 
-    keystorePath =
-        getPropertyOrDefault(
-            properties, PROPERTY_NAME_KEYSTORE_PATH, Paths::get, null);
+    keystorePath = getPropertyOrDefault(properties, PROPERTY_NAME_KEYSTORE_PATH, Paths::get, null);
 
-    keystorePassword =
-        getPropertyOrDefault(properties, PROPERTY_NAME_KEYSTORE_PASSWORD, null);
+    keystorePassword = getPropertyOrDefault(properties, PROPERTY_NAME_KEYSTORE_PASSWORD, null);
 
     keystoreKeyPassword =
-        getPropertyOrDefault(
-            properties, PROPERTY_NAME_KEYSTORE_KEY_PASSWORD, null);
+        getPropertyOrDefault(properties, PROPERTY_NAME_KEYSTORE_KEY_PASSWORD, null);
 
     truststorePath =
-        getPropertyOrDefault(
-            properties, PROPERTY_NAME_TRUSTSTORE_PATH, Paths::get, null);
+        getPropertyOrDefault(properties, PROPERTY_NAME_TRUSTSTORE_PATH, Paths::get, null);
 
-    truststorePassword =
-        getPropertyOrDefault(
-            properties, PROPERTY_NAME_TRUSTSTORE_PASSWORD, null);
+    truststorePassword = getPropertyOrDefault(properties, PROPERTY_NAME_TRUSTSTORE_PASSWORD, null);
 
     credentialsCachePath =
         getPropertyOrDefault(
-            properties,
-            PROPERTY_NAME_CREDENTIALS_CACHE_PATH,
-            DEFAULT_CREDENTIALS_CACHE_PATH);
+            properties, PROPERTY_NAME_CREDENTIALS_CACHE_PATH, DEFAULT_CREDENTIALS_CACHE_PATH);
 
     connectTimeout =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_CONNECT_TIMEOUT,
-            Duration::parse,
+            v -> {
+              try {
+                return Duration.parse(v);
+              } catch (final Throwable t) {
+                return DEFAULT_CONNECT_TIMEOUT;
+              }
+            },
             DEFAULT_CONNECT_TIMEOUT);
 
     readTimeout =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_READ_TIMEOUT,
-            Duration::parse,
+            v -> {
+              try {
+                return Duration.parse(v);
+              } catch (final Throwable t) {
+                return DEFAULT_READ_TIMEOUT;
+              }
+            },
             DEFAULT_READ_TIMEOUT);
 
     clientAssertionKeystorePath =
-        getPropertyOrDefault(
-            properties,
-            PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_PATH,
-            Paths::get,
-            null);
+        getPropertyOrNull(properties, PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_PATH, Paths::get);
 
     clientAssertionKeystorePassword =
-        getPropertyOrDefault(
-            properties, PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_PASSWORD, null);
+        getPropertyOrNull(properties, PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_PASSWORD);
 
     clientAssertionKeystoreKeyAlias =
-        getPropertyOrDefault(
-            properties, PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_KEY_ALIAS, null);
+        getPropertyOrNull(properties, PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_KEY_ALIAS);
 
     clientAssertionKeystoreKeyPassword =
-        getPropertyOrDefault(
-            properties,
-            PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD,
-            null);
+        getPropertyOrNull(properties, PROPERTY_NAME_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD);
   }
 
   public AuthMethod getMethod() {

@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.runtime.properties;
 
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
+import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrNull;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
@@ -63,7 +64,7 @@ public class RemoteRuntimeClientProperties {
             ClientMode.selfManaged);
 
     grpcAddress =
-        getPropertyOrDefault(
+        getPropertyOrNull(
             properties,
             PROPERTY_NAME_GRPC_ADDRESS,
             v -> {
@@ -72,11 +73,10 @@ public class RemoteRuntimeClientProperties {
               } catch (final Throwable t) {
                 return CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_GRPC_ADDRESS;
               }
-            },
-            null);
+            });
 
     restAddress =
-        getPropertyOrDefault(
+        getPropertyOrNull(
             properties,
             PROPERTY_NAME_REST_ADDRESS,
             v -> {
@@ -85,14 +85,19 @@ public class RemoteRuntimeClientProperties {
               } catch (final Throwable t) {
                 return CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_REST_ADDRESS;
               }
-            },
-            null);
+            });
 
     requestTimeout =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_CAMUNDA_CLIENT_REQUEST_TIMEOUT,
-            Duration::parse,
+            v -> {
+              try {
+                return Duration.parse(v);
+              } catch (final Throwable t) {
+                return CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_CLIENT_REQUEST_TIMEOUT;
+              }
+            },
             CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_CLIENT_REQUEST_TIMEOUT);
   }
 
@@ -112,7 +117,7 @@ public class RemoteRuntimeClientProperties {
     return requestTimeout;
   }
 
-  public RemoteRuntimeClientCloudProperties getRemoteRuntimeClientCloudProperties() {
+  public RemoteRuntimeClientCloudProperties getCloudProperties() {
     return remoteRuntimeClientCloudProperties;
   }
 
@@ -122,7 +127,7 @@ public class RemoteRuntimeClientProperties {
 
   public CamundaClientBuilderFactory getClientBuilderFactory() {
     final CamundaClientBuilder camundaClientBuilder =
-        mode == ClientMode.saas ? buildCloudClientFactory() : buildSelfManagedClientFactory();
+        createCamundaClient(mode).defaultRequestTimeout(requestTimeout);
 
     if (CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_GRPC_ADDRESS != null) {
       camundaClientBuilder.grpcAddress(
@@ -135,6 +140,10 @@ public class RemoteRuntimeClientProperties {
     }
 
     return () -> camundaClientBuilder;
+  }
+
+  private CamundaClientBuilder createCamundaClient(final ClientMode mode) {
+    return mode == ClientMode.saas ? buildCloudClientFactory() : buildSelfManagedClientFactory();
   }
 
   private CamundaClientBuilder buildCloudClientFactory() {
