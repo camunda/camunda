@@ -30,6 +30,7 @@ import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +76,8 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
     given(securityConfiguration.getAuthentication()).willReturn(authenticationConfiguration);
     given(securityConfiguration.getAuthorizations()).willReturn(authorizationsConfiguration);
     given(securityConfiguration.getMultiTenancy()).willReturn(multiTenancyConfiguration);
-    given(authenticationConfiguration.getOidc()).willReturn(oidcAuthenticationConfiguration);
+    given(authenticationConfiguration.getOidc())
+        .willReturn(Map.of("foo", oidcAuthenticationConfiguration));
     given(operateProfileService.isLoginDelegated()).willReturn(true);
   }
 

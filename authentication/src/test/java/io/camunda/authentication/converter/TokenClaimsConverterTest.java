@@ -72,7 +72,8 @@ public class TokenClaimsConverterTest {
       MockitoAnnotations.openMocks(this).close();
 
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
-      when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
+      //
+      // when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("not-tested");
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
 
@@ -166,7 +167,8 @@ public class TokenClaimsConverterTest {
       MockitoAnnotations.openMocks(this).close();
 
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
-      when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
+      //
+      // when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(USERNAME_CLAIM);
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
       when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
@@ -367,7 +369,8 @@ public class TokenClaimsConverterTest {
       MockitoAnnotations.openMocks(this).close();
 
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
-      when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
+      //
+      // when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("sub");
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
       when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn(GROUPS_CLAIM);

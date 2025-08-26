@@ -8,6 +8,8 @@
 package io.camunda.security.configuration;
 
 import io.camunda.security.entity.AuthenticationMethod;
+import java.util.HashMap;
+import java.util.Map;
 
 public class AuthenticationConfiguration {
   public static final AuthenticationMethod DEFAULT_METHOD = AuthenticationMethod.BASIC;
@@ -15,8 +17,8 @@ public class AuthenticationConfiguration {
 
   private AuthenticationMethod method = DEFAULT_METHOD;
   private String authenticationRefreshInterval = "PT30S";
-  private OidcAuthenticationConfiguration oidcAuthenticationConfiguration =
-      new OidcAuthenticationConfiguration();
+  private Map<String, OidcAuthenticationConfiguration> oidcAuthenticationConfiguration =
+      new HashMap<>();
   private boolean unprotectedApi = DEFAULT_UNPROTECTED_API;
 
   public boolean getUnprotectedApi() {
@@ -43,11 +45,11 @@ public class AuthenticationConfiguration {
     this.authenticationRefreshInterval = authenticationRefreshInterval;
   }
 
-  public OidcAuthenticationConfiguration getOidc() {
+  public Map<String, OidcAuthenticationConfiguration> getOidc() {
     return oidcAuthenticationConfiguration;
   }
 
-  public void setOidc(final OidcAuthenticationConfiguration configuration) {
+  public void setOidc(final Map<String, OidcAuthenticationConfiguration> configuration) {
     oidcAuthenticationConfiguration = configuration;
   }
 }

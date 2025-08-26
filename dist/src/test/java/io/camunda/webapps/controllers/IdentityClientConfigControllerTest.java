@@ -163,7 +163,7 @@ class IdentityClientConfigControllerTest {
     if (authMethod == AuthenticationMethod.OIDC) {
       final var oidcConfig = new OidcAuthenticationConfiguration();
       oidcConfig.setGroupsClaim(groupsClaim);
-      authentication.setOidc(oidcConfig);
+      //      authentication.setOidc(oidcConfig);
     }
 
     securityConfiguration.setAuthentication(authentication);

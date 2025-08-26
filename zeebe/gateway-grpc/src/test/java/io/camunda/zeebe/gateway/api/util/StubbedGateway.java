@@ -108,7 +108,9 @@ public final class StubbedGateway {
                     new AuthenticationInterceptor(
                         new AuthenticationHandler.Oidc(
                             new FakeJwtDecoder(),
-                            securityConfiguration.getAuthentication().getOidc()))));
+                            securityConfiguration.getAuthentication().getOidc().values().stream()
+                                .findFirst()
+                                .get()))));
     server = serverBuilder.build();
     server.start();
   }

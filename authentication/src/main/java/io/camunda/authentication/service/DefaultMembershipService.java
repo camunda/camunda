@@ -59,7 +59,11 @@ public class DefaultMembershipService implements MembershipService {
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
     this.groupServices = groupServices;
-    groupsClaim = securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
+    groupsClaim =
+        securityConfiguration.getAuthentication().getOidc().values().stream()
+            .findFirst()
+            .get()
+            .getGroupsClaim();
     oidcGroupsLoader = new OidcGroupsLoader(groupsClaim);
   }
 

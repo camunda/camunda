@@ -35,7 +35,7 @@ public class TokenClaimsConverterNoDbTest {
     oidcConfig.setUsernameClaim("preferred_username");
     oidcConfig.setClientIdClaim("azp");
     oidcConfig.setGroupsClaim("groups");
-    authConfig.setOidc(oidcConfig);
+    //    authConfig.setOidc(oidcConfig);
     securityConfiguration.setAuthentication(authConfig);
 
     membershipService = new NoDBMembershipService(securityConfiguration);
@@ -132,7 +132,7 @@ public class TokenClaimsConverterNoDbTest {
     oidcConfig.setClientIdClaim("azp");
     // No groupsClaim set
     final var authConfig = new AuthenticationConfiguration();
-    authConfig.setOidc(oidcConfig);
+    //    authConfig.setOidc(oidcConfig);
     final var config = new SecurityConfiguration();
     config.setAuthentication(authConfig);
 

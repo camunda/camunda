@@ -103,7 +103,7 @@ public class NoSecondaryStorageAuthenticationIT {
       oidcConfig.setUsernameClaim("preferred_username");
       oidcConfig.setClientIdClaim("azp");
       oidcConfig.setGroupsClaim("groups");
-      authConfig.setOidc(oidcConfig);
+      //      authConfig.setOidc(oidcConfig);
       authConfig.setMethod(AuthenticationMethod.OIDC);
       config.setAuthentication(authConfig);
       return config;

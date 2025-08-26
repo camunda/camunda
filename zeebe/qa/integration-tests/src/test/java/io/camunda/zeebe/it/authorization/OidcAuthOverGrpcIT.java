@@ -76,7 +76,7 @@ public class OidcAuthOverGrpcIT {
               c -> {
                 c.getAuthorizations().setEnabled(true);
 
-                final var oidcConfig = c.getAuthentication().getOidc();
+                final var oidcConfig = c.getAuthentication().getOidc().get(0);
                 oidcConfig.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
                 // The following two properties are only needed for the webapp login flow which we
                 // don't test here.

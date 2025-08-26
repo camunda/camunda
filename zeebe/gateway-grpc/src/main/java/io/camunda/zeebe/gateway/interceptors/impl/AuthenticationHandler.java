@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
+import com.nimbusds.jwt.JWTParser;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -18,6 +19,7 @@ import io.camunda.service.UserServices;
 import io.camunda.zeebe.util.Either;
 import io.grpc.Context;
 import io.grpc.Status;
+import java.text.ParseException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,7 @@ import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.jwt.JwtException;
 
 /** Used by the {@link AuthenticationInterceptor} to authenticate incoming requests. */
@@ -56,7 +59,8 @@ public sealed interface AuthenticationHandler {
     public Oidc(
         final JwtDecoder jwtDecoder,
         final OidcAuthenticationConfiguration oidcAuthenticationConfiguration) {
-      this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
+      this.jwtDecoder = jwtDecoder;
+      //      this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
       this.oidcAuthenticationConfiguration =
           Objects.requireNonNull(oidcAuthenticationConfiguration);
       oidcPrincipalLoader =
@@ -76,12 +80,19 @@ public sealed interface AuthenticationHandler {
 
       final Jwt token;
       try {
+        final String issuer =
+            JWTParser.parse(authorizationHeader.substring(BEARER_PREFIX.length()))
+                .getJWTClaimsSet()
+                .getIssuer();
+        final JwtDecoder jwtDecoder = JwtDecoders.fromIssuerLocation(issuer);
         token = jwtDecoder.decode(authorizationHeader.substring(BEARER_PREFIX.length()));
       } catch (final JwtException e) {
         return Either.left(
             Status.UNAUTHENTICATED
                 .augmentDescription("Expected a valid token, see cause for details")
                 .withCause(e));
+      } catch (final ParseException e) {
+        throw new RuntimeException(e);
       }
 
       var context = Context.current();

@@ -99,7 +99,7 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
               c -> {
                 c.getAuthorizations().setEnabled(true);
 
-                final var oidcConfig = c.getAuthentication().getOidc();
+                final var oidcConfig = c.getAuthentication().getOidc().get(0);
                 oidcConfig.setIssuerUri(buildKeycloakIssuerUri());
                 oidcConfig.setClientId(EXAMPLE_CLIENT_ID);
                 oidcConfig.setRedirectUri(EXAMPLE_REDIRECT_URI);

@@ -32,8 +32,16 @@ public class TokenClaimsConverter {
       final SecurityConfiguration securityConfiguration,
       final MembershipService membershipService) {
     this.membershipService = membershipService;
-    usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
-    clientIdClaim = securityConfiguration.getAuthentication().getOidc().getClientIdClaim();
+    usernameClaim =
+        securityConfiguration.getAuthentication().getOidc().values().stream()
+            .findFirst()
+            .get()
+            .getUsernameClaim();
+    clientIdClaim =
+        securityConfiguration.getAuthentication().getOidc().values().stream()
+            .findFirst()
+            .get()
+            .getClientIdClaim();
     oidcPrincipalLoader = new OidcPrincipalLoader(usernameClaim, clientIdClaim);
   }
 

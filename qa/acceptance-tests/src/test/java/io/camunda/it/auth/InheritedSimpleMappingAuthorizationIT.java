@@ -49,8 +49,10 @@ public class InheritedSimpleMappingAuthorizationIT {
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withAuthorizationsEnabled()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withSecurityConfig(c -> c.getAuthentication().getOidc().setClientIdClaim("client_id"))
-          .withSecurityConfig(c -> c.getAuthentication().getOidc().setUsernameClaim("no_username"));
+          .withSecurityConfig(
+              c -> c.getAuthentication().getOidc().get(0).setClientIdClaim("client_id"))
+          .withSecurityConfig(
+              c -> c.getAuthentication().getOidc().get(0).setUsernameClaim("no_username"));
 
   // Injected by the MultiDbTest extension
   private static KeycloakContainer keycloak;
