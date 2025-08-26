@@ -24,10 +24,12 @@ import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 @Service
+@Primary
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
 @ConditionalOnSecondaryStorageEnabled
 @Profile("consolidated-auth")
