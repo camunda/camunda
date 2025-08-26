@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import static io.camunda.zeebe.util.StreamProcessingConstants.DEFAULT_MAX_FRAGMENT_SIZE;
+import static io.camunda.zeebe.util.StreamProcessingConstants.MINIMUM_FRAGMENT_SIZE;
+
 import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -17,8 +20,7 @@ import java.time.InstantSource;
 import java.util.Objects;
 
 public final class LogStreamBuilderImpl implements LogStreamBuilder {
-  private static final int MINIMUM_FRAGMENT_SIZE = 4 * 1024;
-  private int maxFragmentSize = 1024 * 1024 * 4;
+  private int maxFragmentSize = DEFAULT_MAX_FRAGMENT_SIZE;
   private int partitionId = -1;
   private LogStorage logStorage;
   private String logName;
