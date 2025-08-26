@@ -8,12 +8,11 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Backup;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.operate.property.BackupProperties;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.operate.conditions.DatabaseType;
+import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

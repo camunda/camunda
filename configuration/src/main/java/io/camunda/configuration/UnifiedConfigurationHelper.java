@@ -7,14 +7,10 @@
  */
 package io.camunda.configuration;
 
-import java.util.Collection;
-import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
-import io.camunda.configuration.RocksDb.AccessMetricsKind;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import java.io.File;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
