@@ -73,7 +73,7 @@ public class IdentityClientConfigController {
 
   private boolean isCamundaGroupsEnabled(final SecurityConfiguration securityConfiguration) {
     final var authentication = securityConfiguration.getAuthentication();
-    final var oidcConfig = authentication.getOidc();
+    final var oidcConfig = authentication.getOidc().values().stream().findFirst().get();
     return oidcConfig == null
         || oidcConfig.getGroupsClaim() == null
         || oidcConfig.getGroupsClaim().isEmpty();

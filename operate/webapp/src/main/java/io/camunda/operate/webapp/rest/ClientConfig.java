@@ -45,7 +45,12 @@ public class ClientConfig {
     contextPath = context.getContextPath();
     baseName = context.getContextPath() + "/operate";
     // when operating in SaaS we don't have the logout option.
-    canLogout = securityConfiguration.getAuthentication().getOidc().getOrganizationId() == null;
+    canLogout =
+        securityConfiguration.getAuthentication().getOidc().values().stream()
+                .findFirst()
+                .get()
+                .getOrganizationId()
+            == null;
     isLoginDelegated = profileService.isLoginDelegated();
     tasklistUrl = operateProperties.getTasklistUrl();
     resourcePermissionsEnabled = securityConfiguration.getAuthorizations().isEnabled();

@@ -18,14 +18,15 @@ public final class OidcClientRegistration {
 
   private OidcClientRegistration() {}
 
-  public static ClientRegistration create(final OidcAuthenticationConfiguration configuration) {
+  public static ClientRegistration create(
+      final String registrationId, final OidcAuthenticationConfiguration configuration) {
     final Builder builder;
     if (configuration.getIssuerUri() != null) {
       builder =
           ClientRegistrations.fromIssuerLocation(configuration.getIssuerUri())
-              .registrationId(REGISTRATION_ID);
+              .registrationId(registrationId);
     } else {
-      builder = ClientRegistration.withRegistrationId(REGISTRATION_ID);
+      builder = ClientRegistration.withRegistrationId(registrationId);
     }
 
     if (configuration.getClientId() != null) {
@@ -53,5 +54,9 @@ public final class OidcClientRegistration {
       builder.authorizationGrantType(new AuthorizationGrantType(configuration.getGrantType()));
     }
     return builder.build();
+  }
+
+  public static ClientRegistration create(final OidcAuthenticationConfiguration configuration) {
+    return create(REGISTRATION_ID, configuration);
   }
 }
