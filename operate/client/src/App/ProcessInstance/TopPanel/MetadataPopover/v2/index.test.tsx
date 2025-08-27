@@ -37,6 +37,7 @@ import {labels, renderPopover} from './mocks';
 import {
   type ProcessInstance,
   type ElementInstance,
+  type DecisionInstance,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {init} from 'modules/utils/flowNodeMetadata';
@@ -50,6 +51,7 @@ import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/inciden
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
+import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -85,6 +87,24 @@ const mockElementInstance: ElementInstance = {
   processDefinitionKey: '2',
   hasIncident: false,
   tenantId: '<default>',
+};
+
+const mockDecisionInstance: DecisionInstance = {
+  decisionInstanceId: '2251799813685591',
+  decisionInstanceKey: '2251799813685591',
+  decisionDefinitionName: 'Test Decision',
+  decisionDefinitionId: 'decision-1',
+  decisionDefinitionKey: '123',
+  decisionDefinitionVersion: 1,
+  decisionDefinitionType: 'DECISION_TABLE',
+  processDefinitionKey: '2',
+  processInstanceKey: PROCESS_INSTANCE_ID,
+  elementInstanceKey: '2251799813699889',
+  state: 'EVALUATED',
+  evaluationDate: '2018-12-12T22:00:00.000+0000',
+  evaluationFailure: '',
+  tenantId: '<default>',
+  result: '',
 };
 
 describe('MetadataPopover', () => {
@@ -149,6 +169,11 @@ describe('MetadataPopover', () => {
       page: {
         totalItems: 0,
       },
+    });
+
+    mockSearchDecisionInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
   });
 
@@ -494,7 +519,7 @@ describe('MetadataPopover', () => {
     ).not.toBeInTheDocument();
   });
 
-  //TODO fix when #35528 ready
+  //TODO fix when #35529 ready
   it.skip('should not render root cause instance link when instance is root', async () => {
     const {rootCauseInstance} = rootIncidentFlowNodeMetaData.incident;
 
@@ -704,6 +729,77 @@ describe('MetadataPopover', () => {
 
     expect(
       screen.queryByRole('heading', {name: labels.details}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should render root cause decision instance link when decision instance exists', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess(
+      incidentsByProcessKeyMetadata,
+    );
+    mockSearchDecisionInstances().withSuccess({
+      items: [mockDecisionInstance],
+      page: {totalItems: 1},
+    });
+    flowNodeMetaDataStore.setMetaData(incidentFlowNodeMetaData);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'INCIDENT',
+      }),
+    );
+    incidentsStore.init();
+
+    selectFlowNode(
+      {},
+      {flowNodeId: FLOW_NODE_ID, flowNodeInstanceId: '2251799813699889'},
+    );
+
+    renderPopover();
+
+    expect(
+      await screen.findByText('Root Cause Decision Instance'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {
+        name: /View root cause decision Test Decision - 2251799813685591/,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Test Decision - 2251799813685591'),
+    ).toBeInTheDocument();
+  });
+
+  it('should not render root cause decision instance when no decision instance exists', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess(
+      incidentsByProcessKeyMetadata,
+    );
+    mockSearchDecisionInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    flowNodeMetaDataStore.setMetaData(incidentFlowNodeMetaData);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'INCIDENT',
+      }),
+    );
+    incidentsStore.init();
+
+    selectFlowNode(
+      {},
+      {flowNodeId: FLOW_NODE_ID, flowNodeInstanceId: '2251799813699889'},
+    );
+
+    renderPopover();
+
+    expect(await screen.findByText(labels.incident)).toBeInTheDocument();
+    expect(
+      screen.queryByText('Root Cause Decision Instance'),
     ).not.toBeInTheDocument();
   });
 });
