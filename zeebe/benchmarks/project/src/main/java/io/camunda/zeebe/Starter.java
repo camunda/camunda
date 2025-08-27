@@ -172,7 +172,7 @@ public class Starter extends App {
                   .messageName(starterCfg.getMsgName())
                   .correlationKey(UUID.randomUUID().toString())
                   .variables(variables)
-                  .timeToLive(Duration.ZERO)
+                  .timeToLive(starterCfg.getMessagettl())
                   .send());
         } else {
           startViaCommand(starterCfg, processId, requestFutures, client, variables);
