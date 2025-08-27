@@ -15,27 +15,15 @@
  */
 package io.camunda.spring.client.jobhandling;
 
-import io.camunda.client.api.worker.JobHandler;
-import java.util.Collections;
-import java.util.List;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
+import io.camunda.spring.client.metrics.MetricsRecorder;
 
-public interface JobHandlerFactory<T> {
-
-  JobHandler getJobHandler(T context);
-
-  default String getGeneratedJobWorkerName() {
-    return null;
-  }
-
-  default String getGeneratedJobWorkerType() {
-    return null;
-  }
-
-  default boolean usesActivatedJob() {
-    return true;
-  }
-
-  default List<String> getUsedVariableNames() {
-    return Collections.emptyList();
-  }
-}
+public record SpringBeanJobHandlerFactoryContext(
+    CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+    MetricsRecorder metricsRecorder,
+    ParameterResolverStrategy parameterResolverStrategy,
+    ResultProcessorStrategy resultProcessorStrategy,
+    JobExceptionHandlingStrategy jobExceptionHandlingStrategy,
+    JobWorkerValue jobWorkerValue) {}
