@@ -16,6 +16,14 @@ public class OidcAuthenticationConfiguration {
   public static final String GROUPS_CLAIM_PROPERTY =
       "camunda.security.authentication.oidc.groupsClaim";
 
+  public static final String CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC =
+      "client_secret_basic";
+  public static final String CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT = "private_key_jwt";
+  public static final List<String> CLIENT_AUTHENTICATION_METHODS =
+      List.of(
+          CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC,
+          CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT);
+
   private String issuerUri;
   private String clientId;
   private String clientSecret;
@@ -32,6 +40,9 @@ public class OidcAuthenticationConfiguration {
   private String clientIdClaim;
   private String groupsClaim;
   private String organizationId;
+  private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
+  private AssertionKeystoreConfiguration assertionKeystoreConfiguration =
+      new AssertionKeystoreConfiguration();
 
   public String getIssuerUri() {
     return issuerUri;
@@ -155,6 +166,28 @@ public class OidcAuthenticationConfiguration {
     this.groupsClaim = groupsClaim;
   }
 
+  public String getClientAuthenticationMethod() {
+    return clientAuthenticationMethod;
+  }
+
+  public void setClientAuthenticationMethod(final String clientAuthenticationMethod) {
+    this.clientAuthenticationMethod = clientAuthenticationMethod;
+  }
+
+  public boolean isClientAuthenticationPrivateKeyJwt() {
+    return clientAuthenticationMethod != null
+        && clientAuthenticationMethod.equals(CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT);
+  }
+
+  public AssertionKeystoreConfiguration getAssertionKeystore() {
+    return assertionKeystoreConfiguration;
+  }
+
+  public void setAssertionKeystore(
+      final AssertionKeystoreConfiguration assertionKeystoreConfiguration) {
+    this.assertionKeystoreConfiguration = assertionKeystoreConfiguration;
+  }
+
   public boolean isSet() {
     return issuerUri != null
         || clientId != null
@@ -171,7 +204,12 @@ public class OidcAuthenticationConfiguration {
         || audiences != null
         || clientIdClaim != null
         || groupsClaim != null
-        || organizationId != null;
+        || organizationId != null
+        || !CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC.equals(clientAuthenticationMethod)
+        || assertionKeystoreConfiguration.getPath() != null
+        || assertionKeystoreConfiguration.getPassword() != null
+        || assertionKeystoreConfiguration.getKeyAlias() != null
+        || assertionKeystoreConfiguration.getKeyPassword() != null;
   }
 
   public static Builder builder() {
@@ -195,6 +233,9 @@ public class OidcAuthenticationConfiguration {
     private String clientIdClaim;
     private String groupsClaim;
     private String organizationId;
+    private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
+    private AssertionKeystoreConfiguration assertionKeystoreConfiguration =
+        new AssertionKeystoreConfiguration();
 
     public Builder issuerUri(final String issuerUri) {
       this.issuerUri = issuerUri;
@@ -273,6 +314,17 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
+    public Builder clientAuthenticationMethod(final String clientAuthenticationMethod) {
+      this.clientAuthenticationMethod = clientAuthenticationMethod;
+      return this;
+    }
+
+    public Builder assertionKeystoreConfiguration(
+        final AssertionKeystoreConfiguration keystoreConfiguration) {
+      assertionKeystoreConfiguration = keystoreConfiguration;
+      return this;
+    }
+
     public OidcAuthenticationConfiguration build() {
       final OidcAuthenticationConfiguration config = new OidcAuthenticationConfiguration();
       config.setIssuerUri(issuerUri);
@@ -290,6 +342,8 @@ public class OidcAuthenticationConfiguration {
       config.setClientIdClaim(clientIdClaim);
       config.setGroupsClaim(groupsClaim);
       config.setOrganizationId(organizationId);
+      config.setClientAuthenticationMethod(clientAuthenticationMethod);
+      config.setAssertionKeystore(assertionKeystoreConfiguration);
       return config;
     }
   }

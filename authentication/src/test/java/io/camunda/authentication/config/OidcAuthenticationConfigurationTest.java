@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config;
 
+import io.camunda.security.configuration.AssertionKeystoreConfiguration;
 import io.camunda.security.configuration.AuthorizeRequestConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import java.util.ArrayList;
@@ -120,6 +121,40 @@ public class OidcAuthenticationConfigurationTest {
             "organizationId is set",
             OidcAuthenticationConfiguration.builder().organizationId("org").build(),
             true),
+        Arguments.of(
+            "clientAuthenticationMethod is set",
+            OidcAuthenticationConfiguration.builder()
+                .clientAuthenticationMethod("private_key_jwt")
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionKeystoreConfiguration.path is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionKeystoreConfiguration(
+                    AssertionKeystoreConfiguration.builder().path("/path/to/keystore.p12").build())
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionKeystoreConfiguration.password is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionKeystoreConfiguration(
+                    AssertionKeystoreConfiguration.builder().password("keystorepass").build())
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionKeystoreConfiguration.keyAlias is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionKeystoreConfiguration(
+                    AssertionKeystoreConfiguration.builder().keyAlias("alias").build())
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionKeystoreConfiguration.keyPassword is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionKeystoreConfiguration(
+                    AssertionKeystoreConfiguration.builder().keyPassword("keypass").build())
+                .build(),
+            true),
         Arguments.of("default", new OidcAuthenticationConfiguration(), false),
         Arguments.of(
             "default authorizeRequestConfiguration is set",
@@ -138,6 +173,18 @@ public class OidcAuthenticationConfigurationTest {
         Arguments.of(
             "default scope is set",
             OidcAuthenticationConfiguration.builder().scope(List.of("openid", "profile")).build(),
+            false),
+        Arguments.of(
+            "default clientAuthenticationMethod is set",
+            OidcAuthenticationConfiguration.builder()
+                .clientAuthenticationMethod("client_secret_basic")
+                .build(),
+            false),
+        Arguments.of(
+            "AssertionKeystoreConfiguration values are not set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionKeystoreConfiguration(AssertionKeystoreConfiguration.builder().build())
+                .build(),
             false));
   }
 }
