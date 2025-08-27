@@ -316,20 +316,14 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private CompletableFuture<Void> applyPolicyToIndices(
       final String policyName, final List<String> indices) {
 
-    if (indices.stream()
-        .allMatch(
-            index -> {
-              final String retentionPolicy = lifeCyclePolicyApplied.getIfPresent(index);
-              return retentionPolicy != null && retentionPolicy.equals(policyName);
-            })) {
-      return CompletableFuture.completedFuture(null);
-    }
-
     final var indicesWithoutPolicy =
         indices.stream()
             .filter(
-                index -> !Objects.equals(lifeCyclePolicyApplied.getIfPresent(index), policyName))
+                index -> !policyName.equals(lifeCyclePolicyApplied.getIfPresent(index)))
             .toList();
+    if (indicesWithoutPolicy.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
 
     logger.debug(
         "Applying policy '{}' to {} indices: {}",

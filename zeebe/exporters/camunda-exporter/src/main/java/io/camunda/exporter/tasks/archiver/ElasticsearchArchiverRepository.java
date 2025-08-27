@@ -45,7 +45,6 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
 import java.util.Optional;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
@@ -296,20 +295,14 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private CompletableFuture<Void> applyPolicyToIndices(
       final String policyName, final List<String> indices) {
 
-    if (indices.stream()
-        .allMatch(
-            index -> {
-              final String retentionPolicy = lifeCyclePolicyApplied.getIfPresent(index);
-              return retentionPolicy != null && retentionPolicy.equals(policyName);
-            })) {
-      return CompletableFuture.completedFuture(null);
-    }
-
     final var indicesWithoutPolicy =
         indices.stream()
-            .filter(
-                index -> !Objects.equals(lifeCyclePolicyApplied.getIfPresent(index), policyName))
+            .filter(index -> !policyName.equals(lifeCyclePolicyApplied.getIfPresent(index)))
             .toList();
+
+    if (indicesWithoutPolicy.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
 
     logger.debug(
         "Applying policy '{}' to {} indices: {}",
@@ -325,7 +318,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .ignoreUnavailable(true)
             .build();
 
-    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
+    return client
+        .indices()
+        .putSettings(settingsRequest)
+        .thenApplyAsync(
+            ok -> {
+              indicesWithoutPolicy.forEach(
+                  indexName -> lifeCyclePolicyApplied.put(indexName, policyName));
+              return null;
+            },
+            executor);
   }
 
   private CompletableFuture<ArchiveBatch> createArchiveBatch(
