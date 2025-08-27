@@ -18,7 +18,7 @@ import {
   assertBadRequest,
   assertNotFoundRequest,
   assertForbiddenRequest,
-} from '../../../../utils/http';
+} from '../../../utils/http';
 import {
   CREATE_DOC_INVALID_REQUEST,
   CREATE_DOCUMENT_LINK_REQUEST,
@@ -29,11 +29,11 @@ import {
   CREATE_TXT_DOCUMENT_REQUEST,
   documentRequiredFields,
   multipleDocumentsRequiredFields,
-} from '../../../../utils/beans/requestBeans';
+} from '../../../utils/beans/requestBeans';
 import {
   defaultAssertionOptions,
   generateUniqueId,
-} from '../../../../utils/constants';
+} from '../../../utils/constants';
 import {Serializable} from 'playwright-core/types/structs';
 
 test.describe.parallel('Document API Tests', () => {
