@@ -34,7 +34,7 @@ const TimeInput: React.FC<Props> = ({type, labelText, onChange}) => {
       {({input, meta}) => {
         return (
           <TextInput
-            defaultValue={input.value}
+            value={input.value}
             id="time-picker"
             labelText={labelText}
             size="sm"
