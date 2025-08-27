@@ -10,6 +10,7 @@ package io.camunda.configuration.beanoverrides;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.SecondaryStorageDatabase;
+import io.camunda.configuration.Security;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
@@ -35,8 +36,8 @@ public class SearchEngineConnectPropertiesOverride {
   private final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties;
 
   public SearchEngineConnectPropertiesOverride(
-      @Autowired UnifiedConfiguration unifiedConfiguration,
-      @Autowired LegacySearchEngineConnectProperties legacySearchEngineConnectProperties) {
+      @Autowired final UnifiedConfiguration unifiedConfiguration,
+      @Autowired final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
     this.legacySearchEngineConnectProperties = legacySearchEngineConnectProperties;
   }
@@ -59,6 +60,31 @@ public class SearchEngineConnectPropertiesOverride {
     override.setUrl(database.getUrl());
     override.setClusterName(database.getClusterName());
 
+    populateFromSecurity(override);
+
     return override;
+  }
+
+  private void populateFromSecurity(final SearchEngineConnectProperties override) {
+    final Security security = resolveSecurity(override);
+    if (security == null) {
+      return;
+    }
+
+    override.getSecurity().setEnabled(security.isEnabled());
+    override.getSecurity().setCertificatePath(security.getCertificatePath());
+    override.getSecurity().setVerifyHostname(security.isVerifyHostname());
+    override.getSecurity().setSelfSigned(security.isSelfSigned());
+  }
+
+  private Security resolveSecurity(final SearchEngineConnectProperties override) {
+    final SecondaryStorage secondaryStorage =
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+
+    return switch (override.getTypeEnum()) {
+      case ELASTICSEARCH -> secondaryStorage.getElasticsearch().getSecurity();
+      case OPENSEARCH -> secondaryStorage.getOpensearch().getSecurity();
+      default -> null;
+    };
   }
 }
