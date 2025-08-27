@@ -29,7 +29,6 @@ public class JobWorkerValue implements Cloneable {
   private Integer maxJobsActive;
   private Duration requestTimeout;
   private Duration pollInterval;
-  private Boolean autoComplete;
   private List<String> fetchVariables;
   private Boolean enabled;
   private List<String> tenantIds;
@@ -39,6 +38,7 @@ public class JobWorkerValue implements Cloneable {
   private Integer maxRetries;
   // cannot be changed from change set
   private JobHandlerFactory jobHandlerFactory;
+  private Boolean autoComplete;
 
   @Deprecated(forRemoval = true)
   private MethodInfo methodInfo;
