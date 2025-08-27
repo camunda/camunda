@@ -39,6 +39,7 @@ public class StarterCfg {
 
   private boolean startViaMessage;
   private String msgName;
+  private Duration messagettl;
 
   public boolean isStartViaMessage() {
     return startViaMessage;
@@ -134,5 +135,13 @@ public class StarterCfg {
 
   public void setDurationLimit(final int durationLimit) {
     this.durationLimit = durationLimit;
+  }
+
+  public Duration getMessagettl() {
+    return messagettl;
+  }
+
+  public void setMessagettl(final Duration messagettl) {
+    this.messagettl = messagettl;
   }
 }
