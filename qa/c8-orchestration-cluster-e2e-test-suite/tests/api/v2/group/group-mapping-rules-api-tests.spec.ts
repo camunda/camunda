@@ -19,9 +19,9 @@ import {
   CREATE_NEW_GROUP,
   groupRequiredFields,
   mappingRuleRequiredFields,
-} from '../../../../utils/beans/request-beans';
+} from '../../../../utils/beans/requestBeans';
 import {sleep} from '../../../../utils/sleep';
-import {CREATE_NEW_MAPPING_RULE} from '../../../../utils/beans/request-beans';
+import {CREATE_NEW_MAPPING_RULE} from '../../../../utils/beans/requestBeans';
 
 test.describe('Group Mapping Rules API Tests', () => {
   const state: Record<string, unknown> = {};

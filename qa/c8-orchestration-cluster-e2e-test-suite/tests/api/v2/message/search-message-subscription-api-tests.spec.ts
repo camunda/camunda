@@ -18,7 +18,7 @@ import {
   expectedMessageSubscription1,
   expectedMessageSubscription2,
   messageSubscriptionRequiredFields,
-} from '../../../../utils/beans/request-beans';
+} from '../../../../utils/beans/requestBeans';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
 
 test.beforeAll(async () => {

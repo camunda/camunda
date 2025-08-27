@@ -41,6 +41,54 @@ export function assertRequiredFields(obj: unknown, required: string[]): void {
   }
 }
 
+export async function assertUnauthorizedRequest(response: APIResponse) {
+  expect(response.status()).toBe(401);
+  const json = await response.json();
+  assertRequiredFields(json, ['detail', 'title']);
+  expect(json.title).toBe('Unauthorized');
+}
+
+export async function assertUnsupportedMediaTypeRequest(response: APIResponse) {
+  expect(response.status()).toBe(415);
+  const json = await response.json();
+  assertRequiredFields(json, ['error']);
+  expect(json.error).toContain('Unsupported Media Type');
+}
+
+export async function assertBadRequest(
+  response: APIResponse,
+  detail: string,
+  title = 'Bad Request',
+) {
+  expect(response.status()).toBe(400);
+  const json = await response.json();
+  assertRequiredFields(json, ['detail', 'title']);
+  expect(json.title).toBe(title);
+  expect(json.detail).toContain(detail);
+}
+
+export async function assertForbiddenRequest(
+  response: APIResponse,
+  detail: string,
+) {
+  expect(response.status()).toBe(403);
+  const json = await response.json();
+  assertRequiredFields(json, ['detail', 'title']);
+  expect(json.title).toBe('FORBIDDEN');
+  expect(json.detail).toContain(detail);
+}
+
+export async function assertNotFoundRequest(
+  response: APIResponse,
+  detail: string,
+) {
+  expect(response.status()).toBe(404);
+  const json = await response.json();
+  assertRequiredFields(json, ['detail', 'title']);
+  expect(json.title).toBe('NOT_FOUND');
+  expect(json.detail).toContain(detail);
+}
+
 export function assertEqualsForKeys(
   obj: unknown,
   expected: Record<string, unknown>,
@@ -92,6 +140,13 @@ export function assertEqualsForKeys(
 export function jsonHeaders(): Record<string, string> {
   return {
     'Content-Type': 'application/json',
+    ...authHeaders(credentials.accessToken),
+  };
+}
+
+export function defaultHeaders(): Record<string, string> {
+  return {
+    Accept: 'application/json',
     ...authHeaders(credentials.accessToken),
   };
 }

@@ -20,7 +20,7 @@ import {
   CREATE_NEW_ROLE,
   groupRequiredFields,
   roleRequiredFields,
-} from '../../../../utils/beans/request-beans';
+} from '../../../../utils/beans/requestBeans';
 import {sleep} from '../../../../utils/sleep';
 
 test.describe('Group Roles API Tests', () => {
