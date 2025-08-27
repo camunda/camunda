@@ -286,26 +286,6 @@ public class UnifiedConfigurationHelper {
         .instantiate(ExporterConfiguration.class);
   }
 
-  /* Helper methods */
-
-  public static ExporterCfg getCamundaExporter(final BrokerBasedProperties brokerBasedProperties) {
-    final List<ExporterCfg> exporters =
-        brokerBasedProperties.getExporters().values().stream()
-            .filter(e -> e.getClassName().equals("io.camunda.exporter.CamundaExporter"))
-            .toList();
-    if (exporters.isEmpty()) {
-      return null;
-    }
-
-    return exporters.get(0);
-  }
-
-  public static ExporterConfiguration argsToExporterConfiguration(final Map<String, Object> args) {
-    return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
-            "camundaExporter", args)
-        .instantiate(ExporterConfiguration.class);
-  }
-
   /* Setters used by tests to inject the mock objects */
 
   public static void setCustomEnvironment(final Environment environment) {
