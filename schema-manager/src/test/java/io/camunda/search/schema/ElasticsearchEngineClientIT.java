@@ -17,10 +17,12 @@ import static org.mockito.Mockito.*;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.UpdateRequest;
+import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
@@ -55,7 +57,6 @@ public class ElasticsearchEngineClientIT {
     config.setUrl(CONTAINER.getHttpHostAddress());
     final var esConnector = new ElasticsearchConnector(config);
     elsClient = esConnector.createClient();
-
     elsEngineClient = new ElasticsearchEngineClient(elsClient, esConnector.objectMapper());
   }
 
@@ -305,6 +306,89 @@ public class ElasticsearchEngineClientIT {
     assertThat(complexProperty.get("type")).isEqualTo("text");
     assertThat(complexProperty.get("index")).isEqualTo(false);
     assertThat(complexProperty.get("eager_global_ordinals")).isEqualTo(true);
+  }
+
+  @Test
+  void shouldNotIssuePutIndexTemplateWhenSettingsUnchanged() throws IOException {
+    // given
+    final var template = createTestTemplateDescriptor("template_no_change", "/mappings.json");
+    final var initialSettings = new IndexConfiguration();
+    initialSettings.setNumberOfReplicas(0);
+    initialSettings.setNumberOfShards(1);
+    initialSettings.setTemplatePriority(50);
+
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, initialSettings, true);
+    reset(indicesSpy); // ignore create
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, initialSettings);
+
+    // then
+    verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  @Test
+  void shouldIssuePutIndexTemplateWhenSettingsChanged() throws IOException {
+    // given
+    final var template = createTestTemplateDescriptor("template_change", "/mappings.json");
+    final var initialSettings = new IndexConfiguration();
+    initialSettings.setNumberOfReplicas(0);
+    initialSettings.setNumberOfShards(1);
+
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, initialSettings, true);
+    reset(indicesSpy); // ignore create
+
+    final var updated = new IndexConfiguration();
+    updated.setNumberOfReplicas(2); // change
+    updated.setNumberOfShards(1); // same
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, updated);
+
+    // then
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  @Test
+  void shouldIssuePutIndexTemplateWhenTemplatePriorityChanged() throws IOException {
+    // given
+    final var template = createTestTemplateDescriptor("template_change", "/mappings.json");
+    final var initialSettings = new IndexConfiguration();
+    initialSettings.setNumberOfReplicas(0);
+    initialSettings.setNumberOfShards(1);
+    initialSettings.setTemplatePriority(50);
+
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, initialSettings, true);
+    reset(indicesSpy); // ignore create
+
+    final var updated = new IndexConfiguration();
+    updated.setNumberOfReplicas(0); // same
+    updated.setNumberOfShards(1); // same
+    updated.setTemplatePriority(100); // change
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, updated);
+
+    // then
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
   }
 
   @Nested

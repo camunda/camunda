@@ -34,6 +34,10 @@ public class SearchEngineClientUtils {
         .collect(Collectors.joining(","));
   }
 
+  public static <T, U> U convertValue(final T fromValue, final Function<T, U> converter) {
+    return fromValue != null ? converter.apply(fromValue) : null;
+  }
+
   public <T> T mapToSettings(
       final Map<String, String> settingsMap, final Function<InputStream, T> settingsDeserializer) {
     try (final var settingsStream =
@@ -69,17 +73,21 @@ public class SearchEngineClientUtils {
     }
 
     public SchemaSettingsAppender withNumberOfShards(final int numberOfShards) {
-      indexBlock.put("number_of_shards", numberOfShards);
+      indexBlock.put("number_of_shards", String.valueOf(numberOfShards));
       return this;
     }
 
     public SchemaSettingsAppender withNumberOfReplicas(final int numberOfReplicas) {
-      indexBlock.put("number_of_replicas", numberOfReplicas);
+      indexBlock.put("number_of_replicas", String.valueOf(numberOfReplicas));
       return this;
     }
 
     public InputStream build() throws IOException {
       return new ByteArrayInputStream(objectMapper.writeValueAsBytes(map));
+    }
+
+    public boolean equalsSettings(final Map<String, Object> otherSettings) {
+      return settingsBlock.equals(otherSettings);
     }
   }
 }
