@@ -39,7 +39,7 @@ import {Serializable} from 'playwright-core/types/structs';
 test.describe.parallel('Document API Tests', () => {
   const state: Record<string, unknown> = {};
   const nonexistentId = 'nonExistingDocumentId';
-  const resposeKeys: string[] = [
+  const responseKeys: string[] = [
     'camunda.document.type',
     'storeId',
     'metadata',
@@ -94,6 +94,23 @@ test.describe.parallel('Document API Tests', () => {
     await assertBadRequest(res, "Required part 'file' is not present.");
   });
 
+  test('Create Document Invalid Store 400', async ({request}) => {
+    const invalidStoreId = 'invalidStore';
+    const res = await request.post(
+      buildUrl('/documents', {}, {storeId: invalidStoreId}),
+      {
+        headers: defaultHeaders(),
+        multipart: CREATE_TXT_DOCUMENT_REQUEST(),
+      },
+    );
+
+    await assertBadRequest(
+      res,
+      `Document store with id '${invalidStoreId}' does not exist`,
+      'INVALID_ARGUMENT',
+    );
+  });
+
   test('Create Document', async ({request}) => {
     const payload = CREATE_TXT_DOCUMENT_REQUEST();
     const expectedPostBody = CREATE_TXT_DOC_RESPONSE_BODY('helloworld', 12);
@@ -106,7 +123,29 @@ test.describe.parallel('Document API Tests', () => {
     expect(res.status()).toBe(201);
     const json = await res.json();
     assertRequiredFields(json, documentRequiredFields);
-    assertEqualsForKeys(json, expectedPostBody, resposeKeys);
+    assertEqualsForKeys(json, expectedPostBody, responseKeys);
+  });
+
+  test('Create Document With Query Parameters', async ({request}) => {
+    const payload = CREATE_TXT_DOCUMENT_REQUEST();
+    const uniqueId = generateUniqueId();
+    const storeId = 'in-memory';
+    const expectedPostBody = CREATE_TXT_DOC_RESPONSE_BODY('helloworld', 12);
+
+    const res = await request.post(
+      buildUrl('/documents', {}, {documentId: uniqueId, storeId: storeId}),
+      {
+        headers: defaultHeaders(),
+        multipart: payload,
+      },
+    );
+
+    expect(res.status()).toBe(201);
+    const json = await res.json();
+    assertRequiredFields(json, documentRequiredFields);
+    assertEqualsForKeys(json, expectedPostBody, responseKeys);
+    expect(json.documentId).toBe(uniqueId);
+    expect(json.storeId).toBe(storeId);
   });
 
   test('Create Document With Metadata', async ({request}) => {
@@ -122,7 +161,7 @@ test.describe.parallel('Document API Tests', () => {
     expect(res.status()).toBe(201);
     const json = await res.json();
     assertRequiredFields(json, documentRequiredFields);
-    assertEqualsForKeys(json, expectedPostBody, resposeKeys);
+    assertEqualsForKeys(json, expectedPostBody, responseKeys);
   });
 
   test('Get Document', async ({request}) => {
@@ -255,7 +294,7 @@ test.describe.parallel('Document API Tests', () => {
           it.metadata.fileName === expectedFile1.metadata.fileName,
       );
       expect(actualFile1).toBeDefined();
-      assertEqualsForKeys(actualFile1, expectedFile1, resposeKeys);
+      assertEqualsForKeys(actualFile1, expectedFile1, responseKeys);
     });
 
     await test.step('Assert Second File Fields', async () => {
@@ -264,7 +303,7 @@ test.describe.parallel('Document API Tests', () => {
           it.metadata.fileName === expectedFile2.metadata.fileName,
       );
       expect(actualFile2).toBeDefined();
-      assertEqualsForKeys(actualFile2, expectedFile2, resposeKeys);
+      assertEqualsForKeys(actualFile2, expectedFile2, responseKeys);
     });
   });
 
