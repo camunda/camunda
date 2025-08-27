@@ -43,8 +43,7 @@ public class StandaloneCamunda {
           Profile.OPERATE.getId(),
           Profile.TASKLIST.getId(),
           Profile.BROKER.getId(),
-          Profile.IDENTITY.getId(),
-          Profile.CONSOLIDATED_AUTH.getId());
+          Profile.IDENTITY.getId());
 
   public static void main(final String[] args) {
     MainSupport.setDefaultGlobalConfiguration();

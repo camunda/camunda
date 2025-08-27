@@ -400,6 +400,7 @@ public class WebSecurityConfig {
   }
 
   @Configuration
+  @Profile("consolidated-auth")
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   @ConditionalOnSecondaryStorageEnabled
   public static class BasicConfiguration {
@@ -536,6 +537,7 @@ public class WebSecurityConfig {
   }
 
   @Configuration
+  @Profile("consolidated-auth")
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
   public static class OidcConfiguration {
 

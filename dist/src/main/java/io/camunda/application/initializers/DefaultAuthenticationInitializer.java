@@ -23,9 +23,9 @@ public class DefaultAuthenticationInitializer
   @Override
   public void initialize(final ConfigurableApplicationContext context) {
     final var env = context.getEnvironment();
-    if (shouldApplyDefaultAuthenticationProfile(env)) {
-      env.addActiveProfile(CONSOLIDATED_AUTH.getId());
-    }
+    //    if (shouldApplyDefaultAuthenticationProfile(env)) {
+    //      env.addActiveProfile(CONSOLIDATED_AUTH.getId());
+    //    }
   }
 
   protected boolean shouldApplyDefaultAuthenticationProfile(final Environment environment) {

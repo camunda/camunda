@@ -9,13 +9,11 @@ package io.camunda.authentication.service;
 
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 
-import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.TenantServices;
@@ -26,7 +24,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -40,9 +37,7 @@ import org.springframework.security.oauth2.server.resource.authentication.Abstra
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 @ConditionalOnSecondaryStorageEnabled
-@Profile("consolidated-auth")
 public class OidcCamundaUserService implements CamundaUserService {
   private static final String SALES_PLAN_TYPE = "";
 
