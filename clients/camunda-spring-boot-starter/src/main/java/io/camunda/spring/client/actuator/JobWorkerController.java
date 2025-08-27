@@ -21,11 +21,21 @@ import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.ComposedChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.EnabledChangeSet;
+import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.FetchVariablesChangeSet;
+import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.ForceFetchAllVariablesChangeSet;
+import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.MaxJobsActiveChangeSet;
+import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.MaxRetriesChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.NameChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.NoopChangeSet;
+import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.PollIntervalChangeSet;
+import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.RequestTimeoutChangeSet;
+import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.StreamEnabledChangeSet;
+import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.StreamTimeoutChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.TenantIdsChangeSet;
+import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.TimeoutChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.TypeChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerManager;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -60,13 +70,35 @@ public class JobWorkerController {
       @Nullable final String name,
       @Nullable final Boolean enabled,
       @Nullable final String tenantIds,
+      @Nullable final Duration timeout,
+      @Nullable final Integer maxJobsActive,
+      @Nullable final Duration requestTimeout,
+      @Nullable final Duration pollInterval,
+      @Nullable final String fetchVariables,
+      @Nullable final Boolean forceFetchAllVariables,
+      @Nullable final Boolean streamEnabled,
+      @Nullable final Duration streamTimeout,
+      @Nullable final Integer maxRetries,
       @Nullable final Boolean reset,
       @Nullable final Boolean applyCustomizers) {
     if (reset != null && reset) {
       jobWorkerManager.resetJobWorkers();
     } else {
       jobWorkerManager.updateJobWorkers(
-          createChangeSet(null, name, enabled, tenantIds),
+          createChangeSet(
+              null,
+              name,
+              enabled,
+              tenantIds,
+              timeout,
+              maxJobsActive,
+              requestTimeout,
+              pollInterval,
+              fetchVariables,
+              forceFetchAllVariables,
+              streamEnabled,
+              streamTimeout,
+              maxRetries),
           ofNullable(applyCustomizers).orElse(false));
     }
   }
@@ -78,6 +110,15 @@ public class JobWorkerController {
       @Nullable final String name,
       @Nullable final Boolean enabled,
       @Nullable final String tenantIds,
+      @Nullable final Duration timeout,
+      @Nullable final Integer maxJobsActive,
+      @Nullable final Duration requestTimeout,
+      @Nullable final Duration pollInterval,
+      @Nullable final String fetchVariables,
+      @Nullable final Boolean forceFetchAllVariables,
+      @Nullable final Boolean streamEnabled,
+      @Nullable final Duration streamTimeout,
+      @Nullable final Integer maxRetries,
       @Nullable final Boolean reset,
       @Nullable final Boolean applyCustomizers) {
     if (reset != null && reset) {
@@ -85,13 +126,38 @@ public class JobWorkerController {
     } else {
       jobWorkerManager.updateJobWorker(
           finalType,
-          createChangeSet(type, name, enabled, tenantIds),
+          createChangeSet(
+              type,
+              name,
+              enabled,
+              tenantIds,
+              timeout,
+              maxJobsActive,
+              requestTimeout,
+              pollInterval,
+              fetchVariables,
+              forceFetchAllVariables,
+              streamEnabled,
+              streamTimeout,
+              maxRetries),
           ofNullable(applyCustomizers).orElse(false));
     }
   }
 
   private JobWorkerChangeSet createChangeSet(
-      final String type, final String name, final Boolean enabled, final String tenantIds) {
+      final String type,
+      final String name,
+      final Boolean enabled,
+      final String tenantIds,
+      final Duration timeout,
+      final Integer maxJobsActive,
+      final Duration requestTimeout,
+      final Duration pollInterval,
+      final String fetchVariables,
+      final Boolean forceFetchAllVariables,
+      final Boolean streamEnabled,
+      final Duration streamTimeout,
+      final Integer maxRetries) {
     final List<JobWorkerChangeSet> changeSets = new ArrayList<>();
     if (enabled != null) {
       changeSets.add(new EnabledChangeSet(enabled));
@@ -105,6 +171,35 @@ public class JobWorkerController {
     if (tenantIds != null) {
       changeSets.add(
           new TenantIdsChangeSet(Arrays.stream(tenantIds.split(",")).map(String::trim).toList()));
+    }
+    if (timeout != null) {
+      changeSets.add(new TimeoutChangeSet(timeout));
+    }
+    if (maxJobsActive != null) {
+      changeSets.add(new MaxJobsActiveChangeSet(maxJobsActive));
+    }
+    if (requestTimeout != null) {
+      changeSets.add(new RequestTimeoutChangeSet(requestTimeout));
+    }
+    if (pollInterval != null) {
+      changeSets.add(new PollIntervalChangeSet(pollInterval));
+    }
+    if (fetchVariables != null) {
+      changeSets.add(
+          new FetchVariablesChangeSet(
+              Arrays.stream(fetchVariables.split(",")).map(String::trim).toList()));
+    }
+    if (forceFetchAllVariables != null) {
+      changeSets.add(new ForceFetchAllVariablesChangeSet(forceFetchAllVariables));
+    }
+    if (streamEnabled != null) {
+      changeSets.add(new StreamEnabledChangeSet(streamEnabled));
+    }
+    if (streamTimeout != null) {
+      changeSets.add(new StreamTimeoutChangeSet(streamTimeout));
+    }
+    if (maxRetries != null) {
+      changeSets.add(new MaxRetriesChangeSet(maxRetries));
     }
     if (changeSets.isEmpty()) {
       return new NoopChangeSet();
