@@ -17,7 +17,7 @@ package io.camunda.spring.client.annotation.value;
 
 import io.camunda.spring.client.bean.ParameterInfo;
 
-public class VariableValue implements CamundaAnnotationValue<ParameterInfo> {
+public class VariableValue {
   private final String name;
   private final ParameterInfo parameterInfo;
   private final boolean optional;
@@ -33,8 +33,7 @@ public class VariableValue implements CamundaAnnotationValue<ParameterInfo> {
     return name;
   }
 
-  @Override
-  public ParameterInfo getBeanInfo() {
+  public ParameterInfo getParameterInfo() {
     return parameterInfo;
   }
 

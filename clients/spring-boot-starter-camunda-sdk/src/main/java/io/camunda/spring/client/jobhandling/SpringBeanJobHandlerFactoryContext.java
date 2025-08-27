@@ -15,16 +15,15 @@
  */
 package io.camunda.spring.client.jobhandling;
 
-import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
+import io.camunda.spring.client.metrics.MetricsRecorder;
 
-public interface JobExceptionHandlingStrategy {
-  void handleException(Exception exception, ExceptionHandlingContext context) throws Exception;
-
-  record ExceptionHandlingContext(JobClient jobClient, ActivatedJob job, int maxRetries) {}
-
-  interface CommandWrapperCreator {
-    CommandWrapper create(FinalCommandStep<?> command);
-  }
-}
+public record SpringBeanJobHandlerFactoryContext(
+    CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+    MetricsRecorder metricsRecorder,
+    ParameterResolverStrategy parameterResolverStrategy,
+    ResultProcessorStrategy resultProcessorStrategy,
+    JobExceptionHandlingStrategy jobExceptionHandlingStrategy,
+    JobWorkerValue jobWorkerValue) {}

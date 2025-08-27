@@ -17,8 +17,10 @@ package io.camunda.spring.client.configuration;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.spring.client.actuator.CamundaClientHealthIndicator;
+import io.camunda.spring.client.actuator.JobWorkerController;
 import io.camunda.spring.client.actuator.MicrometerMetricsRecorder;
 import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
+import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
@@ -37,6 +39,12 @@ import org.springframework.context.annotation.Lazy;
   MeterRegistry.class
 }) // only if actuator is on classpath
 public class CamundaActuatorConfiguration {
+
+  @Bean
+  public JobWorkerController jobWorkerController(final JobWorkerManager jobWorkerManager) {
+    return new JobWorkerController(jobWorkerManager);
+  }
+
   @Bean
   @ConditionalOnMissingBean
   public MetricsRecorder micrometerMetricsRecorder(@Lazy final MeterRegistry meterRegistry) {
