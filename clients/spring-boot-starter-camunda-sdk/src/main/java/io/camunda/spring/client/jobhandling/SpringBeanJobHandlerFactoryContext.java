@@ -20,7 +20,7 @@ import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.spring.client.metrics.MetricsRecorder;
 
-public record JobHandlerFactoryContext(
+public record SpringBeanJobHandlerFactoryContext(
     CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
     MetricsRecorder metricsRecorder,
     ParameterResolverStrategy parameterResolverStrategy,

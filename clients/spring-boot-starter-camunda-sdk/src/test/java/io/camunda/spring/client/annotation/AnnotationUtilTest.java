@@ -44,7 +44,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var1");
       assertThat(variableValue.isOptional()).isTrue();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 
@@ -57,7 +57,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var1");
       assertThat(variableValue.isOptional()).isFalse();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 
@@ -70,7 +70,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var2");
       assertThat(variableValue.isOptional()).isTrue();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 
@@ -83,7 +83,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var2");
       assertThat(variableValue.isOptional()).isTrue();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 

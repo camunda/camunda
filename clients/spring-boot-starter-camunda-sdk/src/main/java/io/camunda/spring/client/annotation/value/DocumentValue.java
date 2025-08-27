@@ -17,7 +17,7 @@ package io.camunda.spring.client.annotation.value;
 
 import io.camunda.spring.client.bean.ParameterInfo;
 
-public class DocumentValue implements CamundaAnnotationValue<ParameterInfo> {
+public class DocumentValue {
   private final String name;
   private final ParameterInfo parameterInfo;
   private final boolean optional;
@@ -38,8 +38,7 @@ public class DocumentValue implements CamundaAnnotationValue<ParameterInfo> {
     return name;
   }
 
-  @Override
-  public ParameterInfo getBeanInfo() {
+  public ParameterInfo getParameterInfo() {
     return parameterInfo;
   }
 

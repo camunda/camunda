@@ -19,9 +19,9 @@ import io.camunda.client.api.worker.JobHandler;
 import java.util.Collections;
 import java.util.List;
 
-public interface JobHandlerFactory {
+public interface JobHandlerFactory<T> {
 
-  JobHandler getJobHandler(JobHandlerFactoryContext context);
+  JobHandler getJobHandler(T context);
 
   default String getGeneratedJobWorkerName() {
     return null;

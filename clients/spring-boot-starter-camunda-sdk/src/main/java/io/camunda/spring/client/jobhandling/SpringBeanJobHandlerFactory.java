@@ -34,7 +34,8 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.ReflectionUtils;
 
-public class SpringBeanJobHandlerFactory implements JobHandlerFactory {
+public class SpringBeanJobHandlerFactory
+    implements JobHandlerFactory<SpringBeanJobHandlerFactoryContext> {
   private final MethodInfo methodInfo;
 
   public SpringBeanJobHandlerFactory(final MethodInfo methodInfo) {
@@ -54,10 +55,10 @@ public class SpringBeanJobHandlerFactory implements JobHandlerFactory {
   }
 
   @Override
-  public JobHandler getJobHandler(final JobHandlerFactoryContext context) {
+  public JobHandler getJobHandler(final SpringBeanJobHandlerFactoryContext context) {
     return new JobHandlerInvokingSpringBeans(
         context.jobWorkerValue().getName(),
-        context.jobWorkerValue().getMethod(),
+        methodInfo::invoke,
         context.jobWorkerValue().getAutoComplete(),
         context.jobWorkerValue().getMaxRetries(),
         context.commandExceptionHandlingStrategy(),
