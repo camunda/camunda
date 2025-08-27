@@ -33,8 +33,8 @@ import io.camunda.spring.client.bean.BeanInfo;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.spring.client.bean.ParameterInfo;
-import io.camunda.spring.client.jobhandling.SpringBeanJobHandlerFactory;
 import io.camunda.spring.client.jobhandling.DocumentContext;
+import io.camunda.spring.client.jobhandling.SpringBeanJobHandlerFactory;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
@@ -167,7 +167,6 @@ public class AnnotationUtil {
                   annotation.autoComplete(),
                   Arrays.asList(annotation.fetchVariables()),
                   annotation.enabled(),
-                  methodInfo::invoke,
                   Arrays.asList(annotation.tenantIds()),
                   annotation.fetchAllVariables(),
                   annotation.streamEnabled(),
@@ -201,7 +200,6 @@ public class AnnotationUtil {
                   annotation.autoComplete(),
                   Arrays.asList(annotation.fetchVariables()),
                   annotation.enabled(),
-                  methodInfo::invoke,
                   Arrays.asList(annotation.tenantIds()),
                   annotation.fetchAllVariables(),
                   annotation.streamEnabled(),

@@ -93,7 +93,7 @@ public class JobWorkerManager {
           jobWorkerValue
               .getJobHandlerFactory()
               .getJobHandler(
-                  new JobHandlerFactoryContext(
+                  new SpringBeanJobHandlerFactoryContext(
                       commandExceptionHandlingStrategy,
                       metricsRecorder,
                       parameterResolverStrategy,

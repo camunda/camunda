@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.springframework.util.function.ThrowingFunction;
 
 public class JobWorkerValue implements Cloneable {
   private String type;
@@ -41,7 +40,6 @@ public class JobWorkerValue implements Cloneable {
   private Duration retryBackoff;
   // cannot be changed from change set
   private JobHandlerFactory jobHandlerFactory;
-  private ThrowingFunction<Object[], Object> method;
 
   @Deprecated(forRemoval = true)
   private MethodInfo methodInfo;
@@ -59,7 +57,6 @@ public class JobWorkerValue implements Cloneable {
       final Boolean autoComplete,
       final List<String> fetchVariables,
       final Boolean enabled,
-      final ThrowingFunction<Object[], Object> method,
       final List<String> tenantIds,
       final Boolean forceFetchAllVariables,
       final Boolean streamEnabled,
@@ -76,7 +73,6 @@ public class JobWorkerValue implements Cloneable {
     this.autoComplete = autoComplete;
     this.fetchVariables = Collections.unmodifiableList(fetchVariables);
     this.enabled = enabled;
-    this.method = method;
     this.tenantIds = Collections.unmodifiableList(tenantIds);
     this.forceFetchAllVariables = forceFetchAllVariables;
     this.streamEnabled = streamEnabled;
@@ -158,14 +154,6 @@ public class JobWorkerValue implements Cloneable {
     this.enabled = enabled;
   }
 
-  public ThrowingFunction<Object[], Object> getMethod() {
-    return method;
-  }
-
-  public void setMethod(final ThrowingFunction<Object[], Object> method) {
-    this.method = method;
-  }
-
   public List<String> getTenantIds() {
     return tenantIds;
   }
@@ -244,7 +232,6 @@ public class JobWorkerValue implements Cloneable {
         autoComplete,
         fetchVariables,
         enabled,
-        method,
         tenantIds,
         forceFetchAllVariables,
         streamEnabled,
@@ -269,7 +256,6 @@ public class JobWorkerValue implements Cloneable {
         && Objects.equals(autoComplete, that.autoComplete)
         && Objects.equals(fetchVariables, that.fetchVariables)
         && Objects.equals(enabled, that.enabled)
-        && Objects.equals(method, that.method)
         && Objects.equals(tenantIds, that.tenantIds)
         && Objects.equals(forceFetchAllVariables, that.forceFetchAllVariables)
         && Objects.equals(streamEnabled, that.streamEnabled)
@@ -313,8 +299,6 @@ public class JobWorkerValue implements Cloneable {
         + fetchVariables
         + ", enabled="
         + enabled
-        + ", method="
-        + method
         + ", tenantIds="
         + tenantIds
         + ", forceFetchAllVariables="

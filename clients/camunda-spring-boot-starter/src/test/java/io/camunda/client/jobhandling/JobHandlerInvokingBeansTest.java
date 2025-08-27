@@ -37,9 +37,10 @@ import io.camunda.client.exception.JobError;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.jobhandling.parameter.DefaultParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.result.DefaultDocumentResultProcessorFailureHandlingStrategy;
 import io.camunda.spring.client.jobhandling.result.DefaultResultProcessorStrategy;
-import io.camunda.spring.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy;
-import io.camunda.spring.client.jobhandling.result.ResultProcessor;
+import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.spring.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.camunda.spring.client.test.util.JobWorkerPermutations;
@@ -70,27 +71,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class JobHandlerInvokingBeansTest {
 
-  private static JobHandler jobHandlerInvokingSpringBeans(
-      final JobWorkerValue workerValue,
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
-      final MetricsRecorder metricsRecorder,
-      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
-    final DefaultParameterResolverStrategy defaultParameterResolverStrategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
-    final DefaultResultProcessorStrategy defaultResultProcessorStrategy =
-        new DefaultResultProcessorStrategy();
-    return workerValue
-        .getJobHandlerFactory()
-        .getJobHandler(
-            new JobHandlerFactoryContext(
-                commandExceptionHandlingStrategy,
-                metricsRecorder,
-                defaultParameterResolverStrategy,
-                defaultResultProcessorStrategy,
-                jobExceptionHandlingStrategy,
-                workerValue));
-  }
-
   @ParameterizedTest
   @EnumSource(
       value = Response.class,
@@ -99,12 +79,17 @@ public class JobHandlerInvokingBeansTest {
     final JobWorkerValue jobWorkerValue =
         jobWorkerValue(new TestDimension(AutoComplete.YES, response, List.of()));
     final JobHandler jobHandler =
-        jobHandlerInvokingSpringBeans(
-            jobWorkerValue,
-            commandExceptionHandlingStrategy(),
-            metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue));
+        jobWorkerValue
+            .getJobHandlerFactory()
+            .getJobHandler(
+                new SpringBeanJobHandlerFactoryContext(
+                    commandExceptionHandlingStrategy(),
+                    metricsRecorder(),
+                    parameterResolverStrategy(),
+                    resultProcessorStrategy(),
+                    parameterResolvers(jobWorkerValue),
+            resultProcessor(jobWorkerValue),
+                    jobWorkerValue));
 
     final JobClient jobClient = mock(JobClient.class);
     final CompleteJobCommandStep1 completeJobCommandStep1 = mock(CompleteJobCommandStep1.class);
@@ -127,12 +112,17 @@ public class JobHandlerInvokingBeansTest {
     final JobWorkerValue jobWorkerValue =
         jobWorkerValue(new TestDimension(AutoComplete.NO, Response.VOID, List.of()));
     final JobHandler jobHandler =
-        jobHandlerInvokingSpringBeans(
-            jobWorkerValue,
-            commandExceptionHandlingStrategy(),
-            metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue));
+        jobWorkerValue
+            .getJobHandlerFactory()
+            .getJobHandler(
+                new SpringBeanJobHandlerFactoryContext(
+                    commandExceptionHandlingStrategy(),
+                    metricsRecorder(),
+                    parameterResolverStrategy(),
+                    resultProcessorStrategy(),
+                    parameterResolvers(jobWorkerValue),
+            resultProcessor(jobWorkerValue),
+                    jobWorkerValue));
 
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -148,12 +138,17 @@ public class JobHandlerInvokingBeansTest {
     final JobWorkerValue jobWorkerValue =
         jobWorkerValue(new TestDimension(autoComplete, response, List.of()));
     final JobHandler jobHandler =
-        jobHandlerInvokingSpringBeans(
-            jobWorkerValue,
-            commandExceptionHandlingStrategy(),
-            metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue));
+        jobWorkerValue
+            .getJobHandlerFactory()
+            .getJobHandler(
+                new SpringBeanJobHandlerFactoryContext(
+                    commandExceptionHandlingStrategy(),
+                    metricsRecorder(),
+                    parameterResolverStrategy(),
+                    resultProcessorStrategy(),
+                    parameterResolvers(jobWorkerValue),
+            resultProcessor(jobWorkerValue),
+                    jobWorkerValue));
 
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -169,12 +164,17 @@ public class JobHandlerInvokingBeansTest {
     final JobWorkerValue jobWorkerValue =
         jobWorkerValue(new TestDimension(autoComplete, response, List.of()));
     final JobHandler jobHandler =
-        jobHandlerInvokingSpringBeans(
-            jobWorkerValue,
-            commandExceptionHandlingStrategy(),
-            metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue));
+        jobWorkerValue
+            .getJobHandlerFactory()
+            .getJobHandler(
+                new SpringBeanJobHandlerFactoryContext(
+                    commandExceptionHandlingStrategy(),
+                    metricsRecorder(),
+                    parameterResolverStrategy(),
+                    resultProcessorStrategy(),
+                    parameterResolvers(jobWorkerValue),
+            resultProcessor(jobWorkerValue),
+                    jobWorkerValue));
 
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -182,6 +182,16 @@ public class JobHandlerInvokingBeansTest {
         .isInstanceOf(BpmnError.class)
         .hasMessage("[testCode] test message")
         .hasFieldOrPropertyWithValue("errorCode", "testCode");
+  }
+
+  private ParameterResolverStrategy parameterResolverStrategy() {
+    return new DefaultParameterResolverStrategy(
+        new CamundaObjectMapper(), mock(CamundaClient.class));
+  }
+
+  private static ResultProcessorStrategy resultProcessorStrategy() {
+    return new DefaultResultProcessorStrategy(
+        mock(CamundaClient.class), new DefaultDocumentResultProcessorFailureHandlingStrategy());
   }
 
   private static JobWorkerValue jobWorkerValue(final TestDimension testDimension) {
