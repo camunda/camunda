@@ -396,8 +396,8 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   @VisibleForTesting
-  public long getCommitPosition() {
-    return commitPosition;
+  public ActorFuture<Long> getCommitPosition() {
+    return actor.call(() -> commitPosition);
   }
 
   private static final class InProgressSnapshot {
