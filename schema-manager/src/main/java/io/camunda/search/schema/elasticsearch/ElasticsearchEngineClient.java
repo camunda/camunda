@@ -45,6 +45,7 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.SearchEngineClientUtils;
+import io.camunda.search.schema.utils.SearchEngineClientUtils.SchemaSettingsAppender;
 import io.camunda.search.schema.utils.SuppressLogger;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -114,10 +115,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   @Override
   public void createIndexTemplate(
       final IndexTemplateDescriptor templateDescriptor,
-      final IndexConfiguration settings,
+      final IndexConfiguration indexConfiguration,
       final boolean create) {
     final PutIndexTemplateRequest request =
-        putIndexTemplateRequest(templateDescriptor, settings, create);
+        putIndexTemplateRequest(templateDescriptor, indexConfiguration, create);
 
     try {
       client.indices().putIndexTemplate(request);
@@ -254,9 +255,9 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   @Override
   public void updateIndexTemplateSettings(
       final IndexTemplateDescriptor indexTemplateDescriptor,
-      final IndexConfiguration configuredSettings) {
+      final IndexConfiguration indexConfiguration) {
     final var maybeRequest =
-        buildTemplateSettingsUpdateRequestIfChanged(indexTemplateDescriptor, configuredSettings);
+        buildTemplateSettingsUpdateRequestIfChanged(indexTemplateDescriptor, indexConfiguration);
 
     // If settings are equal, no update is needed
     if (maybeRequest.isEmpty()) {
@@ -470,18 +471,18 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                   .withNumberOfReplicas(settings.getNumberOfReplicas())
                   .withNumberOfShards(settings.getNumberOfShards())
                   .build());
-      return new PutIndexTemplateRequest.Builder()
-          .name(indexTemplateDescriptor.getTemplateName())
-          .indexPatterns(indexTemplateDescriptor.getIndexPattern())
-          .template(
-              t ->
-                  t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
-                      .mappings(templateFields.mappings())
-                      .settings(templateFields.settings()))
-          .priority(convertValue(settings.getTemplatePriority(), Long::valueOf))
-          .composedOf(indexTemplateDescriptor.getComposedOf())
-          .create(create)
-          .build();
+      return PutIndexTemplateRequest.of(
+          b ->
+              b.name(indexTemplateDescriptor.getTemplateName())
+                  .indexPatterns(indexTemplateDescriptor.getIndexPattern())
+                  .template(
+                      t ->
+                          t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
+                              .mappings(templateFields.mappings())
+                              .settings(templateFields.settings()))
+                  .priority(convertValue(settings.getTemplatePriority(), Long::valueOf))
+                  .composedOf(indexTemplateDescriptor.getComposedOf())
+                  .create(create));
     } catch (final IOException e) {
       throw new SearchEngineException(
           "Failed to load file "
@@ -493,27 +494,26 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   private Optional<PutIndexTemplateRequest> buildTemplateSettingsUpdateRequestIfChanged(
       final IndexTemplateDescriptor indexTemplateDescriptor,
-      final IndexConfiguration configuredSettings) {
+      final IndexConfiguration indexConfiguration) {
     try (final var templateFile =
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
-      final var schemaSettingsAppender =
+      final var currentTemplate = getIndexTemplateState(indexTemplateDescriptor);
+      final var configuredSettings =
           utils.new SchemaSettingsAppender(templateFile)
-              .withNumberOfShards(configuredSettings.getNumberOfShards())
-              .withNumberOfReplicas(configuredSettings.getNumberOfReplicas());
-      final var currentIndexTemplateState = getIndexTemplateState(indexTemplateDescriptor);
-      final Long configuredPriority =
-          convertValue(configuredSettings.getTemplatePriority(), Long::valueOf);
+              .withNumberOfShards(indexConfiguration.getNumberOfShards())
+              .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas());
+      final var configuredPriority =
+          convertValue(indexConfiguration.getTemplatePriority(), Long::valueOf);
 
-      if (Objects.equals(configuredPriority, currentIndexTemplateState.priority())
-          && schemaSettingsAppender.equalsSettings(
-              serializeAsMap(currentIndexTemplateState.template().settings()))) {
+      if (areTemplateSettingsEqualToConfigured(
+          currentTemplate, configuredSettings, configuredPriority)) {
         LOG.debug(
             "Index template settings for [{}] are already up to date",
             indexTemplateDescriptor.getTemplateName());
         return Optional.empty();
       }
       final var updatedTemplateSettings =
-          deserializeJson(IndexTemplateMapping._DESERIALIZER, schemaSettingsAppender.build())
+          deserializeJson(IndexTemplateMapping._DESERIALIZER, configuredSettings.build())
               .settings();
       LOG.debug(
           "Applying to index template [{}]: settings={}, priority={}",
@@ -521,17 +521,17 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           updatedTemplateSettings,
           configuredPriority);
       return Optional.of(
-          new PutIndexTemplateRequest.Builder()
-              .name(indexTemplateDescriptor.getTemplateName())
-              .indexPatterns(indexTemplateDescriptor.getIndexPattern())
-              .template(
-                  t ->
-                      t.settings(updatedTemplateSettings)
-                          .mappings(currentIndexTemplateState.template().mappings())
-                          .aliases(currentIndexTemplateState.template().aliases()))
-              .priority(configuredPriority)
-              .build());
-
+          PutIndexTemplateRequest.of(
+              b ->
+                  b.name(indexTemplateDescriptor.getTemplateName())
+                      .indexPatterns(indexTemplateDescriptor.getIndexPattern())
+                      .template(
+                          t ->
+                              t.settings(updatedTemplateSettings)
+                                  .mappings(currentTemplate.template().mappings())
+                                  .aliases(currentTemplate.template().aliases()))
+                      .composedOf(currentTemplate.composedOf())
+                      .priority(configuredPriority)));
     } catch (final IOException e) {
       throw new SearchEngineException(
           "Failed to load file "
@@ -539,6 +539,14 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               + " from classpath.",
           e);
     }
+  }
+
+  private boolean areTemplateSettingsEqualToConfigured(
+      final IndexTemplate currentTemplate,
+      final SchemaSettingsAppender configuredSettings,
+      final Long configuredPriority) {
+    return Objects.equals(configuredPriority, currentTemplate.priority())
+        && configuredSettings.equalsSettings(serializeAsMap(currentTemplate.template().settings()));
   }
 
   private IndexTemplate getIndexTemplateState(
