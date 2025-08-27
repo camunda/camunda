@@ -1191,6 +1191,42 @@ public final class AdHocSubProcessTest {
         .hasErrorMessage("The output collection has the wrong type. Expected ARRAY but was NIL.");
   }
 
+  @Test
+  public void foo() {
+    // given
+    final var adHocStartId = "adHocStart";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent(adHocStartId)
+            .adHocSubProcess(
+                AD_HOC_SUB_PROCESS_ELEMENT_ID,
+                adHocSubProcess -> {
+                  adHocSubProcess
+                      .zeebeActiveElementsCollectionExpression("activateElements")
+                      .zeebeOutputCollection("results")
+                      .zeebeOutputElementExpression("result");
+                  adHocSubProcess.serviceTask("A", t -> t.zeebeJobType("A"));
+                  adHocSubProcess.serviceTask("B", t -> t.zeebeJobType("B"));
+                  adHocSubProcess.task("C");
+                })
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("A").create();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId(AHSP_INNER_INSTANCE_ELEMENT_ID)
+        .hasErrorMessage("The output collection has the wrong type. Expected ARRAY but was NIL.");
+  }
+
   private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {
     return r ->
         r.getIntent() == SignalIntent.BROADCASTED
