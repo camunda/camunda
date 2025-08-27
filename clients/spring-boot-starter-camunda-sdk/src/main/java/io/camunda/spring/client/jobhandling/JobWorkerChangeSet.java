@@ -16,6 +16,7 @@
 package io.camunda.spring.client.jobhandling;
 
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -111,6 +112,80 @@ public sealed interface JobWorkerChangeSet {
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
       return updateIfChanged(
           jobWorkerValue.getTenantIds(), tenantIds, jobWorkerValue::setTenantIds);
+    }
+  }
+
+  record TimeoutChangeSet(Duration timeout) implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(jobWorkerValue.getTimeout(), timeout, jobWorkerValue::setTimeout);
+    }
+  }
+
+  record MaxJobsActiveChangeSet(Integer maxJobsActive) implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(
+          jobWorkerValue.getMaxJobsActive(), maxJobsActive, jobWorkerValue::setMaxJobsActive);
+    }
+  }
+
+  record RequestTimeoutChangeSet(Duration requestTimeout) implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(
+          jobWorkerValue.getRequestTimeout(), requestTimeout, jobWorkerValue::setRequestTimeout);
+    }
+  }
+
+  record PollIntervalChangeSet(Duration pollInterval) implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(
+          jobWorkerValue.getPollInterval(), pollInterval, jobWorkerValue::setPollInterval);
+    }
+  }
+
+  record FetchVariablesChangeSet(List<String> fetchVariables) implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(
+          jobWorkerValue.getFetchVariables(), fetchVariables, jobWorkerValue::setFetchVariables);
+    }
+  }
+
+  record ForceFetchAllVariablesChangeSet(Boolean forceFetchAllVariables)
+      implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(
+          jobWorkerValue.getForceFetchAllVariables(),
+          forceFetchAllVariables,
+          jobWorkerValue::setForceFetchAllVariables);
+    }
+  }
+
+  record StreamEnabledChangeSet(Boolean streamEnabled) implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(
+          jobWorkerValue.getStreamEnabled(), streamEnabled, jobWorkerValue::setStreamEnabled);
+    }
+  }
+
+  record StreamTimeoutChangeSet(Duration streamTimeout) implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(
+          jobWorkerValue.getStreamTimeout(), streamTimeout, jobWorkerValue::setStreamTimeout);
+    }
+  }
+
+  record MaxRetriesChangeSet(Integer maxRetries) implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(
+          jobWorkerValue.getMaxRetries(), maxRetries, jobWorkerValue::setMaxRetries);
     }
   }
 }
