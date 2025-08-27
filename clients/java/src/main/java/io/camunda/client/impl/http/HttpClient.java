@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
@@ -123,6 +124,35 @@ public final class HttpClient implements AutoCloseable {
       final HttpCamundaFuture<RespT> result) {
     sendRequest(
         Method.GET, path, queryParams, null, requestConfig, responseType, transformer, result);
+  }
+
+  public <RespT> void get(
+      final String path,
+      final RequestConfig requestConfig,
+      final Predicate<Integer> successPredicate,
+      final StatusCodeTransformer<RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    get(path, Collections.emptyMap(), requestConfig, successPredicate, transformer, result);
+  }
+
+  public <RespT> void get(
+      final String path,
+      final Map<String, String> queryParams,
+      final RequestConfig requestConfig,
+      final Predicate<Integer> successPredicate,
+      final StatusCodeTransformer<RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    sendRequest(
+        Method.GET,
+        path,
+        queryParams,
+        null,
+        requestConfig,
+        MAX_RETRY_ATTEMPTS,
+        successPredicate,
+        transformer,
+        result,
+        null);
   }
 
   public <RespT> void post(
@@ -323,54 +353,13 @@ public final class HttpClient implements AutoCloseable {
               apiCallback.get());
         };
 
-    final SimpleRequestBuilder requestBuilder =
-        SimpleRequestBuilder.create(httpMethod).setUri(target);
-
-    if (queryParams != null && !queryParams.isEmpty()) {
-      queryParams.forEach(requestBuilder::addParameter);
-    }
-
-    if (body != null) {
-      if (body instanceof String) {
-        requestBuilder.setBody((String) body, ContentType.APPLICATION_JSON);
-      } else if (body instanceof HttpEntity) {
-        final HttpEntity entity = (HttpEntity) body;
-        final byte[] entityBytes;
-        try (final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-          entity.writeTo(byteArrayOutputStream);
-          entityBytes = byteArrayOutputStream.toByteArray();
-        } catch (final IOException e) {
-          result.completeExceptionally(
-              new ClientException("Failed to convert multipart entity to bytes", e));
-          return;
-        }
-
-        final ContentType contentType = ContentType.parse(entity.getContentType());
-        requestBuilder.setBody(entityBytes, contentType);
-      } else {
-        result.completeExceptionally(
-            new ClientException("Unsupported body type: " + body.getClass().getName()));
-        return;
-      }
-    }
-
-    try {
-      credentialsProvider.applyCredentials(requestBuilder::addHeader);
-    } catch (final IOException e) {
-      result.completeExceptionally(
-          new ClientException("Failed to apply credentials to request", e));
+    final SimpleHttpRequest request = buildRequest(httpMethod, queryParams, body, result, target);
+    if (request == null) {
       return;
     }
-
-    final SimpleHttpRequest request = requestBuilder.build();
     request.setConfig(requestConfig);
 
-    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer;
-    if (responseType == InputStream.class) {
-      entityConsumer = new DocumentDataConsumer<>(maxMessageSize, jsonMapper);
-    } else {
-      entityConsumer = new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
-    }
+    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer = createEntityConsumer(responseType);
 
     if (apiCallback.get() == null) {
       apiCallback.set(
@@ -387,6 +376,159 @@ public final class HttpClient implements AutoCloseable {
             SimpleRequestProducer.create(request),
             new ApiResponseConsumer<>(entityConsumer),
             apiCallback.get()));
+  }
+
+  private <RespT> void sendRequest(
+      final Method httpMethod,
+      final String path,
+      final Map<String, String> queryParams,
+      final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
+      final RequestConfig requestConfig,
+      final int maxRetries,
+      final Predicate<Integer> successPredicate,
+      final StatusCodeTransformer<RespT> transformer,
+      final HttpCamundaFuture<RespT> result,
+      final StatusCodeBasedApiCallback<RespT> callback) {
+    final AtomicReference<StatusCodeBasedApiCallback<RespT>> apiCallback =
+        new AtomicReference<>(callback);
+    // Create retry action to re-execute the same request
+    final Runnable retryAction =
+        () -> {
+          if (result.isCancelled()) {
+            return;
+          }
+          sendRequest(
+              httpMethod,
+              path,
+              queryParams,
+              body,
+              requestConfig,
+              maxRetries,
+              successPredicate,
+              transformer,
+              result,
+              apiCallback.get());
+        };
+
+    final SimpleHttpRequest request =
+        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path));
+    if (request == null) {
+      return;
+    }
+    request.setConfig(requestConfig);
+
+    if (apiCallback.get() == null) {
+      apiCallback.set(
+          new StatusCodeBasedApiCallback<>(
+              result,
+              transformer,
+              successPredicate,
+              credentialsProvider::shouldRetryRequest,
+              retryAction,
+              maxRetries));
+    }
+
+    result.transportFuture(
+        client.execute(
+            SimpleRequestProducer.create(request),
+            new ApiResponseConsumer<>(new VoidEntityConsumer(maxMessageSize)),
+            apiCallback.get()));
+  }
+
+  private <HttpT> AsyncEntityConsumer<ApiEntity<HttpT>> createEntityConsumer(
+      final Class<HttpT> responseType) {
+    if (responseType == InputStream.class) {
+      return new DocumentDataConsumer<>(maxMessageSize, jsonMapper);
+    } else {
+      return new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
+    }
+  }
+
+  private <RespT> SimpleHttpRequest buildRequest(
+      final Method httpMethod,
+      final Map<String, String> queryParams,
+      final Object body,
+      final HttpCamundaFuture<RespT> result,
+      final URI target) {
+
+    final SimpleRequestBuilder requestBuilder =
+        SimpleRequestBuilder.create(httpMethod).setUri(target);
+
+    addQueryParameters(requestBuilder, queryParams);
+
+    if (!setRequestBody(requestBuilder, body, result)) {
+      return null;
+    }
+
+    if (!applyCredentials(requestBuilder, result)) {
+      return null;
+    }
+
+    return requestBuilder.build();
+  }
+
+  private void addQueryParameters(
+      final SimpleRequestBuilder requestBuilder, final Map<String, String> queryParams) {
+
+    if (queryParams != null && !queryParams.isEmpty()) {
+      queryParams.forEach(requestBuilder::addParameter);
+    }
+  }
+
+  private <RespT> boolean setRequestBody(
+      final SimpleRequestBuilder requestBuilder,
+      final Object body,
+      final HttpCamundaFuture<RespT> result) {
+
+    if (body == null) {
+      return true;
+    }
+
+    if (body instanceof String) {
+      requestBuilder.setBody((String) body, ContentType.APPLICATION_JSON);
+      return true;
+    }
+
+    if (body instanceof HttpEntity) {
+      return setHttpEntityBody(requestBuilder, (HttpEntity) body, result);
+    }
+
+    result.completeExceptionally(
+        new ClientException("Unsupported body type: " + body.getClass().getName()));
+    return false;
+  }
+
+  private <RespT> boolean setHttpEntityBody(
+      final SimpleRequestBuilder requestBuilder,
+      final HttpEntity entity,
+      final HttpCamundaFuture<RespT> result) {
+
+    final byte[] entityBytes;
+    try (final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+      entity.writeTo(byteArrayOutputStream);
+      entityBytes = byteArrayOutputStream.toByteArray();
+    } catch (final IOException e) {
+      result.completeExceptionally(
+          new ClientException("Failed to convert multipart entity to bytes", e));
+      return false;
+    }
+
+    final ContentType contentType = ContentType.parse(entity.getContentType());
+    requestBuilder.setBody(entityBytes, contentType);
+    return true;
+  }
+
+  private <RespT> boolean applyCredentials(
+      final SimpleRequestBuilder requestBuilder, final HttpCamundaFuture<RespT> result) {
+
+    try {
+      credentialsProvider.applyCredentials(requestBuilder::addHeader);
+      return true;
+    } catch (final IOException e) {
+      result.completeExceptionally(
+          new ClientException("Failed to apply credentials to request", e));
+      return false;
+    }
   }
 
   private URI buildRequestURI(final String path) {
