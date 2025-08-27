@@ -283,6 +283,8 @@ jobs:
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ env.GENERAL_UT_MODULES }}
+          ${TEST_FILTER:+-Dtest="${TEST_FILTER}"}
+          ${TEST_EXCLUDE_FILTER:+-DexcludeTests="${TEST_EXCLUDE_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -369,6 +371,8 @@ jobs:
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
+          ${TEST_FILTER:+-Dtest="${TEST_FILTER}"}
+          ${TEST_EXCLUDE_FILTER:+-DexcludeTests="${TEST_EXCLUDE_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -754,8 +758,8 @@ jobs:
             docker-file: camunda.Dockerfile
             owner: "Data Layer"
             module: "Schema Manager"
-          - group: qa-integration
-            name: "Zeebe QA"
+          - group: engine-integration
+            name: "Zeebe Engine QA"
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
@@ -764,6 +768,18 @@ jobs:
             docker-file: Dockerfile
             owner: "General"
             module: "Zeebe"
+            test-exclude-filter: "io/camunda/zeebe/it/backup/**,io/camunda/zeebe/it/clustering/**,io/camunda/zeebe/it/health/**,io/camunda/zeebe/it/network/**,io/camunda/zeebe/it/observability/**,io/camunda/zeebe/it/smoke/**,io/camunda/zeebe/it/startup/**,io/camunda/zeebe/it/system/**"
+          - group: ds-integration
+            name: "Zeebe Cluster QA"
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "General"
+            module: "Zeebe"
+            test-filter: "io/camunda/zeebe/it/backup/**,io/camunda/zeebe/it/clustering/**,io/camunda/zeebe/it/health/**,io/camunda/zeebe/it/network/**,io/camunda/zeebe/it/observability/**,io/camunda/zeebe/it/smoke/**,io/camunda/zeebe/it/startup/**,io/camunda/zeebe/it/system/**"
           - group: qa-migration-integration
             name: "Migration QA"
             maven-modules: "migration/process-migration,migration/usage-metric-migration"
@@ -845,6 +861,10 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
+        env:
+          # Propagate matrix test filters (may be empty for other matrix entries)
+          TEST_FILTER: ${{ matrix.test-filter }}
+          TEST_EXCLUDE_FILTER: ${{ matrix.test-exclude-filter }}
         shell: bash
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
@@ -857,6 +877,8 @@ jobs:
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
+          ${TEST_FILTER:+-Dit.test="${TEST_FILTER}"}
+          ${TEST_EXCLUDE_FILTER:+-Dit.excludeTests="${TEST_EXCLUDE_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
