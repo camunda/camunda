@@ -105,8 +105,10 @@ class SnapshotDirectorPartitionTransitionStepTest {
     if (Role.LEADER.equals(targetRole)) {
       // verify that the last position is read to notify snapshot director
       verify(logstreamReader, times(1)).seekToEnd();
-      assertThat(transitionContext.getSnapshotDirector().getCommitPosition())
-          .isEqualTo(LAST_LOG_POSITION);
+      final ActorFuture<Long> commitPosition =
+          transitionContext.getSnapshotDirector().getCommitPosition();
+      schedulerExtension.workUntilDone();
+      assertThat(commitPosition.join()).isEqualTo(LAST_LOG_POSITION);
     }
   }
 
