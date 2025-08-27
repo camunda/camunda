@@ -12,6 +12,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Initializes the routing state of the cluster configuration if the partition scaling feature is
@@ -20,6 +22,7 @@ import java.util.UUID;
  */
 public class ClusterIdInitializer implements ClusterConfigurationModifier {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClusterIdInitializer.class);
   private final String clusterId;
 
   public ClusterIdInitializer(final String clusterId) {
@@ -31,6 +34,12 @@ public class ClusterIdInitializer implements ClusterConfigurationModifier {
   public ActorFuture<ClusterConfiguration> modify(final ClusterConfiguration configuration) {
     // If the cluster ID is already set, we do not need to modify the configuration.
     if (configuration.clusterId().isPresent()) {
+      if (!configuration.clusterId().get().equals(clusterId)) {
+        LOGGER.warn(
+            "Cluster ID is already set to '{}', but the configured cluster ID is '{}'. Using the existing cluster ID.",
+            configuration.clusterId().get(),
+            clusterId);
+      }
       return CompletableActorFuture.completed(configuration);
     }
 
