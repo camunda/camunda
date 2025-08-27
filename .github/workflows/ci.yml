@@ -1026,14 +1026,14 @@ jobs:
     name: flaky tests summary comment
     if: always() && github.event_name == 'pull_request'
     needs:
-      - general-unit-tests
-      - zeebe-unit-tests
+      - docker-checks
       - elasticsearch-integration-tests
+      - general-unit-tests
+      - integration-tests
       - opensearch-integration-tests
       - rdbms-h2-integration-tests
       - rdbms-integration-tests
-      - integration-tests
-      - docker-checks
+      - zeebe-unit-tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
