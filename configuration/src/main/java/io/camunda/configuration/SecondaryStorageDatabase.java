@@ -18,6 +18,8 @@ public abstract class SecondaryStorageDatabase {
   /** Name of the cluster */
   private String clusterName = databaseName().toLowerCase();
 
+  private Security security = new Security(databaseName());
+
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".url",
@@ -27,8 +29,16 @@ public abstract class SecondaryStorageDatabase {
         legacyUrlProperties());
   }
 
-  public void setUrl(String url) {
+  public void setUrl(final String url) {
     this.url = url;
+  }
+
+  public Security getSecurity() {
+    return security;
+  }
+
+  public void setSecurity(final Security security) {
+    this.security = security;
   }
 
   public String getClusterName() {
