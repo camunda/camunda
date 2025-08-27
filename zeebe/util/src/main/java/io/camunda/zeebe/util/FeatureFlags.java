@@ -47,7 +47,7 @@ public record FeatureFlags(
   //  protected static final boolean FOO_DEFAULT = false;
 
   private static final boolean YIELDING_DUE_DATE_CHECKER = true;
-  private static final boolean ENABLE_ACTOR_METRICS = false;
+  private static final boolean ENABLE_ACTOR_METRICS = true;
 
   private static final boolean ENABLE_MSG_TTL_CHECKER_ASYNC = false;
   private static final boolean ENABLE_DUE_DATE_CHECKER_ASYNC = false;
