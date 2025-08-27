@@ -270,7 +270,7 @@ public class SaaSIdentityMigrationIT {
   }
 
   @Test
-  public void canMigratePermissions() throws URISyntaxException, IOException, InterruptedException {
+  public void canMigratePermissions() {
     // when
     migration.start();
 
@@ -365,6 +365,12 @@ public class SaaSIdentityMigrationIT {
                 ResourceType.BATCH,
                 Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
             tuple(
+                DEVELOPER_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.MESSAGE,
+                Set.of(PermissionType.READ)),
+            tuple(
                 OPERATIONS_ENGINEER_ROLE_ID,
                 OwnerType.ROLE,
                 "operate",
@@ -376,10 +382,12 @@ public class SaaSIdentityMigrationIT {
                 "*",
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(
+                    PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.READ_PROCESS_DEFINITION,
                     PermissionType.READ_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE,
-                    PermissionType.CREATE_PROCESS_INSTANCE,
+                    PermissionType.MODIFY_PROCESS_INSTANCE,
+                    PermissionType.CANCEL_PROCESS_INSTANCE,
                     PermissionType.DELETE_PROCESS_INSTANCE)),
             tuple(
                 OPERATIONS_ENGINEER_ROLE_ID,
@@ -414,6 +422,12 @@ public class SaaSIdentityMigrationIT {
                 "*",
                 ResourceType.BATCH,
                 Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
+            tuple(
+                OPERATIONS_ENGINEER_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.MESSAGE,
+                Set.of(PermissionType.READ)),
             tuple(
                 TASK_USER_ROLE_ID,
                 OwnerType.ROLE,
@@ -470,6 +484,18 @@ public class SaaSIdentityMigrationIT {
                 OwnerType.ROLE,
                 "*",
                 ResourceType.BATCH,
+                Set.of(PermissionType.READ)),
+            tuple(
+                VISITOR_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.MESSAGE,
+                Set.of(PermissionType.READ)),
+            tuple(
+                VISITOR_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.RESOURCE,
                 Set.of(PermissionType.READ)));
   }
 
