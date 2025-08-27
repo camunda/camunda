@@ -14,7 +14,6 @@ import io.camunda.application.commons.backup.BackupPriorityConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.backup.BackupRepository;
@@ -36,7 +35,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeExceptionMapper;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -171,9 +169,6 @@ public class StandaloneBackupManager implements CommandLineRunner {
     return EnumSet.of(BackupStateDto.FAILED, BackupStateDto.INCOMPATIBLE).contains(backupStateDto);
   }
 
-  @EnableConfigurationProperties({
-    SearchEngineConnectProperties.class,
-  })
   @ComponentScan(
       basePackages = "io.camunda.application.commons.backup",
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
