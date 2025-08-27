@@ -1038,8 +1038,6 @@
         #     zeebeExporterIndexPrefix: zeebe-record
         #     The 'zeebeIndexPrefix' must be the same value as the Elasticsearch/OpenSearch exporter 'elasticsearch.args.index.prefix'
         #     otherwise the exporter may never start.
-        #     numberOfShards: 1
-        #     numberOfReplicas: 0
         #     variableSizeThreshold: 8191
         #
         #   history:
@@ -1051,7 +1049,6 @@
         #     maxDelayBetweenRuns: 60000
         #     retention:
         #       enabled: false
-        #       minimumAge: 30d
         #       policyName: camunda-retention-policy
         #
         #   batchOperations:
@@ -1528,3 +1525,139 @@
         # meaning message bodies will not be appended unless explicitly enabled.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEMESSAGEBODYONEXPIRED
         # enableMessageBodyOnExpired: false
+
+# Configure the secondary storage database for Camunda platform.
+# The database is used to store and query workflow data, process instances, and other operational data.
+# Supports Elasticsearch, OpenSearch, or can be disabled entirely.
+# These settings can also be overridden using environment variables with the pattern CAMUNDA_DATABASE_*
+
+# camunda.database:
+    # Specifies the database type to use for secondary storage.
+    # Supported values: elasticsearch, opensearch, none
+    # When set to 'none', secondary storage is disabled.
+    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE.
+    # type: elasticsearch
+
+    # The URL endpoint for the database connection.
+    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_URL.
+    # url: http://localhost:9200
+
+    # The name of the database cluster to connect to.
+    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_CLUSTERNAME.
+    # clusterName: elasticsearch
+
+    # Date format pattern used for database operations.
+    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_DATEFORMAT.
+    # dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZZ
+
+    # Field date format for database field mappings.
+    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_FIELDDATEFORMAT.
+    # fieldDateFormat: date_time
+
+    # Socket timeout for database connections in milliseconds.
+    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_SOCKETTIMEOUT.
+    # socketTimeout: 30000
+
+    # Connection timeout for establishing database connections in milliseconds.
+    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_CONNECTTIMEOUT.
+    # connectTimeout: 5000
+
+    # Username for database authentication.
+    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_USERNAME.
+    # username: elastic
+
+    # Password for database authentication.
+    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_PASSWORD.
+    # password: changeme
+
+    # Prefix to apply to all database indexes/tables.
+    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_INDEXPREFIX.
+    # indexPrefix:
+
+    # security:
+      # Enables SSL/TLS security for database connections.
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_SECURITY_ENABLED.
+      # enabled: false
+
+      # Path to the SSL certificate file.
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_SECURITY_CERTIFICATEPATH.
+      # certificatePath: /path/to/cert.pem
+
+      # Whether to verify the hostname in SSL certificates.
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_SECURITY_VERIFYHOSTNAME.
+      # verifyHostname: true
+
+      # Whether to accept self-signed certificates.
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_SECURITY_SELFSIGNED.
+      # selfSigned: false
+
+    # index:
+      # Default number of shards for database indexes.
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_INDEX_NUMBEROFSHARDS.
+      # numberOfShards: 1
+
+      # Default number of replicas for database indexes.
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS.
+      # numberOfReplicas: 0
+
+      # Priority for index templates.
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_INDEX_TEMPLATEPRIORITY.
+      # templatePriority: 100
+
+      # Specific replica counts for individual indexes.
+      # Example configuration:
+      # replicasByIndexName:
+      #   list-view: 2
+      #   job: 1
+
+      # Specific shard counts for individual indexes.
+      # Example configuration:
+      # shardsByIndexName:
+      #   list-view: 5
+      #   job: 3
+
+    # retention:
+      # Enables automatic data retention policies.
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_RETENTION_ENABLED.
+      # enabled: false
+
+      # Minimum age before data becomes eligible for deletion (e.g., 30d, 90d, 1y).
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_RETENTION_MINIMUMAGE.
+      # minimumAge: 30d
+
+      # Name of the retention policy.
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_RETENTION_POLICYNAME.
+      # policyName: camunda-retention-policy
+
+      # Minimum age for usage metrics before deletion (e.g., 365d, 730d).
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_RETENTION_USAGEMETRICSMINIMUMAGE.
+      # usageMetricsMinimumAge: 730d
+
+      # Name of the usage metrics retention policy.
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_RETENTION_USAGEMETRICSPOLICYNAME.
+      # usageMetricsPolicyName: camunda-usage-metrics-retention-policy
+
+    # schema-manager:
+      # Whether to automatically create database schemas on startup.
+      # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA.
+      # createSchema: true
+
+      # retry:
+        # Maximum number of retries for schema operations.
+        # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_SCHEMA_MANAGER_RETRY_MAXRETRIES.
+        # maxRetries: 2147483647
+
+        # Minimum delay between retry attempts.
+        # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_SCHEMA_MANAGER_RETRY_MINRETRYDELAY.
+        # minRetryDelay: 500ms
+
+        # Maximum delay between retry attempts.
+        # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_SCHEMA_MANAGER_RETRY_MAXRETRYDELAY.
+        # maxRetryDelay: 10s
+
+    # interceptorPlugins:
+      # List of interceptor plugins for database operations.
+      # Example configuration:
+      # - id: my-interceptor
+      #   className: com.example.MyInterceptor
+      #   jarPath: /path/to/interceptor.jar
