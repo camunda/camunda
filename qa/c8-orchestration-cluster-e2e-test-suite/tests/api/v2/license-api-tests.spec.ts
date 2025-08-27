@@ -8,9 +8,9 @@
 
 import {test, expect} from '@playwright/test';
 import {buildUrl, jsonHeaders, assertRequiredFields} from '../../../utils/http';
-import {licenseRequiredFields} from '../../../utils/beans/request-beans';
+import {licenseRequiredFields} from '../../../utils/beans/requestBeans';
 
-test.describe('License API Tests', () => {
+test.describe.parallel('License API Tests', () => {
   test('Get License', async ({request}) => {
     await test.step('Get License', async () => {
       const res = await request.get(buildUrl('/license'), {
@@ -23,16 +23,16 @@ test.describe('License API Tests', () => {
       expect(json.licenseType).toBe('unknown');
       expect(json.isCommercial).toBeFalsy();
     });
+  });
 
-    await test.step('Get License Unauthorized', async () => {
-      const res = await request.get(buildUrl('/license'), {headers: {}});
+  test('Get License Unauthorized', async ({request}) => {
+    const res = await request.get(buildUrl('/license'), {headers: {}});
 
-      expect(res.status()).toBe(200);
-      const json = await res.json();
-      assertRequiredFields(json, licenseRequiredFields);
-      expect(json.validLicense).toBeFalsy();
-      expect(json.licenseType).toBe('unknown');
-      expect(json.isCommercial).toBeFalsy();
-    });
+    expect(res.status()).toBe(200);
+    const json = await res.json();
+    assertRequiredFields(json, licenseRequiredFields);
+    expect(json.validLicense).toBeFalsy();
+    expect(json.licenseType).toBe('unknown');
+    expect(json.isCommercial).toBeFalsy();
   });
 });

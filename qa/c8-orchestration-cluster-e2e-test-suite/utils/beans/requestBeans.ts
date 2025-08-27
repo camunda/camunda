@@ -7,6 +7,7 @@
  */
 
 import {generateUniqueId} from '../constants';
+import * as fs from 'node:fs';
 
 export const groupRequiredFields: string[] = ['groupId', 'name', 'description'];
 export const mappingRuleRequiredFields: string[] = [
@@ -33,6 +34,17 @@ export const messageSubscriptionRequiredFields = [
   'messageName',
   'correlationKey',
   'tenantId',
+];
+export const documentRequiredFields = [
+  'camunda.document.type',
+  'storeId',
+  'documentId',
+  'contentHash',
+  'metadata',
+];
+export const multipleDocumentsRequiredFields = [
+  'createdDocuments',
+  'failedDocuments',
 ];
 export const correlateMessageRequiredFields: string[] = [
   'tenantId',
@@ -102,4 +114,103 @@ export const CORRELATE_MESSAGE = {
   name: expectedMessageSubscription3.messageName,
   correlationKey: expectedMessageSubscription3.correlationKey,
   variables: {foo: 'bar'},
+};
+
+export function CREATE_TXT_DOCUMENT_REQUEST() {
+  const form = new FormData();
+  form.append(
+    'file',
+    new Blob([fs.readFileSync('./resources/helloworld.txt')], {
+      type: 'text/plain',
+    }),
+    'helloworld.txt',
+  );
+  return form;
+}
+
+export function CREATE_DOC_INVALID_REQUEST() {
+  const form = new FormData();
+  form.append('metadata', '{}');
+  return form;
+}
+
+export function CREATE_TXT_DOC_RESPONSE_BODY(name: string, size: number) {
+  return {
+    'camunda.document.type': 'camunda',
+    storeId: 'in-memory',
+    metadata: {
+      contentType: 'text/plain',
+      fileName: `${name}.txt`,
+      size: size,
+      customProperties: {},
+    },
+  };
+}
+
+export function CREATE_TXT_DOC_RESPONSE_WITH_METADATA(
+  name: string,
+  size: number,
+) {
+  return {
+    'camunda.document.type': 'camunda',
+    storeId: 'in-memory',
+    metadata: {
+      contentType: 'text/plain',
+      fileName: `${name}.txt`,
+      size: size,
+      processDefinitionId: name,
+      processInstanceKey: '123456',
+      customProperties: {foo: 'bar'},
+    },
+  };
+}
+
+export function CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
+  name: string,
+) {
+  const form = new FormData();
+  form.append(
+    'file',
+    new File([`Hello World ${name}!`], `${name}.txt`, {
+      type: 'text/ plain',
+    }),
+  );
+  form.append(
+    'metadata',
+    new Blob(
+      [
+        JSON.stringify({
+          contentType: 'text/plain',
+          fileName: `${name}.txt`,
+          processDefinitionId: name,
+          processInstanceKey: '123456',
+          customProperties: {foo: 'bar'},
+        }),
+      ],
+      {
+        type: 'application/json',
+      },
+    ),
+  );
+  return form;
+}
+
+export function CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(
+  name: string,
+  numberOfDocs: number = 1,
+) {
+  const form = new FormData();
+  for (let i = 1; i <= numberOfDocs; i++) {
+    form.append(
+      'files',
+      new File([`Hello World ${name + i}!`], `${name}${i}.txt`, {
+        type: 'text/plain',
+      }),
+    );
+  }
+  return form;
+}
+
+export const CREATE_DOCUMENT_LINK_REQUEST = {
+  timeToLive: 60000,
 };
