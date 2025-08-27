@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.variable.DocumentEntry;
 import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
+import io.camunda.zeebe.engine.state.variable.VariablePointer;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -201,5 +202,23 @@ public final class VariableBehavior {
 
   private void applyEntryToRecord(final DocumentEntry entry) {
     variableRecord.setName(entry.getName()).setValue(entry.getValue());
+  }
+
+  public VariableScope inferScope(final long scopeKey) {
+    if (scopeKey == -1) {
+      return VariableScope.CLUSTER;
+    } else {
+      return VariableScope.UNSUPPORTED;
+    }
+  }
+
+  public VariablePointer getVariablePointer(final long key) {
+    return variableState.getVariableByKey(key);
+  }
+
+  public boolean variableExists(final long scopeKey, final DirectBuffer name) {
+    final VariableInstance variableInstance =
+        variableState.getVariableInstanceLocal(scopeKey, name);
+    return variableInstance != null;
   }
 }

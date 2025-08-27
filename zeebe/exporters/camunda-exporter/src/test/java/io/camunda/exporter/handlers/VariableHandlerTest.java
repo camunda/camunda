@@ -44,7 +44,7 @@ public class VariableHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = VariableIntent.class,
-      names = {"MIGRATED"},
+      names = {"MIGRATED", "CREATE", "UPDATE", "DELETE", "DELETED"},
       mode = Mode.EXCLUDE)
   void shouldHandleRecord(final VariableIntent intent) {
     // given
@@ -167,6 +167,26 @@ public class VariableHandlerTest {
     assertThat(variableEntity.getValue()).isEqualTo(variableRecordValue.getValue());
     assertThat(variableEntity.getIsPreview()).isFalse();
     assertThat(variableEntity.getFullValue()).isNull();
+  }
+
+  @Test
+  void shouldDeleteEntityFromRecord() {
+    // given
+    final VariableRecordValue variableRecordValue =
+        ImmutableVariableRecordValue.builder()
+            .withName("TEST")
+            .withValue("TEST")
+            .withScopeKey(-1)
+            .build();
+
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r -> r.withIntent(VariableIntent.CREATED).withValue(variableRecordValue));
+
+    final long key = variableRecord.getKey();
+
+    System.out.println(key);
   }
 
   @Test

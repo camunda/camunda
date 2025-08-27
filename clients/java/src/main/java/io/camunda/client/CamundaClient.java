@@ -86,6 +86,9 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.command.VariableCreationCommandStep1;
+import io.camunda.client.api.command.VariableDeleteCommandStep1;
+import io.camunda.client.api.command.VariableUpdateCommandStep1;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
@@ -1794,6 +1797,12 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  @return a builder for the request to get a variable
    */
   VariableGetRequest newVariableGetRequest(long variableKey);
+
+  VariableCreationCommandStep1 newVariableCreationCommand();
+
+  VariableUpdateCommandStep1 newVariableUpdateCommand();
+
+  VariableDeleteCommandStep1 newVariableDeleteCommand();
 
   /**
    * Executes a search request to query variables related to a user task.

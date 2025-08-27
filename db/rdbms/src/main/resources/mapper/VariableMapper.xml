@@ -139,6 +139,11 @@
       WHERE VAR_KEY = #{variableKey}
   </update>
 
+  <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel">
+    DELETE FROM ${prefix}VARIABLE
+    WHERE VAR_KEY = #{variableKey}
+  </delete>
+
   <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}VARIABLE SET
       HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
