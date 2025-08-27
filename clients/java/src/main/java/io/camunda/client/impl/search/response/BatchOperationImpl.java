@@ -19,6 +19,7 @@ import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationError;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
 import java.util.ArrayList;
@@ -40,10 +41,7 @@ public class BatchOperationImpl implements BatchOperation {
 
   public BatchOperationImpl(final BatchOperationCreatedResult item) {
     batchOperationKey = item.getBatchOperationKey();
-    type =
-        item.getBatchOperationType() != null
-            ? BatchOperationType.valueOf(item.getBatchOperationType().name())
-            : null;
+    type = EnumUtil.convert(item.getBatchOperationType(), BatchOperationType.class);
     status = null;
     startDate = null;
     endDate = null;
@@ -54,10 +52,7 @@ public class BatchOperationImpl implements BatchOperation {
 
   public BatchOperationImpl(final BatchOperationResponse item) {
     batchOperationKey = item.getBatchOperationKey();
-    type =
-        item.getBatchOperationType() != null
-            ? BatchOperationType.valueOf(item.getBatchOperationType().name())
-            : null;
+    type = EnumUtil.convert(item.getBatchOperationType(), BatchOperationType.class);
     status = item.getState() != null ? BatchOperationState.valueOf(item.getState().name()) : null;
     startDate = item.getStartDate();
     endDate = item.getEndDate();
