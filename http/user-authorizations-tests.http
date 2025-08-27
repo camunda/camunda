@@ -1,4 +1,5 @@
 ###
+# @no-cookie-jar
 # @name test-create-user-unauthorized
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
 Content-Type: application/json
@@ -13,7 +14,7 @@ Accept: application/json
 
 > {%
   client.test("User creation should be unauthorized", function () {
-    client.assert(response.status === 401, "Response status is not 401");
+    client.assert(response.status === 401, "Expected 401, got " + response.status);
   });
 %}
 
@@ -33,12 +34,13 @@ Accept: application/json
 
 > {%
   client.test("User creation should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
     client.global.set("USERNAME_NO_AUTHORIZATIONS", response.body.username);
   });
 %}
 
 ###
+# @no-cookie-jar
 # @name test-create-user-authorized-with-security-headers
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
@@ -54,7 +56,7 @@ Accept: application/json
 
 > {%
   client.test("User creation should be authorized", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
     client.global.set("USERNAME", response.body.username);
   });
 
@@ -77,41 +79,62 @@ Accept: application/json
   client.test("Cross-Origin-Embedder-Policy header should be present", function () {
     const coep = response.headers.valueOf("Cross-Origin-Embedder-Policy");
     client.assert(coep, "Cross-Origin-Embedder-Policy header is missing");
-    client.assert(coep === "unsafe-none" || coep === "require-corp", "Cross-Origin-Embedder-Policy should be 'unsafe-none' or 'require-corp'");
+    client.assert(coep === "unsafe-none", "Cross-Origin-Embedder-Policy should be 'unsafe-none'");
   });
 
   client.test("Cross-Origin-Opener-Policy header should be present", function () {
     const coop = response.headers.valueOf("Cross-Origin-Opener-Policy");
     client.assert(coop, "Cross-Origin-Opener-Policy header is missing");
-    client.assert(["unsafe-none", "same-origin-allow-popups", "same-origin"].includes(coop.toLowerCase()), "Cross-Origin-Opener-Policy should be 'unsafe-none', 'same-origin-allow-popups', or 'same-origin'");
+    client.assert(coop === "same-origin-allow-popups", "Cross-Origin-Opener-Policy should be 'same-origin-allow-popups'");
   });
 
   client.test("Cross-Origin-Resource-Policy header should be present", function () {
     const corp = response.headers.valueOf("Cross-Origin-Resource-Policy");
     client.assert(corp, "Cross-Origin-Resource-Policy header is missing");
-    client.assert(["same-origin", "same-site", "cross-origin"].includes(corp.toLowerCase()), "Cross-Origin-Resource-Policy should be 'same-origin', 'same-site', or 'cross-origin'");
+    client.assert(corp === "same-site", "Cross-Origin-Resource-Policy should be 'same-site'");
   });
 
   client.test("X-Frame-Options header should be present", function () {
     const frameOptions = response.headers.valueOf("X-Frame-Options");
     client.assert(frameOptions, "X-Frame-Options header is missing");
-    client.assert(frameOptions.toUpperCase() === "SAMEORIGIN" || frameOptions.toUpperCase() === "DENY", "X-Frame-Options should be 'SAMEORIGIN' or 'DENY'");
+    client.assert(frameOptions.toUpperCase() === "SAMEORIGIN", "X-Frame-Options should be 'SAMEORIGIN'");
   });
 
   client.test("Referrer-Policy header should be present", function () {
     const referrerPolicy = response.headers.valueOf("Referrer-Policy");
     client.assert(referrerPolicy, "Referrer-Policy header is missing");
-    // Default is strict-origin-when-cross-origin, but could be configured differently
-    client.assert(referrerPolicy.length > 0, "Referrer-Policy should have a value");
+    client.assert(referrerPolicy.toLowerCase() === "strict-origin-when-cross-origin", "Referrer-Policy should be 'STRICT_ORIGIN_WHEN_CROSS_ORIGIN'");
   });
 
-  // Optional: Permissions-Policy header (may not always be present)
-  client.test("Permissions-Policy header validation (if present)", function () {
+  client.test("Permissions-Policy header validation", function () {
     const permissionsPolicy = response.headers.valueOf("Permissions-Policy");
+    console.log(permissionsPolicy)
     if (permissionsPolicy) {
-      client.assert(permissionsPolicy.length > 0, "Permissions-Policy should have a value if present");
+      const expected = [
+        "accelerometer=()", "ambient-light-sensor=()", "attribution-reporting=()",
+        "autoplay=()", "bluetooth=()", "browsing-topics=()", "camera=()", "compute-pressure=()",
+        "cross-origin-isolated=()", "deferred-fetch=()", "deferred-fetch-minimal=()", "display-capture=()",
+        "encrypted-media=()", "fullscreen=()", "gamepad=()", "geolocation=()", "gyroscope=()", "hid=()",
+        "identity-credentials-get=()", "idle-detection=()", "language-detector=()", "local-fonts=()",
+        "magnetometer=()", "microphone=()", "midi=()", "otp-credentials=()", "payment=()",
+        "picture-in-picture=()", "publickey-credentials-create=()", "publickey-credentials-get=()",
+        "screen-wake-lock=()", "serial=()", "speaker-selection=()", "storage-access=()", "summarizer=()",
+        "translator=()", "usb=()", "web-share=()", "window-management=()", "xr-spatial-tracking=()"
+      ];
+
+      const actual = permissionsPolicy
+          .split(",")
+          .map(d => d.trim().toLowerCase());
+
+      expected.forEach(dir => {
+        client.assert(
+            actual.includes(dir.toLowerCase()),
+            `Missing directive in Permissions-Policy: ${dir}`
+        );
+      });
     }
   });
+
 %}
 
 ###
@@ -129,7 +152,7 @@ Accept: application/json
 
 > {%
   client.test("User update should be authorized", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
   });
 %}
 
@@ -163,7 +186,7 @@ Accept: application/json
 
 > {%
   client.test("User search should be authorized", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
@@ -188,7 +211,7 @@ Accept: application/json
 
 > {%
   client.test("The user was not found.", function () {
-    client.assert(response.status === 404, "Response status is not 201");
+    client.assert(response.status === 404, "Expected 404, got " + response.status);
     client.assert(response.body.detail === "Command 'DELETE' rejected with code 'NOT_FOUND': Expected to delete user with username fake, but a user with this username does not exist", "Error message is wrong");
   });
 %}
@@ -218,7 +241,7 @@ Accept: application/json
 
 > {%
   client.test("Authorization creation should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
@@ -244,7 +267,7 @@ Accept: application/json
 
 > {%
   client.test("Authorization creation should fail due to missing fields", function () {
-    client.assert(response.status === 400, "Response status is not 400");
+    client.assert(response.status === 400, "Expected 400, got " + response.status);
     client.assert(response.body.detail === "No ownerType provided. No resourceId provided. No resourceType provided. No permissionTypes provided.");
   });
 %}
@@ -268,7 +291,7 @@ Accept: application/json
 
 > {%
   client.test("Authorization creation should be unauthorized", function () {
-    client.assert(response.status === 401, "Response status is not 401");
+    client.assert(response.status === 401, "Expected 401, got " + response.status);
   });
 %}
 
@@ -301,7 +324,7 @@ Accept: application/json
 
 > {%
   client.test("Authorization search should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
@@ -339,7 +362,7 @@ Accept: application/json
 
 > {%
   client.test("Authorization update should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
     client.assert(response.body === "" || response.body === null, "Response body is not empty");
   });
 %}
@@ -357,14 +380,41 @@ Accept: application/json
 
 > {%
   client.test("Authorization update should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
     client.assert(response.body === "" || response.body === null, "Response body is not empty");
+  });
+%}
+
+
+###
+# @name process-definition-search-authorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/search
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    {
+      "field": "processDefinitionKey",
+      "order": "ASC"
+    }
+  ],
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
+}
+
+> {%
+  client.test("Process definition search is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.global.set("PROCESS_DEFINITION_KEY", response.body.items[0].processDefinitionKey);
   });
 %}
 
 ###
 # @name create-process-instance
-
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json
@@ -378,20 +428,20 @@ Accept: application/json
   "hasIncident": false,
   "tenantId": "<default>",
   "processInstanceKey": "2251799813692075",
-  "processDefinitionKey": "2251799813685329"
+  "processDefinitionKey": {{PROCESS_DEFINITION_KEY}}
 }
 
 > {%
   client.test("Create process instance is successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
     client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
   });
-
+let expectedDefinitionKey = client.global.get("PROCESS_DEFINITION_KEY");
   client.test("Response should contain process key", function () {
-    client.assert(response.body.processDefinitionKey === "2251799813685329", "Process definition key was not returned");
+    client.assert(response.body.processDefinitionKey === expectedDefinitionKey, "Process definition key was not returned");
     client.global.set("PROCESS_INSTANCE_KEY", response.body.processInstanceKey);
   });
 %}
@@ -409,7 +459,7 @@ Accept: application/json
 
 > {%
   client.test("Process instance is successful returned", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
@@ -448,7 +498,7 @@ Accept: application/json
 
 > {%
   client.test("Process instance search is successful without authorizations", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
@@ -473,7 +523,7 @@ Accept: application/json
 
 > {%
   client.test("Get process instance is unsuccessful without tenant assignment", function () {
-    client.assert(response.status === 404, "Response status is not 404");
+    client.assert(response.status === 404, "Expected 404, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
@@ -494,7 +544,7 @@ Accept: application/json
 
 > {%
   client.test("User assignment should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -511,7 +561,7 @@ Accept: application/json
 
 > {%
   client.test("Get process instance is unsuccessful without authorizations", function () {
-    client.assert(response.status === 403, "Response status is not 403");
+    client.assert(response.status === 403, "Expected 403, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
@@ -539,7 +589,7 @@ Accept: application/json
 
 > {%
   client.test("User creation should be Unauthorized", function () {
-    client.assert(response.status === 403, "Response status is not 403");
+    client.assert(response.status === 403, "Expected 403, got " + response.status);
   });
 
   client.test("FORBIDDEN error message should be displayed", function () {
@@ -562,7 +612,7 @@ Accept: application/json
 
 > {%
   client.test("User update should be unauthorized", function () {
-    client.assert(response.status === 403, "Response status is not 403");
+    client.assert(response.status === 403, "Expected 403, got " + response.status);
   });
 
   client.test("FORBIDDEN error message should be displayed", function () {
@@ -599,7 +649,7 @@ Accept: application/json
 
 > {%
   client.test("User search is successful without authorizations", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
@@ -636,7 +686,7 @@ Accept: application/json
 
 > {%
   client.test("Authorization creation should be unsuccessful", function () {
-    client.assert(response.status === 403, "Response status is not 403");
+    client.assert(response.status === 403, "Expected 403, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
@@ -672,7 +722,7 @@ Accept: application/json
 
 > {%
   client.test("Authorization creation should be unsuccessful", function () {
-    client.assert(response.status === 403, "Response status is not 403");
+    client.assert(response.status === 403, "Expected 403, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
@@ -701,7 +751,7 @@ Accept: application/json
 
 > {%
   client.test("Authorization deletion should be unsuccessful", function () {
-    client.assert(response.status === 403, "Response status is not 403");
+    client.assert(response.status === 403, "Expected 403, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
@@ -726,6 +776,7 @@ Content-Type: multipart/form-data; boundary=boundary123
 
 --boundary123
 Content-Disposition: form-data; name="file"; filename="test.pdf"
+X-Document-Metadata: {"fileName": "test.pdf", "size": 1234567}
 Content-Type: application/pdf
 
 < ./test.pdf
@@ -733,7 +784,9 @@ Content-Type: application/pdf
 
 > {%
   client.test("Document upload should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
+    client.global.set("DOCUMENT_ID", response.body.documentId);
+    client.global.set("CONTENT_HASH", response.body.contentHash);
   });
 
   client.test("Response should be JSON", function () {
@@ -745,11 +798,12 @@ Content-Type: application/pdf
   });
 
   client.test("Response body should include document ID", function () {
-    client.assert(!!response.body.documentId, "Document ID found in response");
+    client.assert(response.body.documentId, "Document ID not found in the response");
   });
 %}
 
 ###
+# @no-cookie-jar
 # @name upload-document-unauthorized
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents
 Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
@@ -758,6 +812,7 @@ Content-Type: multipart/form-data; boundary=boundary123
 
 --boundary123
 Content-Disposition: form-data; name="file"; filename="test.pdf"
+X-Document-Metadata: {"fileName": "test.pdf", "size": 1234567}
 Content-Type: application/pdf
 
 < ./test.pdf
@@ -765,20 +820,92 @@ Content-Type: application/pdf
 
 > {%
   client.test("Document upload should be unsuccessful", function () {
-    client.assert(response.status === 403, "Response status is not 403");
+    client.assert(response.status === 403, "Expected 403, got " + response.status);
   });
 
   client.test("Response should be JSON", function () {
     const contentType = response.headers.valueOf("Content-Type") || "";
     client.assert(
-        contentType.toLowerCase().includes("application/json"),
+        contentType.toLowerCase().includes("application/problem+json"),
         `Response is not JSON, Content-Type was: ${contentType}`
     );
   });
 
-  client.test("Forbidden error message should be displayed", function () {
-    client.assert(response.body.detail.includes("FORBIDDEN"), "Incorrect error message");
+  client.test("Unauthorized error message should be displayed", function () {
+    client.assert(response.body.detail.includes("Unauthorized"), "Incorrect error message");
   });
+%}
+
+###
+# @name download-document-authorized
+GET http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/octet-stream
+
+> {%
+  client.test("Document download should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+%}
+
+###
+# @no-cookie-jar
+# @name download-document-unauthorized
+GET http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Accept: application/octet-stream
+
+> {%
+  client.test("Document download should be unsuccessful", function () {
+    client.assert(response.status === 403, "Expected 403, got " + response.status);
+  });
+
+  client.test("Unauthorized error message should be displayed", function () {
+    client.assert(response.body.detail.includes("Unauthorized"), "Incorrect error message");
+  });
+%}
+
+###
+# @no-cookie-jar
+# @name delete-document-unauthorized
+DELETE http://localhost:8080/v2/documents/{{DOCUMENT_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+
+> {%
+  client.test("Document deletion should be unsuccessful", function () {
+    client.assert(response.status === 403, "Expected 403, got " + response.status);
+  });
+
+  client.test("Unauthorized error message should be displayed", function () {
+    client.assert(response.body.detail.includes("Unauthorized"), "Incorrect error message");
+  });
+%}
+
+###
+# @name delete-and-verify-document
+DELETE http://localhost:8080/v2/documents/{{DOCUMENT_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+
+> {%
+  client.test("Document deletion should succeed", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+
+  client.global.set("DOCUMENT_DELETED", "true");
+%}
+
+###
+# @name verify-deleted-document
+GET http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/octet-stream
+
+> {%
+  if (client.global.get("DOCUMENT_DELETED") === "true") {
+    client.test("Document download after deletion should fail", function () {
+      client.assert(response.status === 404, "Expected 404, got " + response.status);
+    });
+  }
 %}
 
 ###
@@ -791,7 +918,7 @@ Accept: application/json
 
 > {%
   client.test("The user was deleted successfully.", function () {
-    client.assert(response.status === 204, "Response status is not 201");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -805,6 +932,6 @@ Accept: application/json
 
 > {%
   client.test("The user was deleted successfully.", function () {
-    client.assert(response.status === 204, "Response status is not 201");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
