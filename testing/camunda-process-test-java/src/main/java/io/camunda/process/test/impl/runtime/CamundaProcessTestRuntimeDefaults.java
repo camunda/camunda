@@ -15,8 +15,10 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +35,8 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final String DEFAULT_ELASTICSEARCH_LOGGER_NAME = "tc.elasticsearch";
   public static final String DEFAULT_CAMUNDA_LOGGER_NAME = "tc.camunda";
   public static final String DEFAULT_CONNECTORS_LOGGER_NAME = "tc.connectors";
+
+  public static final Duration DEFAULT_CAMUNDA_CLIENT_REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
   public static final URI LOCAL_CAMUNDA_MONITORING_API_ADDRESS =
       URI.create("http://0.0.0.0:" + ContainerRuntimePorts.CAMUNDA_MONITORING_API);
@@ -78,4 +82,10 @@ public class CamundaProcessTestRuntimeDefaults {
 
   public static final URI REMOTE_CLIENT_GRPC_ADDRESS = PROPERTIES_UTIL.getRemoteClientGrpcAddress();
   public static final URI REMOTE_CLIENT_REST_ADDRESS = PROPERTIES_UTIL.getRemoteClientRestAddress();
+
+  public static final Duration CAMUNDA_CLIENT_REQUEST_TIMEOUT =
+      PROPERTIES_UTIL.getCamundaClientRequestTimeout();
+
+  public static final CamundaClientBuilderFactory CAMUNDA_CLIENT_BUILDER_FACTORY =
+      PROPERTIES_UTIL.getCamundaClientBuilderFactory();
 }

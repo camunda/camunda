@@ -15,12 +15,12 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,24 +74,10 @@ public class CamundaProcessTestRuntimeBuilder {
   private CamundaProcessTestRuntimeMode runtimeMode =
       CamundaProcessTestRuntimeDefaults.RUNTIME_MODE;
 
+  private Duration camundaClientRequestTimeout =
+      CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_REQUEST_TIMEOUT;
   private CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
-      () -> {
-        final CamundaClientBuilder camundaClientBuilder =
-            CamundaClient.newClientBuilder().usePlaintext();
-
-        // Make sure not to override the CamundaClient's default configuration
-        if (CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_GRPC_ADDRESS != null) {
-          camundaClientBuilder.grpcAddress(
-              CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_GRPC_ADDRESS);
-        }
-
-        if (CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_REST_ADDRESS != null) {
-          camundaClientBuilder.restAddress(
-              CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_REST_ADDRESS);
-        }
-
-        return camundaClientBuilder;
-      };
+      CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_BUILDER_FACTORY;
 
   private URI remoteCamundaMonitoringApiAddress =
       CamundaProcessTestRuntimeDefaults.REMOTE_CAMUNDA_MONITORING_API_ADDRESS;
@@ -225,6 +211,14 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  public CamundaProcessTestRuntimeBuilder withCamundaClientRequestTimeout(
+      final Duration requestTimeout) {
+    this.camundaClientRequestTimeout = requestTimeout;
+    this.remoteCamundaClientBuilderFactory =
+        () -> remoteCamundaClientBuilderFactory.get().defaultRequestTimeout(requestTimeout);
+    return this;
+  }
+
   public CamundaProcessTestRuntimeBuilder withRemoteCamundaClientBuilderFactory(
       final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory) {
     this.remoteCamundaClientBuilderFactory = remoteCamundaClientBuilderFactory;
@@ -240,6 +234,13 @@ public class CamundaProcessTestRuntimeBuilder {
   public CamundaProcessTestRuntimeBuilder withRemoteConnectorsRestApiAddress(
       final URI remoteConnectorsRestApiAddress) {
     this.remoteConnectorsRestApiAddress = remoteConnectorsRestApiAddress;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withCredentialsProvider(
+      final CredentialsProvider credentialsProvider) {
+    this.remoteCamundaClientBuilderFactory =
+        () -> remoteCamundaClientBuilderFactory.get().credentialsProvider(credentialsProvider);
     return this;
   }
 
@@ -341,5 +342,9 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public URI getRemoteConnectorsRestApiAddress() {
     return remoteConnectorsRestApiAddress;
+  }
+
+  public Duration getCamundaClientRequestTimeout() {
+    return camundaClientRequestTimeout;
   }
 }
