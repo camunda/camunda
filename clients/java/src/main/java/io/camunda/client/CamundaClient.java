@@ -67,6 +67,7 @@ import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
@@ -2236,6 +2237,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the assign client to tenant command
    */
   AssignClientToTenantCommandStep1 newAssignClientToTenantCommand();
+
+  /**
+   * Command to unassign a client from a tenant.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newUnassignClientFromTenantCommand()
+   *  .clientId("clientId")
+   *  .tenantId("tenantId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the unassign client from tenant command
+   */
+  UnassignClientFromTenantCommandStep1 newUnassignClientFromTenantCommand();
 
   /**
    * Command to create an authorization
