@@ -221,6 +221,22 @@ public class SearchClientAdapter {
     }
   }
 
+  public void deleteIndex(final String indexName) throws IOException {
+    if (elsClient != null) {
+      elsClient.indices().delete(d -> d.index(indexName));
+    } else if (osClient != null) {
+      osClient.indices().delete(d -> d.index(indexName));
+    }
+  }
+
+  public void deleteIndexTemplate(final String templateName) throws IOException {
+    if (elsClient != null) {
+      elsClient.indices().deleteIndexTemplate(d -> d.name(templateName));
+    } else if (osClient != null) {
+      osClient.indices().deleteIndexTemplate(d -> d.name(templateName));
+    }
+  }
+
   public void refresh() throws IOException {
     if (elsClient != null) {
       elsClient.indices().refresh();
