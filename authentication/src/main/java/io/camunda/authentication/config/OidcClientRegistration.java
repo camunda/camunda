@@ -12,6 +12,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.ClientRegistration.Builder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrations;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
 public final class OidcClientRegistration {
   public static final String REGISTRATION_ID = "oidc";
@@ -51,6 +52,10 @@ public final class OidcClientRegistration {
     }
     if (configuration.getGrantType() != null) {
       builder.authorizationGrantType(new AuthorizationGrantType(configuration.getGrantType()));
+    }
+    if (configuration.getClientAuthenticationMethod() != null) {
+      builder.clientAuthenticationMethod(
+          ClientAuthenticationMethod.valueOf(configuration.getClientAuthenticationMethod()));
     }
     return builder.build();
   }

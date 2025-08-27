@@ -8,6 +8,8 @@
 package io.camunda.security.configuration;
 
 import io.camunda.security.auth.OidcGroupsLoader;
+import java.io.FileInputStream;
+import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -15,6 +17,10 @@ import java.util.Set;
 public class OidcAuthenticationConfiguration {
   public static final String GROUPS_CLAIM_PROPERTY =
       "camunda.security.authentication.oidc.groupsClaim";
+
+  public static final String CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC =
+      "client_secret_basic";
+  public static final String CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT = "private_key_jwt";
 
   private String issuerUri;
   private String clientId;
@@ -32,6 +38,11 @@ public class OidcAuthenticationConfiguration {
   private String clientIdClaim;
   private String groupsClaim;
   private String organizationId;
+  private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
+  private String keystorePath;
+  private String keystorePassword;
+  private String keystoreKeyAlias;
+  private String keystoreKeyPassword;
 
   public String getIssuerUri() {
     return issuerUri;
@@ -153,5 +164,58 @@ public class OidcAuthenticationConfiguration {
   public void setGroupsClaim(final String groupsClaim) {
     new OidcGroupsLoader(groupsClaim);
     this.groupsClaim = groupsClaim;
+  }
+
+  public String getClientAuthenticationMethod() {
+    return clientAuthenticationMethod;
+  }
+
+  public void setClientAuthenticationMethod(final String clientAuthenticationMethod) {
+    this.clientAuthenticationMethod = clientAuthenticationMethod;
+  }
+
+  public boolean isClientAuthenticationPrivateKeyJwt() {
+    return clientAuthenticationMethod != null
+        && clientAuthenticationMethod.equals(CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT);
+  }
+
+  public String getKeystorePath() {
+    return keystorePath;
+  }
+
+  public void setKeystorePath(final String keystorePath) {
+    this.keystorePath = keystorePath;
+  }
+
+  public String getKeystorePassword() {
+    return keystorePassword;
+  }
+
+  public void setKeystorePassword(final String keystorePassword) {
+    this.keystorePassword = keystorePassword;
+  }
+
+  public String getKeystoreKeyAlias() {
+    return keystoreKeyAlias;
+  }
+
+  public void setKeystoreKeyAlias(final String keystoreKeyAlias) {
+    this.keystoreKeyAlias = keystoreKeyAlias;
+  }
+
+  public String getKeystoreKeyPassword() {
+    return keystoreKeyPassword;
+  }
+
+  public void setKeystoreKeyPassword(final String keystoreKeyPassword) {
+    this.keystoreKeyPassword = keystoreKeyPassword;
+  }
+
+  public KeyStore loadKeystore() throws Exception {
+    final KeyStore keyStore = KeyStore.getInstance("PKCS12");
+    try (final FileInputStream fis = new FileInputStream(keystorePath)) {
+      keyStore.load(fis, keystorePassword.toCharArray());
+    }
+    return keyStore;
   }
 }
