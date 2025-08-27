@@ -17,8 +17,8 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.security.configuration.ConfiguredMappingRule;
