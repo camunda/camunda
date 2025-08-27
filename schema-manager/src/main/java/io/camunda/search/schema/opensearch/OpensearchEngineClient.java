@@ -7,6 +7,8 @@
  */
 package io.camunda.search.schema.opensearch;
 
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.convertValue;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -20,6 +22,7 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.SearchEngineClientUtils;
+import io.camunda.search.schema.utils.SearchEngineClientUtils.SchemaSettingsAppender;
 import io.camunda.search.schema.utils.SuppressLogger;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -31,16 +34,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonpDeserializer;
+import org.opensearch.client.json.JsonpSerializable;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
@@ -54,8 +59,8 @@ import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplate;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
-import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateSummary;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
 import org.slf4j.LoggerFactory;
 
@@ -116,10 +121,11 @@ public class OpensearchEngineClient implements SearchEngineClient {
   @Override
   public void createIndexTemplate(
       final IndexTemplateDescriptor templateDescriptor,
-      final IndexConfiguration settings,
+      final IndexConfiguration indexConfiguration,
       final boolean create) {
 
-    final PutIndexTemplateRequest request = putIndexTemplateRequest(templateDescriptor, settings);
+    final PutIndexTemplateRequest request =
+        putIndexTemplateRequest(templateDescriptor, indexConfiguration);
 
     try {
       if (create
@@ -267,19 +273,22 @@ public class OpensearchEngineClient implements SearchEngineClient {
   @Override
   public void updateIndexTemplateSettings(
       final IndexTemplateDescriptor indexTemplateDescriptor,
-      final IndexConfiguration currentSettings) {
-    final var updateIndexTemplateSettingsRequest =
-        updateTemplateSettings(indexTemplateDescriptor, currentSettings);
+      final IndexConfiguration indexConfiguration) {
+    final var maybeRequest =
+        buildTemplateSettingsUpdateRequestIfChanged(indexTemplateDescriptor, indexConfiguration);
+
+    // If settings are equal, no update is needed
+    if (maybeRequest.isEmpty()) {
+      return;
+    }
 
     try {
-      client.indices().putIndexTemplate(updateIndexTemplateSettingsRequest);
+      client.indices().putIndexTemplate(maybeRequest.get());
     } catch (final IOException | OpenSearchException e) {
       throw new SearchEngineException(
           String.format(
               "Expected to update index template settings '%s' with '%s', but failed: %s",
-              indexTemplateDescriptor.getTemplateName(),
-              updateIndexTemplateSettingsRequest,
-              e.getMessage()),
+              indexTemplateDescriptor.getTemplateName(), maybeRequest.get(), e.getMessage()),
           e);
     }
   }
@@ -411,21 +420,30 @@ public class OpensearchEngineClient implements SearchEngineClient {
             p ->
                 new IndexMappingProperty.Builder()
                     .name(p.getKey())
-                    .typeDefinition(propertyToMap(p.getValue()))
+                    .typeDefinition(serializeAsMap(p.getValue()))
                     .build())
         .collect(Collectors.toSet());
   }
 
-  private Map<String, Object> propertyToMap(final Property property) {
+  private Map<String, Object> serializeAsMap(final JsonpSerializable serializable) {
+    if (serializable == null) {
+      return null;
+    }
     try {
       return schemaResourceSerializer.serialize(
           (JacksonJsonpGenerator::new),
           (jacksonJsonpGenerator) ->
-              property.serialize(jacksonJsonpGenerator, client._transport().jsonpMapper()));
+              serializable.serialize(jacksonJsonpGenerator, client._transport().jsonpMapper()));
     } catch (final IOException e) {
       throw new SearchEngineException(
-          String.format("Failed to serialize property [%s]", property.toString()), e);
+          String.format("Failed to serialize [%s]", serializable.toString()), e);
     }
+  }
+
+  private <V extends JsonpSerializable> Map<String, Object> serializeAsMap(
+      final Map<String, V> serializableMap) {
+    return serializableMap.entrySet().stream()
+        .collect(Collectors.toMap(Entry::getKey, e -> serializeAsMap(e.getValue())));
   }
 
   private Map<String, TypeMapping> getCurrentMappings(
@@ -482,17 +500,17 @@ public class OpensearchEngineClient implements SearchEngineClient {
                   .withNumberOfReplicas(settings.getNumberOfReplicas())
                   .build());
 
-      return new PutIndexTemplateRequest.Builder()
-          .name(indexTemplateDescriptor.getTemplateName())
-          .indexPatterns(indexTemplateDescriptor.getIndexPattern())
-          .template(
-              t ->
-                  t.aliases(indexTemplateDescriptor.getAlias(), a -> a)
-                      .mappings(templateFields.mappings())
-                      .settings(templateFields.settings()))
-          .priority(settings.getTemplatePriority())
-          .composedOf(indexTemplateDescriptor.getComposedOf())
-          .build();
+      return PutIndexTemplateRequest.of(
+          b ->
+              b.name(indexTemplateDescriptor.getTemplateName())
+                  .indexPatterns(indexTemplateDescriptor.getIndexPattern())
+                  .template(
+                      t ->
+                          t.aliases(indexTemplateDescriptor.getAlias(), a -> a)
+                              .mappings(templateFields.mappings())
+                              .settings(templateFields.settings()))
+                  .priority(settings.getTemplatePriority())
+                  .composedOf(indexTemplateDescriptor.getComposedOf()));
     } catch (final IOException e) {
       throw new SearchEngineException(
           "Failed to load file "
@@ -502,32 +520,44 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private PutIndexTemplateRequest updateTemplateSettings(
+  private Optional<PutIndexTemplateRequest> buildTemplateSettingsUpdateRequestIfChanged(
       final IndexTemplateDescriptor indexTemplateDescriptor,
-      final IndexConfiguration currentSettings) {
+      final IndexConfiguration indexConfiguration) {
     try (final var templateFile =
         getClass().getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
+      final var currentTemplate = getIndexTemplateState(indexTemplateDescriptor);
+      final var configuredSettings =
+          utils.new SchemaSettingsAppender(templateFile)
+              .withNumberOfShards(indexConfiguration.getNumberOfShards())
+              .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas());
+      final var configuredPriority = indexConfiguration.getTemplatePriority();
+      if (areTemplateSettingsEqualToConfigured(
+          currentTemplate, configuredSettings, configuredPriority)) {
+        LOG.debug(
+            "Index template settings for [{}] are already up to date",
+            indexTemplateDescriptor.getTemplateName());
+        return Optional.empty();
+      }
       final var updatedTemplateSettings =
-          deserializeJson(
-                  IndexTemplateMapping._DESERIALIZER,
-                  utils.new SchemaSettingsAppender(templateFile)
-                      .withNumberOfShards(currentSettings.getNumberOfShards())
-                      .withNumberOfReplicas(currentSettings.getNumberOfReplicas())
-                      .build())
+          deserializeJson(IndexTemplateMapping._DESERIALIZER, configuredSettings.build())
               .settings();
-
-      final var currentIndexTemplateState = getIndexTemplateState(indexTemplateDescriptor);
-
-      return new PutIndexTemplateRequest.Builder()
-          .name(indexTemplateDescriptor.getTemplateName())
-          .indexPatterns(indexTemplateDescriptor.getIndexPattern())
-          .template(
-              t ->
-                  t.settings(updatedTemplateSettings)
-                      .mappings(currentIndexTemplateState.mappings())
-                      .aliases(currentIndexTemplateState.aliases()))
-          .priority(currentSettings.getTemplatePriority())
-          .build();
+      LOG.debug(
+          "Applying to index template [{}]: settings={}, priority={}",
+          indexTemplateDescriptor.getTemplateName(),
+          updatedTemplateSettings,
+          configuredPriority);
+      return Optional.of(
+          PutIndexTemplateRequest.of(
+              b ->
+                  b.name(indexTemplateDescriptor.getTemplateName())
+                      .indexPatterns(indexTemplateDescriptor.getIndexPattern())
+                      .template(
+                          t ->
+                              t.settings(updatedTemplateSettings)
+                                  .mappings(currentTemplate.template().mappings())
+                                  .aliases(currentTemplate.template().aliases()))
+                      .composedOf(currentTemplate.composedOf())
+                      .priority(configuredPriority)));
 
     } catch (final IOException e) {
       throw new SearchEngineException(
@@ -538,7 +568,16 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private IndexTemplateSummary getIndexTemplateState(
+  private boolean areTemplateSettingsEqualToConfigured(
+      final IndexTemplate currentTemplate,
+      final SchemaSettingsAppender configuredSettings,
+      final Integer configuredPriority) {
+    return Objects.equals(
+            convertValue(configuredPriority, Long::valueOf), currentTemplate.priority())
+        && configuredSettings.equalsSettings(serializeAsMap(currentTemplate.template().settings()));
+  }
+
+  private IndexTemplate getIndexTemplateState(
       final IndexTemplateDescriptor indexTemplateDescriptor) {
     try {
       return client
@@ -546,8 +585,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
           .getIndexTemplate(r -> r.name(indexTemplateDescriptor.getTemplateName()))
           .indexTemplates()
           .getFirst()
-          .indexTemplate()
-          .template();
+          .indexTemplate();
     } catch (final IOException e) {
       throw new SearchEngineException(
           String.format(

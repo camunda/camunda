@@ -151,10 +151,19 @@ public class SchemaManager {
   }
 
   private void updateSchemaSettings() {
-    allIndexDescriptors.forEach(this::updateIndexReplicaCount);
+    final var futures =
+        allIndexDescriptors.stream()
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    CompletableFuture.runAsync(
+                        () -> updateIndexSettings(descriptor), virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    joinOnFutures(futures);
   }
 
-  private void updateIndexReplicaCount(final IndexDescriptor indexDescriptor) {
+  private void updateIndexSettings(final IndexDescriptor indexDescriptor) {
     final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor.getIndexName());
     if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
       searchEngineClient.updateIndexTemplateSettings(
@@ -217,7 +226,7 @@ public class SchemaManager {
       return;
     }
     final var missingIndexTemplates = getMissingIndexTemplates(indexTemplateDescriptors);
-    LOG.info("Creating index templates based on '{}' descriptors.", missingIndexTemplates.size());
+    LOG.info("Found '{}' missing index templates", missingIndexTemplates.size());
     final var futures =
         missingIndexTemplates.stream()
             .map(

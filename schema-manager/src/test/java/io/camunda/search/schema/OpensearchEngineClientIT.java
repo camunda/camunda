@@ -13,6 +13,13 @@ import static io.camunda.search.test.utils.SearchDBExtension.ENGINE_CLIENT_TEST_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
@@ -40,6 +47,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.generic.Requests;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 
 public class OpensearchEngineClientIT {
 
@@ -302,6 +310,86 @@ public class OpensearchEngineClientIT {
         .isInstanceOf(SearchEngineException.class)
         .hasMessageContaining(
             "Creating index state management policy [policy_name] with min_deletion_age [test123] failed.");
+  }
+
+  @Test
+  void shouldNotIssuePutIndexTemplateWhenSettingsUnchanged() throws IOException {
+    // given
+    final var template = createTestTemplateDescriptor("template_no_change", "/mappings.json");
+    final var initialSettings = new IndexConfiguration();
+    initialSettings.setNumberOfReplicas(0);
+    initialSettings.setNumberOfShards(1);
+    initialSettings.setTemplatePriority(50);
+
+    final var indicesSpy = spy(openSearchClient.indices());
+    final var clientSpy = spy(openSearchClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient = new OpensearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, initialSettings, true);
+    reset(indicesSpy); // ignore create
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, initialSettings);
+
+    // then
+    verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  @Test
+  void shouldIssuePutIndexTemplateWhenSettingsChanged() throws IOException {
+    // given
+    final var template = createTestTemplateDescriptor("template_change", "/mappings.json");
+    final var initialSettings = new IndexConfiguration();
+    initialSettings.setNumberOfReplicas(0);
+    initialSettings.setNumberOfShards(1);
+
+    final var indicesSpy = spy(openSearchClient.indices());
+    final var clientSpy = spy(openSearchClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient = new OpensearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, initialSettings, true);
+    reset(indicesSpy); // ignore create
+
+    final var updated = new IndexConfiguration();
+    updated.setNumberOfReplicas(2); // change
+    updated.setNumberOfShards(1); // same
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, updated);
+
+    // then
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  @Test
+  void shouldIssuePutIndexTemplateWhenTemplatePriorityChanged() throws IOException {
+    // given
+    final var template = createTestTemplateDescriptor("template_change", "/mappings.json");
+    final var initialSettings = new IndexConfiguration();
+    initialSettings.setNumberOfReplicas(0);
+    initialSettings.setNumberOfShards(1);
+    initialSettings.setTemplatePriority(50);
+
+    final var indicesSpy = spy(openSearchClient.indices());
+    final var clientSpy = spy(openSearchClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient = new OpensearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, initialSettings, true);
+    reset(indicesSpy); // ignore create
+
+    final var updated = new IndexConfiguration();
+    updated.setNumberOfReplicas(0); // same
+    updated.setNumberOfShards(1); // same
+    updated.setTemplatePriority(100); // change
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, updated);
+
+    // then
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
   }
 
   @Nested
