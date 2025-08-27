@@ -16,6 +16,50 @@ export const mappingRuleRequiredFields: string[] = [
   'mappingRuleId',
 ];
 export const roleRequiredFields: string[] = ['roleId', 'name', 'description'];
+export const licenseRequiredFields: string[] = [
+  'validLicense',
+  'licenseType',
+  'isCommercial',
+];
+export const messageSubscriptionRequiredFields = [
+  'messageSubscriptionKey',
+  'processDefinitionId',
+  'processDefinitionKey',
+  'processInstanceKey',
+  'elementId',
+  'elementInstanceKey',
+  'messageSubscriptionType',
+  'lastUpdatedDate',
+  'messageName',
+  'correlationKey',
+  'tenantId',
+];
+export const correlateMessageRequiredFields: string[] = [
+  'tenantId',
+  'messageKey',
+  'processInstanceKey',
+];
+export const expectedMessageSubscription1 = {
+  messageName: 'Message_143t419',
+  correlationKey: '143419',
+  tenantId: '<default>',
+  elementId: 'Event_1idbbd5',
+  processDefinitionId: 'messageCatchEvent1',
+};
+export const expectedMessageSubscription2 = {
+  messageName: 'Message_3p6krla',
+  correlationKey: '3234432',
+  tenantId: '<default>',
+  elementId: 'Event_1aspkyg',
+  processDefinitionId: 'messageCatchEvent3',
+};
+export const expectedMessageSubscription3 = {
+  messageName: 'Message_3tvi9o8',
+  correlationKey: '3838383',
+  tenantId: '<default>',
+  elementId: 'Event_17u9bac',
+  processDefinitionId: 'messageCatchEvent1',
+};
 
 export function CREATE_NEW_GROUP() {
   return {
@@ -43,3 +87,19 @@ export function CREATE_NEW_ROLE() {
     description: 'E2E test role',
   };
 }
+
+export function PUBLISH_NEW_MESSAGE() {
+  return {
+    name: `msg-${Date.now()}`,
+    correlationKey: `corr-${Math.random().toString(36).slice(2, 10)}`,
+    messageId: `corr-${Math.random().toString(36).slice(2, 10)}`,
+    timeToLive: 300000,
+    variables: {foo: 'bar'},
+  };
+}
+
+export const CORRELATE_MESSAGE = {
+  name: expectedMessageSubscription3.messageName,
+  correlationKey: expectedMessageSubscription3.correlationKey,
+  variables: {foo: 'bar'},
+};
