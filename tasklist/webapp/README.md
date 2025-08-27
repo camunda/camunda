@@ -45,7 +45,7 @@ In case of high load you may need to scale importing of data from Zeebe and arch
 In order to achieve this you can run any of the modules separately: Webapp, Importer and Archiver.
 
 For this you can use following configuration parameters:
-* `camunda.tasklist.importerEnabled`: when `true` will include the Importer in current run, default: true
+* `camunda.tasklist.importerEnabled`: when `true` will include the Importer in current run, default: false
 * `camunda.tasklist.webappEnabled`: when `true` will include the Webapp in current run, default: true
 * `camunda.tasklist.archiverEnabled`: when `true` will include the Archiver in current run, default: true
 * `camunda.tasklist.clusterNode.partitionIds`: array of Zeebe partition ids, this Importer (or Archiver) node must be responsible for, default: empty array, meaning all partitions data is loaded
