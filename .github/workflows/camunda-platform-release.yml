@@ -72,8 +72,8 @@ env:
 jobs:
   # Release job performs Maven prepare and perform release operations, managing release artifacts and repository changes.
   # Flags impact:
-  # - With dryRun=true: Skips pushing changes to Git, Maven Central, and Camunda Nexus (local-only operations)
-  # - With releaseProcessDryRun=true: Creates real artifacts in Maven Central and GitHub for E2E testing, but skips Camunda Nexus publishing
+  # - With dryRun=true: Skips pushing changes to Git, Maven Central, and Artifactory (local-only operations)
+  # - With releaseProcessDryRun=true: Creates real, temporary but unpublished artifacts in Maven Central and GitHub for E2E testing, but skips Artifactory publishing
   # - When both flags are active, dryRun takes precedence over releaseProcessDryRun
   release:
     name: Maven Release
