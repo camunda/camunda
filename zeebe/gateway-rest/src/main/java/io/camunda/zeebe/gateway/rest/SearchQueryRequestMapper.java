@@ -111,6 +111,9 @@ public final class SearchQueryRequestMapper {
   public static final AdvancedStringFilter EMPTY_ADVANCED_STRING_FILTER =
       new AdvancedStringFilter();
   public static final BasicStringFilter EMPTY_BASIC_STRING_FILTER = new BasicStringFilter();
+  public static final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter
+      EMPTY_PROCESS_INSTANCE_FILTER =
+          new io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter();
 
   private SearchQueryRequestMapper() {}
 
@@ -955,6 +958,17 @@ public final class SearchQueryRequestMapper {
 
   private static OffsetDateTime toOffsetDateTime(final String text) {
     return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
+  }
+
+  public static Either<List<String>, ProcessInstanceFilter> toRequiredProcessInstanceFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter filter) {
+    if (filter == null) {
+      return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
+    }
+    if (filter.equals(EMPTY_PROCESS_INSTANCE_FILTER)) {
+      return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
+    }
+    return toProcessInstanceFilter(filter);
   }
 
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(

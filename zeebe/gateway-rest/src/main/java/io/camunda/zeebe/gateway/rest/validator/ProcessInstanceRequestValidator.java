@@ -19,12 +19,14 @@ import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -32,6 +34,9 @@ import java.util.function.Predicate;
 import org.springframework.http.ProblemDetail;
 
 public class ProcessInstanceRequestValidator {
+
+  public static final ProcessInstanceMigrationBatchOperationPlan EMPTY_MIGRATION_PLAN =
+      new ProcessInstanceMigrationBatchOperationPlan();
 
   public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
       final ProcessInstanceCreationInstruction request) {
@@ -71,21 +76,34 @@ public class ProcessInstanceRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateMigrateProcessInstanceBatchOperationRequest(
-      final ProcessInstanceMigrationBatchOperationPlan request) {
+      final ProcessInstanceMigrationBatchOperationRequest request) {
     return validate(
         violations -> {
-          if (request.getTargetProcessDefinitionKey() == null) {
+          final var filter =
+              SearchQueryRequestMapper.toRequiredProcessInstanceFilter(request.getFilter());
+          filter.ifLeft(violations::addAll);
+
+          final var migrationPlan = request.getMigrationPlan();
+          if (migrationPlan == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("migrationPlan"));
+            return;
+          }
+
+          if (migrationPlan.getTargetProcessDefinitionKey() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetProcessDefinitionKey"));
           } else {
             // Validate targetProcessDefinitionKey format
             validateKeyFormat(
-                request.getTargetProcessDefinitionKey(), "targetProcessDefinitionKey", violations);
+                migrationPlan.getTargetProcessDefinitionKey(),
+                "targetProcessDefinitionKey",
+                violations);
           }
-          if (request.getMappingInstructions() == null
-              || request.getMappingInstructions().isEmpty()) {
+
+          if (migrationPlan.getMappingInstructions() == null
+              || migrationPlan.getMappingInstructions().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
           } else {
-            validateMappingInstructions(request.getMappingInstructions(), violations);
+            validateMappingInstructions(migrationPlan.getMappingInstructions(), violations);
           }
         });
   }
@@ -125,7 +143,14 @@ public class ProcessInstanceRequestValidator {
       final ProcessInstanceModificationBatchOperationRequest request) {
     return validate(
         violations -> {
-          validateMoveBatchInstructions(request.getMoveInstructions(), violations);
+          final var filter =
+              SearchQueryRequestMapper.toRequiredProcessInstanceFilter(request.getFilter());
+          filter.ifLeft(violations::addAll);
+          if (request.getMoveInstructions() == null || request.getMoveInstructions().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("moveInstructions"));
+          } else {
+            validateMoveBatchInstructions(request.getMoveInstructions(), violations);
+          }
         });
   }
 

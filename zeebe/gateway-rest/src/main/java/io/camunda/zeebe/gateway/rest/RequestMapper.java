@@ -35,6 +35,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.v
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
@@ -758,21 +759,26 @@ public class RequestMapper {
                 request.getOperationReference()));
   }
 
-  public static Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest>
-      toProcessInstanceMigrationBatchOperationRequest(
-          final ProcessInstanceMigrationBatchOperationRequest request) {
-    // First validate filter and return early
-    final var filter = SearchQueryRequestMapper.toProcessInstanceFilter(request.getFilter());
+  public static Either<ProblemDetail, ProcessInstanceFilter> toRequiredProcessInstanceFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter request) {
+
+    final var filter = SearchQueryRequestMapper.toRequiredProcessInstanceFilter(request);
     if (filter.isLeft()) {
       return Either.left(createProblemDetail(filter.getLeft()).get());
     }
 
+    return Either.right(filter.get());
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest>
+      toProcessInstanceMigrationBatchOperationRequest(
+          final ProcessInstanceMigrationBatchOperationRequest request) {
     final var migrationPlan = request.getMigrationPlan();
     return getResult(
-        validateMigrateProcessInstanceBatchOperationRequest(migrationPlan),
+        validateMigrateProcessInstanceBatchOperationRequest(request),
         () ->
             new ProcessInstanceMigrateBatchOperationRequest(
-                filter.get(),
+                toRequiredProcessInstanceFilter(request.getFilter()).get(),
                 KeyUtil.keyToLong(migrationPlan.getTargetProcessDefinitionKey()),
                 migrationPlan.getMappingInstructions().stream()
                     .map(
@@ -806,17 +812,11 @@ public class RequestMapper {
   public static Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest>
       toProcessInstanceModifyBatchOperationRequest(
           final ProcessInstanceModificationBatchOperationRequest request) {
-    // First validate filter and return early
-    final var filter = SearchQueryRequestMapper.toProcessInstanceFilter(request.getFilter());
-    if (filter.isLeft()) {
-      return Either.left(createProblemDetail(filter.getLeft()).get());
-    }
-
     return getResult(
         validateModifyProcessInstanceBatchOperationRequest(request),
         () ->
             new ProcessInstanceModifyBatchOperationRequest(
-                filter.get(),
+                toRequiredProcessInstanceFilter(request.getFilter()).get(),
                 mapProcessInstanceModificationMoveInstruction(request.getMoveInstructions())));
   }
 

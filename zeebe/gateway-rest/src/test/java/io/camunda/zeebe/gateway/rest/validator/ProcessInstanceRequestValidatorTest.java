@@ -10,7 +10,9 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -146,9 +148,14 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept valid targetProcessDefinitionKey format in migration request")
   void shouldAcceptValidTargetProcessDefinitionKey() {
-    final var request = new ProcessInstanceMigrationBatchOperationPlan();
-    request.setTargetProcessDefinitionKey("987654321");
-    request.setMappingInstructions(java.util.List.of());
+
+    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
+    migrationPlan.setTargetProcessDefinitionKey("987654321");
+    migrationPlan.setMappingInstructions(java.util.List.of());
+
+    final var request = new ProcessInstanceMigrationBatchOperationRequest();
+    request.setFilter(new ProcessInstanceFilter());
+    request.setMigrationPlan(migrationPlan);
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest(
@@ -166,9 +173,13 @@ class ProcessInstanceRequestValidatorTest {
   @ValueSource(strings = {"xyz", "99.99", "99xyz", "", " "})
   @DisplayName("Should reject invalid targetProcessDefinitionKey formats in migration request")
   void shouldRejectInvalidTargetProcessDefinitionKey(final String invalidKey) {
-    final var request = new ProcessInstanceMigrationBatchOperationPlan();
-    request.setTargetProcessDefinitionKey(invalidKey);
-    request.setMappingInstructions(java.util.List.of());
+    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
+    migrationPlan.setTargetProcessDefinitionKey(invalidKey);
+    migrationPlan.setMappingInstructions(java.util.List.of());
+
+    final var request = new ProcessInstanceMigrationBatchOperationRequest();
+    request.setFilter(new ProcessInstanceFilter());
+    request.setMigrationPlan(migrationPlan);
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest(
