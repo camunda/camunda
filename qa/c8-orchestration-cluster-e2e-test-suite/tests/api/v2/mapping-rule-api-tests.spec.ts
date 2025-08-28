@@ -414,6 +414,83 @@ test.describe.parallel('Mapping Rules API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
+  test('Update Mapping Rule With Only Claim Name Invalid Body 400', async ({
+    request,
+  }) => {
+    const p = {mappingRuleId: mappingRule3.mappingRuleId as string};
+    const mappingRule = mappingRule3.responseBody as Record<string, unknown>;
+    const updateBody = {
+      claimName: `${mappingRule.claimName}-updated`,
+    };
+
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/mapping-rules/{mappingRuleId}', p),
+        {
+          headers: jsonHeaders(),
+          data: updateBody,
+        },
+      );
+
+      await assertBadRequest(
+        res,
+        /.*\b(mappingRuleId|name|claimValue)\b.*/,
+        'INVALID_ARGUMENT',
+      );
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Update Mapping Rule With Only Claim Value Invalid Body 400', async ({
+    request,
+  }) => {
+    const p = {mappingRuleId: mappingRule3.mappingRuleId as string};
+    const mappingRule = mappingRule3.responseBody as Record<string, unknown>;
+    const updateBody = {
+      claimValue: `${mappingRule.claimValue}-updated`,
+    };
+
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/mapping-rules/{mappingRuleId}', p),
+        {
+          headers: jsonHeaders(),
+          data: updateBody,
+        },
+      );
+      await assertBadRequest(
+        res,
+        /.*\b(mappingRuleId|name|claimName)\b.*/,
+        'INVALID_ARGUMENT',
+      );
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Update Mapping Rule With Only Name Invalid Body 400', async ({
+    request,
+  }) => {
+    const p = {mappingRuleId: mappingRule3.mappingRuleId as string};
+    const mappingRule = mappingRule3.responseBody as Record<string, unknown>;
+    const updateBody = {
+      name: `${mappingRule.name}-updated`,
+    };
+
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/mapping-rules/{mappingRuleId}', p),
+        {
+          headers: jsonHeaders(),
+          data: updateBody,
+        },
+      );
+
+      await assertBadRequest(
+        res,
+        /.*\b(mappingRuleId|claimValue|claimName)\b.*/,
+        'INVALID_ARGUMENT',
+      );
+    }).toPass(defaultAssertionOptions);
+  });
+
   test('Update Mapping Rule Not Found', async ({request}) => {
     const p = {mappingRuleId: 'missing-id'};
     const res = await request.put(
