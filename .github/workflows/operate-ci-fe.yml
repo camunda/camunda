@@ -27,9 +27,9 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: actions/checkout@v4
       - name: Log Test Details
         run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -59,9 +59,9 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: actions/checkout@v4
       - name: Log Test Details
         run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -92,9 +92,9 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: actions/checkout@v4
       - name: Log Test Details
         run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -128,10 +128,10 @@ jobs:
       run:
         working-directory: operate/client
     steps:
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - name: Check out repository code
         uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
@@ -175,10 +175,10 @@ jobs:
       run:
         working-directory: operate/client
     steps:
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - name: Check out repository code
         uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
@@ -222,9 +222,9 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: actions/checkout@v4
       - name: Log Test Details
         run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
