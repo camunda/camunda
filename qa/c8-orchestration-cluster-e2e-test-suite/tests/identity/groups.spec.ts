@@ -80,7 +80,9 @@ test.describe.serial('groups CRUD', () => {
   });
 
   test('deletes a group', async ({page, identityGroupsPage}) => {
-    await expect(identityGroupsPage.groupCell(EDITED_GROUP.name)).toBeVisible();
+    const group = identityGroupsPage.groupCell(EDITED_GROUP.name);
+    expect(await findLocatorInPaginatedList(page, group)).toBe(true);
+    await expect(group).toBeVisible();
 
     await identityGroupsPage.deleteGroup(EDITED_GROUP.name);
 
@@ -88,7 +90,8 @@ test.describe.serial('groups CRUD', () => {
 
     await waitForItemInList(page, item, {
       shouldBeVisible: false,
-      emptyStateLocator: identityGroupsPage.emptyState,
+      clickNext: true,
+      timeout: 60000,
     });
   });
 });
