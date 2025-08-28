@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.util.unit.DataSize;
 
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
@@ -28,7 +29,14 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class GatewayNetworkPropertiesTest {
 
   @Nested
-  @TestPropertySource(properties = {"camunda.cluster.network.host=127.0.0.1"})
+  @TestPropertySource(
+      properties = {
+        "camunda.cluster.network.host=127.0.0.1",
+        "camunda.cluster.network.advertised-host=advertised.host.com",
+        "camunda.cluster.network.socket-send-buffer=2MB",
+        "camunda.cluster.network.socket-receive-buffer=3MB",
+        "camunda.cluster.network.max-message-size=11MB",
+      })
   class WithNetworkPropertiesSet {
     final GatewayBasedProperties gatewayCfg;
 
@@ -39,6 +47,11 @@ public class GatewayNetworkPropertiesTest {
     @Test
     void shouldSetNetworkProperties() {
       assertThat(gatewayCfg.getCluster().getHost()).isEqualTo("127.0.0.1");
+      assertThat(gatewayCfg.getCluster().getAdvertisedHost()).isEqualTo("advertised.host.com");
+      assertThat(gatewayCfg.getCluster().getSocketSendBuffer()).isEqualTo(DataSize.ofMegabytes(2));
+      assertThat(gatewayCfg.getCluster().getSocketReceiveBuffer())
+          .isEqualTo(DataSize.ofMegabytes(3));
+      assertThat(gatewayCfg.getNetwork().getMaxMessageSize()).isEqualTo(DataSize.ofMegabytes(11));
     }
   }
 
@@ -58,7 +71,14 @@ public class GatewayNetworkPropertiesTest {
   }
 
   @Nested
-  @TestPropertySource(properties = {"zeebe.gateway.cluster.host=gateway.host.com"})
+  @TestPropertySource(
+      properties = {
+        "zeebe.gateway.cluster.host=gateway.host.com",
+        "zeebe.gateway.cluster.advertisedHost=gateway.advertised.com",
+        "zeebe.gateway.cluster.socketSendBuffer=4MB",
+        "zeebe.gateway.cluster.socketReceiveBuffer=5MB",
+        "zeebe.gateway.network.maxMessageSize=11MB"
+      })
   class WithLegacyGatewayNetworkPropertiesSet {
     final GatewayBasedProperties gatewayCfg;
 
@@ -69,6 +89,11 @@ public class GatewayNetworkPropertiesTest {
     @Test
     void shouldSetNetworkPropertiesFromLegacyGateway() {
       assertThat(gatewayCfg.getCluster().getHost()).isEqualTo("gateway.host.com");
+      assertThat(gatewayCfg.getCluster().getAdvertisedHost()).isEqualTo("gateway.advertised.com");
+      assertThat(gatewayCfg.getCluster().getSocketSendBuffer()).isEqualTo(DataSize.ofMegabytes(4));
+      assertThat(gatewayCfg.getCluster().getSocketReceiveBuffer())
+          .isEqualTo(DataSize.ofMegabytes(5));
+      assertThat(gatewayCfg.getNetwork().getMaxMessageSize()).isEqualTo(DataSize.ofMegabytes(11));
     }
   }
 
@@ -77,10 +102,20 @@ public class GatewayNetworkPropertiesTest {
       properties = {
         // new unified properties
         "camunda.cluster.network.host=unified.host.com",
+        "camunda.cluster.network.advertised-host=unified.advertised.com",
+        "camunda.cluster.network.socket-send-buffer=6MB",
+        "camunda.cluster.network.socket-receive-buffer=7MB",
+        "camunda.cluster.network.min-keep-alive-interval=120s",
+        "camunda.cluster.network.max-message-size=13MB",
         // legacy broker properties
         "zeebe.broker.network.host=legacy.broker.com",
         // legacy gateway properties
         "zeebe.gateway.cluster.host=legacy.gateway.com",
+        "zeebe.gateway.cluster.advertisedHost=legacy.gateway.advertised.com",
+        "zeebe.gateway.cluster.socketSendBuffer=8MB",
+        "zeebe.gateway.cluster.socketReceiveBuffer=9MB",
+        "zeebe.gateway.network.minKeepAliveInterval=90s",
+        "zeebe.gateway.network.maxMessageSize=17MB",
       })
   class WithNewAndLegacyNetworkPropertiesSet {
     final GatewayBasedProperties gatewayCfg;
@@ -92,6 +127,11 @@ public class GatewayNetworkPropertiesTest {
     @Test
     void shouldPrioritizeNewNetworkProperties() {
       assertThat(gatewayCfg.getCluster().getHost()).isEqualTo("unified.host.com");
+      assertThat(gatewayCfg.getCluster().getAdvertisedHost()).isEqualTo("unified.advertised.com");
+      assertThat(gatewayCfg.getCluster().getSocketSendBuffer()).isEqualTo(DataSize.ofMegabytes(6));
+      assertThat(gatewayCfg.getCluster().getSocketReceiveBuffer())
+          .isEqualTo(DataSize.ofMegabytes(7));
+      assertThat(gatewayCfg.getNetwork().getMaxMessageSize()).isEqualTo(DataSize.ofMegabytes(13));
     }
   }
 }

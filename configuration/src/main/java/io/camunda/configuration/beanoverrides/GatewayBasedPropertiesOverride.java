@@ -74,7 +74,10 @@ public class GatewayBasedPropertiesOverride {
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
     networkCfg.setMinKeepAliveInterval(grpc.getMinKeepAliveInterval());
-    networkCfg.setMaxMessageSize(grpc.getMaxMessageSize());
+
+    final var ucNetwork =
+        unifiedConfiguration.getCamunda().getCluster().getNetwork().withGatewayNetworkProperties();
+    networkCfg.setMaxMessageSize(ucNetwork.getMaxMessageSize());
 
     populateFromSsl(override);
     populateFromInterceptors(override);
@@ -170,6 +173,10 @@ public class GatewayBasedPropertiesOverride {
     final var network =
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withGatewayNetworkProperties();
 
-    override.getCluster().setHost(network.getHost());
+    final var gatewayCluster = override.getCluster();
+    gatewayCluster.setHost(network.getHost());
+    gatewayCluster.setAdvertisedHost(network.getAdvertisedHost());
+    gatewayCluster.setSocketSendBuffer(network.getSocketSendBuffer());
+    gatewayCluster.setSocketReceiveBuffer(network.getSocketReceiveBuffer());
   }
 }
