@@ -41,8 +41,9 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final SecurityContextProvider securityContextProvider,
       final ActivateJobsHandler<T> activateJobsHandler,
       final JobSearchClient jobSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.activateJobsHandler = activateJobsHandler;
     this.jobSearchClient = jobSearchClient;
   }
@@ -54,7 +55,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
         securityContextProvider,
         activateJobsHandler,
         jobSearchClient,
-        authentication);
+        authentication,
+        executorProvider);
   }
 
   public void activateJobs(

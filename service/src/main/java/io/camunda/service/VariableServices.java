@@ -28,15 +28,20 @@ public final class VariableServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final VariableSearchClient variableSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.variableSearchClient = variableSearchClient;
   }
 
   @Override
   public VariableServices withAuthentication(final CamundaAuthentication authentication) {
     return new VariableServices(
-        brokerClient, securityContextProvider, variableSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        variableSearchClient,
+        authentication,
+        executorProvider);
   }
 
   @Override

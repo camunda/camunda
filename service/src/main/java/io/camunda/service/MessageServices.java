@@ -23,13 +23,15 @@ public final class MessageServices extends ApiServices<MessageServices> {
   public MessageServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
   }
 
   @Override
   public MessageServices withAuthentication(final CamundaAuthentication authentication) {
-    return new MessageServices(brokerClient, securityContextProvider, authentication);
+    return new MessageServices(
+        brokerClient, securityContextProvider, authentication, executorProvider);
   }
 
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(
