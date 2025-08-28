@@ -36,6 +36,8 @@ import io.camunda.client.impl.response.CreateBatchOperationResponseImpl;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCancellationBatchOperationRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceIncidentResolutionBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
@@ -142,16 +144,23 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   }
 
   private Object getBody() {
-    if (type == BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE) {
-      return new ProcessInstanceMigrationBatchOperationRequest()
-          .filter(provideSearchRequestProperty(filter))
-          .migrationPlan(migrationPlan);
-    } else if (type == BatchOperationTypeEnum.MODIFY_PROCESS_INSTANCE) {
-      return new ProcessInstanceModificationBatchOperationRequest()
-          .filter(provideSearchRequestProperty(filter))
-          .moveInstructions(moveInstructions);
-    } else {
-      return provideSearchRequestProperty(filter);
+    switch (type) {
+      case MIGRATE_PROCESS_INSTANCE:
+        return new ProcessInstanceMigrationBatchOperationRequest()
+            .filter(provideSearchRequestProperty(filter))
+            .migrationPlan(migrationPlan);
+      case MODIFY_PROCESS_INSTANCE:
+        return new ProcessInstanceModificationBatchOperationRequest()
+            .filter(provideSearchRequestProperty(filter))
+            .moveInstructions(moveInstructions);
+      case CANCEL_PROCESS_INSTANCE:
+        return new ProcessInstanceCancellationBatchOperationRequest()
+            .filter(provideSearchRequestProperty(filter));
+      case RESOLVE_INCIDENT:
+        return new ProcessInstanceIncidentResolutionBatchOperationRequest()
+            .filter(provideSearchRequestProperty(filter));
+      default:
+        throw new IllegalArgumentException("Unsupported batch operation type: " + type);
     }
   }
 
