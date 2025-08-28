@@ -1,6 +1,6 @@
 # hadolint global ignore=DL3006
-ARG BASE_IMAGE="alpine:3.19.1"
-ARG BASE_DIGEST="sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b"
+ARG BASE_IMAGE="alpine:3.22.1"
+ARG BASE_DIGEST="sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1"
 
 # Prepare Operate Distribution
 FROM ${BASE_IMAGE}@${BASE_DIGEST} as prepare
