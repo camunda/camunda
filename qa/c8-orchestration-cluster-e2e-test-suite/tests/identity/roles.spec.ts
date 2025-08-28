@@ -12,7 +12,10 @@ import {relativizePath, Paths} from 'utils/relativizePath';
 import {LOGIN_CREDENTIALS, createTestData} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureFailureVideo, captureScreenshot} from '@setup';
-import {findLocatorInPaginatedList} from '../../utils/waitForItemInList';
+import {
+  findLocatorInPaginatedList,
+  waitForItemInList,
+} from '../../utils/waitForItemInList';
 
 test.describe.serial('roles CRUD', () => {
   let NEW_ROLE: NonNullable<ReturnType<typeof createTestData>['authRole']>;
@@ -49,7 +52,11 @@ test.describe.serial('roles CRUD', () => {
     const item = identityRolesPage.roleCell(NEW_ROLE.name);
     expect(await findLocatorInPaginatedList(page, item)).toBe(true);
     await identityRolesPage.deleteRole(NEW_ROLE.name);
-    await page.reload();
-    expect(await findLocatorInPaginatedList(page, item)).toBe(false);
+
+    await waitForItemInList(page, item, {
+      shouldBeVisible: false,
+      clickNext: true,
+      timeout: 60000,
+    });
   });
 });
