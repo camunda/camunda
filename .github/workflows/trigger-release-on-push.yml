@@ -1,0 +1,20 @@
+name: Trigger Camunda Platform Release on Push
+
+on:
+  push:
+    branches:
+      - '28529-introduce-releaseProcessDryRun-test'
+
+jobs:
+  launch-release:
+    uses: ./.github/workflows/camunda-platform-release.yml
+    secrets: inherit
+    strategy:
+      fail-fast: true
+    with:
+      releaseBranch: "backport-37238-to-stable/8.7"
+      releaseVersion: "8.7.12-alpha1-rc999"
+      nextDevelopmentVersion: '8.7.12-alpha1-rc1000-SNAPSHOT'
+      isLatest: false
+      dryRun: false
+      releaseProcessDryRun: true
