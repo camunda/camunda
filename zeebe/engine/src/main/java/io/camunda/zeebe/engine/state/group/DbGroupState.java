@@ -57,7 +57,7 @@ public class DbGroupState implements MutableGroupState {
   @Override
   public Optional<PersistedGroup> get(final String groupId) {
     this.groupId.wrapString(groupId);
-    final var persistedGroup = groupColumnFamily.get(this.groupId);
+    final var persistedGroup = groupColumnFamily.get(this.groupId, PersistedGroup::new);
     return Optional.ofNullable(persistedGroup);
   }
 }
