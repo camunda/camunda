@@ -39,7 +39,7 @@ env:
 jobs:
   # run every time this CI file is called
   operate-backend-unit-tests:
-    name: "[UT] Back End / ${{matrix.suiteName}}"
+    name: "[UT] Back End"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -108,7 +108,7 @@ jobs:
 
   run-importer-tests:
     if: inputs.runBeTests
-    name: "[IT] Importer Tests / Data Layer"
+    name: "[IT] Importer Tests - Data Layer"
     uses: ./.github/workflows/operate-run-tests.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     with:
@@ -118,7 +118,7 @@ jobs:
 
   run-backup-restore-tests:
     if: inputs.runBeTests
-    name: "[IT] Backup Restore Tests / Data Layer"
+    name: "[IT] Backup Restore Tests - Data Layer"
     timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
