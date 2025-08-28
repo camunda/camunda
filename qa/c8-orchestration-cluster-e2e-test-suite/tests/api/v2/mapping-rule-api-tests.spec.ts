@@ -254,7 +254,7 @@ test.describe.parallel('Mapping Rules API Tests', () => {
     const mappingRule = mappingRule1.responseBody as Record<string, unknown>;
     const body = {
       filter: {
-        claimName: mappingRule.claimName as string,
+        name: mappingRule.name as string,
       },
     };
     await expect(async () => {
@@ -308,7 +308,7 @@ test.describe.parallel('Mapping Rules API Tests', () => {
     const mappingRule = mappingRule2.responseBody as Record<string, unknown>;
     const body = {
       filter: {
-        mappingRuleId: mappingRule.mappingRuleId as string,
+        claimName: mappingRule.claimName as string,
       },
     };
 
