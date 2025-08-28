@@ -54,17 +54,7 @@ public final class ApiServicesExecutorProvider {
     final int availableProcessors = Runtime.getRuntime().availableProcessors();
     final int corePoolSize = availableProcessors * corePoolSizeMultiplier;
     final int maxPoolSize = availableProcessors * maxPoolSizeMultiplier;
-    final ThreadFactory threadFactory =
-        new ThreadFactory() {
-          private final AtomicInteger counter = new AtomicInteger(0);
-
-          @Override
-          public Thread newThread(final Runnable r) {
-            final Thread t = new Thread(r, API_SERVICE_THREAD_NAME + counter.incrementAndGet());
-            t.setDaemon(true);
-            return t;
-          }
-        };
+    final ThreadFactory threadFactory = Thread.ofPlatform().name(API_SERVICE_THREAD_NAME, 0).daemon(true).factory();
 
     final ThreadPoolExecutor executor =
         new ThreadPoolExecutor(
