@@ -55,28 +55,20 @@ public class GatewayRestConfiguration {
    * instead of absolute thread counts, so it scales sensibly across different deployment sizes
    * without manual retuning.
    *
-   * <p>Effective sizes (evaluated at startup):
+   * <p>Effective sizes (computed at startup using {@code Runtime.availableProcessors()}):
    *
    * <pre>
    *   corePoolSize = availableProcessors * corePoolSizeMultiplier
    *   maxPoolSize  = availableProcessors * maxPoolSizeMultiplier
    * </pre>
    *
-   * <p>Threads above the core size are created on demand and reclaimed after being idle for {@code
-   * keepAliveSeconds}. A {@code SynchronousQueue} + direct handoff + a {@code CallerRunsPolicy} (or
-   * similar strategy, depending on the executor implementation) is typically used to:
-   *
-   * <ul>
-   *   <li>Avoid unbounded internal task buffering
-   *   <li>Apply natural back-pressure when saturated (caller executes work)
-   * </ul>
+   * <p>Threads above the core size may be reclaimed after being idle for {@code keepAliveSeconds}.
    *
    * <p><b>Constraints:</b>
    *
    * <ul>
-   *   <li>{@code corePoolSizeMultiplier} should be &gt;= 0 (0 means no core threads, only on-demand
-   *       threads).
-   *   <li>{@code maxPoolSizeMultiplier} should be &gt; 0
+   *   <li>{@code corePoolSizeMultiplier} ≥ 0 (0 means no core threads)
+   *   <li>{@code maxPoolSizeMultiplier} &gt; 0 (and typically ≥ core multiplier)
    * </ul>
    */
   public static class ApiExecutorConfiguration {
