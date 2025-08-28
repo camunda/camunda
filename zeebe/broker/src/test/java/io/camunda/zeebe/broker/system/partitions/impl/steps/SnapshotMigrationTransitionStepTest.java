@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 
 public class SnapshotMigrationTransitionStepTest {
   @AutoClose
-  private static final ActorScheduler scheduler = ActorScheduler.newActorScheduler().build();
+  private static final ActorScheduler SCHEDULER = ActorScheduler.newActorScheduler().build();
 
   private static final Logger LOG =
       LoggerFactory.getLogger(SnapshotMigrationTransitionStepTest.class);
@@ -76,13 +76,13 @@ public class SnapshotMigrationTransitionStepTest {
 
   @BeforeAll
   static void setupAll() {
-    scheduler.start();
+    SCHEDULER.start();
   }
 
   @BeforeEach
   void setup() {
     actor.setMonitor(healthMonitor);
-    scheduler.submitActor(actor).join();
+    SCHEDULER.submitActor(actor).join();
     transitionContext.setConcurrencyControl(actor);
     transitionContext.setSnapshotDirector(snapshotDirector);
     transitionContext.setConcurrencyControl(concurrencyControl);
