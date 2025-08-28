@@ -55,10 +55,9 @@ test.describe.serial('groups CRUD', () => {
     const item = identityGroupsPage.groupCell(NEW_GROUP.name);
 
     await waitForItemInList(page, item, {
-      emptyStateLocator: identityGroupsPage.emptyState,
+      clickNext: true,
+      timeout: 30000,
     });
-
-    await expect(item).toBeVisible();
   });
 
   test('edits a group', async ({page, identityGroupsPage}) => {
@@ -121,7 +120,7 @@ test.describe('Groups functionalities', () => {
 
       const item = identityGroupsPage.groupCell(TEST_GROUP.name);
       await waitForItemInList(page, item, {
-        emptyStateLocator: identityGroupsPage.emptyState,
+        clickNext: true,
       });
       await expect(item).toBeVisible();
     });

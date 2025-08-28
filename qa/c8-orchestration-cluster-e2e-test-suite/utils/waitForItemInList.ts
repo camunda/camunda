@@ -7,6 +7,25 @@
  */
 
 import {expect, Locator, Page} from '@playwright/test';
+import {sleep} from './sleep';
+
+async function clickNextInPaginatedList(page: Page, locator: Locator) {
+  const maxPage = 10;
+  const nextButton = page.getByRole('button', {name: 'Next page'});
+
+  for (let i = 0; i < maxPage; i++) {
+    await sleep(500);
+    if (
+      (await locator.count()) > 0 ||
+      !(await nextButton.isVisible()) ||
+      (await nextButton.isDisabled())
+    ) {
+      return await locator.isVisible();
+    }
+    await nextButton.click();
+  }
+  return false;
+}
 
 export const waitForItemInList = async (
   page: Page,
@@ -16,6 +35,7 @@ export const waitForItemInList = async (
     timeout?: number;
     emptyStateLocator?: Locator;
     onAfterReload?: () => Promise<void>;
+    clickNext?: boolean;
   },
 ) => {
   const {
@@ -23,6 +43,7 @@ export const waitForItemInList = async (
     timeout = 10000,
     emptyStateLocator,
     onAfterReload,
+    clickNext = false,
   } = options || {};
 
   const poll = expect.poll(
@@ -50,7 +71,11 @@ export const waitForItemInList = async (
           .waitFor();
       }
 
-      return await item.isVisible();
+      if (clickNext) {
+        return await clickNextInPaginatedList(page, item);
+      } else {
+        return await item.isVisible();
+      }
     },
     {timeout},
   );
