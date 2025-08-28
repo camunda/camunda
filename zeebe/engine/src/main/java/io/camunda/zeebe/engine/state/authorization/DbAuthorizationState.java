@@ -158,7 +158,8 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   public Optional<PersistedAuthorization> get(final long authorizationKey) {
     this.authorizationKey.wrapLong(authorizationKey);
     final var persistedAuthorization =
-        authorizationByAuthorizationKeyColumnFamily.get(this.authorizationKey);
+        authorizationByAuthorizationKeyColumnFamily.get(
+            this.authorizationKey, PersistedAuthorization::new);
     return Optional.ofNullable(persistedAuthorization);
   }
 
