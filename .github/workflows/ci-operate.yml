@@ -139,7 +139,7 @@ jobs:
   # Typescript Checker
   operate-fe-type-check:
     if: inputs.runFeTests
-    name: "Check / TypeScript"
+    name: "Check / FE / TypeScript"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -173,7 +173,7 @@ jobs:
   # Front End Code linting
   operate-fe-eslint:
     if: inputs.runFeTests
-    name: "Lint / ESLint"
+    name: "Lint / FE / ESLint"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -207,7 +207,7 @@ jobs:
   # description: This workflow runs a11y accessibility tests on Operate
   operate-fe-a11y-tests:
     if: inputs.runFeTests
-    name: "accessibility / a11y"
+    name: "accessibility / FE / a11y"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -255,7 +255,7 @@ jobs:
 
   operate-fe-visual-regression-tests:
     if: inputs.runFeTests
-    name: "regression / Visual regression tests"
+    name: "regression / FE / Visual regression tests"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -303,7 +303,7 @@ jobs:
 
   operate-update-screenshots:
     if: inputs.runFeTests
-    name: "screenshots / Update Screenshots"
+    name: "screenshots / FE / Update Screenshots"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
