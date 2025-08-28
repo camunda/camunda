@@ -148,7 +148,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     // when
     // a backup is taken (but the snapshot store does not complete it,
     // because the BackupStore it's blocked)
-    final var backupResultFut = backupService.takeBackup(backupIdx, backupIdx);
+    final var backupResultFut = backupService.takeBackup(backupIdx, backupIdx, 1);
 
     Awaitility.await("snapshot is reserved")
         .until(
