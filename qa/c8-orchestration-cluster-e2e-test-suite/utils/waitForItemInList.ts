@@ -9,7 +9,10 @@
 import {expect, Locator, Page} from '@playwright/test';
 import {sleep} from './sleep';
 
-async function clickNextInPaginatedList(page: Page, locator: Locator) {
+export async function findLocatorInPaginatedList(
+  page: Page,
+  locator: Locator,
+): Promise<boolean> {
   const maxPage = 10;
   const nextButton = page.getByRole('button', {name: 'Next page'});
 
@@ -72,7 +75,7 @@ export const waitForItemInList = async (
       }
 
       if (clickNext) {
-        return await clickNextInPaginatedList(page, item);
+        return await findLocatorInPaginatedList(page, item);
       } else {
         return await item.isVisible();
       }

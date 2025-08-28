@@ -12,6 +12,7 @@ import {relativizePath, Paths} from 'utils/relativizePath';
 import {LOGIN_CREDENTIALS, createTestData} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureFailureVideo, captureScreenshot} from '@setup';
+import {findLocatorInPaginatedList} from '../../utils/waitForItemInList';
 
 test.describe.serial('roles CRUD', () => {
   let NEW_ROLE: NonNullable<ReturnType<typeof createTestData>['authRole']>;
@@ -46,9 +47,9 @@ test.describe.serial('roles CRUD', () => {
 
   test('deletes a role', async ({page, identityRolesPage}) => {
     const item = identityRolesPage.roleCell(NEW_ROLE.name);
-    await expect(item).toBeVisible();
+    expect(await findLocatorInPaginatedList(page, item)).toBe(true);
     await identityRolesPage.deleteRole(NEW_ROLE.name);
     await page.reload();
-    await expect(item).toBeHidden();
+    expect(await findLocatorInPaginatedList(page, item)).toBe(false);
   });
 });
