@@ -81,6 +81,8 @@ public class CamundaExporter implements Exporter {
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
+  private SchemaManager schemaManager;
+  private boolean schemaChecked = false;
   private boolean exporterCanFlush = false;
   private boolean zeebeIndicesVersion87Exist = false;
   private SearchEngineClient searchEngineClient;
@@ -139,11 +141,7 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     this.controller = controller;
     searchEngineClient = clientAdapter.getSearchEngineClient();
-    final var schemaManager = createSchemaManager();
-
-    if (!schemaManager.isSchemaReadyForUse()) {
-      throw new IllegalStateException("Schema is not ready for use");
-    }
+    schemaManager = createSchemaManager();
 
     writer = createBatchWriter();
 
@@ -205,7 +203,7 @@ public class CamundaExporter implements Exporter {
     // As soon new records start to be exported, they get cached. Importers should be able to
     // complete the importing.
 
-    if (configuration.getIndex().shouldWaitForImporters() && !exporterCanFlush) {
+    if (!exporterCanFlush) {
 
       ensureCachedRecordsLessThanBulkSize(record);
 
@@ -286,9 +284,8 @@ public class CamundaExporter implements Exporter {
 
     if (writer.getBatchSize() == configuration.getBulk().getSize()) {
       LOG.info(
-          """
-Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the importers to finish
-processing records from previous version
+"""
+Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the exporter preconditions to be met.
 """,
           configuration.getBulk().getSize(),
           record.getPosition());
@@ -341,20 +338,29 @@ processing records from previous version
     scheduleDelayedFlush();
   }
 
-  private void scheduleImportersCompletedCheck() {
+  private void checkExporterPreConditions() {
     controller.scheduleCancellableTask(
         Duration.ofSeconds(10), this::checkImportersCompletedAndReschedule);
   }
 
   private void checkImportersCompletedAndReschedule() {
+    if (!schemaChecked) {
+      if (!isSchemaReadyForUse()) {
+        LOG.debug("Schema is not ready for use, thus scheduling delayed check.");
+        checkExporterPreConditions();
+        return;
+      }
+      schemaChecked = true;
+    }
     if (!configuration.getIndex().shouldWaitForImporters()) {
       LOG.debug(
           "Waiting for importers to complete is disabled, thus scheduling delayed flush regardless of importer state.");
+      exporterCanFlush = true;
       scheduleDelayedFlush();
       return;
     }
     if (!exporterCanFlush) {
-      scheduleImportersCompletedCheck();
+      checkExporterPreConditions();
     }
     try {
       final var importPositionIndices =
@@ -380,6 +386,15 @@ processing records from previous version
 
     if (exporterCanFlush) {
       scheduleDelayedFlush();
+    }
+  }
+
+  private boolean isSchemaReadyForUse() {
+    try {
+      return schemaManager.isSchemaReadyForUse();
+    } catch (final Exception e) {
+      LOG.debug("Unexpected exception occurred checking schema, will retry later.", e);
+      return false;
     }
   }
 
