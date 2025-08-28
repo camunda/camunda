@@ -15,6 +15,7 @@ import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
+import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.S3;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
+import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
@@ -49,6 +51,7 @@ import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -239,6 +242,26 @@ public class BrokerBasedPropertiesOverride {
     final var ucNetwork =
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
     override.getGateway().getNetwork().setMaxMessageSize(ucNetwork.getMaxMessageSize());
+
+    populateFromInternalApi(override);
+  }
+
+  private void populateFromInternalApi(final BrokerBasedProperties override) {
+    final InternalApi internalApi =
+        unifiedConfiguration
+            .getCamunda()
+            .getCluster()
+            .getNetwork()
+            .getInternalApi()
+            .withBrokerInternalApiProperties();
+
+    final SocketBindingCfg socketBindingCfg = override.getNetwork().getInternalApi();
+
+    socketBindingCfg.setHost(internalApi.getHost());
+    socketBindingCfg.setPort(internalApi.getPort());
+    socketBindingCfg.setAdvertisedHost(internalApi.getAdvertisedHost());
+    Optional.ofNullable(internalApi.getAdvertisedPort())
+        .ifPresent(socketBindingCfg::setAdvertisedPort);
   }
 
   private void populateFromRestFilters(final BrokerBasedProperties override) {
