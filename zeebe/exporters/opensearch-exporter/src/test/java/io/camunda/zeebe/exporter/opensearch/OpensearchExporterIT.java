@@ -351,11 +351,18 @@ final class OpensearchExporterIT {
     config.setIncludeEnabledRecords(false);
     exporter.configure(exporterTestContext);
     exporter.open(controller);
-
+    final var copyFactory = new ProtocolFactory(factory.getSeed());
     final var record =
         factory.generateRecord(
             valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion().toLowerCase()));
 
+    final var expectedRecord =
+        copyFactory.generateRecord(
+            valueType,
+            r ->
+                r.withAuthorizations(Map.of())
+                    .withBrokerVersion(VersionUtil.getPreviousVersion().toLowerCase())
+                    .withBatchOperationReference(-1L));
     // when
     export(record);
 
@@ -367,7 +374,7 @@ final class OpensearchExporterIT {
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
             String.valueOf(record.getPartitionId()),
-            record);
+            expectedRecord);
   }
 
   private boolean export(final Record<?> record) {
