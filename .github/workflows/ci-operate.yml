@@ -39,7 +39,7 @@ env:
 jobs:
   # run every time this CI file is called
   operate-backend-unit-tests:
-    name: "[UT] Back End"
+    name: "UT / Back End"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -101,7 +101,7 @@ jobs:
 
   operate-frontend-tests:
     if: inputs.runFeTests
-    name: "[UT] Front End"
+    name: "UT / Front End"
     uses: ./.github/workflows/operate-ci-fe.yml
     secrets: inherit
     permissions: { }  # GITHUB_TOKEN unused in this job

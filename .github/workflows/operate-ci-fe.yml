@@ -15,7 +15,7 @@ env:
 jobs:
 
   fe-unit-tests:
-    name: "FE Unit Tests - Core Features"
+    name: "FE Unit Tests"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: { } # GITHUB_TOKEN unused in this job
@@ -43,7 +43,7 @@ jobs:
 
   # Typescript Checker
   operate-fe-type-check:
-    name: "Type check - Core Features"
+    name: "Type check"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -72,7 +72,7 @@ jobs:
 
   # Code linting
   operate-fe-eslint:
-    name: "ESLint - Core Features"
+    name: "ESLint"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -101,7 +101,7 @@ jobs:
 
   # description: This workflow runs a11y accessibility tests on Operate
   operate-fe-a11y-tests:
-    name: "a11y tests - Core Features"
+    name: "a11y tests"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -144,7 +144,7 @@ jobs:
           user_description: "team-core-features"
 
   operate-fe-visual-regression-tests:
-    name: "Visual regression tests - Core Features"
+    name: "Visual regression tests"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -187,7 +187,7 @@ jobs:
           user_description: "team-core-features"
 
   operate-update-screenshots:
-    name: "Update Screenshots - Core Features"
+    name: "Update Screenshots"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
