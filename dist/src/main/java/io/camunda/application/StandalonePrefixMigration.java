@@ -12,6 +12,7 @@ import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -51,12 +52,15 @@ public class StandalonePrefixMigration implements CommandLineRunner {
             .logStartupInfo(true)
             .web(WebApplicationType.NONE)
             .sources(
-                StandalonePrefixMigration.class,
-                SearchEngineDatabaseConfiguration.class,
+                // Unified Configuration classes
                 UnifiedConfiguration.class,
                 UnifiedConfigurationHelper.class,
                 TasklistPropertiesOverride.class,
-                OperatePropertiesOverride.class)
+                OperatePropertiesOverride.class,
+                SearchEngineConnectPropertiesOverride.class,
+                // ---
+                StandalonePrefixMigration.class,
+                SearchEngineDatabaseConfiguration.class)
             .addCommandLineProperties(true)
             .build(args);
 
