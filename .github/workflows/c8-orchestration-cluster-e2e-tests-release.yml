@@ -1,0 +1,220 @@
+# description: Runs End to End tests on the C8 Orchestration Cluster (ie, Tasklist, Operate) for release validation
+# test location: /qa/core-application-e2e-test-suite
+# type: CI
+# owner: @camunda/qa-engineering
+---
+name: C8 Orchestration Cluster E2E Tests - Release Validation
+
+on:
+  push:
+    branches:
+      - "release**"
+  pull_request:
+    branches:
+      - "release**"
+  workflow_dispatch:
+    inputs:
+      releaseVersion:
+        description: "The release version to test (e.g., 8.7.1)"
+        type: string
+        required: true
+      imageTag:
+        description: "The Docker image tag to use for testing (defaults to releaseVersion)"
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  release-e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Determine Image Tag
+        id: image-tag
+        run: |
+          # Priority order for image tag:
+          # 1. Explicit imageTag input
+          # 2. Release version input
+          # 3. Extract from branch name (various patterns)
+          # 4. Default to SNAPSHOT for fallback
+
+          if [[ -n "${{ inputs.imageTag }}" ]]; then
+            IMAGE_TAG="${{ inputs.imageTag }}"
+            echo "Using explicit image tag: $IMAGE_TAG"
+          elif [[ -n "${{ inputs.releaseVersion }}" ]]; then
+            IMAGE_TAG="${{ inputs.releaseVersion }}"
+            echo "Using release version as image tag: $IMAGE_TAG"
+          else
+            # Extract version from various branch name patterns:
+            # - release-8.7.1
+            # - origin/release-8.7.1
+            # - origin/custom-release-8.7.0-rc3
+            # - custom-release-8.6.5-alpha1
+            BRANCH_NAME="${{ github.ref_name }}"
+            echo "Analyzing branch name: $BRANCH_NAME"
+            
+            if [[ "$BRANCH_NAME" =~ ^(origin/)?.*release-([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?)$ ]]; then
+              IMAGE_TAG="${BASH_REMATCH[2]}"
+              echo "Extracted version from branch name: $IMAGE_TAG"
+            elif [[ "$BRANCH_NAME" =~ ^(origin/)?release-(.+)$ ]]; then
+              IMAGE_TAG="${BASH_REMATCH[2]}"
+              echo "Extracted version from simple release branch: $IMAGE_TAG"
+            else
+              IMAGE_TAG="SNAPSHOT"
+              echo "Could not extract version from branch name, falling back to SNAPSHOT"
+            fi
+          fi
+
+          echo "image-tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "Final image tag: $IMAGE_TAG"
+
+      - name: Update Docker Compose with Release Image
+        run: |
+          IMAGE_TAG="${{ steps.image-tag.outputs.image-tag }}"
+
+          # Determine if this is a consolidated (8.8+) or separate services version
+          if [[ "$IMAGE_TAG" =~ ^8\.[0-7](\.|$) ]] || [[ "$IMAGE_TAG" == *"8.7"* ]]; then
+            echo "Using separate services configuration for version: $IMAGE_TAG"
+            
+            # Update individual service images for versions < 8.8
+            sed -i "s|image: camunda/zeebe:8\.7-SNAPSHOT|image: camunda/zeebe:$IMAGE_TAG|g" \
+              qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
+            sed -i "s|image: camunda/tasklist:8\.7-SNAPSHOT|image: camunda/tasklist:$IMAGE_TAG|g" \
+              qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
+            sed -i "s|image: camunda/operate:8\.7-SNAPSHOT|image: camunda/operate:$IMAGE_TAG|g" \
+              qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
+            
+            echo "Updated individual services to use version: $IMAGE_TAG"
+            
+            # Verify the changes
+            echo "Zeebe image:"
+            grep "image: camunda/zeebe:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No zeebe image found"
+            echo "Tasklist image:"
+            grep "image: camunda/tasklist:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No tasklist image found"
+            echo "Operate image:"
+            grep "image: camunda/operate:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No operate image found"
+            
+          else
+            echo "Using consolidated image configuration for version: $IMAGE_TAG"
+            
+            # Update consolidated image for versions >= 8.8
+            sed -i "s|image: camunda/camunda:SNAPSHOT|image: camunda/camunda:$IMAGE_TAG|g" \
+              qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
+            
+            echo "Updated docker-compose.yml to use image: camunda/camunda:$IMAGE_TAG"
+            
+            # Verify the change
+            echo "Consolidated image:"
+            grep "image: camunda/camunda:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No consolidated image found"
+          fi
+
+      - name: Start Camunda
+        run: |
+          echo "Starting Camunda with image tag: ${{ steps.image-tag.outputs.image-tag }}"
+          export DATABASE=elasticsearch
+          docker compose up -d camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        env:
+          DATABASE: elasticsearch
+
+      - name: List running Docker containers
+        run: docker ps -a
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        env:
+          DATABASE: elasticsearch
+
+      - name: Wait for services to be ready
+        id: wait-for-services
+        run: |
+          echo "Checking if services are up..."
+          ready=false
+          for i in {1..90}; do
+            tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+            operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+            identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
+
+            if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
+              echo "Services are ready!"
+              ready=true
+              break
+            fi
+
+            echo "Waiting for services... ($i/90)"
+            echo "Response from Tasklist: $tasklist_status"
+            echo "Response from Operate: $operate_status"
+            echo "Response from Identity: $identity_status"
+            sleep 10
+          done
+
+          if [ "$ready" = true ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Print Docker logs before failing
+        if: failure()
+        run: |
+          docker compose logs camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        env:
+          DATABASE: elasticsearch
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Clean install dependencies
+        shell: bash
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Install Playwright Browsers
+        shell: bash
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Run E2E Tests
+        shell: bash
+        env:
+          LOCAL_TEST: "false"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          CORE_APPLICATION_URL: "http://localhost:8080"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+          RELEASE_VERSION: ${{ steps.image-tag.outputs.image-tag }}
+        run: |
+          echo "Running E2E tests against Camunda release version: $RELEASE_VERSION"
+          npm run test -- --project=chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results-${{ steps.image-tag.outputs.image-tag }}
+          path: |
+            qa/c8-orchestration-cluster-e2e-test-suite/test-results/
+            qa/c8-orchestration-cluster-e2e-test-suite/playwright-report/
+          retention-days: 30
+
+      - name: Upload Docker logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-logs-${{ steps.image-tag.outputs.image-tag }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
+          retention-days: 7
