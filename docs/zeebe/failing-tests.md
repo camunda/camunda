@@ -42,7 +42,7 @@ git push --set-upstream origin 12983-flaky-test-issue-repro
 ```
 
 This will also allow you to
-run [the CI workflow](https://github.com/camunda/camunda/actions/workflows/zeebe-ci.yml) for that specific
+run [the CI workflow](https://github.com/camunda/camunda/actions/workflows/ci-zeebe.yml) for that specific
 branch as many times as you want. If you don't know how to do this, you can read up on
 it [here](https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow).
 
@@ -59,7 +59,7 @@ shorter, and minimize resource usage during investigation.
 
 First, identify the job where the failing test is running. If that job is `Integration tests`, then
 you should skip all other jobs in
-the [zeebe-ci.yml workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-ci.yml). You can
+the [zeebe-ci.yml workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/ci-zeebe.yml). You can
 do this easily by adding a `if: false` to every job definition except the one you want to run,
 e.g. `integration-tests`.
 
@@ -71,7 +71,7 @@ up on narrowing.
 
 Assuming you can still narrow the scope of the workflow, the next step is to have the job execute
 only a single test. In
-the [zeebe-ci.yml workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-ci.yml), under
+the [zeebe-ci.yml workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/ci-zeebe.yml), under
 the job you wish to execute (e.g. `integration-tests`), look for the step which is actually
 executing the test, i.e. the one running `mvn verify`, or `mvn test`, etc. If the test is a unit
 test (and as such run by surefire), then you can add `-Dtest=MyTestClass` (
