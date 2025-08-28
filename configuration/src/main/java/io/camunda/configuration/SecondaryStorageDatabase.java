@@ -15,6 +15,8 @@ public abstract class SecondaryStorageDatabase {
   /** Endpoint for the database configured as secondary storage. */
   private String url = "http://localhost:9200";
 
+  private Security security = new Security(databaseName());
+
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".url",
@@ -24,8 +26,16 @@ public abstract class SecondaryStorageDatabase {
         legacyUrlProperties());
   }
 
-  public void setUrl(String url) {
+  public void setUrl(final String url) {
     this.url = url;
+  }
+
+  public Security getSecurity() {
+    return security;
+  }
+
+  public void setSecurity(final Security security) {
+    this.security = security;
   }
 
   private String prefix() {
