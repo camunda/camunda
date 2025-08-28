@@ -103,7 +103,7 @@ public final class UserTaskServices
 
     final var processDefinitionKeys =
         result.items().stream()
-            .filter(u -> !u.hasName())
+            .filter(u -> !u.hasName() || !u.hasProcessName())
             .map(UserTaskEntity::processDefinitionKey)
             .collect(Collectors.toSet());
 
@@ -123,8 +123,16 @@ public final class UserTaskServices
   }
 
   private UserTaskEntity toCacheEnrichedUserTaskEntity(
-      final UserTaskEntity item, final ProcessCacheItem cachedItem) {
-    return item.hasName() ? item : item.withName(cachedItem.getElementName(item.elementId()));
+      UserTaskEntity item, final ProcessCacheItem cachedItem) {
+
+    if (!item.hasName()) {
+      item = item.withName(cachedItem.getElementName(item.elementId()));
+    }
+    if (!item.hasProcessName()) {
+      item = item.withProcessName(cachedItem.getProcessName());
+    }
+
+    return item;
   }
 
   public SearchQueryResult<UserTaskEntity> search(

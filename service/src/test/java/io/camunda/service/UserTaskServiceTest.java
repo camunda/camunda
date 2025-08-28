@@ -191,7 +191,7 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
-          .thenReturn(new ProcessCacheItem(Map.of(entity.elementId(), "cached name")));
+          .thenReturn(new ProcessCacheItem(null, Map.of(entity.elementId(), "cached name")));
 
       final var foundEntity = services.getByKey(entity.userTaskKey());
 
@@ -205,7 +205,7 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
-          .thenReturn(new ProcessCacheItem(Map.of("unknown-id", "cached name")));
+          .thenReturn(new ProcessCacheItem(null, Map.of("unknown-id", "cached name")));
 
       final var foundEntity = services.getByKey(entity.userTaskKey());
 
@@ -251,7 +251,7 @@ public class UserTaskServiceTest {
       when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
           .thenReturn(
               ProcessCacheResult.of(
-                  entity.processDefinitionKey(), entity.elementId(), "cached name"));
+                  entity.processDefinitionKey(), null, entity.elementId(), "cached name"));
 
       final var searchQueryResult = services.search(UserTaskQuery.of(q -> q));
 
