@@ -13,9 +13,9 @@ import {
   assertRequiredFields,
   assertEqualsForKeys,
 } from '../../../../utils/http';
-import {PUBLISH_NEW_MESSAGE} from '../../../../utils/beans/request-beans';
+import {PUBLISH_NEW_MESSAGE} from '../../../../utils/beans/requestBeans';
 
-test.describe('Publish Message API Tests', () => {
+test.describe.parallel('Publish Message API Tests', () => {
   test('Publish Message', async ({request}) => {
     const requestBody = PUBLISH_NEW_MESSAGE();
     const res = await request.post(buildUrl('/messages/publication'), {

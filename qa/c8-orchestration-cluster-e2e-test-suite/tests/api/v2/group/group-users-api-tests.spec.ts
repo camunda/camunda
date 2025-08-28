@@ -18,7 +18,7 @@ import {
 import {
   CREATE_NEW_GROUP,
   groupRequiredFields,
-} from '../../../../utils/beans/request-beans';
+} from '../../../../utils/beans/requestBeans';
 import {sleep} from '../../../../utils/sleep';
 
 test.describe('Group Users API Tests', () => {

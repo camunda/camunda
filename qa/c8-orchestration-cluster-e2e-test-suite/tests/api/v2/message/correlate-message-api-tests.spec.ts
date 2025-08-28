@@ -17,8 +17,9 @@ import {
 import {
   CORRELATE_MESSAGE,
   correlateMessageRequiredFields,
-} from '../../../../utils/beans/request-beans';
+} from '../../../../utils/beans/requestBeans';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 
 test.describe('Correlate Message API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -44,10 +45,7 @@ test.describe('Correlate Message API Tests', () => {
       );
       expect(matchingItem).toBeDefined();
       state['processInstanceKey'] = matchingItem['processInstanceKey'];
-    }).toPass({
-      intervals: [5_000, 10_000, 15_000],
-      timeout: 30_000,
-    });
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Correlate Message Unauthorized', async ({request}) => {
@@ -139,10 +137,7 @@ test.describe('Correlate Message API Tests', () => {
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);
-      }).toPass({
-        intervals: [5_000, 10_000, 15_000],
-        timeout: 30_000,
-      });
+      }).toPass(defaultAssertionOptions);
     });
   });
 });
