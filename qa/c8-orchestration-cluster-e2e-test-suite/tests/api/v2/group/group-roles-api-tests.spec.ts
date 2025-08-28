@@ -9,56 +9,43 @@
 import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
-  extractAndStoreIds,
   buildUrl,
   assertRequiredFields,
   assertEqualsForKeys,
   paginatedResponseFields,
+  assertUnauthorizedRequest,
+  assertNotFoundRequest,
+  assertConflictRequest,
 } from '../../../../utils/http';
 import {
-  CREATE_NEW_GROUP,
-  CREATE_NEW_ROLE,
-  groupRequiredFields,
+  CREATE_GROUP_ROLE_EXPECTED_BODY_USING_GROUP,
   roleRequiredFields,
 } from '../../../../utils/beans/requestBeans';
-import {sleep} from '../../../../utils/sleep';
+import {
+  assignRolesToGroup,
+  createGroupAndStoreResponseFields,
+  createRole,
+  roleIdFromState,
+} from '../../../../utils/requestHelpers';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 
-test.describe('Group Roles API Tests', () => {
+test.describe.parallel('Group Roles API Tests', () => {
   const state: Record<string, unknown> = {};
 
-  test('CRUD', async ({request}) => {
-    await test.step('Create Group', async () => {
-      const requestBody = CREATE_NEW_GROUP();
-      const res = await request.post(buildUrl('/groups'), {
-        headers: jsonHeaders(),
-        data: requestBody,
-      });
-      expect(res.status()).toBe(201);
-      const json = await res.json();
-      assertRequiredFields(json, groupRequiredFields);
-      assertEqualsForKeys(json, requestBody, groupRequiredFields);
-      state['groupId'] = json.groupId;
-      await sleep(5000);
-    });
+  test.beforeAll(async ({request}) => {
+    await createGroupAndStoreResponseFields(request, 3, state);
+    await assignRolesToGroup(request, 1, state['groupId2'] as string, state);
+    await assignRolesToGroup(request, 1, state['groupId3'] as string, state);
+  });
 
-    await test.step('Create Role', async () => {
-      const body = CREATE_NEW_ROLE();
+  test('Assign Role To Group', async ({request}) => {
+    const role = await createRole(request);
+    const p = {
+      groupId: state['groupId1'] as string,
+      roleId: role.roleId as string,
+    };
 
-      const res = await request.post(buildUrl('/roles'), {
-        headers: jsonHeaders(),
-        data: body,
-      });
-
-      expect(res.status()).toBe(201);
-      await extractAndStoreIds(res, state);
-    });
-
-    await test.step('Assign Role To Group', async () => {
-      await sleep(5000);
-      const p = {
-        groupId: state['groupId'] as string,
-        roleId: state['roleId'] as string,
-      };
+    await expect(async () => {
       const res = await request.put(
         buildUrl('/roles/{roleId}/groups/{groupId}', p),
         {
@@ -66,19 +53,32 @@ test.describe('Group Roles API Tests', () => {
         },
       );
       expect(res.status()).toBe(204);
-    });
+    }).toPass(defaultAssertionOptions);
+  });
 
-    await test.step('Search Roles For Group', async () => {
-      await sleep(10000);
-      const p = {groupId: state['groupId'] as string};
-      const expectedBody: Record<string, string> = {
-        name: state['name'] as string,
-        roleId: state['roleId'] as string,
-        description: state['description'] as string,
-      };
+  test('Assign Already Added Role To Group Conflict', async ({request}) => {
+    const stateParams: Record<string, string> = {
+      groupId: state['groupId2'] as string,
+      roleId: roleIdFromState('groupId2', state) as string,
+    };
+    const res = await request.put(
+      buildUrl('/roles/{roleId}/groups/{groupId}', stateParams),
+      {
+        headers: jsonHeaders(),
+      },
+    );
 
+    await assertConflictRequest(res);
+  });
+
+  test('Search Roles For Group', async ({request}) => {
+    const groupId: string = state['groupId2'] as string;
+    const expectedBody: Record<string, string> =
+      CREATE_GROUP_ROLE_EXPECTED_BODY_USING_GROUP(groupId, state);
+
+    await expect(async () => {
       const res = await request.post(
-        buildUrl('/groups/{groupId}/roles/search', p),
+        buildUrl('/groups/{groupId}/roles/search', {groupId: groupId}),
         {
           headers: jsonHeaders(),
           data: {},
@@ -91,55 +91,60 @@ test.describe('Group Roles API Tests', () => {
       expect(json.page.totalItems).toBe(1);
       assertRequiredFields(json.items[0], roleRequiredFields);
       assertEqualsForKeys(json.items[0], expectedBody, roleRequiredFields);
-    });
+    }).toPass(defaultAssertionOptions);
+  });
 
-    await test.step('Search Roles For Group Unauthorized', async () => {
-      const p = {groupId: state['groupId'] as string};
-      const res = await request.post(
-        buildUrl('/groups/{groupId}/roles/search', p),
-        {
-          headers: {},
-          data: {},
-        },
-      );
-      expect(res.status()).toBe(401);
-    });
+  test('Search Roles For Group Unauthorized', async ({request}) => {
+    const p = {groupId: state['groupId1'] as string};
+    const res = await request.post(
+      buildUrl('/groups/{groupId}/roles/search', p),
+      {
+        headers: {},
+        data: {},
+      },
+    );
+    await assertUnauthorizedRequest(res);
+  });
 
-    await test.step('Search Roles For Group Not Found', async () => {
-      const p = {groupId: 'invalidGroupId'};
+  test('Search Roles For Group Not Found', async ({request}) => {
+    const p = {groupId: 'invalidGroupId'};
 
-      const res = await request.post(
-        buildUrl('/groups/{groupId}/roles/search', p),
-        {
-          headers: jsonHeaders(),
-          data: {},
-        },
-      );
+    const res = await request.post(
+      buildUrl('/groups/{groupId}/roles/search', p),
+      {
+        headers: jsonHeaders(),
+        data: {},
+      },
+    );
 
-      const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      expect(json.page.totalItems).toBe(0);
-      expect(json.items.length).toBe(0);
-    });
+    const json = await res.json();
+    assertRequiredFields(json, paginatedResponseFields);
+    expect(json.page.totalItems).toBe(0);
+    expect(json.items.length).toBe(0);
+  });
 
+  test('Unassign Role From Group', async ({request}) => {
     await test.step('Unassign Role From Group', async () => {
       const p = {
-        groupId: state['groupId'] as string,
-        roleId: state['roleId'] as string,
+        groupId: state['groupId3'] as string,
+        roleId: roleIdFromState('groupId3', state) as string,
       };
-      const res = await request.delete(
-        buildUrl('/roles/{roleId}/groups/{groupId}', p),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      expect(res.status()).toBe(204);
+
+      await expect(async () => {
+        const res = await request.delete(
+          buildUrl('/roles/{roleId}/groups/{groupId}', p),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+        expect(res.status()).toBe(204);
+      }).toPass(defaultAssertionOptions);
     });
 
     await test.step('Search Roles For Group After Deletion', async () => {
-      await expect(async () => {
-        const p = {groupId: state['groupId'] as string};
+      const p = {groupId: state['groupId3'] as string};
 
+      await expect(async () => {
         const res = await request.post(
           buildUrl('/groups/{groupId}/roles/search', p),
           {
@@ -152,38 +157,38 @@ test.describe('Group Roles API Tests', () => {
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);
-      }).toPass({
-        intervals: [5_000, 10_000, 15_000],
-        timeout: 30_000,
-      });
+      }).toPass(defaultAssertionOptions);
     });
+  });
 
-    await test.step('Unassign Role From Group Unauthorized', async () => {
-      const p = {
-        groupId: state['groupId'] as string,
-        roleId: state['roleId'] as string,
-      };
-      const res = await request.delete(
-        buildUrl('/roles/{roleId}/groups/{groupId}', p),
-        {
-          headers: {},
-        },
-      );
-      expect(res.status()).toBe(401);
-    });
+  test('Unassign Role From Group Unauthorized', async ({request}) => {
+    const p = {
+      groupId: state['groupId2'] as string,
+      roleId: roleIdFromState('groupId2', state) as string,
+    };
+    const res = await request.delete(
+      buildUrl('/roles/{roleId}/groups/{groupId}', p),
+      {
+        headers: {},
+      },
+    );
+    await assertUnauthorizedRequest(res);
+  });
 
-    await test.step('Unassign Role From Group Not Found', async () => {
-      const p = {
-        groupId: state['groupId'] as string,
-        roleId: state['roleId'] as string,
-      };
-      const res = await request.delete(
-        buildUrl('/roles/{roleId}/groups/{groupId}', p),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      expect(res.status()).toBe(404);
-    });
+  test('Unassign Role From Group Not Found', async ({request}) => {
+    const p = {
+      groupId: 'invalidGroupId',
+      roleId: roleIdFromState('groupId2', state) as string,
+    };
+    const res = await request.delete(
+      buildUrl('/roles/{roleId}/groups/{groupId}', p),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertNotFoundRequest(
+      res,
+      `Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND'`,
+    );
   });
 });

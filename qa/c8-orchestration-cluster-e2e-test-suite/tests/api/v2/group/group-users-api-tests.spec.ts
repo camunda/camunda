@@ -9,57 +9,60 @@
 import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
-  extractAndStoreIds,
   buildUrl,
   assertRequiredFields,
   assertEqualsForKeys,
   paginatedResponseFields,
+  assertUnauthorizedRequest,
+  assertNotFoundRequest,
+  assertConflictRequest,
 } from '../../../../utils/http';
+import {CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP} from '../../../../utils/beans/requestBeans';
 import {
-  CREATE_NEW_GROUP,
-  groupRequiredFields,
-} from '../../../../utils/beans/requestBeans';
-import {sleep} from '../../../../utils/sleep';
+  assignUsersToGroup,
+  createGroupAndStoreResponseFields,
+  userFromState,
+} from '../../../../utils/requestHelpers';
+import {
+  defaultAssertionOptions,
+  generateUniqueId,
+} from '../../../../utils/constants';
 
-test.describe('Group Users API Tests', () => {
+test.describe.parallel('Group Users API Tests', () => {
   const state: Record<string, unknown> = {};
 
-  test('CRUD', async ({request}) => {
-    await test.step('Create Group', async () => {
-      const requestBody = CREATE_NEW_GROUP();
-      const res = await request.post(buildUrl('/groups'), {
+  test.beforeAll(async ({request}) => {
+    await createGroupAndStoreResponseFields(request, 3, state);
+    await assignUsersToGroup(request, 1, state['groupId2'] as string, state);
+    await assignUsersToGroup(request, 1, state['groupId3'] as string, state);
+  });
+
+  test('Assign User To Group Not Found', async ({request}) => {
+    state['username'] = 'demo';
+    const stateParams: Record<string, string> = {
+      groupId: 'invalidGroupId',
+      username: state['username'] as string,
+    };
+    const res = await request.put(
+      buildUrl('/groups/{groupId}/users/{username}', stateParams),
+      {
         headers: jsonHeaders(),
-        data: requestBody,
-      });
-      expect(res.status()).toBe(201);
-      const json = await res.json();
-      assertRequiredFields(json, groupRequiredFields);
-      assertEqualsForKeys(json, requestBody, groupRequiredFields);
-      await extractAndStoreIds(res, state);
-      await sleep(5000);
-    });
+      },
+    );
+    await assertNotFoundRequest(
+      res,
+      `Command 'ADD_ENTITY' rejected with code 'NOT_FOUND'`,
+    );
+  });
 
-    await test.step('Assign User To Group Not Found', async () => {
-      state['username'] = 'demo';
-      const stateParams: Record<string, string> = {
-        groupId: 'invalidGroupId',
-        username: state['username'] as string,
-      };
-      const res = await request.put(
-        buildUrl('/groups/{groupId}/users/{username}', stateParams),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      expect(res.status()).toBe(404);
-    });
+  test('Assign User To Group', async ({request}) => {
+    const user = 'test-user' + generateUniqueId();
+    const stateParams: Record<string, string> = {
+      groupId: state['groupId1'] as string,
+      username: user,
+    };
 
-    await test.step('Assign User To Group', async () => {
-      state['username'] = 'demo';
-      const stateParams: Record<string, string> = {
-        groupId: state['groupId'] as string,
-        username: state['username'] as string,
-      };
+    await expect(async () => {
       const res = await request.put(
         buildUrl('/groups/{groupId}/users/{username}', stateParams),
         {
@@ -67,37 +70,35 @@ test.describe('Group Users API Tests', () => {
         },
       );
       expect(res.status()).toBe(204);
-    });
+    }).toPass(defaultAssertionOptions);
+  });
 
-    await test.step('Assign Already Added User To Group Conflict', async () => {
-      state['username'] = 'demo';
-      const stateParams: Record<string, string> = {
-        groupId: state['groupId'] as string,
-        username: state['username'] as string,
-      };
-      const res = await request.put(
-        buildUrl('/groups/{groupId}/users/{username}', stateParams),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      expect(res.status()).toBe(409);
-      const json = await res.json();
-      assertRequiredFields(json, ['title']);
-      expect(json['title']).toContain('ALREADY_EXISTS');
-    });
+  test('Assign Already Added User To Group Conflict', async ({request}) => {
+    const stateParams: Record<string, string> = {
+      groupId: state['groupId2'] as string,
+      username: userFromState('groupId2', state) as string,
+    };
+    const res = await request.put(
+      buildUrl('/groups/{groupId}/users/{username}', stateParams),
+      {
+        headers: jsonHeaders(),
+      },
+    );
 
-    await test.step('Search Users For Group', async () => {
-      await sleep(10000);
-      const stateParams: Record<string, string> = {
-        groupId: state['groupId'] as string,
-        username: state['username'] as string,
-      };
-      const expectedBody = {username: state['username'] as string};
-      const requiredFields = Object.keys(expectedBody);
+    await assertConflictRequest(res);
+  });
 
+  test('Search Users For Group', async ({request}) => {
+    const groupId: string = state['groupId2'] as string;
+    const expectedBody = CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP(
+      groupId,
+      state,
+    );
+    const requiredFields = Object.keys(expectedBody);
+
+    await expect(async () => {
       const res = await request.post(
-        buildUrl('/groups/{groupId}/users/search', stateParams),
+        buildUrl('/groups/{groupId}/users/search', {groupId: groupId}),
         {headers: jsonHeaders()},
       );
 
@@ -107,97 +108,101 @@ test.describe('Group Users API Tests', () => {
       expect(json.page.totalItems).toBe(1);
       assertRequiredFields(json.items[0], requiredFields);
       assertEqualsForKeys(json.items[0], expectedBody, requiredFields);
-    });
+    }).toPass(defaultAssertionOptions);
+  });
 
-    await test.step('Search Users For Group Unauthorized', async () => {
-      state['username'] = 'demo';
-      const stateParams: Record<string, string> = {
-        groupId: state['groupId'] as string,
-        username: state['username'] as string,
-      };
-      const res = await request.post(
-        buildUrl('/groups/{groupId}/users/search', stateParams),
-        {headers: {}},
-      );
-      expect(res.status()).toBe(401);
-    });
+  test('Search Users For Group Unauthorized', async ({request}) => {
+    const p = {groupId: state['groupId1'] as string};
 
-    await test.step('Search Users For Group Not Found', async () => {
-      const stateParams: Record<string, string> = {
-        groupId: 'invalidGroupName',
-        username: state['username'] as string,
-      };
+    const res = await request.post(
+      buildUrl('/groups/{groupId}/users/search', p),
+      {headers: {}},
+    );
+    await assertUnauthorizedRequest(res);
+  });
 
-      const res = await request.post(
-        buildUrl('/groups/{groupId}/users/search', stateParams),
-        {headers: jsonHeaders()},
-      );
+  test('Search Users For Group Not Found', async ({request}) => {
+    const p = {groupId: 'invalidGroupId'};
 
-      expect(res.status()).toBe(200);
-      const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      expect(json.page.totalItems).toBe(0);
-      expect(json.items.length).toBe(0);
-    });
+    const res = await request.post(
+      buildUrl('/groups/{groupId}/users/search', p),
+      {headers: jsonHeaders()},
+    );
 
-    await test.step('Unassign User From Group', async () => {
+    expect(res.status()).toBe(200);
+    const json = await res.json();
+    assertRequiredFields(json, paginatedResponseFields);
+    expect(json.page.totalItems).toBe(0);
+    expect(json.items.length).toBe(0);
+  });
+
+  test('Unassign User From Group', async ({request}) => {
+    await test.step('Unassign User', async () => {
       const p = {
-        groupId: state['groupId'] as string,
-        username: state['username'] as string,
+        groupId: state['groupId3'] as string,
+        username: userFromState('groupId3', state) as string,
       };
-      const res = await request.delete(
-        buildUrl('/groups/{groupId}/users/{username}', p),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      expect(res.status()).toBe(204);
+
+      await expect(async () => {
+        const res = await request.delete(
+          buildUrl('/groups/{groupId}/users/{username}', p),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+        expect(res.status()).toBe(204);
+      }).toPass(defaultAssertionOptions);
     });
 
     await test.step('Search Users After Deletion', async () => {
-      await sleep(10000);
-      const p = {groupId: state['groupId'] as string};
+      const p = {groupId: state['groupId3'] as string};
 
-      const res = await request.post(
-        buildUrl('/groups/{groupId}/users/search', p),
-        {
-          headers: jsonHeaders(),
-          data: {},
-        },
-      );
-      expect(res.status()).toBe(200);
-      const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      expect(json.page.totalItems).toBe(0);
-      expect(json.items.length).toBe(0);
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/groups/{groupId}/users/search', p),
+          {
+            headers: jsonHeaders(),
+            data: {},
+          },
+        );
+        expect(res.status()).toBe(200);
+        const json = await res.json();
+        assertRequiredFields(json, paginatedResponseFields);
+        expect(json.page.totalItems).toBe(0);
+        expect(json.items.length).toBe(0);
+      }).toPass(defaultAssertionOptions);
     });
+  });
 
-    await test.step('Unassign User From Group Unauthorized', async () => {
-      const p = {
-        groupId: state['groupId'] as string,
-        username: state['username'] as string,
-      };
-      const res = await request.delete(
-        buildUrl('/groups/{groupId}/users/{username}', p),
-        {
-          headers: {},
-        },
-      );
-      expect(res.status()).toBe(401);
-    });
+  test('Unassign User From Group Unauthorized', async ({request}) => {
+    const p = {
+      groupId: state['groupId2'] as string,
+      username: userFromState('groupId2', state) as string,
+    };
 
-    await test.step('Unassign User From Group Not Found', async () => {
-      const p = {
-        groupId: state['groupId'] as string,
-        username: state['username'] as string,
-      };
-      const res = await request.delete(
-        buildUrl('/groups/{groupId}/users/{username}', p),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      expect(res.status()).toBe(404);
-    });
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}/users/{username}', p),
+      {
+        headers: {},
+      },
+    );
+    await assertUnauthorizedRequest(res);
+  });
+
+  test('Unassign User From Group Not Found', async ({request}) => {
+    const p = {
+      groupId: 'invalidGroupId',
+      username: userFromState('groupId2', state) as string,
+    };
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}/users/{username}', p),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertNotFoundRequest(
+      res,
+      `Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND'`,
+    );
   });
 });
