@@ -28,6 +28,10 @@ on:
         description: 'Whether to perform a dry release where no changes or artifacts are pushed, defaults to true.'
         type: boolean
         default: true
+      releaseProcessDryRun:
+        description: 'Activates E2E testing mode for the release process. This mode creates real, temporary changes and artifacts in GitHub and Maven Central, which are left for manual inspection. A separate process (dryrun_cleanup.bpmn) is responsible for their final reversion, ensuring no lasting impact on production. This flag acts separately to dryRun flag and should be used with dryRun=false. If both flags are active then dryRun takes precedence.'
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       releaseBranch:
@@ -52,7 +56,10 @@ on:
         description: 'Whether to perform a dry release where no changes or artifacts are pushed, defaults to true.'
         type: boolean
         default: true
-
+      releaseProcessDryRun:
+        description: 'Activates E2E testing mode for the release process. This mode creates real, temporary changes and artifacts in GitHub and Maven Central, which are left for manual inspection. A separate process (dryrun_cleanup.bpmn) is responsible for their final reversion, ensuring no lasting impact on production. This flag acts separately to dryRun flag and should be used with dryRun=false. If both flags are active then dryRun takes precedence.'
+        type: boolean
+        default: false
 defaults:
   run:
     shell: bash
@@ -60,8 +67,14 @@ defaults:
 env:
   RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
+  RELEASE_TAG: ${{ inputs.releaseProcessDryRun && format('dryrun-{0}', inputs.releaseVersion) || inputs.releaseVersion }}
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
 jobs:
+  # Release job performs Maven prepare and perform release operations, managing release artifacts and repository changes.
+  # Flags impact:
+  # - With dryRun=true: Skips pushing changes to Git, Maven Central, and Artifactory (local-only operations)
+  # - With releaseProcessDryRun=true: Creates real, temporary but unpublished artifacts in Maven Central and GitHub for E2E testing, but skips Artifactory publishing
+  # - When both flags are active, dryRun takes precedence over releaseProcessDryRun
   release:
     name: Maven Release
     runs-on: gcp-core-16-release
@@ -70,7 +83,7 @@ jobs:
       releaseBranch: ${{ env.RELEASE_BRANCH }}
     env:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
-      PUSH_CHANGES: ${{ inputs.dryRun == false }}
+      PUSH_CHANGES: ${{ !inputs.dryRun }}
     steps:
       - name: Output Inputs
         run: echo "${{ toJSON(github.event.inputs) }}"
@@ -160,7 +173,7 @@ jobs:
           #   This is the reason why we have to set it at least as empty string.
           ./mvnw release:prepare -B \
             -Dresume=false \
-            -Dtag="${RELEASE_VERSION}" \
+            -Dtag="${RELEASE_TAG}" \
             -DreleaseVersion="${RELEASE_VERSION}" \
             -DdevelopmentVersion="${DEVELOPMENT_VERSION}" \
             -DpushChanges="${PUSH_CHANGES}" \
@@ -174,7 +187,8 @@ jobs:
       - name: Maven Perform Release
         id: maven-perform-release
         env:
-          SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
+          SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
+          SKIP_CAMUNDA_RELEASE: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
@@ -192,7 +206,7 @@ jobs:
             -DskipQaBuild=true \
             -P-autoFormat \
             -P\!include-optimize \
-            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
@@ -236,7 +250,7 @@ jobs:
             fi
           done
       - name: Push Changes to Release branch
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun }}
         run: git push origin "${RELEASE_BRANCH}"
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
@@ -252,6 +266,12 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
+  # Flags impact:
+  # - With dryRun=true: Skips creating the actual GitHub release (only prepares artifacts and changelog)
+  # - With releaseProcessDryRun=true: Creates a draft GitHub release for E2E testing and manual inspection
+  # - Uses RELEASE_TAG for versioning (prefixed with 'dryrun-' when releaseProcessDryRun=true)
+  # The job generates changelog, checksums artifacts, and determines pre-release status
   github:
     needs: release
     name: Github Release
@@ -291,7 +311,7 @@ jobs:
           # ZCL_TARGET_REV should be replaced with the tag name for the version you are releasing, and
           # ZCL_FROM_REV should be replaced as the tag name for the previous version, based on the release type
           ZCL_FROM_REV="${{ steps.prev_version.outputs.previous_version }}"
-          ZCL_TARGET_REV="${{ inputs.releaseVersion }}"
+          ZCL_TARGET_REV="${{ env.RELEASE_TAG }}"
 
           # The following command will add labels to the issues on GitHub.
           # You can verify this step by looking at closed issues. They should now be tagged with the release.
@@ -350,17 +370,17 @@ jobs:
           echo "result=${PRE_RELEASE}" >> "$GITHUB_OUTPUT"
       - name: Create Github release
         uses: ncipollo/release-action@v1
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun }}
         with:
-          name: ${{ inputs.releaseVersion }}
+          name: ${{ env.RELEASE_TAG }}
           artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
-          draft: false
+          draft: ${{ inputs.releaseProcessDryRun }}
           makeLatest: ${{ inputs.isLatest }}
           body: ${{ steps.gen-changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps.pre-release.outputs.result }}
-          tag: ${{ inputs.releaseVersion }}
+          tag: ${{ env.RELEASE_TAG }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -371,6 +391,12 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  # Docker image release jobs build and publish multi-platform Docker images for each Camunda component.
+  # All Docker jobs follow the same pattern: build locally, verify, then sync to DockerHub.
+  # Flags impact:
+  # - With dryRun=true: Skips pushing images to DockerHub (only builds and verifies locally)
+  # - With releaseProcessDryRun=true: Skips pushing images to DockerHub (only builds and verifies locally)
+  # - Uses local registry (localhost:5000) for verification before pushing to remote registry
   zeebe-docker:
     needs: release
     name: Zeebe docker Image Release
@@ -433,7 +459,7 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
       - name: Sync Docker Image to DockerHub
         id: push-docker
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
@@ -515,7 +541,7 @@ jobs:
           goldenfile: operate-docker-labels.golden.json
       - name: Sync Operate Docker Image to DockerHub
         id: push-docker
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
@@ -597,7 +623,7 @@ jobs:
           goldenfile: tasklist-docker-labels.golden.json
       - name: Sync Tasklist Docker Image to DockerHub
         id: push-docker
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
@@ -679,7 +705,7 @@ jobs:
           goldenfile: camunda-docker-labels.golden.json
       - name: Sync Camunda Docker Image to DockerHub
         id: push-docker
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
@@ -696,6 +722,13 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  # Snyk security monitoring job performs vulnerability scanning on Docker images and source code.
+  # Only runs for stable releases (not alpha, rc, SNAPSHOT).
+  # Flags impact:
+  # - With dryRun=true: Runs security tests instead of monitoring (no data sent to Snyk dashboard)
+  # - With releaseProcessDryRun=true: Runs security tests instead of monitoring (E2E testing mode)
+  # - When either flag is active: Builds Docker images locally since they won't be pushed to registry
+  # Uses concurrency control to prevent multiple Snyk jobs from running simultaneously for the same version
   snyk:
     name: Snyk Monitor
     needs: [ zeebe-docker, release ]
@@ -711,12 +744,19 @@ jobs:
       version: ${{ inputs.releaseVersion }}
       useMinorVersion: true
       # test instead of monitor during dry-runs
-      monitor: ${{ !inputs.dryRun }}
+      monitor: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
       # the docker image will not be pushed during a dry-run, so we need to build it locally
-      build: ${{ inputs.dryRun }}
-      dockerImage: ${{ inputs.dryRun && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
+      build: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+      dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
     secrets: inherit
 
+  # Slack notification jobs send release status updates to the team's Slack channel.
+  # Both jobs are conditional and only run for actual releases (not dry runs or E2E testing).
+  # Flags impact:
+  # - With dryRun=true: Skips sending notifications to reduce noise during manual testing
+  # - With releaseProcessDryRun=true: Skips sending notifications to avoid false alerts during E2E testing
+  # - Only sends notifications for real releases to keep the team informed of production deployments
+  # The success job runs when all release jobs complete successfully, the failure job runs when any job fails
   notify-on-success:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
@@ -731,7 +771,7 @@ jobs:
       needs.tasklist-docker.result == 'success' &&
       needs.camunda-docker.result == 'success' &&
       (needs.snyk.result == 'success' || needs.snyk.result == 'skipped')
-      ) && inputs.dryRun == false }}
+      ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
@@ -780,7 +820,7 @@ jobs:
         needs.tasklist-docker.result == 'failure' ||
         needs.camunda-docker.result == 'failure' ||
         needs.snyk.result == 'failure'
-        ) && inputs.dryRun == false }}
+        ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
