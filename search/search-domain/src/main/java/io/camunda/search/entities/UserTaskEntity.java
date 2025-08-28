@@ -18,6 +18,7 @@ public record UserTaskEntity(
     String elementId,
     String name,
     String processDefinitionId,
+    String processName,
     OffsetDateTime creationDate,
     OffsetDateTime completionDate,
     String assignee,
@@ -43,6 +44,33 @@ public record UserTaskEntity(
         elementId,
         newName,
         processDefinitionId,
+        processName,
+        creationDate,
+        completionDate,
+        assignee,
+        state,
+        formKey,
+        processDefinitionKey,
+        processInstanceKey,
+        elementInstanceKey,
+        tenantId,
+        dueDate,
+        followUpDate,
+        candidateGroups,
+        candidateUsers,
+        externalFormReference,
+        processDefinitionVersion,
+        customHeaders,
+        priority);
+  }
+
+  public UserTaskEntity withProcessName(final String newProcessName) {
+    return new UserTaskEntity(
+        userTaskKey,
+        elementId,
+        name,
+        processDefinitionId,
+        newProcessName,
         creationDate,
         completionDate,
         assignee,
@@ -64,6 +92,10 @@ public record UserTaskEntity(
 
   public boolean hasName() {
     return name != null && !name.isBlank();
+  }
+
+  public boolean hasProcessName() {
+    return processName != null && !processName.isBlank();
   }
 
   public enum UserTaskState {
