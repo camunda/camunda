@@ -11,6 +11,8 @@ on:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: Core Features
+  TEST_PRODUCT: Operate
 
 jobs:
 
@@ -19,10 +21,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: { } # GITHUB_TOKEN unused in this job
+    env:
+        TEST_TYPE: UT
     defaults:
       run:
         working-directory: operate/client
     steps:
+      - name: Log Test Details
+        shell: bash
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -47,10 +54,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+        TEST_TYPE: Check
     defaults:
       run:
         working-directory: operate/client
     steps:
+      - name: Log Test Details
+        shell: bash
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -76,10 +88,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+        TEST_TYPE: Lint
     defaults:
       run:
         working-directory: operate/client
     steps:
+      - name: Log Test Details
+        shell: bash
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -105,6 +122,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+        TEST_TYPE: accessibility
     container:
       image: mcr.microsoft.com/playwright:v1.54.0
       options: --user 1001:1000
@@ -112,6 +131,9 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - name: Log Test Details
+        shell: bash
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - name: Check out repository code
         uses: actions/checkout@v4
       - name: Setup NodeJS
@@ -148,6 +170,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+        TEST_TYPE: visual-regression
     container:
       image: mcr.microsoft.com/playwright:v1.54.0
       options: --user 1001:1000
@@ -155,6 +179,9 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - name: Log Test Details
+        shell: bash
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - name: Check out repository code
         uses: actions/checkout@v4
       - name: Setup NodeJS
@@ -191,6 +218,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+        TEST_TYPE: screenshot-update
     container:
       image: mcr.microsoft.com/playwright:v1.54.0
       options: --user 1001:1000
@@ -198,6 +227,9 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - name: Log Test Details
+        shell: bash
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:

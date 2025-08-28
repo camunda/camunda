@@ -23,6 +23,9 @@ on:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: Core Features
+  TEST_PRODUCT: Operate
+  TEST_TYPE: UT
 
 defaults:
   run:
@@ -39,6 +42,9 @@ jobs:
     timeout-minutes: 10
     permissions: { }
     steps:
+      - name: Log Test Details
+        shell: bash
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:

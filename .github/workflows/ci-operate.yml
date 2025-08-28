@@ -35,6 +35,7 @@ defaults:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Operate
 
 jobs:
   # run every time this CI file is called
@@ -66,7 +67,12 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+      TEST_OWNER: Core Features
+      TEST_TYPE: Check
     steps:
+      - name: Log Test Details
+        shell: bash
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - uses: ./.github/actions/setup-build
@@ -108,7 +114,7 @@ jobs:
 
   run-importer-tests:
     if: inputs.runBeTests
-    name: "[IT] Importer Tests - Data Layer"
+    name: "IT / Importer"
     uses: ./.github/workflows/operate-run-tests.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     with:
@@ -118,18 +124,23 @@ jobs:
 
   run-backup-restore-tests:
     if: inputs.runBeTests
-    name: "[IT] Backup Restore Tests - Data Layer"
+    name: "IT / Backup Restore"
     timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       DOCKER_IMAGE_TAG: current-test
+      TEST_OWNER: Data Layer
+      TEST_TYPE: IT
     services:
       registry:
         image: registry:3
         ports:
           - 5000:5000
     steps:
+      - name: Log Test Details
+        shell: bash
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: actions/checkout@v4
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
