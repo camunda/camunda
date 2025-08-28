@@ -9,7 +9,6 @@ package io.camunda.service;
 
 import java.util.Objects;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ApiServicesExecutorProvider {
 
@@ -28,10 +27,6 @@ public final class ApiServicesExecutorProvider {
 
   public ApiServicesExecutorProvider(final ExecutorService executor) {
     this.executor = Objects.requireNonNull(executor, "REST API Executor Service must not be null");
-  }
-
-  public static ApiServicesExecutorProvider of(final ExecutorService executor) {
-    return new ApiServicesExecutorProvider(executor);
   }
 
   public ExecutorService getExecutor() {
@@ -54,7 +49,8 @@ public final class ApiServicesExecutorProvider {
     final int availableProcessors = Runtime.getRuntime().availableProcessors();
     final int corePoolSize = availableProcessors * corePoolSizeMultiplier;
     final int maxPoolSize = availableProcessors * maxPoolSizeMultiplier;
-    final ThreadFactory threadFactory = Thread.ofPlatform().name(API_SERVICE_THREAD_NAME, 0).daemon(true).factory();
+    final ThreadFactory threadFactory =
+        Thread.ofPlatform().name(API_SERVICE_THREAD_NAME, 0).daemon(true).factory();
 
     final ThreadPoolExecutor executor =
         new ThreadPoolExecutor(

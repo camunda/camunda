@@ -120,7 +120,7 @@ public class IdentityMigrationModuleConfiguration {
 
   @Bean
   public ApiServicesExecutorProvider apiServicesExecutorProvider() {
-    return ApiServicesExecutorProvider.of(ForkJoinPool.commonPool());
+    return new ApiServicesExecutorProvider(ForkJoinPool.commonPool());
   }
 
   @Bean
