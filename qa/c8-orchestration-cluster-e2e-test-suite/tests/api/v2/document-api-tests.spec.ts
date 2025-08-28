@@ -170,9 +170,9 @@ test.describe.parallel('Document API Tests', () => {
         buildUrl(
           '/documents/{documentId}',
           {
-            documentId: state.documentId1 as number,
+            documentId: state.documentId1 as string,
           },
-          {contentHash: state.contentHash1 as number},
+          {contentHash: state.contentHash1 as string},
         ),
         {headers: defaultHeaders()},
       );
@@ -186,7 +186,7 @@ test.describe.parallel('Document API Tests', () => {
     await expect(async () => {
       const res = await request.get(
         buildUrl('/documents/{documentId}', {
-          documentId: state.documentId1 as number,
+          documentId: state.documentId1 as string,
         }),
         {headers: defaultHeaders()},
       );
@@ -346,9 +346,9 @@ test.describe.parallel('Document API Tests', () => {
         buildUrl(
           '/documents/{documentId}/links',
           {
-            documentId: state.documentId1 as number,
+            documentId: state.documentId1 as string,
           },
-          {contentHash: state.contentHash1 as number},
+          {contentHash: state.contentHash1 as string},
         ),
         {
           headers: jsonHeaders(),
@@ -366,7 +366,7 @@ test.describe.parallel('Document API Tests', () => {
     await expect(async () => {
       const res = await request.post(
         buildUrl('/documents/{documentId}/links', {
-          documentId: state.documentId1 as number,
+          documentId: state.documentId1 as string,
         }),
         {
           headers: jsonHeaders(),
