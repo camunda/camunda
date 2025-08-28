@@ -35,11 +35,12 @@ defaults:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Optimize
 
 jobs:
   # run every time this workflow is called
   optimize-backend-unit-tests:
-    name: "[UT] Back End / ${{matrix.suiteName}}"
+    name: "Unit / Back End"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -57,8 +58,9 @@ jobs:
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
 
+
   optimize-frontend-unit-tests:
-    name: "[UT] Front End / Core Features"
+    name: "Unit / Front End UTs"
     if: inputs.runFeTests
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -68,9 +70,13 @@ jobs:
         working-directory: optimize/client
     env:
       LIMITS_CPU: 4
+      TEST_OWNER: Core Features
+      TEST_TYPE: Unit
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - name: "Parse pom.xml for versions"
         id: "pom_info"
         uses: YunaBraska/java-info-action@main
@@ -108,10 +114,13 @@ jobs:
 
   hadolint:
     if: inputs.runBeTests
-    name: "[Linting] Dockerfile / Core Features"
+    name: "Tool / Dockerfile / Hadolint"
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
     timeout-minutes: 4
+    env:
+      TEST_OWNER: Core Features
+      TEST_TYPE: Tool
     strategy:
       fail-fast: false
       matrix:
@@ -120,6 +129,8 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:

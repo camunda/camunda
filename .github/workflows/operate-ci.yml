@@ -1,9 +1,8 @@
-# description: Runs the CI tests owned by Data Layer. Runs unit tests, and integration tests
-# test location: operate/common, operate/importer, operate/importer-8_7, operate/importer-common, operate/qa/integration-tests, operate/schema, operate/webapp
+# description: Runs legacy integration CI tests
+# test location: operate/qa/integration-tests
 # type: CI
-# owner: @camunda/data-layer
----
-name: "[Legacy] Operate / [IT] Data Layer"
+# owner: @camunda/core-features, @camunda/data-layer
+name: "[Legacy] Operate"
 on:
   workflow_dispatch:
   push:
@@ -46,8 +45,26 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
+  # builds image and pushes to Dockerhub if branch is `main`
+  run-operate-build:
+    name: "Build / Operate and Image"
+    uses: ./.github/workflows/operate-ci-build-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
+  # over 10min run time
+  run-core-features-integration-tests:
+    name: "Integration"
+    uses: ./.github/workflows/operate-ci-test-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      command: ./mvnw -f operate/qa/integration-tests verify -P operateCoreFeaturesIT -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
+      test-type: Integration Tests
+      runner-type: gcp-core-32-default
+
   run-data-layer-opensearch-tests:
-    name: "Opensearch"
+    name: "Integration"
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
