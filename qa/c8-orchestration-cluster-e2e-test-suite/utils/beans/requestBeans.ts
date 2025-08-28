@@ -8,6 +8,8 @@
 
 import {generateUniqueId} from '../constants';
 import * as fs from 'node:fs';
+import {createMappingRule, mappingRuleIdFromState} from '../requestHelpers';
+import {APIRequestContext} from 'playwright-core';
 
 export const groupRequiredFields: string[] = ['groupId', 'name', 'description'];
 export const mappingRuleRequiredFields: string[] = [
@@ -228,6 +230,18 @@ export function CREATE_MAPPING_EXPECTED_BODY_USING_GROUP(
   };
 }
 
+export function CREATE_MAPPING_EXPECTED_BODY(
+  key: string,
+  state: Record<string, unknown>,
+) {
+  return {
+    claimName: state[`claimName${key}`] as string,
+    claimValue: state[`claimValue${key}`] as string,
+    name: state[`name${key}`] as string,
+    mappingRuleId: state[`mappingRuleId${key}`] as string,
+  };
+}
+
 export function CREATE_GROUP_ROLE_EXPECTED_BODY_USING_GROUP(
   groupId: string,
   state: Record<string, unknown>,
@@ -247,5 +261,18 @@ export function CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP(
 ) {
   return {
     username: state[`${groupId}user${nth}`] as string,
+  };
+}
+
+export async function mappingRuleBundle(
+  request: APIRequestContext,
+  state: Record<string, unknown>,
+) {
+  const mappingRuleKey = 'mappingRuleId' + generateUniqueId();
+  await createMappingRule(request, state, mappingRuleKey);
+  return {
+    mappingRuleKey: 'mappingRuleId' + generateUniqueId(),
+    mappingRuleId: mappingRuleIdFromState(mappingRuleKey, state),
+    responseBody: CREATE_MAPPING_EXPECTED_BODY(mappingRuleKey, state),
   };
 }

@@ -25,7 +25,7 @@ import {
   assignMappingToGroup,
   createGroupAndStoreResponseFields,
   createMappingRule,
-  mappingRuleFromState,
+  groupMappingRuleFromState,
 } from '../../../../utils/requestHelpers';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 
@@ -61,7 +61,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
   }) => {
     const stateParams: Record<string, string> = {
       groupId: state['groupId2'] as string,
-      mappingRuleId: mappingRuleFromState('groupId2', state) as string,
+      mappingRuleId: groupMappingRuleFromState('groupId2', state) as string,
     };
 
     await expect(async () => {
@@ -137,7 +137,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
     await test.step('Unassign Mapping Rule', async () => {
       const p = {
         groupId: state['groupId3'] as string,
-        mappingRuleId: mappingRuleFromState('groupId3', state) as string,
+        mappingRuleId: groupMappingRuleFromState('groupId3', state) as string,
       };
 
       await expect(async () => {
@@ -172,7 +172,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
   test('Unassign Mapping Rule From Group Unauthorized', async ({request}) => {
     const p = {
       groupId: state['groupId2'] as string,
-      mappingRuleId: mappingRuleFromState('groupId2', state) as string,
+      mappingRuleId: groupMappingRuleFromState('groupId2', state) as string,
     };
     const res = await request.delete(
       buildUrl('/groups/{groupId}/mapping-rules/{mappingRuleId}', p),
@@ -186,7 +186,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
   test('Unassign Mapping Rule From Group Not Found', async ({request}) => {
     const p = {
       groupId: 'invalidGroupId',
-      mappingRuleId: mappingRuleFromState('groupId2', state) as string,
+      mappingRuleId: groupMappingRuleFromState('groupId2', state) as string,
     };
     const res = await request.delete(
       buildUrl('/groups/{groupId}/mapping-rules/{mappingRuleId}', p),
