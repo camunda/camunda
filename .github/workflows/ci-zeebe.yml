@@ -32,7 +32,7 @@ env:
 
 jobs:
   smoke-tests:
-    name: "Smoke - ${{ matrix.os }} with ${{ matrix.arch }}"
+    name: "Smoke / ${{ matrix.os }} with ${{ matrix.arch }}"
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runner }}
@@ -120,7 +120,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   property-tests:
-    name: "Unit - Property Tests"
+    name: "Unit / Core Features / Property Tests"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -249,7 +249,7 @@ jobs:
 
   strace-tests:
     # Zeebe tests requiring strace
-    name: "Unit - Strace Tests"
+    name: "Unit / Strace Tests"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job

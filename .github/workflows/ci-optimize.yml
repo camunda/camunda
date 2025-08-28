@@ -40,7 +40,7 @@ env:
 jobs:
   # run every time this workflow is called
   optimize-backend-unit-tests:
-    name: "Unit"
+    name: "Unit / Back End"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -60,7 +60,7 @@ jobs:
 
 
   optimize-frontend-unit-tests:
-    name: "Unit - Front End"
+    name: "Unit / Front End UTs"
     if: inputs.runFeTests
     runs-on: ubuntu-latest
     timeout-minutes: 10

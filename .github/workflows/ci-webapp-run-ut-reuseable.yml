@@ -36,7 +36,7 @@ permissions: { }
 
 jobs:
   build:
-    name: "Unit - Back End - ${{ inputs.suiteName}}"
+    name: "${{ inputs.suiteName}} UTs"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 10
     permissions: { }
