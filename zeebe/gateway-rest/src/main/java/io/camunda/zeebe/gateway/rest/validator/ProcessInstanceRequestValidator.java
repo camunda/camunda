@@ -18,7 +18,7 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateO
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
@@ -71,21 +71,25 @@ public class ProcessInstanceRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateMigrateProcessInstanceBatchOperationRequest(
-      final ProcessInstanceMigrationBatchOperationPlan request) {
+      final ProcessInstanceMigrationBatchOperationRequest request) {
     return validate(
         violations -> {
-          if (request.getTargetProcessDefinitionKey() == null) {
+          final var migrationPlan = request.getMigrationPlan();
+          if (migrationPlan.getTargetProcessDefinitionKey() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetProcessDefinitionKey"));
           } else {
             // Validate targetProcessDefinitionKey format
             validateKeyFormat(
-                request.getTargetProcessDefinitionKey(), "targetProcessDefinitionKey", violations);
+                migrationPlan.getTargetProcessDefinitionKey(),
+                "targetProcessDefinitionKey",
+                violations);
           }
-          if (request.getMappingInstructions() == null
-              || request.getMappingInstructions().isEmpty()) {
+
+          if (migrationPlan.getMappingInstructions() == null
+              || migrationPlan.getMappingInstructions().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
           } else {
-            validateMappingInstructions(request.getMappingInstructions(), violations);
+            validateMappingInstructions(migrationPlan.getMappingInstructions(), violations);
           }
         });
   }

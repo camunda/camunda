@@ -957,6 +957,18 @@ public final class SearchQueryRequestMapper {
     return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
   }
 
+  public static Either<List<String>, ProcessInstanceFilter> toRequiredProcessInstanceFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter filter) {
+    if (filter == null) {
+      return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
+    }
+    final var emptyFilter = new io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter();
+    if (filter.equals(emptyFilter)) {
+      return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
+    }
+    return toProcessInstanceFilter(filter);
+  }
+
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
       final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter filter) {
     final List<String> validationErrors = new ArrayList<>();
