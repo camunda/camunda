@@ -195,4 +195,23 @@ public class MappingRuleStateTest {
     assertThat(mappingByClaim.getName()).isEqualTo(newName);
     assertThat(mappingByClaim.getMappingRuleId()).isEqualTo(mappingRuleId);
   }
+
+  @Test
+  void shouldReturnNewCopiesOnGet() {
+    // given
+    final String id = "mappingRuleId";
+    mappingRuleState.create(
+        new MappingRuleRecord()
+            .setMappingRuleKey(123L)
+            .setMappingRuleId(id)
+            .setClaimName("claimName")
+            .setClaimValue("claimValue"));
+
+    // when
+    final var rule1 = mappingRuleState.get(id).get();
+    final var rule2 = mappingRuleState.get(id).get();
+
+    // then
+    assertThat(rule1).isNotSameAs(rule2);
+  }
 }
