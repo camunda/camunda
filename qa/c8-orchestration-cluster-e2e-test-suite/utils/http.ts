@@ -90,14 +90,10 @@ export async function assertPaginatedRequest(
     );
   }
   if (options.totalItemsEqualTo !== undefined) {
-    expect(json.page.totalItems).toBe(
-        options.totalItemsEqualTo as number,
-    );
+    expect(json.page.totalItems).toBe(options.totalItemsEqualTo as number);
   }
   if (options.itemsLengthEqualTo !== undefined) {
-    expect(json.items.length).toBe(
-        options.itemsLengthEqualTo as number,
-    );
+    expect(json.items.length).toBe(options.itemsLengthEqualTo as number);
   }
 }
 
