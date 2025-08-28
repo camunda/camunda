@@ -64,7 +64,7 @@ final class DiskSpaceRecoveryIT {
           .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
           .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
           // Unified Config: DB type + legacy compatibility
-          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "none")
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "none")
           .withEnv("CAMUNDA_DATABASE_TYPE", "none")
           .withEnv("CAMUNDA_OPERATE_DATABASE", "none")
           .withEnv("CAMUNDA_TASKLIST_DATABASE", "none");

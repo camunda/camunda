@@ -43,7 +43,7 @@ final class BasicAuthOverRestIT {
   @AutoClose private static CamundaClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withAuthorizationsEnabled()
@@ -51,7 +51,11 @@ final class BasicAuthOverRestIT {
 
   @BeforeEach
   void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
+    broker
+        .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
+        .withProperty(
+            "camunda.data.secondary-storage.elasticsearch.url",
+            "http://" + CONTAINER.getHttpHostAddress());
     broker.start();
 
     final var defaultUsername = "demo";

@@ -76,13 +76,13 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
 
     return Map.ofEntries(
         // Unified Configuration: DB URL + compatibility
-        Map.entry("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", dbUrl),
+        Map.entry("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", dbUrl),
         Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", dbUrl),
         Map.entry("CAMUNDA_DATABASE_URL", dbUrl),
         Map.entry("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", dbUrl),
         Map.entry("CAMUNDA_OPERATE_ELASTICSEARCH_URL", dbUrl),
         // Unified Configuration: DB type + compatibility
-        Map.entry("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", dbType),
+        Map.entry("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", dbType),
         Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", dbType),
         Map.entry("CAMUNDA_OPERATE_DATABASE", dbType),
         Map.entry("CAMUNDA_TASKLIST_DATABASE", dbType),

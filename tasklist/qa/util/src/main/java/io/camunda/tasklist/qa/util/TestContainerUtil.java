@@ -437,13 +437,13 @@ public class TestContainerUtil {
       final String osUrl = String.format("http://%s:%s", osHost, osPort);
       tasklistContainer
           // Unified config for db url + compatibility
-          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_URL", osUrl)
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", osUrl)
           .withEnv("CAMUNDA_DATABASE_URL", osUrl)
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", osUrl)
           .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", osUrl)
           // Unified config for db type + compatibility vars
           .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
-          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "opensearch")
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "opensearch")
           .withEnv("CAMUNDA_OPERATE_DATABASE", "opensearch")
           .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
           // ---
@@ -463,12 +463,12 @@ public class TestContainerUtil {
       tasklistContainer
           // Unified config for db type + compatibility vars
           .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
           // Unified config for db type + compatibility vars
           .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
-          .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "elasticsearch")
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
           .withEnv("CAMUNDA_OPERATE_DATABASE", "elasticsearch")
           .withEnv("CAMUNDA_TASKLIST_DATABASE", "elasticsearch")
           // ---
@@ -557,13 +557,13 @@ public class TestContainerUtil {
 
     zeebeBroker
         // Unified Configuration: DB URL + compatibility
-        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_" + type.toUpperCase() + "_URL", url)
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_" + type.toUpperCase() + "_URL", url)
         .withEnv("CAMUNDA_DATABASE_URL", url)
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", url)
         .withEnv("CAMUNDA_OPERATE_" + type.toUpperCase() + "_URL", url)
         .withEnv("CAMUNDA_TASKLIST_" + type.toUpperCase() + "_URL", url)
         // Unified Configuration: DB type + compatibility
-        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", type)
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", type)
         .withEnv("CAMUNDA_DATABASE_TYPE", type)
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", type)
         .withEnv("CAMUNDA_OPERATE_DATABASE", type)

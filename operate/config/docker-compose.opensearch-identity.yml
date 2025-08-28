@@ -137,7 +137,7 @@ services:
     environment:
       - SERVER_PORT=8081
       # Unified configuration and compatibility properties for DB type
-      - CAMUNDA_DATA_SECONDARY_STORAGE_TYPE=opensearch
+      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=opensearch
       - CAMUNDA_OPERATE_DATABASE=opensearch
       - CAMUNDA_TASKLIST_DATABASE=opensearch
       - CAMUNDA_DATABASE_TYPE=opensearch

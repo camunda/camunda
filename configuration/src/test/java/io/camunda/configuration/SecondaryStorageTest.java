@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
@@ -33,6 +35,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   TasklistPropertiesOverride.class,
   OperatePropertiesOverride.class,
   BrokerBasedPropertiesOverride.class,
+  SearchEngineConnectPropertiesOverride.class
 })
 public class SecondaryStorageTest {
 
@@ -46,14 +49,17 @@ public class SecondaryStorageTest {
     final OperateProperties operateProperties;
     final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithOnlyUnifiedConfigSet(
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
-        @Autowired final BrokerBasedProperties brokerBasedProperties) {
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
 
     @Test
@@ -89,6 +95,12 @@ public class SecondaryStorageTest {
           UnifiedConfigurationHelper.argsToExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
+    }
+
+    @Test
+    void testCamundaSearchEngineConnectProperties() {
+      assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo("elasticsearch");
+      assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://expected-url:4321");
     }
   }
 
@@ -110,14 +122,17 @@ public class SecondaryStorageTest {
     final OperateProperties operateProperties;
     final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithNewAndLegacySet(
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
-        @Autowired final BrokerBasedProperties brokerBasedProperties) {
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
 
     @Test
@@ -153,6 +168,12 @@ public class SecondaryStorageTest {
           UnifiedConfigurationHelper.argsToExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
+    }
+
+    @Test
+    void testCamundaSearchEngineConnectProperties() {
+      assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo("elasticsearch");
+      assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://matching-url:4321");
     }
   }
 }

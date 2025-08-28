@@ -587,7 +587,7 @@
       <activation>
         <activeByDefault>true</activeByDefault>
         <property>
-          <name>camunda.tasklist.database</name>
+          <name>camunda.data.secondary-storage.type</name>
           <value>opensearch</value>
         </property>
       </activation>
@@ -655,7 +655,7 @@
       <activation>
         <activeByDefault>true</activeByDefault>
         <property>
-          <name>camunda.tasklist.database</name>
+          <name>camunda.data.secondary-storage.type</name>
           <value>elasticsearch</value>
         </property>
       </activation>

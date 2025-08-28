@@ -290,7 +290,8 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return Integer.parseInt(portProperty.toString());
   }
 
-  public static void setupElasticsearchUrl(TestSpringApplication application, String url) {
+  public static void setupElasticsearchUrl(
+      final TestSpringApplication application, final String url) {
     final Set<String> properties =
         Set.of(
             "camunda.data.secondary-storage.elasticsearch.url",
