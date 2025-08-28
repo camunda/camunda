@@ -77,6 +77,12 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-utils</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
