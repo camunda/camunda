@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ApiServicesExecutorProvider {
 
-  public static final String API_SERVICE_THREAD_NAME = "api-service-thread-";
+  private static final String API_SERVICE_THREAD_NAME = "api-service-thread-";
   private final ExecutorService executor;
 
   public ApiServicesExecutorProvider(
