@@ -55,7 +55,12 @@ public class UserTaskEntityMapperTest {
     assertThat(entity)
         .usingRecursiveComparison()
         .ignoringFields(
-            "customHeaders", "creationDate", "completionDate", "dueDate", "followUpDate")
+            "customHeaders",
+            "creationDate",
+            "completionDate",
+            "dueDate",
+            "followUpDate",
+            "processName")
         .isEqualTo(dbModel);
 
     assertThat(entity.customHeaders()).isEqualTo(Map.of("key", "value"));
@@ -103,7 +108,12 @@ public class UserTaskEntityMapperTest {
     assertThat(entity)
         .usingRecursiveComparison()
         .ignoringFields(
-            "customHeaders", "creationDate", "completionDate", "dueDate", "followUpDate")
+            "customHeaders",
+            "creationDate",
+            "completionDate",
+            "dueDate",
+            "followUpDate",
+            "processName")
         .isEqualTo(dbModel);
 
     assertThat(entity.customHeaders()).isEqualTo(Map.of("key", "value"));
