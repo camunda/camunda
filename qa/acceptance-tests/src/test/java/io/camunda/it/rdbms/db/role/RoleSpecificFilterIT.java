@@ -58,7 +58,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       "spring.liquibase.enabled=false",
-      "camunda.database.type=rdbms",
+      "camunda.data.secondary-storage.type=rdbms",
       "logging.level.io.camunda.db.rdbms=TRACE"
     })
 public class RoleSpecificFilterIT {

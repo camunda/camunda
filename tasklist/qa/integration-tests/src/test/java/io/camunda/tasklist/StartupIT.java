@@ -65,6 +65,7 @@ public class StartupIT {
 
     final String elasticSearchUrl = String.format("http://%s:%s", elsHost, elsPort);
     tasklistContainer
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticSearchUrl)
         .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticSearchUrl)
         .withEnv("CAMUNDA_DATABASE_URL", elasticSearchUrl)

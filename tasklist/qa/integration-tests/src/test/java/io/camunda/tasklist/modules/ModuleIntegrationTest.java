@@ -7,6 +7,9 @@
  */
 package io.camunda.tasklist.modules;
 
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.modules.ModulesTestApplication;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,7 +21,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
-    classes = {ModulesTestApplication.class},
+    classes = {
+      ModulesTestApplication.class,
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class,
+      SearchEngineConnectPropertiesOverride.class
+    },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
