@@ -51,7 +51,7 @@ docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t gcr.io/z
 docker push gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
 ```
 
-Change the `values.yaml` file to use the newly created image.
+Create a `values.yaml` file and set the newly created image.
 
 The changes should look similar to this:
 
@@ -91,7 +91,7 @@ To do this, simply pass the copied `values-stable.yaml` file as an additional ar
 Helm. For example:
 
 ```shell
-helm install myRelease zeebe-benchmark/zeebe-benchmark -f values.yaml -f values-stable.yaml
+helm install myRelease zeebe-benchmark/zeebe-benchmark -f values-stable.yaml
 ```
 
 You can also use the `*-stable` Makefile jobs, namely:
