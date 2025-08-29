@@ -22,7 +22,7 @@ public class SnapshotAfterMigrationTransitionStep implements PartitionTransition
   @Override
   public ActorFuture<Void> prepareTransition(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
-    if (targetRole == Role.INACTIVE & migrationSnapshotDirector != null) {
+    if (migrationSnapshotDirector != null) {
       migrationSnapshotDirector.close();
       migrationSnapshotDirector = null;
     }
