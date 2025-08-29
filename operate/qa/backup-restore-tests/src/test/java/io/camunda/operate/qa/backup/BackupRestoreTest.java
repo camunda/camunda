@@ -137,8 +137,8 @@ public class BackupRestoreTest {
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createSnapshotRepository(testContext);
 
-    final String zeebeVersion = "current-test";
-        //ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
+    final String zeebeVersion =
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
     testContainerUtil.startZeebe(zeebeVersion, testContext);
 
     operateContainer =
