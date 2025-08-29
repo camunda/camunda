@@ -57,7 +57,10 @@ public class SecurityHeadersBasicAuthIT extends SecurityHeadersBaseIT {
 
   @BeforeEach
   void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
+    broker
+        .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
+        .withProperty(
+            "camunda.data.secondary-storage.elasticsearch.url", CONTAINER.getHttpHostAddress());
     broker.start();
 
     camundaClient = createClient(broker, USERNAME, PASSWORD);
