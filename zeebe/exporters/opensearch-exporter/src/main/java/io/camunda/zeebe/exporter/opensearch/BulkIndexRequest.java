@@ -14,6 +14,11 @@ import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,6 +36,7 @@ final class BulkIndexRequest implements ContentProducer {
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
           .addMixIn(Record.class, RecordSequenceMixin.class)
+          .addMixIn(UserTaskRecordValue.class, UserTaskMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
@@ -38,6 +44,11 @@ final class BulkIndexRequest implements ContentProducer {
       new ObjectMapper()
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(Record.class, BatchOperationReferenceMixin.class)
+          .addMixIn(ProcessInstanceCreationRecordValue.class, ProcessInstanceCreationMixin.class)
+          .addMixIn(ProcessInstanceRecordValue.class, ProcessInstanceMixin.class)
+          .addMixIn(ProcessInstanceResultRecordValue.class, ProcessInstanceResultMixin.class)
+          .addMixIn(UserTaskRecordValue.class, UserTaskMixin.class)
+          .addMixIn(JobRecordValue.class, JobMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -46,6 +57,13 @@ final class BulkIndexRequest implements ContentProducer {
   private static final String RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY =
       "decisionEvaluationInstanceKey";
   private static final String BATCH_OPERATION_REFERENCE_PROPERTY = "batchOperationReference";
+  private static final String TAGS_PROPERTY = "tags";
+  private static final String RESULT_PROPERTY = "result";
+  private static final String DENIED_REASON_PROPERTY = "deniedReason";
+  private static final String RUNTIME_INSTRUCTIONS_PROPERTY = "runtimeInstructions";
+  private static final String ELEMENT_INSTANCE_PATH_PROPERTY = "elementInstancePath";
+  private static final String PROCESS_DEFINITION_PATH_PROPERTY = "processDefinitionPath";
+  private static final String CALLING_ELEMENT_PATH_PROPERTY = "callingElementPath";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -162,9 +180,27 @@ final class BulkIndexRequest implements ContentProducer {
   @JsonIgnoreProperties({RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY})
   private static final class EvaluatedDecisionMixin {}
 
-  /// Include annotations from {@link RecordSequenceMixin} since you can only have one Mixin per
-  /// class in Jackson
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
   @JsonIgnoreProperties({BATCH_OPERATION_REFERENCE_PROPERTY, RECORD_AUTHORIZATIONS_PROPERTY})
   private static final class BatchOperationReferenceMixin {}
+
+  @JsonIgnoreProperties({
+    TAGS_PROPERTY,
+    ELEMENT_INSTANCE_PATH_PROPERTY,
+    PROCESS_DEFINITION_PATH_PROPERTY,
+    CALLING_ELEMENT_PATH_PROPERTY,
+  })
+  private static final class ProcessInstanceMixin {}
+
+  @JsonIgnoreProperties({TAGS_PROPERTY, RUNTIME_INSTRUCTIONS_PROPERTY})
+  private static final class ProcessInstanceCreationMixin {}
+
+  @JsonIgnoreProperties({TAGS_PROPERTY})
+  private static final class ProcessInstanceResultMixin {}
+
+  @JsonIgnoreProperties({DENIED_REASON_PROPERTY})
+  private static final class UserTaskMixin {}
+
+  @JsonIgnoreProperties({RESULT_PROPERTY, TAGS_PROPERTY})
+  private static final class JobMixin {}
 }
