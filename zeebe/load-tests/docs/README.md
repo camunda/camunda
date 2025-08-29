@@ -1,15 +1,11 @@
 # Documentation
 
-This folder contains information/documentation we collected during setup several benchmarks
+This folder contains information/documentation we collected during setup several load tests
 and Google Cloud clusters.
 
 ## Scripts
 
 The [scripts](scripts/README.md) section contains several scripts which can help on running benchmarks.
-
-## Kubernetes
-
-The [kubernetes](kubernetes/README.md) section contains several information about kubernetes.
 
 ## Failures
 
