@@ -8,7 +8,7 @@
     <version>8.9.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>util</artifactId>
+  <artifactId>optimize-util</artifactId>
   <packaging>pom</packaging>
   <name>Optimize Util</name>
 
