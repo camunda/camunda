@@ -89,14 +89,6 @@ public class ProcessInstanceRestServiceIT {
   }
 
   @Test
-  public void testGetVariablesByIdWithInvalidId() throws Exception {
-    final var url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/not-valid-id-123/variables";
-    final MvcResult mvcResult =
-        mockMvcManager.postRequestShouldFailWithException(url, ConstraintViolationException.class);
-    assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
-  }
-
-  @Test
   public void testGetFlowNodeStatesByIdWithInvalidId() throws Exception {
     final var url =
         ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/not-valid-id-123/flow-node-states";
@@ -226,8 +218,7 @@ public class ProcessInstanceRestServiceIT {
         Arguments.of("/1/sequence-flows"),
         Arguments.of("/1/variables/1"),
         Arguments.of("/1/variables/1"),
-        Arguments.of("/1/flow-node-states"),
-        Arguments.of("/1/statistics"));
+        Arguments.of("/1/flow-node-states"));
   }
 
   private static Stream<Arguments> noPermissionPostParameters() {

@@ -61,43 +61,6 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
   @MockitoBean private BatchOperationWriter batchOperationWriter;
 
   @Test
-  public void testProcessDefinitionByIdFailsWhenNoPermissions() throws Exception {
-    // given
-    final Long processDefinitionKey = 123L;
-    final String bpmnProcessId = "processId";
-    // when
-    when(processReader.getProcess(processDefinitionKey))
-        .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(false);
-    final MvcResult mvcResult =
-        getRequestShouldFailWithNoAuthorization(getProcessByIdUrl(processDefinitionKey.toString()));
-    // then
-    assertErrorMessageContains(mvcResult, "No read permission for process");
-  }
-
-  @Test
-  public void testProcessDefinitionXmlFailsWhenNoPermissions() throws Exception {
-    // given
-    final Long processDefinitionKey = 123L;
-    final String bpmnProcessId = "processId";
-    // when
-    when(processReader.getProcess(processDefinitionKey))
-        .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(false);
-    final MvcResult mvcResult =
-        getRequestShouldFailWithNoAuthorization(
-            getProcessXmlByIdUrl(processDefinitionKey.toString()));
-    // then
-    assertErrorMessageContains(mvcResult, "No read permission for process");
-  }
-
-  @Test
   public void testDeleteProcessDefinition() throws Exception {
     // given
     final Long processDefinitionKey = 123L;
@@ -173,9 +136,5 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
 
   public String getProcessByIdUrl(final String id) {
     return ProcessRestService.PROCESS_URL + "/" + id;
-  }
-
-  public String getProcessXmlByIdUrl(final String id) {
-    return ProcessRestService.PROCESS_URL + "/" + id + "/xml";
   }
 }

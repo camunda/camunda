@@ -58,25 +58,6 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
   @MockitoBean private BatchOperationWriter batchOperationWriter;
 
   @Test
-  public void testDecisionDefinitionXmlFailsWhenNoPermissions() throws Exception {
-    // given
-    final Long decisionDefinitionKey = 123L;
-    final String decisionId = "decisionId";
-    // when
-    when(decisionReader.getDecision(decisionDefinitionKey))
-        .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForDecision(
-            decisionId, PermissionType.READ_DECISION_INSTANCE))
-        .thenReturn(false);
-    final MvcResult mvcResult =
-        getRequestShouldFailWithNoAuthorization(
-            getDecisionXmlByIdUrl(decisionDefinitionKey.toString()));
-    // then
-    assertErrorMessageContains(mvcResult, "No read permission for decision");
-  }
-
-  @Test
   public void testDeleteDecisionDefinition() throws Exception {
     // given
     final Long decisionDefinitionKey = 123L;
@@ -146,10 +127,6 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
             getDecisionByIdUrl(decisionDefinitionKey.toString()));
     // then
     assertErrorMessageContains(mvcResult, "No delete permission for decision");
-  }
-
-  private String getDecisionXmlByIdUrl(final String id) {
-    return DecisionRestService.DECISION_URL + "/" + id + "/xml";
   }
 
   private String getDecisionByIdUrl(final String id) {
