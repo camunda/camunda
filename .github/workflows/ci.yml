@@ -252,6 +252,8 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
@@ -316,6 +318,8 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     strategy:
       fail-fast: false
       matrix:
@@ -382,6 +386,15 @@ jobs:
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[UT] Zeebe - ${{ matrix.component }} - ${{matrix.suiteName}}"
+      - name: Write matrix outputs for test analysis
+        uses: cloudposse/github-action-matrix-outputs-write@v1
+        id: matrix-write
+        with:
+          matrix-step-name: ${{ github.job }}
+          matrix-key: ${{ matrix.component }}-${{ matrix.suiteName }}
+          outputs: |-
+            flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
+            hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -403,6 +416,8 @@ jobs:
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
@@ -496,6 +511,8 @@ jobs:
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
@@ -595,6 +612,8 @@ jobs:
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     steps:
@@ -661,6 +680,8 @@ jobs:
     name: "[IT] RDBMS"
     timeout-minutes: 7
     runs-on: gcp-perf-core-8-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     permissions: { }  # no GITHUB_TOKEN is needed
     steps:
       - uses: actions/checkout@v4
@@ -720,6 +741,8 @@ jobs:
     timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runs-on }}
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     strategy:
       fail-fast: false
       matrix:
@@ -870,6 +893,15 @@ jobs:
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[IT] ${{ matrix.name }}"
+      - name: Write matrix outputs for test analysis
+        uses: cloudposse/github-action-matrix-outputs-write@v1
+        id: matrix-write
+        with:
+          matrix-step-name: ${{ github.job }}
+          matrix-key: ${{ matrix.module }} - [IT] ${{ matrix.name }} - ${{ matrix.owner }}
+          outputs: |-
+            flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
+            hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -889,6 +921,8 @@ jobs:
     name: Camunda docker tests
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     timeout-minutes: 20
     permissions:
       security-events: write
@@ -988,6 +1022,68 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "General"
 
+  utils-flaky-tests-summary:
+    name: flaky tests summary comment
+    if: always() && github.event_name == 'pull_request'
+    needs:
+      - docker-checks
+      - elasticsearch-integration-tests
+      - general-unit-tests
+      - integration-tests
+      - opensearch-integration-tests
+      - rdbms-h2-integration-tests
+      - rdbms-integration-tests
+      - zeebe-unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read Zeebe unit tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@v1
+        id: zeebe-matrix-read
+        with:
+          matrix-step-name: zeebe-unit-tests
+      - name: Read Integration tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@v1
+        id: integration-matrix-read
+        with:
+          matrix-step-name: integration-tests
+      - name: Collect flaky test results
+        id: collect-results
+        uses: ./.github/actions/collect-flaky-tests
+        with:
+          general-unit-tests-result: ${{ needs.general-unit-tests.result }}
+          general-unit-tests-flaky: ${{ needs.general-unit-tests.outputs.flakyTests }}
+          elasticsearch-tests-result: ${{ needs.elasticsearch-integration-tests.result }}
+          elasticsearch-tests-flaky: ${{ needs.elasticsearch-integration-tests.outputs.flakyTests }}
+          opensearch-tests-result: ${{ needs.opensearch-integration-tests.result }}
+          opensearch-tests-flaky: ${{ needs.opensearch-integration-tests.outputs.flakyTests }}
+          rdbms-h2-tests-result: ${{ needs.rdbms-h2-integration-tests.result }}
+          rdbms-h2-tests-flaky: ${{ needs.rdbms-h2-integration-tests.outputs.flakyTests }}
+          rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
+          rdbms-tests-flaky: ${{ needs.rdbms-integration-tests.outputs.flakyTests }}
+          docker-checks-result: ${{ needs.docker-checks.result }}
+          docker-checks-flaky: ${{ needs.docker-checks.outputs.flakyTests }}
+          zeebe-tests-result: ${{ needs.zeebe-unit-tests.result }}
+          zeebe-matrix-output-result: ${{ steps.zeebe-matrix-read.outputs.result }}
+          integration-tests-result: ${{ needs.integration-tests.result }}
+          integration-matrix-output-result: ${{ steps.integration-matrix-read.outputs.result }}
+      - name: Update flaky tests comment
+        uses: ./.github/actions/flaky-tests-summary-comment
+        with:
+          flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data }}'
+          pr-number: ${{ github.event.pull_request.number }}
+          branch-name: ${{ github.event.pull_request.head.ref }}
+      - name: Delete matrix job generated artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            zeebe-unit-tests-*
+            integration-tests-*
+
   identity-frontend-tests:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
     needs: [ detect-changes ]
@@ -1027,7 +1123,6 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           user_description: "Identity"
-
 
   tasklist-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
