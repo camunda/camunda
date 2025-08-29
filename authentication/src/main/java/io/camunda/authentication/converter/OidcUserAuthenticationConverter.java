@@ -21,7 +21,6 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtException;
 
 public class OidcUserAuthenticationConverter
     implements CamundaAuthenticationConverter<Authentication> {
@@ -92,12 +91,13 @@ public class OidcUserAuthenticationConverter
   }
 
   protected Jwt decodeAccessToken(final String accessTokenValue) {
-    try {
-      return jwtDecoder.decode(accessTokenValue);
-    } catch (final JwtException e) {
-      LOGGER.warn("Failed to decode Access Token: '{}', returning null", e.getMessage());
-      return null;
-    }
+    return null;
+    //    try {
+    //      return jwtDecoder.decode(accessTokenValue);
+    //    } catch (final JwtException e) {
+    //      LOGGER.warn("Failed to decode Access Token: '{}', returning null", e.getMessage());
+    //      return null;
+    //    }
   }
 
   protected Map<String, Object> getIdTokenClaims(

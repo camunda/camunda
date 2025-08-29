@@ -56,7 +56,8 @@ public sealed interface AuthenticationHandler {
     public Oidc(
         final JwtDecoder jwtDecoder,
         final OidcAuthenticationConfiguration oidcAuthenticationConfiguration) {
-      this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
+      this.jwtDecoder = jwtDecoder;
+      //      this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
       this.oidcAuthenticationConfiguration =
           Objects.requireNonNull(oidcAuthenticationConfiguration);
       oidcPrincipalLoader =

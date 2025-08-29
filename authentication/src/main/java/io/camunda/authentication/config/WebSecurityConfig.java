@@ -7,18 +7,10 @@
  */
 package io.camunda.authentication.config;
 
-import static com.nimbusds.jose.JOSEObjectType.JWT;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES256;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES384;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES512;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS384;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS512;
 
 import com.nimbusds.jose.JOSEObjectType;
-import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
@@ -39,6 +31,7 @@ import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -96,10 +89,9 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest.Builder;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.JwtValidators;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtIssuerAuthenticationManagerResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -167,7 +159,8 @@ public class WebSecurityConfig {
           "/rest-api.yaml",
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
-          "/favicon.ico");
+          "/favicon.ico",
+          "/default-ui.css");
   // We explicitly support the "at+jwt" JWT 'typ' header defined in
   // https://datatracker.ietf.org/doc/html/rfc9068#name-header
   static final JOSEObjectType AT_JWT = new JOSEObjectType("at+jwt");
@@ -571,34 +564,35 @@ public class WebSecurityConfig {
     @Bean
     public CamundaAuthenticationConverter<Authentication> oidcUserAuthenticationConverter(
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final JwtDecoder jwtDecoder,
+        //        final JwtDecoder jwtDecoder,
         final TokenClaimsConverter tokenClaimsConverter,
         final HttpServletRequest request) {
       return new OidcUserAuthenticationConverter(
-          authorizedClientRepository, jwtDecoder, tokenClaimsConverter, request);
+          authorizedClientRepository, null, tokenClaimsConverter, request);
     }
 
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
         final SecurityConfiguration securityConfiguration) {
       try {
-        return new InMemoryClientRegistrationRepository(
-            OidcClientRegistration.create(securityConfiguration.getAuthentication().getOidc()));
+        final var providers =
+            securityConfiguration.getAuthentication().getOidc().entrySet().stream()
+                .map(e -> OidcClientRegistration.create(e.getKey(), e.getValue()))
+                .toList();
+        return new InMemoryClientRegistrationRepository(providers);
       } catch (final Exception e) {
-        final String issuerUri = securityConfiguration.getAuthentication().getOidc().getIssuerUri();
-        throw new IllegalStateException(
-            "Unable to connect to the Identity Provider endpoint `"
-                + issuerUri
-                + "'. Double check that it is configured correctly, and if the problem persists, "
-                + "contact your external Identity provider.",
-            e);
+        throw new IllegalStateException(e);
       }
     }
 
     @Bean
     public OidcGroupsLoader oidcGroupsLoader(final SecurityConfiguration securityConfiguration) {
+      // TODO:
       final String groupsClaim =
-          securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
+          securityConfiguration.getAuthentication().getOidc().values().stream()
+              .findFirst()
+              .get()
+              .getGroupsClaim();
       return new OidcGroupsLoader(groupsClaim);
     }
 
@@ -606,41 +600,48 @@ public class WebSecurityConfig {
     public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
         final SecurityConfiguration securityConfiguration) {
       final var decoderFactory = new OidcIdTokenDecoderFactory();
+      // TODO: apply validator's according to configured provider
       decoderFactory.setJwtValidatorFactory(
           registration -> getTokenValidator(securityConfiguration));
       return decoderFactory;
     }
 
-    @Bean
-    public JwtDecoder jwtDecoder(
-        final SecurityConfiguration securityConfiguration,
-        final ClientRegistrationRepository clientRegistrationRepository) {
-      // Do not rely on the configured uri, the client registration can automatically discover it
-      // based on the issuer uri.
-      final var jwkSetUri =
-          clientRegistrationRepository
-              .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
-              .getProviderDetails()
-              .getJwkSetUri();
+    //    @Bean
+    //    public JwtDecoder jwtDecoder(
+    //        final SecurityConfiguration securityConfiguration,
+    //        final ClientRegistrationRepository clientRegistrationRepository) {
+    //      // Do not rely on the configured uri, the client registration can automatically discover
+    // it
+    //      // based on the issuer uri.
+    //      final var jwkSetUri =
+    //          clientRegistrationRepository
+    //              .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
+    //              .getProviderDetails()
+    //              .getJwkSetUri();
+    //
+    //      final var decoder =
+    //          NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
+    //              .jwsAlgorithms(
+    //                  algorithms ->
+    //                      algorithms.addAll(List.of(RS256, RS384, RS512, ES256, ES384, ES512)))
+    //              .jwtProcessorCustomizer(
+    //                  // the default implementation supports only JOSEObjectType.JWT and null
+    //                  processor ->
+    //                      processor.setJWSTypeVerifier(
+    //                          new DefaultJOSEObjectTypeVerifier<>(JWT, AT_JWT, null)))
+    //              .build();
+    //      decoder.setJwtValidator(getTokenValidator(securityConfiguration));
+    //      return decoder;
+    //    }
 
-      final var decoder =
-          NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
-              .jwsAlgorithms(
-                  algorithms ->
-                      algorithms.addAll(List.of(RS256, RS384, RS512, ES256, ES384, ES512)))
-              .jwtProcessorCustomizer(
-                  // the default implementation supports only JOSEObjectType.JWT and null
-                  processor ->
-                      processor.setJWSTypeVerifier(
-                          new DefaultJOSEObjectTypeVerifier<>(JWT, AT_JWT, null)))
-              .build();
-      decoder.setJwtValidator(getTokenValidator(securityConfiguration));
-      return decoder;
-    }
-
-    private static OAuth2TokenValidator<Jwt> getTokenValidator(
+    public static OAuth2TokenValidator<Jwt> getTokenValidator(
         final SecurityConfiguration configuration) {
-      final var validAudiences = configuration.getAuthentication().getOidc().getAudiences();
+      // TODO:
+      final var validAudiences =
+          configuration.getAuthentication().getOidc().values().stream()
+              .findFirst()
+              .get()
+              .getAudiences();
       final var validators = new LinkedList<OAuth2TokenValidator<Jwt>>();
       if (validAudiences != null) {
         validators.add(new AudienceValidator(validAudiences));
@@ -667,12 +668,32 @@ public class WebSecurityConfig {
     public SecurityFilterChain oidcApiSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
-        final JwtDecoder jwtDecoder,
+        //        final JwtDecoder jwtDecoder,
         final SecurityConfiguration securityConfiguration,
+        final ClientRegistrationRepository clientRegistrationRepository,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager)
         throws Exception {
+
+      final var trustedIssuers =
+          securityConfiguration.getAuthentication().getOidc().values().stream()
+              .map(OidcAuthenticationConfiguration::getIssuerUri)
+              .toList();
+
+      final var decoderFactory =
+          new io.camunda.authentication.config.JwtDecoderFactory(
+              clientRegistrationRepository, securityConfiguration);
+
+      final var authenticationManagerResolver =
+          new IssuerBasedAuthenticationManagerResolver(
+              securityConfiguration.getAuthentication().getOidc(),
+              decoderFactory,
+              trustedIssuers::contains);
+
+      final var jwtIssuerResolver =
+          new JwtIssuerAuthenticationManagerResolver(authenticationManagerResolver);
+
       final var filterChainBuilder =
           httpSecurity
               .securityMatcher(API_PATHS.toArray(new String[0]))
@@ -695,7 +716,7 @@ public class WebSecurityConfig {
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
               .oauth2ResourceServer(
-                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+                  oauth2 -> oauth2.authenticationManagerResolver(jwtIssuerResolver))
               .oauth2Login(AbstractHttpConfigurer::disable)
               .oidcLogout(AbstractHttpConfigurer::disable)
               .logout(AbstractHttpConfigurer::disable);
@@ -714,7 +735,7 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final ClientRegistrationRepository clientRegistrationRepository,
-        final JwtDecoder jwtDecoder,
+        //        final JwtDecoder jwtDecoder,
         final SecurityConfiguration securityConfiguration,
         final CamundaAuthenticationProvider authenticationProvider,
         final ResourceAccessProvider resourceAccessProvider,
@@ -738,8 +759,9 @@ public class WebSecurityConfig {
               .cors(AbstractHttpConfigurer::disable)
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
-              .oauth2ResourceServer(
-                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+              //              .oauth2ResourceServer(
+              //                  oauth2 -> oauth2.jwt(jwtConfigurer ->
+              // jwtConfigurer.decoder(jwtDecoder)))
               .oauth2Login(
                   oauthLoginConfigurer -> {
                     oauthLoginConfigurer
@@ -793,10 +815,11 @@ public class WebSecurityConfig {
     private Consumer<Builder> authorizationRequestCustomizer(
         final SecurityConfiguration securityConfiguration) {
       return customizer -> {
+        // TODO:
         final var additionalParameters =
-            securityConfiguration
-                .getAuthentication()
-                .getOidc()
+            securityConfiguration.getAuthentication().getOidc().values().stream()
+                .findFirst()
+                .get()
                 .getAuthorizeRequest()
                 .getAdditionalParameters();
 

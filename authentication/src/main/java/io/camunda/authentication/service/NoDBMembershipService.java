@@ -27,7 +27,11 @@ public class NoDBMembershipService implements MembershipService {
   private final String groupsClaim;
 
   public NoDBMembershipService(final SecurityConfiguration securityConfiguration) {
-    groupsClaim = securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
+    groupsClaim =
+        securityConfiguration.getAuthentication().getOidc().values().stream()
+            .findFirst()
+            .get()
+            .getGroupsClaim();
     oidcGroupsLoader = new OidcGroupsLoader(groupsClaim);
   }
 
