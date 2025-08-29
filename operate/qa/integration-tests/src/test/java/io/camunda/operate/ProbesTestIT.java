@@ -24,6 +24,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 class ProbesTestIT {
+  private static final String INDEX_PREFIX_CONFIG =
+      "camunda.data.secondary-storage.elasticsearch.index-prefix";
 
   @Nested
   @ExtendWith(SpringExtension.class)
@@ -39,7 +41,7 @@ class ProbesTestIT {
 
     @DynamicPropertySource
     static void setProperties(final DynamicPropertyRegistry registry) {
-      registry.add("camunda.database.indexPrefix", () -> TestUtil.createRandomString(10));
+      registry.add(INDEX_PREFIX_CONFIG, () -> TestUtil.createRandomString(10));
       registry.add("camunda.database.schema-manager.createSchema", () -> true);
       registry.add("camunda.operate.zeebe.compatibility.enabled", () -> true);
     }
@@ -65,7 +67,7 @@ class ProbesTestIT {
 
     @DynamicPropertySource
     static void setProperties(final DynamicPropertyRegistry registry) {
-      registry.add("camunda.database.indexPrefix", () -> TestUtil.createRandomString(10));
+      registry.add(INDEX_PREFIX_CONFIG, () -> TestUtil.createRandomString(10));
       registry.add("camunda.database.schema-manager.createSchema", () -> false);
       registry.add("camunda.operate.zeebe.compatibility.enabled", () -> true);
     }
