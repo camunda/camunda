@@ -53,7 +53,7 @@
     <module>dmn</module>
     <module>snapshot</module>
     <module>journal</module>
-    <module>benchmarks/project</module>
+    <module>load-tests/project</module>
     <module>scheduler</module>
     <module>backup</module>
     <module>backup-stores/testkit</module>
