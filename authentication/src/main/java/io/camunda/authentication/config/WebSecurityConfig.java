@@ -18,6 +18,7 @@ import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS
 import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS512;
 
 import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
@@ -56,6 +57,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.KeyStore;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -80,11 +82,15 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.ContentTypeOptionsConfig;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.HstsConfig;
+import org.springframework.security.config.annotation.web.configurers.oauth2.client.OAuth2LoginConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.endpoint.NimbusJwtClientAuthenticationParametersConverter;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
+import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -753,6 +759,7 @@ public class WebSecurityConfig {
                                 authorization.authorizationRequestResolver(
                                     authorizationRequestResolver(
                                         clientRegistrationRepository, securityConfiguration)));
+                    configureTokenEndpoint(securityConfiguration, oauthLoginConfigurer);
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
               .logout(
@@ -775,6 +782,50 @@ public class WebSecurityConfig {
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
+    }
+
+    private void configureTokenEndpoint(
+        final SecurityConfiguration securityConfiguration,
+        final OAuth2LoginConfigurer<HttpSecurity> oauthLoginConfigurer) {
+      if (securityConfiguration
+          .getAuthentication()
+          .getOidc()
+          .isClientAuthenticationPrivateKeyJwt()) {
+        oauthLoginConfigurer.tokenEndpoint(
+            token ->
+                token.accessTokenResponseClient(
+                    createPrivateKeyJwtTokenResponseClient(securityConfiguration)));
+      }
+      // fallback is Spring default client_secret_basic
+    }
+
+    private RestClientAuthorizationCodeTokenResponseClient createPrivateKeyJwtTokenResponseClient(
+        final SecurityConfiguration securityConfiguration) {
+      final var converter =
+          new NimbusJwtClientAuthenticationParametersConverter<OAuth2AuthorizationCodeGrantRequest>(
+              clientRegistration -> resolveJwk(securityConfiguration));
+      converter.setJwtClientAssertionCustomizer(
+          ctx -> {
+            // get thumbprint from context and set as kid
+          });
+
+      final RestClientAuthorizationCodeTokenResponseClient tokenResponseClient =
+          new RestClientAuthorizationCodeTokenResponseClient();
+      tokenResponseClient.addParametersConverter(converter);
+      return tokenResponseClient;
+    }
+
+    private JWK resolveJwk(final SecurityConfiguration securityConfiguration) {
+      final var oidcConfig = securityConfiguration.getAuthentication().getOidc();
+      try {
+        final KeyStore keyStore = oidcConfig.loadKeystore();
+        return JWK.load(
+            keyStore,
+            oidcConfig.getKeystoreKeyAlias(),
+            oidcConfig.getKeystoreKeyPassword().toCharArray());
+      } catch (final Exception e) {
+        throw new IllegalStateException("Unable to load keystore", e);
+      }
     }
 
     private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
