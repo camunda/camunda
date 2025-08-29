@@ -20,6 +20,7 @@ import org.mockito.Mockito;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +73,7 @@ final class OpenSearchArchiverRepositoryTest {
         "import-position",
         "zeebe-record",
         client,
+        new OpenSearchGenericClient(client._transport(), client._transportOptions()),
         Runnable::run,
         metrics,
         LOGGER);
