@@ -7,11 +7,15 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 public class MappingRuleClient {
@@ -120,6 +124,16 @@ public class MappingRuleClient {
 
     public Record<MappingRuleRecordValue> delete() {
       final long position = writer.writeCommand(MappingRuleIntent.DELETE, mappingRuleRecord);
+      return expectation.apply(position);
+    }
+
+    public Record<MappingRuleRecordValue> deleteWithMappingRuleAuth(
+        final String claim, final String value) {
+      final var auth = new AuthInfo();
+      final var claims = new HashMap<>();
+      claims.put(claim, value);
+      auth.setClaims(Map.of(Authorization.USER_TOKEN_CLAIMS, claims));
+      final long position = writer.writeCommand(MappingRuleIntent.DELETE, mappingRuleRecord, auth);
       return expectation.apply(position);
     }
 
