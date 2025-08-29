@@ -35,6 +35,7 @@ import FlowNodeTaskReceive from 'modules/components/Icon/flow-node-task-receive.
 import FlowNodeTaskSend from 'modules/components/Icon/flow-node-task-send.svg?react';
 import FlowNodeTaskSubProcess from 'modules/components/Icon/flow-node-subprocess-embedded.svg?react';
 import FlowNodeTaskSubProcessAdhoc from 'modules/components/Icon/flow-node-subprocess-adhoc.svg?react';
+import FlowNodeTaskSubProcessAdhocInnerInstance from 'modules/components/Icon/flow-node-subprocess-adhoc-inner-instance.svg?react';
 import FlowNodeTaskMulti from 'modules/components/Icon/flow-node-multi-instance-parallel.svg?react';
 import FlowNodeTaskParallel from 'modules/components/Icon/flow-node-multi-instance-sequential.svg?react';
 import FlowNodeCallActivity from 'modules/components/Icon/flow-node-call-activity.svg?react';
@@ -95,11 +96,6 @@ const getSVGComponent = (
   businessObject: BusinessObject | undefined,
   flowNodeInstanceType: String,
 ) => {
-  if (businessObject === undefined) {
-    return FlowNodeTask;
-  }
-
-  console.log(flowNodeInstanceType);
   if (flowNodeInstanceType === 'MULTI_INSTANCE_BODY') {
     switch (getMultiInstanceType(businessObject)) {
       case 'parallel':
@@ -108,10 +104,9 @@ const getSVGComponent = (
         return FlowNodeTaskMulti;
     }
   } else if (flowNodeInstanceType === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
-    console.log(flowNodeInstanceType);
-    return FlowNodeTaskParallel;
+    return FlowNodeTaskSubProcessAdhocInnerInstance;
   } else if (businessObject === undefined) {
-    return FlowNodeTaskParallel;
+    return FlowNodeTask;
   }
 
   switch (getEventType(businessObject)) {
