@@ -20,7 +20,7 @@ This is a small overview of the contents of the different modules:
 - `broker` contains the Zeebe broker which is the server side of Zeebe
 - `client-java` contains the Java Zeebe client
 - `atomix` contains transport, membership, and consensus algorithms
-- `benchmark` contains utilities the team uses to run load tests
+- `load-tests` contains utilities the team uses to run load tests
 - `exporters/elasticsearch-exporter` contains the official Elasticsearch exporter for Zeebe
 - `journal` contains the append-only log used by the consensus algorithm
 - `snapshots` abstracts how state snapshots (i.e. `zb-db`) are handled

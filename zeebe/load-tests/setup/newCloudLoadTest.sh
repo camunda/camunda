@@ -1,9 +1,8 @@
 #!/bin/bash
+set -exo pipefail
 
 # Contains OS specific sed function
 . utils.sh
-
-set -exo pipefail
 
 if [ -z $1 ]
 then
@@ -11,7 +10,7 @@ then
   exit 1
 fi
 
-### Benchmark helper script
+### Cloud load test helper script
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 
@@ -19,12 +18,8 @@ fi
 namespace=$1
 
 kubectl create namespace $namespace
-cp -rv default/ $namespace
+cp -rv cloud-default/ $namespace
 cd $namespace
 
 # calls OS specific sed inplace function
-sed_inplace "s/default/$namespace/g" Makefile
-
-# get latest updates from zeebe repo
-helm repo add zeebe-benchmark https://camunda.github.io/zeebe-benchmark-helm # skips if already exists
-helm repo update
+sed_inplace "s/default/$namespace/g" Makefile starter.yaml timer.yaml simpleStarter.yaml worker.yaml

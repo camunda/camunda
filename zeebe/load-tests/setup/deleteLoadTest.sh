@@ -8,7 +8,7 @@ then
 fi
 
 
-### Benchmark helper script
+### Load test helper script
 ### First parameter is used as namespace name
 ### Given namespace will be completely deleted.
 
