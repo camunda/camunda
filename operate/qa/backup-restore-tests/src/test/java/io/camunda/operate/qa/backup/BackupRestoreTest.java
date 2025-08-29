@@ -145,8 +145,7 @@ public class BackupRestoreTest {
         testContainerUtil
             .createOperateContainer(OPERATE_TEST_DOCKER_IMAGE, VERSION, testContext)
             .withLogConsumer(new Slf4jLogConsumer(LOGGER))
-            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", INDEX_PREFIX)
-            .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX", INDEX_PREFIX)
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", INDEX_PREFIX)
             .withEnv("CAMUNDA_OPERATE_IMPORTERENABLED", "false")
             .withEnv("CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME", REPOSITORY_NAME);
 

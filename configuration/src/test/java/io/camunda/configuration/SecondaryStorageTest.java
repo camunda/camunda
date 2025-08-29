@@ -38,12 +38,14 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   SearchEngineConnectPropertiesOverride.class
 })
 public class SecondaryStorageTest {
+  private static final String EXPECTED_INDEX_PREFIX = "sample-index-prefix";
 
   @Nested
   @TestPropertySource(
       properties = {
         "camunda.data.secondary-storage.type=elasticsearch",
-        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321"
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -69,6 +71,8 @@ public class SecondaryStorageTest {
 
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(operateProperties.getElasticsearch().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
     }
 
     @Test
@@ -78,6 +82,8 @@ public class SecondaryStorageTest {
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(tasklistProperties.getElasticsearch().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
     }
 
     @Test
@@ -95,12 +101,15 @@ public class SecondaryStorageTest {
           UnifiedConfigurationHelper.argsToExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
+      assertThat(exporterConfiguration.getConnect().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
     }
 
     @Test
     void testCamundaSearchEngineConnectProperties() {
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo("elasticsearch");
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://expected-url:4321");
+      assertThat(searchEngineConnectProperties.getIndexPrefix()).isEqualTo(EXPECTED_INDEX_PREFIX);
     }
   }
 
@@ -116,7 +125,17 @@ public class SecondaryStorageTest {
         "camunda.data.secondary-storage.elasticsearch.url=http://matching-url:4321",
         "camunda.database.url=http://matching-url:4321",
         "camunda.tasklist.elasticsearch.url=http://matching-url:4321",
-        "camunda.operate.elasticsearch.url=http://matching-url:4321"
+        "camunda.operate.elasticsearch.url=http://matching-url:4321",
+
+        // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
+        //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
+        //  the className is also configured.
+
+        // index prefix
+        "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
+        "camunda.database.indexPrefix=" + EXPECTED_INDEX_PREFIX,
+        "camunda.tasklist.elasticsearch.indexPrefix=" + EXPECTED_INDEX_PREFIX,
+        "camunda.operate.elasticsearch.indexPrefix=" + EXPECTED_INDEX_PREFIX,
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
@@ -142,6 +161,8 @@ public class SecondaryStorageTest {
 
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(operateProperties.getElasticsearch().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
     }
 
     @Test
@@ -151,6 +172,8 @@ public class SecondaryStorageTest {
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(tasklistProperties.getElasticsearch().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
     }
 
     @Test
@@ -168,12 +191,15 @@ public class SecondaryStorageTest {
           UnifiedConfigurationHelper.argsToExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
+      assertThat(exporterConfiguration.getConnect().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
     }
 
     @Test
     void testCamundaSearchEngineConnectProperties() {
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo("elasticsearch");
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://matching-url:4321");
+      assertThat(searchEngineConnectProperties.getIndexPrefix()).isEqualTo(EXPECTED_INDEX_PREFIX);
     }
   }
 }

@@ -127,6 +127,7 @@ camunda:
       type: 'opensearch'
       opensearch:
         url: 'http://localhost:9200'
+        index-prefix: ''
   # -----
 
   database:

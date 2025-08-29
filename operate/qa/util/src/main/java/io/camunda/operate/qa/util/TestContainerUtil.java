@@ -625,12 +625,10 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", dbUrl)
         .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", dbUrl)
         .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", dbUrl);
-    if (testContext.getZeebeIndexPrefix() != null) {
-      broker
-          .withEnv(
-              "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX",
-              testContext.getZeebeIndexPrefix())
-          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testContext.getZeebeIndexPrefix());
+    if (testContext.getZeebeIndexPrefix() != null && dbType != null) {
+      broker.withEnv(
+          "CAMUNDA_DATA_SECONDARYSTORAGE_" + dbType.toUpperCase() + "_INDEXPREFIX",
+          testContext.getZeebeIndexPrefix());
     }
   }
 

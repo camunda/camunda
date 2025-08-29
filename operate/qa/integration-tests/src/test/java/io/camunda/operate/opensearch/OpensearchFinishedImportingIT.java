@@ -47,10 +47,14 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       "camunda.data.secondary-storage.type=opensearch",
+
+      // TODO: Some property sources are setting the following legacy variables equal to
+      //  'elasticsearch', causing a conflict. I couldn't find where this setting is happening,
+      //  therefore, for the moment, I'm overriding them here to let the tests work.
+      //  We need to identify these sources and remove them.
       "camunda.database.type=opensearch",
       "camunda.tasklist.database=opensearch",
       "camunda.operate.database=opensearch",
-      "zeebe.broker.exporters.camundaexporter.args.connect.type=opensearch"
     })
 public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
 

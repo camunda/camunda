@@ -57,6 +57,7 @@ public class SearchEngineConnectPropertiesOverride {
 
     override.setType(secondaryStorage.getType().name());
     override.setUrl(database.getUrl());
+    override.setIndexPrefix(database.getIndexPrefix());
 
     return override;
   }
