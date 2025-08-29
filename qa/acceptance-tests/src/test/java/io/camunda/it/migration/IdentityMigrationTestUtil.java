@@ -27,6 +27,7 @@ final class IdentityMigrationTestUtil {
   public static final String CAMUNDA_IDENTITY_RESOURCE_SERVER = "camunda-identity-resource-server";
   public static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   public static final int IDENTITY_PORT = 8080;
+  public static final String LATEST_87 = "8.7.6";
   private static final String KEYCLOAK_HOST = "keycloak";
   private static final int KEYCLOAK_PORT = 8080;
   private static final String KEYCLOAK_USER = "admin";
@@ -74,7 +75,7 @@ final class IdentityMigrationTestUtil {
 
   static GenericContainer<?> getManagementIdentitySMKeycloak(
       final KeycloakContainer keycloak, final GenericContainer<?> postgres) {
-    return new GenericContainer<>(DockerImageName.parse("camunda/identity:SNAPSHOT"))
+    return new GenericContainer<>(DockerImageName.parse("camunda/identity:" + LATEST_87))
         .withImagePullPolicy(PullPolicy.alwaysPull())
         .dependsOn(keycloak)
         .dependsOn(postgres)
@@ -116,7 +117,7 @@ final class IdentityMigrationTestUtil {
 
   static GenericContainer<?> getManagementIdentitySMOidc(
       final KeycloakContainer keycloak, final GenericContainer<?> postgres) {
-    return new GenericContainer<>(DockerImageName.parse("camunda/identity:SNAPSHOT"))
+    return new GenericContainer<>(DockerImageName.parse("camunda/identity:" + LATEST_87))
         .withImagePullPolicy(PullPolicy.alwaysPull())
         .dependsOn(keycloak)
         .dependsOn(postgres)
@@ -159,7 +160,7 @@ final class IdentityMigrationTestUtil {
   }
 
   static GenericContainer<?> getManagementIdentitySaaS(final GenericContainer<?> postgres) {
-    return new GenericContainer<>(DockerImageName.parse("camunda/identity:SNAPSHOT"))
+    return new GenericContainer<>(DockerImageName.parse("camunda/identity:" + LATEST_87))
         .withImagePullPolicy(PullPolicy.alwaysPull())
         .dependsOn(postgres)
         .withEnv("SERVER_PORT", Integer.toString(IDENTITY_PORT))
