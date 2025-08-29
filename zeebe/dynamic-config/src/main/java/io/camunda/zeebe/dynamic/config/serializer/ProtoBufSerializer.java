@@ -575,7 +575,7 @@ public class ProtoBufSerializer
           topologyChangeOperation.getPartitionDisableExporter().getExporterId());
     } else if (topologyChangeOperation.hasPartitionDeleteExporter()) {
       return new PartitionDeleteExporterOperation(
-          memberId,
+          MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getPartitionDeleteExporter().getPartitionId(),
           topologyChangeOperation.getPartitionDeleteExporter().getExporterId());
     } else if (topologyChangeOperation.hasPartitionEnableExporter()) {

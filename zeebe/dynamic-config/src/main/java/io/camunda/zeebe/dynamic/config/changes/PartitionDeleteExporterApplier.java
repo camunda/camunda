@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -96,16 +97,25 @@ final class PartitionDeleteExporterApplier implements MemberOperationApplier {
 
   @Override
   public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
-    return partitionChangeExecutor
+    final var result = new CompletableActorFuture<UnaryOperator<MemberState>>();
+    partitionChangeExecutor
         .deleteExporter(partitionId, exporterId)
-        .thenApply(
-            (nothing) -> {
-              return memberState ->
-                  memberState.updatePartition(
-                      partitionId,
-                      partition ->
-                          partition.updateConfig(config -> deleteExporter(config, exporterId)));
+        .onComplete(
+            (nothing, error) -> {
+              if (error != null) {
+                result.completeExceptionally(error);
+              } else {
+                result.complete(
+                    memberState ->
+                        memberState.updatePartition(
+                            partitionId,
+                            partition ->
+                                partition.updateConfig(
+                                    config -> deleteExporter(config, exporterId))));
+              }
             });
+
+    return result;
   }
 
   private DynamicPartitionConfig deleteExporter(
