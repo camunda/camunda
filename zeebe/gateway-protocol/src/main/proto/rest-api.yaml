@@ -2000,11 +2000,11 @@ paths:
         parentProcessInstanceKey are ignored and overridden during this batch operation.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProcessInstanceFilter"
+              $ref: "#/components/schemas/ProcessInstanceCancellationBatchOperationRequest"
       responses:
         "200":
           description: The batch operation request was created.
@@ -2039,11 +2039,11 @@ paths:
         filters for state are ignored and overridden during this batch operation.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProcessInstanceFilter"
+              $ref: "#/components/schemas/ProcessInstanceIncidentResolutionBatchOperationRequest"
       responses:
         "200":
           description: The batch operation request was created.
@@ -10869,6 +10869,24 @@ components:
         errorMessage:
           description: the error message from the engine in case of a failed operation.
           type: string
+    ProcessInstanceCancellationBatchOperationRequest:
+      type: object
+      description: |
+        The process instance filter that defines which process instances should be canceled.
+      properties:
+        filter:
+          $ref: "#/components/schemas/ProcessInstanceFilter"
+      required:
+        - filter
+    ProcessInstanceIncidentResolutionBatchOperationRequest:
+      type: object
+      description: |
+        The process instance filter that defines which process instances should have their incidents resolved.
+      properties:
+        filter:
+          $ref: "#/components/schemas/ProcessInstanceFilter"
+      required:
+        - filter
     ProcessInstanceModificationBatchOperationRequest:
       type: object
       description: |
