@@ -27,6 +27,8 @@ import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
@@ -68,6 +70,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
   private final String zeebeIndexPrefix;
+  private final Cache<String, String> lifeCyclePolicyApplied =
+      Caffeine.newBuilder().maximumSize(200).build();
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -266,17 +270,39 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private CompletableFuture<Void> applyPolicyToIndices(
       final String policyName, final List<String> indices) {
 
-    logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
+    final var indicesWithoutPolicy =
+        indices.stream()
+            .filter(index -> !policyName.equals(lifeCyclePolicyApplied.getIfPresent(index)))
+            .toList();
+
+    if (indicesWithoutPolicy.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    logger.debug(
+        "Applying policy '{}' to {} indices: {}",
+        policyName,
+        indicesWithoutPolicy.size(),
+        indicesWithoutPolicy);
 
     final var settingsRequest =
         new PutIndicesSettingsRequest.Builder()
             .settings(settings -> settings.lifecycle(lifecycle -> lifecycle.name(policyName)))
-            .index(indices)
+            .index(indicesWithoutPolicy)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .build();
 
-    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
+    return client
+        .indices()
+        .putSettings(settingsRequest)
+        .thenApplyAsync(
+            ok -> {
+              indicesWithoutPolicy.forEach(
+                  indexName -> lifeCyclePolicyApplied.put(indexName, policyName));
+              return null;
+            },
+            executor);
   }
 
   private CompletableFuture<ArchiveBatch> createArchiveBatch(
