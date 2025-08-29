@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
 
 public final class BackgroundTaskManagerFactory {
@@ -257,6 +258,9 @@ public final class BackgroundTaskManagerFactory {
       }
       case OPENSEARCH -> {
         final var connector = new OpensearchConnector(config.getConnect());
+        final var asyncClient = connector.createAsyncClient();
+        final var genericClient =
+            new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
         yield new OpenSearchArchiverRepository(
             partitionId,
             config.getHistory(),
@@ -265,7 +269,8 @@ public final class BackgroundTaskManagerFactory {
             listViewTemplate.getFullQualifiedName(),
             batchOperationTemplate.getFullQualifiedName(),
             config.getIndex().getZeebeIndexPrefix(),
-            connector.createAsyncClient(),
+            asyncClient,
+            genericClient,
             executor,
             metrics,
             logger);

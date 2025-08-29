@@ -86,6 +86,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String batchOperationIndex,
       final String zeebeIndexPrefix,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
+      final OpenSearchGenericClient genericClient,
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
@@ -98,8 +99,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     this.batchOperationIndex = batchOperationIndex;
     this.metrics = metrics;
     this.zeebeIndexPrefix = zeebeIndexPrefix;
-
-    genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
+    this.genericClient = genericClient;
   }
 
   @Override
@@ -288,8 +288,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final var indicesWithoutPolicy =
         indices.stream()
-            .filter(
-                index -> !policyName.equals(lifeCyclePolicyApplied.getIfPresent(index)))
+            .filter(index -> !policyName.equals(lifeCyclePolicyApplied.getIfPresent(index)))
             .toList();
     if (indicesWithoutPolicy.isEmpty()) {
       return CompletableFuture.completedFuture(null);
