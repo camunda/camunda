@@ -14,6 +14,7 @@ import org.testcontainers.containers.Network;
 
 public class TestContext<T extends TestContext<T>> {
 
+  private String databaseType = null;
   private File zeebeDataFolder;
   private Network network;
   private String internalPostgresHost;
@@ -48,6 +49,14 @@ public class TestContext<T extends TestContext<T>> {
   private final Map<String, String> operateContainerEnvs = new LinkedHashMap<>();
 
   private String connectionType;
+
+  public void setDatabaseType(String databaseType) {
+    this.databaseType = databaseType;
+  }
+
+  public String getDatabaseType() {
+    return databaseType;
+  }
 
   public File getZeebeDataFolder() {
     return zeebeDataFolder;

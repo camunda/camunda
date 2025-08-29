@@ -436,9 +436,17 @@ public class TestContainerUtil {
       final Integer osPort = testContext.getInternalOsPort();
       final String osUrl = String.format("http://%s:%s", osHost, osPort);
       tasklistContainer
+          // Unified config for db url + compatibility
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", osUrl)
           .withEnv("CAMUNDA_DATABASE_URL", osUrl)
-          .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", osUrl)
+          .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", osUrl)
+          // Unified config for db type + compatibility vars
+          .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "opensearch")
+          .withEnv("CAMUNDA_OPERATE_DATABASE", "opensearch")
+          .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
+          // ---
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_HOST", osHost)
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort))
           .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", osUrl)
@@ -453,9 +461,17 @@ public class TestContainerUtil {
       final Integer elsPort = testContext.getInternalElsPort();
       final String esUrl = String.format("http://%s:%s", elsHost, elsPort);
       tasklistContainer
+          // Unified config for db type + compatibility vars
           .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-          .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
+          // Unified config for db type + compatibility vars
+          .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
+          .withEnv("CAMUNDA_OPERATE_DATABASE", "elasticsearch")
+          .withEnv("CAMUNDA_TASKLIST_DATABASE", "elasticsearch")
+          // ---
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", elsHost)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", String.valueOf(elsPort))
           .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
@@ -537,15 +553,23 @@ public class TestContainerUtil {
             : "http://%s:%s"
                 .formatted(testContext.getInternalElsHost(), testContext.getInternalElsPort());
     final var type = TestUtil.isOpenSearch() ? "opensearch" : "elasticsearch";
+    final String exporterClassName = "io.camunda.exporter.CamundaExporter";
 
     zeebeBroker
+        // Unified Configuration: DB URL + compatibility
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_" + type.toUpperCase() + "_URL", url)
         .withEnv("CAMUNDA_DATABASE_URL", url)
-        .withEnv("CAMUNDA_DATABASE_TYPE", type)
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
-            "io.camunda.exporter.CamundaExporter")
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", url)
+        .withEnv("CAMUNDA_OPERATE_" + type.toUpperCase() + "_URL", url)
+        .withEnv("CAMUNDA_TASKLIST_" + type.toUpperCase() + "_URL", url)
+        // Unified Configuration: DB type + compatibility
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", type)
+        .withEnv("CAMUNDA_DATABASE_TYPE", type)
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", type)
+        .withEnv("CAMUNDA_OPERATE_DATABASE", type)
+        .withEnv("CAMUNDA_TASKLIST_DATABASE", type)
+        // ---
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME", exporterClassName)
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_WAITPERIODBEFOREARCHIVING", "1s");
     if (testContext.getZeebeIndexPrefix() != null) {

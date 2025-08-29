@@ -10,7 +10,7 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandalonePrefixMigration;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
+import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
