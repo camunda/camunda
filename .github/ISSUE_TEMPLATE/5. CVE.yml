@@ -1,7 +1,7 @@
 name: CVE
 description: Raise a CVE issue.
 labels: ["kind/cve"]
-type: CVE
+type: cve
 body:
   - type: dropdown
     id: Component
