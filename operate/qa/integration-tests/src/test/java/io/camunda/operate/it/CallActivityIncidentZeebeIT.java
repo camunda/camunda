@@ -20,7 +20,6 @@ import io.camunda.operate.qa.util.RestAPITestUtil;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
-import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
@@ -47,7 +46,6 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
   public static final String CALL_ACTIVITY_ID = "callActivity";
   public static final String TASK_ID = "task";
   public static final String TASK_ID_2 = "task2";
-  private static final String QUERY_PROCESS_STATISTICS_URL = "/api/process-instances/statistics";
   private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
   private static final String QUERY_PROCESS_CORE_STATISTICS_URL =
       "/api/process-instances/core-statistics";
@@ -128,49 +126,10 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
   public void testIncidentPropagatedInIncidentsByProcess() throws Exception {
     final List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
     assertThat(processGroups).hasSize(2);
-    for (IncidentsByProcessGroupStatisticsDto stat : processGroups) {
+    for (final IncidentsByProcessGroupStatisticsDto stat : processGroups) {
       assertThat(stat.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
       assertThat(stat.getActiveInstancesCount()).isEqualTo(2);
     }
-  }
-
-  @Test
-  public void testStatistics() throws Exception {
-    // statistics for parent process
-    ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(parentProcessDefinitionKey);
-
-    List<FlowNodeStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
-    assertThat(activityStatisticsDtos).hasSize(1);
-    assertThat(activityStatisticsDtos)
-        .filteredOn(ai -> ai.getActivityId().equals(CALL_ACTIVITY_ID))
-        .allMatch(
-            ai ->
-                ai.getActive().equals(2L)
-                    && ai.getCanceled().equals(0L)
-                    && ai.getCompleted().equals(0L)
-                    && ai.getIncidents().equals(1L));
-
-    // statistics for called process
-    queryRequest = createGetAllProcessInstancesQuery(calledProcessDefinitionKey);
-
-    activityStatisticsDtos = getActivityStatistics(queryRequest);
-    assertThat(activityStatisticsDtos).hasSize(2);
-    assertThat(activityStatisticsDtos)
-        .filteredOn(ai -> ai.getActivityId().equals(TASK_ID))
-        .allMatch(
-            ai ->
-                ai.getActive().equals(2L)
-                    && ai.getCanceled().equals(0L)
-                    && ai.getCompleted().equals(0L)
-                    && ai.getIncidents().equals(1L));
-    assertThat(activityStatisticsDtos)
-        .filteredOn(ai -> ai.getActivityId().equals(TASK_ID_2))
-        .allMatch(
-            ai ->
-                ai.getActive().equals(3L)
-                    && ai.getCanceled().equals(0L)
-                    && ai.getCompleted().equals(0L)
-                    && ai.getIncidents().equals(0L));
   }
 
   @Test
@@ -235,7 +194,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
         .containsOnly(FlowNodeStateDto.ACTIVE);
   }
 
-  private ListViewQueryDto createGetAllProcessInstancesQuery(Long... processDefinitionKeys) {
+  private ListViewQueryDto createGetAllProcessInstancesQuery(final Long... processDefinitionKeys) {
     final ListViewQueryDto q = RestAPITestUtil.createGetAllProcessInstancesQuery();
     if (processDefinitionKeys != null && processDefinitionKeys.length > 0) {
       q.setProcessIds(CollectionUtil.toSafeListOfStrings(processDefinitionKeys));
@@ -243,13 +202,8 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
     return q;
   }
 
-  private List<FlowNodeStatisticsDto> getActivityStatistics(ListViewQueryDto query)
+  private ListViewResponseDto getProcessInstanceList(final ListViewRequestDto request)
       throws Exception {
-    return mockMvcTestRule.listFromResponse(
-        postRequest(QUERY_PROCESS_STATISTICS_URL, query), FlowNodeStatisticsDto.class);
-  }
-
-  private ListViewResponseDto getProcessInstanceList(ListViewRequestDto request) throws Exception {
     return mockMvcTestRule.fromResponse(
         postRequest(PROCESS_INSTANCE_URL, request), new TypeReference<>() {});
   }
@@ -259,7 +213,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
         getRequest(QUERY_INCIDENTS_BY_PROCESS_URL), IncidentsByProcessGroupStatisticsDto.class);
   }
 
-  private Map<String, FlowNodeStateDto> getFlowNodeStateDtos(String processInstanceId)
+  private Map<String, FlowNodeStateDto> getFlowNodeStateDtos(final String processInstanceId)
       throws Exception {
     final MvcResult mvcResult =
         getRequest(
@@ -277,7 +231,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
-      FlowNodeInstanceQueryDto query) throws Exception {
+      final FlowNodeInstanceQueryDto query) throws Exception {
     final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
     final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
     final Map<String, FlowNodeInstanceResponseDto> response =
