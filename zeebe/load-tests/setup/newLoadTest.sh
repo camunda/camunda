@@ -11,7 +11,7 @@ then
   exit 1
 fi
 
-### Benchmark helper script
+### Load test helper script
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 

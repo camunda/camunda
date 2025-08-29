@@ -1,6 +1,6 @@
 # Welcome
 
-Welcome to the Zeebe Benchmark folder :wave:
+Welcome to the Zeebe Load Tests folder :wave:
 
 ## Introduction
 
@@ -8,7 +8,7 @@ Make sure you have access to our Google Cloud environment. Ask the team or SRE f
 
 ### Requirements
 
-In order to setup a benchmark you need to have several tools on your machine installed.
+In order to setup a load test you need to have several tools on your machine installed.
 
 Follow these guide's to install each of them:
 
@@ -68,6 +68,6 @@ When following the instructions above, execute all commands that deal with Docke
 ## What's next?
 
 * [Read the docs](docs/README.md)
-* [Run a Benchmark](setup/README.md)
+* [Run a Load Test](setup/README.md)
 * [Change the Project](project/README.md)
 
