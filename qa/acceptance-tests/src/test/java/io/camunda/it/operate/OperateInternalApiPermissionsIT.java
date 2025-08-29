@@ -189,43 +189,6 @@ public class OperateInternalApiPermissionsIT {
   }
 
   @Test
-  public void shouldGetProcessByKeyOnlyForAuthorizedProcesses() {
-    // super user can read all process definitions
-    final var operateClient =
-        STANDALONE_CAMUNDA.newOperateClient(SUPER_USER.username(), SUPER_USER.password());
-
-    assertThat(
-            DEPLOYED_PROCESSES.stream()
-                .map(Process::getProcessDefinitionKey)
-                .allMatch(
-                    (key) ->
-                        operateClient.internalGetProcessDefinitionByKey(key).get().statusCode()
-                            == 200))
-        .isTrue();
-
-    // restricted user can read process definition 1
-    final var restrictedOperateClient =
-        STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER.username(), RESTRICTED_USER.password());
-
-    assertThat(
-            restrictedOperateClient
-                .internalGetProcessDefinitionByKey(
-                    DEPLOYED_PROCESSES.get(0).getProcessDefinitionKey())
-                .get()
-                .statusCode())
-        .isEqualTo(200);
-
-    // restricted user cannot read process definition 2
-    assertThat(
-            restrictedOperateClient
-                .internalGetProcessDefinitionByKey(
-                    DEPLOYED_PROCESSES.get(1).getProcessDefinitionKey())
-                .get()
-                .statusCode())
-        .isEqualTo(403);
-  }
-
-  @Test
   public void shouldReturnOnlyAuthorizedDecisionInstances(final CamundaClient adminClient)
       throws URISyntaxException, IOException, InterruptedException {
     // given

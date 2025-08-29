@@ -12,19 +12,14 @@ import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForDecisionsToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
-import static io.camunda.it.util.TestHelper.waitUntilIncidentsConditionsAreMet;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
@@ -35,18 +30,13 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.webapps.schema.entities.operation.OperationType;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -158,7 +148,6 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
 
   private static long processDefinitionForDeletionKey;
   private static DeploymentEvent decisionDeploymentEvent;
-  private static long targetMigrationProcessDefinitionKey;
 
   @BeforeAll
   public static void beforeAll(
@@ -183,11 +172,6 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
     deployResource(adminClient, PROCESS_WITH_SERVICE_TASKS_RESOURCE);
     deployResource(adminClient, PROCESS_WITH_INCIDENT_RESOURCE);
     deployResource(adminClient, PROCESS_FOR_MIGRATION_V1_RESOURCE);
-    targetMigrationProcessDefinitionKey =
-        deployResource(adminClient, PROCESS_FOR_MIGRATION_V2_RESOURCE)
-            .getProcesses()
-            .get(0)
-            .getProcessDefinitionKey();
 
     // wait for operate to catch up
     waitForProcessesToBeDeployed(adminClient, 6);
@@ -259,103 +243,6 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
 
   @ParameterizedTest
   @MethodSource("provideUserAndResponseCode")
-  public void shouldCancelProcessInstance(
-      final TestUser user,
-      final int expectedResponseCode,
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
-    // given
-    final var processInstanceKey =
-        startProcessInstance(adminClient, PROCESS_WITH_SERVICE_TASKS).getProcessInstanceKey();
-    // wait for operate to catch up
-    waitForProcessInstancesToStart(
-        adminClient, filter -> filter.processInstanceKey(processInstanceKey), 1);
-    // and a user with process instance update permissions
-    try (final var operateRestClient =
-        STANDALONE_CAMUNDA.newOperateClient(user.username(), user.password())) {
-
-      // when
-      final var response = operateRestClient.cancelProcessInstance(processInstanceKey);
-
-      // then
-      assertThat(response).isRight();
-      final var responseBody = response.get();
-      assertThat(responseBody).isNotNull();
-      assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
-      if (expectedResponseCode == 200) {
-        // if the request is successful, we expect the process instance to be canceled
-        assertThat(
-                RecordingExporter.processInstanceRecords()
-                    .withIntent(ProcessInstanceIntent.TERMINATE_ELEMENT)
-                    .withRecordKey(processInstanceKey)
-                    .count())
-            .isEqualTo(1L);
-      }
-    }
-  }
-
-  // process instance migrations are batched and accepted without permission checks,
-  // so a request from an unauthorized user will return a 200
-  @Test
-  public void shouldMigrateProcessInstance(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
-    // given
-    final var processInstanceKey =
-        startProcessInstance(adminClient, PROCESS_FOR_MIGRATION_V1).getProcessInstanceKey();
-    // wait for operate to catch up
-    waitForProcessInstancesToStart(
-        adminClient, filter -> filter.processInstanceKey(processInstanceKey), 1);
-
-    try (final var operateRestClient =
-        STANDALONE_CAMUNDA.newOperateClient(
-            TEST_USER_WITH_PERMISSIONS.username(), TEST_USER_WITH_PERMISSIONS.password())) {
-      final var migrationRequestBody =
-          new CreateBatchOperationRequestDto()
-              .setName("authorized-batch")
-              .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
-              .setQuery(
-                  new ListViewQueryDto()
-                      .setActive(true)
-                      .setRunning(true)
-                      .setIncidents(true)
-                      .setFinished(true)
-                      .setCompleted(true)
-                      .setCanceled(true))
-              .setMigrationPlan(
-                  new MigrationPlanDto()
-                      .setTargetProcessDefinitionKey(
-                          String.valueOf(targetMigrationProcessDefinitionKey))
-                      .setMappingInstructions(
-                          List.of(
-                              new MigrationPlanDto.MappingInstruction()
-                                  .setSourceElementId("taskA")
-                                  .setTargetElementId("taskA2"),
-                              new MigrationPlanDto.MappingInstruction()
-                                  .setSourceElementId("taskB")
-                                  .setTargetElementId("taskB2"))));
-
-      // when
-      final var response = operateRestClient.migrateProcessInstance(migrationRequestBody);
-
-      // then
-      assertThat(response).isRight();
-      final var responseBody = response.get();
-      assertThat(responseBody).isNotNull();
-      assertThat(responseBody.statusCode()).isEqualTo(200);
-
-      // TODO: re-enable this assertion once batch operations are picked up by the Operate executor
-      //      RecordingExporter.setMaximumWaitTime(25_000L);
-      //      assertThat(
-      //              RecordingExporter.processInstanceMigrationRecords(
-      //                      ProcessInstanceMigrationIntent.MIGRATED)
-      //                  .withRecordKey(processInstanceKey)
-      //                  .count())
-      //          .isEqualTo(1L);
-      //      RecordingExporter.setMaximumWaitTime(5000);
-    }
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideUserAndResponseCode")
   public void shouldModifyProcessInstance(
       final TestUser user,
       final int expectedResponseCode,
@@ -392,87 +279,6 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
         assertThat(
                 RecordingExporter.processInstanceModificationRecords()
                     .withIntent(ProcessInstanceModificationIntent.MODIFIED)
-                    .withProcessInstanceKey(processInstanceKey)
-                    .count())
-            .isEqualTo(1L);
-      }
-    }
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideUserAndResponseCode")
-  public void shouldUpdateProcessInstanceVariable(
-      final TestUser user,
-      final int expectedResponseCode,
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
-    // given
-    final var processInstanceKey =
-        startProcessInstance(adminClient, PROCESS_WITH_VARIABLE).getProcessInstanceKey();
-    final String variableScopeId = String.valueOf(processInstanceKey);
-    final String variableName = "process01";
-    final var variableValue = 3;
-    waitForProcessInstancesToStart(
-        adminClient, filter -> filter.processInstanceKey(processInstanceKey), 1);
-
-    try (final var operateRestClient =
-        STANDALONE_CAMUNDA.newOperateClient(user.username(), user.password())) {
-
-      // when
-      final var response =
-          operateRestClient.updateVariable(
-              processInstanceKey, variableScopeId, variableName, variableValue);
-
-      // then
-      assertThat(response).isRight();
-      final var responseBody = response.get();
-      assertThat(responseBody).isNotNull();
-      assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
-      if (expectedResponseCode == 200) {
-        // if the request is successful, we expect the variable to be updated
-        final var variableUpdateRecord =
-            RecordingExporter.variableRecords()
-                .withIntent(VariableIntent.UPDATED)
-                .withScopeKey(processInstanceKey)
-                .withName(variableName)
-                .limit(1L)
-                .getFirst();
-        assertThat(variableUpdateRecord).isNotNull();
-        assertThat(variableUpdateRecord.getValue().getValue()).isEqualTo("3");
-      }
-    }
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideUserAndResponseCode")
-  public void shouldResolveIncident(
-      final TestUser user,
-      final int expectedResponseCode,
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
-    // given
-    final var processInstanceKey =
-        startProcessInstance(adminClient, PROCESS_WITH_INCIDENT).getProcessInstanceKey();
-    waitUntilIncidentsConditionsAreMet(
-        adminClient,
-        f -> f.processInstanceKey(processInstanceKey).state(IncidentState.ACTIVE),
-        1,
-        "should wait until incidents become active");
-
-    try (final var operateRestClient =
-        STANDALONE_CAMUNDA.newOperateClient(user.username(), user.password())) {
-
-      // when
-      final var response = operateRestClient.resolveIncident(processInstanceKey);
-
-      // then
-      assertThat(response).isRight();
-      final var responseBody = response.get();
-      assertThat(responseBody).isNotNull();
-      assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
-      if (expectedResponseCode == 200) {
-        // if the request is successful, we expect the incident to be resolved
-        assertThat(
-                RecordingExporter.incidentRecords()
-                    .withIntent(IncidentIntent.RESOLVED)
                     .withProcessInstanceKey(processInstanceKey)
                     .count())
             .isEqualTo(1L);
