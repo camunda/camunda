@@ -10,9 +10,9 @@
     <relativePath>../../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-benchmark</artifactId>
+  <artifactId>zeebe-load-test</artifactId>
 
-  <name>Zeebe Benchmark</name>
+  <name>Zeebe Load Test</name>
 
   <licenses>
     <license>
@@ -37,7 +37,7 @@
   </properties>
 
   <dependencies>
-    <!-- Benchmark only dependencies -->
+    <!-- Load test only dependencies -->
     <dependency>
       <groupId>com.typesafe</groupId>
       <artifactId>config</artifactId>

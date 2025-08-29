@@ -1,15 +1,15 @@
 namespace ?= default
 
 .PHONY: all
-all: benchmark
+all: load-test
 
-.PHONY: benchmark
-benchmark:
+.PHONY: load-test
+load-test:
 	helm install --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark -f values.yaml --skip-crds
 
 # To deploy the Zeebe pods on stable nodes, use this job
-.PHONY: benchmark-stable
-benchmark-stable:
+.PHONY: load-test-stable
+load-test-stable:
 	helm install --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark -f values.yaml -f values-stable.yaml --skip-crds
 
 # Generates templates from the zeebe helm charts, useful to make some more specific changes which are not doable by the values file.
