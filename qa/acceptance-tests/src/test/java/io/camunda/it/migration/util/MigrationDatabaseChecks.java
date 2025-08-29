@@ -17,6 +17,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +44,17 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
                 }
               }
             }
+        """;
+  private static final String GET_IDS_QUERY =
+      """
+           {
+             "_source": false,
+             "fields": [],
+             "size": 1000,
+             "query": {
+               "match_all": {}
+             }
+           }
         """;
   private final String indexPrefix;
 
@@ -112,6 +125,29 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
     LOGGER.info("Checking if demo user is present");
     final var response = httpClient.send(request, BodyHandlers.ofString());
     return response.statusCode() == 200;
+  }
+
+  public boolean checkIfTasksHaveBeenReindexed() throws IOException, InterruptedException {
+    final Set<String> sourceIndexIds =
+        getDocumentIds(String.format("%s-tasklist-task-8.5.0_alias", indexPrefix));
+    final Set<String> targetIndexIds =
+        getDocumentIds(String.format("%s-tasklist-task-8.8.0_alias", indexPrefix));
+    return sourceIndexIds.isEmpty() || targetIndexIds.containsAll(sourceIndexIds);
+  }
+
+  private Set<String> getDocumentIds(final String targetUrl)
+      throws IOException, InterruptedException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(String.format("%s/%s/%s", endpoint, targetUrl, "_search")))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(GET_IDS_QUERY))
+            .build();
+    final var response = httpClient.send(request, BodyHandlers.ofString());
+    final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
+    final Set<String> ids = new HashSet<>();
+    jsonResponse.get("hits").get("hits").forEach(hit -> ids.add(hit.get("_id").asText()));
+    return ids;
   }
 
   @Override

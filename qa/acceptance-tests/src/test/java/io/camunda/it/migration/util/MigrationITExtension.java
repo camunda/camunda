@@ -130,6 +130,7 @@ public class MigrationITExtension
     awaitImportersFinished();
 
     awaitProcessMigrationFinished();
+    awaitTaskMigrationFinished();
   }
 
   private void awaitDemoUserIsPresent() {
@@ -215,6 +216,13 @@ public class MigrationITExtension
         .untilAsserted(() -> assertThat(appender.logs.size()).isGreaterThan(0));
 
     logger.detachAndStopAllAppenders();
+  }
+
+  private void awaitTaskMigrationFinished() {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> assertThat(migrationDatabaseChecks.checkIfTasksHaveBeenReindexed()).isTrue());
   }
 
   private void ingestRecordToTriggerImporters(final CamundaClient client) {

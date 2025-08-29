@@ -95,7 +95,7 @@
       },
       "customHeaders": {
         "type": "object",
-        "dynamic": "true"
+        "enabled": false
       },
       "priority": {
         "type": "integer"
