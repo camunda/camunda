@@ -10,7 +10,7 @@ then
   exit 1
 fi
 
-### Cloud Benchmark helper script
+### Cloud load test helper script
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 
