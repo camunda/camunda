@@ -227,7 +227,7 @@ jobs:
     needs: [ detect-changes ]
     outputs:
       # Zeebe modules owned by the @camunda/core-features team
-      ZEEBE_CORE_FEATURES_MODULES: "':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-db',':zeebe-workflow-engine'"
+      ZEEBE_CORE_FEATURES_MODULES: "':zeebe-auth',':camunda-load-tests',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-db',':zeebe-workflow-engine'"
       ZEEBE_PROTOCOL_MODULES: "':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
       ZEEBE_GATEWAY_MODULES: "':zeebe-gateway',':zeebe-gateway-grpc',':zeebe-gateway-protocol',':zeebe-gateway-protocol-impl',':zeebe-gateway-rest'"
       ZEEBE_EXPORTER_MODULES: "':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter',':rdbms-exporter',':zeebe-exporter-api',':zeebe-exporter-common',':zeebe-exporter-test'"
