@@ -158,7 +158,7 @@ jobs:
       - name: Start Camunda (OIDC config for mapping-rules)
         if: matrix.case == 'mapping-rules.http'
         run: |
-          cd ./dist/target/camunda-zeebe-8.8.0-SNAPSHOT
+          cd ./dist/target/camunda-zeebe-8.9.0-SNAPSHOT
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100 && \
