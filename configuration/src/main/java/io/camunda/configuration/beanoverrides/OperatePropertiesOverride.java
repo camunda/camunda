@@ -8,7 +8,10 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Backup;
+import io.camunda.configuration.SecondaryStorage;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
 import org.springframework.beans.BeanUtils;
@@ -42,6 +45,22 @@ public class OperatePropertiesOverride {
     BeanUtils.copyProperties(legacyOperateProperties, override);
 
     pouplateFromBackup(override);
+
+    final SecondaryStorage database =
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+
+    if (SecondaryStorageType.elasticsearch.equals(database.getType())) {
+      override.setDatabase(DatabaseType.Elasticsearch);
+      override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
+      override.getZeebeElasticsearch().setUrl(database.getElasticsearch().getUrl());
+    } else if (SecondaryStorageType.opensearch == database.getType()) {
+      override.setDatabase(DatabaseType.Opensearch);
+      override.getOpensearch().setUrl(database.getOpensearch().getUrl());
+      override.getZeebeOpensearch().setUrl(database.getOpensearch().getUrl());
+    }
+
+    // TODO: Populate the rest of the bean using unifiedConfiguration
+    //  override.setSampleField(unifiedConfiguration.getSampleField());
 
     return override;
   }

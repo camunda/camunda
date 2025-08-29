@@ -146,6 +146,9 @@ final class ContainerState implements AutoCloseable {
             .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
             .withEnv(UNPROTECTED_API_ENV_VAR, "true")
             .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "NONE")
+            .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
+            .withEnv("CAMUNDA_REST_ENABLED", "false")
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
             .withZeebeData(volume)
             .withNetwork(network);

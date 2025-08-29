@@ -21,6 +21,7 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.identity.IdentityModuleConfiguration;
@@ -70,9 +71,10 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     super(
         // Unified Configuration classes
         UnifiedConfiguration.class,
+        UnifiedConfigurationHelper.class,
         TasklistPropertiesOverride.class,
         OperatePropertiesOverride.class,
-        UnifiedConfigurationHelper.class,
+        SearchEngineConnectPropertiesOverride.class,
         GatewayRestPropertiesOverride.class,
         // ---
         CommonsModuleConfiguration.class,

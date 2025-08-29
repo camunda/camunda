@@ -28,6 +28,7 @@ import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.UNIFIED_CONFIGURATION_CAMUNDA_ENV_DATABASE_TYPE;
 
 import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
@@ -81,6 +82,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   public CamundaContainer withH2() {
     withEnv(CAMUNDA_ENV_DATABASE_TYPE, DATABASE_TYPE)
+        .withEnv(UNIFIED_CONFIGURATION_CAMUNDA_ENV_DATABASE_TYPE, DATABASE_TYPE)
         .withEnv(CAMUNDA_ENV_CAMUNDA_DATABASE_URL, databaseUrL(UUID.randomUUID()))
         .withEnv(CAMUNDA_ENV_DATABASE_USERNAME, DATABASE_USERNAME)
         .withEnv(CAMUNDA_ENV_DATABASE_PASSWORD, DATABASE_PASSWORD)

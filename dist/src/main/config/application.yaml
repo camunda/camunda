@@ -77,16 +77,18 @@ zeebe:
       ioThreadCount: 2
 
 camunda:
+  # Unified Configuration
+  data:
+    secondary-storage:
+      type: 'elasticsearch'
+      elasticsearch:
+        url: 'http://localhost:9200'
+  # ---
+
   database:
-    # Controls which database must be used, possible values: elasticsearch, opensearch
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE
-    type: elasticsearch
     # Sets the name of the cluster, default name is "elasticsearch"
     # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_CLUSTERNAME
     clusterName: elasticsearch
-    # Sets the database url.
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_URL
-    url: http://localhost:9200
   # Operate configuration properties
   operate:
     # Set operate username and password.
@@ -98,8 +100,6 @@ camunda:
     elasticsearch:
       # Cluster name
       clusterName: elasticsearch
-      # URL
-      url: http://localhost:9200
     # Zeebe instance
     zeebe:
       # Gateway address
@@ -108,8 +108,6 @@ camunda:
     zeebeElasticsearch:
       # Cluster name
       clusterName: elasticsearch
-      # URL
-      url: http://localhost:9200
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record
   # Tasklist configuration properties
@@ -123,8 +121,6 @@ camunda:
     elasticsearch:
       # Cluster name
       clusterName: elasticsearch
-      # URL
-      url: http://localhost:9200
     # Zeebe instance
     zeebe:
       # Gateway address
@@ -133,8 +129,6 @@ camunda:
     zeebeElasticsearch:
       # Cluster name
       clusterName: elasticsearch
-      # Url
-      url: http://localhost:9200
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record
   security:
