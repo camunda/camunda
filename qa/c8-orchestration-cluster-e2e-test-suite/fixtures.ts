@@ -28,7 +28,6 @@ import {IdentityMappingRulesPage} from '@pages/IdentityMappingRulesPage';
 import {IdentityRolesPage} from '@pages/IdentityRolesPage';
 import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
 import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
-import {AccessDeniedPage} from '@pages/AccessDeniedPage';
 
 import {sleep} from 'utils/sleep';
 
@@ -55,7 +54,6 @@ type PlaywrightFixtures = {
   identityRolesPage: IdentityRolesPage;
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
-  accessDeniedPage: AccessDeniedPage;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -162,10 +160,6 @@ const test = base.extend<PlaywrightFixtures>({
 
   identityRolesDetailsPage: async ({page}, use) => {
     await use(new IdentityRolesDetailsPage(page));
-  },
-
-  accessDeniedPage: async ({page}, use) => {
-    await use(new AccessDeniedPage(page));
   },
 });
 

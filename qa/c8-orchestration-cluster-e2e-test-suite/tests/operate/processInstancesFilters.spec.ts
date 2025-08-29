@@ -174,7 +174,7 @@ test.describe('Process Instances Filters', () => {
   test('Interaction between diagram and filters', async ({
     operateProcessesPage,
     operateFiltersPanelPage,
-    page
+    page,
   }) => {
     await test.step('Filter by Process Name and assert version value', async () => {
       await operateFiltersPanelPage.selectProcess(
@@ -192,7 +192,9 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.selectFlowNode('StartEvent_1');
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.noMatchingInstancesMessage).toBeVisible({timeout: 60000});
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({timeout: 60000});
         },
         onFailure: async () => {
           await page.reload();
