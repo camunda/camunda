@@ -12,16 +12,20 @@ import {
   LOGIN_CREDENTIALS,
   createTestData,
   createComponentAuthorization,
+  createUserAuthorization,
 } from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {verifyAccess} from 'utils/accessVerification';
 
 test.describe.serial('authorizations CRUD', () => {
   let NEW_USER: NonNullable<ReturnType<typeof createTestData>['user']>;
-  let NEW_AUTH_ROLE: NonNullable<ReturnType<typeof createTestData>['authRole']>;
+  let NEW_AUTH_ROLE: NonNullable<
+    ReturnType<typeof createTestData>['ownerType']
+  >;
   let NEW_USER_AUTHORIZATION: NonNullable<
-    ReturnType<typeof createTestData>['userAuth']
+    ReturnType<typeof createUserAuthorization>
   >;
   let NEW_COMPONENT_AUTHORIZATION: NonNullable<
     ReturnType<typeof createComponentAuthorization>
@@ -30,13 +34,12 @@ test.describe.serial('authorizations CRUD', () => {
     // Create test data once for the entire serial test suite
     const testData = createTestData({
       user: true,
-      authRole: true,
-      userAuth: true,
+      ownerType: true,
       componentAuth: true,
     });
     NEW_USER = testData.user!;
-    NEW_AUTH_ROLE = testData.authRole!;
-    NEW_USER_AUTHORIZATION = testData.userAuth!;
+    NEW_AUTH_ROLE = testData.ownerType!;
+    NEW_USER_AUTHORIZATION = createUserAuthorization(NEW_AUTH_ROLE);
     NEW_COMPONENT_AUTHORIZATION = testData.componentAuth!;
   });
 
@@ -70,9 +73,8 @@ test.describe.serial('authorizations CRUD', () => {
 
     await test.step(`Login as new user and check users list`, async () => {
       await identityHeader.logout();
-
       await loginPage.login(NEW_USER.username, NEW_USER.password);
-      await expect(page).toHaveURL(relativizePath(Paths.forbidden('identity')));
+      await verifyAccess(page, false);
     });
 
     await test.step(`Login as main user and create role and assign the new user to it`, async () => {
@@ -101,7 +103,7 @@ test.describe.serial('authorizations CRUD', () => {
       );
       await identityHeader.logout();
       await loginPage.login(NEW_USER.username, NEW_USER.password);
-      await expect(page).toHaveURL(relativizePath(Paths.forbidden('identity')));
+      await verifyAccess(page, false);
     });
   });
 
@@ -156,7 +158,7 @@ test.describe.serial('authorizations CRUD', () => {
     await test.step(`Logout and login with new user and assert authorization`, async () => {
       await identityHeader.logout();
       await loginPage.login(NEW_USER.username, NEW_USER.password);
-      await expect(page).toHaveURL(relativizePath(Paths.forbidden('identity')));
+      await verifyAccess(page, false);
       await identityHeader.logout();
     });
 
