@@ -22,6 +22,7 @@ import {
   FLOW_NODE_ID,
   USER_TASK_FLOW_NODE_ID,
   BUSINESS_RULE_FLOW_NODE_ID,
+  calledDecisionInstanceMetadata,
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {
@@ -40,8 +41,8 @@ import {mockIncidents} from 'modules/mocks/incidents';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
-import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 
 import type {
   ElementInstance,
@@ -279,7 +280,7 @@ describe('MetadataPopover', () => {
     );
 
     mockSearchDecisionInstances().withSuccess({
-      items: [mockDecisionInstance],
+      items: [calledDecisionInstanceMetadata],
       page: {totalItems: 1},
     });
 
@@ -347,7 +348,7 @@ describe('MetadataPopover', () => {
     };
 
     const mockFailedDecisionInstance = {
-      ...mockDecisionInstance,
+      ...calledDecisionInstanceMetadata,
       state: 'FAILED' as const,
     };
 
