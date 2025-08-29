@@ -7,8 +7,13 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -25,7 +30,7 @@ import org.springframework.stereotype.Component;
 public class UnifiedConfigurationHelper {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
-  private static final ConversionService CONVERSATION_SERVICE = new ApplicationConversionService();
+  private static final ConversionService CONVERSION_SERVICE = new ApplicationConversionService();
 
   private static Environment environment;
 
@@ -87,8 +92,12 @@ public class UnifiedConfigurationHelper {
       final String strValue = environment.getProperty(legacyProperty);
       final T legacyValue = parseLegacyValue(strValue, expectedType);
 
+      LOGGER.debug("Parsing legacy property '" + legacyProperty + "' -> '" + legacyValue + "'");
       if (legacyValue != null) {
         legacyValues.add(legacyValue);
+        LOGGER.debug("Parsed actual value: '" + legacyValue + "'");
+      } else {
+        LOGGER.debug("Parsed null object");
       }
     }
 
@@ -174,7 +183,7 @@ public class UnifiedConfigurationHelper {
 
       final String errorMessage =
           String.format(
-              "Ambiguous configuration. The value %s=%s does not match the value(s) conflicts with the values '%s' from the legacy properties %s",
+              "Ambiguous configuration. The value %s=%s conflicts with the values '%s' from the legacy properties %s",
               newProperty, newValue, legacyValue, String.join(", ", legacyProperties));
       throw new UnifiedConfigurationException(errorMessage);
     }
@@ -216,6 +225,7 @@ public class UnifiedConfigurationHelper {
   private static boolean legacyConfigPresent(final Set<String> legacyProperties) {
     for (final String legacyProperty : legacyProperties) {
       if (environment.containsProperty(legacyProperty)) {
+        LOGGER.debug("Found legacy property '{}'", legacyProperty);
         return true;
       }
     }
@@ -238,7 +248,7 @@ public class UnifiedConfigurationHelper {
 
     // simple types
     if (generics.length == 0) {
-      return (T) CONVERSATION_SERVICE.convert(strValue, rawClass);
+      return (T) CONVERSION_SERVICE.convert(strValue, rawClass);
     }
 
     // generic types
@@ -246,10 +256,30 @@ public class UnifiedConfigurationHelper {
       final TypeDescriptor targetType =
           TypeDescriptor.collection(rawClass, TypeDescriptor.valueOf(generics[0].resolve()));
       return (T)
-          CONVERSATION_SERVICE.convert(strValue, TypeDescriptor.valueOf(String.class), targetType);
+          CONVERSION_SERVICE.convert(strValue, TypeDescriptor.valueOf(String.class), targetType);
     }
 
     throw new IllegalArgumentException("Unsupported type: " + expectedType);
+  }
+
+  /* Helper methods */
+
+  public static ExporterCfg getCamundaExporter(final BrokerBasedProperties brokerBasedProperties) {
+    final List<ExporterCfg> exporters =
+        brokerBasedProperties.getExporters().values().stream()
+            .filter(e -> e.getClassName().equals("io.camunda.exporter.CamundaExporter"))
+            .toList();
+    if (exporters.isEmpty()) {
+      return null;
+    }
+
+    return exporters.get(0);
+  }
+
+  public static ExporterConfiguration argsToExporterConfiguration(final Map<String, Object> args) {
+    return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
+            "camundaExporter", args)
+        .instantiate(ExporterConfiguration.class);
   }
 
   /* Setters used by tests to inject the mock objects */
