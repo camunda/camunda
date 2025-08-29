@@ -176,7 +176,7 @@ public class WebSecurityConfig {
   private static final int ORDER_UNPROTECTED = 0;
   // Used for chains that protect the APIs or Webapp paths.
   private static final int ORDER_WEBAPP_API = 1;
-  // Intended for a "catch-all-unhandled"-chain protecting all resources by default
+  // Intended for a "catch-all-unhandled"-chain protecting api resources by default
   private static final int ORDER_UNHANDLED = 2;
 
   @Bean
@@ -241,10 +241,10 @@ public class WebSecurityConfig {
   @Order(ORDER_UNHANDLED)
   public SecurityFilterChain protectedUnhandledPathsSecurityFilterChain(
       final HttpSecurity httpSecurity) throws Exception {
-    // all resources not yet explicitly handled by any previous chain require an authenticated user
-    // thus by default unhandled paths are always protected
+    // all api resources not yet explicitly handled by any previous chain require an
+    // authenticated user thus by default unhandled paths are always protected
     return httpSecurity
-        .securityMatcher("/**")
+        .securityMatcher(API_PATHS.toArray(String[]::new))
         .authorizeHttpRequests(
             (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().denyAll())
         .build();
