@@ -75,8 +75,6 @@ zeebe:
         className: io.camunda.exporter.CamundaExporter
         args:
           connect:
-            type: elasticsearch
-            url: http://localhost:9200
             clusterName: elasticsearch
             dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZZ
             socketTimeout: 1000
@@ -123,8 +121,6 @@ zeebe:
 camunda:
 
   # Unified Configuration
-  # TODO: Remove legacy properties once issue https://github.com/camunda/camunda/issues/34902 is
-  #  done
   data:
     secondary-storage:
       type: 'elasticsearch'
@@ -133,15 +129,9 @@ camunda:
   # -----
 
   database:
-    # Controls which database must be used, possible values: elasticsearch, opensearch
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE
-    type: elasticsearch
     # Sets the name of the cluster, default name is "elasticsearch"
     # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_CLUSTERNAME
     clusterName: elasticsearch
-    # Sets the database url.
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_URL
-    url: http://localhost:9200
   # Operate configuration properties
   operate:
     # Set operate username and password.
@@ -153,8 +143,6 @@ camunda:
     elasticsearch:
       # Cluster name
       clusterName: elasticsearch
-      # URL
-      url: http://localhost:9200
     # Zeebe instance
     zeebe:
       # Gateway address
@@ -178,8 +166,6 @@ camunda:
     elasticsearch:
       # Cluster name
       clusterName: elasticsearch
-      # URL
-      url: http://localhost:9200
     # Zeebe instance
     zeebe:
       # Gateway address

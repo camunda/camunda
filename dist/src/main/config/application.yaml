@@ -86,9 +86,6 @@ camunda:
   # ---
 
   database:
-    # Controls which database must be used, possible values: elasticsearch, opensearch
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE
-    type: elasticsearch
     # Sets the name of the cluster, default name is "elasticsearch"
     # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_CLUSTERNAME
     clusterName: elasticsearch
