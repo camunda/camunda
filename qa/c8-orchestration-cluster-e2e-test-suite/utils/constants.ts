@@ -112,7 +112,8 @@ export const createComponentAuthorization = (
 // Generic function to create specific test data with shared ID
 export const createTestData = (options: {
   user?: boolean;
-  ownerType?: boolean;
+  authRole?: boolean;
+  userAuth?: boolean;
   componentAuth?: boolean;
   group?: boolean;
   editedGroup?: boolean;
@@ -122,7 +123,8 @@ export const createTestData = (options: {
 }) => {
   const {
     user = false,
-    ownerType = false,
+    authRole = false,
+    userAuth = false,
     componentAuth = false,
     group = false,
     editedGroup = false,
@@ -134,7 +136,8 @@ export const createTestData = (options: {
 
   const result: {
     user?: ReturnType<typeof createUniqueUser>;
-    ownerType?: ReturnType<typeof createUniqueAuthRole>;
+    authRole?: ReturnType<typeof createUniqueAuthRole>;
+    userAuth?: ReturnType<typeof createUserAuthorization>;
     componentAuth?: ReturnType<typeof createComponentAuthorization>;
     group?: ReturnType<typeof createUniqueGroup>;
     editedGroup?: ReturnType<typeof createEditedGroup>;
@@ -148,8 +151,8 @@ export const createTestData = (options: {
     result.user = createUniqueUser(sharedId);
   }
 
-  if (ownerType) {
-    result.ownerType = createUniqueAuthRole(sharedId);
+  if (authRole) {
+    result.authRole = createUniqueAuthRole(sharedId);
   }
 
   if (group) {
@@ -172,12 +175,13 @@ export const createTestData = (options: {
     result.editedMappingRule = createEditedMappingRule(sharedId);
   }
 
-  // Create authorizations only if ownerType is also created
-  if (componentAuth && result.ownerType) {
-    result.componentAuth = createComponentAuthorization(
-      result.ownerType,
-      'Role',
-    );
+  // Create authorizations only if authRole is also created
+  if (userAuth && result.authRole) {
+    result.userAuth = createUserAuthorization(result.authRole);
+  }
+
+  if (componentAuth && result.authRole) {
+    result.componentAuth = createComponentAuthorization(result.authRole);
   }
 
   return result;
