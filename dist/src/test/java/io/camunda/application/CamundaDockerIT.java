@@ -194,8 +194,7 @@ public class CamundaDockerIT {
             // Unified Configuration
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
-            // ---
-            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", "some-prefix");
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEX_PREFIX", "some-prefix");
 
     // when - then the container should start without errors
     startContainer(createContainer(() -> prefixMigrationContainer));

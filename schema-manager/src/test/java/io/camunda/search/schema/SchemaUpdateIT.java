@@ -89,6 +89,8 @@ class SchemaUpdateIT {
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withEnv("CAMUNDA_DATABASE_TYPE", databaseType.toString())
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", databaseType.toString())
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL".formatted(databaseType.name()), url)
             .withEnv("CAMUNDA_DATABASE_URL", url)
             .withEnv("CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS", "1")
             .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix)
@@ -100,6 +102,12 @@ class SchemaUpdateIT {
             .withEnv("CAMUNDA_TASKLIST_DATABASE", databaseType.toString())
             .withEnv("CAMUNDA_TASKLIST_%s_URL".formatted(databaseType.name()), url)
             .withEnv("CAMUNDA_TASKLIST_%s_INDEXPREFIX".formatted(databaseType.name()), indexPrefix)
+            .withEnv(
+                "CAMUNDA_DATA_SECONDARY_STORAGE_%s_INDEX_PREFIX".formatted(databaseType.name()),
+                indexPrefix)
+            .withEnv(
+                "CAMUNDA_DATA_SECONDARY_STORAGE_%s_INDEX_PREFIX".formatted(databaseType.name()),
+                indexPrefix)
             .withEnv("CAMUNDA_TASKLIST_ZEEBE%s_URL".formatted(databaseType.name()), url)) {
       previousVersionContainer.start();
       previousVersionContainer.followOutput(new Slf4jLogConsumer(LOG));

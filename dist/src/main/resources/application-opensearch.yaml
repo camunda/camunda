@@ -127,6 +127,7 @@ camunda:
       opensearch:
         url: 'http://localhost:9200'
         cluster-name: 'opensearch'
+        index-prefix: ''
   # -----
 
   # Operate configuration properties

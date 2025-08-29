@@ -77,6 +77,7 @@ public class TasklistPropertiesOverride {
     override.getElasticsearch().setUsername(database.getElasticsearch().getUsername());
     override.getElasticsearch().setPassword(database.getElasticsearch().getPassword());
     override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
+    override.getElasticsearch().setIndexPrefix(database.getElasticsearch().getIndexPrefix());
 
     populateFromSecurity(
         database.getElasticsearch().getSecurity(),
@@ -91,6 +92,7 @@ public class TasklistPropertiesOverride {
     override.getOpenSearch().setUsername(database.getOpensearch().getUsername());
     override.getOpenSearch().setPassword(database.getOpensearch().getPassword());
     override.getOpenSearch().setClusterName(database.getOpensearch().getClusterName());
+    override.getOpenSearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
 
     populateFromSecurity(
         database.getOpensearch().getSecurity(),

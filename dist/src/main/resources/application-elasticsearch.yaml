@@ -126,6 +126,7 @@ camunda:
       elasticsearch:
         url: 'http://localhost:9200'
         cluster-name: 'elasticsearch'
+        index-prefix: ''
   # -----
 
   # Operate configuration properties

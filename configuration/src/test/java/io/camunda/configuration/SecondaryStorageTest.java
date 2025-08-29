@@ -39,6 +39,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 })
 public class SecondaryStorageTest {
   private static final String EXPECTED_CLUSTER_NAME = "sample-cluster";
+  private static final String EXPECTED_INDEX_PREFIX = "sample-index-prefix";
 
   private static final String EXPECTED_USERNAME = "testUsername";
   private static final String EXPECTED_PASSWORD = "testPassword";
@@ -48,9 +49,10 @@ public class SecondaryStorageTest {
       properties = {
         "camunda.data.secondary-storage.type=elasticsearch",
         "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
-        "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
         "camunda.data.secondary-storage.elasticsearch.username=" + EXPECTED_USERNAME,
-        "camunda.data.secondary-storage.elasticsearch.password=" + EXPECTED_PASSWORD
+        "camunda.data.secondary-storage.elasticsearch.password=" + EXPECTED_PASSWORD,
+        "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
+        "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -80,6 +82,8 @@ public class SecondaryStorageTest {
       assertThat(operateProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(operateProperties.getElasticsearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(operateProperties.getElasticsearch().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
     }
 
     @Test
@@ -91,6 +95,8 @@ public class SecondaryStorageTest {
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(tasklistProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(tasklistProperties.getElasticsearch().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
     }
 
     @Test
@@ -109,12 +115,15 @@ public class SecondaryStorageTest {
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(exporterConfiguration.getConnect().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
     }
 
     @Test
     void testCamundaSearchEngineConnectProperties() {
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo("elasticsearch");
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://expected-url:4321");
+      assertThat(searchEngineConnectProperties.getIndexPrefix()).isEqualTo(EXPECTED_INDEX_PREFIX);
     }
   }
 
@@ -150,6 +159,17 @@ public class SecondaryStorageTest {
         "camunda.data.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.tasklist.elasticsearch.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.operate.elasticsearch.clusterName=" + EXPECTED_CLUSTER_NAME,
+        "camunda.operate.elasticsearch.url=http://matching-url:4321",
+
+        // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
+        //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
+        //  the className is also configured.
+
+        // index prefix
+        "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
+        "camunda.database.indexPrefix=" + EXPECTED_INDEX_PREFIX,
+        "camunda.tasklist.elasticsearch.indexPrefix=" + EXPECTED_INDEX_PREFIX,
+        "camunda.operate.elasticsearch.indexPrefix=" + EXPECTED_INDEX_PREFIX,
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
@@ -177,6 +197,8 @@ public class SecondaryStorageTest {
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(operateProperties.getElasticsearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(operateProperties.getElasticsearch().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(operateProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(operateProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
@@ -190,6 +212,8 @@ public class SecondaryStorageTest {
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(tasklistProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(tasklistProperties.getElasticsearch().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(tasklistProperties.getElasticsearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
     }
@@ -210,6 +234,8 @@ public class SecondaryStorageTest {
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(exporterConfiguration.getConnect().getIndexPrefix())
+          .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(exporterConfiguration.getConnect().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
     }
@@ -218,6 +244,7 @@ public class SecondaryStorageTest {
     void testCamundaSearchEngineConnectProperties() {
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo("elasticsearch");
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://matching-url:4321");
+      assertThat(searchEngineConnectProperties.getIndexPrefix()).isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(searchEngineConnectProperties.getClusterName()).isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(searchEngineConnectProperties.getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(EXPECTED_PASSWORD);

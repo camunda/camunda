@@ -61,6 +61,7 @@ public class SearchEngineConnectPropertiesOverride {
     override.setClusterName(database.getClusterName());
 
     populateFromSecurity(override);
+    override.setIndexPrefix(database.getIndexPrefix());
 
     override.setUsername(database.getUsername());
     override.setPassword(database.getPassword());

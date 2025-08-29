@@ -80,6 +80,7 @@ public class OperatePropertiesOverride {
     override.getElasticsearch().setUsername(database.getElasticsearch().getUsername());
     override.getElasticsearch().setPassword(database.getElasticsearch().getPassword());
     override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
+    override.getElasticsearch().setIndexPrefix(database.getElasticsearch().getIndexPrefix());
 
     populateFromSecurity(
         database.getElasticsearch().getSecurity(),
@@ -94,6 +95,7 @@ public class OperatePropertiesOverride {
     override.getOpensearch().setUsername(database.getOpensearch().getUsername());
     override.getOpensearch().setPassword(database.getOpensearch().getPassword());
     override.getOpensearch().setClusterName(database.getOpensearch().getClusterName());
+    override.getOpensearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
 
     populateFromSecurity(
         database.getOpensearch().getSecurity(),
