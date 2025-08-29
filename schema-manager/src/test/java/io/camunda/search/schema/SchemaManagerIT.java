@@ -383,6 +383,21 @@ public class SchemaManagerIT {
         .asInstanceOf(type(JsonNode.class))
         .extracting(this::retentionMinAge)
         .isEqualTo("100d");
+
+    // when: update the retention configuration with new values and restart the schema manager
+    retention.setMinimumAge("18d");
+    retention.setUsageMetricsMinimumAge("10d");
+    schemaManager.startup();
+
+    // then: verify that all configured retention policies were updated with new custom values
+    assertThat(searchClientAdapter.getPolicyAsNode("custom-retention-policy"))
+        .asInstanceOf(type(JsonNode.class)) // switch from IterableAssert -> ObjectAssert<JsonNode>
+        .extracting(this::retentionMinAge)
+        .isEqualTo("18d");
+    assertThat(searchClientAdapter.getPolicyAsNode("custom-metrics-retention-policy"))
+        .asInstanceOf(type(JsonNode.class))
+        .extracting(this::retentionMinAge)
+        .isEqualTo("10d");
   }
 
   @TestTemplate
