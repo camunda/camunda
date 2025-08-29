@@ -67,7 +67,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
   @Override
   public void run(final ApplicationArguments args) {
     waitForClusterId()
-        .thenRun(this::buildLicensePayload)
+        .thenAccept(this::buildLicensePayload)
         .thenRun(
             () -> {
               final var validationResult = validateConfiguration();
@@ -104,8 +104,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
       return Either.left(
           String.format("Ping endpoint %s must be a valid URI.", pingConfiguration.endpoint));
     }
-    if (brokerTopologyManager.getClusterConfiguration().clusterId().isEmpty()
-        || brokerTopologyManager.getClusterConfiguration().clusterId().get().isBlank()) {
+    if (brokerTopologyManager.getClusterConfiguration().clusterId().get().isBlank()) {
       return Either.left("Cluster ID must not be null or empty.");
     }
     if (pingConfiguration.clusterName() == null || pingConfiguration.clusterName().isBlank()) {
@@ -171,7 +170,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
     return executor;
   }
 
-  private void buildLicensePayload() {
+  private void buildLicensePayload(final String clusterId) {
     final ObjectMapper objectMapper = new ObjectMapper();
     final LicensePayload.License license =
         new LicensePayload.License(
@@ -184,10 +183,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
     final LicensePayload payload =
         new LicensePayload(
             license,
-            brokerTopologyManager
-                .getClusterConfiguration()
-                .clusterId()
-                .orElseThrow(() -> new IllegalStateException("Cluster ID is not set.")),
+            clusterId,
             pingConfiguration.clusterName(),
             VersionUtil.getVersion(),
             getActiveProfiles(),
@@ -199,17 +195,17 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
     }
   }
 
-  private CompletableFuture<Void> waitForClusterId() {
-    final CompletableFuture<Void> future = new CompletableFuture<>();
+  private CompletableFuture<String> waitForClusterId() {
+    final CompletableFuture<String> future = new CompletableFuture<>();
     if (brokerTopologyManager.getClusterConfiguration().clusterId().isPresent()) {
-      future.complete(null);
+      future.complete(brokerTopologyManager.getClusterConfiguration().clusterId().get());
     } else {
       brokerTopologyManager.addTopologyListener(
           new BrokerTopologyListener() {
             @Override
             public void completedClusterChange() {
               if (brokerTopologyManager.getClusterConfiguration().clusterId().isPresent()) {
-                future.complete(null);
+                future.complete(brokerTopologyManager.getClusterConfiguration().clusterId().get());
                 brokerTopologyManager.removeTopologyListener(this);
               }
             }
