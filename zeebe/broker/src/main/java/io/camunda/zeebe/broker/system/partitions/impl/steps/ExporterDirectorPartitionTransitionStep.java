@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.stream.BlockingExporter;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
@@ -23,11 +24,11 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
@@ -181,31 +182,40 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
       final PartitionTransitionContext context) {
     final Collection<ExporterDescriptor> exporterDescriptors = context.getExportedDescriptors();
     final var exporterConfig = context.getDynamicPartitionConfig().exporting().exporters();
+
+    return exporterConfig.entrySet().stream()
+        .filter(
+            entry ->
+                entry.getValue().state() == State.ENABLED
+                    // Exporters whose configuration is not found are considered as enabled, but
+                    // since configuration is not found, we cannot export any records to them.
+                    || entry.getValue().state() == State.CONFIG_NOT_FOUND)
+        .map(entry -> getExporterDescriptor(entry.getKey(), entry.getValue(), exporterDescriptors))
+        .collect(Collectors.toMap(Tuple::getLeft, Tuple::getRight));
+  }
+
+  private static Tuple<ExporterDescriptor, ExporterInitializationInfo> getExporterDescriptor(
+      final String id,
+      final ExporterState config,
+      final Collection<ExporterDescriptor> exporterDescriptors) {
+
     return exporterDescriptors.stream()
-        .filter(exporterDescriptor -> isEnabled(exporterConfig, exporterDescriptor))
-        .collect(
-            Collectors.toMap(
-                Function.identity(),
-                descriptor -> getInitializationInfo(descriptor, exporterConfig)));
-  }
-
-  private static ExporterInitializationInfo getInitializationInfo(
-      final ExporterDescriptor descriptor, final Map<String, ExporterState> exportersConfig) {
-    if (exportersConfig.containsKey(descriptor.getId())) {
-      final ExporterState config = exportersConfig.get(descriptor.getId());
-      return new ExporterInitializationInfo(
-          config.metadataVersion(), config.initializedFrom().orElse(null));
-    }
-
-    // TODO: This case won't happen after https://github.com/camunda/camunda/issues/18296 and we
-    // handle the default behaviour for newly added exporters.
-    return new ExporterInitializationInfo(0, null);
-  }
-
-  private static boolean isEnabled(
-      final Map<String, ExporterState> exporterConfig,
-      final ExporterDescriptor exporterDescriptor) {
-    return exporterConfig.containsKey(exporterDescriptor.getId())
-        && exporterConfig.get(exporterDescriptor.getId()).state() == State.ENABLED;
+        .filter(exporterDescriptor -> exporterDescriptor.getId().equals(id))
+        .findAny()
+        // If a configured exporter is found, return the descriptor and its initialization info.
+        .map(
+            exporterDescriptor -> {
+              final ExporterInitializationInfo initializationInfo =
+                  new ExporterInitializationInfo(
+                      config.metadataVersion(), config.initializedFrom().orElse(null));
+              return Tuple.of(exporterDescriptor, initializationInfo);
+            })
+        // if the exporter's config is not found, return a blocking exporter descriptor as a
+        // placeholder. Exporting to this exporter will be blocked.
+        .orElse(
+            Tuple.of(
+                new ExporterDescriptor(id, BlockingExporter.class, Map.of()),
+                new ExporterInitializationInfo(
+                    config.metadataVersion(), config.initializedFrom().orElse(null))));
   }
 }
