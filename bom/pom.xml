@@ -216,7 +216,7 @@
                   <include>**/*.scala</include>
                 </includes>
                 <excludes>
-                  <exclude>zeebe/benchmarks/project/**/*</exclude>
+                  <exclude>zeebe/load-tests/project/**/*</exclude>
                   <exclude>operate/**/*</exclude>
                   <exclude>tasklist/**/*</exclude>
                 </excludes>
