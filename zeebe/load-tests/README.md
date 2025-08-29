@@ -1,6 +1,6 @@
 # Welcome
 
-Welcome to the Zeebe Benchmark folder :wave:
+Welcome to the Zeebe Load test :wave:
 
 ## Introduction
 
@@ -8,7 +8,7 @@ Make sure you have access to our Google Cloud environment. Ask the team or SRE f
 
 ### Requirements
 
-In order to setup a benchmark you need to have several tools on your machine installed.
+To set up a load test you need to have several tools on your machine installed.
 
 Follow these guide's to install each of them:
 
@@ -51,7 +51,7 @@ install kubens /usr/local/bin/
 
 ## Best Practices Windows
 
-Running the benchmarks on Windows is possible with the help of the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+Running the load tests on Windows is possible, with the help of the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
 The setup changes slightly compared to the Linux setup.
 
 These are the components to install on Windows:
@@ -68,6 +68,6 @@ When following the instructions above, execute all commands that deal with Docke
 ## What's next?
 
 * [Read the docs](docs/README.md)
-* [Run a Benchmark](setup/README.md)
+* [Run a load test](setup/README.md)
 * [Change the Project](project/README.md)
 
