@@ -25,7 +25,7 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
   // Accepts more lenient cases, such that the property "something" would match a field "someThing"
   // Note however that if a field "something" and "someThing" are present, only one of them will be
   // instantiated (the last declared one), using the last matching value.
-  private static final ObjectMapper MAPPER =
+  public static final ObjectMapper MAPPER =
       JsonMapper.builder()
           .addModule(new JavaTimeModule())
           .addModule(
