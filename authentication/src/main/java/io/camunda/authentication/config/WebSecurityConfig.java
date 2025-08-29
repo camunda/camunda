@@ -128,6 +128,7 @@ public class WebSecurityConfig {
           // these v2 endpoints are public
           "/v2/license",
           "/v2/setup/user",
+          "/v2/status",
           // deprecated Tasklist v1 Public Endpoints
           "/v1/external/process/**");
   public static final Set<String> WEBAPP_PATHS =

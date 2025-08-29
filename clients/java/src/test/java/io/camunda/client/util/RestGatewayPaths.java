@@ -63,6 +63,7 @@ public class RestGatewayPaths {
   private static final String URL_TENANT = REST_API_PATH + "/tenants/%s";
   private static final String URL_TENANTS = REST_API_PATH + "/tenants";
   private static final String URL_TOPOLOGY = REST_API_PATH + "/topology";
+  private static final String URL_STATUS = REST_API_PATH + "/status";
   private static final String URL_USAGE_METRICS = REST_API_PATH + "/system/usage-metrics";
   private static final String URL_USER = REST_API_PATH + "/users/%s";
   private static final String URL_USERS = REST_API_PATH + "/users";
@@ -82,6 +83,13 @@ public class RestGatewayPaths {
    */
   public static String getTopologyUrl() {
     return URL_TOPOLOGY;
+  }
+
+  /**
+   * @return the status request URL
+   */
+  public static String getStatusUrl() {
+    return URL_STATUS;
   }
 
   /**
