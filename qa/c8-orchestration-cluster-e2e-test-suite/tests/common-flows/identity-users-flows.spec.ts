@@ -7,11 +7,13 @@
  */
 
 import {test} from 'fixtures';
-import {navigateToApp} from '@pages/UtilitiesPage';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
-import {createTestData} from 'utils/constants';
+import {createTestData, createComponentAuthorization} from 'utils/constants';
+import {navigateToApp} from '@pages/UtilitiesPage';
+import {verifyAccess} from 'utils/accessVerification';
+import {sleep} from 'utils/sleep';
 
 test.describe('Identity User Flows', () => {
   test.beforeEach(async ({loginPage, page}) => {
@@ -75,7 +77,6 @@ test.describe('Identity User Flows', () => {
     loginPage,
     identityUsersPage,
     identityHeader,
-    accessDeniedPage,
   }) => {
     let testUser:
       | {username: string; password: string; email?: string; name?: string}
@@ -96,18 +97,105 @@ test.describe('Identity User Flows', () => {
     await test.step(`Login with the new user and verify Identity access is denied`, async () => {
       await identityHeader.logout();
       await loginPage.login(testUser!.username, testUser!.password);
-
-      await accessDeniedPage.expectAccessDenied();
-    });
-
-    await test.step(`Verify Operate access is denied`, async () => {
-      await page.goto(relativizePath(`/operate`));
-      await accessDeniedPage.expectAccessDenied();
+      await verifyAccess(page, false);
     });
 
     await test.step(`Verify Tasklist access is denied`, async () => {
-      await page.goto(relativizePath(`/tasklist`));
-      await accessDeniedPage.expectAccessDenied();
+      await verifyAccess(page, false, 'tasklist');
+    });
+
+    await test.step(`Verify Operate access is denied`, async () => {
+      await verifyAccess(page, false, 'operate');
+    });
+  });
+
+  test('Admin user can remove Authorizations granted to user', async ({
+    page,
+    loginPage,
+    identityUsersPage,
+    identityHeader,
+    identityAuthorizationsPage,
+  }) => {
+    let testUser:
+      | {username: string; password: string; email?: string; name?: string}
+      | undefined;
+
+    await test.step(`Create new user`, async () => {
+      const testData = createTestData({user: true});
+      testUser = testData.user!;
+
+      await identityUsersPage.createUser({
+        username: testUser.username,
+        password: testUser.password,
+        email: testUser.email!,
+        name: testUser.name ?? testUser.username,
+      });
+    });
+
+    await test.step(`Grant Authorizations to user for all applications`, async () => {
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+
+      const COMPONENT_AUTH = createComponentAuthorization(
+        {name: testUser!.name ?? testUser!.username},
+        'User',
+      );
+      await identityAuthorizationsPage.createAuthorization(COMPONENT_AUTH);
+    });
+
+    await test.step(`Login with the new user and verify Identity access`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(testUser!.username, testUser!.password);
+      await expect(page).toHaveURL(new RegExp(`identity`));
+      await verifyAccess(page);
+    });
+
+    await test.step(`Verify Operate access`, async () => {
+      await verifyAccess(page, true, 'operate');
+    });
+
+    await test.step(`Verify Tasklist access`, async () => {
+      await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
+      await loginPage.login(testUser!.username, testUser!.password);
+      await expect(page).toHaveURL(new RegExp(`tasklist`));
+      await verifyAccess(page, true, 'tasklist');
+    });
+
+    await test.step(`Logout, login with demo and delete the created authorization`, async () => {
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await loginPage.login('demo', 'demo');
+      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+
+      await identityAuthorizationsPage.selectResourceTypeTab('Component');
+      await identityAuthorizationsPage.clickDeleteAuthorizationButton(
+        testUser!.username,
+      );
+
+      await expect(
+        identityAuthorizationsPage.deleteAuthorizationModal,
+      ).toBeVisible();
+      await identityAuthorizationsPage.clickDeleteAuthorizationSubButton();
+      await expect(
+        identityAuthorizationsPage.deleteAuthorizationModal,
+      ).toBeHidden();
+      await sleep(1500);
+    });
+
+    await test.step(`Logout and login with the new user`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(testUser!.username, testUser!.password);
+    });
+
+    await test.step(`Verify Identity access is denied`, async () => {
+      await verifyAccess(page, false);
+    });
+
+    await test.step(`Verify Tasklist access is denied`, async () => {
+      await verifyAccess(page, false, 'tasklist');
+    });
+
+    await test.step(`Verify Operate access is denied`, async () => {
+      await verifyAccess(page, false, 'operate');
     });
   });
 });
