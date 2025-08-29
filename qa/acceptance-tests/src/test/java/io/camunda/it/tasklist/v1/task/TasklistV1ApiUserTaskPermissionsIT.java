@@ -10,6 +10,7 @@ package io.camunda.it.tasklist.v1.task;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.READ_USER_TASK;
 import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.JsonUtil;
 import java.util.Collections;
 import java.util.List;
+import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -66,7 +68,8 @@ public class TasklistV1ApiUserTaskPermissionsIT {
               new Permissions(AUTHORIZATION, READ, List.of("*")),
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
+              new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
 
   @UserDefinition
   private static final TestUser UNAUTHORIZED =
@@ -97,38 +100,39 @@ public class TasklistV1ApiUserTaskPermissionsIT {
             .variables(json)
             .send()
             .join();
-    await()
-        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var tasks =
-                  adminClient
-                      .newUserTaskSearchRequest()
-                      .filter(
-                          t -> t.processInstanceKey(processInstanceEvent.getProcessInstanceKey()))
-                      .send()
-                      .join()
-                      .items();
-              assertThat(tasks).describedAs("Wait until the task exists").hasSize(1);
-              taskKey = tasks.getFirst().getUserTaskKey();
-            });
-    await()
-        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var authorizations =
-                  adminClient
-                      .newAuthorizationSearchRequest()
-                      .filter(t -> t.ownerId(ADMIN_USERNAME))
-                      .send()
-                      .join()
-                      .items();
-              assertThat(authorizations)
-                  .describedAs("Wait until the authorizations exist")
-                  .hasSize(6); // 5 created here + 1 default permission
-            });
+
+    waitUntilAsserted(
+        () -> {
+          final var tasks =
+              adminClient
+                  .newUserTaskSearchRequest()
+                  .filter(t -> t.processInstanceKey(processInstanceEvent.getProcessInstanceKey()))
+                  .send()
+                  .join()
+                  .items();
+          assertThat(tasks).describedAs("Wait until the task exists").hasSize(1);
+          taskKey = tasks.getFirst().getUserTaskKey();
+        });
+
+    waitUntilAsserted(
+        () -> {
+          final var authorizations =
+              adminClient
+                  .newAuthorizationSearchRequest()
+                  .filter(t -> t.ownerId(ADMIN_USERNAME))
+                  .send()
+                  .join()
+                  .items();
+          assertThat(authorizations)
+              .describedAs("Wait until the authorizations exist")
+              .hasSize(7); // 6 created here + 1 default permission
+        });
+
+    waitUntilAsserted(
+        () -> {
+          final var variables = adminClient.newVariableSearchRequest().send().join().items();
+          assertThat(variables).describedAs("Wait until the variable exists").hasSize(1);
+        });
 
     authorizedClient =
         STANDALONE_CAMUNDA
@@ -194,5 +198,12 @@ public class TasklistV1ApiUserTaskPermissionsIT {
         TestRestTasklistClient.OBJECT_MAPPER.readValue(
             response.body(), VariableSearchResponse[].class);
     assertThat(userTasks).isEmpty();
+  }
+
+  private static void waitUntilAsserted(ThrowingRunnable runnable) {
+    await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(runnable);
   }
 }
