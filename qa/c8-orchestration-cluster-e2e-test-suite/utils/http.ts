@@ -57,14 +57,44 @@ export async function assertUnsupportedMediaTypeRequest(response: APIResponse) {
 
 export async function assertBadRequest(
   response: APIResponse,
-  detail: string,
+  detail: string | RegExp,
   title = 'Bad Request',
 ) {
   expect(response.status()).toBe(400);
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
   expect(json.title).toBe(title);
-  expect(json.detail).toContain(detail);
+  expect(json.detail).toMatch(detail);
+}
+
+export async function assertPaginatedRequest(
+  response: APIResponse,
+  options: {
+    totalItemGreaterThan?: number;
+    itemLengthGreaterThan?: number;
+    totalItemsEqualTo?: number;
+    itemsLengthEqualTo?: number;
+  },
+) {
+  expect(response.status()).toBe(200);
+  const json = await response.json();
+  assertRequiredFields(json, paginatedResponseFields);
+  if (options.itemLengthGreaterThan !== undefined) {
+    expect(json.page.totalItems).toBeGreaterThan(
+      options.totalItemGreaterThan as number,
+    );
+  }
+  if (options.itemLengthGreaterThan !== undefined) {
+    expect(json.items.length).toBeGreaterThan(
+      options.itemLengthGreaterThan as number,
+    );
+  }
+  if (options.totalItemsEqualTo !== undefined) {
+    expect(json.page.totalItems).toBe(options.totalItemsEqualTo as number);
+  }
+  if (options.itemsLengthEqualTo !== undefined) {
+    expect(json.items.length).toBe(options.itemsLengthEqualTo as number);
+  }
 }
 
 export async function assertForbiddenRequest(
@@ -76,6 +106,13 @@ export async function assertForbiddenRequest(
   assertRequiredFields(json, ['detail', 'title']);
   expect(json.title).toBe('FORBIDDEN');
   expect(json.detail).toContain(detail);
+}
+
+export async function assertConflictRequest(response: APIResponse) {
+  expect(response.status()).toBe(409);
+  const json = await response.json();
+  assertRequiredFields(json, ['title']);
+  expect(json['title']).toContain('ALREADY_EXISTS');
 }
 
 export async function assertNotFoundRequest(

@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
+import {defaultAssertionOptions} from '../utils/constants';
 
 export class IdentityMappingRulesPage {
   private page: Page;
@@ -193,7 +194,12 @@ export class IdentityMappingRulesPage {
   }
 
   async deleteMappingRule(mappingRuleName: string) {
-    await this.deleteMappingRuleButton(mappingRuleName).click();
+    await expect(this.deleteMappingRuleButton(mappingRuleName)).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(async () => {
+      await this.deleteMappingRuleButton(mappingRuleName).click();
+    }).toPass(defaultAssertionOptions);
     await expect(this.deleteMappingRuleModal).toBeVisible();
     await this.deleteMappingRuleModalDeleteButton.click();
     await expect(this.deleteMappingRuleModal).toBeHidden();

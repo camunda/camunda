@@ -12,7 +12,10 @@ import {relativizePath, Paths} from 'utils/relativizePath';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {LOGIN_CREDENTIALS, createTestData} from 'utils/constants';
-import {waitForItemInList} from 'utils/waitForItemInList';
+import {
+  findLocatorInPaginatedList,
+  waitForItemInList,
+} from 'utils/waitForItemInList';
 import {mockOIDCModeUI} from 'utils/mockOIDCModeUI';
 
 test.describe.serial('mapping rules CRUD', () => {
@@ -60,16 +63,17 @@ test.describe.serial('mapping rules CRUD', () => {
     );
 
     await waitForItemInList(page, item, {
-      emptyStateLocator: identityMappingRulesPage.emptyState,
+      clickNext: true,
+      timeout: 30000,
     });
-
-    await expect(item).toBeVisible();
   });
 
   test('edits a mapping rule', async ({page, identityMappingRulesPage}) => {
-    await expect(
-      identityMappingRulesPage.mappingRuleCell(NEW_MAPPING_RULE.name),
-    ).toBeVisible();
+    const mappingRule = identityMappingRulesPage.mappingRuleCell(
+      NEW_MAPPING_RULE.name,
+    );
+    expect(await findLocatorInPaginatedList(page, mappingRule)).toBe(true);
+    await expect(mappingRule).toBeVisible();
 
     await identityMappingRulesPage.editMappingRule(
       NEW_MAPPING_RULE.name,
@@ -82,13 +86,15 @@ test.describe.serial('mapping rules CRUD', () => {
       EDITED_MAPPING_RULE.name,
     );
 
-    await waitForItemInList(page, item);
+    await waitForItemInList(page, item, {timeout: 60000, clickNext: true});
   });
 
   test('deletes a mapping rule', async ({page, identityMappingRulesPage}) => {
-    await expect(
-      identityMappingRulesPage.mappingRuleCell(EDITED_MAPPING_RULE.name),
-    ).toBeVisible();
+    const mappingRule = identityMappingRulesPage.mappingRuleCell(
+      EDITED_MAPPING_RULE.name,
+    );
+    expect(await findLocatorInPaginatedList(page, mappingRule)).toBe(true);
+    await expect(mappingRule).toBeVisible();
 
     await identityMappingRulesPage.deleteMappingRule(EDITED_MAPPING_RULE.name);
 
@@ -98,7 +104,8 @@ test.describe.serial('mapping rules CRUD', () => {
 
     await waitForItemInList(page, item, {
       shouldBeVisible: false,
-      emptyStateLocator: identityMappingRulesPage.emptyState,
+      clickNext: true,
+      timeout: 60000,
     });
   });
 });

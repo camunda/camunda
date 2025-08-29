@@ -8,6 +8,8 @@
 
 import {generateUniqueId} from '../constants';
 import * as fs from 'node:fs';
+import {createMappingRule, mappingRuleIdFromState} from '../requestHelpers';
+import {APIRequestContext} from 'playwright-core';
 
 export const groupRequiredFields: string[] = ['groupId', 'name', 'description'];
 export const mappingRuleRequiredFields: string[] = [
@@ -214,3 +216,63 @@ export function CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(
 export const CREATE_DOCUMENT_LINK_REQUEST = {
   timeToLive: 60000,
 };
+
+export function CREATE_MAPPING_EXPECTED_BODY_USING_GROUP(
+  groupId: string,
+  state: Record<string, unknown>,
+  nth: number = 1,
+) {
+  return {
+    claimName: state[`${groupId}claimName${nth}`] as string,
+    claimValue: state[`${groupId}claimValue${nth}`] as string,
+    name: state[`${groupId}name${nth}`] as string,
+    mappingRuleId: state[`${groupId}mappingRule${nth}`] as string,
+  };
+}
+
+export function CREATE_MAPPING_EXPECTED_BODY(
+  key: string,
+  state: Record<string, unknown>,
+) {
+  return {
+    claimName: state[`claimName${key}`] as string,
+    claimValue: state[`claimValue${key}`] as string,
+    name: state[`name${key}`] as string,
+    mappingRuleId: state[`mappingRuleId${key}`] as string,
+  };
+}
+
+export function CREATE_GROUP_ROLE_EXPECTED_BODY_USING_GROUP(
+  groupId: string,
+  state: Record<string, unknown>,
+  nth: number = 1,
+) {
+  return {
+    name: state[`${groupId}name${nth}`] as string,
+    roleId: state[`${groupId}roleId${nth}`] as string,
+    description: state[`${groupId}description${nth}`] as string,
+  };
+}
+
+export function CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP(
+  groupId: string,
+  state: Record<string, unknown>,
+  nth: number = 1,
+) {
+  return {
+    username: state[`${groupId}user${nth}`] as string,
+  };
+}
+
+export async function mappingRuleBundle(
+  request: APIRequestContext,
+  state: Record<string, unknown>,
+) {
+  const mappingRuleKey = 'mappingRuleId' + generateUniqueId();
+  await createMappingRule(request, state, mappingRuleKey);
+  return {
+    mappingRuleKey: 'mappingRuleId' + generateUniqueId(),
+    mappingRuleId: mappingRuleIdFromState(mappingRuleKey, state),
+    responseBody: CREATE_MAPPING_EXPECTED_BODY(mappingRuleKey, state),
+  };
+}

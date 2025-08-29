@@ -13,36 +13,37 @@ import {
   assertRequiredFields,
   assertEqualsForKeys,
   paginatedResponseFields,
+  assertUnauthorizedRequest,
+  assertNotFoundRequest,
+  assertConflictRequest,
 } from '../../../../utils/http';
 import {
-  CREATE_NEW_GROUP,
-  groupRequiredFields,
-} from '../../../../utils/beans/requestBeans';
-import {sleep} from '../../../../utils/sleep';
+  assignClientToGroup,
+  clientIdFromState,
+  createGroupAndStoreResponseFields,
+} from '../../../../utils/requestHelpers';
+import {
+  defaultAssertionOptions,
+  generateUniqueId,
+} from '../../../../utils/constants';
 
-test.describe('Groups Clients API Tests', () => {
+test.describe.parallel('Groups Clients API Tests', () => {
   const state: Record<string, unknown> = {};
 
-  test('CRUD', async ({request}) => {
-    await test.step('Create Group', async () => {
-      const requestBody = CREATE_NEW_GROUP();
-      const res = await request.post(buildUrl('/groups'), {
-        headers: jsonHeaders(),
-        data: requestBody,
-      });
-      expect(res.status()).toBe(201);
-      const json = await res.json();
-      assertRequiredFields(json, groupRequiredFields);
-      assertEqualsForKeys(json, requestBody, groupRequiredFields);
-      state['groupId'] = json.groupId;
-    });
+  test.beforeAll(async ({request}) => {
+    await createGroupAndStoreResponseFields(request, 3, state);
+    await assignClientToGroup(request, 1, state['groupId2'] as string, state);
+    await assignClientToGroup(request, 1, state['groupId3'] as string, state);
+  });
 
-    await test.step('Assign Client To Group', async () => {
-      state['clientId'] = 'test-client';
-      const p = {
-        groupId: state['groupId'] as string,
-        clientId: state['clientId'] as string,
-      };
+  test('Assign Client To Group', async ({request}) => {
+    const clientId = `test-client` + generateUniqueId();
+    const p = {
+      groupId: state['groupId1'] as string,
+      clientId: clientId as string,
+    };
+
+    await expect(async () => {
       const res = await request.put(
         buildUrl('/groups/{groupId}/clients/{clientId}', p),
         {
@@ -50,14 +51,32 @@ test.describe('Groups Clients API Tests', () => {
         },
       );
       expect(res.status()).toBe(204);
-    });
+    }).toPass(defaultAssertionOptions);
+  });
 
-    await test.step('Search Clients For Group', async () => {
-      await sleep(10000);
-      const p = {groupId: state['groupId'] as string};
-      const expectedBody = {clientId: state['clientId'] as string};
-      const requiredFields = Object.keys(expectedBody);
+  test('Assign Already Added Client To Group Conflict', async ({request}) => {
+    const stateParams: Record<string, string> = {
+      groupId: state['groupId2'] as string,
+      clientId: clientIdFromState('groupId2', state) as string,
+    };
+    const res = await request.put(
+      buildUrl('/groups/{groupId}/clients/{clientId}', stateParams),
+      {
+        headers: jsonHeaders(),
+      },
+    );
 
+    await assertConflictRequest(res);
+  });
+
+  test('Search Clients For Group', async ({request}) => {
+    const p = {groupId: state['groupId2'] as string};
+    const expectedBody = {
+      clientId: clientIdFromState('groupId2', state) as string,
+    };
+    const requiredFields = Object.keys(expectedBody);
+
+    await expect(async () => {
       const res = await request.post(
         buildUrl('/groups/{groupId}/clients/search', p),
         {
@@ -65,102 +84,112 @@ test.describe('Groups Clients API Tests', () => {
           data: {},
         },
       );
+
       expect(res.status()).toBe(200);
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
       assertRequiredFields(json.items[0], requiredFields);
       assertEqualsForKeys(json.items[0], expectedBody, requiredFields);
-    });
+    }).toPass(defaultAssertionOptions);
+  });
 
-    await test.step('Search Clients For Group Unauthorized', async () => {
-      const p = {groupId: state['groupId'] as string};
-      const res = await request.post(
-        buildUrl('/groups/{groupId}/clients/search', p),
-        {
-          headers: {},
-          data: {},
-        },
-      );
-      expect(res.status()).toBe(401);
-    });
+  test('Search Clients For Group Unauthorized', async ({request}) => {
+    const p = {groupId: state['groupId1'] as string};
+    const res = await request.post(
+      buildUrl('/groups/{groupId}/clients/search', p),
+      {
+        headers: {},
+        data: {},
+      },
+    );
+    await assertUnauthorizedRequest(res);
+  });
 
-    await test.step('Search Clients For Group Not Found', async () => {
-      const p = {groupId: 'invalidGroupId'};
+  test('Search Clients For Group Not Found', async ({request}) => {
+    const p = {groupId: 'invalidGroupId'};
 
-      const res = await request.post(
-        buildUrl('/groups/{groupId}/clients/search', p),
-        {
-          headers: jsonHeaders(),
-          data: {},
-        },
-      );
+    const res = await request.post(
+      buildUrl('/groups/{groupId}/clients/search', p),
+      {
+        headers: jsonHeaders(),
+        data: {},
+      },
+    );
 
-      expect(res.status()).toBe(200);
-      const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      expect(json.page.totalItems).toBe(0);
-      expect(json.items.length).toBe(0);
-    });
+    expect(res.status()).toBe(200);
+    const json = await res.json();
+    assertRequiredFields(json, paginatedResponseFields);
+    expect(json.page.totalItems).toBe(0);
+    expect(json.items.length).toBe(0);
+  });
 
-    await test.step('Unassign Client From Group', async () => {
+  test('Unassign Client From Group', async ({request}) => {
+    await test.step('Unassign Client', async () => {
       const p = {
-        groupId: state['groupId'] as string,
-        clientId: state['clientId'] as string,
+        groupId: state['groupId3'] as string,
+        clientId: clientIdFromState('groupId3', state) as string,
       };
-      const res = await request.delete(
-        buildUrl('/groups/{groupId}/clients/{clientId}', p),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      expect(res.status()).toBe(204);
+      await expect(async () => {
+        const res = await request.delete(
+          buildUrl('/groups/{groupId}/clients/{clientId}', p),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+        expect(res.status()).toBe(204);
+      }).toPass(defaultAssertionOptions);
     });
 
     await test.step('Search Clients After Deletion', async () => {
-      await sleep(10000);
-      const p = {groupId: state['groupId'] as string};
+      const p = {groupId: state['groupId3'] as string};
 
-      const res = await request.post(
-        buildUrl('/groups/{groupId}/clients/search', p),
-        {
-          headers: jsonHeaders(),
-          data: {},
-        },
-      );
-      expect(res.status()).toBe(200);
-      const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      expect(json.page.totalItems).toBe(0);
-      expect(json.items.length).toBe(0);
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/groups/{groupId}/clients/search', p),
+          {
+            headers: jsonHeaders(),
+            data: {},
+          },
+        );
+        expect(res.status()).toBe(200);
+        const json = await res.json();
+        assertRequiredFields(json, paginatedResponseFields);
+        expect(json.page.totalItems).toBe(0);
+        expect(json.items.length).toBe(0);
+      }).toPass(defaultAssertionOptions);
     });
+  });
 
-    await test.step('Unassign Client From Group Unauthorized', async () => {
-      const p = {
-        groupId: state['groupId'] as string,
-        clientId: state['clientId'] as string,
-      };
-      const res = await request.delete(
-        buildUrl('/groups/{groupId}/clients/{clientId}', p),
-        {
-          headers: {},
-        },
-      );
-      expect(res.status()).toBe(401);
-    });
+  test('Unassign Client From Group Unauthorized', async ({request}) => {
+    const p = {
+      groupId: state['groupId2'] as string,
+      clientId: clientIdFromState('groupId2', state) as string,
+    };
 
-    await test.step('Unassign Client From Group Not Found', async () => {
-      const p = {
-        groupId: state['groupId'] as string,
-        clientId: state['clientId'] as string,
-      };
-      const res = await request.delete(
-        buildUrl('/groups/{groupId}/clients/{clientId}', p),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      expect(res.status()).toBe(404);
-    });
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}/clients/{clientId}', p),
+      {
+        headers: {},
+      },
+    );
+    await assertUnauthorizedRequest(res);
+  });
+
+  test('Unassign Client From Group Not Found', async ({request}) => {
+    const p = {
+      groupId: 'invalidGroupId',
+      clientId: clientIdFromState('groupId2', state) as string,
+    };
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}/clients/{clientId}', p),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertNotFoundRequest(
+      res,
+      `Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND'`,
+    );
   });
 });
