@@ -10,9 +10,13 @@ package io.camunda.service.cache;
 import java.util.Collections;
 import java.util.Map;
 
-public record ProcessCacheItem(Map<String, String> elementIdNameMap) {
+public record ProcessCacheItem(String processName, Map<String, String> elementIdNameMap) {
 
-  public static final ProcessCacheItem EMPTY = new ProcessCacheItem(Collections.emptyMap());
+  public static final ProcessCacheItem EMPTY = new ProcessCacheItem(null, Collections.emptyMap());
+
+  public String getProcessName() {
+    return processName;
+  }
 
   public String getElementName(final String elementId) {
     return elementIdNameMap.getOrDefault(elementId, elementId);

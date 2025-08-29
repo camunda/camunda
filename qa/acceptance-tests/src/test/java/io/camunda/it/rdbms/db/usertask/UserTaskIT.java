@@ -646,6 +646,7 @@ public class UserTaskIT {
             "dueDate",
             "followUpDate",
             "candidateUsers",
+            "processName",
             "candidateGroups")
         .isEqualTo(userTask);
     assertThat(instance.creationDate())

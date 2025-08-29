@@ -63,6 +63,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "userTaskKey": "0",
                       "processInstanceKey": "1",
                       "processDefinitionKey": "2",
+                      "processName": "ProcessName",
                       "elementInstanceKey": "3",
                       "processDefinitionId": "b",
                       "state": "CREATED",
@@ -129,6 +130,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "userTaskKey": "0",
                       "processInstanceKey": "1",
                       "processDefinitionKey": "2",
+                      "processName": "ProcessName",
                       "elementInstanceKey": "3",
                       "processDefinitionId": "b",
                       "state": "CREATED",
@@ -172,6 +174,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "e", // elementBpmnId
                       "name",
                       "b", // bpmnProcessId
+                      "ProcessName",
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // creationTime
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // completionTime
                       "a", // assignee
@@ -224,6 +227,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 "e",
                 "name",
                 "b",
+                "ProcessName",
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
                 "a",

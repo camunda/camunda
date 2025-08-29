@@ -14,44 +14,43 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessElementProvider {
+public class ProcessDefinitionProvider {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ProcessElementProvider.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessDefinitionProvider.class);
   private final ProcessDefinitionServices processDefinitionServices;
 
-  public ProcessElementProvider(final ProcessDefinitionServices processDefinitionServices) {
+  public ProcessDefinitionProvider(final ProcessDefinitionServices processDefinitionServices) {
     this.processDefinitionServices = processDefinitionServices;
   }
 
-  public void extractElementNames(
-      final Long processDefinitionKey,
-      final BiConsumer<Long, ProcessElement> processDefinitionKeyElementConsumer) {
+  public ProcessCacheData extractProcessData(final Long processDefinitionKey) {
     try {
       final var processDefinition =
           processDefinitionServices
               .withAuthentication(CamundaAuthentication.anonymous())
               .getByKey(processDefinitionKey);
-      extractElementNames(processDefinition, processDefinitionKeyElementConsumer);
+      return extractProcessData(processDefinition);
     } catch (final Exception e) {
       LOG.warn(
           "Could not load process definition with key {} into cache. Skipping element extraction.",
           processDefinitionKey,
           e);
+      return new ProcessCacheData(null, Map.of());
     }
   }
 
-  public void extractElementNames(
-      final Set<Long> processDefinitionKeys,
-      final BiConsumer<Long, ProcessElement> processDefinitionKeyElementConsumer) {
+  public Map<Long, ProcessCacheData> extractProcessData(final Set<Long> processDefinitionKeys) {
     final var keysList = new ArrayList<>(processDefinitionKeys);
+    final var result = new HashMap<Long, ProcessCacheData>();
 
     try {
-      final var result =
+      final var searchResult =
           processDefinitionServices
               .withAuthentication(CamundaAuthentication.anonymous())
               .search(
@@ -60,22 +59,24 @@ public class ProcessElementProvider {
                           q.filter(f -> f.processDefinitionKeys(keysList))
                               .page(p -> p.size(keysList.size()))));
 
-      if (result.total() < processDefinitionKeys.size()) {
+      if (searchResult.total() < processDefinitionKeys.size()) {
         LOG.warn("Could not load all required process definitions into the cache");
       }
 
-      for (final ProcessDefinitionEntity processDefinition : result.items()) {
-        extractElementNames(processDefinition, processDefinitionKeyElementConsumer);
+      for (final ProcessDefinitionEntity processDefinition : searchResult.items()) {
+        final var processData = extractProcessData(processDefinition);
+        result.put(processDefinition.processDefinitionKey(), processData);
       }
     } catch (final Exception e) {
       LOG.warn(
           "Could not load process definitions into the cache. Skipping element extraction.", e);
     }
+
+    return result;
   }
 
-  private void extractElementNames(
-      final ProcessDefinitionEntity processDefinition,
-      final BiConsumer<Long, ProcessElement> elementConsumer) {
+  private ProcessCacheData extractProcessData(final ProcessDefinitionEntity processDefinition) {
+    final var elements = new HashMap<String, String>();
     final byte[] bpmnBytes = processDefinition.bpmnXml().getBytes(StandardCharsets.UTF_8);
     ProcessModelReader.of(bpmnBytes, processDefinition.processDefinitionId())
         .ifPresent(
@@ -83,10 +84,12 @@ public class ProcessElementProvider {
                 reader.extractFlowNodes().stream()
                     .filter(fn -> fn.getName() != null)
                     .map(fn -> new ProcessElement(fn.getId(), fn.getName()))
-                    .forEach(
-                        fn ->
-                            elementConsumer.accept(processDefinition.processDefinitionKey(), fn)));
+                    .forEach(fn -> elements.put(fn.id(), fn.name())));
+
+    return new ProcessCacheData(processDefinition.name(), elements);
   }
 
   public record ProcessElement(String id, String name) {}
+
+  public record ProcessCacheData(String processName, Map<String, String> elementIdNameMap) {}
 }
