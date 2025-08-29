@@ -120,7 +120,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
-  // keep map
   @Override
   public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
     if (!retention.isEnabled()) {
