@@ -5,13 +5,13 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.8.0-SNAPSHOT</version>
+  <version>8.9.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
 
@@ -48,7 +48,7 @@
     <project.previousVersion>8.7.0</project.previousVersion>
     <camunda.maven.artifacts.version>7.22.0</camunda.maven.artifacts.version>
 
-    <zeebe.version>8.8.0-SNAPSHOT</zeebe.version>
+    <zeebe.version>8.9.0-SNAPSHOT</zeebe.version>
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
     <identity.version>8.7.5</identity.version>
     <!-- We use this for the Zeebe test container version only -->
@@ -106,7 +106,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-build-tools</artifactId>
-      <version>8.8.0-SNAPSHOT</version>
+      <version>8.9.0-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
