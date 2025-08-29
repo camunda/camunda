@@ -20,10 +20,13 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {verifyAccess} from 'utils/accessVerification';
 
 test.describe.serial('authorizations CRUD', () => {
-  let NEW_USER: NonNullable<ReturnType<typeof createTestData>['user']>;
-  let NEW_AUTH_ROLE: NonNullable<
-    ReturnType<typeof createTestData>['ownerType']
-  >;
+  let NEW_USER: {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
+  let NEW_AUTH_ROLE: {id: string; name: string};
   let NEW_USER_AUTHORIZATION: NonNullable<
     ReturnType<typeof createUserAuthorization>
   >;
@@ -34,11 +37,11 @@ test.describe.serial('authorizations CRUD', () => {
     // Create test data once for the entire serial test suite
     const testData = createTestData({
       user: true,
-      ownerType: true,
+      authRole: true,
       componentAuth: true,
     });
     NEW_USER = testData.user!;
-    NEW_AUTH_ROLE = testData.ownerType!;
+    NEW_AUTH_ROLE = testData.authRole!;
     NEW_USER_AUTHORIZATION = createUserAuthorization(NEW_AUTH_ROLE);
     NEW_COMPONENT_AUTHORIZATION = testData.componentAuth!;
   });
