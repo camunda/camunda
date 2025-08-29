@@ -1,0 +1,68 @@
+name: CVE
+description: Raise a CVE issue.
+labels: ["kind/cve"]
+type: CVE
+body:
+  - type: dropdown
+    id: Component
+    attributes:
+      label: <!-- Component -->
+      description: Which component is affected by this CVE?
+      # The components should be kept in alphabetical order, with "Not sure" at the top
+      options:
+        - <!-- Not sure- -->
+        - <!-- C8-API- -->
+        - <!-- C8Run- -->
+        - <!-- Camunda Process Test- -->
+        - <!-- Clients- -->
+        - <!-- Data Layer- -->
+        - <!-- Feel- -->
+        - <!-- Identity- -->
+        - <!-- Operate- -->
+        - <!-- Optimize- -->
+        - <!-- Spring SDK- -->
+        - <!-- Tasklist- -->
+        - <!-- Zeebe- -->
+      default: null
+    validations:
+      required: true
+  - type: dropdown
+    id: affected-version
+    attributes:
+      label: <!-- Affected version -->
+      multiple: true
+      description: Which version is affected? (You can select more than one)
+      options:
+        - <!-- -8.3 -->
+        - <!-- -8.4 -->
+        - <!-- -8.5 -->
+        - <!-- -8.6 -->
+        - <!-- -8.7 -->
+        - <!-- -8.8 -->
+      default: null
+    validations:
+      required: true
+  - type: textarea
+    id: cve-number
+    attributes:
+      label: CVE Number
+      description: |
+          - Please provide the CVE number assigned to this vulnerability.
+    validations:
+      required: true
+  - type: textarea
+    id: cve-registry
+    attributes:
+      label: CVE Registry URL
+      description: |
+          - Please provide the URL to the CVE registry entry for this vulnerability.
+    validations:
+      required: true
+  - type: textarea
+    id: cve-jira
+    attributes:
+      label: CVE JIRA URL
+      description: |
+          - Please provide the URL to the JIRA ticket for this vulnerability.
+    validations:
+      required: true
