@@ -50,13 +50,9 @@ public class OperatePropertiesOverride {
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 
     if (SecondaryStorageType.elasticsearch.equals(database.getType())) {
-      override.setDatabase(DatabaseType.Elasticsearch);
-      override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
-      override.getZeebeElasticsearch().setUrl(database.getElasticsearch().getUrl());
+      configureElasticsearch(override, database);
     } else if (SecondaryStorageType.opensearch == database.getType()) {
-      override.setDatabase(DatabaseType.Opensearch);
-      override.getOpensearch().setUrl(database.getOpensearch().getUrl());
-      override.getZeebeOpensearch().setUrl(database.getOpensearch().getUrl());
+      configureOpensearch(override, database);
     }
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
@@ -73,5 +69,21 @@ public class OperatePropertiesOverride {
     backupProperties.setSnapshotTimeout(operateBackup.getSnapshotTimeout());
     backupProperties.setIncompleteCheckTimeoutInSeconds(
         operateBackup.getIncompleteCheckTimeout().getSeconds());
+  }
+
+  private void configureElasticsearch(
+      final OperateProperties override, final SecondaryStorage database) {
+    override.setDatabase(DatabaseType.Elasticsearch);
+    override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
+    override.getElasticsearch().setUsername(database.getElasticsearch().getUsername());
+    override.getElasticsearch().setPassword(database.getElasticsearch().getPassword());
+  }
+
+  private void configureOpensearch(
+      final OperateProperties override, final SecondaryStorage database) {
+    override.setDatabase(DatabaseType.Opensearch);
+    override.getOpensearch().setUrl(database.getOpensearch().getUrl());
+    override.getOpensearch().setUsername(database.getOpensearch().getUsername());
+    override.getOpensearch().setPassword(database.getOpensearch().getPassword());
   }
 }

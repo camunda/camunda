@@ -35,8 +35,8 @@ public class SearchEngineConnectPropertiesOverride {
   private final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties;
 
   public SearchEngineConnectPropertiesOverride(
-      @Autowired UnifiedConfiguration unifiedConfiguration,
-      @Autowired LegacySearchEngineConnectProperties legacySearchEngineConnectProperties) {
+      @Autowired final UnifiedConfiguration unifiedConfiguration,
+      @Autowired final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
     this.legacySearchEngineConnectProperties = legacySearchEngineConnectProperties;
   }
@@ -57,6 +57,8 @@ public class SearchEngineConnectPropertiesOverride {
 
     override.setType(secondaryStorage.getType().name());
     override.setUrl(database.getUrl());
+    override.setUsername(database.getUsername());
+    override.setPassword(database.getPassword());
 
     return override;
   }
