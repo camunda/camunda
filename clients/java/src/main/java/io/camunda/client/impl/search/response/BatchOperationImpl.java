@@ -55,7 +55,7 @@ public class BatchOperationImpl implements BatchOperation {
   public BatchOperationImpl(final BatchOperationResponse item) {
     batchOperationKey = item.getBatchOperationKey();
     type = EnumUtil.convert(item.getBatchOperationType(), BatchOperationType.class);
-    status = item.getState() != null ? BatchOperationState.valueOf(item.getState().name()) : null;
+    status = EnumUtil.convert(item.getState(), BatchOperationState.class);
     startDate = ParseUtil.parseOffsetDateTimeOrNull(item.getStartDate());
     endDate = ParseUtil.parseOffsetDateTimeOrNull(item.getEndDate());
     operationsTotalCount = item.getOperationsTotalCount();
