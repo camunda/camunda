@@ -21,7 +21,7 @@ public class OperateProperties {
 
   private static final String UNKNOWN_VERSION = "unknown-version";
 
-  private boolean importerEnabled = true;
+  private boolean importerEnabled = false;
   private boolean webappEnabled = true;
 
   private boolean rfc3339ApiDateFormat = false;
