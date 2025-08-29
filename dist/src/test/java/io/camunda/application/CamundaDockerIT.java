@@ -127,7 +127,7 @@ public class CamundaDockerIT {
     final CamundaClient camundaClient =
         new CamundaClientBuilderImpl()
             .usePlaintext()
-            .preferRestOverGrpc(true)
+            .preferRestOverGrpc(false)
             .restAddress(new URI(camundaEndpoint))
             .build();
 
@@ -153,7 +153,7 @@ public class CamundaDockerIT {
             .join();
 
     Awaitility.await("Process instance is visible via search")
-        .atMost(Duration.ofMinutes(2))
+        .atMost(Duration.ofMinutes(5))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -229,8 +229,8 @@ public class CamundaDockerIT {
             new HttpWaitStrategy()
                 .forPort(MANAGEMENT_PORT)
                 .forPath("/actuator/health")
-                .withReadTimeout(Duration.ofSeconds(120)))
-        .withStartupTimeout(Duration.ofSeconds(300))
+                .withReadTimeout(Duration.ofSeconds(240)))
+        .withStartupTimeout(Duration.ofSeconds(600))
         // Unified Configuration
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())

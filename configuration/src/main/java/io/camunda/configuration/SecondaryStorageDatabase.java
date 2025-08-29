@@ -16,10 +16,10 @@ public abstract class SecondaryStorageDatabase {
   private String url = "http://localhost:9200";
 
   /** Username for the database configured as secondary storage. */
-  private String username = "";
+  private String username = null;
 
   /** Password for the database configured as secondary storage. */
-  private String password = "";
+  private String password = null;
 
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
