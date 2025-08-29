@@ -53,10 +53,12 @@ public class TasklistPropertiesOverride {
       override.setDatabase("elasticsearch");
       override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
       override.getZeebeElasticsearch().setUrl(database.getElasticsearch().getUrl());
+      override.getElasticsearch().setIndexPrefix(database.getElasticsearch().getIndexPrefix());
     } else if (SecondaryStorageType.opensearch == database.getType()) {
       override.setDatabase("opensearch");
       override.getOpenSearch().setUrl(database.getOpensearch().getUrl());
       override.getZeebeOpenSearch().setUrl(database.getOpensearch().getUrl());
+      override.getOpenSearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
     }
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
