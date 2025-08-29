@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type V2MetaDataDto} from '../types';
+import {type V2InstanceMetadata} from '../types';
 
 export const buildMetadata = (
-  metadata: V2MetaDataDto['instanceMetadata'] | null,
+  metadata: V2InstanceMetadata | null,
   incident: {
     errorType: {id: string; name: string};
     errorMessage: string;
@@ -19,18 +19,13 @@ export const buildMetadata = (
     return '';
   }
 
-  const {
-    flowNodeInstanceId,
-    calledProcessInstanceId,
-    calledDecisionInstanceId,
-    ...metadataSubset
-  } = metadata;
+  const {calledProcessInstanceId, calledDecisionInstanceId, ...metadataSubset} =
+    metadata;
 
   return JSON.stringify({
     ...metadataSubset,
     incidentErrorType: incident?.errorType.name || null,
     incidentErrorMessage: incident?.errorMessage || null,
-    flowNodeInstanceKey: flowNodeInstanceId,
     calledProcessInstanceKey: calledProcessInstanceId,
     calledDecisionInstanceKey: calledDecisionInstanceId,
   });

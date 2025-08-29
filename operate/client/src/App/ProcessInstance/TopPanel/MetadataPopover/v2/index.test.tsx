@@ -28,6 +28,7 @@ import {
   singleInstanceMetadata,
   incidentsByProcessKeyMetadata,
   jobMetadata,
+  calledDecisionInstanceMetadata,
 } from 'modules/mocks/metadata';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
@@ -50,6 +51,7 @@ import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/inciden
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
+import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -149,6 +151,11 @@ describe('MetadataPopover', () => {
       page: {
         totalItems: 0,
       },
+    });
+
+    mockSearchDecisionInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
   });
 
@@ -275,6 +282,7 @@ describe('MetadataPopover', () => {
       ...mockElementInstance,
       startDate: '2018-12-12 00:00:00',
       endDate: '2018-12-12 00:00:00',
+      type: 'CALL_ACTIVITY',
     });
     flowNodeMetaDataStore.setMetaData(calledInstanceMetadata);
 
@@ -326,14 +334,12 @@ describe('MetadataPopover', () => {
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
 
     expect(
-      await screen.findByText(/"flowNodeId": "Activity_0zqism7"/),
+      await screen.findByText(/"elementId": "Activity_0zqism7"/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/"flowNodeInstanceKey": "2251799813699889"/),
+      screen.getByText(/"elementInstanceKey": "2251799813699889"/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/"flowNodeType": "TASK_CALL_ACTIVITY"/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/"type": "CALL_ACTIVITY"/)).toBeInTheDocument();
     expect(
       screen.getByText(/"startDate": "2018-12-12 00:00:00"/),
     ).toBeInTheDocument();
@@ -704,6 +710,76 @@ describe('MetadataPopover', () => {
 
     expect(
       screen.queryByRole('heading', {name: labels.details}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should render called decision instance link for business rule task', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchElementInstance('2251799813699889').withSuccess({
+      ...mockElementInstance,
+      elementId: 'BusinessRuleTask',
+      type: 'BUSINESS_RULE_TASK',
+    });
+    mockSearchDecisionInstances().withSuccess({
+      items: [calledDecisionInstanceMetadata],
+      page: {totalItems: 1},
+    });
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    selectFlowNode(
+      {},
+      {flowNodeId: 'BusinessRuleTask', flowNodeInstanceId: '2251799813699889'},
+    );
+
+    renderPopover();
+
+    await waitFor(() => {
+      expect(screen.getByText('Called Decision Instance')).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByRole('link', {
+        name: /View Approval Rules instance 9876543210/,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Approval Rules - 9876543210')).toBeInTheDocument();
+  });
+
+  it('should not show decision instances for non-business rule tasks', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchElementInstance('2251799813699889').withSuccess({
+      ...mockElementInstance,
+      type: 'SERVICE_TASK',
+    });
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    selectFlowNode(
+      {},
+      {flowNodeId: FLOW_NODE_ID, flowNodeInstanceId: '2251799813699889'},
+    );
+
+    renderPopover();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', {name: labels.details}),
+      ).toBeInTheDocument();
+    });
+
+    expect(
+      screen.queryByText('Called Decision Instance'),
     ).not.toBeInTheDocument();
   });
 });
