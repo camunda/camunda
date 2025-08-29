@@ -126,7 +126,7 @@ jobs:
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       benchmark-load: >
         --set starter.rate=1
-        --set workers.benchmark.replicas=1
+        --set workers.worker.replicas=1
 
   notify:
     name: Notify on failure
