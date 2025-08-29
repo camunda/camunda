@@ -22,6 +22,7 @@ import {
   FLOW_NODE_ID,
   USER_TASK_FLOW_NODE_ID,
   BUSINESS_RULE_FLOW_NODE_ID,
+  calledDecisionInstanceMetadata,
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {
@@ -40,8 +41,8 @@ import {mockIncidents} from 'modules/mocks/incidents';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
-import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 
 import type {
   ElementInstance,
@@ -92,24 +93,6 @@ const mockIncident = {
   elementInstanceKey: '2251799813699889',
   jobKey: '',
   tenantId: '<default>',
-};
-
-const mockDecisionInstance = {
-  decisionInstanceId: '750893257230984',
-  decisionInstanceKey: '750893257230984',
-  decisionDefinitionName: 'Take decision',
-  decisionDefinitionId: 'decision-1',
-  decisionDefinitionKey: '123',
-  decisionDefinitionVersion: 1,
-  decisionDefinitionType: 'DECISION_TABLE' as const,
-  processDefinitionKey: '2',
-  processInstanceKey: PROCESS_INSTANCE_ID,
-  elementInstanceKey: '2251799813699889',
-  state: 'EVALUATED' as const,
-  evaluationDate: '2018-12-12T22:00:00.000+0000',
-  evaluationFailure: '',
-  tenantId: '<default>',
-  result: '',
 };
 
 vi.mock('date-fns', async () => {
@@ -274,7 +257,7 @@ describe('MetadataPopover', () => {
     );
 
     mockSearchDecisionInstances().withSuccess({
-      items: [mockDecisionInstance],
+      items: [calledDecisionInstanceMetadata],
       page: {totalItems: 1},
     });
 
@@ -307,15 +290,15 @@ describe('MetadataPopover', () => {
 
     await user.click(
       screen.getByText(
-        `${mockDecisionInstance!.decisionDefinitionName} - ${
-          mockDecisionInstance!.decisionInstanceId
+        `${calledDecisionInstanceMetadata!.decisionDefinitionName} - ${
+          calledDecisionInstanceMetadata!.decisionInstanceId
         }`,
       ),
     );
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        `/decisions/${mockDecisionInstance!.decisionInstanceId}`,
+        `/decisions/${calledDecisionInstanceMetadata!.decisionInstanceId}`,
       ),
     );
 
@@ -334,7 +317,7 @@ describe('MetadataPopover', () => {
     };
 
     const mockFailedDecisionInstance = {
-      ...mockDecisionInstance,
+      ...calledDecisionInstanceMetadata,
       state: 'FAILED' as const,
     };
 
@@ -431,7 +414,7 @@ describe('MetadataPopover', () => {
     );
 
     const mockUnevaluatedDecisionInstance = {
-      ...mockDecisionInstance,
+      ...calledDecisionInstanceMetadata,
       decisionInstanceId: '',
       decisionInstanceKey: '',
       state: 'UNSPECIFIED' as const,
