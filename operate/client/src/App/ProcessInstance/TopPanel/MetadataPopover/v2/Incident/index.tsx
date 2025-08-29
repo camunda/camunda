@@ -11,13 +11,17 @@ import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {Header} from '../../Header';
-import type {Incident as IncidentDto} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {SummaryDataKey, SummaryDataValue} from '../../styled.tsx';
+import type {
+  Incident as IncidentDto,
+  DecisionInstance,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {SummaryDataKey, SummaryDataValue} from '../../styled';
 import {resolveIncidentErrorType} from './resolveIncidentErrorType';
 
 type Props = {
   incidentV2: IncidentDto;
   incident: MetaDataDto['incident'];
+  rootCauseDecisionInstance: DecisionInstance | null;
   processInstanceId?: string;
   onButtonClick: () => void;
 };
@@ -25,15 +29,16 @@ type Props = {
 const Incident: React.FC<Props> = ({
   incidentV2,
   incident,
+  rootCauseDecisionInstance,
   processInstanceId,
   onButtonClick,
 }) => {
-  if (incident === null) {
+  if (!incident || !incidentV2) {
     return null;
   }
 
-  //TODO will be handled separately in #35528 and #35529
-  const {rootCauseDecision, rootCauseInstance} = incident;
+  //TODO will be handled separately in #35529
+  const {rootCauseInstance} = incident;
 
   const errorType = resolveIncidentErrorType(incidentV2.errorType);
 
@@ -61,35 +66,35 @@ const Incident: React.FC<Props> = ({
             </SummaryDataValue>
           </Stack>
         )}
-        {incidentV2 !== null &&
-          rootCauseInstance !== null &&
-          rootCauseDecision === null && (
-            <Stack gap={3} as="dl">
-              <SummaryDataKey>Root Cause Process Instance</SummaryDataKey>
-              <SummaryDataValue>
-                {rootCauseInstance.instanceId === processInstanceId ? (
-                  'Current Instance'
-                ) : (
-                  <Link
-                    to={Paths.processInstance(rootCauseInstance.instanceId)}
-                    title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
-                  >
-                    {`${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
-                  </Link>
-                )}
-              </SummaryDataValue>
-            </Stack>
-          )}
-        {rootCauseDecision !== null && (
+        {!!rootCauseInstance && !rootCauseDecisionInstance && (
+          <Stack gap={3} as="dl">
+            <SummaryDataKey>Root Cause Process Instance</SummaryDataKey>
+            <SummaryDataValue>
+              {rootCauseInstance.instanceId === processInstanceId ? (
+                'Current Instance'
+              ) : (
+                <Link
+                  to={Paths.processInstance(rootCauseInstance.instanceId)}
+                  title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                >
+                  {`${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                </Link>
+              )}
+            </SummaryDataValue>
+          </Stack>
+        )}
+        {rootCauseDecisionInstance !== null && (
           <Stack gap={3} as="dl">
             <SummaryDataKey>Root Cause Decision Instance</SummaryDataKey>
             <SummaryDataValue>
               <Link
-                to={Paths.decisionInstance(rootCauseDecision.instanceId)}
-                title={`View root cause decision ${rootCauseDecision.decisionName} - ${rootCauseDecision.instanceId}`}
-                aria-label={`View root cause decision ${rootCauseDecision.decisionName} - ${rootCauseDecision.instanceId}`}
+                to={Paths.decisionInstance(
+                  rootCauseDecisionInstance.decisionInstanceKey,
+                )}
+                title={`View root cause decision ${rootCauseDecisionInstance.decisionDefinitionName} - ${rootCauseDecisionInstance.decisionInstanceKey}`}
+                aria-label={`View root cause decision ${rootCauseDecisionInstance.decisionDefinitionName} - ${rootCauseDecisionInstance.decisionInstanceKey}`}
               >
-                {`${rootCauseDecision.decisionName} - ${rootCauseDecision.instanceId}`}
+                {`${rootCauseDecisionInstance.decisionDefinitionName} - ${rootCauseDecisionInstance.decisionInstanceKey}`}
               </Link>
             </SummaryDataValue>
           </Stack>
