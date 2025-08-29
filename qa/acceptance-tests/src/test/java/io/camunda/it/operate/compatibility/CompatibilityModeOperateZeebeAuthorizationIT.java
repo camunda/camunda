@@ -174,7 +174,7 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
     deployResource(adminClient, PROCESS_FOR_MIGRATION_V1_RESOURCE);
 
     // wait for operate to catch up
-    waitForProcessesToBeDeployed(adminClient, 6);
+    waitForProcessesToBeDeployed(adminClient, 5);
   }
 
   @ParameterizedTest

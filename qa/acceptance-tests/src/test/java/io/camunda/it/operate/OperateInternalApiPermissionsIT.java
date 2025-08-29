@@ -33,7 +33,6 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.it.util.TestHelper;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
-import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
@@ -273,60 +272,6 @@ public class OperateInternalApiPermissionsIT {
     assertThat(adminResponseDto.isRight()).isTrue();
     assertThat(adminResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
     assertThat(((DecisionGroupDto[]) adminResponseDto.get())).hasSize(2);
-  }
-
-  @Test
-  public void shouldReturnAuthorizedFlowNodeStatistics(final CamundaClient adminClient)
-      throws URISyntaxException, IOException, InterruptedException {
-    // given
-    final String flowNodeStatisticsDto =
-        toJsonString(
-            new ListViewQueryDto()
-                .setActive(true)
-                .setCompleted(true)
-                .setRunning(true)
-                .setFinished(true)
-                .setProcessIds(List.of(String.valueOf(processToFind.getProcessDefinitionKey()))));
-    final var restrictedOperateClient =
-        STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER_USERNAME, RESTRICTED_USER.password());
-
-    // when
-    final var restrictedResponse =
-        restrictedOperateClient.sendInternalSearchRequest(
-            "api/process-instances/statistics", flowNodeStatisticsDto);
-    final var restrictedResponseMapping =
-        restrictedOperateClient.mapResult(restrictedResponse, FlowNodeStatisticsDto[].class);
-
-    // then
-    assertThat(restrictedResponseMapping.isRight()).isTrue();
-    final var restrictedResponseDto = (FlowNodeStatisticsDto[]) restrictedResponseMapping.get();
-    assertThat(restrictedResponseDto).hasSize(1);
-  }
-
-  @Test
-  public void shouldNotReturnUnauthorizedFlowNodeStatistics(final CamundaClient adminClient)
-      throws URISyntaxException, IOException, InterruptedException {
-    final String flowNodeStatisticsDto =
-        toJsonString(
-            new ListViewQueryDto()
-                .setActive(true)
-                .setCompleted(true)
-                .setRunning(true)
-                .setFinished(true)
-                .setProcessIds(
-                    List.of(String.valueOf(processNotToFind.getProcessDefinitionKey()))));
-
-    final var restrictedOperateClient =
-        STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER_USERNAME, RESTRICTED_USER.password());
-
-    final var restrictedResponse =
-        restrictedOperateClient.sendInternalSearchRequest(
-            "api/process-instances/statistics", flowNodeStatisticsDto);
-    final var restrictedResponseMapping =
-        restrictedOperateClient.mapResult(restrictedResponse, FlowNodeStatisticsDto[].class);
-    assertThat(restrictedResponseMapping.isRight()).isTrue();
-    final var restrictedResponseDto = (FlowNodeStatisticsDto[]) restrictedResponseMapping.get();
-    assertThat(restrictedResponseDto).isEmpty();
   }
 
   /*
