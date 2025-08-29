@@ -64,10 +64,12 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
 
   @Override
   protected void streamStart(final ContentType contentType) throws IOException {
-    if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)) {
-      entityConsumer = new JsonApiEntityConsumer<>(json, type, true);
-    } else if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
+    if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
       entityConsumer = new JsonApiEntityConsumer<>(json, type, false);
+    } else if (Void.class.equals(type)) {
+      entityConsumer = new RawApiEntityConsumer<>(true, chunkSize);
+    } else if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)) {
+      entityConsumer = new JsonApiEntityConsumer<>(json, type, true);
     } else {
       final boolean isResponse =
           String.class.equals(type)

@@ -273,6 +273,51 @@ class ApiEntityConsumerTest {
         .isEqualTo(unsupportedData);
   }
 
+  @Test
+  void testVoidTypeWithApplicationJson() throws IOException {
+    // given
+
+    final ApiEntityConsumer<Void> consumer =
+        new ApiEntityConsumer<>(new ObjectMapper(), Void.class, 2048);
+
+    // when
+    // Start the stream with application/json content type
+    consumer.streamStart(ContentType.APPLICATION_JSON);
+    // Generate the content
+    final ApiEntity<Void> entity = consumer.generateContent();
+
+    // then
+    assertThat(entity).isNull();
+  }
+
+  @Test
+  void shouldProcessProblemDetailsEvenIfTheExpectedResponseWasVoid() throws IOException {
+    // given
+    final String problemDetailResponse =
+        "{\"type\":\"about:blank\",\"title\":\"Something went wrong\",\"status\":400,\"detail\":\"Invalid request\",\"instance\":\"/v1/entity/123\"}";
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(problemDetailResponse.getBytes());
+    final ApiEntityConsumer<Void> consumer =
+        new ApiEntityConsumer<>(new ObjectMapper(), Void.class, 2048);
+
+    // when
+    // Start the stream with application/problem+json content type
+    consumer.streamStart(ContentType.APPLICATION_PROBLEM_JSON);
+    // Feed the data
+    consumer.data(byteBuffer, true);
+    // Generate the content
+    final ApiEntity<Void> entity = consumer.generateContent();
+
+    // then
+    assertThat(entity).isInstanceOf(Error.class);
+    final ProblemDetail problemDetail = entity.problem();
+    assertThat(problemDetail).isNotNull();
+    assertThat(problemDetail.getType()).isEqualTo(URI.create("about:blank"));
+    assertThat(problemDetail.getTitle()).isEqualTo("Something went wrong");
+    assertThat(problemDetail.getStatus()).isEqualTo(400);
+    assertThat(problemDetail.getDetail()).isEqualTo("Invalid request");
+    assertThat(problemDetail.getInstance()).isEqualTo(URI.create("/v1/entity/123"));
+  }
+
   // Test entity class used for JSON serialization/deserialization
   static class TestEntity {
     private String name;
