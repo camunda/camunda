@@ -27,6 +27,8 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -291,7 +293,58 @@ final class ElasticsearchExporterIT {
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
             String.valueOf(record.getPartitionId()),
-            record);
+            modifyExpectedRecordForPreviousVersion(valueType, record));
+  }
+
+  private Record modifyExpectedRecordForPreviousVersion(
+      final ValueType valueType, final Record record) {
+    final var copyFactory = new ProtocolFactory(factory.getSeed());
+    final RecordValue recordValue =
+        switch (valueType) {
+          case JOB ->
+              ImmutableJobRecordValue.builder()
+                  .from(((ImmutableJobRecordValue) record.getValue()))
+                  .withTags(List.of())
+                  .resultBuilder(null)
+                  .build();
+          case PROCESS_INSTANCE ->
+              ImmutableProcessInstanceRecordValue.builder()
+                  .from(((ImmutableProcessInstanceRecordValue) record.getValue()))
+                  .withCallingElementPath(List.of())
+                  .withProcessDefinitionPath(List.of())
+                  .withTags(List.of())
+                  .withElementInstancePath(List.of())
+                  .build();
+          case JOB_BATCH ->
+              ImmutableJobBatchRecordValue.builder()
+                  .from(((ImmutableJobBatchRecordValue) record.getValue()))
+                  .withJobs(
+                      ((ImmutableJobBatchRecordValue) record.getValue())
+                          .getJobs().stream()
+                              .map(
+                                  job ->
+                                      ImmutableJobRecordValue.builder()
+                                          .from(job)
+                                          .withTags(List.of())
+                                          .resultBuilder(null)
+                                          .build())
+                              .toList())
+                  .build();
+          case PROCESS_INSTANCE_CREATION ->
+              ImmutableProcessInstanceCreationRecordValue.builder()
+                  .from(((ImmutableProcessInstanceCreationRecordValue) record.getValue()))
+                  .withTags(List.of())
+                  .withRuntimeInstructions(List.of())
+                  .build();
+          default -> record.getValue();
+        };
+    return copyFactory.generateRecord(
+        valueType,
+        r ->
+            r.withValue(recordValue)
+                .withAuthorizations(record.getAuthorizations())
+                .withBrokerVersion(record.getBrokerVersion())
+                .withBatchOperationReference(-1L));
   }
 
   private boolean export(final Record<?> record) {
