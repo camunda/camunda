@@ -43,7 +43,7 @@ jobs:
           credentials_json: ${{ steps.secrets.outputs.gcloud_sa_key }}
 
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@cb1e50a9932213ecece00a606661ae9ca44f3397 # v2
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2
 
       - name: Print Google Cloud SDK version used
         shell: bash
