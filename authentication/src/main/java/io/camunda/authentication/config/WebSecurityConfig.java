@@ -65,6 +65,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -579,6 +580,7 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "camunda.security.authentication.oidc.clientId")
     public ClientRegistrationRepository clientRegistrationRepository(
         final SecurityConfiguration securityConfiguration) {
       try {
@@ -615,13 +617,12 @@ public class WebSecurityConfig {
     public JwtDecoder jwtDecoder(
         final SecurityConfiguration securityConfiguration,
         final ClientRegistrationRepository clientRegistrationRepository) {
+
+      final var iterator = (Iterable<ClientRegistration>) clientRegistrationRepository;
+
       // Do not rely on the configured uri, the client registration can automatically discover it
       // based on the issuer uri.
-      final var jwkSetUri =
-          clientRegistrationRepository
-              .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
-              .getProviderDetails()
-              .getJwkSetUri();
+      final var jwkSetUri = iterator.iterator().next().getProviderDetails().getJwkSetUri();
 
       final var decoder =
           NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
