@@ -32,6 +32,8 @@ import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProce
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useSearchMessageSubscriptions} from 'modules/queries/messageSubscriptions/useSearchMessageSubscriptions';
+import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
+import {useDecisionDefinition} from 'modules/queries/decisionDefinitions/useDecisionDefinition';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -195,6 +197,37 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     },
   );
 
+  const {
+    data: decisionInstanceSearchResult,
+    isLoading: isSearchingDecisionInstances,
+  } = useDecisionInstancesSearch(
+    {
+      filter: {
+        elementInstanceKey: elementInstanceMetadata?.elementInstanceKey ?? '',
+      },
+    },
+    {
+      enabled:
+        !!elementInstanceMetadata?.elementInstanceKey &&
+        elementInstanceMetadata?.type === 'BUSINESS_RULE_TASK',
+    },
+  );
+
+  const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
+    (instance) =>
+      instance.rootDecisionDefinitionKey === instance.decisionDefinitionKey,
+  );
+
+  const calledDecisionDefinitionId =
+    decisionInstanceSearchResult?.items?.[0]?.rootDecisionDefinitionKey;
+
+  const {
+    data: calledDecisionDefinition,
+    isLoading: isSearchingCalledDecisionDefinition,
+  } = useDecisionDefinition(calledDecisionDefinitionId ?? '', {
+    enabled: !!calledDecisionDefinitionId && !calledDecisionInstance,
+  });
+
   if (
     elementId === undefined ||
     metaData === null ||
@@ -203,7 +236,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     isSearchingUserTasks ||
     isSearchingProcessInstances ||
     isSearchingJob ||
-    isSearchingMessageSubscription
+    isSearchingMessageSubscription ||
+    isSearchingCalledDecisionDefinition ||
+    isSearchingDecisionInstances
   ) {
     return null;
   }
@@ -244,6 +279,8 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                 jobSearchResult?.[0],
                 processInstancesSearchResult?.items?.[0],
                 messageSubscriptionSearchResult?.items?.[0],
+                calledDecisionDefinition,
+                calledDecisionInstance,
                 elementInstanceMetadata.type === 'USER_TASK'
                   ? userTask
                   : undefined,

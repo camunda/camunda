@@ -28,6 +28,7 @@ import {
   singleInstanceMetadata,
   incidentsByProcessKeyMetadata,
   jobMetadata,
+  calledDecisionInstanceMetadata,
 } from 'modules/mocks/metadata';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
@@ -53,6 +54,7 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
+import {mockFetchDecisionDefinition} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinition';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -175,6 +177,21 @@ describe('MetadataPopover', () => {
     mockSearchMessageSubscriptions().withSuccess({
       items: [],
       page: {totalItems: 0},
+    });
+
+    mockSearchDecisionInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockFetchDecisionDefinition('123456').withSuccess({
+      decisionDefinitionKey: '123456',
+      decisionDefinitionId: 'approval-decision',
+      name: 'Approval Rules',
+      version: 1,
+      decisionRequirementsKey: '456789',
+      decisionRequirementsId: 'approval-requirements',
+      tenantId: '<default>',
     });
   });
 
@@ -306,6 +323,7 @@ describe('MetadataPopover', () => {
       ...mockElementInstance,
       startDate: '2018-12-12 00:00:00',
       endDate: '2018-12-12 00:00:00',
+      type: 'CALL_ACTIVITY',
     });
     flowNodeMetaDataStore.setMetaData(calledInstanceMetadata);
 
@@ -362,14 +380,12 @@ describe('MetadataPopover', () => {
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
 
     expect(
-      await screen.findByText(/"flowNodeId": "Activity_0zqism7"/),
+      await screen.findByText(/"elementId": "Activity_0zqism7"/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/"flowNodeInstanceKey": "2251799813699889"/),
+      screen.getByText(/"elementInstanceKey": "2251799813699889"/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/"flowNodeType": "TASK_CALL_ACTIVITY"/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/"type": "CALL_ACTIVITY"/)).toBeInTheDocument();
     expect(
       screen.getByText(/"startDate": "2018-12-12 00:00:00"/),
     ).toBeInTheDocument();
@@ -791,6 +807,10 @@ describe('MetadataPopover', () => {
       page: {totalItems: 0},
     });
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+    mockFetchElementInstance('2251799813699889').withSuccess({
+      ...mockElementInstance,
+      hasIncident: true,
+    });
     mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess(
       incidentsByProcessKeyMetadata,
     );
@@ -858,6 +878,146 @@ describe('MetadataPopover', () => {
     expect(await screen.findByText(labels.incident)).toBeInTheDocument();
     expect(
       screen.queryByText('Root Cause Decision Instance'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should render called decision instance link for business rule task', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchElementInstance('2251799813699889').withSuccess({
+      ...mockElementInstance,
+      elementId: 'BusinessRuleTask',
+      type: 'BUSINESS_RULE_TASK',
+    });
+    const rootDecisionInstance = {
+      ...calledDecisionInstanceMetadata,
+      rootDecisionDefinitionKey: '123456',
+    };
+
+    mockSearchDecisionInstances().withSuccess({
+      items: [rootDecisionInstance],
+      page: {totalItems: 1},
+    });
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    selectFlowNode(
+      {},
+      {flowNodeId: 'BusinessRuleTask', flowNodeInstanceId: '2251799813699889'},
+    );
+
+    renderPopover();
+
+    await waitFor(() => {
+      expect(screen.getByText('Called Decision Instance')).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByRole('link', {
+        name: /View Approval Rules instance 9876543210/,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Approval Rules - 9876543210')).toBeInTheDocument();
+  });
+
+  it('should not show decision instances for non-business rule tasks', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchElementInstance('2251799813699889').withSuccess({
+      ...mockElementInstance,
+      type: 'SERVICE_TASK',
+    });
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    selectFlowNode(
+      {},
+      {flowNodeId: FLOW_NODE_ID, flowNodeInstanceId: '2251799813699889'},
+    );
+
+    renderPopover();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', {name: labels.details}),
+      ).toBeInTheDocument();
+    });
+
+    expect(
+      screen.queryByText('Called Decision Instance'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should render called decision definition name when no decision instances exist', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchElementInstance('2251799813699889').withSuccess({
+      ...mockElementInstance,
+      type: 'BUSINESS_RULE_TASK',
+    });
+
+    mockSearchDecisionInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    selectFlowNode(
+      {},
+      {flowNodeId: FLOW_NODE_ID, flowNodeInstanceId: '2251799813699889'},
+    );
+
+    renderPopover();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', {name: labels.details}),
+      ).toBeInTheDocument();
+    });
+
+    expect(
+      screen.queryByText('Called Decision Instance'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should handle decision instance search errors gracefully', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchElementInstance('2251799813699889').withSuccess({
+      ...mockElementInstance,
+      type: 'BUSINESS_RULE_TASK',
+    });
+
+    mockSearchDecisionInstances().withNetworkError();
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    selectFlowNode(
+      {},
+      {flowNodeId: FLOW_NODE_ID, flowNodeInstanceId: '2251799813699889'},
+    );
+
+    renderPopover();
+
+    expect(
+      screen.queryByRole('heading', {name: labels.details}),
     ).not.toBeInTheDocument();
   });
 });
