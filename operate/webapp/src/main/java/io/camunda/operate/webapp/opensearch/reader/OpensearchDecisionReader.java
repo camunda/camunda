@@ -53,36 +53,6 @@ public class OpensearchDecisionReader implements DecisionReader {
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Override
-  public String getDiagram(final Long decisionDefinitionKey) {
-    record DecisionRequirementsIdRecord(Long decisionRequirementsKey) {}
-    final var request =
-        searchRequestBuilder(decisionIndex.getAlias())
-            .query(withTenantCheck(ids(decisionDefinitionKey.toString())));
-    final var hits =
-        richOpenSearchClient.doc().search(request, DecisionRequirementsIdRecord.class).hits();
-    if (hits.total().value() == 0) {
-      throw new NotFoundException("No decision definition found for id " + decisionDefinitionKey);
-    }
-    final var decisionRequirementsId = hits.hits().get(0).source().decisionRequirementsKey;
-
-    final var xmlRequest =
-        searchRequestBuilder(decisionRequirementsIndex.getAlias())
-            .query(withTenantCheck(ids(decisionRequirementsId.toString())))
-            .source(sourceInclude(DecisionRequirementsIndex.XML));
-    record XmlRecord(String xml) {}
-    final var xmlHits = richOpenSearchClient.doc().search(xmlRequest, XmlRecord.class).hits();
-    if (xmlHits.total().value() == 1) {
-      return xmlHits.hits().get(0).source().xml;
-    } else if (hits.total().value() > 1) {
-      throw new NotFoundException(
-          String.format("Could not find unique DRD with id '%s'.", decisionRequirementsId));
-    } else {
-      throw new NotFoundException(
-          String.format("Could not find DRD with id '%s'.", decisionRequirementsId));
-    }
-  }
-
-  @Override
   public DecisionDefinitionEntity getDecision(final Long decisionDefinitionKey) {
     final var request =
         searchRequestBuilder(decisionIndex.getAlias())

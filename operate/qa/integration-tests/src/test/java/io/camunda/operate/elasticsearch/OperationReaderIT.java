@@ -16,16 +16,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestUtil;
-import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -137,22 +132,6 @@ public class OperationReaderIT extends OperateAbstractIT {
   }
 
   @Test
-  public void testGetVariables() throws Exception {
-
-    final MvcResult mvcResult = getVariables(processInstanceId2);
-    final List<VariableDto> variables =
-        mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
-
-    assertThat(variables).hasSize(3);
-
-    assertThat(variables)
-        .filteredOn("name", VARNAME_1)
-        .allMatch(inc -> !inc.isHasActiveOperation());
-    assertThat(variables).filteredOn("name", VARNAME_2).allMatch(inc -> inc.isHasActiveOperation());
-    assertThat(variables).filteredOn("name", VARNAME_3).allMatch(inc -> inc.isHasActiveOperation());
-  }
-
-  @Test
   public void testQueryProcessInstanceById() throws Exception {
 
     final MvcResult mvcResult = getRequest(queryProcessInstanceById(processInstanceId3));
@@ -169,23 +148,6 @@ public class OperationReaderIT extends OperateAbstractIT {
 
   private String queryIncidentsByProcessInstanceId(final String processInstanceId) {
     return String.format("%s/%s/incidents", PROCESS_INSTANCE_URL, processInstanceId);
-  }
-
-  private MvcResult getVariables(final String processInstanceId) throws Exception {
-    final VariableRequestDto request =
-        new VariableRequestDto().setScopeId(String.valueOf(processInstanceId));
-    return mockMvc
-        .perform(
-            post(getVariablesURL(processInstanceId))
-                .content(mockMvcTestRule.json(request))
-                .contentType(mockMvcTestRule.getContentType()))
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-        .andReturn();
-  }
-
-  private String getVariablesURL(final String processInstanceId) {
-    return String.format(PROCESS_INSTANCE_URL + "/%s/variables", processInstanceId);
   }
 
   private String queryProcessInstanceById(final String processInstanceId) {
