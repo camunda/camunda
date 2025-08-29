@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
@@ -42,6 +43,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
@@ -421,6 +423,12 @@ public class ProtoBufSerializer
                   .setPartitionId(disableExporterOperation.partitionId())
                   .setExporterId(disableExporterOperation.exporterId())
                   .build());
+      case final PartitionDeleteExporterOperation deleteExporterOperation ->
+          builder.setPartitionDeleteExporter(
+              Topology.PartitionDeleteExporterOperation.newBuilder()
+                  .setPartitionId(deleteExporterOperation.partitionId())
+                  .setExporterId(deleteExporterOperation.exporterId())
+                  .build());
       case final PartitionEnableExporterOperation enableExporterOperation ->
           builder.setPartitionEnableExporter(
               encodeEnabledExporterOperation(enableExporterOperation));
@@ -565,6 +573,11 @@ public class ProtoBufSerializer
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getPartitionDisableExporter().getPartitionId(),
           topologyChangeOperation.getPartitionDisableExporter().getExporterId());
+    } else if (topologyChangeOperation.hasPartitionDeleteExporter()) {
+      return new PartitionDeleteExporterOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          topologyChangeOperation.getPartitionDeleteExporter().getPartitionId(),
+          topologyChangeOperation.getPartitionDeleteExporter().getExporterId());
     } else if (topologyChangeOperation.hasPartitionEnableExporter()) {
       final var enableExporterOperation = topologyChangeOperation.getPartitionEnableExporter();
       final Optional<String> initializeFrom =
@@ -672,6 +685,15 @@ public class ProtoBufSerializer
     return Requests.ExporterDisableRequest.newBuilder()
         .setExporterId(exporterDisableRequest.exporterId())
         .setDryRun(exporterDisableRequest.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public byte[] encodeExporterDeleteRequest(final ExporterDeleteRequest exporterDeleteRequest) {
+    return Requests.ExporterDeleteRequest.newBuilder()
+        .setExporterId(exporterDeleteRequest.exporterId())
+        .setDryRun(exporterDeleteRequest.dryRun())
         .build()
         .toByteArray();
   }
@@ -829,6 +851,17 @@ public class ProtoBufSerializer
       final var exporterDisableRequest = Requests.ExporterDisableRequest.parseFrom(encodedRequest);
       return new ExporterDisableRequest(
           exporterDisableRequest.getExporterId(), exporterDisableRequest.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public ExporterDeleteRequest decodeExporterDeleteRequest(final byte[] encodedRequest) {
+    try {
+      final var exporterDeleteRequest = Requests.ExporterDeleteRequest.parseFrom(encodedRequest);
+      return new ExporterDeleteRequest(
+          exporterDeleteRequest.getExporterId(), exporterDeleteRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }

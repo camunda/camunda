@@ -19,6 +19,7 @@ public enum ClusterConfigurationRequestTopics {
   FORCE_SCALE_DOWN("topology-force-scale-down"),
   DISABLE_EXPORTER("topology-exporter-disable"),
   ENABLE_EXPORTER("topology-exporter-enable"),
+  DELETE_EXPORTER("topology-exporter-delete"),
 
   SCALE_CLUSTER("topology-cluster-scale"),
   PATCH_CLUSTER("topology-cluster-patch"),

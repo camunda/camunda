@@ -89,6 +89,8 @@ message TopologyChangeOperation {
     PartitionDisableExporterOperation partitionDisableExporter = 9;
     PartitionEnableExporterOperation partitionEnableExporter = 10;
     PartitionBootstrapOperation partitionBootstrap = 11;
+    // Because this is backported from 8.8, we have to use non-contiguous index
+    PartitionDeleteExporterOperation partitionDeleteExporter = 17;
   }
 }
 
@@ -117,6 +119,11 @@ message PartitionForceReconfigureOperation {
 }
 
 message PartitionDisableExporterOperation {
+  int32 partitionId = 1;
+  string exporterId = 2;
+}
+
+message PartitionDeleteExporterOperation {
   int32 partitionId = 1;
   string exporterId = 2;
 }
