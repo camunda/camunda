@@ -123,7 +123,7 @@
 /zeebe/broker/src/test/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
 
 # Performance  + Load testing
-/zeebe/benchmarks @camunda/zeebe-distributed-platform
+/zeebe/load-tests @camunda/zeebe-distributed-platform
 
 # Identity
 /identity/*        @camunda/identity
