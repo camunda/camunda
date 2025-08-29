@@ -11,6 +11,8 @@ import static io.camunda.search.test.utils.SearchDBExtension.ARCHIVER_IDX_PREFIX
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static io.camunda.search.test.utils.SearchDBExtension.create;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
@@ -44,6 +46,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -52,6 +56,7 @@ import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
+import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest.Builder;
@@ -511,6 +516,49 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
   }
 
+  @Test
+  void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly() {
+    // given
+    retention.setEnabled(true);
+    final var sourceIndexName = UUID.randomUUID().toString();
+    final var destIndexName = UUID.randomUUID().toString();
+
+    final var asyncClient = createOpenSearchAsyncClient();
+    final var genericClientSpy =
+        Mockito.spy(
+            new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions()));
+
+    final var repository = createRepository(genericClientSpy);
+
+    // when - first time setting policy for destIndexName it should make the ism add for
+    // destIndexName
+    repository.setIndexLifeCycle(destIndexName);
+
+    final ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
+
+    Awaitility.await().untilAsserted(() -> verify(genericClientSpy).executeAsync(captor.capture()));
+
+    final List<Request> requests = captor.getAllValues();
+    assertThat(requests).hasSize(1);
+    assertThat(requests.getFirst().getEndpoint()).isEqualTo("_plugins/_ism/add/" + destIndexName);
+
+    // setting policy first time for srcIndexName but second time for destIndexName, it
+    // should have cached the fact that destIndexName already has a ism and not be included in
+    // the requests.
+    repository.setIndexLifeCycle(sourceIndexName, destIndexName);
+
+    // then
+    final var captor2 = ArgumentCaptor.forClass(Request.class);
+
+    Awaitility.await()
+        .untilAsserted(() -> verify(genericClientSpy, times(2)).executeAsync(captor2.capture()));
+
+    final List<Request> requests2 = captor2.getAllValues();
+    assertThat(requests2).hasSize(2);
+
+    assertThat(requests2.getLast().getEndpoint()).isEqualTo("_plugins/_ism/add/" + sourceIndexName);
+  }
+
   private void createBatchOperationIndex() throws IOException {
     final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
     final var endDateProp =
@@ -582,6 +630,14 @@ final class OpenSearchArchiverRepositoryIT {
   // no need to close resource returned here, since the transport is closed above anyway
   private OpenSearchArchiverRepository createRepository() {
     final var client = createOpenSearchAsyncClient();
+
+    return createRepository(
+        new OpenSearchGenericClient(client._transport(), client._transportOptions()));
+  }
+
+  private OpenSearchArchiverRepository createRepository(
+      final OpenSearchGenericClient genericClient) {
+    final var client = createOpenSearchAsyncClient();
     final var metrics = new CamundaExporterMetrics(meterRegistry);
 
     return new OpenSearchArchiverRepository(
@@ -593,6 +649,7 @@ final class OpenSearchArchiverRepositoryIT {
         batchOperationIndex,
         zeebeIndexPrefix,
         client,
+        genericClient,
         Runnable::run,
         metrics,
         LOGGER);
