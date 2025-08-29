@@ -10,11 +10,13 @@ package io.camunda.configuration.beanoverrides;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Grpc;
 import io.camunda.configuration.Interceptor;
+import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.configuration.beans.LegacyGatewayBasedProperties;
+import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
@@ -22,6 +24,7 @@ import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -174,9 +177,66 @@ public class GatewayBasedPropertiesOverride {
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withGatewayNetworkProperties();
 
     final var gatewayCluster = override.getCluster();
-    gatewayCluster.setHost(network.getHost());
-    gatewayCluster.setAdvertisedHost(network.getAdvertisedHost());
+
+    gatewayCluster.setHost(resolveHost());
+    gatewayCluster.setAdvertisedHost(resolveAdvertisedHost());
     gatewayCluster.setSocketSendBuffer(network.getSocketSendBuffer());
     gatewayCluster.setSocketReceiveBuffer(network.getSocketReceiveBuffer());
+
+    populateFromInternalApi(override);
+  }
+
+  private String resolveHost() {
+    final String internalApiHost =
+        unifiedConfiguration
+            .getCamunda()
+            .getCluster()
+            .getNetwork()
+            .getInternalApi()
+            .withGatewayInternalApiProperties()
+            .getHost();
+
+    return internalApiHost != null
+        ? internalApiHost
+        : unifiedConfiguration
+            .getCamunda()
+            .getCluster()
+            .getNetwork()
+            .withGatewayNetworkProperties()
+            .getHost();
+  }
+
+  private String resolveAdvertisedHost() {
+    final String internalApiAdvertisedHost =
+        unifiedConfiguration
+            .getCamunda()
+            .getCluster()
+            .getNetwork()
+            .getInternalApi()
+            .withGatewayInternalApiProperties()
+            .getAdvertisedHost();
+
+    return internalApiAdvertisedHost != null
+        ? internalApiAdvertisedHost
+        : unifiedConfiguration
+            .getCamunda()
+            .getCluster()
+            .getNetwork()
+            .withGatewayNetworkProperties()
+            .getAdvertisedHost();
+  }
+
+  private void populateFromInternalApi(final GatewayBasedProperties override) {
+    final InternalApi internalApi =
+        unifiedConfiguration
+            .getCamunda()
+            .getCluster()
+            .getNetwork()
+            .getInternalApi()
+            .withGatewayInternalApiProperties();
+    final ClusterCfg clusterCfg = override.getCluster();
+
+    clusterCfg.setPort(internalApi.getPort());
+    Optional.ofNullable(internalApi.getAdvertisedPort()).ifPresent(clusterCfg::setAdvertisedPort);
   }
 }
