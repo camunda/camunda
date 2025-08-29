@@ -75,8 +75,6 @@ zeebe:
         className: io.camunda.exporter.CamundaExporter
         args:
           connect:
-            type: opensearch
-            url: http://localhost:9200
             clusterName: opensearch
             dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZZ
             socketTimeout: 1000
@@ -122,16 +120,19 @@ zeebe:
             maxCacheSize: 10000
 
 camunda:
+
+  # Unified Configuration
+  data:
+    secondary-storage:
+      type: 'opensearch'
+      opensearch:
+        url: 'http://localhost:9200'
+  # -----
+
   database:
-    # Controls which database must be used, possible values: elasticsearch, opensearch
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE
-    type: opensearch
     # Sets the name of the cluster, default name is "elasticsearch"
     # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_CLUSTERNAME
     clusterName: opensearch
-    # Sets the database url.
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_URL
-    url: http://localhost:9200
   # Operate configuration properties
   operate:
     # Set operate username and password.
@@ -143,8 +144,6 @@ camunda:
     opensearch:
       # Cluster name
       clusterName: opensearch
-      # URL
-      url: http://localhost:9200
     # Zeebe instance
     zeebe:
       # Gateway address
@@ -153,8 +152,6 @@ camunda:
     zeebeOpensearch:
       # Cluster name
       clusterName: opensearch
-      # URL
-      url: http://localhost:9200
       # Index prefix, configured in Zeebe Opensearch exporter
       prefix: zeebe-record
   # Tasklist configuration properties
@@ -168,8 +165,6 @@ camunda:
     opensearch:
       # Cluster name
       clusterName: opensearch
-      # URL
-      url: http://localhost:9200
     # Zeebe instance
     zeebe:
       # Gateway address
@@ -178,7 +173,5 @@ camunda:
     zeebeOpensearch:
       # Cluster name
       clusterName: opensearch
-      # Url
-      url: http://localhost:9200
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record

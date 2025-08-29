@@ -13,6 +13,8 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
@@ -26,9 +28,13 @@ public class TestStandaloneBackupManager
 
   public TestStandaloneBackupManager() {
     super(
+        // Unified Configuration classes
+        UnifiedConfigurationHelper.class,
+        UnifiedConfiguration.class,
+        SearchEngineConnectPropertiesOverride.class,
+        // ---
         BackupManagerConfiguration.class,
-        StandaloneBackupManager.class,
-        UnifiedConfiguration.class);
+        StandaloneBackupManager.class);
     withProperty(BACKUP_WEBAPPS_ENABLED, true);
   }
 

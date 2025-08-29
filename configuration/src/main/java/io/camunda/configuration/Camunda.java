@@ -39,19 +39,19 @@ public class Camunda {
     this.system = system;
   }
 
+  public Data getData() {
+    return data;
+  }
+
+  public void setData(Data data) {
+    this.data = data;
+  }
+
   public Api getApi() {
     return api;
   }
 
   public void setApi(final Api api) {
     this.api = api;
-  }
-
-  public Data getData() {
-    return data;
-  }
-
-  public void setData(final Data data) {
-    this.data = data;
   }
 }

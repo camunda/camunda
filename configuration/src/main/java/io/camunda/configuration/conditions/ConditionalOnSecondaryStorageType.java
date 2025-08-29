@@ -5,25 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.condition;
+package io.camunda.configuration.conditions;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
-
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType.OnSecondaryStorageTypeCondition;
-import io.camunda.search.connect.configuration.DatabaseConfig;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType.OnSecondaryStorageTypeCondition;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.type.AnnotatedTypeMetadata;
-import org.springframework.util.StringUtils;
 
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
@@ -31,32 +27,30 @@ import org.springframework.util.StringUtils;
 @Conditional(OnSecondaryStorageTypeCondition.class)
 public @interface ConditionalOnSecondaryStorageType {
 
-  String[] value();
+  SecondaryStorageType[] value();
 
   class OnSecondaryStorageTypeCondition implements Condition {
 
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final var env = context.getEnvironment();
-      final var configuredType = env.getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
+      final var strType =
+          Optional.ofNullable(env.getProperty("camunda.data.secondary-storage.type"))
+              .orElse("elasticsearch");
 
-      final var type =
-          Optional.ofNullable(configuredType)
-              .filter(StringUtils::hasText)
-              .orElse(DatabaseConfig.ELASTICSEARCH);
+      final var type = SecondaryStorageType.valueOf(strType.toLowerCase());
 
-      if (metadata.isAnnotated(ConditionalOnSecondaryStorageType.class.getName())) {
-        final var value =
-            Objects.requireNonNull(
-                    metadata.getAnnotationAttributes(
-                        ConditionalOnSecondaryStorageType.class.getName()))
-                .get("value");
-        if (value instanceof final String[] acceptedTypes) {
-          return Arrays.stream(acceptedTypes)
-              .map(String::toLowerCase)
-              .anyMatch(type.toLowerCase()::equals);
-        }
+      final var attributes =
+          metadata.getAnnotationAttributes(ConditionalOnSecondaryStorageType.class.getName());
+      if (attributes == null) {
+        return false;
       }
+
+      final var value = attributes.get("value");
+      if (value instanceof SecondaryStorageType[] acceptedTypes) {
+        return Arrays.asList(acceptedTypes).contains(type);
+      }
+
       return false;
     }
   }
