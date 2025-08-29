@@ -13,7 +13,8 @@
 
 ### Get list of all modules in monorepo
 # shellcheck disable=SC2016,SC2005,SC2006,SC2046
-rawModuleList=$(echo $(./mvnw -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_GAV### ${project.artifactId}' | grep '###MODULE_GAV### ' | cut -f2 -d' '))
+rawModuleList=$(echo $(./mvnw -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q -pl '-:zeebe-qa-integration-tests','-:zeebe-qa-update-tests','-:operate-qa-data-generator','-:operate-qa-it-tests','-:operate-qa-backup-restore-tests','-:tasklist-it-tests','-:tasklist-qa-backup-restore-tests','-:tasklist-test-coverage','-:camunda-qa-util','-:camunda-qa-acceptance-tests','-:optimize-commons'))
+echo "Raw module list: $rawModuleList"
 
 # Convert the module list string into an array
 IFS=' ' read -ra items <<< "$rawModuleList"
