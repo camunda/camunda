@@ -21,7 +21,7 @@ import {
   PROCESS_INSTANCE_ID,
   FLOW_NODE_ID,
   USER_TASK_FLOW_NODE_ID,
-  BUSSINESS_RULE_FLOW_NODE_ID,
+  BUSINESS_RULE_FLOW_NODE_ID,
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {
@@ -51,7 +51,7 @@ const MOCK_EXECUTION_DATE = '21 seconds';
 
 const mockElementInstance: ElementInstance = {
   elementInstanceKey: '2251799813699889',
-  elementId: BUSSINESS_RULE_FLOW_NODE_ID,
+  elementId: BUSINESS_RULE_FLOW_NODE_ID,
   elementName: 'Service Task',
   type: 'SERVICE_TASK',
   state: 'COMPLETED',
@@ -217,7 +217,7 @@ describe('MetadataPopover', () => {
     selectFlowNode(
       {},
       {
-        flowNodeId: BUSSINESS_RULE_FLOW_NODE_ID,
+        flowNodeId: BUSINESS_RULE_FLOW_NODE_ID,
         flowNodeInstanceId: '2251799813699889',
       },
     );
@@ -273,7 +273,7 @@ describe('MetadataPopover', () => {
     selectFlowNode(
       {},
       {
-        flowNodeId: BUSSINESS_RULE_FLOW_NODE_ID,
+        flowNodeId: BUSINESS_RULE_FLOW_NODE_ID,
         flowNodeInstanceId: '2251799813699889',
       },
     );
@@ -334,7 +334,7 @@ describe('MetadataPopover', () => {
     selectFlowNode(
       {},
       {
-        flowNodeId: BUSSINESS_RULE_FLOW_NODE_ID,
+        flowNodeId: BUSINESS_RULE_FLOW_NODE_ID,
         flowNodeInstanceId: '2251799813699889',
       },
     );

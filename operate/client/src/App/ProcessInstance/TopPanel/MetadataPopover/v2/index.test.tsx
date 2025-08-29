@@ -185,6 +185,11 @@ describe('MetadataPopover', () => {
   });
 
   it('should not show unrelated data', async () => {
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     flowNodeMetaDataStore.setMetaData(singleInstanceMetadata);
 
@@ -312,6 +317,11 @@ describe('MetadataPopover', () => {
         },
       ],
       page: {totalItems: 1},
+    });
+
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
 
     mockSearchJobs().withSuccess({
@@ -494,6 +504,12 @@ describe('MetadataPopover', () => {
   it('should not render called instances for multi instance call activities', async () => {
     mockFetchFlowNodeMetadata().withSuccess(multiInstanceCallActivityMetadata);
     mockFetchFlowNodeMetadata().withSuccess(multiInstanceCallActivityMetadata);
+
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     flowNodeMetaDataStore.setMetaData(multiInstanceCallActivityMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -561,6 +577,12 @@ describe('MetadataPopover', () => {
 
     mockFetchFlowNodeMetadata().withSuccess(userTaskFlowNodeMetaData);
     mockFetchFlowNodeMetadata().withSuccess(userTaskFlowNodeMetaData);
+
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     flowNodeMetaDataStore.setMetaData(userTaskFlowNodeMetaData);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -592,6 +614,12 @@ describe('MetadataPopover', () => {
   it('should render retries left', async () => {
     mockFetchFlowNodeMetadata().withSuccess(retriesLeftFlowNodeMetaData);
     mockFetchFlowNodeMetadata().withSuccess(retriesLeftFlowNodeMetaData);
+
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     flowNodeMetaDataStore.setMetaData(retriesLeftFlowNodeMetaData);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -628,6 +656,11 @@ describe('MetadataPopover', () => {
       mockElementInstance,
     );
 
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
@@ -652,6 +685,11 @@ describe('MetadataPopover', () => {
   });
 
   it('should search for single element instance when count is 1', async () => {
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
@@ -667,6 +705,11 @@ describe('MetadataPopover', () => {
     mockSearchElementInstances().withSuccess({
       items: [mockElementInstance],
       page: {totalItems: 1},
+    });
+
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
 
     processInstanceDetailsStore.setProcessInstance(
@@ -687,6 +730,10 @@ describe('MetadataPopover', () => {
   });
 
   it('should handle failed element instance search gracefully', async () => {
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockSearchElementInstances().withNetworkError();
 
@@ -707,6 +754,10 @@ describe('MetadataPopover', () => {
   });
 
   it('should handle failed single element instance fetch gracefully', async () => {
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchElementInstance('invalid-key').withNetworkError();
 
@@ -733,6 +784,10 @@ describe('MetadataPopover', () => {
   });
 
   it('should render root cause decision instance link when decision instance exists', async () => {
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
     mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess(
       incidentsByProcessKeyMetadata,
