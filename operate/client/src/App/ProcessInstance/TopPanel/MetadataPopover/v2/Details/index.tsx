@@ -17,11 +17,15 @@ import {Header} from '../../Header';
 import {SummaryDataKey, SummaryDataValue} from '../../styled';
 import {getExecutionDuration} from '../../Details/getExecutionDuration';
 import {buildMetadata} from './buildMetadata';
-import {type V2MetaDataDto} from '../types';
+import {type V2InstanceMetadata} from '../types';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
 type Props = {
-  metaData: V2MetaDataDto;
+  instanceMetadata: V2InstanceMetadata | null;
+  incident: {
+    errorType: {id: string; name: string};
+    errorMessage: string;
+  } | null;
   elementId: string;
   businessObject?: BusinessObject | null;
 };
@@ -38,12 +42,15 @@ const NULL_METADATA = {
   jobRetries: null,
 } as const;
 
-const Details: React.FC<Props> = ({metaData, elementId, businessObject}) => {
+const Details: React.FC<Props> = ({
+  instanceMetadata,
+  incident,
+  elementId,
+  businessObject,
+}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const elementName = businessObject?.name || elementId;
-
-  const {instanceMetadata, incident} = metaData;
   const {
     elementInstanceKey,
     startDate,
@@ -125,24 +132,25 @@ const Details: React.FC<Props> = ({metaData, elementId, businessObject}) => {
             </Stack>
           )}
 
-        {businessObject?.$type === 'bpmn:BusinessRuleTask' && (
-          <Stack gap={3} as="dl">
-            <SummaryDataKey>Called Decision Instance</SummaryDataKey>
-            <SummaryDataValue>
-              {calledDecisionInstanceId ? (
-                <Link
-                  to={Paths.decisionInstance(calledDecisionInstanceId)}
-                  title={`View ${calledDecisionDefinitionName} instance ${calledDecisionInstanceId}`}
-                  aria-label={`View ${calledDecisionDefinitionName} instance ${calledDecisionInstanceId}`}
-                >
-                  {`${calledDecisionDefinitionName} - ${calledDecisionInstanceId}`}
-                </Link>
-              ) : (
-                (calledDecisionDefinitionName ?? '—')
-              )}
-            </SummaryDataValue>
-          </Stack>
-        )}
+        {businessObject?.$type === 'bpmn:BusinessRuleTask' &&
+          calledDecisionDefinitionName && (
+            <Stack gap={3} as="dl">
+              <SummaryDataKey>Called Decision Instance</SummaryDataKey>
+              <SummaryDataValue>
+                {calledDecisionInstanceId ? (
+                  <Link
+                    to={Paths.decisionInstance(calledDecisionInstanceId)}
+                    title={`View ${calledDecisionDefinitionName} instance ${calledDecisionInstanceId}`}
+                    aria-label={`View ${calledDecisionDefinitionName} instance ${calledDecisionInstanceId}`}
+                  >
+                    {`${calledDecisionDefinitionName} - ${calledDecisionInstanceId}`}
+                  </Link>
+                ) : (
+                  (calledDecisionDefinitionName ?? '—')
+                )}
+              </SummaryDataValue>
+            </Stack>
+          )}
       </Stack>
       <JSONEditorModal
         isVisible={isModalVisible}

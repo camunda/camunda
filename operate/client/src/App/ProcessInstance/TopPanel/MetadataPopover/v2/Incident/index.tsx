@@ -35,6 +35,8 @@ const Incident: React.FC<Props> = ({
   //TODO will be handled separately in #35528 and #35529
   const {rootCauseDecision, rootCauseInstance} = incident;
 
+  console.log('rootCauseDecisionInstance', rootCauseDecisionInstance);
+
   const errorType = resolveIncidentErrorType(incidentV2.errorType);
 
   return (

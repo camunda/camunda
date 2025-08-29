@@ -22,7 +22,7 @@ import {useElementInstance} from 'modules/queries/elementInstances/useElementIns
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {useMemo} from 'react';
 import {Details} from './Details';
-import {createV2InstanceMetadata} from './types';
+import {buildInstanceMetadata} from './types';
 import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
 import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
@@ -31,6 +31,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 import {useJobs} from 'modules/queries/jobs/useJobs';
+import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -175,6 +176,23 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     select: (data) => data.pages?.flatMap((page) => page.items),
   });
 
+  const {
+    data: decisionInstanceSearchResult,
+    isLoading: isSearchingDecisionInstance,
+  } = useDecisionInstancesSearch(
+    {
+      filter: {
+        elementInstanceKey: elementInstanceMetadata?.elementInstanceKey ?? '',
+      },
+    },
+    {
+      enabled:
+        !!elementInstanceMetadata?.elementInstanceKey &&
+        (elementInstanceMetadata?.type === 'BUSINESS_RULE_TASK' ||
+          elementInstanceMetadata?.hasIncident),
+    },
+  );
+
   if (
     elementId === undefined ||
     metaData === null ||
@@ -182,12 +200,13 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     (!!elementInstanceId && isFetchingInstance) ||
     isSearchingUserTasks ||
     isSearchingProcessInstances ||
-    isSearchingJob
+    isSearchingJob ||
+    isSearchingDecisionInstance
   ) {
     return null;
   }
 
-  const {instanceMetadata, incident} = metaData;
+  const {incident} = metaData;
 
   return (
     <Popover
@@ -215,26 +234,25 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
 
         {elementInstanceMetadata && (
           <Details
-            metaData={{
-              ...metaData,
-              instanceMetadata: createV2InstanceMetadata(
-                instanceMetadata,
-                elementInstanceMetadata,
-                jobSearchResult?.[0],
-                processInstancesSearchResult?.items?.[0],
-                elementInstanceMetadata.type === 'USER_TASK'
-                  ? userTask
-                  : undefined,
-              ),
-              incident: singleIncident
+            instanceMetadata={buildInstanceMetadata(
+              elementInstanceMetadata,
+              jobSearchResult?.[0],
+              processInstancesSearchResult?.items?.[0],
+              decisionInstanceSearchResult?.items?.[0],
+              elementInstanceMetadata.type === 'USER_TASK'
+                ? userTask
+                : undefined,
+            )}
+            incident={
+              singleIncident
                 ? {
                     errorType: resolveIncidentErrorType(
                       singleIncident?.errorType,
                     ),
                     errorMessage: singleIncident.errorMessage,
                   }
-                : null,
-            }}
+                : null
+            }
             elementId={elementInstanceMetadata.elementId}
             businessObject={businessObject}
           />
