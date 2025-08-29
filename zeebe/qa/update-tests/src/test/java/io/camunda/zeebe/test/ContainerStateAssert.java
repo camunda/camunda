@@ -63,11 +63,41 @@ final class ContainerStateAssert
     return myself;
   }
 
+  @SuppressWarnings("ConstantConditions")
+  public ContainerStateAssert hasNewSnapshotAvailable(
+      final int partitionId, final String oldSnapshotId) {
+    final Map<Integer, PartitionStatus> partitions = actual.getPartitionsActuator().query();
+    final PartitionStatus partitionStatus = partitions.get(partitionId);
+    System.out.println("Partition status: " + partitionStatus);
+    if (partitionStatus == null) {
+      failWithMessage(
+          "expected partitions query to return info about partition %d, but got %s",
+          partitionId, partitions.keySet());
+    }
+
+    // the IDE is unaware that if null, failWithMessage will throw, and we won't reach here, so
+    // disable the warning
+    if (partitionStatus.snapshotId().equals(oldSnapshotId)) {
+      failWithMessage("expected to have a new snapshot");
+    }
+
+    return myself;
+  }
+
   public ContainerStateAssert eventuallyHasSnapshotAvailable(final int partitionId) {
     await("has snapshot available on partition " + partitionId)
         .atMost(Duration.ofSeconds(30))
         .pollInterval(Duration.ofMillis(500))
         .untilAsserted(() -> hasSnapshotAvailable(partitionId));
+    return myself;
+  }
+
+  public ContainerStateAssert eventuallyHasNewSnapshotAvailable(
+      final int partitionId, final String oldSnapshotId) {
+    await("has new snapshot available on partition " + partitionId)
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofSeconds(2))
+        .untilAsserted(() -> hasNewSnapshotAvailable(partitionId, oldSnapshotId));
     return myself;
   }
 
