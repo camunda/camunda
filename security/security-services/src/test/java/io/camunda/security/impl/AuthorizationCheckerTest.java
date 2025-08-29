@@ -913,4 +913,355 @@ public class AuthorizationCheckerTest {
       }
     }
   }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class RetrieveAuthorizedAuthorizationScopesTests {
+
+    private static final String WILDCARD_RESOURCE_ID = AuthorizationScope.WILDCARD.getResourceId();
+
+    private final AtomicLong keyCounter = new AtomicLong(Protocol.encodePartitionId(1, 300));
+
+    @ParameterizedTest(name = "{index} {0}")
+    @MethodSource("retrieveAuthorizationScopesScenarios")
+    void retrieveAuthorizationScopesScenariosTest(final RetrieveScopesScenario scenario) {
+      try (final var reader = new FakeAuthorizationReader()) {
+        // given
+        for (final var entity : scenario.given()) {
+          reader.create(entity);
+        }
+        final var checker = new AuthorizationChecker(reader);
+        final var securityContext =
+            SecurityContext.of(
+                c ->
+                    c.withAuthentication(scenario.authentication())
+                        .withAuthorization(
+                            a ->
+                                a.resourceType(scenario.resourceType())
+                                    .permissionType(scenario.permissionType())
+                                    .resourceId(WILDCARD_RESOURCE_ID)));
+
+        // when
+        final var actual = checker.retrieveAuthorizedAuthorizationScopes(securityContext);
+
+        // then
+        assertThat(actual)
+            .describedAs(scenario.displayName())
+            .containsExactlyElementsOf(scenario.expected());
+      }
+    }
+
+    Stream<RetrieveScopesScenario> retrieveAuthorizationScopesScenarios() {
+      return Stream.of(
+          RetrieveScopesScenario.displayName("anonymous DOCUMENT no authorizations -> empty")
+              .whenAnonymous()
+              .accessesResource(AuthorizationResourceType.DOCUMENT, PermissionType.READ)
+              .thenResultContains()
+              .build(),
+          RetrieveScopesScenario.displayName("user alice wildcard + specific -> ['*','res-1']")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.DOCUMENT,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ)),
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.DOCUMENT,
+                      AuthorizationResourceMatcher.ID,
+                      "res-1",
+                      Set.of(PermissionType.READ)))
+              .whenUser("alice")
+              .accessesResource(AuthorizationResourceType.DOCUMENT, PermissionType.READ)
+              .thenResultContains(WILDCARD_RESOURCE_ID, "res-1")
+              .build(),
+          RetrieveScopesScenario.displayName("user + group union -> ['user-res','group-res']")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.MESSAGE,
+                      AuthorizationResourceMatcher.ID,
+                      "user-res",
+                      Set.of(PermissionType.READ)),
+                  authEntity(
+                      AuthorizationOwnerType.GROUP,
+                      "groupA",
+                      AuthorizationResourceType.MESSAGE,
+                      AuthorizationResourceMatcher.ID,
+                      "group-res",
+                      Set.of(PermissionType.READ)))
+              .whenUser("alice")
+              .withGroups("groupA")
+              .accessesResource(AuthorizationResourceType.MESSAGE, PermissionType.READ)
+              .thenResultContains("user-res", "group-res")
+              .build(),
+          RetrieveScopesScenario.displayName(
+                  "duplicate resource ids from user + group retained -> ['dup-res','dup-res']")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ID,
+                      "dup-res",
+                      Set.of(PermissionType.READ)),
+                  authEntity(
+                      AuthorizationOwnerType.GROUP,
+                      "groupA",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ID,
+                      "dup-res",
+                      Set.of(PermissionType.READ)))
+              .whenUser("alice")
+              .withGroups("groupA")
+              .accessesResource(AuthorizationResourceType.AUTHORIZATION, PermissionType.READ)
+              .thenResultContains("dup-res", "dup-res")
+              .build(),
+          RetrieveScopesScenario.displayName("different permission excluded -> ['res-read']")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ID,
+                      "res-read",
+                      Set.of(PermissionType.READ)),
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ID,
+                      "res-update",
+                      Set.of(PermissionType.UPDATE)))
+              .whenUser("alice")
+              .accessesResource(AuthorizationResourceType.AUTHORIZATION, PermissionType.READ)
+              .thenResultContains("res-read")
+              .build(),
+          RetrieveScopesScenario.displayName(
+                  "multiple owner types aggregated -> ['client-res','role-res','mr-res']")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.CLIENT,
+                      "clientX",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ID,
+                      "client-res",
+                      Set.of(PermissionType.READ)),
+                  authEntity(
+                      AuthorizationOwnerType.ROLE,
+                      "roleY",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ID,
+                      "role-res",
+                      Set.of(PermissionType.READ)),
+                  authEntity(
+                      AuthorizationOwnerType.MAPPING_RULE,
+                      "mrZ",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ID,
+                      "mr-res",
+                      Set.of(PermissionType.READ)))
+              .whenClient("clientX")
+              .withRoles("roleY")
+              .withMappingRules("mrZ")
+              .accessesResource(AuthorizationResourceType.AUTHORIZATION, PermissionType.READ)
+              .thenResultContains("client-res", "role-res", "mr-res")
+              .build(),
+          RetrieveScopesScenario.displayName("resource type mismatch -> empty")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.PROCESS_DEFINITION,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ_PROCESS_DEFINITION)))
+              .whenUser("alice")
+              .accessesResource(AuthorizationResourceType.AUTHORIZATION, PermissionType.READ)
+              .thenResultContains()
+              .build(),
+          RetrieveScopesScenario.displayName("permission type mismatch -> empty")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
+              .whenUser("alice")
+              .accessesResource(AuthorizationResourceType.AUTHORIZATION, PermissionType.UPDATE)
+              .thenResultContains()
+              .build(),
+          RetrieveScopesScenario.displayName("only wildcard -> ['*']")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
+              .whenUser("alice")
+              .accessesResource(AuthorizationResourceType.AUTHORIZATION, PermissionType.READ)
+              .thenResultContains(WILDCARD_RESOURCE_ID)
+              .build());
+    }
+
+    private AuthorizationEntity authEntity(
+        final AuthorizationOwnerType ownerType,
+        final String ownerId,
+        final AuthorizationResourceType resourceType,
+        final AuthorizationResourceMatcher matcher,
+        final String resourceId,
+        final Set<PermissionType> permissionTypes) {
+      return new AuthorizationEntity(
+          keyCounter.incrementAndGet(),
+          ownerId,
+          ownerType.name(),
+          resourceType.name(),
+          matcher.value(),
+          resourceId,
+          permissionTypes);
+    }
+
+    record RetrieveScopesScenario(
+        String displayName,
+        CamundaAuthentication authentication,
+        AuthorizationResourceType resourceType,
+        PermissionType permissionType,
+        List<AuthorizationEntity> given,
+        List<AuthorizationScope> expected) {
+
+      @Override
+      public String toString() {
+        return displayName;
+      }
+
+      static Builder displayName(final String displayName) {
+        return new Builder(displayName);
+      }
+
+      static final class Builder {
+        private final String displayName;
+        private String user;
+        private String clientId;
+        private final List<String> groupIds = new ArrayList<>();
+        private final List<String> mappingRuleIds = new ArrayList<>();
+        private final List<String> roleIds = new ArrayList<>();
+        private AuthorizationResourceType resourceType;
+        private PermissionType permissionType;
+        private final List<AuthorizationEntity> givenAuthorizationEntities = new ArrayList<>();
+        private final List<AuthorizationScope> expectedScopes = new ArrayList<>();
+
+        Builder(final String displayName) {
+          this.displayName = displayName;
+        }
+
+        Builder given(final AuthorizationEntity... authorizationEntities) {
+          if (authorizationEntities != null) {
+            givenAuthorizationEntities.addAll(Arrays.asList(authorizationEntities));
+          }
+          return this;
+        }
+
+        Builder whenAnonymous() {
+          user = null;
+          clientId = null;
+          groupIds.clear();
+          mappingRuleIds.clear();
+          roleIds.clear();
+          return this;
+        }
+
+        Builder whenUser(final String user) {
+          this.user = user;
+          return this;
+        }
+
+        Builder whenClient(final String clientId) {
+          this.clientId = clientId;
+          return this;
+        }
+
+        Builder withGroups(final String... groupIds) {
+          if (groupIds != null) {
+            this.groupIds.addAll(Arrays.asList(groupIds));
+          }
+          return this;
+        }
+
+        Builder withMappingRules(final String... mappingRuleIds) {
+          if (mappingRuleIds != null) {
+            this.mappingRuleIds.addAll(Arrays.asList(mappingRuleIds));
+          }
+          return this;
+        }
+
+        Builder withRoles(final String... roleIds) {
+          if (roleIds != null) {
+            this.roleIds.addAll(Arrays.asList(roleIds));
+          }
+          return this;
+        }
+
+        Builder accessesResource(
+            final AuthorizationResourceType resourceType, final PermissionType permissionType) {
+          this.resourceType = resourceType;
+          this.permissionType = permissionType;
+          return this;
+        }
+
+        Builder thenResultContains(final String... resourceIds) {
+          if (resourceIds != null) {
+            Arrays.stream(resourceIds).forEach(id -> expectedScopes.add(AuthorizationScope.of(id)));
+          }
+          return this;
+        }
+
+        RetrieveScopesScenario build() {
+          final CamundaAuthentication authentication;
+          if (user == null
+              && clientId == null
+              && groupIds.isEmpty()
+              && mappingRuleIds.isEmpty()
+              && roleIds.isEmpty()) {
+            authentication = CamundaAuthentication.anonymous();
+          } else {
+            authentication =
+                CamundaAuthentication.of(
+                    a -> {
+                      if (user != null) {
+                        a.user(user);
+                      }
+                      if (clientId != null) {
+                        a.clientId(clientId);
+                      }
+                      if (!groupIds.isEmpty()) {
+                        a.groupIds(groupIds);
+                      }
+                      if (!mappingRuleIds.isEmpty()) {
+                        a.mappingRule(mappingRuleIds);
+                      }
+                      if (!roleIds.isEmpty()) {
+                        a.roleIds(roleIds);
+                      }
+                      return a;
+                    });
+          }
+          return new RetrieveScopesScenario(
+              displayName,
+              authentication,
+              resourceType,
+              permissionType,
+              List.copyOf(givenAuthorizationEntities),
+              List.copyOf(expectedScopes));
+        }
+      }
+    }
+  }
 }
