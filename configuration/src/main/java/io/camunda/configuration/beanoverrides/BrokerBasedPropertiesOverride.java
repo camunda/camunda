@@ -457,6 +457,7 @@ public class BrokerBasedPropertiesOverride {
     final Map<String, Object> args = exporter.getArgs();
     setArg(args, "connect.type", secondaryStorage.getType().name());
     setArg(args, "connect.url", database.getUrl());
+    setArg(args, "connect.clusterName", database.getClusterName());
   }
 
   @SuppressWarnings("unchecked")

@@ -1,15 +1,16 @@
 camunda:
+  # Unified Configuration
   data:
     secondary-storage:
       type: 'elasticsearch'
       elasticsearch:
         url: 'http://localhost:9200'
+        cluster-name: 'clusterName'
+  # ---
   tasklist:
     csrfPreventionEnabled: false
     batchOperationMaxSize: 500
     elasticsearch:
-      clusterName: clusterName
-      url: http://localhost:9200
       dateFormat: yyyy-MM-dd
       batchSize: 111
     zeebeElasticsearch:
