@@ -57,6 +57,7 @@ public class SearchEngineConnectPropertiesOverride {
 
     override.setType(secondaryStorage.getType().name());
     override.setUrl(database.getUrl());
+    override.setClusterName(database.getClusterName());
 
     return override;
   }

@@ -1,9 +1,17 @@
+# Unified Configuration
+camunda:
+  data:
+    secondary-storage:
+      type: 'elasticsearch'
+      elasticsearch:
+        url: 'http://localhost:9200'
+        cluster-name: 'docker-cluster'
+# ---
+
 camunda.tasklist:
   username: demo
   password: demo
   elasticsearch:
-    clusterName: docker-cluster
-    url: http://localhost:9200
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   zeebe:
     gatewayAddress: localhost:26500
