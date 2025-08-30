@@ -75,7 +75,6 @@ zeebe:
         className: io.camunda.exporter.CamundaExporter
         args:
           connect:
-            clusterName: opensearch
             dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZZ
             socketTimeout: 1000
             connectTimeout: 1000
@@ -127,23 +126,11 @@ camunda:
       type: 'opensearch'
       opensearch:
         url: 'http://localhost:9200'
+        cluster-name: 'opensearch'
   # -----
 
-  database:
-    # Sets the name of the cluster, default name is "elasticsearch"
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_CLUSTERNAME
-    clusterName: opensearch
   # Operate configuration properties
   operate:
-    # Set operate username and password.
-    # If user with <username> does not exists it will be created.
-    # Default: demo/demo
-    #username:
-    #password:
-    # ELS instance to store Operate data
-    opensearch:
-      # Cluster name
-      clusterName: opensearch
     # Zeebe instance
     zeebe:
       # Gateway address
@@ -156,15 +143,6 @@ camunda:
       prefix: zeebe-record
   # Tasklist configuration properties
   tasklist:
-    # Set Tasklist username and password.
-    # If user with <username> does not exists it will be created.
-    # Default: demo/demo
-    #username:
-    #password:
-    # ELS instance to store Tasklist data
-    opensearch:
-      # Cluster name
-      clusterName: opensearch
     # Zeebe instance
     zeebe:
       # Gateway address

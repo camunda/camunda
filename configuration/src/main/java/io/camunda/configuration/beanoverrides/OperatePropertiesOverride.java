@@ -53,10 +53,12 @@ public class OperatePropertiesOverride {
       override.setDatabase(DatabaseType.Elasticsearch);
       override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
       override.getZeebeElasticsearch().setUrl(database.getElasticsearch().getUrl());
+      override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
     } else if (SecondaryStorageType.opensearch == database.getType()) {
       override.setDatabase(DatabaseType.Opensearch);
       override.getOpensearch().setUrl(database.getOpensearch().getUrl());
       override.getZeebeOpensearch().setUrl(database.getOpensearch().getUrl());
+      override.getOpensearch().setClusterName(database.getOpensearch().getClusterName());
     }
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
