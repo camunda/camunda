@@ -38,12 +38,14 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   SearchEngineConnectPropertiesOverride.class
 })
 public class SecondaryStorageTest {
+  private static final String EXPECTED_CLUSTER_NAME = "sample-cluster";
 
   @Nested
   @TestPropertySource(
       properties = {
         "camunda.data.secondary-storage.type=elasticsearch",
-        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321"
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -69,6 +71,8 @@ public class SecondaryStorageTest {
 
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(operateProperties.getElasticsearch().getClusterName())
+          .isEqualTo(EXPECTED_CLUSTER_NAME);
     }
 
     @Test
@@ -115,7 +119,17 @@ public class SecondaryStorageTest {
         "camunda.data.secondary-storage.elasticsearch.url=http://matching-url:4321",
         "camunda.database.url=http://matching-url:4321",
         "camunda.tasklist.elasticsearch.url=http://matching-url:4321",
-        "camunda.operate.elasticsearch.url=http://matching-url:4321"
+        "camunda.operate.elasticsearch.url=http://matching-url:4321",
+
+        // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
+        //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
+        //  the className is also configured.
+
+        // cluster name
+        "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
+        "camunda.data.clusterName=" + EXPECTED_CLUSTER_NAME,
+        "camunda.tasklist.elasticsearch.clusterName=" + EXPECTED_CLUSTER_NAME,
+        "camunda.operate.elasticsearch.clusterName=" + EXPECTED_CLUSTER_NAME,
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
@@ -141,6 +155,8 @@ public class SecondaryStorageTest {
 
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(operateProperties.getElasticsearch().getClusterName())
+          .isEqualTo(EXPECTED_CLUSTER_NAME);
     }
 
     @Test
@@ -150,6 +166,8 @@ public class SecondaryStorageTest {
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
+      assertThat(tasklistProperties.getElasticsearch().getClusterName())
+          .isEqualTo(EXPECTED_CLUSTER_NAME);
     }
 
     @Test
@@ -166,12 +184,15 @@ public class SecondaryStorageTest {
           UnifiedConfigurationHelper.argsToExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
+      assertThat(exporterConfiguration.getConnect().getClusterName())
+          .isEqualTo(EXPECTED_CLUSTER_NAME);
     }
 
     @Test
     void testCamundaSearchEngineConnectProperties() {
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo("elasticsearch");
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://matching-url:4321");
+      assertThat(searchEngineConnectProperties.getClusterName()).isEqualTo(EXPECTED_CLUSTER_NAME);
     }
   }
 }

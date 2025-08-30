@@ -64,6 +64,11 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
     registry.add("camunda.tasklist.cloud.clusterId", () -> "449ac2ad-d3c6-4c73-9c68-7752e39ae616");
     registry.add("camunda.tasklist.client.clusterId", () -> "449ac2ad-d3c6-4c73-9c68-7752e39ae616");
     registry.add("camunda.tasklist.featureFlag.processPublicEndpoints", () -> true);
+
+    // TODO: Some legacy configs are setting this to docker-cluster. I couldn't find them. We should
+    //  remove them eventually. For the moment, the test will work in compatibility mode.
+    registry.add(
+        "camunda.data.secondary-storage.elasticsearch.cluster-name", () -> "docker-cluster");
   }
 
   @BeforeEach
