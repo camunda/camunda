@@ -214,3 +214,38 @@ export function CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(
 export const CREATE_DOCUMENT_LINK_REQUEST = {
   timeToLive: 60000,
 };
+
+export function CREATE_MAPPING_EXPECTED_BODY_USING_GROUP(
+  groupId: string,
+  state: Record<string, unknown>,
+  nth: number = 1,
+) {
+  return {
+    claimName: state[`${groupId}claimName${nth}`] as string,
+    claimValue: state[`${groupId}claimValue${nth}`] as string,
+    name: state[`${groupId}name${nth}`] as string,
+    mappingRuleId: state[`${groupId}mappingRule${nth}`] as string,
+  };
+}
+
+export function CREATE_GROUP_ROLE_EXPECTED_BODY_USING_GROUP(
+  groupId: string,
+  state: Record<string, unknown>,
+  nth: number = 1,
+) {
+  return {
+    name: state[`${groupId}name${nth}`] as string,
+    roleId: state[`${groupId}roleId${nth}`] as string,
+    description: state[`${groupId}description${nth}`] as string,
+  };
+}
+
+export function CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP(
+  groupId: string,
+  state: Record<string, unknown>,
+  nth: number = 1,
+) {
+  return {
+    username: state[`${groupId}user${nth}`] as string,
+  };
+}

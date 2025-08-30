@@ -12,7 +12,10 @@ import {relativizePath, Paths} from 'utils/relativizePath';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {LOGIN_CREDENTIALS, createTestData} from 'utils/constants';
-import {waitForItemInList} from 'utils/waitForItemInList';
+import {
+  findLocatorInPaginatedList,
+  waitForItemInList,
+} from 'utils/waitForItemInList';
 
 test.describe.serial('groups CRUD', () => {
   let NEW_GROUP: NonNullable<ReturnType<typeof createTestData>['group']>;
@@ -55,14 +58,15 @@ test.describe.serial('groups CRUD', () => {
     const item = identityGroupsPage.groupCell(NEW_GROUP.name);
 
     await waitForItemInList(page, item, {
-      emptyStateLocator: identityGroupsPage.emptyState,
+      clickNext: true,
+      timeout: 30000,
     });
-
-    await expect(item).toBeVisible();
   });
 
   test('edits a group', async ({page, identityGroupsPage}) => {
-    await expect(identityGroupsPage.groupCell(NEW_GROUP.name)).toBeVisible();
+    const group = identityGroupsPage.groupCell(NEW_GROUP.name);
+    expect(await findLocatorInPaginatedList(page, group)).toBe(true);
+    await expect(group).toBeVisible();
 
     await identityGroupsPage.editGroup(
       NEW_GROUP.name,
@@ -72,11 +76,13 @@ test.describe.serial('groups CRUD', () => {
 
     const item = identityGroupsPage.groupCell(EDITED_GROUP.name);
 
-    await waitForItemInList(page, item);
+    await waitForItemInList(page, item, {timeout: 60000, clickNext: true});
   });
 
   test('deletes a group', async ({page, identityGroupsPage}) => {
-    await expect(identityGroupsPage.groupCell(EDITED_GROUP.name)).toBeVisible();
+    const group = identityGroupsPage.groupCell(EDITED_GROUP.name);
+    expect(await findLocatorInPaginatedList(page, group)).toBe(true);
+    await expect(group).toBeVisible();
 
     await identityGroupsPage.deleteGroup(EDITED_GROUP.name);
 
@@ -84,7 +90,8 @@ test.describe.serial('groups CRUD', () => {
 
     await waitForItemInList(page, item, {
       shouldBeVisible: false,
-      emptyStateLocator: identityGroupsPage.emptyState,
+      clickNext: true,
+      timeout: 60000,
     });
   });
 });
@@ -121,7 +128,7 @@ test.describe('Groups functionalities', () => {
 
       const item = identityGroupsPage.groupCell(TEST_GROUP.name);
       await waitForItemInList(page, item, {
-        emptyStateLocator: identityGroupsPage.emptyState,
+        clickNext: true,
       });
       await expect(item).toBeVisible();
     });
