@@ -255,6 +255,7 @@ class ClusterConfigurationTest {
             Optional.of(
                 new CompletedChange(changeId, Status.COMPLETED, Instant.now(), Instant.now())),
             Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     ClusterConfigurationAssert.assertThatClusterTopology(finalTopology).hasSameTopologyAs(expected);
@@ -306,6 +307,7 @@ class ClusterConfigurationTest {
                     Map.of(1, PartitionState.active(1, DynamicPartitionConfig.uninitialized())))),
             Optional.empty(),
             Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     final DynamicPartitionConfig validConfig =
@@ -317,6 +319,7 @@ class ClusterConfigurationTest {
             Map.of(
                 member(1),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, validConfig)))),
+            Optional.empty(),
             Optional.empty(),
             Optional.empty(),
             Optional.empty());
@@ -340,12 +343,14 @@ class ClusterConfigurationTest {
     final var oldRoutingState =
         Optional.of(new RoutingState(1, new AllPartitions(3), new HashMod(3)));
     final var oldConfig =
-        new ClusterConfiguration(1, Map.of(), Optional.empty(), Optional.empty(), oldRoutingState);
+        new ClusterConfiguration(
+            1, Map.of(), Optional.empty(), Optional.empty(), oldRoutingState, Optional.empty());
 
     final var newRoutingState =
         Optional.of(new RoutingState(2, new AllPartitions(4), new HashMod(4)));
     final var newConfig =
-        new ClusterConfiguration(1, Map.of(), Optional.empty(), Optional.empty(), newRoutingState);
+        new ClusterConfiguration(
+            1, Map.of(), Optional.empty(), Optional.empty(), newRoutingState, Optional.empty());
 
     // when
     final var merged = oldConfig.merge(newConfig);

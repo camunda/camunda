@@ -13,6 +13,8 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
 import io.camunda.service.ManagementServices;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -24,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -40,94 +43,105 @@ import org.springframework.stereotype.Component;
 @Component
 @EnableConfigurationProperties({ConsolePingConfiguration.class})
 @ConditionalOnProperty(prefix = "camunda.console.ping", name = "enabled", havingValue = "true")
-public class PingConsoleRunner implements ApplicationRunner {
+public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListener {
   private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleRunner.class);
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
   private final ConsolePingConfiguration pingConfiguration;
   private final ManagementServices managementServices;
-  private final Either<Exception, String> licensePayload;
+  private Either<Exception, String> licensePayload;
+  private final BrokerTopologyManager brokerTopologyManager;
   private final ApplicationContext applicationContext;
-  private final String clusterId;
 
   @Autowired
   public PingConsoleRunner(
       final ConsolePingConfiguration pingConfigurationProperties,
       final ManagementServices managementServices,
       final ApplicationContext applicationContext,
-      final String clusterId) {
+      final BrokerTopologyManager brokerTopologyManager) {
     pingConfiguration = pingConfigurationProperties;
     this.managementServices = managementServices;
     this.applicationContext = applicationContext;
-    this.clusterId = clusterId;
-    licensePayload = getLicensePayload();
+    this.brokerTopologyManager = brokerTopologyManager;
   }
 
   @Override
   public void run(final ApplicationArguments args) {
-    try {
-      validateConfiguration();
-      LOGGER.info(
-          "Console ping is enabled with endpoint: {}, and delay of {}.",
-          pingConfiguration.endpoint(),
-          pingConfiguration.pingPeriod());
-      final var executor = createTaskExecutor();
-      executor.scheduleAtFixedRate(
-          new PingConsoleTask(pingConfiguration, licensePayload.get()),
-          1000,
-          pingConfiguration.pingPeriod.toMillis(),
-          TimeUnit.MILLISECONDS);
-    } catch (final Exception exception) {
-      LOGGER.error("Failed to initialize PingConsoleTask.", exception);
-    }
+    waitForClusterId()
+        .thenAccept(this::buildLicensePayload)
+        .thenRun(
+            () -> {
+              final var validationResult = validateConfiguration();
+              if (validationResult.isRight()) {
+                startPingTask();
+              } else {
+                LOGGER.error("Configuration validation failed: {}", validationResult.getLeft());
+              }
+            });
+  }
+
+  private void startPingTask() {
+
+    LOGGER.info(
+        "Console ping is enabled cluster ID of {}, with endpoint: {}, and period of {}.",
+        brokerTopologyManager.getClusterConfiguration().clusterId().get(),
+        pingConfiguration.endpoint(),
+        pingConfiguration.pingPeriod());
+    final var executor = createTaskExecutor();
+    executor.scheduleAtFixedRate(
+        new PingConsoleTask(pingConfiguration, licensePayload.get()),
+        1000,
+        pingConfiguration.pingPeriod.toMillis(),
+        TimeUnit.MILLISECONDS);
   }
 
   @VisibleForTesting
-  protected void validateConfiguration() {
+  protected Either<String, Void> validateConfiguration() {
     if (pingConfiguration.endpoint() == null) {
-      throw new IllegalArgumentException("Ping endpoint must not be null.");
+      return Either.left("Ping endpoint must not be null.");
     }
     if (pingConfiguration.endpoint.getScheme() == null
         || pingConfiguration.endpoint.getHost() == null) {
-      throw new IllegalArgumentException(
+      return Either.left(
           String.format("Ping endpoint %s must be a valid URI.", pingConfiguration.endpoint));
     }
-    if (clusterId == null || clusterId.isBlank()) {
-      throw new IllegalArgumentException("Cluster ID must not be null or empty.");
+    if (brokerTopologyManager.getClusterConfiguration().clusterId().get().isBlank()) {
+      return Either.left("Cluster ID must not be null or empty.");
     }
     if (pingConfiguration.clusterName() == null || pingConfiguration.clusterName().isBlank()) {
-      throw new IllegalArgumentException("Cluster name must not be null or empty.");
+      return Either.left("Cluster name must not be null or empty.");
     }
     if (pingConfiguration.pingPeriod().isZero() || pingConfiguration.pingPeriod().isNegative()) {
-      throw new IllegalArgumentException("Ping period must be greater than zero.");
+      return Either.left("Ping period must be greater than zero.");
     }
     if (pingConfiguration.retry() != null) {
       if (pingConfiguration.retry().getMaxRetries() <= 0) {
-        throw new IllegalArgumentException("Number of max retries must be greater than zero.");
+        return Either.left("Number of max retries must be greater than zero.");
       }
       if (pingConfiguration.retry().getRetryDelayMultiplier() <= 0) {
-        throw new IllegalArgumentException("Retry delay multiplier must be greater than zero.");
+        return Either.left("Retry delay multiplier must be greater than zero.");
       }
       if (pingConfiguration.retry().getMaxRetryDelay().isZero()
           || pingConfiguration.retry().getMinRetryDelay().isNegative()) {
-        throw new IllegalArgumentException("Max retry delay must be greater than zero.");
+        return Either.left("Max retry delay must be greater than zero.");
       }
       if (pingConfiguration.retry().getMinRetryDelay().isZero()
           || pingConfiguration.retry().getMinRetryDelay().isNegative()) {
-        throw new IllegalArgumentException("Min retry delay must be greater than zero.");
+        return Either.left("Min retry delay must be greater than zero.");
       }
       if (pingConfiguration
               .retry()
               .getMaxRetryDelay()
               .compareTo(pingConfiguration.retry().getMinRetryDelay())
           < 0) {
-        throw new IllegalArgumentException(
-            "Max retry delay must be greater than or equal to min retry delay.");
+        return Either.left("Max retry delay must be greater than or equal to min retry delay.");
       }
     }
     if (licensePayload.isLeft()) {
-      throw new IllegalArgumentException(
-          "Failed to parse license payload for Console ping task.", licensePayload.getLeft());
+      return Either.left(
+          "Failed to parse license payload for Console ping task: "
+              + licensePayload.getLeft().getMessage());
     }
+    return Either.right(null);
   }
 
   private List<String> getActiveProfiles() {
@@ -156,7 +170,7 @@ public class PingConsoleRunner implements ApplicationRunner {
     return executor;
   }
 
-  private Either<Exception, String> getLicensePayload() {
+  private void buildLicensePayload(final String clusterId) {
     final ObjectMapper objectMapper = new ObjectMapper();
     final LicensePayload.License license =
         new LicensePayload.License(
@@ -175,10 +189,29 @@ public class PingConsoleRunner implements ApplicationRunner {
             getActiveProfiles(),
             pingConfiguration.properties());
     try {
-      return Either.right(objectMapper.writeValueAsString(payload));
+      licensePayload = Either.right(objectMapper.writeValueAsString(payload));
     } catch (final JsonProcessingException exception) {
-      return Either.left(exception);
+      licensePayload = Either.left(exception);
     }
+  }
+
+  private CompletableFuture<String> waitForClusterId() {
+    final CompletableFuture<String> future = new CompletableFuture<>();
+    if (brokerTopologyManager.getClusterConfiguration().clusterId().isPresent()) {
+      future.complete(brokerTopologyManager.getClusterConfiguration().clusterId().get());
+    } else {
+      brokerTopologyManager.addTopologyListener(
+          new BrokerTopologyListener() {
+            @Override
+            public void completedClusterChange() {
+              if (brokerTopologyManager.getClusterConfiguration().clusterId().isPresent()) {
+                future.complete(brokerTopologyManager.getClusterConfiguration().clusterId().get());
+                brokerTopologyManager.removeTopologyListener(this);
+              }
+            }
+          });
+    }
+    return future;
   }
 
   @ConfigurationProperties("camunda.console.ping")

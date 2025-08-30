@@ -36,7 +36,8 @@ public class AwaitRedistributionCompletionTest extends AbstractApplierTest {
           Map.of(),
           Optional.empty(),
           Optional.empty(),
-          Optional.of(RoutingState.initializeWithPartitionCount(3)));
+          Optional.of(RoutingState.initializeWithPartitionCount(3)),
+          Optional.empty());
 
   ClusterConfiguration valid3OutOf6Partitions =
       new ClusterConfiguration(
@@ -46,7 +47,8 @@ public class AwaitRedistributionCompletionTest extends AbstractApplierTest {
           Optional.empty(),
           Optional.of(
               new RoutingState(
-                  1, new ActivePartitions(3, Set.of(), Set.of(4, 5, 6)), new HashMod(3))));
+                  1, new ActivePartitions(3, Set.of(), Set.of(4, 5, 6)), new HashMod(3))),
+          Optional.empty());
 
   PartitionScalingChangeExecutor executor = new NoopPartitionScalingChangeExecutor();
 

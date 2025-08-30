@@ -118,14 +118,6 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.nodeId = nodeId;
   }
 
-  public String getClusterId() {
-    return clusterId;
-  }
-
-  public void setClusterId(final String clusterId) {
-    this.clusterId = clusterId;
-  }
-
   public int getPartitionsCount() {
     return partitionsCount;
   }
@@ -160,6 +152,14 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   public void setClusterName(final String clusterName) {
     this.clusterName = clusterName;
+  }
+
+  public String getClusterId() {
+    return clusterId;
+  }
+
+  public void setClusterId(final String clusterId) {
+    this.clusterId = clusterId;
   }
 
   public MembershipCfg getMembership() {
