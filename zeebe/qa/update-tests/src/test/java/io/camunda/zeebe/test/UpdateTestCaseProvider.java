@@ -16,8 +16,8 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.test.UpdateTestCase.TestCaseBuilder;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -235,7 +235,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
                   publishMessage(state, -1L, -1L);
                   return -1;
                 })
-            .afterUpgrade(this::awaitAllPartitionsToBeActivated)
+            .afterUpgrade(this::awaitUntilInstancesCreatedOnAllPartitions)
             .done());
   }
 
@@ -477,7 +477,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
         .join();
   }
 
-  private void awaitAllPartitionsToBeActivated(final ContainerState containerState) {
+  private void awaitUntilInstancesCreatedOnAllPartitions(final ContainerState containerState) {
     deployProcess(containerState);
     final var partitionIdsActivated = new HashSet<>();
     Awaitility.await("Await all partitions to be activated")
