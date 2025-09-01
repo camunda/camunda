@@ -815,7 +815,7 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/camunda
             docker-file: camunda.Dockerfile
-            owner: "Core Features"
+            owner: "CamundaEx"
             module: "Testing"
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test

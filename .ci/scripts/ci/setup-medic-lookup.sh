@@ -29,6 +29,11 @@ lookupTeamMedic["team-distributed-systems"]=$distributedSystemsMedic
 lookupTeamMedic["Distributed Systems"]=$distributedSystemsMedic
 lookupTeamMedic["DistributedSystems"]=$distributedSystemsMedic
 
+# @camunda-ex-medic
+camundaExMedic="<!subteam^S064J3N99A5|camunda-ex-medic>"
+lookupTeamMedic["Camunda Ex"]=camundaExMedic
+lookupTeamMedic["CamundaEx"]=camundaExMedic
+
 # failure in QA test
 lookupTeamMedic["QA"]="QA Acceptance Test, requires investigation"
 
