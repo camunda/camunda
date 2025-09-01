@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.api.coverage.model;
 
+import java.util.Objects;
+
 public class Model {
 
   /** Key of the model. */
@@ -54,5 +56,22 @@ public class Model {
 
   public String xml() {
     return xml;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(processDefinitionId, totalElementCount, version, xml);
+  }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
+    final Model other = (Model) obj;
+    return processDefinitionId.equals(other.processDefinitionId)
+        && totalElementCount == other.totalElementCount
+        && version.equals(other.version)
+        && xml.equals(other.xml);
   }
 }
