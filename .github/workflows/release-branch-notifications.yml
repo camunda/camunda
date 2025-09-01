@@ -115,20 +115,25 @@ jobs:
           if [[ -z "$ACTION_TYPE" || -z "$BRANCH_NAME" || -z "$AUTHOR" ]]; then
             echo "::error::Failed to extract required data from GitHub event"
             echo "::error::ACTION_TYPE: $ACTION_TYPE"
-            echo "::error::BRANCH_NAME: $BRANCH_NAME"
+            echo "::error::BRANCH_NAME: $BRANCH_NAME" 
             echo "::error::AUTHOR: $AUTHOR"
             exit 1
           fi
 
-          ACTION_TYPE=$(echo "$ACTION_TYPE" | sed 's/"/\\"/g')
-          LINK_TEXT=$(echo "$LINK_TEXT" | sed 's/"/\\"/g')
+          # Escape quotes using Bash string replacement
+          ACTION_TYPE="${ACTION_TYPE//\"/\\\"}"
+          LINK_TEXT="${LINK_TEXT//\"/\\\"}"
 
-          echo "action_type=$ACTION_TYPE" >> "$GITHUB_OUTPUT"
-          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
-          echo "author=$AUTHOR" >> "$GITHUB_OUTPUT"
-          echo "link_text=$LINK_TEXT" >> "$GITHUB_OUTPUT"
-          echo "link_url=$LINK_URL" >> "$GITHUB_OUTPUT"
+          # Output variables to GitHub Actions in a single block
+          {
+            echo "action_type=$ACTION_TYPE"
+            echo "branch_name=$BRANCH_NAME"
+            echo "author=$AUTHOR"
+            echo "link_text=$LINK_TEXT"
+            echo "link_url=$LINK_URL"
+          } >> "$GITHUB_OUTPUT"
 
+          # Debug output
           echo "✅ Extracted data:"
           echo "📝 Action Type: $ACTION_TYPE"
           echo "🌿 Branch: $BRANCH_NAME"
