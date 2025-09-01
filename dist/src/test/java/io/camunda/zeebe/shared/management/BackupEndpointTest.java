@@ -147,7 +147,7 @@ final class BackupEndpointTest {
       doThrow(failure).when(api).getStatus(anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.status(1);
+      final WebEndpointResponse<?> response = endpoint.query("1");
 
       // then
       assertThat(response.getBody())
@@ -165,7 +165,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.completedFuture(backupStatus)).when(api).getStatus(anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.status(1);
+      final WebEndpointResponse<?> response = endpoint.query("1");
 
       // then
       assertThat(response.getStatus()).isEqualTo(404);
@@ -183,7 +183,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.failedFuture(error)).when(api).getStatus(anyLong());
 
       // when
-      final var response = endpoint.status(1);
+      final var response = endpoint.query("1");
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -236,7 +236,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.status(1);
+      final WebEndpointResponse<?> response = endpoint.query("1");
 
       // then
       assertThat(response.getBody())
@@ -282,7 +282,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.status(1);
+      final WebEndpointResponse<?> response = endpoint.query("1");
 
       // then
       assertThat(response.getBody())
@@ -342,10 +342,10 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var endpoint = new BackupEndpoint(api);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).listBackups();
+      doThrow(failure).when(api).listBackups("*");
 
       // when
-      final WebEndpointResponse<?> response = endpoint.list();
+      final WebEndpointResponse<?> response = endpoint.listAll();
 
       // then
       assertThat(response.getBody())
@@ -359,10 +359,10 @@ final class BackupEndpointTest {
       // given
       final var api = mock(BackupApi.class);
       final var endpoint = new BackupEndpoint(api);
-      doReturn(CompletableFuture.failedFuture(error)).when(api).listBackups();
+      doReturn(CompletableFuture.failedFuture(error)).when(api).listBackups("*");
 
       // when
-      final var response = endpoint.list();
+      final var response = endpoint.listAll();
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -392,7 +392,7 @@ final class BackupEndpointTest {
               List.of(createPartialPartitionStatus(BackupStatusCode.IN_PROGRESS)));
       doReturn(CompletableFuture.completedFuture(List.of(backup1, backup2)))
           .when(api)
-          .listBackups();
+          .listBackups("*");
 
       final String expectedJson =
           """
@@ -431,7 +431,7 @@ final class BackupEndpointTest {
               mapper.getTypeFactory().constructCollectionType(List.class, BackupInfo.class));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.list();
+      final WebEndpointResponse<?> response = endpoint.listAll();
 
       // then
       assertThat(response.getBody())
@@ -444,10 +444,10 @@ final class BackupEndpointTest {
       // given
       final var api = mock(BackupApi.class);
       final var endpoint = new BackupEndpoint(api);
-      doReturn(CompletableFuture.completedFuture(List.of())).when(api).listBackups();
+      doReturn(CompletableFuture.completedFuture(List.of())).when(api).listBackups("*");
 
       // when
-      final WebEndpointResponse<?> response = endpoint.list();
+      final WebEndpointResponse<?> response = endpoint.listAll();
 
       // then
       assertThat(response.getBody())
