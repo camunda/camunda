@@ -35,7 +35,7 @@
     <module>spring-utils</module>
     <module>clients/java</module>
     <module>clients/java-deprecated</module>
-    <module>clients/spring-boot-starter-camunda</module>
+    <module>clients/spring-boot-camunda-starter</module>
     <module>clients/spring-boot-starter-camunda-sdk-deprecated</module>
     <module>testing</module>
     <module>document</module>

@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 /*
  * This is a near duplicate of the CredentialsProviderConfiguration found in the
- * spring-boot-starter-camunda-sdk project. However, because that implementation is heavily
+ * spring-boot-camunda-starter project. However, because that implementation is heavily
  * reliant on spring boot's autoconfiguration, the decision was made to copy the implementation
  * for the CPT context.
  */

@@ -8,7 +8,7 @@
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>spring-boot-starter-camunda</artifactId>
+  <artifactId>spring-boot-camunda-starter</artifactId>
 
   <name>Spring Boot Camunda Starter</name>
 
