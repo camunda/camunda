@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -36,7 +37,6 @@ final class BulkIndexRequest implements ContentProducer {
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
           .addMixIn(Record.class, RecordSequenceMixin.class)
-          .addMixIn(UserTaskRecordValue.class, UserTaskMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
@@ -107,14 +107,8 @@ final class BulkIndexRequest implements ContentProducer {
 
   private static byte[] serializeRecord(final Record<?> record, final RecordSequence recordSequence)
       throws IOException {
-    final SemanticVersion semanticVersion =
-        SemanticVersion.parse(record.getBrokerVersion())
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "Expected to parse valid semantic version, but got [%s]"
-                            .formatted(record.getBrokerVersion())));
-    final var mapper = semanticVersion.minor() < 8 ? PREVIOUS_VERSION_MAPPER : MAPPER;
+    final var mapper =
+        isPreviousVersionRecord(record.getBrokerVersion()) ? PREVIOUS_VERSION_MAPPER : MAPPER;
     return mapper
         .writer()
         // Enhance the serialized record by its sequence number. The sequence number is not a part
@@ -169,6 +163,22 @@ final class BulkIndexRequest implements ContentProducer {
       outStream.write(operation.source());
       outStream.write('\n');
     }
+  }
+
+  private static boolean isPreviousVersionRecord(final String brokerVersion) {
+    final SemanticVersion semanticVersion =
+        SemanticVersion.parse(brokerVersion)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Expected to parse valid semantic version, but got [%s]"
+                            .formatted(brokerVersion)));
+    final int currentMinorVersion =
+        VersionUtil.getSemanticVersion()
+            .map(SemanticVersion::minor)
+            .orElseThrow(
+                () -> new IllegalStateException("Expected to have a valid semantic version"));
+    return semanticVersion.minor() < currentMinorVersion;
   }
 
   record BulkOperation(BulkIndexAction metadata, byte[] source) {}
