@@ -210,4 +210,17 @@ public final class SortOptionBuilders {
           fn) {
     return fn.apply(correlatedMessageSubscription()).build();
   }
+
+  public static ProcessDefinitionInstanceStatisticsSort.Builder
+      processDefinitionInstanceStatistics() {
+    return new ProcessDefinitionInstanceStatisticsSort.Builder();
+  }
+
+  public static ProcessDefinitionInstanceStatisticsSort processDefinitionInstanceStatistics(
+      final Function<
+              ProcessDefinitionInstanceStatisticsSort.Builder,
+              ObjectBuilder<ProcessDefinitionInstanceStatisticsSort>>
+          fn) {
+    return fn.apply(processDefinitionInstanceStatistics()).build();
+  }
 }

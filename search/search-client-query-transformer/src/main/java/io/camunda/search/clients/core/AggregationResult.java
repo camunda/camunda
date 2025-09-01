@@ -17,6 +17,9 @@ public record AggregationResult(
     List<SearchQueryHit> hits,
     String endCursor) {
 
+  public static final AggregationResult EMPTY =
+      new AggregationResult(0L, Map.of(), List.of(), null);
+
   public AggregationResult(final Long docCount, final Map<String, AggregationResult> aggregations) {
     this(docCount, aggregations, List.of(), null);
   }

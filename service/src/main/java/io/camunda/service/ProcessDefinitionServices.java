@@ -9,12 +9,15 @@ package io.camunda.service;
 
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -95,6 +98,17 @@ public class ProcessDefinitionServices
                             PROCESS_DEFINITION_READ_AUTHORIZATION,
                             ProcessDefinitionEntity::processDefinitionId)))
                 .getProcessDefinition(processDefinitionKey));
+  }
+
+  public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity>
+      getProcessDefinitionInstanceStatistics(final ProcessDefinitionInstanceStatisticsQuery query) {
+    return executeSearchRequest(
+        () ->
+            processDefinitionSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .processDefinitionInstanceStatistics(query));
   }
 
   public Optional<FormEntity> getProcessDefinitionStartForm(final long processDefinitionKey) {

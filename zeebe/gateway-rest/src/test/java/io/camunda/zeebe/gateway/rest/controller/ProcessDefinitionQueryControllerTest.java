@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -14,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.ProcessDefinitionFilter;
@@ -38,7 +40,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
+import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -126,6 +130,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @MockitoBean FormServices formServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+
+  @Captor
+  ArgumentCaptor<io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery>
+      instanceStatsQueryCaptor;
 
   @BeforeEach
   void setupProcessDefinitionServices() {
@@ -404,7 +412,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  public void shouldReturnFormItemForValidFormKey() throws Exception {
+  public void shouldReturnFormItemForValidFormKey() {
     when(processDefinitionServices.getProcessDefinitionStartForm(1L))
         .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "formId", "schema", 1L)));
 
@@ -422,7 +430,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  public void shouldReturn404ForFormInvaliProcessKey() throws Exception {
+  public void shouldReturn404ForFormInvaliProcessKey() {
     when(processDefinitionServices.getProcessDefinitionStartForm(999L))
         .thenThrow(
             ErrorMapper.mapSearchError(
@@ -451,7 +459,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  public void shouldReturn500OnUnexpectedException() throws Exception {
+  public void shouldReturn500OnUnexpectedException() {
     when(processDefinitionServices.getProcessDefinitionStartForm(1L))
         .thenThrow(new RuntimeException("Unexpected error"));
 
@@ -523,5 +531,198 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
     verify(processDefinitionServices)
         .search(new ProcessDefinitionQuery.Builder().filter(filter).build());
+  }
+
+  @Test
+  public void shouldGetProcessDefinitionInstanceStatisticsWithOrOperator() {
+    // given
+    final var statsEntity =
+        new ProcessDefinitionInstanceStatisticsEntity(
+            "complexProcess", "Complex process", true, 5L, 10L);
+    final var statsResult =
+        new io.camunda.search.query.SearchQueryResult.Builder<
+                ProcessDefinitionInstanceStatisticsEntity>()
+            .total(1L)
+            .items(List.of(statsEntity))
+            .startCursor(null)
+            .endCursor(null)
+            .build();
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any()))
+        .thenReturn(statsResult);
+
+    final var request =
+        """
+        {
+          "filter": {
+            "state": "ACTIVE",
+            "$or": [
+              { "tenantId": "tenantA" },
+              { "processDefinitionId": "complexProcess" }
+            ]
+          }
+        }
+        """;
+    final var response =
+        """
+        {
+          "items": [
+            {
+              "processDefinitionId": "complexProcess",
+              "latestProcessDefinitionName": "Complex process",
+              "hasMultipleVersions": true,
+              "activeInstancesWithoutIncidentCount": 5,
+              "activeInstancesWithIncidentCount": 10
+            }
+          ],
+          "page": {
+            "totalItems": 1,
+            "hasMoreTotalItems": false
+          }
+        }
+        """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "statistics/process-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices)
+        .getProcessDefinitionInstanceStatistics(instanceStatsQueryCaptor.capture());
+    final var capturedQuery = instanceStatsQueryCaptor.getValue();
+    assertThat(capturedQuery).isNotNull();
+    final var filter = capturedQuery.filter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.stateOperations().stream().anyMatch(op -> "ACTIVE".equals(op.value())))
+        .isTrue();
+    assertThat(filter.orFilters()).isNotNull();
+    assertThat(filter.orFilters().size()).isEqualTo(2);
+    final boolean foundTenant =
+        filter.orFilters().stream()
+            .anyMatch(
+                f ->
+                    f.tenantIdOperations() != null
+                        && f.tenantIdOperations().stream()
+                            .anyMatch(op -> "tenantA".equals(op.value())));
+    final boolean foundProcDef =
+        filter.orFilters().stream()
+            .anyMatch(
+                f ->
+                    f.processDefinitionIdOperations() != null
+                        && f.processDefinitionIdOperations().stream()
+                            .anyMatch(op -> "complexProcess".equals(op.value())));
+    assertThat(foundTenant).as("Expected orFilters to contain tenantId 'tenantA'").isTrue();
+    assertThat(foundProcDef)
+        .as("Expected orFilters to contain processDefinitionId 'complexProcess'")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldGetProcessDefinitionInstanceStatisticsWithEmptyFilter() {
+    // given
+    final var statsResult =
+        new io.camunda.search.query.SearchQueryResult.Builder<
+                ProcessDefinitionInstanceStatisticsEntity>()
+            .total(0L)
+            .items(List.of())
+            .startCursor(null)
+            .endCursor(null)
+            .build();
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any()))
+        .thenReturn(statsResult);
+
+    final var request = "{ \"filter\": {} }";
+    final var response =
+        """
+        {
+          "items": [],
+          "page": {
+            "totalItems": 0,
+            "hasMoreTotalItems": false
+          }
+        }
+        """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "statistics/process-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices)
+        .getProcessDefinitionInstanceStatistics(instanceStatsQueryCaptor.capture());
+    final var capturedQuery = instanceStatsQueryCaptor.getValue();
+    assertThat(capturedQuery).isNotNull();
+    final var filter = capturedQuery.filter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.orFilters() == null || filter.orFilters().isEmpty()).isTrue();
+  }
+
+  @Test
+  public void shouldGetProcessDefinitionInstanceStatisticsWithMissingFilter() {
+    // given
+    final var statsResult =
+        new io.camunda.search.query.SearchQueryResult.Builder<
+                ProcessDefinitionInstanceStatisticsEntity>()
+            .total(0L)
+            .items(List.of())
+            .startCursor(null)
+            .endCursor(null)
+            .build();
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any()))
+        .thenReturn(statsResult);
+
+    final var request = "{}";
+    final var response =
+        """
+        {
+          "items": [],
+          "page": {
+            "totalItems": 0,
+            "hasMoreTotalItems": false
+          }
+        }
+        """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "statistics/process-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices)
+        .getProcessDefinitionInstanceStatistics(instanceStatsQueryCaptor.capture());
+    final var capturedQuery = instanceStatsQueryCaptor.getValue();
+    assertThat(capturedQuery).isNotNull();
+    final var filter = capturedQuery.filter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.orFilters() == null || filter.orFilters().isEmpty()).isTrue();
   }
 }
