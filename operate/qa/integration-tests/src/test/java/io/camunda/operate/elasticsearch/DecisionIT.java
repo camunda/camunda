@@ -21,11 +21,9 @@ import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.security.reader.TenantAccess;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Set;
@@ -33,7 +31,6 @@ import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -56,8 +53,6 @@ public class DecisionIT extends OperateAbstractIT {
 
   private static final String QUERY_DECISION_GROUPED_URL =
       DecisionRestService.DECISION_URL + "/grouped";
-  private static final String QUERY_DECISION_XML_URL_PATTERN =
-      DecisionRestService.DECISION_URL + "/%s/xml";
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   @MockitoBean private PermissionsService permissionsService;
 
@@ -366,89 +361,5 @@ public class DecisionIT extends OperateAbstractIT {
         .flatMap(g -> g.getDecisions())
         .extracting("id")
         .containsExactlyInAnyOrder(id111, id121);
-  }
-
-  @Test
-  public void testDecisionXMLWithUserTenantCheck() throws Exception {
-    // given
-    final String id111 = "111";
-    final String id112 = "112";
-    final String id2 = "222";
-    final String id3 = "333";
-    final String decisionId1 = "decisionId1";
-    final String decisionId2 = "decisionId2";
-    final String decisionId3 = "decisionId3";
-    final long decisionReqId1 = 1;
-    final long decisionReqId2 = 2;
-    final String tenantId1 = "tenant1";
-    final String tenantId2 = "tenant2";
-    final String tenant1Xml = "<xml>tenant1<xml>";
-    final String tenant2Xml = "<xml>tenant2<xml>";
-    doReturn(TenantAccess.allowed(List.of(tenantId1)))
-        .when(tenantService)
-        .getAuthenticatedTenants();
-
-    final DecisionDefinitionEntity decision111 =
-        new DecisionDefinitionEntity()
-            .setId(id111)
-            .setKey(Long.valueOf(id111))
-            .setVersion(1)
-            .setDecisionId(decisionId1)
-            .setTenantId(tenantId1)
-            .setDecisionRequirementsKey(decisionReqId1);
-    final DecisionDefinitionEntity decision112 =
-        new DecisionDefinitionEntity()
-            .setId(id112)
-            .setKey(Long.valueOf(id112))
-            .setVersion(1)
-            .setDecisionId(decisionId1)
-            .setTenantId(tenantId2)
-            .setDecisionRequirementsKey(decisionReqId2);
-    final DecisionDefinitionEntity decision2 =
-        new DecisionDefinitionEntity()
-            .setId(id2)
-            .setKey(Long.valueOf(id2))
-            .setVersion(1)
-            .setDecisionId(decisionId2)
-            .setTenantId(tenantId1)
-            .setDecisionRequirementsKey(decisionReqId1);
-    final DecisionDefinitionEntity decision3 =
-        new DecisionDefinitionEntity()
-            .setId(id3)
-            .setKey(Long.valueOf(id3))
-            .setVersion(1)
-            .setDecisionId(decisionId3)
-            .setTenantId(tenantId2)
-            .setDecisionRequirementsKey(decisionReqId2);
-    final DecisionRequirementsEntity decisionReq1 =
-        new DecisionRequirementsEntity()
-            .setId(String.valueOf(decisionReqId1))
-            .setKey(decisionReqId1)
-            .setXml(tenant1Xml)
-            .setTenantId(tenantId1);
-    final DecisionRequirementsEntity decisionReq2 =
-        new DecisionRequirementsEntity()
-            .setId(String.valueOf(decisionReqId2))
-            .setKey(decisionReqId2)
-            .setXml(tenant2Xml)
-            .setTenantId(tenantId2);
-    searchTestRule.persistNew(
-        decision111, decisionReq1, decision112, decisionReq2, decision2, decision3);
-
-    when(permissionsService.hasPermissionForDecision(
-            decisionId1, PermissionType.READ_DECISION_DEFINITION))
-        .thenReturn(true);
-
-    // when
-    MvcResult mvcResult =
-        getRequest(String.format(QUERY_DECISION_XML_URL_PATTERN, id111), MediaType.TEXT_PLAIN);
-
-    // then
-    assertThat(mvcResult.getResponse().getContentAsString()).isEqualTo(tenant1Xml);
-
-    // when
-    mvcResult =
-        getRequestShouldFailWithException(
-            String.format(QUERY_DECISION_XML_URL_PATTERN, id112), NotFoundException.class);
   }
 }

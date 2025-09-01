@@ -14,8 +14,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.operate.cache.ProcessCache;
@@ -25,9 +23,7 @@ import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.ProcessRestService;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.webapp.zeebe.operation.adapter.ClientBasedAdapter;
@@ -46,17 +42,9 @@ import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
@@ -70,7 +58,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
   protected static final String POST_OPERATION_URL = PROCESS_INSTANCE_URL + "/%s/operation";
-  private static final String POST_BATCH_OPERATION_URL = PROCESS_INSTANCE_URL + "/batch-operation";
   @Rule public final OperateZeebeRule zeebeRule;
 
   // test rule
@@ -89,10 +76,6 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Autowired
   @Qualifier("noActivitiesHaveIncident")
   protected Predicate<Object[]> noActivitiesHaveIncident;
-
-  @Autowired
-  @Qualifier("incidentsAreResolved")
-  protected Predicate<Object[]> incidentsAreResolved;
 
   @Autowired
   @Qualifier("variableExistsCheck")
@@ -115,10 +98,6 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected Predicate<Object[]> incidentsArePresentCheck;
 
   @Autowired
-  @Qualifier("postImporterQueueCountCheck")
-  protected Predicate<Object[]> postImporterQueueCountCheck;
-
-  @Autowired
   @Qualifier("incidentWithErrorMessageIsActiveCheck")
   protected Predicate<Object[]> incidentWithErrorMessageIsActiveCheck;
 
@@ -131,20 +110,12 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected Predicate<Object[]> jobWithRetriesCheck;
 
   @Autowired
-  @Qualifier("incidentsInAnyInstanceAreActiveCheck")
-  protected Predicate<Object[]> incidentsInAnyInstanceAreActiveCheck;
-
-  @Autowired
   @Qualifier("processInstanceIsCreatedCheck")
   protected Predicate<Object[]> processInstanceIsCreatedCheck;
 
   @Autowired
   @Qualifier("incidentsInAnyInstanceArePresentCheck")
   protected Predicate<Object[]> incidentsInAnyInstanceArePresentCheck;
-
-  @Autowired
-  @Qualifier("processInstancesAreStartedCheck")
-  protected Predicate<Object[]> processInstancesAreStartedCheck;
 
   @Autowired
   @Qualifier("processInstanceIsCompletedCheck")
@@ -190,16 +161,11 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Qualifier("listenerJobIsCreated")
   protected Predicate<Object[]> listenerJobIsCreated;
 
-  @Autowired
-  @Qualifier("userTasksAreCreated")
-  protected Predicate<Object[]> userTasksAreCreated;
-
   @Autowired protected OperateProperties operateProperties;
   @Autowired protected OperationExecutor operationExecutor;
   protected OperateTester tester;
   private ZeebeContainer zeebeContainer;
   @Autowired private TestSearchRepository testSearchRepository;
-  private final HttpClient httpClient = HttpClient.newHttpClient();
   private String workerName;
   @Autowired private MeterRegistry meterRegistry;
 
@@ -279,14 +245,6 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
             getClient(), taskName, getWorkerName(), 1, errorMessage);
     searchTestRule.processAllRecordsAndWait(jobWithRetriesCheck, processInstanceKey, jobKey, 1);
     return jobKey;
-  }
-
-  protected Long deployProcessWithTenant(
-      final String tenantId, final String... classpathResources) {
-    final Long processDefinitionKey =
-        ZeebeTestUtil.deployProcess(getClient(), tenantId, classpathResources);
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
-    return processDefinitionKey;
   }
 
   protected Long deployProcess(final String... classpathResources) {
@@ -420,53 +378,6 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     return mvcResult;
   }
 
-  protected MvcResult postBatchOperationWithOKResponse(
-      final ListViewQueryDto query, final OperationType operationType) throws Exception {
-    return postBatchOperationWithOKResponse(query, operationType, null);
-  }
-
-  protected MvcResult postBatchOperationWithOKResponse(
-      final ListViewQueryDto query, final OperationType operationType, final String name)
-      throws Exception {
-    return postBatchOperation(query, operationType, name, HttpStatus.SC_OK);
-  }
-
-  protected MvcResult postBatchOperation(
-      final CreateBatchOperationRequestDto batchOperationDto, final int expectedStatus)
-      throws Exception {
-    final MockHttpServletRequestBuilder postOperationRequest =
-        post(POST_BATCH_OPERATION_URL)
-            .content(mockMvcTestRule.json(batchOperationDto))
-            .contentType(mockMvcTestRule.getContentType());
-
-    final MvcResult mvcResult =
-        mockMvc.perform(postOperationRequest).andExpect(status().is(expectedStatus)).andReturn();
-    searchTestRule.refreshSerchIndexes();
-    return mvcResult;
-  }
-
-  protected MvcResult postBatchOperation(
-      final ListViewQueryDto query,
-      final OperationType operationType,
-      final String name,
-      final int expectedStatus)
-      throws Exception {
-    final CreateBatchOperationRequestDto batchOperationDto =
-        createBatchOperationDto(operationType, name, query);
-    return postBatchOperation(batchOperationDto, expectedStatus);
-  }
-
-  protected CreateBatchOperationRequestDto createBatchOperationDto(
-      final OperationType operationType, final String name, final ListViewQueryDto query) {
-    final CreateBatchOperationRequestDto batchOperationDto = new CreateBatchOperationRequestDto();
-    batchOperationDto.setQuery(query);
-    batchOperationDto.setOperationType(operationType);
-    if (name != null) {
-      batchOperationDto.setName(name);
-    }
-    return batchOperationDto;
-  }
-
   protected BatchOperationEntity deleteProcessWithOkResponse(final String processId)
       throws Exception {
     final String requestUrl = ProcessRestService.PROCESS_URL + "/" + processId;
@@ -505,115 +416,11 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     }
   }
 
-  protected Instant pinZeebeTime() {
-    return pinZeebeTime(Instant.now());
-  }
-
-  protected Instant pinZeebeTime(final Instant pinAt) {
-    final var pinRequest = new ZeebeClockActuatorPinRequest(pinAt.toEpochMilli());
-    try {
-      final var body =
-          HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(pinRequest));
-      return zeebeRequest("POST", "actuator/clock/pin", body);
-    } catch (final IOException | InterruptedException e) {
-      throw new IllegalStateException("Could not pin zeebe clock", e);
-    }
-  }
-
-  protected Instant offsetZeebeTime(final Duration offsetBy) {
-    final var offsetRequest = new ZeebeClockActuatorOffsetRequest(offsetBy.toMillis());
-    try {
-      final var body =
-          HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(offsetRequest));
-      return zeebeRequest("POST", "actuator/clock/pin", body);
-    } catch (final IOException | InterruptedException e) {
-      throw new IllegalStateException("Could not offset zeebe clock", e);
-    }
-  }
-
-  protected Instant resetZeebeTime() {
-    try {
-      return zeebeRequest("DELETE", "actuator/clock", HttpRequest.BodyPublishers.noBody());
-    } catch (final IOException | InterruptedException e) {
-      throw new IllegalStateException("Could not reset zeebe clock", e);
-    }
-  }
-
-  private Instant zeebeRequest(
-      final String method, final String endpoint, final HttpRequest.BodyPublisher bodyPublisher)
-      throws IOException, InterruptedException {
-    final var fullEndpoint =
-        URI.create(
-            String.format("http://%s/%s", zeebeContainer.getExternalAddress(9600), endpoint));
-    final var httpRequest =
-        HttpRequest.newBuilder(fullEndpoint)
-            .method(method, bodyPublisher)
-            .header("Content-Type", "application/json")
-            .build();
-    final var httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-    if (httpResponse.statusCode() != 200) {
-      throw new IllegalStateException("Pinning time failed: " + httpResponse.body());
-    }
-    final var result =
-        objectMapper.readValue(httpResponse.body(), ZeebeClockActuatorResponse.class);
-
-    return Instant.ofEpochMilli(result.epochMilli);
-  }
-
-  protected List<Long> deployProcesses(final String... processResources) {
-    return Stream.of(processResources)
-        .sequential()
-        .map(
-            resource ->
-                tester
-                    .deployProcess(resource)
-                    .and()
-                    .waitUntil()
-                    .processIsDeployed()
-                    .getProcessDefinitionKey())
-        .collect(Collectors.toList());
-  }
-
-  protected List<Long> startProcesses(final String... bpmnProcessIds) {
-    return Stream.of(bpmnProcessIds)
-        .sequential()
-        .map(
-            bpmnProcessId ->
-                tester
-                    .startProcessInstance(bpmnProcessId)
-                    .and()
-                    .waitUntil()
-                    .processInstanceExists()
-                    .getProcessInstanceKey())
-        .collect(Collectors.toList());
-  }
-
   protected <R> List<R> searchAllDocuments(final String index, final Class<R> clazz) {
     try {
       return testSearchRepository.searchAll(index, clazz);
     } catch (final IOException ex) {
       throw new OperateRuntimeException("Search failed for index " + index, ex);
     }
-  }
-
-  private static final class ZeebeClockActuatorPinRequest {
-    @JsonProperty long epochMilli;
-
-    ZeebeClockActuatorPinRequest(final long epochMilli) {
-      this.epochMilli = epochMilli;
-    }
-  }
-
-  private static final class ZeebeClockActuatorOffsetRequest {
-    @JsonProperty long epochMilli;
-
-    public ZeebeClockActuatorOffsetRequest(final long offsetMilli) {
-      epochMilli = offsetMilli;
-    }
-  }
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  private static final class ZeebeClockActuatorResponse {
-    @JsonProperty long epochMilli;
   }
 }
