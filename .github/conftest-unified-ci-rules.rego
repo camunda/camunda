@@ -88,6 +88,35 @@ deny[msg] {
         [concat(", ", get_jobs_after_checkresults_without_ifalways(input.jobs))])
 }
 
+deny[msg] {
+    # only enforced on Unified CI since it is specific to utils-flaky-tests-summary job
+    input.name == "CI"
+    input.jobs["utils-flaky-tests-summary"]
+
+    jobs_with_flaky_outputs := get_jobs_with_flaky_outputs(input.jobs)
+    flaky_summary_needs := {need | need := input.jobs["utils-flaky-tests-summary"].needs[_]}
+
+    missing_jobs := jobs_with_flaky_outputs - flaky_summary_needs
+    count(missing_jobs) > 0
+
+    msg := sprintf("The utils-flaky-tests-summary job is missing dependencies on jobs with flakyTests outputs! Missing job IDs: %s",
+        [concat(", ", missing_jobs)])
+}
+
+deny[msg] {
+    # only enforced on Unified CI since it is specific to utils-flaky-tests-summary job
+    input.name == "CI"
+    input.jobs["utils-flaky-tests-summary"]
+
+    needs_list := input.jobs["utils-flaky-tests-summary"].needs
+    sorted_needs := sort(needs_list)
+
+    needs_list != sorted_needs
+
+    msg := sprintf("The utils-flaky-tests-summary job \"needs\" list is not alphabetically ordered! Expected: [%s], Got: [%s]",
+        [concat(", ", sorted_needs), concat(", ", needs_list)])
+}
+
 ###########################   RULE HELPERS   ##################################
 
 get_jobs_without_timeoutminutes(jobInput) = jobs_without_timeoutminutes {
@@ -125,6 +154,7 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "get-concurrency-group-dynamically"
         job_id != "get-snapshot-docker-version-tag"
         job_id != "setup-unit-tests"
+        job_id != "utils-flaky-tests-summary"
 
         # not enforced on jobs that invoke other reusable workflows (instead enforced there)
         not job.uses
@@ -190,5 +220,14 @@ get_jobs_after_checkresults_without_ifalways(jobInput) = jobs_after_checkresults
         #
         job_if := object.get(job, "if", "")  # get with empty default value
         not contains(job_if, "always() && needs.check-results.result == 'success'")
+    }
+}
+
+get_jobs_with_flaky_outputs(jobInput) = jobs_with_flaky_outputs {
+    jobs_with_flaky_outputs := { job_id |
+        job := jobInput[job_id]
+
+        # check if job has flakyTests output
+        job.outputs.flakyTests
     }
 }
