@@ -63,6 +63,7 @@ class CorrelatedMessageExportHandlerTest {
     verify(correlatedMessageWriter).create(correlatedMessageCaptor.capture());
 
     final CorrelatedMessageDbModel model = correlatedMessageCaptor.getValue();
+    assertThat(model.key()).isEqualTo(record.getKey());
     assertThat(model.messageKey()).isEqualTo(record.getValue().getMessageKey());
     assertThat(model.messageName()).isEqualTo(record.getValue().getMessageName());
     assertThat(model.correlationKey()).isEqualTo(record.getValue().getCorrelationKey());
@@ -90,6 +91,7 @@ class CorrelatedMessageExportHandlerTest {
     verify(correlatedMessageWriter).create(correlatedMessageCaptor.capture());
 
     final CorrelatedMessageDbModel model = correlatedMessageCaptor.getValue();
+    assertThat(model.key()).isEqualTo(record.getKey());
     assertThat(model.messageKey()).isEqualTo(record.getValue().getMessageKey());
     assertThat(model.messageName()).isEqualTo(record.getValue().getMessageName());
     assertThat(model.correlationKey()).isEqualTo(record.getValue().getCorrelationKey());
@@ -116,7 +118,7 @@ class CorrelatedMessageExportHandlerTest {
   }
 
   @Test
-  void shouldOnlyExportFirstCorrelationForSameMessage() {
+  void shouldExportAllCorrelationsForSameMessage() {
     // given
     final long messageKey = 123L;
     final Record<ProcessMessageSubscriptionRecordValue> record1 =
@@ -135,8 +137,8 @@ class CorrelatedMessageExportHandlerTest {
     handler.export((Record<Object>) record2);
 
     // then
-    // Only the first correlation should be exported, second should be ignored
-    verify(correlatedMessageWriter, times(1)).create(any(CorrelatedMessageDbModel.class));
+    // Both correlations should be exported since they have different record keys
+    verify(correlatedMessageWriter, times(2)).create(any(CorrelatedMessageDbModel.class));
   }
 
   @Test

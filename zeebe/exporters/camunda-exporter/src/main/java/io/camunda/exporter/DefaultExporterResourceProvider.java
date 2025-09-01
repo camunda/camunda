@@ -17,6 +17,7 @@ import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
+import io.camunda.exporter.handlers.CorrelatedMessageHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
@@ -97,6 +98,7 @@ import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -246,6 +248,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
             new EventFromProcessMessageSubscriptionHandler(
                 indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
+            new CorrelatedMessageHandler(
+                indexDescriptors.get(CorrelatedMessageTemplate.class).getFullQualifiedName()),
             new UserTaskHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,

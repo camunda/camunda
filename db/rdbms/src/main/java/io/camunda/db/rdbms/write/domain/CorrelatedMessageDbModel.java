@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 import java.util.function.Function;
 
 public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbModel> {
+  private Long key;
   private Long messageKey;
   private String messageName;
   private String correlationKey;
@@ -25,11 +26,12 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
   private int partitionId;
   private OffsetDateTime historyCleanupDate;
 
-  public CorrelatedMessageDbModel(final Long messageKey) {
-    this.messageKey = messageKey;
+  public CorrelatedMessageDbModel(final Long key) {
+    this.key = key;
   }
 
   public CorrelatedMessageDbModel(
+      final Long key,
       final Long messageKey,
       final String messageName,
       final String correlationKey,
@@ -42,6 +44,7 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
       final OffsetDateTime dateTime,
       final int partitionId,
       final OffsetDateTime historyCleanupDate) {
+    this.key = key;
     this.messageKey = messageKey;
     this.messageName = messageName;
     this.correlationKey = correlationKey;
@@ -54,6 +57,14 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
     this.dateTime = dateTime;
     this.partitionId = partitionId;
     this.historyCleanupDate = historyCleanupDate;
+  }
+
+  public Long key() {
+    return key;
+  }
+
+  public void key(final Long key) {
+    this.key = key;
   }
 
   public Long messageKey() {
@@ -155,6 +166,7 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
   @Override
   public CorrelatedMessageDbModel copy() {
     return new CorrelatedMessageDbModel(
+        key,
         messageKey,
         messageName,
         correlationKey,
@@ -171,6 +183,7 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
 
   @Override
   public void copyFrom(final CorrelatedMessageDbModel other) {
+    this.key = other.key;
     this.messageKey = other.messageKey;
     this.messageName = other.messageName;
     this.correlationKey = other.correlationKey;
@@ -191,6 +204,7 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
   }
 
   public static class Builder implements ObjectBuilder<CorrelatedMessageDbModel> {
+    private Long key;
     private Long messageKey;
     private String messageName;
     private String correlationKey;
@@ -203,6 +217,11 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
     private OffsetDateTime dateTime;
     private int partitionId;
     private OffsetDateTime historyCleanupDate;
+
+    public Builder key(final Long key) {
+      this.key = key;
+      return this;
+    }
 
     public Builder messageKey(final Long messageKey) {
       this.messageKey = messageKey;
@@ -267,6 +286,7 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
     @Override
     public CorrelatedMessageDbModel build() {
       return new CorrelatedMessageDbModel(
+          key,
           messageKey,
           messageName,
           correlationKey,

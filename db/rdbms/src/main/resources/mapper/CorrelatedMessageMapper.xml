@@ -24,6 +24,7 @@
     resultMap="io.camunda.db.rdbms.sql.CorrelatedMessageMapper.searchResultMap">
     SELECT * FROM (
     SELECT
+    KEY,
     MESSAGE_KEY,
     MESSAGE_NAME,
     CORRELATION_KEY,
@@ -48,6 +49,12 @@
   <sql id="searchFilter">
     WHERE 1 = 1
     <!-- basic filter -->
+    <if test="filter.keyOperations != null and !filter.keyOperations.isEmpty()">
+      <foreach collection="filter.keyOperations" item="operation">
+        AND KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
     <if test="filter.messageKeyOperations != null and !filter.messageKeyOperations.isEmpty()">
       <foreach collection="filter.messageKeyOperations" item="operation">
         AND MESSAGE_KEY
@@ -112,8 +119,9 @@
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel">
     <constructor>
-      <idArg column="MESSAGE_KEY" javaType="java.lang.Long" />
+      <idArg column="KEY" javaType="java.lang.Long" />
     </constructor>
+    <result column="MESSAGE_KEY" property="messageKey" javaType="java.lang.Long" />
     <result column="MESSAGE_NAME" property="messageName" javaType="java.lang.String" />
     <result column="CORRELATION_KEY" property="correlationKey" javaType="java.lang.String" />
     <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
@@ -129,6 +137,7 @@
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel">
     INSERT INTO ${prefix}CORRELATED_MESSAGE (
+                                             KEY,
                                              MESSAGE_KEY,
                                              MESSAGE_NAME,
                                              CORRELATION_KEY,
@@ -143,6 +152,7 @@
                                              HISTORY_CLEANUP_DATE
     )
     VALUES (
+            #{key},
             #{messageKey},
             #{messageName},
             #{correlationKey},
@@ -160,7 +170,7 @@
 
   <delete id="delete">
     DELETE FROM ${prefix}CORRELATED_MESSAGE
-    WHERE MESSAGE_KEY = #{messageKey}
+    WHERE KEY = #{key}
   </delete>
 
   <update id="updateHistoryCleanupDate">

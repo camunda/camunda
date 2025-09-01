@@ -676,9 +676,10 @@
 
   <changeSet id="create_correlated_message_table" author="copilot">
     <createTable tableName="${prefix}CORRELATED_MESSAGE">
-      <column name="MESSAGE_KEY" type="BIGINT">
+      <column name="KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
+      <column name="MESSAGE_KEY" type="BIGINT"/>
       <column name="MESSAGE_NAME" type="VARCHAR(255)"/>
       <column name="CORRELATION_KEY" type="VARCHAR(255)"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
@@ -691,6 +692,13 @@
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
     </createTable>
+
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE" indexName="${prefix}IDX_CORRELATED_MESSAGE_MESSAGE_KEY">
+      <column name="MESSAGE_KEY"/>
+    </createIndex>
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE" indexName="${prefix}IDX_CORRELATED_MESSAGE_PROCESS_INSTANCE_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
 
     <modifySql dbms="mariadb">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->

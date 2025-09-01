@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.sql.columns;
 import io.camunda.search.entities.CorrelatedMessageEntity;
 
 public enum CorrelatedMessageColumn implements SearchColumn<CorrelatedMessageEntity> {
+  KEY("key"),
   MESSAGE_KEY("messageKey"),
   MESSAGE_NAME("messageName"),
   CORRELATION_KEY("correlationKey"),
