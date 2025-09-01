@@ -1101,9 +1101,20 @@ public class JobBasedAdHocSubProcessTest {
     completeJob(jobType, true, false, activateElement("A"), activateElement("B"));
 
     // then
+    final var ahspKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AHSP_ELEMENT_ID)
+            .getFirst()
+            .getKey();
+
     Assertions.assertThat(RecordingExporter.jobRecords().onlyCommandRejections().getFirst())
-        .extracting(Record::getRejectionType, Record::getIntent)
-        .containsOnly(RejectionType.INVALID_ARGUMENT, JobIntent.COMPLETE);
+        .extracting(Record::getRejectionType, Record::getIntent, Record::getRejectionReason)
+        .containsOnly(
+            RejectionType.INVALID_ARGUMENT,
+            JobIntent.COMPLETE,
+            "No elements can be activated for ad-hoc sub-process with key '%s' because the completion condition is fulfilled."
+                .formatted(ahspKey));
   }
 
   private void completeJob(
@@ -1119,7 +1130,6 @@ public class JobBasedAdHocSubProcessTest {
             .setCompletionConditionFulfilled(completionConditionFulfilled)
             .setCancelRemainingInstances(cancelRemainingInstances);
     ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
-    System.out.println("this is the job key: " + jobKey);
   }
 
   private JobResultActivateElement activateElement(final String elementId) {
