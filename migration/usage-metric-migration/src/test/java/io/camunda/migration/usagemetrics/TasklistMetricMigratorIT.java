@@ -52,7 +52,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class TUMetricsMigrationIT extends MigrationTest {
+public class TasklistMetricMigratorIT extends MigrationTest {
   private final ThreadLocalRandom rnd = ThreadLocalRandom.current();
   private final List<String> assignees = new ArrayList<>();
   private final Map<String, Long> documentCountPerAssignee = new HashMap<>();
@@ -272,7 +272,7 @@ public class TUMetricsMigrationIT extends MigrationTest {
                 assertThatExceptionOfType(MigrationException.class)
                     .isThrownBy(this::runMigration)
                     .withCauseInstanceOf(MigrationTimeoutException.class)
-                    .withMessageContaining("Importer did not finish within the timeout of"));
+                    .withMessageContaining("Importers did not finish within the timeout of"));
   }
 
   @ParameterizedTest
