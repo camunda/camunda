@@ -81,6 +81,7 @@ public class CamundaExporter implements Exporter {
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
+  private boolean schemaIsReady = false;
   private boolean exporterCanFlush = false;
   private boolean zeebeIndicesVersion87Exist = false;
   private SearchEngineClient searchEngineClient;
@@ -139,13 +140,13 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     this.controller = controller;
     searchEngineClient = clientAdapter.getSearchEngineClient();
-    final var schemaManager = createSchemaManager();
+    writer = createBatchWriter();
 
-    if (!schemaManager.isSchemaReadyForUse()) {
+    final var schemaManager = createSchemaManager();
+    schemaIsReady = schemaManager.isSchemaReadyForUse();
+    if (!schemaIsReady) {
       throw new IllegalStateException("Schema is not ready for use");
     }
-
-    writer = createBatchWriter();
 
     checkImportersCompletedAndReschedule();
     controller.readMetadata().ifPresent(metadata::deserialize);
@@ -157,7 +158,7 @@ public class CamundaExporter implements Exporter {
   @Override
   public void close() {
 
-    if (writer != null) {
+    if (writer != null && schemaIsReady && exporterCanFlush) {
       try {
         flush();
       } catch (final Exception e) {
@@ -205,7 +206,7 @@ public class CamundaExporter implements Exporter {
     // As soon new records start to be exported, they get cached. Importers should be able to
     // complete the importing.
 
-    if (configuration.getIndex().shouldWaitForImporters() && !exporterCanFlush) {
+    if (!schemaIsReady || !exporterCanFlush) {
 
       ensureCachedRecordsLessThanBulkSize(record);
 
@@ -350,6 +351,7 @@ processing records from previous version
     if (!configuration.getIndex().shouldWaitForImporters()) {
       LOG.debug(
           "Waiting for importers to complete is disabled, thus scheduling delayed flush regardless of importer state.");
+      exporterCanFlush = true;
       scheduleDelayedFlush();
       return;
     }
