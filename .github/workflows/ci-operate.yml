@@ -359,14 +359,14 @@ jobs:
         uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
-          maven-cache-key-modifier: operate-${{ inputs.testName }}
+          maven-cache-key-modifier: operate-importer
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Build Operate
         run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
       - name: Run Tests
-        run: ${{ inputs.command }}
+        run: ./mvnw -pl operate -am verify -T1C -P skipFrontendBuild,operateItImport -B -Dfailsafe.rerunFailingTestsCount=2
       - name: Observe build status
         if: always()
         continue-on-error: true
