@@ -118,6 +118,11 @@ final class UpdateTestCase implements Arguments {
       return this;
     }
 
+    TestCaseBuilder afterUpgrade(final Consumer<ContainerState> func) {
+      after = (state, ignoredProcessKey, ignoredProcessInstanceKey) -> func.accept(state);
+      return this;
+    }
+
     UpdateTestCase done() {
       return new UpdateTestCase(this);
     }
