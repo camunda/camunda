@@ -14,6 +14,13 @@ import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -33,11 +40,30 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
+  private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
+      new ObjectMapper()
+          .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
+          .addMixIn(Record.class, RecordMetadata87Mixin.class)
+          .addMixIn(ProcessInstanceCreationRecordValue.class, ProcessInstanceCreation87Mixin.class)
+          .addMixIn(ProcessInstanceRecordValue.class, ProcessInstance87Mixin.class)
+          .addMixIn(ProcessInstanceResultRecordValue.class, ProcessInstanceResult87Mixin.class)
+          .addMixIn(UserTaskRecordValue.class, UserTask87Mixin.class)
+          .addMixIn(JobRecordValue.class, Job87Mixin.class)
+          .enable(Feature.ALLOW_SINGLE_QUOTES);
+
   // The property of the ES record template to store the sequence of the record.
   private static final String RECORD_SEQUENCE_PROPERTY = "sequence";
   private static final String RECORD_AUTHORIZATIONS_PROPERTY = "authorizations";
   private static final String RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY =
       "decisionEvaluationInstanceKey";
+  private static final String BATCH_OPERATION_REFERENCE_PROPERTY = "batchOperationReference";
+  private static final String TAGS_PROPERTY = "tags";
+  private static final String RESULT_PROPERTY = "result";
+  private static final String DENIED_REASON_PROPERTY = "deniedReason";
+  private static final String RUNTIME_INSTRUCTIONS_PROPERTY = "runtimeInstructions";
+  private static final String ELEMENT_INSTANCE_PATH_PROPERTY = "elementInstancePath";
+  private static final String PROCESS_DEFINITION_PATH_PROPERTY = "processDefinitionPath";
+  private static final String CALLING_ELEMENT_PATH_PROPERTY = "callingElementPath";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -81,10 +107,12 @@ final class BulkIndexRequest implements ContentProducer {
 
   private static byte[] serializeRecord(final Record<?> record, final RecordSequence recordSequence)
       throws IOException {
-    return MAPPER
+    final var mapper =
+        isPreviousVersionRecord(record.getBrokerVersion()) ? PREVIOUS_VERSION_MAPPER : MAPPER;
+    return mapper
         .writer()
         // Enhance the serialized record by its sequence number. The sequence number is not a part
-        // of the record itself but a special property for Opensearch. It can be used to limit
+        // of the record itself but a special property for Elasticsearch. It can be used to limit
         // the number of records when reading from the index, for example, by using a range query.
         // Read https://github.com/camunda/camunda/issues/10568 for details.
         .withAttribute(RECORD_SEQUENCE_PROPERTY, recordSequence.sequence())
@@ -137,6 +165,22 @@ final class BulkIndexRequest implements ContentProducer {
     }
   }
 
+  private static boolean isPreviousVersionRecord(final String brokerVersion) {
+    final SemanticVersion semanticVersion =
+        SemanticVersion.parse(brokerVersion)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Expected to parse valid semantic version, but got [%s]"
+                            .formatted(brokerVersion)));
+    final int currentMinorVersion =
+        VersionUtil.getSemanticVersion()
+            .map(SemanticVersion::minor)
+            .orElseThrow(
+                () -> new IllegalStateException("Expected to have a valid semantic version"));
+    return semanticVersion.minor() < currentMinorVersion;
+  }
+
   record BulkOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
@@ -145,4 +189,28 @@ final class BulkIndexRequest implements ContentProducer {
 
   @JsonIgnoreProperties({RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY})
   private static final class EvaluatedDecisionMixin {}
+
+  @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
+  @JsonIgnoreProperties({BATCH_OPERATION_REFERENCE_PROPERTY, RECORD_AUTHORIZATIONS_PROPERTY})
+  private static final class RecordMetadata87Mixin {}
+
+  @JsonIgnoreProperties({
+    TAGS_PROPERTY,
+    ELEMENT_INSTANCE_PATH_PROPERTY,
+    PROCESS_DEFINITION_PATH_PROPERTY,
+    CALLING_ELEMENT_PATH_PROPERTY,
+  })
+  private static final class ProcessInstance87Mixin {}
+
+  @JsonIgnoreProperties({TAGS_PROPERTY, RUNTIME_INSTRUCTIONS_PROPERTY})
+  private static final class ProcessInstanceCreation87Mixin {}
+
+  @JsonIgnoreProperties({TAGS_PROPERTY})
+  private static final class ProcessInstanceResult87Mixin {}
+
+  @JsonIgnoreProperties({DENIED_REASON_PROPERTY})
+  private static final class UserTask87Mixin {}
+
+  @JsonIgnoreProperties({RESULT_PROPERTY, TAGS_PROPERTY})
+  private static final class Job87Mixin {}
 }

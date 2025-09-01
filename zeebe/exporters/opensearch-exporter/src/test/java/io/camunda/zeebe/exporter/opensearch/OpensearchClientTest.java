@@ -130,8 +130,12 @@ final class OpensearchClientTest {
     @Test
     void shouldFlushOnMemoryLimit() {
       // given
-      final var firstRecord = factory.generateRecord(ValueType.DECISION);
-      final var secondRecord = factory.generateRecord(ValueType.VARIABLE);
+      final var firstRecord =
+          factory.generateRecord(
+              r -> r.withBrokerVersion(VersionUtil.getVersion()).withValueType(ValueType.DECISION));
+      final var secondRecord =
+          factory.generateRecord(
+              r -> r.withBrokerVersion(VersionUtil.getVersion()).withValueType(ValueType.VARIABLE));
 
       // when - index a single record, then set the memory limit specifically to be its size + 1
       // this decouples the test from whatever is used to serialize the record
@@ -148,8 +152,10 @@ final class OpensearchClientTest {
     void shouldFlushOnSizeLimit() {
       // given
       config.bulk.size = 2;
-      final var firstRecord = factory.generateRecord();
-      final var secondRecord = factory.generateRecord();
+      final var firstRecord =
+          factory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersion()));
+      final var secondRecord =
+          factory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersion()));
 
       // when
       client.index(firstRecord, new RecordSequence(PARTITION_ID, 1));
@@ -179,7 +185,9 @@ final class OpensearchClientTest {
           mockClientResponse(new BulkIndexResponse(false, List.of()));
 
       // when
-      client.index(factory.generateRecord(), new RecordSequence(PARTITION_ID, 1));
+      client.index(
+          factory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersion())),
+          new RecordSequence(PARTITION_ID, 1));
       client.flush();
 
       // then
@@ -199,7 +207,9 @@ final class OpensearchClientTest {
       mockClientResponse(new BulkIndexResponse(false, List.of()));
 
       // when
-      client.index(factory.generateRecord(), new RecordSequence(PARTITION_ID, 1));
+      client.index(
+          factory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersion())),
+          new RecordSequence(PARTITION_ID, 1));
       client.flush();
 
       // then
@@ -214,7 +224,9 @@ final class OpensearchClientTest {
       doThrow(failure).when(restClient).performRequest(any());
 
       // when
-      client.index(factory.generateRecord(), new RecordSequence(PARTITION_ID, 1));
+      client.index(
+          factory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersion())),
+          new RecordSequence(PARTITION_ID, 1));
       assertThatCode(client::flush).isEqualTo(failure);
 
       // then
