@@ -16,7 +16,7 @@
 package io.camunda.client.api.search.enums;
 
 public enum MessageSubscriptionType {
-  CORRELATED,
   CREATED,
   MIGRATED,
+  UNKNOWN_ENUM_VALUE
 }

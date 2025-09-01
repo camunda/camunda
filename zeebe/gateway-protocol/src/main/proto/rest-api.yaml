@@ -4343,7 +4343,6 @@ paths:
   /message-subscriptions/search:
     post:
       tags:
-        - Message
         - Message subscription
       operationId: searchMessageSubscriptions
       summary: Search message subscriptions
@@ -7228,7 +7227,6 @@ components:
       enum:
         - CREATED
         - MIGRATED
-        - CORRELATED
     AdvancedMessageSubscriptionTypeFilter:
       title: Advanced filter
       description: Advanced MessageSubscriptionTypeEnum filter
