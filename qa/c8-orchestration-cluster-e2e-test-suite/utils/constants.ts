@@ -98,9 +98,12 @@ export const createUserAuthorization = (authRole: {name: string}) => ({
   accessPermissions: ['update', 'create', 'read', 'delete'],
 });
 
-export const createComponentAuthorization = (authRole: {name: string}) => ({
-  ownerType: 'Role',
-  ownerId: authRole.name,
+export const createComponentAuthorization = (
+  owner: {name: string},
+  ownerType: 'Role' | 'User' | 'Group' = 'Role',
+) => ({
+  ownerType,
+  ownerId: owner.name,
   resourceType: 'Component',
   resourceId: '*',
   accessPermissions: ['access'],
