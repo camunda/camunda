@@ -98,24 +98,24 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
       final String osUrl =
           String.format("http://%s:%s", opensearch.getHost(), opensearch.getMappedPort(9200));
       TestPropertyValues.of(
-              // Unified Config compatibility: DB type
+              // Unified Configuration
               "camunda.data.secondary-storage.type=opensearch",
-              "camunda.database.type=opensearch",
-              "camunda.operate.database=opensearch",
-              "camunda.tasklist.database=opensearch",
-              // Unified Config compatibility: DB URL
               "camunda.data.secondary-storage.opensearch.url=" + osUrl,
+              "camunda.data.secondary-storage.opensearch.cluster-name=docker-cluster",
+
+              // TODO: The following legacy values are set somewhere equal to http://localhost:9200.
+              //  We should find them and unset them, so that they don't cause conflicts. In the
+              //  meantime, this test can run in double configuration mode.
               "camunda.database.url=" + osUrl,
               "camunda.tasklist.opensearch.url=" + osUrl,
               "camunda.operate.opensearch.url=" + osUrl,
               // ---
+
               "camunda.tasklist.opensearch.username=opensearch",
               "camunda.tasklist.opensearch.password=changeme",
-              "camunda.tasklist.opensearch.clusterName=docker-cluster",
               "camunda.tasklist.zeebeOpensearch.url=" + osUrl,
               "camunda.tasklist.zeebeOpensearch.username=opensearch",
               "camunda.tasklist.zeebeOpensearch.password=changeme",
-              "camunda.tasklist.zeebeOpensearch.clusterName=docker-cluster",
               "camunda.tasklist.zeebeOpensearch.prefix=zeebe-record")
           .applyTo(applicationContext.getEnvironment());
     }
