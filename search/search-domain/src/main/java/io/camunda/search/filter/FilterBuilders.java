@@ -252,4 +252,14 @@ public final class FilterBuilders {
           fn) {
     return fn.apply(messageSubscription()).build();
   }
+
+  public static CorrelatedMessageFilter.Builder correlatedMessage() {
+    return new CorrelatedMessageFilter.Builder();
+  }
+
+  public static CorrelatedMessageFilter correlatedMessage(
+      final Function<CorrelatedMessageFilter.Builder, ObjectBuilder<CorrelatedMessageFilter>>
+          fn) {
+    return fn.apply(correlatedMessage()).build();
+  }
 }

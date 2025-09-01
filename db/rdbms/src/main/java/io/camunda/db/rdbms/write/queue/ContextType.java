@@ -29,7 +29,8 @@ public enum ContextType {
   SEQUENCE_FLOW(false),
   USAGE_METRIC(false),
   USAGE_METRIC_TU(false),
-  MESSAGE_SUBSCRIPTION(false);
+  MESSAGE_SUBSCRIPTION(false),
+  CORRELATED_MESSAGE(false);
 
   private final boolean preserveOrder;
 
