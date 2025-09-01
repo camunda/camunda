@@ -179,7 +179,7 @@ paths:
       responses:
         '200':
           description: OK
-          $ref: '#/components/responses/HistoryBackupInfo'
+          $ref: '#/components/responses/HistoryBackupDetail'
         '404':
           description: Backup with given ID does not exist.
           $ref: '#/components/responses/Error'
