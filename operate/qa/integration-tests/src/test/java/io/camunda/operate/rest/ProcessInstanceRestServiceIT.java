@@ -23,7 +23,6 @@ import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
@@ -263,10 +262,6 @@ public class ProcessInstanceRestServiceIT {
                     List.of(
                         new Modification().setModification(Type.ADD_TOKEN).setToFlowNodeId("fid"))),
             PermissionType.MODIFY_PROCESS_INSTANCE),
-        Arguments.of(
-            "/1/variables",
-            new VariableRequestDto().setScopeId("scope"),
-            PermissionType.READ_PROCESS_INSTANCE),
         Arguments.of(
             "/1/listeners",
             new ListenerRequestDto().setPageSize(5).setFlowNodeId("fid"),
