@@ -56,7 +56,7 @@ public class DbUsageMetricStateTest {
     // then
     final var actual = state.getOrCreateActiveBucket();
     assertThat(actual.getFromTime()).isEqualTo(1L);
-    assertThat(actual.getToTime()).isEqualTo(1001L);
+    assertThat(actual.getToTime()).isEqualTo(-1L);
     assertThat(actual.getTenantRPIMap()).isEmpty();
     assertThat(actual.getTenantEDIMap()).isEmpty();
     assertThat(actual.getTenantTUMap()).isEmpty();
@@ -80,7 +80,7 @@ public class DbUsageMetricStateTest {
     // then
     final var actual = state.getOrCreateActiveBucket();
     assertThat(actual.getFromTime()).isEqualTo(1L);
-    assertThat(actual.getToTime()).isEqualTo(1001L);
+    assertThat(actual.getToTime()).isEqualTo(-1L);
     assertThat(actual.getTenantRPIMap())
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L, "tenant1", 3L, "tenant2", 1L));
@@ -104,7 +104,7 @@ public class DbUsageMetricStateTest {
     // then
     final var actual = state.getOrCreateActiveBucket();
     assertThat(actual.getFromTime()).isEqualTo(1L);
-    assertThat(actual.getToTime()).isEqualTo(1001L);
+    assertThat(actual.getToTime()).isEqualTo(-1L);
     assertThat(actual.getTenantEDIMap())
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L, "tenant1", 3L, "tenant2", 1L));
@@ -129,7 +129,7 @@ public class DbUsageMetricStateTest {
     // then
     final var actual = state.getOrCreateActiveBucket();
     assertThat(actual.getFromTime()).isEqualTo(1L);
-    assertThat(actual.getToTime()).isEqualTo(1001L);
+    assertThat(actual.getToTime()).isEqualTo(-1L);
     assertThat(actual.getTenantTUMap())
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(
