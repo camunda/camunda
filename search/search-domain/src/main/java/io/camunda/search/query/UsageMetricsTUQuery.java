@@ -10,12 +10,16 @@ package io.camunda.search.query;
 import io.camunda.search.aggregation.UsageMetricsTUAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.UsageMetricsTUFilter;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.sort.NoSort;
+import io.camunda.search.sort.SortOption;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
 public record UsageMetricsTUQuery(UsageMetricsTUFilter filter)
-    implements TypedSearchAggregationQuery<UsageMetricsTUFilter, UsageMetricsTUAggregation> {
+    implements TypedSearchAggregationQuery<
+        UsageMetricsTUFilter, SortOption, UsageMetricsTUAggregation> {
 
   public static UsageMetricsTUQuery of(
       final Function<Builder, ObjectBuilder<UsageMetricsTUQuery>> fn) {
@@ -23,8 +27,18 @@ public record UsageMetricsTUQuery(UsageMetricsTUFilter filter)
   }
 
   @Override
+  public SortOption sort() {
+    return NoSort.NO_SORT;
+  }
+
+  @Override
   public UsageMetricsTUAggregation aggregation() {
     return new UsageMetricsTUAggregation(filter);
+  }
+
+  @Override
+  public SearchQueryPage page() {
+    return SearchQueryPage.NO_ENTITIES_QUERY;
   }
 
   public static final class Builder implements ObjectBuilder<UsageMetricsTUQuery> {

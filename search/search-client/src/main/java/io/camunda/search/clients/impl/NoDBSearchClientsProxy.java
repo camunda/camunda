@@ -24,6 +24,7 @@ import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionProcessInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -52,6 +53,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
+import io.camunda.search.query.ProcessDefinitionProcessInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
@@ -202,6 +204,12 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   public List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public SearchQueryResult<ProcessDefinitionProcessInstanceStatisticsEntity> processDefinitionProcessInstanceStatistics(
+      final ProcessDefinitionProcessInstanceStatisticsQuery query) {
+    throw  new NoSecondaryStorageException();
   }
 
   @Override

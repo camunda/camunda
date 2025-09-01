@@ -207,4 +207,9 @@ public final class SearchQueryBuilders {
       final Function<CorrelatedMessageQuery.Builder, ObjectBuilder<CorrelatedMessageQuery>> fn) {
     return fn.apply(correlatedMessageSearchQuery()).build();
   }
+
+  public static ProcessDefinitionProcessInstanceStatisticsQuery.Builder
+      processDefinitionProcessInstanceStatisticsQuery() {
+    return new ProcessDefinitionProcessInstanceStatisticsQuery.Builder();
+  }
 }

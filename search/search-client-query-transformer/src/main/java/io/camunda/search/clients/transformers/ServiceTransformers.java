@@ -10,12 +10,13 @@ package io.camunda.search.clients.transformers;
 import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation;
+import io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation;
 import io.camunda.search.aggregation.UsageMetricsAggregation;
 import io.camunda.search.aggregation.UsageMetricsTUAggregation;
-import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionLatestVersionAggregationResult;
+import io.camunda.search.aggregation.result.ProcessDefinitionProcessInstanceStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.UsageMetricsAggregationResult;
 import io.camunda.search.aggregation.result.UsageMetricsTUAggregationResult;
@@ -26,12 +27,14 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.aggregation.AggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionLatestVersionAggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessInstanceFlowNodeStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.UsageMetricsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.UsageMetricsTUAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.AggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionLatestVersionAggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionProcessInstanceStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.UsageMetricsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.UsageMetricsTUAggregationResultTransformer;
@@ -77,6 +80,7 @@ import io.camunda.search.clients.transformers.filter.JobFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MappingRuleFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MessageSubscriptionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
+import io.camunda.search.clients.transformers.filter.ProcessDefinitionProcessInstanceStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceStatisticsFilterTransformer;
@@ -133,6 +137,7 @@ import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.filter.ProcessDefinitionProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
@@ -160,6 +165,8 @@ import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionProcessInstanceStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionProcessInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -278,8 +285,8 @@ public final class ServiceTransformers {
     return (FilterTransformer<F>) transformer;
   }
 
-  public <A extends AggregationResultBase>
-      AggregationResultTransformer<A> getSearchAggregationResultTransformer(final Class<A> cls) {
+  public <A> AggregationResultTransformer<A> getSearchAggregationResultTransformer(
+      final Class<A> cls) {
     final ServiceTransformer<Map<String, AggregationResult>, A> transformer = getTransformer(cls);
     return (AggregationResultTransformer<A>) transformer;
   }
@@ -330,6 +337,7 @@ public final class ServiceTransformers {
             MessageSubscriptionQuery.class,
             ProcessDefinitionQuery.class,
             ProcessDefinitionFlowNodeStatisticsQuery.class,
+            ProcessDefinitionProcessInstanceStatisticsQuery.class,
             ProcessInstanceQuery.class,
             ProcessInstanceFlowNodeStatisticsQuery.class,
             RoleQuery.class,
@@ -473,6 +481,11 @@ public final class ServiceTransformers {
         CorrelatedMessageFilter.class,
         new CorrelatedMessageFilterTransformer(
             indexDescriptors.get(CorrelatedMessageTemplate.class)));
+    mappers.put(
+        ProcessDefinitionProcessInstanceStatisticsFilter.class,
+        new ProcessDefinitionProcessInstanceStatisticsFilterTransformer(
+            indexDescriptors.get(ListViewTemplate.class)));
+
     // result config -> source config
     mappers.put(
         DecisionInstanceQueryResultConfig.class, new DecisionInstanceResultConfigTransformer());
@@ -494,6 +507,9 @@ public final class ServiceTransformers {
         new ProcessDefinitionLatestVersionAggregationTransformer());
     mappers.put(UsageMetricsAggregation.class, new UsageMetricsAggregationTransformer());
     mappers.put(UsageMetricsTUAggregation.class, new UsageMetricsTUAggregationTransformer());
+    mappers.put(
+        ProcessDefinitionProcessInstanceStatisticsAggregation.class,
+        new ProcessDefinitionProcessInstanceStatisticsAggregationTransformer());
 
     // aggregation result
     mappers.put(
@@ -509,5 +525,8 @@ public final class ServiceTransformers {
         UsageMetricsAggregationResult.class, new UsageMetricsAggregationResultTransformer());
     mappers.put(
         UsageMetricsTUAggregationResult.class, new UsageMetricsTUAggregationResultTransformer());
+    mappers.put(
+        ProcessDefinitionProcessInstanceStatisticsAggregationResult.class,
+        new ProcessDefinitionProcessInstanceStatisticsAggregationResultTransformer());
   }
 }

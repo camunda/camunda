@@ -261,4 +261,18 @@ public final class FilterBuilders {
       final Function<CorrelatedMessageFilter.Builder, ObjectBuilder<CorrelatedMessageFilter>> fn) {
     return fn.apply(correlatedMessage()).build();
   }
+
+  public static ProcessDefinitionProcessInstanceStatisticsFilter.Builder
+      processDefinitionProcessInstanceStatistics() {
+    return new ProcessDefinitionProcessInstanceStatisticsFilter.Builder();
+  }
+
+  public static ProcessDefinitionProcessInstanceStatisticsFilter
+      processDefinitionProcessInstanceStatistics(
+          final Function<
+                  ProcessDefinitionProcessInstanceStatisticsFilter.Builder,
+                  ObjectBuilder<ProcessDefinitionProcessInstanceStatisticsFilter>>
+              fn) {
+    return fn.apply(processDefinitionProcessInstanceStatistics()).build();
+  }
 }
