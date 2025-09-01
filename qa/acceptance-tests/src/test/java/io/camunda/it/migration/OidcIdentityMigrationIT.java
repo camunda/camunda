@@ -192,6 +192,11 @@ public class OidcIdentityMigrationIT {
               assertThat(roles.items())
                   .extracting(Role::getRoleId)
                   .contains("operate", "tasklist", "zeebe", "identity");
+
+              final var authorizations = client.newAuthorizationSearchRequest().send().join();
+              assertThat(authorizations.items())
+                  .extracting(Authorization::getOwnerId)
+                  .contains("operate", "tasklist", "zeebe", "identity");
             });
 
     // then
