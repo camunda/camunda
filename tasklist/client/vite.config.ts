@@ -70,6 +70,9 @@ export default defineConfig(({mode}) => ({
       src: path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    exclude: ['monaco-editor'],
+  },
   test: {
     globals: true,
     environment: 'jsdom',
