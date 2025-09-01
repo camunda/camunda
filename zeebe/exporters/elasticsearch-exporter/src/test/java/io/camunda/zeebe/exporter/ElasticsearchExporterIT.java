@@ -20,13 +20,25 @@ import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapp
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableDeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableForm;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -226,6 +238,136 @@ final class ElasticsearchExporterIT {
         .get()
         .extracting(ComponentTemplateWrapper::name)
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+  void shouldExportRecordsOnPreviousVersion(final ValueType valueType) {
+    // given
+    exporter.configure(exporterTestContext);
+    exporter.open(controller);
+
+    final var record = factory.generateRecord(valueType, r -> r.withBrokerVersion("8.5.0"));
+
+    // when
+    export(record);
+
+    // then
+    final var response = testClient.getExportedDocumentFor(record);
+    assertThat(response)
+        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
+        .containsExactly(
+            indexRouter.indexFor(record),
+            indexRouter.idFor(record),
+            String.valueOf(record.getPartitionId()),
+            modifyExpectedRecordForPreviousVersion(valueType, record));
+  }
+
+  private Record modifyExpectedRecordForPreviousVersion(
+      final ValueType valueType, final Record record) {
+    // For 8.5.0 version, we need to remove fields that are not serialized due to Jackson mixins
+    final var copyFactory = new ProtocolFactory(factory.getSeed());
+    final var recordValue =
+        modifyExpectedRecordValueForPreviousVersion(valueType, record.getValue());
+
+    // Also remove operationReference from the record itself for 8.5.0
+    return ImmutableRecord.builder()
+        .from(record)
+        .withValue(recordValue)
+        .withOperationReference(0L)
+        .build();
+  }
+
+  private static <T extends RecordValue> T modifyExpectedRecordValueForPreviousVersion(
+      final ValueType valueType, final T value) {
+    final T recordValue =
+        (T)
+            switch (valueType) {
+              case DEPLOYMENT ->
+                  ImmutableDeploymentRecordValue.builder()
+                      .from(((ImmutableDeploymentRecordValue) value))
+                      .withDecisionsMetadata(
+                          ((ImmutableDeploymentRecordValue) value)
+                              .getDecisionsMetadata().stream()
+                                  .map(
+                                      decisionRecordValue ->
+                                          modifyExpectedRecordValueForPreviousVersion(
+                                              ValueType.DECISION, decisionRecordValue))
+                                  .toList())
+                      .withFormMetadata(
+                          ((ImmutableDeploymentRecordValue) value)
+                              .getFormMetadata().stream()
+                                  .map(
+                                      formMetadataValue ->
+                                          modifyExpectedRecordValueForPreviousVersion(
+                                              ValueType.FORM, formMetadataValue))
+                                  .toList())
+                      .withProcessesMetadata(
+                          ((ImmutableDeploymentRecordValue) value)
+                              .getProcessesMetadata().stream()
+                                  .map(
+                                      processMetadataValue ->
+                                          modifyExpectedRecordValueForPreviousVersion(
+                                              ValueType.PROCESS, processMetadataValue))
+                                  .toList())
+                      .withDeploymentKey(0L)
+                      .build();
+              case DECISION ->
+                  ImmutableDecisionRecordValue.builder()
+                      .from(((DecisionRecordValue) value))
+                      .withDeploymentKey(0L)
+                      .withVersionTag(null)
+                      .build();
+              case FORM ->
+                  ImmutableForm.builder()
+                      .from(((FormMetadataValue) value))
+                      .withDeploymentKey(0L)
+                      .withVersionTag(null)
+                      .build();
+              case PROCESS ->
+                  ImmutableProcess.builder()
+                      .from(((ProcessMetadataValue) value))
+                      .withDeploymentKey(0L)
+                      .withVersionTag(null)
+                      .build();
+              case COMMAND_DISTRIBUTION ->
+                  ImmutableCommandDistributionRecordValue.builder()
+                      .from(((ImmutableCommandDistributionRecordValue) value))
+                      .withQueueId(null)
+                      .build();
+              case USER_TASK ->
+                  ImmutableUserTaskRecordValue.builder()
+                      .from(((ImmutableUserTaskRecordValue) value))
+                      .withPriority(0)
+                      .build();
+              case INCIDENT ->
+                  ImmutableIncidentRecordValue.builder()
+                      .from(((IncidentRecordValue) value))
+                      .withElementInstancePath(List.of())
+                      .withProcessDefinitionPath(List.of())
+                      .withCallingElementPath(List.of())
+                      .build();
+              case JOB ->
+                  ImmutableJobRecordValue.builder()
+                      .from(((JobRecordValue) value))
+                      .withJobListenerEventType(null)
+                      .withChangedAttributes(List.of())
+                      .build();
+              case JOB_BATCH ->
+                  ImmutableJobBatchRecordValue.builder()
+                      .from((JobBatchRecordValue) value)
+                      .withJobs(
+                          ((JobBatchRecordValue) value)
+                              .getJobs().stream()
+                                  .map(
+                                      jobRecordValue ->
+                                          modifyExpectedRecordValueForPreviousVersion(
+                                              ValueType.JOB, jobRecordValue))
+                                  .toList())
+                      .build();
+              default -> value;
+            };
+    return recordValue;
   }
 
   private boolean export(final Record<?> record) {
