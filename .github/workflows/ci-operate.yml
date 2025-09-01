@@ -303,7 +303,7 @@ jobs:
 
   operate-update-screenshots:
     if: inputs.runFeTests
-    name: "Tool / FE / Update Screenshots"
+    name: "Tool / Front End / Update Screenshots"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
