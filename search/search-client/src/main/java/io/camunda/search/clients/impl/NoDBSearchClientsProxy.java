@@ -205,9 +205,10 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<ProcessDefinitionProcessInstanceStatisticsEntity> processDefinitionProcessInstanceStatistics(
-      final ProcessDefinitionProcessInstanceStatisticsQuery query) {
-    throw  new NoSecondaryStorageException();
+  public SearchQueryResult<ProcessDefinitionProcessInstanceStatisticsEntity>
+      processDefinitionProcessInstanceStatistics(
+          final ProcessDefinitionProcessInstanceStatisticsQuery query) {
+    throw new NoSecondaryStorageException();
   }
 
   @Override
