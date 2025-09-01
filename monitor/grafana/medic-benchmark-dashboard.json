@@ -87,7 +87,7 @@
       },
       "id": 282,
       "panels": [],
-      "title": "Normal Benchmarks",
+      "title": "Normal Load Tests",
       "type": "row"
     },
     {
@@ -351,7 +351,7 @@
       },
       "id": 280,
       "panels": [],
-      "title": "Mixed Benchmarks",
+      "title": "Mixed Load Tests",
       "type": "row"
     },
     {
@@ -619,7 +619,7 @@
       },
       "id": 286,
       "panels": [],
-      "title": "Latency Benchmarks",
+      "title": "Latency Load Tests",
       "type": "row"
     },
     {
@@ -1373,7 +1373,7 @@
       },
       "id": 284,
       "panels": [],
-      "title": "Medic Benchmarks Health",
+      "title": "Medic Load Tests Health",
       "type": "row"
     },
     {
@@ -1935,7 +1935,7 @@
       },
       "id": 290,
       "panels": [],
-      "title": "Release benchmarks",
+      "title": "Release Load Tests",
       "type": "row"
     },
     {
@@ -3051,7 +3051,7 @@
     ]
   },
   "timezone": "",
-  "title": "Zeebe Medic Benchmarks",
+  "title": "Zeebe Medic Load Tests",
   "uid": "zeebe-medic-benchmark",
   "version": 5,
   "weekStart": ""
