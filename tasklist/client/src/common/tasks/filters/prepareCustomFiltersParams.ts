@@ -26,6 +26,7 @@ function prepareCustomFiltersParams(
     taskId,
   } = body;
   const params: Record<string, string> = {};
+  const {clientMode} = getClientConfig();
 
   if (body === undefined) {
     return params;
@@ -63,7 +64,11 @@ function prepareCustomFiltersParams(
   }
 
   if (tenant !== undefined) {
-    params.tenantIds = JSON.stringify([tenant]);
+    if (clientMode === 'v1') {
+      params.tenantIds = JSON.stringify([tenant]);
+    } else {
+      params.tenantId = tenant;
+    }
   }
 
   if (dueDateFrom !== undefined) {
@@ -83,7 +88,7 @@ function prepareCustomFiltersParams(
   }
 
   if (taskId !== undefined) {
-    if (getClientConfig().clientMode === 'v1') {
+    if (clientMode === 'v1') {
       params.taskDefinitionId = taskId;
     } else {
       params.elementId = taskId;

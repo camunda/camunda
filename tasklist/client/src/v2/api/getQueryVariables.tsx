@@ -125,6 +125,7 @@ function convertFiltersToQueryVariables(
     dueDateTo,
     followUpDateFrom,
     followUpDateTo,
+    assigned,
     ...restFilters
   } = filters;
   const numberFilters =
@@ -167,6 +168,12 @@ function convertFiltersToQueryVariables(
     updatedFilters.followUpDate = {
       $gte: followUpDateFrom.toISOString(),
       $lte: followUpDateTo.toISOString(),
+    };
+  }
+
+  if (assigned !== undefined && !assigned) {
+    updatedFilters.assignee = {
+      $exists: false,
     };
   }
 
