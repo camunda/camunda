@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.schema;
+package io.camunda.search.schema.opensearch;
 
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
@@ -21,9 +21,12 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.schema.IndexMappingProperty;
+import io.camunda.search.schema.MappingSource;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
-import io.camunda.search.schema.opensearch.OpensearchEngineClient;
+import io.camunda.search.schema.opensearch.OpensearchEngineClient.ISMPolicyState;
 import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -54,12 +57,13 @@ public class OpensearchEngineClientIT {
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
   private static OpenSearchClient openSearchClient;
+  private static ObjectMapper objectMapper;
   private static OpensearchEngineClient opensearchEngineClient;
 
   @BeforeAll
   public static void init() {
     openSearchClient = SEARCH_DB.osClient();
-    final var objectMapper =
+    objectMapper =
         ((JacksonJsonpMapper) openSearchClient._transport().jsonpMapper()).objectMapper();
     opensearchEngineClient = new OpensearchEngineClient(openSearchClient, objectMapper);
   }
@@ -303,6 +307,54 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policies not allowed for shared DBs")
+  void shouldReturnEmptyISMPolicyStateIfIndexLifeCyclePolicyNotFound() throws IOException {
+    // when
+    final ISMPolicyState ismPolicyState =
+        opensearchEngineClient.getCurrentISMPolicyState("unknown_policy_name");
+
+    // then: verify the empty state is returned
+    assertThat(ismPolicyState.exists()).isFalse();
+  }
+
+  @Test
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policies not allowed for shared DBs")
+  void shouldAlwaysUpdateIndexLifeCyclePolicyEvenIfExistingHasSameValue() throws IOException {
+    // given
+    opensearchEngineClient.putIndexLifeCyclePolicy("policy_name", "20d");
+
+    // then: policy state after first creation
+    final ISMPolicyState policyStateAfterCreation =
+        opensearchEngineClient.getCurrentISMPolicyState("policy_name");
+
+    // then: verify state after creation
+    assertThat(policyStateAfterCreation.exists()).isTrue();
+    assertThat(policyStateAfterCreation.seqNo()).isEqualTo(0); // first creation has seq no 0
+    assertThat(getPolicyMinAge("policy_name")).isEqualTo("20d");
+
+    // when: update ISM with same parameters
+    assertThatNoException()
+        .isThrownBy(() -> opensearchEngineClient.putIndexLifeCyclePolicy("policy_name", "20d"));
+
+    // then: policy state after first creation
+    final ISMPolicyState policyStateAfterUpdate =
+        opensearchEngineClient.getCurrentISMPolicyState("policy_name");
+
+    // then: state seq no should increment, but others should remain the same
+    assertThat(policyStateAfterUpdate.exists()).isTrue();
+    assertThat(policyStateAfterUpdate.primaryTerm())
+        .isEqualTo(policyStateAfterCreation.primaryTerm());
+    assertThat(policyStateAfterUpdate.seqNo()).isGreaterThan(policyStateAfterCreation.seqNo());
+    assertThat(getPolicyMinAge("policy_name")).isEqualTo("20d");
+  }
+
+  @Test
   void shouldFailIfIndexStateManagementPolicyInvalid() {
     // given, when, then
     assertThatThrownBy(
@@ -390,6 +442,24 @@ public class OpensearchEngineClientIT {
 
     // then
     verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  private String getPolicyMinAge(final String policyName) throws IOException {
+    final var request =
+        Requests.builder().method("GET").endpoint("_plugins/_ism/policies/" + policyName).build();
+
+    final var policyJsonNode =
+        objectMapper.readTree(openSearchClient.generic().execute(request).getBody().get().body());
+
+    return policyJsonNode
+        .path("policy")
+        .path("states")
+        .path(0)
+        .path("transitions")
+        .path(0)
+        .path("conditions")
+        .get("min_index_age")
+        .asText();
   }
 
   @Nested
