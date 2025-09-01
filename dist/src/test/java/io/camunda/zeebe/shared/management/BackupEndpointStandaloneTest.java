@@ -31,14 +31,14 @@ public abstract class BackupEndpointStandaloneTest {
 
   @Test
   public void shouldCallListWhenIsStandalone() {
-    backupEndpointStandalone.list();
-    verify(backupEndpoint).list();
+    backupEndpointStandalone.query(null);
+    verify(backupEndpoint).query(null);
   }
 
   @Test
   public void shouldCallGetWhenIsStandalone() {
-    backupEndpointStandalone.status(11L);
-    verify(backupEndpoint).status(11L);
+    backupEndpointStandalone.query("11");
+    verify(backupEndpoint).query("11");
   }
 
   @Test
