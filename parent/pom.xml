@@ -976,6 +976,12 @@
         <version>${version.zpt}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-gateway-validation</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- Third party dependencies -->
       <dependency>
         <groupId>org.junit</groupId>

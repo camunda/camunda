@@ -37,6 +37,10 @@ import io.camunda.zeebe.gateway.rest.deserializer.MessageSubscriptionTypePropert
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.UserTaskStateFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.validation.OneOfGroup;
+import io.camunda.zeebe.gateway.validation.runtime.jackson.TokenCaptureModule;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import java.util.function.Consumer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -77,7 +81,27 @@ public class JacksonConfig {
         new MessageSubscriptionTypePropertyDeserializer());
     module.addDeserializer(
         UserTaskStateFilterProperty.class, new UserTaskStateFilterPropertyDeserializer());
-    return builder -> builder.modulesToInstall(modules -> modules.add(module));
+                        return builder -> builder.modulesToInstall(modules -> {
+                                modules.add(module);
+                                try {
+                                    final ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+                                    scanner.addIncludeFilter(new AnnotationTypeFilter(OneOfGroup.class));
+                                    final java.util.List<Class<?>> targets = new java.util.ArrayList<>();
+                                    // Scan protocol REST package (adjust base packages if needed)
+                                    for (var bd : scanner.findCandidateComponents("io.camunda.zeebe.gateway.protocol.rest")) {
+                                        try {
+                                            final Class<?> c = Class.forName(bd.getBeanClassName());
+                                            final OneOfGroup ann = c.getAnnotation(OneOfGroup.class);
+                                            if (ann != null && (ann.captureRawTokens() || ann.strictTokenKinds())) {
+                                                targets.add(c);
+                                            }
+                                        } catch (ClassNotFoundException ignored) { }
+                                    }
+                                    modules.add(TokenCaptureModule.forClasses(targets.toArray(Class[]::new))); // owner: validation
+                                } catch (Exception e) {
+                                    modules.add(TokenCaptureModule.forClasses()); // fallback
+                                }
+                        });
   }
 
   @Bean("gatewayRestObjectMapper")

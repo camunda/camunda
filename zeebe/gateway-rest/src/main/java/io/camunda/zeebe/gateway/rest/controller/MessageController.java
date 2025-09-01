@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
+@Validated
 @RequestMapping("/v2/messages")
 public class MessageController {
 
@@ -55,6 +56,21 @@ public class MessageController {
             correlationRequest, multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::correlateMessage);
   }
+
+// @CamundaPostMapping(path = "/correlation")
+// public CompletableFuture<ResponseEntity<Object>> correlateMessage(
+//     @RequestBody @OneOfGroup(
+//         value = "MessageCorrelationRequest", // group id from generated descriptors
+//         strictExtra = true,
+//         strictTokenKinds = true,
+//         captureRawTokens = true,
+//         failOnAmbiguous = true
+//     ) final MessageCorrelationRequest correlationRequest) {
+//   return RequestMapper.toMessageCorrelationRequest(
+//           correlationRequest, multiTenancyCfg.isChecksEnabled())
+//       .fold(RestErrorMapper::mapProblemToCompletedResponse, this::correlateMessage);
+// }
+
 
   private CompletableFuture<ResponseEntity<Object>> correlateMessage(
       final CorrelateMessageRequest correlationRequest) {
