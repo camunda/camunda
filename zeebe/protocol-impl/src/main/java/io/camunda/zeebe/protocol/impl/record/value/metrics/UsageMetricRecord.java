@@ -139,4 +139,8 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
   public DirectBuffer getSetValueBuffer() {
     return setValuesProp.getValue();
   }
+
+  public boolean hasData() {
+    return !(getCounterValues().isEmpty() && getSetValues().isEmpty());
+  }
 }

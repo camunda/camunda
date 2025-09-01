@@ -12,6 +12,4 @@ import io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics;
 public interface UsageMetricState {
 
   PersistedUsageMetrics getActiveBucket();
-
-  PersistedUsageMetrics getOrCreateActiveBucket();
 }

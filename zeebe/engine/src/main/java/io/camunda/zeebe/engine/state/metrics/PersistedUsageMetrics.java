@@ -37,10 +37,6 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
         .declareProperty(tenantTUMapProp);
   }
 
-  public boolean isInitialized() {
-    return fromTimeProp.getValue() != TIME_NOT_SET && toTimeProp.getValue() != TIME_NOT_SET;
-  }
-
   public long getFromTime() {
     return fromTimeProp.getValue();
   }
@@ -121,5 +117,14 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
       setTenantTUMap(tenantTUMap);
     }
     return this;
+  }
+
+  public PersistedUsageMetrics close(final long time) {
+    if (getFromTime() == TIME_NOT_SET) {
+      // initialize fromTime in case metrics were recorded before the first checker run
+      setFromTime(time);
+    }
+    setToTime(time);
+    return this; // return copy
   }
 }
