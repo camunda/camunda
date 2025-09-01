@@ -57,10 +57,8 @@ jobs:
           COMPARE_URL: ${{ github.event.compare }}
           REPO_URL: ${{ github.event.repository.html_url }}
         run: |
-          # Set bash strict mode for better error handling
           set -euo pipefail
           
-          # Initialize variables
           ACTION_TYPE=""
           BRANCH_NAME=""
           AUTHOR=""
