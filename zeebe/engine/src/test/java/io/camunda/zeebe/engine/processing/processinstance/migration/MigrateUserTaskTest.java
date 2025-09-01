@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -425,5 +426,63 @@ public class MigrateUserTaskTest {
                 .findAny())
         .describedAs("Expect that the process instance is continued in the target process")
         .isPresent();
+  }
+
+  @Test
+  public void shouldMigrateUserTaskWithIncident() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .zeebeFormId("invalidformid")
+                    .zeebeUserTask()
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .zeebeUserTask()
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.USER_TASK)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasVersion(1)
+        .hasElementId("B");
   }
 }
