@@ -159,18 +159,17 @@ jobs:
             {
               "blocks": [
                 {
-                  "type": "header",
+                  "type": "section",
                   "text": {
-                    "type": "plain_text",
-                    "text": "📢 Monorepo Release Branch Activity",
-                    "emoji": true
+                    "type": "mrkdwn",
+                    "text": "📢 *Monorepo Release Branch Activity* — `${{ steps.extract-data.outputs.branch_name }}`"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "**${{ steps.extract-data.outputs.action_type }}**"
+                    "text": "*${{ steps.extract-data.outputs.action_type }}*"
                   }
                 },
                 {
@@ -178,21 +177,14 @@ jobs:
                   "text": 
                     {
                       "type": "mrkdwn",
-                      "text": "🎯 **Repository:**\n${{ github.repository }}"
+                      "text": "🎯 *Repository:* ${{ github.repository }}"
                     }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🌿 **Branch:**\n`${{ steps.extract-data.outputs.branch_name }}`"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "📝 **Author:**\n${{ steps.extract-data.outputs.author }}"
+                    "text": "📝 *Author:* ${{ steps.extract-data.outputs.author }}"
                   }
                 },
                 {
