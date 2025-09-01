@@ -39,6 +39,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -79,6 +80,12 @@ public class IncidentNotifierIT {
         });
   }
 
+  @AfterAll
+  public static void tearDown() {
+    HTTP_CLIENT.close();
+    STANDALONE_CAMUNDA.stop();
+  }
+
   @Test
   public void shouldUseProcessVersionForWebhookPayloadProcessVersionField() {
     if (!STANDALONE_CAMUNDA.isStarted()) {
@@ -86,10 +93,10 @@ public class IncidentNotifierIT {
       STANDALONE_CAMUNDA.awaitCompleteTopology();
     }
 
-    final var camundaClient = STANDALONE_CAMUNDA.newClientBuilder().build();
-    final var incident = generateIncident(camundaClient);
-
-    waitForIncidentToExist(incident, camundaClient);
+    try (final var camundaClient = STANDALONE_CAMUNDA.newClientBuilder().build()) {
+      final var incident = generateIncident(camundaClient);
+      waitForIncidentToExist(incident, camundaClient);
+    }
 
     await()
         .untilAsserted(
@@ -112,12 +119,12 @@ public class IncidentNotifierIT {
       STANDALONE_CAMUNDA.start();
       STANDALONE_CAMUNDA.awaitCompleteTopology();
     }
-
-    final var camundaClient = STANDALONE_CAMUNDA.newClientBuilder().build();
-    final var incident = generateIncident(camundaClient);
-
-    // then
-    waitForIncidentToExist(incident, camundaClient);
+    final ProcessInstanceEvent incident;
+    try (final var camundaClient = STANDALONE_CAMUNDA.newClientBuilder().build()) {
+      incident = generateIncident(camundaClient);
+      // then
+      waitForIncidentToExist(incident, camundaClient);
+    }
 
     await()
         .untilAsserted(
