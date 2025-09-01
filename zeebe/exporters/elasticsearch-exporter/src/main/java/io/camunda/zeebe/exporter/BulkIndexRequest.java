@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -36,14 +37,13 @@ final class BulkIndexRequest implements ContentProducer {
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
           .addMixIn(Record.class, RecordSequenceMixin.class)
-          .addMixIn(UserTaskRecordValue.class, UserTaskMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
       new ObjectMapper()
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
-          .addMixIn(Record.class, BatchOperationReferenceRecordMixin.class)
+          .addMixIn(Record.class, RecordMetadata87Mixin.class)
           .addMixIn(ProcessInstanceCreationRecordValue.class, ProcessInstanceCreationMixin.class)
           .addMixIn(ProcessInstanceRecordValue.class, ProcessInstanceMixin.class)
           .addMixIn(ProcessInstanceResultRecordValue.class, ProcessInstanceResultMixin.class)
@@ -106,14 +106,8 @@ final class BulkIndexRequest implements ContentProducer {
 
   private static byte[] serializeRecord(final Record<?> record, final RecordSequence recordSequence)
       throws IOException {
-    final SemanticVersion semanticVersion =
-        SemanticVersion.parse(record.getBrokerVersion())
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "Expected to parse valid semantic version, but got [%s]"
-                            .formatted(record.getBrokerVersion())));
-    final var mapper = semanticVersion.minor() < 8 ? PREVIOUS_VERSION_MAPPER : MAPPER;
+    final var mapper =
+        isPreviousVersionRecord(record.getBrokerVersion()) ? PREVIOUS_VERSION_MAPPER : MAPPER;
     return mapper
         .writer()
         // Enhance the serialized record by its sequence number. The sequence number is not a part
@@ -170,6 +164,22 @@ final class BulkIndexRequest implements ContentProducer {
     }
   }
 
+  private static boolean isPreviousVersionRecord(final String brokerVersion) {
+    final SemanticVersion semanticVersion =
+        SemanticVersion.parse(brokerVersion)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Expected to parse valid semantic version, but got [%s]"
+                            .formatted(brokerVersion)));
+    final int currentMinorVersion =
+        VersionUtil.getSemanticVersion()
+            .map(SemanticVersion::minor)
+            .orElseThrow(
+                () -> new IllegalStateException("Expected to have a valid semantic version"));
+    return semanticVersion.minor() < currentMinorVersion;
+  }
+
   record BulkOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
@@ -181,7 +191,7 @@ final class BulkIndexRequest implements ContentProducer {
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
   @JsonIgnoreProperties({BATCH_OPERATION_REFERENCE_PROPERTY, RECORD_AUTHORIZATIONS_PROPERTY})
-  private static final class BatchOperationReferenceRecordMixin {}
+  private static final class RecordMetadata87Mixin {}
 
   @JsonIgnoreProperties({
     TAGS_PROPERTY,

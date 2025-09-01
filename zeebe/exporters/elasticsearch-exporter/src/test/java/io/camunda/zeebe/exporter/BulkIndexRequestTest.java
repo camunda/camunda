@@ -331,14 +331,13 @@ final class BulkIndexRequestTest {
           .containsExactly(10);
     }
 
-    @ParameterizedTest
-    @MethodSource("deniedReasonRecordVersions")
-    void shouldIndexRecordWithoutDeniedReason(final String version) {
+    @Test
+    void shouldIndexRecordWithoutDeniedReason() {
       // given
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(version)
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
                       .withValue(new UserTaskRecord().setDeniedReason("denied")));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
@@ -354,6 +353,30 @@ final class BulkIndexRequestTest {
           .extracting(source -> ((Map<String, Object>) source).get("deniedReason"))
           .describedAs("Expect that the records are NOT serialized with deniedReason")
           .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexRecordWithDeniedReason() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new UserTaskRecord().setDeniedReason("denied")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("deniedReason"))
+          .describedAs("Expect that the records are serialized with deniedReason")
+          .containsExactly("denied");
     }
 
     @ParameterizedTest
@@ -663,11 +686,6 @@ final class BulkIndexRequestTest {
                   r ->
                       r.withBrokerVersion(version)
                           .withValue(ImmutableJobRecordValue.builder().withTags(tags).build()))));
-    }
-
-    static Stream<Arguments> deniedReasonRecordVersions() {
-      return Stream.of(
-          Arguments.of(VersionUtil.getVersion()), Arguments.of(VersionUtil.getPreviousVersion()));
     }
   }
 }
