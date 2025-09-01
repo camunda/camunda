@@ -7,16 +7,20 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.camunda.zeebe.exporter.opensearch.BulkIndexRequest.BulkOperation;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -36,7 +40,9 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 final class BulkIndexRequestTest {
 
   private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new ZeebeProtocolModule());
+      new ObjectMapper()
+          .registerModule(new ZeebeProtocolModule())
+          .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
   private static final int PARTITION_ID = 1;
 
@@ -49,7 +55,11 @@ final class BulkIndexRequestTest {
   @Test
   void shouldReturnMemoryUsageAsLengthOfAllSerializedRecords() throws IOException {
     // given
-    final var records = recordFactory.generateRecords().limit(2).toList();
+    final var records =
+        recordFactory
+            .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+            .limit(2)
+            .toList();
     final var actions =
         List.of(
             new BulkIndexAction("index", "id", "routing"),
@@ -83,7 +93,11 @@ final class BulkIndexRequestTest {
   @Test
   void shouldClear() {
     // given
-    final var records = recordFactory.generateRecords().limit(2).toList();
+    final var records =
+        recordFactory
+            .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+            .limit(2)
+            .toList();
     final var actions =
         List.of(
             new BulkIndexAction("index", "id", "routing"),
@@ -107,7 +121,11 @@ final class BulkIndexRequestTest {
     @Test
     void shouldNotIndexWithIdenticalMetadata() {
       // given
-      final var records = recordFactory.generateRecords().limit(2).toList();
+      final var records =
+          recordFactory
+              .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+              .limit(2)
+              .toList();
       final var action = new BulkIndexAction("index", "id", "routing");
 
       // when - doesn't matter what the records are, if the metadata is the same we skip it
@@ -125,7 +143,11 @@ final class BulkIndexRequestTest {
     @Test
     void shouldIndexWithDifferentMetadata() {
       // given
-      final var records = recordFactory.generateRecords().limit(2).toList();
+      final var records =
+          recordFactory
+              .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+              .limit(2)
+              .toList();
       final var actions =
           List.of(
               new BulkIndexAction("index", "id", "routing"),
@@ -146,10 +168,12 @@ final class BulkIndexRequestTest {
 
   @Nested
   final class SerializationTest {
+
     @Test
     void shouldIndexRecordSerialized() {
       // given
-      final var record = recordFactory.generateRecord();
+      final var record =
+          recordFactory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersion()));
       final var action = new BulkIndexAction("index", "id", "routing");
 
       // when
@@ -166,7 +190,11 @@ final class BulkIndexRequestTest {
     @Test
     void shouldWriteOperationsAsNDJson() throws IOException {
       // given
-      final var records = recordFactory.generateRecords().limit(2).toList();
+      final var records =
+          recordFactory
+              .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+              .limit(2)
+              .toList();
       final var actions =
           List.of(
               new BulkIndexAction("index", "id", "routing"),
@@ -200,7 +228,11 @@ final class BulkIndexRequestTest {
     @Test
     void shouldIndexRecordWithSequence() {
       // given
-      final var records = recordFactory.generateRecords().limit(2).toList();
+      final var records =
+          recordFactory
+              .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+              .limit(2)
+              .toList();
 
       final var actions =
           List.of(
@@ -221,6 +253,72 @@ final class BulkIndexRequestTest {
           .extracting(source -> source.get("sequence"))
           .describedAs("Expect that the records are serialized with the sequences")
           .containsExactly(recordSequences.get(0).sequence(), recordSequences.get(1).sequence());
+    }
+
+    @Test
+    void shouldIndexDeploymentRecordWithResourceMetadata() {
+      // given
+      final var value = new DeploymentRecord();
+      value
+          .resourceMetadata()
+          .add()
+          .setDeploymentKey(12345L)
+          .setResourceName("resourceName")
+          .setResourceId("resourceId")
+          .setChecksum(wrapString("checksum"))
+          .setResourceKey(1L)
+          .setVersion(1);
+      final var record =
+          recordFactory.generateRecord(
+              r -> r.withBrokerVersion(VersionUtil.getVersion()).withValue(value));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("resourceMetadata"))
+          .describedAs("Expect that the records are serialized with resourceMetadata")
+          .map(source -> MAPPER.writeValueAsString(source))
+          .containsExactly(
+              """
+              [{"checksum":"Y2hlY2tzdW0=","deploymentKey":12345,"duplicate":false,"resourceId":"resourceId","resourceKey":1,"resourceName":"resourceName","tenantId":"<default>","version":1,"versionTag":""}]""");
+    }
+
+    @Test
+    void shouldIndexDeploymentRecordOnPreviousVersionWithoutResourceMetadata() {
+      // given
+      final var value = new DeploymentRecord();
+      value
+          .resourceMetadata()
+          .add()
+          .setDeploymentKey(12345L)
+          .setResourceName("resourceName")
+          .setResourceId("resourceId")
+          .setChecksum(wrapString("checksum"))
+          .setResourceKey(1L)
+          .setVersion(1);
+      final var record =
+          recordFactory.generateRecord(r -> r.withBrokerVersion("8.6.0").withValue(value));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("resourceMetadata"))
+          .describedAs("Expect that the records are NOT serialized with resourceMetadata")
+          .containsExactly(new Object[] {null});
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {

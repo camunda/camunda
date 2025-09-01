@@ -17,9 +17,11 @@ import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTe
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.ImmutableDeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
@@ -300,6 +302,43 @@ final class OpensearchExporterIT {
         .isInstanceOf(UncheckedIOException.class)
         .hasCauseInstanceOf(ResponseException.class)
         .hasMessageContaining("Policy not found");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
+  void shouldExportRecordsOnPreviousVersion(final ValueType valueType) {
+    // given
+    exporter.configure(exporterTestContext);
+    exporter.open(controller);
+
+    final var record = factory.generateRecord(valueType, r -> r.withBrokerVersion("8.6.0"));
+
+    // when
+    export(record);
+
+    // then
+    final var response = testClient.getExportedDocumentFor(record);
+    assertThat(response)
+        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
+        .containsExactly(
+            indexRouter.indexFor(record),
+            indexRouter.idFor(record),
+            String.valueOf(record.getPartitionId()),
+            modifyExpectedRecordForPreviousVersion(valueType, record));
+  }
+
+  private Record modifyExpectedRecordForPreviousVersion(
+      final ValueType valueType, final Record record) {
+    final RecordValue recordValue =
+        switch (valueType) {
+          case DEPLOYMENT ->
+              ImmutableDeploymentRecordValue.builder()
+                  .from(((ImmutableDeploymentRecordValue) record.getValue()))
+                  .withResourceMetadata(List.of())
+                  .build();
+          default -> record.getValue();
+        };
+    return ImmutableRecord.copyOf(record).withValue(recordValue);
   }
 
   private boolean export(final Record<?> record) {
