@@ -17,6 +17,8 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionProcessInstanceStatisticsQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionProcessInstanceStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -132,6 +134,15 @@ public class ProcessDefinitionController {
         .fold(RestErrorMapper::mapProblemToResponse, this::elementStatistics);
   }
 
+  @CamundaPostMapping(path = "/statistics/process-instances")
+  public ResponseEntity<ProcessDefinitionProcessInstanceStatisticsQueryResult>
+      processInstanceStatistics(
+          @RequestBody(required = false)
+              final ProcessDefinitionProcessInstanceStatisticsQuery query) {
+    return SearchQueryRequestMapper.toProcessDefinitionProcessInstanceStatisticsQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getProcessInstanceStatistics);
+  }
+
   private ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     try {
@@ -141,6 +152,21 @@ public class ProcessDefinitionController {
               .elementStatistics(filter);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionElementStatisticsResult(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<ProcessDefinitionProcessInstanceStatisticsQueryResult>
+      getProcessInstanceStatistics(
+          final io.camunda.search.query.ProcessDefinitionProcessInstanceStatisticsQuery query) {
+    try {
+      final var result =
+          processDefinitionServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getProcessDefinitionProcessInstanceStatistics(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toProcessInstanceStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

@@ -252,4 +252,18 @@ public final class FilterBuilders {
           fn) {
     return fn.apply(messageSubscription()).build();
   }
+
+  public static ProcessDefinitionProcessInstanceStatisticsFilter.Builder
+      processDefinitionProcessInstanceStatistics() {
+    return new ProcessDefinitionProcessInstanceStatisticsFilter.Builder();
+  }
+
+  public static ProcessDefinitionProcessInstanceStatisticsFilter
+      processDefinitionProcessInstanceStatistics(
+          final Function<
+                  ProcessDefinitionProcessInstanceStatisticsFilter.Builder,
+                  ObjectBuilder<ProcessDefinitionProcessInstanceStatisticsFilter>>
+              fn) {
+    return fn.apply(processDefinitionProcessInstanceStatistics()).build();
+  }
 }

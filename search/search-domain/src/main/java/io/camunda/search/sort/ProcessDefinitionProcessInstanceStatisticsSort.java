@@ -1,0 +1,49 @@
+package io.camunda.search.sort;
+
+import io.camunda.util.ObjectBuilder;
+import java.util.List;
+import java.util.function.Function;
+
+public record ProcessDefinitionProcessInstanceStatisticsSort(List<FieldSorting> orderings)
+    implements SortOption {
+
+  @Override
+  public List<FieldSorting> getFieldSortings() {
+    return orderings;
+  }
+
+  public static ProcessDefinitionProcessInstanceStatisticsSort of(
+      final Function<Builder, ObjectBuilder<ProcessDefinitionProcessInstanceStatisticsSort>> fn) {
+    return SortOptionBuilders.processDefinitionProcessInstanceStatistics(fn);
+  }
+
+  public static final class Builder
+      extends SortOption.AbstractBuilder<ProcessDefinitionProcessInstanceStatisticsSort.Builder>
+      implements ObjectBuilder<ProcessDefinitionProcessInstanceStatisticsSort> {
+
+    public Builder processDefinitionId() {
+      currentOrdering = new FieldSorting("processDefinitionId", null);
+      return this;
+    }
+
+    public Builder activeInstancesWithIncident() {
+      currentOrdering = new FieldSorting("activeInstancesWithIncident", null);
+      return this;
+    }
+
+    public Builder activeInstancesWithoutIncident() {
+      currentOrdering = new FieldSorting("activeInstancesWithoutIncident", null);
+      return this;
+    }
+
+    @Override
+    protected Builder self() {
+      return this;
+    }
+
+    @Override
+    public ProcessDefinitionProcessInstanceStatisticsSort build() {
+      return new ProcessDefinitionProcessInstanceStatisticsSort(orderings);
+    }
+  }
+}

@@ -12,6 +12,7 @@ import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_
 
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.reader.SearchEntityReader;
+import io.camunda.search.clients.reader.SearchQueryStatisticsReader;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -27,6 +28,7 @@ import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionProcessInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -60,6 +62,7 @@ import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionProcessInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -67,6 +70,7 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UsageMetricsTUQuery;
@@ -234,6 +238,13 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public SearchQueryResult<ProcessDefinitionProcessInstanceStatisticsEntity>
+      processDefinitionProcessInstanceStatistics(
+          final ProcessDefinitionProcessInstanceStatisticsQuery query) {
+    return doSearchWithReader(readers.processDefinitionProcessInstanceStatisticsReader(), query);
+  }
+
+  @Override
   public ProcessInstanceEntity getProcessInstance(final long processInstanceKey) {
     return doGetWithReader(readers.processInstanceReader(), processInstanceKey)
         .orElseThrow(() -> entityByKeyNotFoundException("Process Instance", processInstanceKey));
@@ -387,6 +398,19 @@ public class CamundaSearchClients implements SearchClientsProxy {
   protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> doSearchWithReader(
       final SearchEntityReader<T, Q> reader, final Q query) {
     return withResultTypeCheck(reader, query);
+  }
+
+  protected <T, A extends TypedSearchAggregationQuery<?, ?, ?>>
+      SearchQueryResult<T> doSearchWithReader(
+          final SearchQueryStatisticsReader<T, A> reader, final A query) {
+    return withResultTypeCheck(reader, query);
+  }
+
+  protected <T, A extends TypedSearchAggregationQuery<?, ?, ?>>
+      SearchQueryResult<T> withResultTypeCheck(
+          final SearchQueryStatisticsReader<T, A> reader, final A query) {
+    return ensureSingeResultIfNecessary(
+        () -> doReadWithResourceAccessController(a -> reader.aggregate(query, a)), query);
   }
 
   protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> withResultTypeCheck(

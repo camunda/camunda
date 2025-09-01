@@ -7,10 +7,9 @@
  */
 package io.camunda.search.clients.transformers.aggregation.result;
 
-import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import java.util.Map;
 
-public interface AggregationResultTransformer<A extends AggregationResultBase>
+public interface AggregationResultTransformer<A>
     extends ServiceTransformer<Map<String, AggregationResult>, A> {}

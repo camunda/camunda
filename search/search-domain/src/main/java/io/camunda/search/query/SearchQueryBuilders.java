@@ -198,4 +198,9 @@ public final class SearchQueryBuilders {
   public static MessageSubscriptionQuery.Builder messageSubscriptionSearchQuery() {
     return new MessageSubscriptionQuery.Builder();
   }
+
+  public static ProcessDefinitionProcessInstanceStatisticsQuery.Builder
+      processDefinitionProcessInstanceStatisticsQuery() {
+    return new ProcessDefinitionProcessInstanceStatisticsQuery.Builder();
+  }
 }

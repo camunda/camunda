@@ -32,6 +32,7 @@ import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.filter.ProcessDefinitionProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
@@ -77,6 +78,7 @@ import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.search.sort.MessageSubscriptionSort;
+import io.camunda.search.sort.ProcessDefinitionProcessInstanceStatisticsSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
@@ -1331,6 +1333,30 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
+  private static ProcessDefinitionProcessInstanceStatisticsFilter toProcessInstanceStatisticsFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionProcessInstanceStatisticsFilter
+          filter) {
+    final var builder = FilterBuilders.processDefinitionProcessInstanceStatistics();
+    if (filter != null) {
+      ofNullable(filter.getProcessDefinitionName())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::processDefinitionNameOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getProcessDefinitionVersion())
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::processDefinitionVersionOperations);
+      ofNullable(filter.getProcessDefinitionVersionTag())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::processDefinitionVersionTagOperations);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::processDefinitionIdOperations);
+    }
+    return builder.build();
+  }
+
   private static MessageSubscriptionFilter toMessageSubscriptionFilter(
       final io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionFilter filter) {
     final var builder = FilterBuilders.messageSubscription();
@@ -1791,6 +1817,23 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
+  private static List<String> applyProcessDefinitionProcessInstanceStatisticsSortField(
+      final ProcessDefinitionProcessInstanceStatisticsQuerySortRequest.FieldEnum field,
+      final ProcessDefinitionProcessInstanceStatisticsSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case ACTIVE_INSTANCES_WITH_INCIDENT -> builder.activeInstancesWithIncident();
+        case ACTIVE_INSTANCES_WITHOUT_INCIDENT -> builder.activeInstancesWithoutIncident();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
   private static Either<List<String>, List<VariableValueFilter>> toVariableValueFilters(
       final List<VariableValueFilterProperty> filters) {
     if (CollectionUtils.isEmpty(filters)) {
@@ -2020,5 +2063,26 @@ public final class SearchQueryRequestMapper {
     final var filter = toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
+  }
+
+  public static Either<
+          ProblemDetail, io.camunda.search.query.ProcessDefinitionProcessInstanceStatisticsQuery>
+      toProcessDefinitionProcessInstanceStatisticsQuery(
+          final ProcessDefinitionProcessInstanceStatisticsQuery request) {
+    if (request == null) {
+      return Either.right(
+          SearchQueryBuilders.processDefinitionProcessInstanceStatisticsQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper
+                .fromProcessDefinitionProcessInstanceStatisticsQuerySortRequest(request.getSort()),
+            SortOptionBuilders::processDefinitionProcessInstanceStatistics,
+            SearchQueryRequestMapper::applyProcessDefinitionProcessInstanceStatisticsSortField);
+    final var filter = toProcessInstanceStatisticsFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, sort, page, SearchQueryBuilders::processDefinitionProcessInstanceStatisticsQuery);
   }
 }
