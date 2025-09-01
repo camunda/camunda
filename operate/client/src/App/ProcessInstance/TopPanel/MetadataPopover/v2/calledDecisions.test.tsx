@@ -22,6 +22,7 @@ import {
   FLOW_NODE_ID,
   USER_TASK_FLOW_NODE_ID,
   BUSSINESS_RULE_FLOW_NODE_ID,
+  calledDecisionInstanceMetadata,
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {
@@ -40,6 +41,10 @@ import {mockIncidents} from 'modules/mocks/incidents';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
+import {mockSearchIncidents} from 'modules/mocks/api/v2/incidents/searchIncidents';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
+import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 
 import type {
   ElementInstance,
@@ -126,6 +131,28 @@ describe('MetadataPopover', () => {
       ],
     });
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockSearchIncidents().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchUserTasks().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchDecisionInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
   });
 
   afterEach(() => {
@@ -140,7 +167,9 @@ describe('MetadataPopover', () => {
 
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
-    mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID}),
+    );
 
     const mockCallActivityElementInstance: ElementInstance = {
       ...mockElementInstance,
@@ -159,6 +188,11 @@ describe('MetadataPopover', () => {
     mockSearchProcessInstances().withSuccess({
       items: [mockProcessInstance],
       page: {totalItems: 1},
+    });
+
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
 
     processInstanceDetailsStore.setProcessInstance(
@@ -201,11 +235,30 @@ describe('MetadataPopover', () => {
   it('should render completed decision', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const {instanceMetadata} = calledDecisionMetadata;
+    const mockBusinessRuleElementInstance: ElementInstance = {
+      ...mockElementInstance,
+      elementId: BUSSINESS_RULE_FLOW_NODE_ID,
+      type: 'BUSINESS_RULE_TASK',
+    };
 
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledDecisionMetadata);
-    mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID}),
+    );
+    mockFetchElementInstance('2251799813699889').withSuccess(
+      mockBusinessRuleElementInstance,
+    );
+
+    mockSearchElementInstances().withSuccess({
+      items: [mockBusinessRuleElementInstance],
+      page: {totalItems: 1},
+    });
+
+    mockSearchDecisionInstances().withSuccess({
+      items: [calledDecisionInstanceMetadata],
+      page: {totalItems: 1},
+    });
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -236,15 +289,15 @@ describe('MetadataPopover', () => {
 
     await user.click(
       screen.getByText(
-        `${instanceMetadata!.calledDecisionDefinitionName} - ${
-          instanceMetadata!.calledDecisionInstanceId
+        `${calledDecisionInstanceMetadata.decisionDefinitionName} - ${
+          calledDecisionInstanceMetadata.decisionInstanceId
         }`,
       ),
     );
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        `/decisions/${instanceMetadata!.calledDecisionInstanceId}`,
+        `/decisions/${calledDecisionInstanceMetadata.decisionInstanceId}`,
       ),
     );
 
@@ -261,7 +314,9 @@ describe('MetadataPopover', () => {
 
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledFailedDecisionMetadata);
-    mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID}),
+    );
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -318,11 +373,25 @@ describe('MetadataPopover', () => {
   });
 
   it('should render unevaluated decision', async () => {
+    const mockBusinessRuleElementInstance: ElementInstance = {
+      ...mockElementInstance,
+      elementId: BUSSINESS_RULE_FLOW_NODE_ID,
+      type: 'BUSINESS_RULE_TASK',
+    };
+
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledUnevaluatedDecisionMetadata);
-    mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID}),
+    );
+    mockFetchElementInstance('2251799813699889').withSuccess(
+      mockBusinessRuleElementInstance,
+    );
 
-    const {instanceMetadata} = calledUnevaluatedDecisionMetadata;
+    mockSearchDecisionInstances().withSuccess({
+      items: [calledDecisionInstanceMetadata],
+      page: {totalItems: 1},
+    });
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -345,7 +414,11 @@ describe('MetadataPopover', () => {
       await screen.findByText(labels.calledDecisionInstance),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(instanceMetadata.calledDecisionDefinitionName),
+      screen.getByText(
+        `${
+          calledDecisionInstanceMetadata.decisionDefinitionName
+        } - ${calledDecisionInstanceMetadata.decisionInstanceId}`,
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByText(labels.incident)).not.toBeInTheDocument();
     expect(
