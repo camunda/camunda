@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -57,6 +59,16 @@ public class ExportersEndpoint {
                 exporterId,
                 Optional.ofNullable(initializeInfo).map(InitializationInfo::initializeFrom),
                 dryRun))
+        .handle(ClusterApiUtils::mapOperationResponse);
+  }
+
+  @DeleteMapping(path = "/{exporterId}")
+  public CompletableFuture<ResponseEntity<?>> deleteExporter(
+      @PathVariable("exporterId") final String exporterId,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+
+    return requestSender
+        .deleteExporter(new ExporterDeleteRequest(exporterId, dryRun))
         .handle(ClusterApiUtils::mapOperationResponse);
   }
 

@@ -61,6 +61,26 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
+  /{exporterId}:
+    delete:
+      summary: Delete an exporter
+      description: Delete the exporter with the given exporterId. This will remove the exporter configuration and stop all export operations for this exporter.
+      parameters:
+        - $ref: '#/components/parameters/ExporterId'
+      responses:
+        '202':
+          $ref: "#/components/responses/ExporterOperationResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
   /:
     get:
       summary: List all exporters
@@ -84,7 +104,7 @@ components:
 
   responses:
     ExporterOperationResponse:
-      description: Request to disable or enable exporter is accepted.
+      description: Request to disable, enable, or delete exporter is accepted.
       content:
         application.json:
           schema:
@@ -121,4 +141,3 @@ components:
           type: string
           description: Id of the exporter to initialize from
           example: "exporter-1"
-
