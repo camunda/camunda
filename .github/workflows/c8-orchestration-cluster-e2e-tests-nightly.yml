@@ -17,7 +17,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [stable/8.6, stable/8.7, main] # Run all three branches in parallel
+        branch: [stable/8.6, stable/8.7, stable/8.8, main]
+        tasklist_mode: [v1, v2] # Run both V1 and V2 modes
+        exclude:
+          # V2 mode only supported on main branch - exclude V2 for older branches
+          - branch: stable/8.6
+            tasklist_mode: v2
+          - branch: stable/8.7
+            tasklist_mode: v2
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -32,7 +39,15 @@ jobs:
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
+            if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
+              echo "Starting with Tasklist V2 mode enabled"
+              CAMUNDA_TASKLIST_V2_MODE_ENABLED=true DATABASE=elasticsearch docker compose up -d camunda
+            else
+              echo "Starting with default Tasklist V1 mode"
+              export DATABASE=elasticsearch
+            echo "Starting Camunda with NON_STANDALONE:$NON_STANDALONE, database:$DATABASE"
             DATABASE=elasticsearch docker compose up -d camunda
+            fi
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
@@ -144,6 +159,7 @@ jobs:
           INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
         run: |
           if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -154,7 +170,13 @@ jobs:
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
           fi
 
-          npm run test -- --project=chromium
+          if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
+            echo "Running focused tests in V2 mode: Tasklist + HTO flows (excluding @v1-only tests)"
+            npm run test -- --project=chromium tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep-invert "@v1-only"
+          else
+            echo "Running all tests in V1 mode"
+            npm run test -- --project=chromium
+          fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
@@ -173,6 +195,6 @@ jobs:
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             parse_junit --suite-id 17050 \
-            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME (${{ matrix.tasklist_mode }}) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"

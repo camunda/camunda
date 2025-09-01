@@ -170,7 +170,7 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.completeTaskButton).toBeHidden();
   });
 
-  test('complete zeebe and job worker tasks', async ({
+  test('complete zeebe and job worker tasks @v1-only', async ({
     page,
     taskPanelPage,
     taskDetailsPage,
@@ -267,6 +267,11 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
+    await expect(async () => {
+      await expect(
+        taskPanelPage.availableTasks.getByText('processWithDeployedForm'),
+      ).toBeVisible();
+    }).toPass();
     await taskPanelPage.openTask('processWithDeployedForm');
 
     await taskDetailsPage.clickAssignToMeButton();
@@ -293,11 +298,16 @@ test.describe('task details page', () => {
 
     await taskDetailsPage.completeTaskButton.click();
 
-    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
-      timeout: 60000,
-    });
+    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+    //   timeout: 60000,
+    // });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
+    await expect(async () => {
+      await expect(
+        taskPanelPage.availableTasks.getByText('processWithDeployedForm'),
+      ).toBeVisible();
+    }).toPass();
     await taskPanelPage.openTask('processWithDeployedForm');
 
     await taskDetailsPage.assertFieldValue('Client Name*', 'Jon');

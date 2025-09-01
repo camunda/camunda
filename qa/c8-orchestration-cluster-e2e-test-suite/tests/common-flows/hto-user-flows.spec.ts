@@ -53,7 +53,7 @@ test.describe('HTO User Flow Tests', () => {
     },
   });
 
-  test('User Task Most Common Flow', async ({
+  test('User Task Most Common Flow @v1-only', async ({
     operateHomePage,
     operateProcessesPage,
     taskDetailsPage,
