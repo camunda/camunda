@@ -9,24 +9,30 @@
 import {type ReactElement} from 'react';
 import {OverflowMenuItem} from '@carbon/react';
 import {Filter} from '@carbon/react/icons';
-import {ButtonStack, OverflowMenu, Container} from './styled';
+import {ButtonStack, OverflowMenu, Container, TriggerButton} from './styled';
 
 interface Props<T> {
   visibleFilters: T[];
   optionalFilters: {id: T; label: string}[];
   onFilterSelect: (filter: T) => void;
+  onOpenAdvanced?: () => void;
 }
 
 const OptionalFiltersMenu = <T extends string>({
   visibleFilters,
   optionalFilters,
   onFilterSelect,
+  onOpenAdvanced,
 }: Props<T>): ReactElement | null => {
   const unselectedOptionalFilters = optionalFilters.filter(
     (filter) => !visibleFilters.includes(filter.id),
   );
 
-  return unselectedOptionalFilters.length > 0 ? (
+  if (unselectedOptionalFilters.length === 0) {
+    return null;
+  }
+
+  return (
     <Container>
       <OverflowMenu
         direction="top"
@@ -35,7 +41,7 @@ const OptionalFiltersMenu = <T extends string>({
         flipped
         renderIcon={() => (
           <ButtonStack orientation="horizontal" gap={3}>
-            <span>More Filters</span>
+            <span>More filters</span>
             <Filter />
           </ButtonStack>
         )}
@@ -49,8 +55,22 @@ const OptionalFiltersMenu = <T extends string>({
           />
         ))}
       </OverflowMenu>
+
+      {typeof onOpenAdvanced === 'function' && (
+        <TriggerButton
+          type="button"
+          onClick={onOpenAdvanced}
+          data-testid="open-advanced-filters"
+          aria-label="Advanced Filters"
+        >
+          <ButtonStack orientation="horizontal" gap={3}>
+            <span>Advanced filters</span>
+            <Filter />
+          </ButtonStack>
+        </TriggerButton>
+      )}
     </Container>
-  ) : null;
+  );
 };
 
 export {OptionalFiltersMenu};
