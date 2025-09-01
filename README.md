@@ -80,7 +80,7 @@ below, which are made available under the [Apache License, Version
 
 Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
 - Java Client ([clients/java](/clients/java))
-- Spring Boot Camunda Starter ([spring-boot-starter-camunda-sdk](/clients/spring-boot-starter-camunda-sdk))
+- Spring Boot Camunda Starter ([spring-boot-starter-camunda](/clients/spring-boot-starter-camunda))
 - Exporter API ([exporter-api](/zeebe/exporter-api))
 - Protocol ([protocol](/zeebe/protocol))
 - Gateway Protocol Implementation ([gateway-protocol-impl](/zeebe/gateway-protocol-impl))
