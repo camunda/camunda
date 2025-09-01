@@ -80,8 +80,7 @@ public final class ApiServicesExecutorProvider {
             TimeUnit.SECONDS,
             workQueue,
             threadFactory,
-            // Fail-fast on saturation: throws RejectedExecutionException immediately.
-            new ThreadPoolExecutor.AbortPolicy());
+            new ThreadPoolExecutor.CallerRunsPolicy());
 
     executor.allowCoreThreadTimeOut(true); // needed if corePoolSize is greater than 0
     return executor;
