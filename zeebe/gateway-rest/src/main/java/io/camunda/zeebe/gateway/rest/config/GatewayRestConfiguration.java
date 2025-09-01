@@ -74,7 +74,7 @@ public class GatewayRestConfiguration {
   public static class ApiExecutorConfiguration {
 
     private static final int DEFAULT_CORE_POOL_SIZE_MULTIPLIER = 1;
-    private static final int DEFAULT_MAX_POOL_SIZE_MULTIPLIER = 2;
+    private static final int DEFAULT_MAX_POOL_SIZE_MULTIPLIER = 8;
     private static final long DEFAULT_KEEP_ALIVE_SECONDS = 60L;
 
     /**
