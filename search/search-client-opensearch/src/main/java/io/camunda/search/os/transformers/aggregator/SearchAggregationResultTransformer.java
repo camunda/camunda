@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.CardinalityAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
 import org.opensearch.client.opensearch._types.aggregations.LongTermsAggregate;
@@ -112,6 +113,10 @@ public class SearchAggregationResultTransformer<T>
     return new Builder().hits(toSearchQueryHits(hits, topHitAggregator.documentClass())).build();
   }
 
+  private AggregationResult transformCardinalityAggregate(final CardinalityAggregate aggregate) {
+    return new Builder().docCount(aggregate.value()).build();
+  }
+
   private <B extends MultiBucketBase> AggregationResult transformMultiBucketAggregate(
       final MultiBucketAggregateBase<B> aggregate) {
     final var map = new LinkedHashMap<String, AggregationResult>();
@@ -190,6 +195,7 @@ public class SearchAggregationResultTransformer<T>
             case Composite -> res = transformMultiBucketAggregate(aggregate.composite());
             case TopHits -> res = transformTopHitsAggregate(key, aggregate.topHits());
             case Sum -> res = transformSingleMetricAggregate(aggregate.sum());
+            case Cardinality -> res = transformCardinalityAggregate(aggregate.cardinality());
             default ->
                 throw new IllegalStateException(
                     "Unsupported aggregation type: " + aggregate._kind());

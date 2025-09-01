@@ -8,6 +8,8 @@
 package io.camunda.search.es.transformers;
 
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import io.camunda.search.clients.aggregator.SearchBucketSortAggregator;
+import io.camunda.search.clients.aggregator.SearchCardinalityAggregator;
 import io.camunda.search.clients.aggregator.SearchChildrenAggregator;
 import io.camunda.search.clients.aggregator.SearchCompositeAggregator;
 import io.camunda.search.clients.aggregator.SearchFilterAggregator;
@@ -44,6 +46,8 @@ import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.es.transformers.aggregator.SearchBucketSortAggregationTransformer;
+import io.camunda.search.es.transformers.aggregator.SearchCardinalityAggregationTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchChildrenAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchCompositeAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchFilterAggregatorTransformer;
@@ -150,6 +154,10 @@ public final class ElasticsearchTransformers {
     mappers.put(SearchChildrenAggregator.class, new SearchChildrenAggregatorTransformer(mappers));
     mappers.put(SearchParentAggregator.class, new SearchParentAggregatorTransformer(mappers));
     mappers.put(SearchSumAggregator.class, new SearchSumAggregatorTransformer(mappers));
+    mappers.put(
+        SearchBucketSortAggregator.class, new SearchBucketSortAggregationTransformer(mappers));
+    mappers.put(
+        SearchCardinalityAggregator.class, new SearchCardinalityAggregationTransformer(mappers));
 
     // sort
     mappers.put(SearchSortOptions.class, new SortOptionsTransformer(mappers));
