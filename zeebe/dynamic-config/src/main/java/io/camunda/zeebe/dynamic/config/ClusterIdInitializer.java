@@ -8,42 +8,49 @@
 package io.camunda.zeebe.dynamic.config;
 
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Optional;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Initializes the routing state of the cluster configuration if the partition scaling feature is
  * enabled. All members will initialize the same routing state (as long as their statically
  * configured partition counts match).
  */
-public class RoutingStateInitializer implements ClusterConfigurationModifier {
+public class ClusterIdInitializer implements ClusterConfigurationModifier {
 
-  private final boolean enablePartitionScaling;
-  private final int staticPartitionCount;
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClusterIdInitializer.class);
+  private final String clusterId;
 
-  public RoutingStateInitializer(
-      final boolean enablePartitionScaling, final int staticPartitionCount) {
-    this.enablePartitionScaling = enablePartitionScaling;
-    this.staticPartitionCount = staticPartitionCount;
+  public ClusterIdInitializer(final String clusterId) {
+    // if not cluster id is configured a new one is generated.
+    this.clusterId = Optional.ofNullable(clusterId).orElse(UUID.randomUUID().toString());
   }
 
   @Override
   public ActorFuture<ClusterConfiguration> modify(final ClusterConfiguration configuration) {
-    if (configuration.routingState().isPresent() || !enablePartitionScaling) {
+    // If the cluster ID is already set, we do not need to modify the configuration.
+    if (configuration.clusterId().isPresent()) {
+      if (!configuration.clusterId().get().equals(clusterId)) {
+        LOGGER.warn(
+            "Cluster ID is already set to '{}', but the configured cluster ID is '{}'. Using the existing cluster ID.",
+            configuration.clusterId().get(),
+            clusterId);
+      }
       return CompletableActorFuture.completed(configuration);
     }
 
-    final var routingState = RoutingState.initializeWithPartitionCount(staticPartitionCount);
-    final var withRoutingState =
+    final var withClusterId =
         new ClusterConfiguration(
             configuration.version(),
             configuration.members(),
             configuration.lastChange(),
             configuration.pendingChanges(),
-            Optional.of(routingState),
-            configuration.clusterId());
-    return CompletableActorFuture.completed(withRoutingState);
+            configuration.routingState(),
+            Optional.ofNullable(clusterId));
+    return CompletableActorFuture.completed(withClusterId);
   }
 }

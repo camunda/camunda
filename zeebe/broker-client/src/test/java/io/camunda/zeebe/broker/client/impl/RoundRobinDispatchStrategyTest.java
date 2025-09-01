@@ -66,7 +66,8 @@ final class RoundRobinDispatchStrategyTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.of(
-                    new RoutingState(1, new AllPartitions(2), new MessageCorrelation.HashMod(2)))));
+                    new RoutingState(1, new AllPartitions(2), new MessageCorrelation.HashMod(2))),
+                Optional.empty()));
 
     // when - then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
@@ -94,7 +95,8 @@ final class RoundRobinDispatchStrategyTest {
                     new RoutingState(
                         1,
                         new ActivePartitions(1, Set.of(3), Set.of()),
-                        new MessageCorrelation.HashMod(3)))));
+                        new MessageCorrelation.HashMod(3))),
+                Optional.empty()));
 
     // when - then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
@@ -120,7 +122,8 @@ final class RoundRobinDispatchStrategyTest {
                 new RoutingState(
                     1,
                     new ActivePartitions(1, Set.of(3), Set.of()),
-                    new MessageCorrelation.HashMod(1)))));
+                    new MessageCorrelation.HashMod(1))),
+            Optional.empty()));
 
     // then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
@@ -134,7 +137,8 @@ final class RoundRobinDispatchStrategyTest {
             Optional.empty(),
             Optional.empty(),
             Optional.of(
-                new RoutingState(2, new AllPartitions(3), new MessageCorrelation.HashMod(1)))));
+                new RoutingState(2, new AllPartitions(3), new MessageCorrelation.HashMod(1))),
+            Optional.empty()));
 
     // then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(3);

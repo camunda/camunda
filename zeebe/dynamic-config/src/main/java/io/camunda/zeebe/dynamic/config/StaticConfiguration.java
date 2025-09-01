@@ -23,7 +23,8 @@ public record StaticConfiguration(
     MemberId localMemberId,
     List<PartitionId> partitionIds,
     int replicationFactor,
-    DynamicPartitionConfig partitionConfig) {
+    DynamicPartitionConfig partitionConfig,
+    String clusterId) {
 
   public int partitionCount() {
     return partitionIds.size();
@@ -32,7 +33,7 @@ public record StaticConfiguration(
   public ClusterConfiguration generateTopology() {
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
     return ConfigurationUtil.getClusterConfigFrom(
-        enablePartitionScaling, partitionDistribution, partitionConfig);
+        enablePartitionScaling, partitionDistribution, partitionConfig, clusterId);
   }
 
   public Set<PartitionMetadata> generatePartitionDistribution() {

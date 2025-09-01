@@ -83,7 +83,8 @@ public class AwaitRedistributionCompletionApplier implements ClusterOperationApp
         config.members(),
         config.lastChange(),
         config.pendingChanges(),
-        Optional.of(routingState));
+        Optional.of(routingState),
+        config.clusterId());
   }
 
   private RequestHandling updateRequestHandling(final RequestHandling requestHandling) {

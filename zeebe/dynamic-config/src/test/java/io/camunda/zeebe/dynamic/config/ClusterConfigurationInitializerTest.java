@@ -212,7 +212,8 @@ final class ClusterConfigurationInitializerTest {
             member,
             List.of(partitionId),
             1,
-            DynamicPartitionConfig.init()));
+            DynamicPartitionConfig.init(),
+            "clusterId"));
   }
 
   private static final class TestClusterConfigurationNotifier

@@ -409,6 +409,7 @@ final class BrokerTopologyManagerTest {
             Map.of(),
             Optional.of(new CompletedChange(1, Status.COMPLETED, Instant.now(), Instant.now())),
             Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     topologyManager.onClusterConfigurationUpdated(clusterTopology);

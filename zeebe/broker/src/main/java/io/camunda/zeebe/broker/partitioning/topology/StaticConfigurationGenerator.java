@@ -50,6 +50,7 @@ public final class StaticConfigurationGenerator {
     final var clusterMembers = getRaftGroupMembers(clusterCfg);
     final var partitionIds = getSortedPartitionIds(partitionCount);
     final var partitionConfig = generatePartitionConfig(brokerCfg);
+    final var clusterId = clusterCfg.getClusterId();
 
     return new StaticConfiguration(
         enablePartitionScaling,
@@ -58,7 +59,8 @@ public final class StaticConfigurationGenerator {
         localMemberId,
         partitionIds,
         replicationFactor,
-        partitionConfig);
+        partitionConfig,
+        clusterId);
   }
 
   private static PartitionDistributor getPartitionDistributor(final PartitioningCfg partitionCfg) {

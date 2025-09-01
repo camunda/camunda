@@ -13,6 +13,7 @@ message ClusterTopology {
   CompletedChange lastChange = 3;
   ClusterChangePlan currentChange = 4;
   RoutingState routingState = 5;
+  string clusterId = 6;
 }
 
 message RoutingState {
