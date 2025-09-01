@@ -43,12 +43,12 @@ final class BulkIndexRequest implements ContentProducer {
   private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
       new ObjectMapper()
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
-          .addMixIn(Record.class, BatchOperationReferenceMixin.class)
-          .addMixIn(ProcessInstanceCreationRecordValue.class, ProcessInstanceCreationMixin.class)
-          .addMixIn(ProcessInstanceRecordValue.class, ProcessInstanceMixin.class)
-          .addMixIn(ProcessInstanceResultRecordValue.class, ProcessInstanceResultMixin.class)
-          .addMixIn(UserTaskRecordValue.class, UserTaskMixin.class)
-          .addMixIn(JobRecordValue.class, JobMixin.class)
+          .addMixIn(Record.class, RecordMetadata87Mixin.class)
+          .addMixIn(ProcessInstanceCreationRecordValue.class, ProcessInstanceCreation87Mixin.class)
+          .addMixIn(ProcessInstanceRecordValue.class, ProcessInstance87Mixin.class)
+          .addMixIn(ProcessInstanceResultRecordValue.class, ProcessInstanceResult87Mixin.class)
+          .addMixIn(UserTaskRecordValue.class, UserTask87Mixin.class)
+          .addMixIn(JobRecordValue.class, Job87Mixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -192,7 +192,7 @@ final class BulkIndexRequest implements ContentProducer {
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
   @JsonIgnoreProperties({BATCH_OPERATION_REFERENCE_PROPERTY, RECORD_AUTHORIZATIONS_PROPERTY})
-  private static final class BatchOperationReferenceMixin {}
+  private static final class RecordMetadata87Mixin {}
 
   @JsonIgnoreProperties({
     TAGS_PROPERTY,
@@ -200,17 +200,17 @@ final class BulkIndexRequest implements ContentProducer {
     PROCESS_DEFINITION_PATH_PROPERTY,
     CALLING_ELEMENT_PATH_PROPERTY,
   })
-  private static final class ProcessInstanceMixin {}
+  private static final class ProcessInstance87Mixin {}
 
   @JsonIgnoreProperties({TAGS_PROPERTY, RUNTIME_INSTRUCTIONS_PROPERTY})
-  private static final class ProcessInstanceCreationMixin {}
+  private static final class ProcessInstanceCreation87Mixin {}
 
   @JsonIgnoreProperties({TAGS_PROPERTY})
-  private static final class ProcessInstanceResultMixin {}
+  private static final class ProcessInstanceResult87Mixin {}
 
   @JsonIgnoreProperties({DENIED_REASON_PROPERTY})
-  private static final class UserTaskMixin {}
+  private static final class UserTask87Mixin {}
 
   @JsonIgnoreProperties({RESULT_PROPERTY, TAGS_PROPERTY})
-  private static final class JobMixin {}
+  private static final class Job87Mixin {}
 }
