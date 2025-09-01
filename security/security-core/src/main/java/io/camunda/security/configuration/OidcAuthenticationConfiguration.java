@@ -159,8 +159,7 @@ public class OidcAuthenticationConfiguration {
     return issuerUri != null
         || clientId != null
         || clientSecret != null
-        || grantType == null
-        || !grantType.equals("authorization_code")
+        || !"authorization_code".equals(grantType)
         || redirectUri != null
         || !Arrays.asList("openid", "profile").equals(scope)
         || jwkSetUri != null
@@ -168,8 +167,7 @@ public class OidcAuthenticationConfiguration {
         || tokenUri != null
         || authorizeRequestConfiguration == null
         || authorizeRequestConfiguration.isSet()
-        || usernameClaim == null
-        || !usernameClaim.equals("sub")
+        || !"sub".equals(usernameClaim)
         || audiences != null
         || clientIdClaim != null
         || groupsClaim != null
