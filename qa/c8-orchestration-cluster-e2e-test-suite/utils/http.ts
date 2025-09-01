@@ -78,6 +78,13 @@ export async function assertForbiddenRequest(
   expect(json.detail).toContain(detail);
 }
 
+export async function assertConflictRequest(response: APIResponse) {
+  expect(response.status()).toBe(409);
+  const json = await response.json();
+  assertRequiredFields(json, ['title']);
+  expect(json['title']).toContain('ALREADY_EXISTS');
+}
+
 export async function assertNotFoundRequest(
   response: APIResponse,
   detail: string,

@@ -34,5 +34,6 @@ test.describe.parallel('License API Tests', () => {
     expect(json.validLicense).toBeFalsy();
     expect(json.licenseType).toBe('unknown');
     expect(json.isCommercial).toBeFalsy();
+    expect(json).not.toHaveProperty('expiresAt'); //the field is null, we expect it not to be present
   });
 });
