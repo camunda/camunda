@@ -122,7 +122,7 @@ export class IdentityRolesPage {
     const item = this.roleCell(role.name);
 
     await waitForItemInList(this.page, item, {
-      timeout: 200000,
+      timeout: 60000,
       clickNext: true,
     });
   }
