@@ -13,15 +13,27 @@ import java.util.concurrent.*;
 public final class ApiServicesExecutorProvider {
 
   private static final String API_SERVICE_THREAD_NAME = "api-service-thread-";
+
+  // TODO - make it configurable
+  private static final int DEFAULT_QUEUE_CAPACITY = 64;
+
   private final ExecutorService executor;
 
   public ApiServicesExecutorProvider(
       final int corePoolSizeMultiplier,
       final int maxPoolSizeMultiplier,
       final long keepAliveSeconds) {
+    this(corePoolSizeMultiplier, maxPoolSizeMultiplier, keepAliveSeconds, DEFAULT_QUEUE_CAPACITY);
+  }
+
+  public ApiServicesExecutorProvider(
+      final int corePoolSizeMultiplier,
+      final int maxPoolSizeMultiplier,
+      final long keepAliveSeconds,
+      final int queueCapacity) {
     executor =
         Objects.requireNonNull(
-            create(corePoolSizeMultiplier, maxPoolSizeMultiplier, keepAliveSeconds),
+            create(corePoolSizeMultiplier, maxPoolSizeMultiplier, keepAliveSeconds, queueCapacity),
             "REST API Executor Service must not be null");
   }
 
@@ -41,26 +53,36 @@ public final class ApiServicesExecutorProvider {
    * @param maxPoolSizeMultiplier multiplier for the maximum number of threads based on available
    *     processors
    * @param keepAliveSeconds how long to keep idle threads above core alive
+   * @param queueCapacity tiny bounded queue capacity for short bursts (e.g., 32–128)
    */
   private static ExecutorService create(
       final int corePoolSizeMultiplier,
       final int maxPoolSizeMultiplier,
-      final long keepAliveSeconds) {
+      final long keepAliveSeconds,
+      final int queueCapacity) {
+
     final int availableProcessors = Runtime.getRuntime().availableProcessors();
     final int corePoolSize = availableProcessors * corePoolSizeMultiplier;
     final int maxPoolSize = availableProcessors * maxPoolSizeMultiplier;
     final ThreadFactory threadFactory =
         Thread.ofPlatform().name(API_SERVICE_THREAD_NAME, 0).daemon(true).factory();
 
+    // Tiny bounded buffer to absorb micro-bursts
+    final int cap = Math.max(1, queueCapacity);
+    final BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(cap);
+
+    // TODO - possibly need to map RejectedExecutionException
     final ThreadPoolExecutor executor =
         new ThreadPoolExecutor(
             corePoolSize,
             maxPoolSize,
             keepAliveSeconds,
             TimeUnit.SECONDS,
-            new SynchronousQueue<>(),
+            workQueue,
             threadFactory,
-            new ThreadPoolExecutor.CallerRunsPolicy());
+            // Fail-fast on saturation: throws RejectedExecutionException immediately.
+            new ThreadPoolExecutor.AbortPolicy());
+
     executor.allowCoreThreadTimeOut(true); // needed if corePoolSize is greater than 0
     return executor;
   }
