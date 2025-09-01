@@ -113,7 +113,10 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   @Override
-  public CompletionStage<List<BackupStatus>> listBackups() {
+  public CompletionStage<List<BackupStatus>> listBackups(final String prefix) {
+    if (!prefix.equals(BackupApi.WILDCARD)) {
+      throw new UnsupportedOperationException("Filtering by prefix is not yet supported");
+    }
     return checkTopologyComplete()
         .thenCompose(
             topology -> {
