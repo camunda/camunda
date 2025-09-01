@@ -674,4 +674,28 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_correlated_message_table" author="copilot">
+    <createTable tableName="${prefix}CORRELATED_MESSAGE">
+      <column name="MESSAGE_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="MESSAGE_NAME" type="VARCHAR(255)"/>
+      <column name="CORRELATION_KEY" type="VARCHAR(255)"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT"/>
+      <column name="START_EVENT_ID" type="VARCHAR(255)"/>
+      <column name="BPMN_PROCESS_ID" type="VARCHAR(255)"/>
+      <column name="VARIABLES" type="CLOB"/>
+      <column name="TENANT_ID" type="VARCHAR(255)"/>
+      <column name="DATE_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="PARTITION_ID" type="NUMBER"/>
+      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
+    </createTable>
+
+    <modifySql dbms="mariadb">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
+  </changeSet>
+
 </databaseChangeLog>

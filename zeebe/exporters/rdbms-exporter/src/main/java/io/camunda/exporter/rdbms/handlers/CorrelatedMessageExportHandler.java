@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CorrelatedMessageExportHandler implements RdbmsExportHandler<Object> {
 
@@ -28,6 +29,8 @@ public class CorrelatedMessageExportHandler implements RdbmsExportHandler<Object
           ProcessMessageSubscriptionIntent.CORRELATED,
           MessageStartEventSubscriptionIntent.CORRELATED);
 
+  // Track messages that have already been correlated to ensure only first correlation is exported
+  private final Set<Long> correlatedMessages = ConcurrentHashMap.newKeySet();
   private final CorrelatedMessageWriter correlatedMessageWriter;
 
   public CorrelatedMessageExportHandler(final CorrelatedMessageWriter correlatedMessageWriter) {
@@ -41,13 +44,27 @@ public class CorrelatedMessageExportHandler implements RdbmsExportHandler<Object
 
   @Override
   public void export(final Record<Object> record) {
-    if (record.getIntent() == ProcessMessageSubscriptionIntent.CORRELATED) {
-      final var processMessageRecord = (ProcessMessageSubscriptionRecordValue) record.getValue();
-      correlatedMessageWriter.create(mapFromProcessMessageSubscription(record, processMessageRecord));
-    } else if (record.getIntent() == MessageStartEventSubscriptionIntent.CORRELATED) {
-      final var messageStartRecord = (MessageStartEventSubscriptionRecordValue) record.getValue();
-      correlatedMessageWriter.create(mapFromMessageStartEventSubscription(record, messageStartRecord));
+    final Long messageKey = getMessageKeyFromRecord(record);
+    
+    // Only export if this is the first correlation for this message
+    if (messageKey != null && correlatedMessages.add(messageKey)) {
+      if (record.getIntent() == ProcessMessageSubscriptionIntent.CORRELATED) {
+        final var processMessageRecord = (ProcessMessageSubscriptionRecordValue) record.getValue();
+        correlatedMessageWriter.create(mapFromProcessMessageSubscription(record, processMessageRecord));
+      } else if (record.getIntent() == MessageStartEventSubscriptionIntent.CORRELATED) {
+        final var messageStartRecord = (MessageStartEventSubscriptionRecordValue) record.getValue();
+        correlatedMessageWriter.create(mapFromMessageStartEventSubscription(record, messageStartRecord));
+      }
     }
+  }
+
+  private Long getMessageKeyFromRecord(final Record<Object> record) {
+    if (record.getIntent() == ProcessMessageSubscriptionIntent.CORRELATED) {
+      return ((ProcessMessageSubscriptionRecordValue) record.getValue()).getMessageKey();
+    } else if (record.getIntent() == MessageStartEventSubscriptionIntent.CORRELATED) {
+      return ((MessageStartEventSubscriptionRecordValue) record.getValue()).getMessageKey();
+    }
+    return null;
   }
 
   private CorrelatedMessageDbModel mapFromProcessMessageSubscription(

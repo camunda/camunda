@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.CorrelatedMessageMapper">
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*)
+    FROM ${prefix}CORRELATED_MESSAGE
+    <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageMapper.searchFilter" />
+  </select>
+
+  <!-- default search statement for databases supporting LIMIT/OFFSET-->
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.CorrelatedMessageDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.CorrelatedMessageMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT
+    MESSAGE_KEY,
+    MESSAGE_NAME,
+    CORRELATION_KEY,
+    PROCESS_INSTANCE_KEY,
+    FLOW_NODE_INSTANCE_KEY,
+    START_EVENT_ID,
+    BPMN_PROCESS_ID,
+    VARIABLES,
+    TENANT_ID,
+    DATE_TIME,
+    PARTITION_ID,
+    HISTORY_CLEANUP_DATE
+    FROM ${prefix}CORRELATED_MESSAGE
+
+    <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageMapper.searchFilter" />
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter" />
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy" />
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging" />
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filter -->
+    <if test="filter.messageKeyOperations != null and !filter.messageKeyOperations.isEmpty()">
+      <foreach collection="filter.messageKeyOperations" item="operation">
+        AND MESSAGE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.messageNameOperations != null and !filter.messageNameOperations.isEmpty()">
+      <foreach collection="filter.messageNameOperations" item="operation">
+        AND MESSAGE_NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.correlationKeyOperations != null and !filter.correlationKeyOperations.isEmpty()">
+      <foreach collection="filter.correlationKeyOperations" item="operation">
+        AND CORRELATION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.processInstanceKeyOperations" item="operation">
+        AND PROCESS_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.flowNodeInstanceKeyOperations != null and !filter.flowNodeInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.flowNodeInstanceKeyOperations" item="operation">
+        AND FLOW_NODE_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.startEventIdOperations != null and !filter.startEventIdOperations.isEmpty()">
+      <foreach collection="filter.startEventIdOperations" item="operation">
+        AND START_EVENT_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.bpmnProcessIdOperations != null and !filter.bpmnProcessIdOperations.isEmpty()">
+      <foreach collection="filter.bpmnProcessIdOperations" item="operation">
+        AND BPMN_PROCESS_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.variablesOperations != null and !filter.variablesOperations.isEmpty()">
+      <foreach collection="filter.variablesOperations" item="operation">
+        AND VARIABLES
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+      <foreach collection="filter.tenantIdOperations" item="operation">
+        AND TENANT_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.dateTimeOperations != null and !filter.dateTimeOperations.isEmpty()">
+      <foreach collection="filter.dateTimeOperations" item="operation">
+        AND DATE_TIME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel">
+    <constructor>
+      <idArg column="MESSAGE_KEY" javaType="java.lang.Long" />
+    </constructor>
+    <result column="MESSAGE_NAME" property="messageName" javaType="java.lang.String" />
+    <result column="CORRELATION_KEY" property="correlationKey" javaType="java.lang.String" />
+    <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
+    <result column="FLOW_NODE_INSTANCE_KEY" property="flowNodeInstanceKey" javaType="java.lang.Long" />
+    <result column="START_EVENT_ID" property="startEventId" javaType="java.lang.String" />
+    <result column="BPMN_PROCESS_ID" property="bpmnProcessId" javaType="java.lang.String" />
+    <result column="VARIABLES" property="variables" javaType="java.lang.String" />
+    <result column="TENANT_ID" property="tenantId" javaType="java.lang.String" />
+    <result column="DATE_TIME" property="dateTime" javaType="java.time.OffsetDateTime" />
+    <result column="PARTITION_ID" property="partitionId" javaType="java.lang.Integer" />
+    <result column="HISTORY_CLEANUP_DATE" property="historyCleanupDate" javaType="java.time.OffsetDateTime" />
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel">
+    INSERT INTO ${prefix}CORRELATED_MESSAGE (
+                                             MESSAGE_KEY,
+                                             MESSAGE_NAME,
+                                             CORRELATION_KEY,
+                                             PROCESS_INSTANCE_KEY,
+                                             FLOW_NODE_INSTANCE_KEY,
+                                             START_EVENT_ID,
+                                             BPMN_PROCESS_ID,
+                                             VARIABLES,
+                                             TENANT_ID,
+                                             DATE_TIME,
+                                             PARTITION_ID,
+                                             HISTORY_CLEANUP_DATE
+    )
+    VALUES (
+            #{messageKey},
+            #{messageName},
+            #{correlationKey},
+            #{processInstanceKey},
+            #{flowNodeInstanceKey},
+            #{startEventId},
+            #{bpmnProcessId},
+            #{variables},
+            #{tenantId},
+            #{dateTime, jdbcType=TIMESTAMP},
+            #{partitionId},
+            #{historyCleanupDate, jdbcType=TIMESTAMP}
+    )
+  </insert>
+
+  <delete id="delete">
+    DELETE FROM ${prefix}CORRELATED_MESSAGE
+    WHERE MESSAGE_KEY = #{messageKey}
+  </delete>
+
+  <update id="updateHistoryCleanupDate">
+    UPDATE ${prefix}CORRELATED_MESSAGE SET
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <delete id="cleanupHistory">
+    <bind name="tableName" value="'CORRELATED_MESSAGE'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+</mapper>
