@@ -199,7 +199,11 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstanceRecord, processInstanceKey);
     requireSameUserTaskImplementation(
-        targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        targetElementId,
+        elementInstance,
+        processInstanceKey);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoBoundaryEventInSource(
