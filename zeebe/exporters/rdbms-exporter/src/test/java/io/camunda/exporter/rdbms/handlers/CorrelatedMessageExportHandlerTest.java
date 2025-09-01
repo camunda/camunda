@@ -132,13 +132,27 @@ class CorrelatedMessageExportHandlerTest {
             r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
                    .withValue(v -> v.setMessageKey(messageKey)));
 
+    // Verify that the records have different keys (critical for avoiding overwrites)
+    assertThat(record1.getKey()).isNotEqualTo(record2.getKey());
+
     // when
     handler.export((Record<Object>) record1);
     handler.export((Record<Object>) record2);
 
     // then
     // Both correlations should be exported since they have different record keys
-    verify(correlatedMessageWriter, times(2)).create(any(CorrelatedMessageDbModel.class));
+    verify(correlatedMessageWriter, times(2)).create(correlatedMessageCaptor.capture());
+    
+    // Verify that both records were exported with their unique record keys
+    final var models = correlatedMessageCaptor.getAllValues();
+    assertThat(models).hasSize(2);
+    assertThat(models.get(0).key()).isEqualTo(record1.getKey());
+    assertThat(models.get(1).key()).isEqualTo(record2.getKey());
+    assertThat(models.get(0).key()).isNotEqualTo(models.get(1).key());
+    
+    // Both should have the same message key (they're correlations of the same message)
+    assertThat(models.get(0).messageKey()).isEqualTo(messageKey);
+    assertThat(models.get(1).messageKey()).isEqualTo(messageKey);
   }
 
   @Test
@@ -161,5 +175,67 @@ class CorrelatedMessageExportHandlerTest {
 
     // then
     verify(correlatedMessageWriter, times(2)).create(any(CorrelatedMessageDbModel.class));
+  }
+
+  @Test
+  void shouldExportMultipleCorrelationsToSameSubscription() {
+    // This simulates the scenario where a non-interrupting boundary event
+    // receives multiple messages and each correlation generates a unique record
+    final long subscriptionElementInstanceKey = 789L;
+    final String messageName = "non-interrupting-message";
+    
+    final Record<ProcessMessageSubscriptionRecordValue> correlation1 =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                   .withValue(v -> v.setElementInstanceKey(subscriptionElementInstanceKey)
+                                    .setMessageName(messageName)
+                                    .setMessageKey(111L)));
+    final Record<ProcessMessageSubscriptionRecordValue> correlation2 =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                   .withValue(v -> v.setElementInstanceKey(subscriptionElementInstanceKey)
+                                    .setMessageName(messageName)
+                                    .setMessageKey(222L)));
+    final Record<ProcessMessageSubscriptionRecordValue> correlation3 =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                   .withValue(v -> v.setElementInstanceKey(subscriptionElementInstanceKey)
+                                    .setMessageName(messageName)
+                                    .setMessageKey(333L)));
+
+    // Verify each correlation has a unique record key
+    assertThat(correlation1.getKey()).isNotEqualTo(correlation2.getKey());
+    assertThat(correlation2.getKey()).isNotEqualTo(correlation3.getKey());
+    assertThat(correlation1.getKey()).isNotEqualTo(correlation3.getKey());
+
+    // when - export all three correlations
+    handler.export((Record<Object>) correlation1);
+    handler.export((Record<Object>) correlation2);
+    handler.export((Record<Object>) correlation3);
+
+    // then - all three should be stored without overwriting each other
+    verify(correlatedMessageWriter, times(3)).create(correlatedMessageCaptor.capture());
+    
+    final var models = correlatedMessageCaptor.getAllValues();
+    assertThat(models).hasSize(3);
+    
+    // Each model should have its unique record key
+    assertThat(models.get(0).key()).isEqualTo(correlation1.getKey());
+    assertThat(models.get(1).key()).isEqualTo(correlation2.getKey());
+    assertThat(models.get(2).key()).isEqualTo(correlation3.getKey());
+    
+    // All should reference the same subscription (same element instance and message name)
+    assertThat(models).allSatisfy(model -> {
+      assertThat(model.flowNodeInstanceKey()).isEqualTo(subscriptionElementInstanceKey);
+      assertThat(model.messageName()).isEqualTo(messageName);
+    });
+    
+    // But each should have different message keys (different messages)
+    assertThat(models.get(0).messageKey()).isEqualTo(111L);
+    assertThat(models.get(1).messageKey()).isEqualTo(222L);
+    assertThat(models.get(2).messageKey()).isEqualTo(333L);
   }
 }
