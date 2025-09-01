@@ -271,7 +271,7 @@ export async function mappingRuleBundle(
   const mappingRuleKey = 'mappingRuleId' + generateUniqueId();
   await createMappingRule(request, state, mappingRuleKey);
   return {
-    mappingRuleKey: 'mappingRuleId' + generateUniqueId(),
+    mappingRuleKey: mappingRuleKey,
     mappingRuleId: mappingRuleIdFromState(mappingRuleKey, state),
     responseBody: CREATE_MAPPING_EXPECTED_BODY(mappingRuleKey, state),
   };

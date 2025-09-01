@@ -79,7 +79,7 @@ export async function assertPaginatedRequest(
   expect(response.status()).toBe(200);
   const json = await response.json();
   assertRequiredFields(json, paginatedResponseFields);
-  if (options.itemLengthGreaterThan !== undefined) {
+  if (options.totalItemGreaterThan !== undefined) {
     expect(json.page.totalItems).toBeGreaterThan(
       options.totalItemGreaterThan as number,
     );
