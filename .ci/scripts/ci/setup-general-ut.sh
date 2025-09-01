@@ -1,5 +1,4 @@
-#!/bin/bash -eux
-
+#!/bin/bash
 #
 # Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
 # one or more contributor license agreements. See the NOTICE file distributed
@@ -8,12 +7,14 @@
 # except in compliance with the Camunda License 1.0.
 #
 
+set -euxo pipefail
+
 #### Outputs a list of optimize, operate, tasklist, and zeebe modules that should be skipped in the general unit tests
 #### The skipped modules are run elsewhere. This script ensures that any new modules that are added will be run by general unit test
 
 ### Get list of all modules in monorepo
 # shellcheck disable=SC2016,SC2005,SC2006,SC2046
-rawModuleList=$(echo $(./mvnw -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q -pl '-:zeebe-qa-integration-tests','-:zeebe-qa-update-tests','-:operate-qa-data-generator','-:operate-qa-it-tests','-:operate-qa-backup-restore-tests','-:tasklist-it-tests','-:tasklist-qa-backup-restore-tests','-:tasklist-test-coverage','-:camunda-qa-util','-:camunda-qa-acceptance-tests','-:optimize-commons'))
+rawModuleList=$(./mvnw -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q -pl '-:zeebe-qa-integration-tests','-:zeebe-qa-update-tests','-:operate-qa-data-generator','-:operate-qa-it-tests','-:operate-qa-backup-restore-tests','-:tasklist-it-tests','-:tasklist-qa-backup-restore-tests','-:tasklist-test-coverage','-:camunda-qa-util','-:camunda-qa-acceptance-tests','-:optimize-commons')
 echo "Raw module list: $rawModuleList"
 
 # Convert the module list string into an array
