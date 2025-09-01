@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -96,6 +97,7 @@ public class CoverageReporter {
         CoverageReportCreator.createSuiteCoverageReport(
             coverageCollector.getSuite(), coverageCollector.getModels()));
     writeJsonReport(CoverageReportCreator.createAggregatedCoverageReport(suites, models));
+    writeHtmlReport(CoverageReportCreator.createHtmlCoverageReport(suites, models));
   }
 
   /**
@@ -114,24 +116,24 @@ public class CoverageReporter {
                 .flatMap(r -> r.getCoverages().stream())
                 .collect(Collectors.toList()),
             coverageCollector.getModels());
+    final String coverageList =
+        coverages.stream()
+            .map(
+                coverage ->
+                    String.format(
+                        "- %s: %.0f%%",
+                        coverage.getProcessDefinitionId(), coverage.getCoverage() * 100))
+            .collect(Collectors.joining("\n"));
     final String message =
-        "Process coverage: "
-            + suite.getId()
-            + "\n========================\n"
-            + coverages.stream()
-                .map(
-                    coverage ->
-                        "- "
-                            + coverage.getProcessDefinitionId()
-                            + ": "
-                            + String.format("%.0f", coverage.getCoverage() * 100)
-                            + "%")
-                .collect(Collectors.joining("\n"))
-            + "\n\nSee more details: "
-            + resourceDirectory
-            + "/"
-            + suite.getId()
-            + "/report.json";
+        MessageFormat.format(
+            "Process coverage: {1} \n"
+                + "========================\n"
+                + "{2}\n\n"
+                + "See more details: \n"
+                + " - HTML Global coverage: file://{0}/report.html\n"
+                + " - JSON Global coverage report: file://{0}/report.json \n"
+                + " - JSON Coverage report: file://{0}/{1}/report.json\n",
+            resourceDirectory, suite.getId(), coverageList);
     printStream.accept(message);
   }
 
@@ -143,6 +145,12 @@ public class CoverageReporter {
   private void writeJsonReport(final AggregatedCoverageReport aggregatedReport) {
     final File jsonFile = new File(resourceDirectory, "/report.json");
     writeContent(jsonFile, () -> CoverageReportUtil.toJson(aggregatedReport));
+  }
+
+  private void writeHtmlReport(final HtmlCoverageReport htmlCoverageReport) {
+    CoverageReportUtil.installReportDependencies(resourceDirectory);
+    final File destFile = new File(resourceDirectory, "report.html");
+    writeContent(destFile, () -> CoverageReportUtil.toHtml(htmlCoverageReport));
   }
 
   private void writeContent(final File destFile, final Supplier<String> contentProvider) {
