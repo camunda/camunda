@@ -48,20 +48,6 @@ public class DbUsageMetricState implements MutableUsageMetricState {
     return metricsBucketColumnFamily.get(metricsBucketKey);
   }
 
-  @Override
-  public PersistedUsageMetrics getOrCreateActiveBucket() {
-    setActiveBucketKeys();
-
-    final var existingBucket = metricsBucketColumnFamily.get(metricsBucketKey);
-    if (existingBucket != null) {
-      return existingBucket;
-    }
-
-    final var bucket = new PersistedUsageMetrics();
-    metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
-    return bucket;
-  }
-
   public void updateActiveBucket(final PersistedUsageMetrics bucket) {
     setActiveBucketKeys();
     metricsBucketColumnFamily.update(metricsBucketKey, bucket);
@@ -91,21 +77,22 @@ public class DbUsageMetricState implements MutableUsageMetricState {
   public void resetActiveBucket(final long resetTime) {
     setActiveBucketKeys();
     metricsBucketColumnFamily.deleteIfExists(metricsBucketKey);
-    final var bucket =
-        new PersistedUsageMetrics()
-            .setFromTime(resetTime)
-            .setToTime(resetTime + exportInterval.toMillis());
+    final var bucket = new PersistedUsageMetrics().setFromTime(resetTime);
 
     metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
   }
 
   @Override
-  public void updateActiveBucketTime(final long resetTime) {
+  public PersistedUsageMetrics getOrCreateActiveBucket() {
     setActiveBucketKeys();
-    final var bucket =
-        getOrCreateActiveBucket()
-            .setFromTime(resetTime)
-            .setToTime(resetTime + exportInterval.toMillis());
-    metricsBucketColumnFamily.update(metricsBucketKey, bucket);
+
+    final var existingBucket = metricsBucketColumnFamily.get(metricsBucketKey);
+    if (existingBucket != null) {
+      return existingBucket;
+    }
+
+    final var bucket = new PersistedUsageMetrics();
+    metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
+    return bucket;
   }
 }
