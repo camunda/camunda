@@ -39,6 +39,23 @@ jobs:
     steps:
       - name: Determine action type and extract data
         id: extract-data
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_ACTION: ${{ github.event.action }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_LABEL: ${{ github.event.label.name }}
+          PUSH_AUTHOR: ${{ github.event.pusher.name }}
+          HEAD_COMMIT_SHA: ${{ github.event.head_commit.id }}
+          HEAD_COMMIT_MSG: ${{ github.event.head_commit.message }}
+          HEAD_COMMIT_URL: ${{ github.event.head_commit.url }}
+          COMPARE_URL: ${{ github.event.compare }}
+          REPO_URL: ${{ github.event.repository.html_url }}
         run: |
           # Set bash strict mode for better error handling
           set -euo pipefail
@@ -49,80 +66,69 @@ jobs:
           AUTHOR=""
           LINK_TEXT=""
           LINK_URL=""
-          PR_TITLE=""
-          
-          echo "🔍 Processing event: ${{ github.event_name }} - ${{ github.event.action }}"
-          
+
+          echo "🔍 Processing event: $GITHUB_EVENT_NAME - $GITHUB_EVENT_ACTION"
+
           # Determine event type and extract data
-          if [[ "${{ github.event_name }}" == "pull_request" || "${{ github.event_name }}" == "pull_request_target" ]]; then
-            BRANCH_NAME="${{ github.event.pull_request.base.ref }}"
-            AUTHOR="${{ github.event.pull_request.user.login }}"
-            PR_TITLE="${{ github.event.pull_request.title }}"
-            
-            # Truncate long titles for better display
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" || "$GITHUB_EVENT_NAME" == "pull_request_target" ]]; then
+            BRANCH_NAME="$PR_BASE_REF"
+            AUTHOR="$PR_AUTHOR"
+
+            # Truncate long titles
             if [[ ${#PR_TITLE} -gt 80 ]]; then
               PR_TITLE="${PR_TITLE:0:77}..."
             fi
-            
-            if [[ "${{ github.event.action }}" == "closed" && "${{ github.event.pull_request.merged }}" == "true" ]]; then
+
+            if [[ "$GITHUB_EVENT_ACTION" == "closed" && "$PR_MERGED" == "true" ]]; then
               ACTION_TYPE="MERGE COMPLETED"
-              LINK_TEXT="Merged PR: #${{ github.event.pull_request.number }} - ${PR_TITLE}"
-              LINK_URL="${{ github.event.pull_request.html_url }}"
-            elif [[ "${{ github.event.action }}" == "labeled" ]]; then
+              LINK_TEXT="Merged PR: #$PR_NUMBER - $PR_TITLE"
+              LINK_URL="$PR_URL"
+            elif [[ "$GITHUB_EVENT_ACTION" == "labeled" ]]; then
               ACTION_TYPE="BACKPORTING"
-              # For backport labels, the base branch might not be release-*
-              BRANCH_NAME="${{ github.event.pull_request.base.ref }}"
-              LINK_TEXT="PR: #${{ github.event.pull_request.number }} - ${PR_TITLE} (Label: ${{ github.event.label.name }})"
-              LINK_URL="${{ github.event.pull_request.html_url }}"
+              LINK_TEXT="PR: #$PR_NUMBER - $PR_TITLE (Label: $PR_LABEL)"
+              LINK_URL="$PR_URL"
             fi
-            
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
+
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
             ACTION_TYPE="DIRECT PUSH to release branch"
-            BRANCH_NAME="${{ github.ref_name }}"
-            AUTHOR="${{ github.event.pusher.name }}"
-            
-            # Handle commits - GitHub event may have multiple commits
+            BRANCH_NAME="$GITHUB_REF_NAME"
+            AUTHOR="$PUSH_AUTHOR"
+
             COMMIT_MSG=""
             COMMIT_SHA=""
-            
-            # Try to get first commit info if available
-            if [[ -n "${{ github.event.head_commit.id }}" ]]; then
-              COMMIT_MSG="${{ github.event.head_commit.message }}"
-              COMMIT_SHA="${{ github.event.head_commit.id }}"
-              # Truncate commit message for display
+
+            if [[ -n "$HEAD_COMMIT_SHA" ]]; then
+              COMMIT_MSG="$HEAD_COMMIT_MSG"
+              COMMIT_SHA="$HEAD_COMMIT_SHA"
+
               if [[ ${#COMMIT_MSG} -gt 60 ]]; then
                 COMMIT_MSG="${COMMIT_MSG:0:57}..."
               fi
-              LINK_TEXT="Commit: ${COMMIT_SHA:0:7} - ${COMMIT_MSG}"
-              LINK_URL="${{ github.event.head_commit.url }}"
+              LINK_TEXT="Commit: ${COMMIT_SHA:0:7} - $COMMIT_MSG"
+              LINK_URL="$HEAD_COMMIT_URL"
             else
-              COMPARE_URL="${{ github.event.compare }}"
               LINK_TEXT="Push to release branch"
-              LINK_URL="${COMPARE_URL:-${{ github.event.repository.html_url }}/tree/${{ github.ref_name }}}"
+              LINK_URL="${COMPARE_URL:-$REPO_URL/tree/$GITHUB_REF_NAME}"
             fi
           fi
-          
-          # Validate required data
+
           if [[ -z "$ACTION_TYPE" || -z "$BRANCH_NAME" || -z "$AUTHOR" ]]; then
             echo "::error::Failed to extract required data from GitHub event"
             echo "::error::ACTION_TYPE: $ACTION_TYPE"
-            echo "::error::BRANCH_NAME: $BRANCH_NAME" 
+            echo "::error::BRANCH_NAME: $BRANCH_NAME"
             echo "::error::AUTHOR: $AUTHOR"
             exit 1
           fi
-          
-          # Escape special characters for GitHub Actions output
+
           ACTION_TYPE=$(echo "$ACTION_TYPE" | sed 's/"/\\"/g')
           LINK_TEXT=$(echo "$LINK_TEXT" | sed 's/"/\\"/g')
-          
-          # Output variables for next step
+
           echo "action_type=$ACTION_TYPE" >> "$GITHUB_OUTPUT"
-          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"  
+          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
           echo "author=$AUTHOR" >> "$GITHUB_OUTPUT"
           echo "link_text=$LINK_TEXT" >> "$GITHUB_OUTPUT"
           echo "link_url=$LINK_URL" >> "$GITHUB_OUTPUT"
-          
-          # Debug output
+
           echo "✅ Extracted data:"
           echo "📝 Action Type: $ACTION_TYPE"
           echo "🌿 Branch: $BRANCH_NAME"
@@ -220,6 +226,6 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
