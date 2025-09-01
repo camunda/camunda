@@ -8,6 +8,8 @@
 package io.camunda.zeebe.db.impl.rocksdb;
 
 import jnr.ffi.LibraryLoader;
+import jnr.ffi.Platform;
+import jnr.ffi.Platform.OS;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
 import jnr.ffi.annotations.In;
@@ -76,7 +78,11 @@ final class RocksDbOptionsFormatter {
       return false;
     }
     try {
-      libC = LibraryLoader.create(LibC.class).load("c");
+      if (Platform.getNativePlatform().getOS() == OS.WINDOWS) {
+        libC = LibraryLoader.create(LibC.class).load("msvcrt");
+      } else {
+        libC = LibraryLoader.create(LibC.class).load("c");
+      }
       runtime = Runtime.getRuntime(libC);
     } catch (final Exception e) {
       libCUnavailable = true;
