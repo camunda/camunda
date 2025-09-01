@@ -147,10 +147,10 @@ public abstract class MetricMigrator implements Migrator {
         return true;
       } else if (Instant.now().isAfter(timeout)) {
         log.error(
-            "Importer did not finish within the timeout of {}. Aborting migration.",
+            "Importers did not finish within the timeout of {}. Aborting migration.",
             configuration.getTimeout());
         throw new MigrationTimeoutException(
-            "Importer did not finish within the timeout of " + configuration.getTimeout(), false);
+            "Importers did not finish within the timeout of " + configuration.getTimeout(), false);
       }
     } catch (final MigrationException e) {
       log.error("Failed to check whether importers are done", e);

@@ -36,7 +36,8 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -44,6 +45,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -155,20 +157,26 @@ public class UsageMetricMigrationIT {
   }
 
   private static void createImportPosition() throws IOException {
-    final var entity = importPosition(true, 1);
-    if (isElasticsearch) {
-      createDocumentsES(importPositionIndex, entity);
-    } else {
-      createDocumentsOS(importPositionIndex, entity);
+    final var entities =
+        List.of(
+            importPositions(true, 1, ListViewTemplate.INDEX_NAME),
+            importPositions(true, 1, DecisionInstanceTemplate.INDEX_NAME));
+    for (final Object entity : entities) {
+      if (isElasticsearch) {
+        createDocumentsES(importPositionIndex, entity);
+      } else {
+        createDocumentsOS(importPositionIndex, entity);
+      }
     }
   }
 
-  private static ImportPositionEntity importPosition(final boolean completed, final int partition) {
+  private static ImportPositionEntity importPositions(
+      final boolean completed, final int partition, final String indexName) {
     return new ImportPositionEntity()
-        .setId(partition + "-" + TaskTemplate.INDEX_NAME)
+        .setId(partition + "-" + indexName)
         .setPartitionId(partition)
-        .setAliasName(TaskTemplate.INDEX_NAME)
-        .setIndexName(TaskTemplate.INDEX_NAME)
+        .setAliasName(indexName)
+        .setIndexName(indexName)
         .setCompleted(completed);
   }
 

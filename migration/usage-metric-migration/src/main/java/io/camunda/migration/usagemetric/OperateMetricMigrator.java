@@ -12,6 +12,7 @@ import static io.camunda.migration.usagemetric.client.UsageMetricMigrationClient
 import static io.camunda.migration.usagemetric.util.MetricRegistry.OPERATE_REINDEX_TASK;
 import static io.camunda.migration.usagemetric.util.MetricRegistry.OPERATE_TASK_IMPORTER_FINISHED;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.wildcardQuery;
 
 import io.camunda.migration.commons.configuration.MigrationProperties;
@@ -24,7 +25,8 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.OffsetDateTime;
@@ -84,7 +86,9 @@ public class OperateMetricMigrator extends MetricMigrator {
 
   @Override
   protected SearchQuery getImportPositionQuery() {
-    return wildcardQuery(ImportPositionIndex.ID, "*-" + TaskTemplate.INDEX_NAME);
+    return or(
+        wildcardQuery(ImportPositionIndex.ID, "*-" + ListViewTemplate.INDEX_NAME),
+        wildcardQuery(ImportPositionIndex.ID, "*-" + DecisionInstanceTemplate.INDEX_NAME));
   }
 
   @Override
