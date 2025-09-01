@@ -27,8 +27,7 @@ public interface UnassignClientFromTenantCommandStep1 {
    */
   UnassignClientFromTenantCommandStep2 clientId(String clientId);
 
-  interface UnassignClientFromTenantCommandStep2
-      extends FinalCommandStep<UnassignClientFromTenantResponse> {
+  interface UnassignClientFromTenantCommandStep2 {
 
     /**
      * Sets the tenant ID.
@@ -37,6 +36,9 @@ public interface UnassignClientFromTenantCommandStep1 {
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    UnassignClientFromTenantCommandStep2 tenantId(String tenantId);
+    UnassignClientFromTenantCommandStep3 tenantId(String tenantId);
   }
+
+  interface UnassignClientFromTenantCommandStep3
+      extends FinalCommandStep<UnassignClientFromTenantResponse> {}
 }

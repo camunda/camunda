@@ -15,11 +15,11 @@
  */
 package io.camunda.client.tenant;
 
+import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
-import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
@@ -40,9 +40,11 @@ public class UnassignClientFromTenantTest extends ClientRestTest {
         .join();
 
     // then
-    final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl().contains(TENANT_ID + "/clients/" + CLIENT_ID)).isTrue();
-    assertThat(RestGatewayService.getLastRequest().getMethod()).isEqualTo(RequestMethod.DELETE);
+    final String requestPath = RestGatewayService.getLastRequest().getUrl();
+    final RequestMethod method = RestGatewayService.getLastRequest().getMethod();
+    assertThat(requestPath)
+        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/clients/" + CLIENT_ID);
+    assertThat(method).isEqualTo(RequestMethod.DELETE);
   }
 
   @Test
