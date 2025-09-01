@@ -84,7 +84,7 @@ final class RocksDbOptionsFormatter {
         libC = LibraryLoader.create(LibC.class).load("c");
       }
       runtime = Runtime.getRuntime(libC);
-    } catch (final Exception e) {
+    } catch (final Throwable e) {
       libCUnavailable = true;
       LOG.warn("Failed to load libc for sprintf formatting, will fall back to String.format", e);
     }
