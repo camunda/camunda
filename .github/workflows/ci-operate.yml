@@ -40,7 +40,7 @@ env:
 jobs:
   # run every time this CI file is called
   operate-backend-unit-tests:
-    name: "UT / Back End"
+    name: "Unit / Back End"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -106,7 +106,7 @@ jobs:
 
   fe-unit-tests:
     if: inputs.runFeTests
-    name: "UT / Front End"
+    name: "Unit / Front End"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: { } # GITHUB_TOKEN unused in this job
@@ -139,7 +139,7 @@ jobs:
   # Typescript Checker
   operate-fe-type-check:
     if: inputs.runFeTests
-    name: "Check / FE / TypeScript"
+    name: "Tool / Front End / TypeScript Type Check"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -173,7 +173,7 @@ jobs:
   # Front End Code linting
   operate-fe-eslint:
     if: inputs.runFeTests
-    name: "Lint / FE / ESLint"
+    name: "Tool / Front End / ESLint"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -207,7 +207,7 @@ jobs:
   # description: This workflow runs a11y accessibility tests on Operate
   operate-fe-a11y-tests:
     if: inputs.runFeTests
-    name: "accessibility / FE / a11y"
+    name: "Tool / Front End / a11y"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -255,7 +255,7 @@ jobs:
 
   operate-fe-visual-regression-tests:
     if: inputs.runFeTests
-    name: "regression / FE / Visual regression tests"
+    name: "Unit / Front End / Visual Regression"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -303,7 +303,7 @@ jobs:
 
   operate-update-screenshots:
     if: inputs.runFeTests
-    name: "screenshots / FE / Update Screenshots"
+    name: "Tool / FE / Update Screenshots"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -350,17 +350,38 @@ jobs:
 
   run-importer-tests:
     if: inputs.runBeTests
-    name: "IT / Importer"
-    uses: ./.github/workflows/operate-run-tests.yml
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    with:
-      command: ./mvnw -pl operate -am verify -T1C -P skipFrontendBuild,operateItImport -B -Dfailsafe.rerunFailingTestsCount=2
-      testName: "Importer"
-    secrets: inherit
+    name: "Integration / Importer"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: operate-${{ inputs.testName }}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Build Operate
+        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
+      - name: Run Tests
+        run: ${{ inputs.command }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "operate-importer-test"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-data-layer"
 
   run-backup-restore-tests:
     if: inputs.runBeTests
-    name: "IT / Backup Restore"
+    name: "Integration / Backup Restore"
     timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
