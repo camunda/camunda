@@ -22,7 +22,7 @@
     <!-- production (for process application) -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+      <artifactId>spring-boot-starter-camunda</artifactId>
     </dependency>
 
     <!-- testing (for process test) -->
