@@ -42,7 +42,7 @@ For example, you can use it to import the
 ```
 
 Also, you can use it to import the
-Spring SDK
+Spring Boot Camunda Starter
 
 ```xml
 <dependencies>

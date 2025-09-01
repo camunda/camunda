@@ -1,6 +1,6 @@
-# Camunda Spring SDK
+# Spring Boot Camunda Starter
 
-## Spring SDK usage in Camunda Saas staging environments
+## Spring Boot Camunda Starter usage in Camunda Saas staging environments
 
 To use a staging environment, the `camunda.client.cloud.domain` can be updated to match the domain of the desired cloud environment.
 
