@@ -43,11 +43,15 @@ const changedFolders =
     ? args[changedFoldersArgIndex + 1].split(',')
     : [];
 
+// Check if V2 mode is enabled to exclude V1-only tests
+const isV2ModeEnabled = process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED === 'true';
+
 export default defineConfig({
   testDir: `./tests/`,
   timeout: 12 * 60 * 1000,
   workers: 4,
   retries: 1,
+  grep: isV2ModeEnabled ? /^(?!.*@v1-only).*$/ : undefined,
   expect: {
     timeout: 10_000,
   },
@@ -70,6 +74,7 @@ export default defineConfig({
     {
       name: 'chromium-subset',
       testMatch: 'task-panel.spec.ts',
+      grep: /^(?!.*@v1-only).*$/,
       use: devices['Desktop Chrome'],
     },
     {
@@ -99,6 +104,14 @@ export default defineConfig({
       testMatch: ['tests/tasklist/*.spec.ts', 'tests/tasklist/v1/*.spec.ts'],
       use: devices['Desktop Edge'],
       testIgnore: 'task-panel.spec.ts',
+      teardown: 'chromium-subset',
+    },
+    {
+      name: 'tasklist-v2-e2e',
+      testMatch: ['tests/tasklist/*.spec.ts'],
+      use: devices['Desktop Edge'],
+      testIgnore: ['task-panel.spec.ts', 'tests/tasklist/v1/*.spec.ts'],
+      grep: /^(?!.*@v1-only).*$/,
       teardown: 'chromium-subset',
     },
     {
