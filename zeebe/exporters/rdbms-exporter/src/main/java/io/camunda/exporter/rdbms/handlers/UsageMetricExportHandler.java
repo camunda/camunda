@@ -28,18 +28,11 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricRecordValue> {
+public record UsageMetricExportHandler(
+    UsageMetricWriter usageMetricWriter, UsageMetricTUWriter usageMetricTUWriter)
+    implements RdbmsExportHandler<UsageMetricRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricExportHandler.class);
-
-  private final UsageMetricWriter usageMetricWriter;
-  private final UsageMetricTUWriter usageMetricTUWriter;
-
-  public UsageMetricExportHandler(
-      final UsageMetricWriter usageMetricWriter, final UsageMetricTUWriter usageMetricTUWriter) {
-    this.usageMetricWriter = usageMetricWriter;
-    this.usageMetricTUWriter = usageMetricTUWriter;
-  }
 
   @Override
   public boolean canExport(final Record<UsageMetricRecordValue> record) {
@@ -64,7 +57,7 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
       return new Tuple<>(List.of(), List.of());
     }
 
-    final var startTime = DateUtil.toOffsetDateTime(value.getStartTime());
+    final var endTime = DateUtil.toOffsetDateTime(value.getEndTime());
     final var recordKey = usageMetricRecordValue.getKey();
     final var partitionId = usageMetricRecordValue.getPartitionId();
 
@@ -76,8 +69,7 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
         .forEach(
             (key, val) ->
                 usageMetricList.add(
-                    new UsageMetricDbModel(
-                        recordKey, startTime, key, eventType, val, partitionId)));
+                    new UsageMetricDbModel(recordKey, endTime, key, eventType, val, partitionId)));
     value.getSetValues().entrySet().stream()
         .flatMap(
             entry ->
@@ -85,7 +77,7 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
                     .map(
                         val ->
                             new UsageMetricTUDbModel(
-                                recordKey, startTime, entry.getKey(), val, partitionId)))
+                                recordKey, endTime, entry.getKey(), val, partitionId)))
         .forEach(usageMetricTUList::add);
 
     return new Tuple<>(usageMetricList, usageMetricTUList);
