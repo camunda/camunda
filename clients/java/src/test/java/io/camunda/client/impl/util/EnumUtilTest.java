@@ -25,6 +25,7 @@ import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
@@ -34,6 +35,7 @@ import io.camunda.client.protocol.rest.BatchOperationError;
 import io.camunda.client.protocol.rest.BatchOperationItemResponse;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
 import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
+import io.camunda.client.protocol.rest.MessageSubscriptionTypeEnum;
 import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import org.junit.jupiter.api.Test;
 
@@ -516,6 +518,32 @@ public class EnumUtilTest {
       assertThat(value).isNotNull();
       if (protocolValue == BatchOperationError.TypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(BatchOperationErrorType.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
+
+  @Test
+  public void shouldConvertMessageSubscriptionType() {
+
+    for (final MessageSubscriptionType value : MessageSubscriptionType.values()) {
+      final MessageSubscriptionTypeEnum protocolValue =
+          EnumUtil.convert(value, MessageSubscriptionTypeEnum.class);
+      assertThat(protocolValue).isNotNull();
+      if (value == MessageSubscriptionType.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue).isEqualTo(MessageSubscriptionTypeEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final MessageSubscriptionTypeEnum protocolValue : MessageSubscriptionTypeEnum.values()) {
+      final MessageSubscriptionType value =
+          EnumUtil.convert(protocolValue, MessageSubscriptionType.class);
+      assertThat(value).isNotNull();
+      if (protocolValue == MessageSubscriptionTypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(MessageSubscriptionType.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());
       }
