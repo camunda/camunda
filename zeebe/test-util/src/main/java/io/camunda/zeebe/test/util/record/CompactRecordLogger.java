@@ -1401,6 +1401,9 @@ public class CompactRecordLogger {
   }
 
   private String formatTime(final String name, final long time) {
+    if (time == -1) {
+      return "%s[%s]".formatted(name, -1);
+    }
     final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneOffset.UTC);
     return "%s[%s]".formatted(name, shortenDateTime(dateTime));
   }
