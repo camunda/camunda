@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.testkit.support;
 
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import java.util.List;
@@ -28,7 +29,7 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                 "Backups of arbitrary nodes",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
-                        Optional.empty(), Optional.of(1), Optional.of(1L)),
+                        Optional.empty(), Optional.of(1), CheckpointPattern.of(1L)),
                     List.of(
                         new BackupIdentifierImpl(1, 1, 1),
                         new BackupIdentifierImpl(2, 1, 1),
@@ -40,7 +41,7 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                 "Backups of arbitrary partitions",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
-                        Optional.of(1), Optional.empty(), Optional.of(1L)),
+                        Optional.of(1), Optional.empty(), CheckpointPattern.of(1L)),
                     List.of(
                         new BackupIdentifierImpl(1, 1, 1),
                         new BackupIdentifierImpl(1, 2, 1),
@@ -52,7 +53,7 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                 "Backups of arbitrary checkpoints",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
-                        Optional.of(1), Optional.of(1), Optional.empty()),
+                        Optional.of(1), Optional.of(1), CheckpointPattern.any()),
                     List.of(
                         new BackupIdentifierImpl(1, 1, 1),
                         new BackupIdentifierImpl(1, 1, 2),
@@ -64,7 +65,7 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                 "Backups of arbitrary partitions and checkpoints",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
-                        Optional.of(1), Optional.empty(), Optional.empty()),
+                        Optional.of(1), Optional.empty(), CheckpointPattern.any()),
                     List.of(
                         new BackupIdentifierImpl(1, 1, 3),
                         new BackupIdentifierImpl(1, 2, 2),
@@ -76,7 +77,7 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                 "Backups of arbitrary nodes and partitions",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
-                        Optional.empty(), Optional.empty(), Optional.of(1L)),
+                        Optional.empty(), Optional.empty(), CheckpointPattern.of(1L)),
                     List.of(
                         new BackupIdentifierImpl(1, 3, 1),
                         new BackupIdentifierImpl(2, 2, 1),
@@ -88,7 +89,7 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                 "Backups of arbitrary nodes and checkpoints",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
-                        Optional.empty(), Optional.of(1), Optional.empty()),
+                        Optional.empty(), Optional.of(1), CheckpointPattern.any()),
                     List.of(
                         new BackupIdentifierImpl(1, 1, 3),
                         new BackupIdentifierImpl(2, 1, 2),
@@ -100,7 +101,7 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                 "All backups",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
-                        Optional.empty(), Optional.empty(), Optional.empty()),
+                        Optional.empty(), Optional.empty(), CheckpointPattern.any()),
                     List.of(
                         new BackupIdentifierImpl(1, 1, 1),
                         new BackupIdentifierImpl(2, 2, 2),
