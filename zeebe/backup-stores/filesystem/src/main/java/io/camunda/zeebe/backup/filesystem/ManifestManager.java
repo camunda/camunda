@@ -210,7 +210,7 @@ public final class ManifestManager {
                 MANIFEST_PATH_FORMAT.formatted(
                     basePath,
                     wildcard.partitionId().map(Number::toString).orElse("\\d+"),
-                    wildcard.checkpointId().map(Number::toString).orElse("\\d+"),
+                    wildcard.checkpointPattern().asRegex(),
                     wildcard.nodeId().map(Number::toString).orElse("\\d+")))
             .asMatchPredicate();
     return pattern.test(path);

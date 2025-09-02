@@ -36,10 +36,6 @@ public interface BackupManager {
    */
   ActorFuture<BackupStatus> getBackupStatus(long checkpointId);
 
-  default ActorFuture<Collection<BackupStatus>> listBackups() {
-    return listBackups(null);
-  }
-
   /**
    * Get all available backups where status is one of {@link BackupStatusCode#COMPLETED}, {@link
    * BackupStatusCode#FAILED}, {@link BackupStatusCode#IN_PROGRESS}
