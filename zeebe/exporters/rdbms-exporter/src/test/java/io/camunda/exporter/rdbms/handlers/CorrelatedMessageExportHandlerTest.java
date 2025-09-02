@@ -9,7 +9,6 @@ package io.camunda.exporter.rdbms.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -22,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -124,13 +124,15 @@ class CorrelatedMessageExportHandlerTest {
     final Record<ProcessMessageSubscriptionRecordValue> record1 =
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                   .withValue(v -> v.setMessageKey(messageKey)));
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                    .withValue(v -> v.setMessageKey(messageKey)));
     final Record<ProcessMessageSubscriptionRecordValue> record2 =
         factory.generateRecord(
-            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,  
-            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                   .withValue(v -> v.setMessageKey(messageKey)));
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                    .withValue(v -> v.setMessageKey(messageKey)));
 
     // Verify that the records have different keys (critical for avoiding overwrites)
     assertThat(record1.getKey()).isNotEqualTo(record2.getKey());
@@ -142,14 +144,14 @@ class CorrelatedMessageExportHandlerTest {
     // then
     // Both correlations should be exported since they have different record keys
     verify(correlatedMessageWriter, times(2)).create(correlatedMessageCaptor.capture());
-    
+
     // Verify that both records were exported with their unique record keys
     final var models = correlatedMessageCaptor.getAllValues();
     assertThat(models).hasSize(2);
     assertThat(models.get(0).key()).isEqualTo(record1.getKey());
     assertThat(models.get(1).key()).isEqualTo(record2.getKey());
     assertThat(models.get(0).key()).isNotEqualTo(models.get(1).key());
-    
+
     // Both should have the same message key (they're correlations of the same message)
     assertThat(models.get(0).messageKey()).isEqualTo(messageKey);
     assertThat(models.get(1).messageKey()).isEqualTo(messageKey);
@@ -161,13 +163,15 @@ class CorrelatedMessageExportHandlerTest {
     final Record<ProcessMessageSubscriptionRecordValue> record1 =
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                   .withValue(v -> v.setMessageKey(123L)));
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                    .withValue(v -> v.setMessageKey(123L)));
     final Record<ProcessMessageSubscriptionRecordValue> record2 =
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                   .withValue(v -> v.setMessageKey(456L)));
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                    .withValue(v -> v.setMessageKey(456L)));
 
     // when
     handler.export((Record<Object>) record1);
@@ -183,28 +187,37 @@ class CorrelatedMessageExportHandlerTest {
     // receives multiple messages and each correlation generates a unique record
     final long subscriptionElementInstanceKey = 789L;
     final String messageName = "non-interrupting-message";
-    
+
     final Record<ProcessMessageSubscriptionRecordValue> correlation1 =
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                   .withValue(v -> v.setElementInstanceKey(subscriptionElementInstanceKey)
-                                    .setMessageName(messageName)
-                                    .setMessageKey(111L)));
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                    .withValue(
+                        v ->
+                            v.setElementInstanceKey(subscriptionElementInstanceKey)
+                                .setMessageName(messageName)
+                                .setMessageKey(111L)));
     final Record<ProcessMessageSubscriptionRecordValue> correlation2 =
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                   .withValue(v -> v.setElementInstanceKey(subscriptionElementInstanceKey)
-                                    .setMessageName(messageName)
-                                    .setMessageKey(222L)));
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                    .withValue(
+                        v ->
+                            v.setElementInstanceKey(subscriptionElementInstanceKey)
+                                .setMessageName(messageName)
+                                .setMessageKey(222L)));
     final Record<ProcessMessageSubscriptionRecordValue> correlation3 =
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                   .withValue(v -> v.setElementInstanceKey(subscriptionElementInstanceKey)
-                                    .setMessageName(messageName)
-                                    .setMessageKey(333L)));
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                    .withValue(
+                        v ->
+                            v.setElementInstanceKey(subscriptionElementInstanceKey)
+                                .setMessageName(messageName)
+                                .setMessageKey(333L)));
 
     // Verify each correlation has a unique record key
     assertThat(correlation1.getKey()).isNotEqualTo(correlation2.getKey());
@@ -218,24 +231,87 @@ class CorrelatedMessageExportHandlerTest {
 
     // then - all three should be stored without overwriting each other
     verify(correlatedMessageWriter, times(3)).create(correlatedMessageCaptor.capture());
-    
+
     final var models = correlatedMessageCaptor.getAllValues();
     assertThat(models).hasSize(3);
-    
+
     // Each model should have its unique record key
     assertThat(models.get(0).key()).isEqualTo(correlation1.getKey());
     assertThat(models.get(1).key()).isEqualTo(correlation2.getKey());
     assertThat(models.get(2).key()).isEqualTo(correlation3.getKey());
-    
+
     // All should reference the same subscription (same element instance and message name)
-    assertThat(models).allSatisfy(model -> {
-      assertThat(model.flowNodeInstanceKey()).isEqualTo(subscriptionElementInstanceKey);
-      assertThat(model.messageName()).isEqualTo(messageName);
-    });
-    
+    assertThat(models)
+        .allSatisfy(
+            model -> {
+              assertThat(model.flowNodeInstanceKey()).isEqualTo(subscriptionElementInstanceKey);
+              assertThat(model.messageName()).isEqualTo(messageName);
+            });
+
     // But each should have different message keys (different messages)
     assertThat(models.get(0).messageKey()).isEqualTo(111L);
     assertThat(models.get(1).messageKey()).isEqualTo(222L);
     assertThat(models.get(2).messageKey()).isEqualTo(333L);
+  }
+
+  @Test
+  void shouldExportVariablesForProcessMessageSubscription() {
+    // given
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                .withValue(v -> v.setVariables(Map.of("var1", "value1", "var2", 42))));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(correlatedMessageWriter).create(modelCaptor.capture());
+    final CorrelatedMessageDbModel model = modelCaptor.getValue();
+
+    assertThat(model.variables()).isNotNull();
+    assertThat(model.variables()).contains("\"var1\":\"value1\"");
+    assertThat(model.variables()).contains("\"var2\":42");
+  }
+
+  @Test
+  void shouldExportVariablesForMessageStartEventSubscription() {
+    // given
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r -> r.withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+                .withValue(v -> v.setVariables(Map.of("startVar", "initValue", "count", 100))));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(correlatedMessageWriter).create(modelCaptor.capture());
+    final CorrelatedMessageDbModel model = modelCaptor.getValue();
+
+    assertThat(model.variables()).isNotNull();
+    assertThat(model.variables()).contains("\"startVar\":\"initValue\"");
+    assertThat(model.variables()).contains("\"count\":100");
+  }
+
+  @Test
+  void shouldHandleEmptyVariables() {
+    // given
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                .withValue(v -> v.setVariables(Map.of())));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(correlatedMessageWriter).create(modelCaptor.capture());
+    final CorrelatedMessageDbModel model = modelCaptor.getValue();
+
+    assertThat(model.variables()).isNull();
   }
 }

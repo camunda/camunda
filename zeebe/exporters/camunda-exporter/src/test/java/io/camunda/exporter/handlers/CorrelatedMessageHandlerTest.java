@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -138,5 +139,58 @@ class CorrelatedMessageHandlerTest {
   @Test
   void shouldReturnCorrectIndexName() {
     assertThat(handler.getIndexName()).isEqualTo(INDEX_NAME);
+  }
+
+  @Test
+  void shouldHandleVariablesInProcessMessageSubscriptionRecord() {
+    // given
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                    .withValue(v -> v.setVariables(Map.of("key1", "value1", "key2", 42))));
+
+    // when
+    final boolean handlesRecord = handler.handlesRecord((Record<Object>) record);
+    final List<String> ids = handler.generateIds((Record<Object>) record);
+    final CorrelatedMessageEntity entity = handler.createNewEntity(ids.get(0));
+    handler.updateEntity((Record<Object>) record, entity);
+    handler.flush(entity, batchRequest);
+
+    // then
+    assertThat(handlesRecord).isTrue();
+    assertThat(entity.getVariables()).isNotNull();
+    assertThat(entity.getVariables()).contains("\"key1\":\"value1\"");
+    assertThat(entity.getVariables()).contains("\"key2\":42");
+
+    verify(batchRequest).add(INDEX_NAME, entity);
+  }
+
+  @Test
+  void shouldHandleVariablesInMessageStartEventSubscriptionRecord() {
+    // given
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r ->
+                r.withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+                    .withValue(
+                        v -> v.setVariables(Map.of("processVar", "startValue", "count", 100))));
+
+    // when
+    final boolean handlesRecord = handler.handlesRecord((Record<Object>) record);
+    final List<String> ids = handler.generateIds((Record<Object>) record);
+    final CorrelatedMessageEntity entity = handler.createNewEntity(ids.get(0));
+    handler.updateEntity((Record<Object>) record, entity);
+    handler.flush(entity, batchRequest);
+
+    // then
+    assertThat(handlesRecord).isTrue();
+    assertThat(entity.getVariables()).isNotNull();
+    assertThat(entity.getVariables()).contains("\"processVar\":\"startValue\"");
+    assertThat(entity.getVariables()).contains("\"count\":100");
+
+    verify(batchRequest).add(INDEX_NAME, entity);
   }
 }
