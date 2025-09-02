@@ -55,7 +55,7 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 * [BPMN Processes](https://docs.camunda.io/docs/components/modeler/bpmn/bpmn-primer/)
 * [Installation and Configuration](https://docs.camunda.io/docs/self-managed/setup/overview/)
 * [Java Client](https://docs.camunda.io/docs/apis-tools/java-client/)
-* [Spring Boot Camunda Starter](https://docs.camunda.io/docs/apis-tools/spring-zeebe-sdk/getting-started/)
+* [Camunda Spring Boot Starter](https://docs.camunda.io/docs/apis-tools/spring-zeebe-sdk/getting-started/)
 
 ## Contributing
 
@@ -80,7 +80,7 @@ below, which are made available under the [Apache License, Version
 
 Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
 - Java Client ([clients/java](/clients/java))
-- Spring Boot Camunda Starter ([spring-boot-camunda-starter](/clients/spring-boot-camunda-starter))
+- Camunda Spring Boot Starter ([spring-boot-camunda-starter](/clients/spring-boot-camunda-starter))
 - Exporter API ([exporter-api](/zeebe/exporter-api))
 - Protocol ([protocol](/zeebe/protocol))
 - Gateway Protocol Implementation ([gateway-protocol-impl](/zeebe/gateway-protocol-impl))

@@ -10,7 +10,7 @@
 
   <artifactId>spring-boot-camunda-starter</artifactId>
 
-  <name>Spring Boot Camunda Starter</name>
+  <name>Camunda Spring Boot Starter</name>
 
   <licenses>
     <license>
