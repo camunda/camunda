@@ -20,7 +20,6 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
@@ -57,11 +56,15 @@ class SchemaUpdateIT {
   static void beforeAll() {
     final var semanticVersion = VersionUtil.getSemanticVersion().get();
     currentMinorVersion = "%d.%d".formatted(semanticVersion.major(), semanticVersion.minor());
-    final var previousSemanticVersion =
-        SemanticVersion.parse(VersionUtil.getPreviousVersion()).get();
-    previousMinorSnapshotVersion =
-        "%d.%d-SNAPSHOT"
-            .formatted(previousSemanticVersion.major(), previousSemanticVersion.minor());
+    // TODO find a better way to get the previous version image
+    // final var previousSemanticVersion =
+    //    SemanticVersion.parse(VersionUtil.getPreviousVersion()).get();
+    // previousMinorSnapshotVersion =
+    //   "%d.%d-SNAPSHOT"
+    //       .formatted(previousSemanticVersion.major(), previousSemanticVersion.minor());
+
+    // FIXME using SNAPSHOT for now, as it is the only one that has tasklist-task-8.8.0_ index
+    previousMinorSnapshotVersion = "SNAPSHOT";
   }
 
   @BeforeEach
@@ -85,22 +88,19 @@ class SchemaUpdateIT {
                     .forPort(9600)
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
+            .withEnv("CAMUNDA_DATABASE_TYPE", databaseType.toString())
+            .withEnv("CAMUNDA_DATABASE_URL", url)
+            .withEnv("CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS", "1")
+            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix)
+            .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")
             .withEnv("CAMUNDA_OPERATE_DATABASE", databaseType.toString())
             .withEnv("CAMUNDA_OPERATE_%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_OPERATE_%s_NUMBEROFREPLICAS".formatted(databaseType.name()), "1")
-            .withEnv(
-                "CAMUNDA_OPERATE_%s_INDEXPREFIX".formatted(databaseType.name()),
-                "%s-operate".formatted(indexPrefix))
+            .withEnv("CAMUNDA_OPERATE_%s_INDEXPREFIX".formatted(databaseType.name()), indexPrefix)
             .withEnv("CAMUNDA_OPERATE_ZEEBE%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_OPERATE_ARCHIVER_ILMENABLED", "true")
             .withEnv("CAMUNDA_TASKLIST_DATABASE", databaseType.toString())
             .withEnv("CAMUNDA_TASKLIST_%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_TASKLIST_%s_NUMBEROFREPLICAS".formatted(databaseType.name()), "1")
-            .withEnv(
-                "CAMUNDA_TASKLIST_%s_INDEXPREFIX".formatted(databaseType.name()),
-                "%s-tasklist".formatted(indexPrefix))
-            .withEnv("CAMUNDA_TASKLIST_ZEEBE%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_TASKLIST_ARCHIVER_ILMENABLED", "true")) {
+            .withEnv("CAMUNDA_TASKLIST_%s_INDEXPREFIX".formatted(databaseType.name()), indexPrefix)
+            .withEnv("CAMUNDA_TASKLIST_ZEEBE%s_URL".formatted(databaseType.name()), url)) {
       previousVersionContainer.start();
       previousVersionContainer.followOutput(new Slf4jLogConsumer(LOG));
     }
