@@ -7,8 +7,7 @@
  */
 package io.camunda.authentication.config;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,18 +28,20 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
 
   @ParameterizedTest
   @MethodSource("getAllInvalidProperties")
-  void whenInvalidConfiguration_thenApplicationFailed(final Map<String, Object> invalidProperties) {
-    final Exception exception =
-        assertThrows(
-            Exception.class,
+  void invalidConfigurationApplicationFailed(final Map<String, Object> invalidProperties) {
+    assertThatThrownBy(
             () -> {
-              new SpringApplicationBuilder(TestApplication.class)
-                  .web(WebApplicationType.NONE)
-                  .properties(invalidProperties)
-                  .run();
-            });
-    assertThat(exception.getCause().getMessage())
-        .contains("Oidc configuration is not supported with `BASIC` authentication method");
+              try (final var context =
+                  new SpringApplicationBuilder(TestApplication.class)
+                      .web(WebApplicationType.NONE)
+                      .properties(invalidProperties)
+                      .run()) {
+                // Should not reach here
+              }
+            })
+        .getCause()
+        .hasMessageContaining(
+            "Oidc configuration is not supported with `BASIC` authentication method");
   }
 
   private Stream<Map<String, Object>> getAllInvalidProperties() {
@@ -74,7 +75,5 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
   @AutoConfigureMockMvc
   @AutoConfigureWebMvc
   @ComponentScan(basePackages = {"io.camunda.authentication"})
-  static class TestApplication {
-    // This is a minimal Spring Boot application for testing
-  }
+  static class TestApplication {}
 }
