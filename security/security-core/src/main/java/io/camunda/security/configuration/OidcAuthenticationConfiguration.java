@@ -32,6 +32,21 @@ public class OidcAuthenticationConfiguration {
   private String clientIdClaim;
   private String groupsClaim;
   private String organizationId;
+<<<<<<< HEAD
+=======
+  private List<String> resource;
+
+  public List<String> getResource() {
+    return resource;
+  }
+
+  public void setResource(final List<String> resource) {
+    this.resource = resource;
+  }
+  private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
+  private AssertionKeystoreConfiguration assertionKeystoreConfiguration =
+      new AssertionKeystoreConfiguration();
+>>>>>>> 5d0d9891 (feat: introduce new `resource` parameter as per RFC 8707)
 
   public String getIssuerUri() {
     return issuerUri;
