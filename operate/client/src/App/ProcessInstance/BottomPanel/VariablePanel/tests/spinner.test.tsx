@@ -38,7 +38,7 @@ import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstan
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {init} from 'modules/utils/flowNodeMetadata';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';

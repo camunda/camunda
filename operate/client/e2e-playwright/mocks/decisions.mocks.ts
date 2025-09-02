@@ -12,7 +12,7 @@ import type {
   DecisionInstancesDto,
   BatchOperationDto,
 } from '@/types';
-import {type QueryBatchOperationsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type QueryBatchOperationsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 function mockResponses({
   batchOperations,

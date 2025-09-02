@@ -9,7 +9,7 @@
 import {
   endpoints,
   type QueryJobsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {IS_LISTENERS_TAB_V2} from 'modules/feature-flags';
 import {RequestHandler, http, HttpResponse} from 'msw';
 

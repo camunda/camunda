@@ -17,7 +17,7 @@ import {IncidentsTable} from './IncidentsTable';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {getFilteredIncidents, init} from 'modules/utils/incidents';
 import {useIncidents} from 'modules/hooks/incidents';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
 type Props = {
   processInstance: ProcessInstance;

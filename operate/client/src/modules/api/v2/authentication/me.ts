@@ -7,7 +7,10 @@
  */
 
 import {requestWithThrow} from 'modules/request';
-import {type CurrentUser, endpoints} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {
+  type CurrentUser,
+  endpoints,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const getMe = async () => {
   return requestWithThrow<CurrentUser>({
