@@ -142,7 +142,8 @@ public class WebSecurityConfig {
           "/decisions",
           "/decisions/*",
           "/instances",
-          "/instances/*");
+          "/instances/*",
+          "/default-ui.css");
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -159,8 +160,7 @@ public class WebSecurityConfig {
           "/rest-api.yaml",
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
-          "/favicon.ico",
-          "/default-ui.css");
+          "/favicon.ico");
   // We explicitly support the "at+jwt" JWT 'typ' header defined in
   // https://datatracker.ietf.org/doc/html/rfc9068#name-header
   static final JOSEObjectType AT_JWT = new JOSEObjectType("at+jwt");
@@ -230,18 +230,19 @@ public class WebSecurityConfig {
     return filterChainBuilder.build();
   }
 
-  @Bean
-  @Order(ORDER_UNHANDLED)
-  public SecurityFilterChain protectedUnhandledPathsSecurityFilterChain(
-      final HttpSecurity httpSecurity) throws Exception {
-    // all resources not yet explicitly handled by any previous chain require an authenticated user
-    // thus by default unhandled paths are always protected
-    return httpSecurity
-        .securityMatcher("/**")
-        .authorizeHttpRequests(
-            (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().denyAll())
-        .build();
-  }
+  //  @Bean
+  //  @Order(ORDER_UNHANDLED)
+  //  public SecurityFilterChain protectedUnhandledPathsSecurityFilterChain(
+  //      final HttpSecurity httpSecurity) throws Exception {
+  //    // all resources not yet explicitly handled by any previous chain require an authenticated
+  // user
+  //    // thus by default unhandled paths are always protected
+  //    return httpSecurity
+  //        .securityMatcher("/**")
+  //        .authorizeHttpRequests(
+  //            (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().denyAll())
+  //        .build();
+  //  }
 
   private static void setupSecureHeaders(
       final HeadersConfigurer<HttpSecurity> headers,
@@ -747,7 +748,12 @@ public class WebSecurityConfig {
           httpSecurity
               .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
               .authorizeHttpRequests(
-                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().authenticated())
+                  (authorizeHttpRequests) ->
+                      authorizeHttpRequests
+                          .requestMatchers(List.of("/default-ui.css").toArray(String[]::new))
+                          .permitAll()
+                          .anyRequest()
+                          .authenticated())
               .headers(
                   headers ->
                       setupSecureHeaders(
