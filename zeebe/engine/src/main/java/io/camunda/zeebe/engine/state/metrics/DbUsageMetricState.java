@@ -16,22 +16,15 @@ import io.camunda.zeebe.db.impl.DbEnumValue;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
-import java.time.Duration;
 
 public class DbUsageMetricState implements MutableUsageMetricState {
-
-  private final Duration exportInterval;
 
   private final ColumnFamily<DbEnumValue<IntervalType>, PersistedUsageMetrics>
       metricsBucketColumnFamily;
   private final DbEnumValue<IntervalType> metricsBucketKey;
 
   public DbUsageMetricState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext,
-      final Duration exportInterval) {
-
-    this.exportInterval = exportInterval;
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
     metricsBucketKey = new DbEnumValue<>(IntervalType.class);
     metricsBucketColumnFamily =
@@ -82,7 +75,6 @@ public class DbUsageMetricState implements MutableUsageMetricState {
     metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
   }
 
-  @Override
   public PersistedUsageMetrics getOrCreateActiveBucket() {
     setActiveBucketKeys();
 

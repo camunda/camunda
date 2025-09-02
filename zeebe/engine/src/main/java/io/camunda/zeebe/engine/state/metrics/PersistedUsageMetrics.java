@@ -120,11 +120,13 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
   }
 
   public PersistedUsageMetrics close(final long time) {
+    final var bucket = new PersistedUsageMetrics();
+    bucket.copyFrom(this);
+    // Ensure the toTime is set. This can happen if metrics were recorded before the first applier.
     if (getFromTime() == TIME_NOT_SET) {
-      // initialize fromTime in case metrics were recorded before the first checker run
-      setFromTime(time);
+      bucket.setFromTime(time);
     }
-    setToTime(time);
-    return this; // return copy
+    bucket.setToTime(time);
+    return bucket;
   }
 }

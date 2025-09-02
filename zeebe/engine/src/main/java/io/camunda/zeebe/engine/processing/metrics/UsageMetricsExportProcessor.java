@@ -16,11 +16,9 @@ import io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
-import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
-import java.util.List;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,33 +49,31 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
 
     final long now = clock.millis();
 
-    // bucket is initialized when some metric is recorded or when the checker runs
+    // bucket is initialized when some metric is recorded or when the first applier runs
     var bucket = usageMetricState.getActiveBucket();
     if (bucket == null) {
       bucket = new PersistedUsageMetrics();
     }
 
-    // close bucket end time and update start time if needed
+    // Copy and update the bucket fromTime as we are exporting it now.
+    // Additionally, ensure the toTime is set. This can happen if metrics were recorded before the
+    // first applier.
     final PersistedUsageMetrics finalBucket = bucket.close(now);
 
     // export usage metric events if there is data
-    final List<UsageMetricRecord> records =
-        Stream.of(EventType.RPI, EventType.EDI, EventType.TU)
-            .map(eventType -> createRecord(eventType, finalBucket))
-            .filter(UsageMetricRecord::hasData)
-            .toList();
-
-    records.forEach(this::appendFollowUpEvent);
+    Stream.of(EventType.RPI, EventType.EDI, EventType.TU)
+        .map(eventType -> createUsageMetricRecord(eventType, finalBucket))
+        .filter(UsageMetricRecord::hasData)
+        .forEach(this::appendFollowUpEvent);
     // append NONE event that triggers the reset in the applier
     appendFollowUpEvent(new UsageMetricRecord().setEventType(EventType.NONE).setResetTime(now));
   }
 
-  private static UsageMetricRecord createRecord(
+  private static UsageMetricRecord createUsageMetricRecord(
       final EventType eventType, final PersistedUsageMetrics bucket) {
 
     final var record =
         new UsageMetricRecord()
-            .setIntervalType(IntervalType.ACTIVE)
             .setStartTime(bucket.getFromTime())
             .setEndTime(bucket.getToTime())
             .setEventType(eventType);
