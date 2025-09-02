@@ -184,7 +184,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   public void start() {
-    start(StreamProcessorMode.PROCESSING, true);
+    start(environmentRule.getStreamProcessorMode(), true);
   }
 
   public void start(final StreamProcessorMode mode, final boolean awaitOpening) {
