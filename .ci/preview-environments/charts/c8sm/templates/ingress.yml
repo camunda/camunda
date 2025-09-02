@@ -31,7 +31,7 @@ spec:
         pathType: Prefix
       - backend:
           service:
-            name: {{ template "core.fullname" $camundaPlatform }}
+            name: {{ template "core.fullname" $camundaPlatform }}-gateway
             port:
               number: {{ .Values.camundaPlatform.core.service.httpPort }}
         path: {{ .Values.camundaPlatform.core.contextPath }}
