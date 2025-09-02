@@ -48,7 +48,7 @@ Camunda Spring Boot Starter
 <dependencies>
   <dependency>
     <groupId>io.camunda</groupId>
-    <artifactId>spring-boot-camunda-starter</artifactId>
+    <artifactId>camunda-spring-boot-starter</artifactId>
   </dependency>
 </dependencies>
 ```
