@@ -458,11 +458,11 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - run: ./mvnw -B -D skipTests -D skipChecks -pl zeebe/benchmarks/project -am install
+      - run: ./mvnw -B -D skipTests -D skipChecks -pl zeebe/load-tests/project -am install
       - name: Build Starter Image
-        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter
+        run: ./mvnw -pl zeebe/load-tests/project jib:build -P starter
       - name: Build Worker Image
-        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker
+        run: ./mvnw -pl zeebe/load-tests/project jib:build -P worker
       - name: Observe build status
         if: always()
         continue-on-error: true
