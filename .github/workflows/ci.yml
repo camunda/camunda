@@ -247,7 +247,7 @@ jobs:
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-unit-tests
   general-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "General / [UT] Run Unit Tests"
+    name: "General / Unit Tests"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -313,7 +313,7 @@ jobs:
 
   zeebe-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "Zeebe / [UT] ${{matrix.component}} / ${{matrix.suiteName}}"
+    name: "Zeebe / Unit Test / ${{matrix.component}} / ${{matrix.suiteName}}"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -412,7 +412,7 @@ jobs:
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "[IT] Elasticsearch"
+    name: "General / Integration / Elasticsearch"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -507,7 +507,7 @@ jobs:
   opensearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "[IT] OpenSearch"
+    name: "General / Integration / OpenSearch"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -608,7 +608,7 @@ jobs:
   rdbms-h2-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "[IT] RDBMS - H2"
+    name: "General / Integration / RDBMS - H2"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
@@ -677,7 +677,7 @@ jobs:
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
-    name: "[IT] RDBMS"
+    name: "General / Integration / RDBMS"
     timeout-minutes: 7
     runs-on: gcp-perf-core-8-default
     outputs:
