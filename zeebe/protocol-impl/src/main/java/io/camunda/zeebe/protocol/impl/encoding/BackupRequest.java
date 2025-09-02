@@ -26,11 +26,13 @@ public class BackupRequest implements BufferReader, BufferWriter {
   private BackupRequestType type;
   private int partitionId;
   private long backupId;
+  private String pattern;
 
   public BackupRequest reset() {
     type = BackupRequestType.NULL_VAL;
     partitionId = BackupRequestEncoder.partitionIdNullValue();
     backupId = BackupRequestEncoder.backupIdNullValue();
+    pattern = null;
     return this;
   }
 
@@ -61,17 +63,30 @@ public class BackupRequest implements BufferReader, BufferWriter {
     return this;
   }
 
+  public String getPattern() {
+    return pattern;
+  }
+
+  public BackupRequest setPattern(final String pattern) {
+    this.pattern = pattern;
+    return this;
+  }
+
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
     partitionId = bodyDecoder.partitionId();
     type = bodyDecoder.type();
     backupId = bodyDecoder.backupId();
+    pattern = bodyDecoder.pattern();
   }
 
   @Override
   public int getLength() {
-    return headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
+    return headerEncoder.encodedLength()
+        + bodyEncoder.sbeBlockLength()
+        + BackupRequestEncoder.patternHeaderLength()
+        + (pattern == null ? 0 : pattern.length());
   }
 
   @Override
@@ -80,6 +95,7 @@ public class BackupRequest implements BufferReader, BufferWriter {
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .partitionId(partitionId)
         .type(type)
-        .backupId(backupId);
+        .backupId(backupId)
+        .pattern(pattern);
   }
 }

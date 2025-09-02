@@ -417,7 +417,49 @@ class BackupServiceImplTest {
         .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2)));
 
     // when
-    final var backups = backupService.listBackups(partitionId, concurrencyControl).join();
+    final var backups = backupService.listBackups(partitionId, null, concurrencyControl).join();
+
+    // then
+    assertThat(backups).containsExactlyInAnyOrder(backup1, backup2);
+  }
+
+  @Test
+  void shouldListAvailableBackupsWithPrefix() {
+    // given
+    final int partitionId = 2;
+    final var backup1 = mock(BackupStatus.class);
+    final var backup2 = mock(BackupStatus.class);
+    when(backup1.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, 11));
+    when(backup2.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, 21));
+
+    when(backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(partitionId), Optional.empty())))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2)));
+
+    // when
+    final var backups = backupService.listBackups(partitionId, "1*", concurrencyControl).join();
+
+    // then
+    assertThat(backups).singleElement().isEqualTo(backup1);
+  }
+
+  @Test
+  void shouldListAllAvailableBackupsWithEmptyPrefix() {
+    // given
+    final int partitionId = 2;
+    final var backup1 = mock(BackupStatus.class);
+    final var backup2 = mock(BackupStatus.class);
+    when(backup1.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, 11));
+    when(backup2.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, 21));
+
+    when(backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(partitionId), Optional.empty())))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2)));
+
+    // when
+    final var backups = backupService.listBackups(partitionId, "*", concurrencyControl).join();
 
     // then
     assertThat(backups).containsExactlyInAnyOrder(backup1, backup2);

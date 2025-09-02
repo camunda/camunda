@@ -296,7 +296,7 @@ final class BackupServiceImpl {
   }
 
   ActorFuture<Collection<BackupStatus>> listBackups(
-      final int partitionId, final ConcurrencyControl executor) {
+      final int partitionId, final String pattern, final ConcurrencyControl executor) {
     final ActorFuture<Collection<BackupStatus>> availableBackupsFuture = executor.createFuture();
     executor.run(
         () ->
@@ -304,13 +304,30 @@ final class BackupServiceImpl {
                 .list(
                     new BackupIdentifierWildcardImpl(
                         Optional.empty(), Optional.of(partitionId), Optional.empty()))
-                .thenAccept(availableBackupsFuture::complete)
+                .thenAccept(
+                    statuses ->
+                        availableBackupsFuture.complete(
+                            statuses.stream()
+                                .filter(status -> matchPattern(status, pattern))
+                                .toList()))
                 .exceptionally(
                     error -> {
                       availableBackupsFuture.completeExceptionally(error);
                       return null;
                     }));
     return availableBackupsFuture;
+  }
+
+  private boolean matchPattern(final BackupStatus status, final String pattern) {
+    if (pattern == null || pattern.isEmpty()) {
+      return true;
+    }
+    if (pattern.endsWith("*")) {
+      final var prefix = pattern.substring(0, pattern.length() - 1);
+      return Long.toString(status.id().checkpointId()).startsWith(prefix);
+    } else {
+      return Long.toString(status.id().checkpointId()).equals(pattern);
+    }
   }
 
   void createFailedBackup(
