@@ -19,6 +19,7 @@ import java.util.Objects;
 
 public record CorrelatedMessageFilter(
     List<Operation<Long>> messageKeyOperations,
+    List<Operation<Long>> subscriptionKeyOperations,
     List<Operation<String>> messageNameOperations,
     List<Operation<String>> correlationKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
@@ -33,6 +34,7 @@ public record CorrelatedMessageFilter(
   public static final class Builder implements ObjectBuilder<CorrelatedMessageFilter> {
 
     private List<Operation<Long>> messageKeyOperations;
+    private List<Operation<Long>> subscriptionKeyOperations;
     private List<Operation<String>> messageNameOperations;
     private List<Operation<String>> correlationKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
@@ -52,10 +54,25 @@ public record CorrelatedMessageFilter(
       return this;
     }
 
+    public Builder subscriptionKeys(final Long value, final Long... values) {
+      return subscriptionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder subscriptionKeyOperations(final List<Operation<Long>> operations) {
+      subscriptionKeyOperations = addValuesToList(subscriptionKeyOperations, operations);
+      return this;
+    }
+
     @SafeVarargs
     public final Builder messageKeyOperations(
         final Operation<Long> operation, final Operation<Long>... operations) {
       return messageKeyOperations(collectValues(operation, operations));
+    }
+
+    @SafeVarargs
+    public final Builder subscriptionKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return subscriptionKeyOperations(collectValues(operation, operations));
     }
 
     public Builder messageNames(final String value, final String... values) {
@@ -197,6 +214,7 @@ public record CorrelatedMessageFilter(
     public CorrelatedMessageFilter build() {
       return new CorrelatedMessageFilter(
           Objects.requireNonNullElse(messageKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(subscriptionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(messageNameOperations, Collections.emptyList()),
           Objects.requireNonNullElse(correlationKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),

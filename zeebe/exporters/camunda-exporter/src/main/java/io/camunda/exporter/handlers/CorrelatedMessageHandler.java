@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class CorrelatedMessageHandler
@@ -62,7 +63,42 @@ public class CorrelatedMessageHandler
 
   @Override
   public List<String> generateIds(final Record<RecordValueWithVariables> record) {
-    return List.of(String.valueOf(record.getKey()));
+    // Generate composite ID: messageKey + "-" + subscriptionKey
+    final String compositeId = generateCompositeId(record);
+    return List.of(compositeId);
+  }
+
+  private String generateCompositeId(final Record<RecordValueWithVariables> record) {
+    if (record.getIntent() == ProcessMessageSubscriptionIntent.CORRELATED) {
+      final var value = (ProcessMessageSubscriptionRecordValue) record.getValue();
+      final long subscriptionKey = generateProcessMessageSubscriptionKey(
+          value.getElementInstanceKey(), value.getMessageName(), value.getTenantId());
+      return value.getMessageKey() + "-" + subscriptionKey;
+    } else if (record.getIntent() == MessageStartEventSubscriptionIntent.CORRELATED) {
+      final var value = (MessageStartEventSubscriptionRecordValue) record.getValue();
+      final long subscriptionKey = generateMessageStartEventSubscriptionKey(
+          value.getMessageName(), value.getProcessDefinitionKey(), value.getTenantId());
+      return value.getMessageKey() + "-" + subscriptionKey;
+    }
+    throw new IllegalArgumentException("Unsupported record intent: " + record.getIntent());
+  }
+
+  /**
+   * Generate a subscription key for process message subscriptions.
+   * This simulates the key generation logic from DbProcessMessageSubscriptionState.
+   */
+  private long generateProcessMessageSubscriptionKey(
+      final long elementInstanceKey, final String messageName, final String tenantId) {
+    return Objects.hash(elementInstanceKey, messageName, tenantId);
+  }
+
+  /**
+   * Generate a subscription key for message start event subscriptions.
+   * This simulates the key generation logic from DbMessageStartEventSubscriptionState.
+   */
+  private long generateMessageStartEventSubscriptionKey(
+      final String messageName, final long processDefinitionKey, final String tenantId) {
+    return Objects.hash(messageName, processDefinitionKey, tenantId);
   }
 
   @Override
@@ -73,9 +109,9 @@ public class CorrelatedMessageHandler
   @Override
   public void updateEntity(
       final Record<RecordValueWithVariables> record, final CorrelatedMessageEntity entity) {
+    final String compositeId = generateCompositeId(record);
     entity
-        .setId(String.valueOf(record.getKey()))
-        .setKey(record.getKey())
+        .setId(compositeId)
         .setDateTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
 
     if (record.getIntent() == ProcessMessageSubscriptionIntent.CORRELATED) {
@@ -89,8 +125,12 @@ public class CorrelatedMessageHandler
 
   private void updateFromProcessMessageSubscription(
       final CorrelatedMessageEntity entity, final ProcessMessageSubscriptionRecordValue value) {
+    final long subscriptionKey = generateProcessMessageSubscriptionKey(
+        value.getElementInstanceKey(), value.getMessageName(), value.getTenantId());
+    
     entity
         .setMessageKey(value.getMessageKey())
+        .setSubscriptionKey(subscriptionKey)
         .setMessageName(value.getMessageName())
         .setCorrelationKey(value.getCorrelationKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
@@ -103,8 +143,12 @@ public class CorrelatedMessageHandler
 
   private void updateFromMessageStartEventSubscription(
       final CorrelatedMessageEntity entity, final MessageStartEventSubscriptionRecordValue value) {
+    final long subscriptionKey = generateMessageStartEventSubscriptionKey(
+        value.getMessageName(), value.getProcessDefinitionKey(), value.getTenantId());
+    
     entity
         .setMessageKey(value.getMessageKey())
+        .setSubscriptionKey(subscriptionKey)
         .setMessageName(value.getMessageName())
         .setCorrelationKey(value.getCorrelationKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())

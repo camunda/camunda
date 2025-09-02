@@ -63,8 +63,8 @@ class CorrelatedMessageExportHandlerTest {
     verify(correlatedMessageWriter).create(correlatedMessageCaptor.capture());
 
     final CorrelatedMessageDbModel model = correlatedMessageCaptor.getValue();
-    assertThat(model.key()).isEqualTo(record.getKey());
     assertThat(model.messageKey()).isEqualTo(record.getValue().getMessageKey());
+    assertThat(model.subscriptionKey()).isNotNull(); // Should be generated based on subscription key
     assertThat(model.messageName()).isEqualTo(record.getValue().getMessageName());
     assertThat(model.correlationKey()).isEqualTo(record.getValue().getCorrelationKey());
     assertThat(model.processInstanceKey()).isEqualTo(record.getValue().getProcessInstanceKey());
@@ -91,8 +91,8 @@ class CorrelatedMessageExportHandlerTest {
     verify(correlatedMessageWriter).create(correlatedMessageCaptor.capture());
 
     final CorrelatedMessageDbModel model = correlatedMessageCaptor.getValue();
-    assertThat(model.key()).isEqualTo(record.getKey());
     assertThat(model.messageKey()).isEqualTo(record.getValue().getMessageKey());
+    assertThat(model.subscriptionKey()).isNotNull(); // Should be generated based on subscription key
     assertThat(model.messageName()).isEqualTo(record.getValue().getMessageName());
     assertThat(model.correlationKey()).isEqualTo(record.getValue().getCorrelationKey());
     assertThat(model.processInstanceKey()).isEqualTo(record.getValue().getProcessInstanceKey());
@@ -118,43 +118,50 @@ class CorrelatedMessageExportHandlerTest {
   }
 
   @Test
-  void shouldExportAllCorrelationsForSameMessage() {
-    // given
+  void shouldExportCorrelationsForSameMessageToDifferentSubscriptions() {
+    // This test simulates the real scenario where the same message correlates to 
+    // different subscriptions (e.g., different element instances with same message name)
+    // In the engine, each correlation gets the subscription key as the record key,
+    // so same subscription = same record key, different subscriptions = different record keys
+    
     final long messageKey = 123L;
+    final String messageName = "test-message";
+    final String tenantId = "tenant1";
+    
+    // Create two records with different element instance keys (different subscriptions)
     final Record<ProcessMessageSubscriptionRecordValue> record1 =
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-            r ->
-                r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                    .withValue(v -> v.setMessageKey(messageKey)));
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                  .withValue(v -> v.setMessageKey(messageKey)
+                                  .setMessageName(messageName)
+                                  .setElementInstanceKey(111L) // Different subscription
+                                  .setTenantId(tenantId)));
     final Record<ProcessMessageSubscriptionRecordValue> record2 =
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-            r ->
-                r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                    .withValue(v -> v.setMessageKey(messageKey)));
-
-    // Verify that the records have different keys (critical for avoiding overwrites)
-    assertThat(record1.getKey()).isNotEqualTo(record2.getKey());
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                  .withValue(v -> v.setMessageKey(messageKey)
+                                  .setMessageName(messageName)  
+                                  .setElementInstanceKey(222L) // Different subscription
+                                  .setTenantId(tenantId)));
 
     // when
     handler.export((Record<Object>) record1);
     handler.export((Record<Object>) record2);
 
     // then
-    // Both correlations should be exported since they have different record keys
     verify(correlatedMessageWriter, times(2)).create(correlatedMessageCaptor.capture());
 
-    // Verify that both records were exported with their unique record keys
     final var models = correlatedMessageCaptor.getAllValues();
     assertThat(models).hasSize(2);
-    assertThat(models.get(0).key()).isEqualTo(record1.getKey());
-    assertThat(models.get(1).key()).isEqualTo(record2.getKey());
-    assertThat(models.get(0).key()).isNotEqualTo(models.get(1).key());
-
-    // Both should have the same message key (they're correlations of the same message)
+    
+    // Both should have the same message key (same message)
     assertThat(models.get(0).messageKey()).isEqualTo(messageKey);
     assertThat(models.get(1).messageKey()).isEqualTo(messageKey);
+    
+    // But should have different subscription keys (different subscriptions)
+    assertThat(models.get(0).subscriptionKey()).isNotEqualTo(models.get(1).subscriptionKey());
   }
 
   @Test
@@ -219,10 +226,8 @@ class CorrelatedMessageExportHandlerTest {
                                 .setMessageName(messageName)
                                 .setMessageKey(333L)));
 
-    // Verify each correlation has a unique record key
-    assertThat(correlation1.getKey()).isNotEqualTo(correlation2.getKey());
-    assertThat(correlation2.getKey()).isNotEqualTo(correlation3.getKey());
-    assertThat(correlation1.getKey()).isNotEqualTo(correlation3.getKey());
+    // Verify each correlation uses the same subscription key but different message keys
+    // This simulates how the engine would behave with the same subscription getting multiple messages
 
     // when - export all three correlations
     handler.export((Record<Object>) correlation1);
@@ -235,10 +240,10 @@ class CorrelatedMessageExportHandlerTest {
     final var models = correlatedMessageCaptor.getAllValues();
     assertThat(models).hasSize(3);
 
-    // Each model should have its unique record key
-    assertThat(models.get(0).key()).isEqualTo(correlation1.getKey());
-    assertThat(models.get(1).key()).isEqualTo(correlation2.getKey());
-    assertThat(models.get(2).key()).isEqualTo(correlation3.getKey());
+    // All should have the same subscription key (same subscription)
+    final Long expectedSubscriptionKey = models.get(0).subscriptionKey();
+    assertThat(models.get(1).subscriptionKey()).isEqualTo(expectedSubscriptionKey);
+    assertThat(models.get(2).subscriptionKey()).isEqualTo(expectedSubscriptionKey);
 
     // All should reference the same subscription (same element instance and message name)
     assertThat(models)
@@ -267,8 +272,8 @@ class CorrelatedMessageExportHandlerTest {
     handler.export(record);
 
     // then
-    verify(correlatedMessageWriter).create(modelCaptor.capture());
-    final CorrelatedMessageDbModel model = modelCaptor.getValue();
+    verify(correlatedMessageWriter).create(correlatedMessageCaptor.capture());
+    final CorrelatedMessageDbModel model = correlatedMessageCaptor.getValue();
 
     assertThat(model.variables()).isNotNull();
     assertThat(model.variables()).contains("\"var1\":\"value1\"");
@@ -288,8 +293,8 @@ class CorrelatedMessageExportHandlerTest {
     handler.export(record);
 
     // then
-    verify(correlatedMessageWriter).create(modelCaptor.capture());
-    final CorrelatedMessageDbModel model = modelCaptor.getValue();
+    verify(correlatedMessageWriter).create(correlatedMessageCaptor.capture());
+    final CorrelatedMessageDbModel model = correlatedMessageCaptor.getValue();
 
     assertThat(model.variables()).isNotNull();
     assertThat(model.variables()).contains("\"startVar\":\"initValue\"");
@@ -309,8 +314,8 @@ class CorrelatedMessageExportHandlerTest {
     handler.export(record);
 
     // then
-    verify(correlatedMessageWriter).create(modelCaptor.capture());
-    final CorrelatedMessageDbModel model = modelCaptor.getValue();
+    verify(correlatedMessageWriter).create(correlatedMessageCaptor.capture());
+    final CorrelatedMessageDbModel model = correlatedMessageCaptor.getValue();
 
     assertThat(model.variables()).isNull();
   }

@@ -15,8 +15,8 @@ public class CorrelatedMessageEntity
     implements ExporterEntity<CorrelatedMessageEntity>, TenantOwned {
 
   private String id;
-  private Long key;
   private Long messageKey;
+  private Long subscriptionKey;
   private String messageName;
   private String correlationKey;
   private Long processInstanceKey;
@@ -38,21 +38,21 @@ public class CorrelatedMessageEntity
     return this;
   }
 
-  public Long getKey() {
-    return key;
-  }
-
-  public CorrelatedMessageEntity setKey(final Long key) {
-    this.key = key;
-    return this;
-  }
-
   public Long getMessageKey() {
     return messageKey;
   }
 
   public CorrelatedMessageEntity setMessageKey(final Long messageKey) {
     this.messageKey = messageKey;
+    return this;
+  }
+
+  public Long getSubscriptionKey() {
+    return subscriptionKey;
+  }
+
+  public CorrelatedMessageEntity setSubscriptionKey(final Long subscriptionKey) {
+    this.subscriptionKey = subscriptionKey;
     return this;
   }
 
@@ -148,8 +148,8 @@ public class CorrelatedMessageEntity
     }
     final CorrelatedMessageEntity that = (CorrelatedMessageEntity) o;
     return Objects.equals(id, that.id)
-        && Objects.equals(key, that.key)
         && Objects.equals(messageKey, that.messageKey)
+        && Objects.equals(subscriptionKey, that.subscriptionKey)
         && Objects.equals(messageName, that.messageName)
         && Objects.equals(correlationKey, that.correlationKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
@@ -165,8 +165,8 @@ public class CorrelatedMessageEntity
   public int hashCode() {
     return Objects.hash(
         id,
-        key,
         messageKey,
+        subscriptionKey,
         messageName,
         correlationKey,
         processInstanceKey,
@@ -184,10 +184,10 @@ public class CorrelatedMessageEntity
         + "id='"
         + id
         + '\''
-        + ", key="
-        + key
         + ", messageKey="
         + messageKey
+        + ", subscriptionKey="
+        + subscriptionKey
         + ", messageName='"
         + messageName
         + '\''

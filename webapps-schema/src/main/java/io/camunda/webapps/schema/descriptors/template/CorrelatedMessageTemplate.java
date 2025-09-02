@@ -19,8 +19,8 @@ public class CorrelatedMessageTemplate extends AbstractTemplateDescriptor
   public static final String INDEX_NAME = "correlated-message";
 
   public static final String ID = "id";
-  public static final String KEY = "key";
   public static final String MESSAGE_KEY = "messageKey";
+  public static final String SUBSCRIPTION_KEY = "subscriptionKey";
   public static final String MESSAGE_NAME = "messageName";
   public static final String CORRELATION_KEY = "correlationKey";
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
