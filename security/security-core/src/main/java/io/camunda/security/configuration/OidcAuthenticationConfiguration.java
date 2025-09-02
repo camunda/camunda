@@ -32,6 +32,15 @@ public class OidcAuthenticationConfiguration {
   private String clientIdClaim;
   private String groupsClaim;
   private String organizationId;
+  private List<String> resource;
+
+  public List<String> getResource() {
+    return resource;
+  }
+
+  public void setResource(final List<String> resource) {
+    this.resource = resource;
+  }
 
   public String getIssuerUri() {
     return issuerUri;
