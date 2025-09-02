@@ -37,10 +37,7 @@ import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public final class ManifestManager {
   public static final int PRECONDITION_FAILED = 412;
@@ -235,7 +232,7 @@ public final class ManifestManager {
         Pattern.compile(
                 MANIFEST_PATH_FORMAT.formatted(
                     wildcard.partitionId().map(Number::toString).orElse("\\d+"),
-                    wildcard.checkpointId().map(Number::toString).orElse("\\d+"),
+                    wildcard.checkpointPattern().asRegex(),
                     wildcard.nodeId().map(Number::toString).orElse("\\d+")))
             .asMatchPredicate();
     return pattern.test(path);
@@ -247,12 +244,7 @@ public final class ManifestManager {
    * the prefix is empty, the prefix will only contain the first prefix component and so forth.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    //noinspection OptionalGetWithoutIsPresent -- checked by takeWhile
-    return Stream.of(wildcard.partitionId(), wildcard.checkpointId(), wildcard.nodeId())
-        .takeWhile(Optional::isPresent)
-        .map(Optional::get)
-        .map(Number::toString)
-        .collect(Collectors.joining("/", "manifests/", ""));
+    return "manifests/" + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
   void assureContainerCreated() {

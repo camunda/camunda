@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.management;
 
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -50,7 +51,7 @@ final class BackupServiceImpl {
             new BackupIdentifierWildcardImpl(
                 Optional.empty(),
                 Optional.of(inProgressBackup.id().partitionId()),
-                Optional.of(inProgressBackup.checkpointId())));
+                CheckpointPattern.of(inProgressBackup.checkpointId())));
 
     final ActorFuture<Void> backupSaved = concurrencyControl.createFuture();
 
@@ -167,7 +168,9 @@ final class BackupServiceImpl {
             backupStore
                 .list(
                     new BackupIdentifierWildcardImpl(
-                        Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId)))
+                        Optional.empty(),
+                        Optional.of(partitionId),
+                        CheckpointPattern.of(checkpointId)))
                 .whenComplete(
                     (backupStatuses, throwable) -> {
                       if (throwable != null) {
@@ -189,7 +192,7 @@ final class BackupServiceImpl {
                       new BackupIdentifierWildcardImpl(
                           Optional.empty(),
                           Optional.of(partitionId),
-                          Optional.of(lastCheckpointId)))
+                          CheckpointPattern.of(lastCheckpointId)))
                   .thenAccept(backups -> backups.forEach(this::failInProgressBackup))
                   .exceptionally(
                       failure -> {
@@ -226,7 +229,9 @@ final class BackupServiceImpl {
             backupStore
                 .list(
                     new BackupIdentifierWildcardImpl(
-                        Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId)))
+                        Optional.empty(),
+                        Optional.of(partitionId),
+                        CheckpointPattern.of(checkpointId)))
                 .thenCompose(
                     backups ->
                         CompletableFuture.allOf(
@@ -262,30 +267,13 @@ final class BackupServiceImpl {
             backupStore
                 .list(
                     new BackupIdentifierWildcardImpl(
-                        Optional.empty(), Optional.of(partitionId), Optional.empty()))
-                .thenAccept(
-                    statuses ->
-                        availableBackupsFuture.complete(
-                            statuses.stream()
-                                .filter(status -> matchPattern(status, pattern))
-                                .toList()))
+                        Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(pattern)))
+                .thenAccept(availableBackupsFuture::complete)
                 .exceptionally(
                     error -> {
                       availableBackupsFuture.completeExceptionally(error);
                       return null;
                     }));
     return availableBackupsFuture;
-  }
-
-  private boolean matchPattern(final BackupStatus status, final String pattern) {
-    if (pattern == null || pattern.isEmpty()) {
-      return true;
-    }
-    if (pattern.endsWith("*")) {
-      final var prefix = pattern.substring(0, pattern.length() - 1);
-      return Long.toString(status.id().checkpointId()).startsWith(prefix);
-    } else {
-      return Long.toString(status.id().checkpointId()).equals(pattern);
-    }
   }
 }
