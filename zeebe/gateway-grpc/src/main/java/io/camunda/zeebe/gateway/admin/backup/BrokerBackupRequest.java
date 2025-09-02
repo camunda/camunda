@@ -117,6 +117,14 @@ public final class BrokerBackupRequest extends BrokerRequest<BackupResponse> {
     request.setBackupId(backupId);
   }
 
+  public String getPattern() {
+    return request.getPattern();
+  }
+
+  public void setPattern(final String pattern) {
+    request.setPattern(pattern);
+  }
+
   @Override
   public int getLength() {
     return request.getLength();
