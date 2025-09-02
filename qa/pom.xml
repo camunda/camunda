@@ -19,6 +19,7 @@
     <module>acceptance-tests</module>
     <module>archunit-tests</module>
     <module>util</module>
+    <module>load-tests/project</module>
   </modules>
 
   <build>
