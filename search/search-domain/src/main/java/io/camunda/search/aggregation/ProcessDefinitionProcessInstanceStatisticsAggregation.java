@@ -7,13 +7,13 @@
  */
 package io.camunda.search.aggregation;
 
-import io.camunda.search.filter.ProcessDefinitionProcessInstanceStatisticsFilter;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AggregationPaginated;
 import io.camunda.search.sort.ProcessDefinitionProcessInstanceStatisticsSort;
 
 public record ProcessDefinitionProcessInstanceStatisticsAggregation(
-    ProcessDefinitionProcessInstanceStatisticsFilter filter,
+    ProcessInstanceFilter filter,
     ProcessDefinitionProcessInstanceStatisticsSort sort,
     SearchQueryPage page)
     implements AggregationBase, AggregationPaginated {

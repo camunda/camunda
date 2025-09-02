@@ -6731,7 +6731,7 @@ components:
         filter:
           description: The process definition process instance statistics filters.
           allOf:
-            - $ref: "#/components/schemas/ProcessDefinitionProcessInstanceStatisticsFilter"
+            - $ref: "#/components/schemas/ProcessInstanceFilter"
 
     ProcessDefinitionProcessInstanceStatisticsQueryResult:
       type: object
@@ -6781,31 +6781,6 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-
-    ProcessDefinitionProcessInstanceStatisticsFilter:
-      description: Process definition process instance statistics filter.
-      type: object
-      properties:
-        processDefinitionId:
-          description: The process definition ID associated to this element instance.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionKey:
-          description: The key for this process definition.
-          allOf:
-            - $ref: "#/components/schemas/BasicStringFilterProperty"
-        processDefinitionName:
-            description: Name of this process definition.
-            allOf:
-                - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionVersion:
-            description: Version of this process definition.
-            allOf:
-                - $ref: "#/components/schemas/IntegerFilterProperty"
-        processDefinitionVersionTag:
-            description: Version tag of this process definition.
-            allOf:
-                - $ref: "#/components/schemas/StringFilterProperty"
 
     CancelProcessInstanceRequest:
       type: object

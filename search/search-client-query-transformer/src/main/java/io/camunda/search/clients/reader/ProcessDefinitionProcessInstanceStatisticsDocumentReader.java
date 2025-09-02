@@ -21,18 +21,34 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 public class ProcessDefinitionProcessInstanceStatisticsDocumentReader extends DocumentBasedReader
     implements ProcessDefinitionProcessInstanceStatisticsReader {
 
+  private final IncidentErrorHashCodeNormalizer normalizer;
+
   public ProcessDefinitionProcessInstanceStatisticsDocumentReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+      final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptor indexDescriptor,
+      final IncidentErrorHashCodeNormalizer normalizer) {
     super(executor, indexDescriptor);
+    this.normalizer = normalizer;
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionProcessInstanceStatisticsEntity> aggregate(
       final ProcessDefinitionProcessInstanceStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
+
+    final var filter =
+        normalizer.normalizeAndValidateProcessInstanceFilter(query.filter(), resourceAccessChecks);
+    if (filter == null) {
+      return SearchQueryResult.empty();
+    }
+
+    final var normalizedQuery =
+        new ProcessDefinitionProcessInstanceStatisticsQuery(filter, query.sort(), query.page());
+
+    // Update the query to use the normalized filter
     // Convert sorting field if needed
     final var updatedQuery =
-        query.withConvertedSortingField(
+        normalizedQuery.withConvertedSortingField(
             AGGREGATION_FIELD_PROCESS_DEFINITION_ID, AGGREGATION_FIELD_KEY);
 
     // Run unlimited query to get total item count

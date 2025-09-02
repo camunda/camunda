@@ -32,7 +32,6 @@ import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
-import io.camunda.search.filter.ProcessDefinitionProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
@@ -1333,30 +1332,6 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static ProcessDefinitionProcessInstanceStatisticsFilter toProcessInstanceStatisticsFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionProcessInstanceStatisticsFilter
-          filter) {
-    final var builder = FilterBuilders.processDefinitionProcessInstanceStatistics();
-    if (filter != null) {
-      ofNullable(filter.getProcessDefinitionName())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::processDefinitionNameOperations);
-      ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToOperations(Long.class))
-          .ifPresent(builder::processDefinitionKeyOperations);
-      ofNullable(filter.getProcessDefinitionVersion())
-          .map(mapToOperations(Integer.class))
-          .ifPresent(builder::processDefinitionVersionOperations);
-      ofNullable(filter.getProcessDefinitionVersionTag())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::processDefinitionVersionTagOperations);
-      ofNullable(filter.getProcessDefinitionId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::processDefinitionIdOperations);
-    }
-    return builder.build();
-  }
-
   private static MessageSubscriptionFilter toMessageSubscriptionFilter(
       final io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionFilter filter) {
     final var builder = FilterBuilders.messageSubscription();
@@ -2081,7 +2056,7 @@ public final class SearchQueryRequestMapper {
                 .fromProcessDefinitionProcessInstanceStatisticsQuerySortRequest(request.getSort()),
             SortOptionBuilders::processDefinitionProcessInstanceStatistics,
             SearchQueryRequestMapper::applyProcessDefinitionProcessInstanceStatisticsSortField);
-    final var filter = toProcessInstanceStatisticsFilter(request.getFilter());
+    final var filter = toProcessInstanceFilter(request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::processDefinitionProcessInstanceStatisticsQuery);
   }
