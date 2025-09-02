@@ -40,6 +40,15 @@ public class OidcAuthenticationConfiguration {
   private String clientIdClaim;
   private String groupsClaim;
   private String organizationId;
+  private List<String> resource;
+
+  public List<String> getResource() {
+    return resource;
+  }
+
+  public void setResource(final List<String> resource) {
+    this.resource = resource;
+  }
   private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
   private AssertionKeystoreConfiguration assertionKeystoreConfiguration =
       new AssertionKeystoreConfiguration();
