@@ -16,6 +16,7 @@
 package io.camunda.spring.client.jobhandling.parameter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ActivatedJob;
@@ -31,21 +32,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class VariableParameterResolverTest {
 
-  private VariableParameterResolver resolver;
+  private VariableParameterResolver optionalResolver;
+  private VariableParameterResolver requiredResolver;
   @Mock private JobClient jobClient;
   @Mock private ActivatedJob job;
 
   @BeforeEach
   void setUp() {
-    resolver =
+    optionalResolver =
         new VariableParameterResolver("testVar", String.class, new CamundaObjectMapper(), true);
+    requiredResolver =
+        new VariableParameterResolver("testVar", String.class, new CamundaObjectMapper(), false);
   }
 
   @Test
-  void shouldResolveVariableNotPresent() {
+  void shouldResolveOptionalVariableNotPresent() {
     when(job.getVariablesAsMap()).thenReturn(Map.of("anotherVar", "another value"));
 
-    final Object resolvedValue = resolver.resolve(jobClient, job);
+    final Object resolvedValue = optionalResolver.resolve(jobClient, job);
 
     assertThat(resolvedValue).isNull();
   }
@@ -54,7 +58,25 @@ class VariableParameterResolverTest {
   void shouldResolveVariableIsPresent() {
     when(job.getVariablesAsMap()).thenReturn(Map.of("testVar", "test value"));
 
-    final Object resolvedValue = resolver.resolve(jobClient, job);
+    final Object resolvedValue = optionalResolver.resolve(jobClient, job);
+
+    assertThat(resolvedValue).isEqualTo("test value");
+  }
+
+  @Test
+  void shouldThrowExceptionWhenRequiredVariableNotPresent() {
+    when(job.getVariablesAsMap()).thenReturn(Map.of("anotherVar", "another value"));
+
+    assertThatThrownBy(() -> requiredResolver.resolve(jobClient, job))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Variable testVar is mandatory, but no value was found");
+  }
+
+  @Test
+  void shouldResolveRequiredVariableWhenPresent() {
+    when(job.getVariablesAsMap()).thenReturn(Map.of("testVar", "test value"));
+
+    final Object resolvedValue = requiredResolver.resolve(jobClient, job);
 
     assertThat(resolvedValue).isEqualTo("test value");
   }
