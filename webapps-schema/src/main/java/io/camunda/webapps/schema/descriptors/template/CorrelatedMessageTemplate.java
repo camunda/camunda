@@ -26,7 +26,12 @@ public class CorrelatedMessageTemplate extends AbstractTemplateDescriptor
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
   public static final String FLOW_NODE_INSTANCE_KEY = "flowNodeInstanceKey";
   public static final String START_EVENT_ID = "startEventId";
+  public static final String ELEMENT_ID = "elementId";
+  public static final String IS_INTERRUPTING = "isInterrupting";
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
+  public static final String VERSION = "version";
+  public static final String VERSION_TAG = "versionTag";
   public static final String VARIABLES = "variables";
   public static final String TENANT_ID = "tenantId";
   public static final String DATE_TIME = "dateTime";

@@ -31,7 +31,12 @@
     PROCESS_INSTANCE_KEY,
     FLOW_NODE_INSTANCE_KEY,
     START_EVENT_ID,
+    ELEMENT_ID,
+    IS_INTERRUPTING,
+    PROCESS_DEFINITION_KEY,
     BPMN_PROCESS_ID,
+    VERSION,
+    VERSION_TAG,
     VARIABLES,
     TENANT_ID,
     DATE_TIME,
@@ -127,7 +132,12 @@
     <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
     <result column="FLOW_NODE_INSTANCE_KEY" property="flowNodeInstanceKey" javaType="java.lang.Long" />
     <result column="START_EVENT_ID" property="startEventId" javaType="java.lang.String" />
+    <result column="ELEMENT_ID" property="elementId" javaType="java.lang.String" />
+    <result column="IS_INTERRUPTING" property="isInterrupting" javaType="java.lang.Boolean" />
+    <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" javaType="java.lang.Long" />
     <result column="BPMN_PROCESS_ID" property="bpmnProcessId" javaType="java.lang.String" />
+    <result column="VERSION" property="version" javaType="java.lang.Integer" />
+    <result column="VERSION_TAG" property="versionTag" javaType="java.lang.String" />
     <result column="VARIABLES" property="variables" javaType="java.lang.String" />
     <result column="TENANT_ID" property="tenantId" javaType="java.lang.String" />
     <result column="DATE_TIME" property="dateTime" javaType="java.time.OffsetDateTime" />
@@ -144,7 +154,12 @@
                                              PROCESS_INSTANCE_KEY,
                                              FLOW_NODE_INSTANCE_KEY,
                                              START_EVENT_ID,
+                                             ELEMENT_ID,
+                                             IS_INTERRUPTING,
+                                             PROCESS_DEFINITION_KEY,
                                              BPMN_PROCESS_ID,
+                                             VERSION,
+                                             VERSION_TAG,
                                              VARIABLES,
                                              TENANT_ID,
                                              DATE_TIME,
@@ -159,7 +174,12 @@
             #{processInstanceKey},
             #{flowNodeInstanceKey},
             #{startEventId},
+            #{elementId},
+            #{isInterrupting},
+            #{processDefinitionKey},
             #{bpmnProcessId},
+            #{version},
+            #{versionTag},
             #{variables},
             #{tenantId},
             #{dateTime, jdbcType=TIMESTAMP},

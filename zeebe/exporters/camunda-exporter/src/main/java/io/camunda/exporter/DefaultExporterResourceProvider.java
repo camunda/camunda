@@ -17,7 +17,8 @@ import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
-import io.camunda.exporter.handlers.CorrelatedMessageHandler;
+import io.camunda.exporter.handlers.MessageStartEventSubscriptionCorrelatedHandler;
+import io.camunda.exporter.handlers.ProcessMessageSubscriptionCorrelatedHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
@@ -248,7 +249,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
             new EventFromProcessMessageSubscriptionHandler(
                 indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
-            new CorrelatedMessageHandler(
+            new ProcessMessageSubscriptionCorrelatedHandler(
+                indexDescriptors.get(CorrelatedMessageTemplate.class).getFullQualifiedName()),
+            new MessageStartEventSubscriptionCorrelatedHandler(
                 indexDescriptors.get(CorrelatedMessageTemplate.class).getFullQualifiedName()),
             new UserTaskHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),

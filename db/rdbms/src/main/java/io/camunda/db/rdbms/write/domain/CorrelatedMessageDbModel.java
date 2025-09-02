@@ -23,6 +23,8 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
   private Boolean isInterrupting;
   private Long processDefinitionKey;
   private String bpmnProcessId;
+  private Integer version;
+  private String versionTag;
   private String variables;
   private String tenantId;
   private OffsetDateTime dateTime;
@@ -46,6 +48,8 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
       final Boolean isInterrupting,
       final Long processDefinitionKey,
       final String bpmnProcessId,
+      final Integer version,
+      final String versionTag,
       final String variables,
       final String tenantId,
       final OffsetDateTime dateTime,
@@ -62,6 +66,8 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
     this.isInterrupting = isInterrupting;
     this.processDefinitionKey = processDefinitionKey;
     this.bpmnProcessId = bpmnProcessId;
+    this.version = version;
+    this.versionTag = versionTag;
     this.variables = variables;
     this.tenantId = tenantId;
     this.dateTime = dateTime;
@@ -157,6 +163,22 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
     this.bpmnProcessId = bpmnProcessId;
   }
 
+  public Integer version() {
+    return version;
+  }
+
+  public void version(final Integer version) {
+    this.version = version;
+  }
+
+  public String versionTag() {
+    return versionTag;
+  }
+
+  public void versionTag(final String versionTag) {
+    this.versionTag = versionTag;
+  }
+
   public String variables() {
     return variables;
   }
@@ -218,6 +240,8 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
         .isInterrupting(isInterrupting)
         .processDefinitionKey(processDefinitionKey)
         .bpmnProcessId(bpmnProcessId)
+        .version(version)
+        .versionTag(versionTag)
         .variables(variables)
         .tenantId(tenantId)
         .dateTime(dateTime)
@@ -238,7 +262,12 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
     private Long processInstanceKey;
     private Long flowNodeInstanceKey;
     private String startEventId;
+    private String elementId;
+    private Boolean isInterrupting;
+    private Long processDefinitionKey;
     private String bpmnProcessId;
+    private Integer version;
+    private String versionTag;
     private String variables;
     private String tenantId;
     private OffsetDateTime dateTime;
@@ -280,8 +309,33 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
       return this;
     }
 
+    public Builder elementId(final String elementId) {
+      this.elementId = elementId;
+      return this;
+    }
+
+    public Builder isInterrupting(final Boolean isInterrupting) {
+      this.isInterrupting = isInterrupting;
+      return this;
+    }
+
+    public Builder processDefinitionKey(final Long processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
+      return this;
+    }
+
     public Builder bpmnProcessId(final String bpmnProcessId) {
       this.bpmnProcessId = bpmnProcessId;
+      return this;
+    }
+
+    public Builder version(final Integer version) {
+      this.version = version;
+      return this;
+    }
+
+    public Builder versionTag(final String versionTag) {
+      this.versionTag = versionTag;
       return this;
     }
 
@@ -324,6 +378,8 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
           isInterrupting,
           processDefinitionKey,
           bpmnProcessId,
+          version,
+          versionTag,
           variables,
           tenantId,
           dateTime,

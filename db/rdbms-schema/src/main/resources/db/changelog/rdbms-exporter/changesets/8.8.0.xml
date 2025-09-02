@@ -711,4 +711,11 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="add_version_attributes_to_correlated_message_table" author="copilot">
+    <addColumn tableName="${prefix}CORRELATED_MESSAGE">
+      <column name="VERSION" type="SMALLINT"/>
+      <column name="VERSION_TAG" type="VARCHAR(255)"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

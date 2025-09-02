@@ -22,7 +22,12 @@ public class CorrelatedMessageEntity
   private Long processInstanceKey;
   private Long flowNodeInstanceKey;
   private String startEventId;
+  private String elementId;
+  private Boolean isInterrupting;
+  private Long processDefinitionKey;
   private String bpmnProcessId;
+  private Integer version;
+  private String versionTag;
   private String variables;
   private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private OffsetDateTime dateTime;
@@ -101,12 +106,57 @@ public class CorrelatedMessageEntity
     return this;
   }
 
+  public String getElementId() {
+    return elementId;
+  }
+
+  public CorrelatedMessageEntity setElementId(final String elementId) {
+    this.elementId = elementId;
+    return this;
+  }
+
+  public Boolean getIsInterrupting() {
+    return isInterrupting;
+  }
+
+  public CorrelatedMessageEntity setIsInterrupting(final Boolean isInterrupting) {
+    this.isInterrupting = isInterrupting;
+    return this;
+  }
+
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public CorrelatedMessageEntity setProcessDefinitionKey(final Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+    return this;
+  }
+
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
   public CorrelatedMessageEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+    return this;
+  }
+
+  public Integer getVersion() {
+    return version;
+  }
+
+  public CorrelatedMessageEntity setVersion(final Integer version) {
+    this.version = version;
+    return this;
+  }
+
+  public String getVersionTag() {
+    return versionTag;
+  }
+
+  public CorrelatedMessageEntity setVersionTag(final String versionTag) {
+    this.versionTag = versionTag;
     return this;
   }
 
@@ -155,7 +205,12 @@ public class CorrelatedMessageEntity
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(flowNodeInstanceKey, that.flowNodeInstanceKey)
         && Objects.equals(startEventId, that.startEventId)
+        && Objects.equals(elementId, that.elementId)
+        && Objects.equals(isInterrupting, that.isInterrupting)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(version, that.version)
+        && Objects.equals(versionTag, that.versionTag)
         && Objects.equals(variables, that.variables)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(dateTime, that.dateTime);
@@ -172,7 +227,12 @@ public class CorrelatedMessageEntity
         processInstanceKey,
         flowNodeInstanceKey,
         startEventId,
+        elementId,
+        isInterrupting,
+        processDefinitionKey,
         bpmnProcessId,
+        version,
+        versionTag,
         variables,
         tenantId,
         dateTime);
@@ -201,8 +261,20 @@ public class CorrelatedMessageEntity
         + ", startEventId='"
         + startEventId
         + '\''
+        + ", elementId='"
+        + elementId
+        + '\''
+        + ", isInterrupting="
+        + isInterrupting
+        + ", processDefinitionKey="
+        + processDefinitionKey
         + ", bpmnProcessId='"
         + bpmnProcessId
+        + '\''
+        + ", version="
+        + version
+        + ", versionTag='"
+        + versionTag
         + '\''
         + ", variables='"
         + variables
