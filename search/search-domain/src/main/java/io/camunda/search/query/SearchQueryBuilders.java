@@ -208,8 +208,8 @@ public final class SearchQueryBuilders {
     return fn.apply(correlatedMessageSearchQuery()).build();
   }
 
-  public static ProcessDefinitionProcessInstanceStatisticsQuery.Builder
-      processDefinitionProcessInstanceStatisticsQuery() {
-    return new ProcessDefinitionProcessInstanceStatisticsQuery.Builder();
+  public static ProcessDefinitionInstanceStatisticsQuery.Builder
+  processDefinitionInstanceStatisticsQuery() {
+    return new ProcessDefinitionInstanceStatisticsQuery.Builder();
   }
 }

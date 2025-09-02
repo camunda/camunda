@@ -34,7 +34,7 @@ import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessDefinitionProcessInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -100,8 +100,8 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionProcessInstanceStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionProcessInstanceStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessElementStatisticsResult;
@@ -236,11 +236,11 @@ public final class SearchQueryResponseMapper {
         .completed(result.completed());
   }
 
-  public static ProcessDefinitionProcessInstanceStatisticsQueryResult
+  public static ProcessDefinitionInstanceStatisticsQueryResult
       toProcessInstanceStatisticsQueryResult(
-          final SearchQueryResult<ProcessDefinitionProcessInstanceStatisticsEntity> result) {
+          final SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new ProcessDefinitionProcessInstanceStatisticsQueryResult()
+    return new ProcessDefinitionInstanceStatisticsQueryResult()
         .page(page)
         .items(
             result.items().stream()
@@ -248,9 +248,9 @@ public final class SearchQueryResponseMapper {
                 .toList());
   }
 
-  private static ProcessDefinitionProcessInstanceStatisticsResult toProcessInstanceStatisticsResult(
-      final ProcessDefinitionProcessInstanceStatisticsEntity result) {
-    return new ProcessDefinitionProcessInstanceStatisticsResult()
+  private static ProcessDefinitionInstanceStatisticsResult toProcessInstanceStatisticsResult(
+      final ProcessDefinitionInstanceStatisticsEntity result) {
+    return new ProcessDefinitionInstanceStatisticsResult()
         .processDefinitionId(result.processDefinitionId())
         .latestProcessDefinitionName(result.latestProcessDefinitionName())
         .hasMultipleVersions(result.hasMultipleVersions())

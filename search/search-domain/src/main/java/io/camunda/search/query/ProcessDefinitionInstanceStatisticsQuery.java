@@ -7,39 +7,39 @@
  */
 package io.camunda.search.query;
 
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_TERMS_SIZE;
 
-import io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation;
+import io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.sort.ProcessDefinitionProcessInstanceStatisticsSort;
+import io.camunda.search.sort.ProcessDefinitionInstanceStatisticsSort;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record ProcessDefinitionProcessInstanceStatisticsQuery(
+public record ProcessDefinitionInstanceStatisticsQuery(
     ProcessInstanceFilter filter,
-    ProcessDefinitionProcessInstanceStatisticsSort sort,
+    ProcessDefinitionInstanceStatisticsSort sort,
     SearchQueryPage page)
     implements TypedSearchAggregationQuery<
         ProcessInstanceFilter,
-        ProcessDefinitionProcessInstanceStatisticsSort,
-        ProcessDefinitionProcessInstanceStatisticsAggregation> {
+        ProcessDefinitionInstanceStatisticsSort,
+        ProcessDefinitionInstanceStatisticsAggregation> {
 
-  public static ProcessDefinitionProcessInstanceStatisticsQuery of(
-      final Function<Builder, ObjectBuilder<ProcessDefinitionProcessInstanceStatisticsQuery>> fn) {
+  public static ProcessDefinitionInstanceStatisticsQuery of(
+      final Function<Builder, ObjectBuilder<ProcessDefinitionInstanceStatisticsQuery>> fn) {
     return fn.apply(new Builder()).build();
   }
 
   @Override
-  public ProcessDefinitionProcessInstanceStatisticsAggregation aggregation() {
-    return new ProcessDefinitionProcessInstanceStatisticsAggregation(filter, sort, page);
+  public ProcessDefinitionInstanceStatisticsAggregation aggregation() {
+    return new ProcessDefinitionInstanceStatisticsAggregation(filter, sort, page);
   }
 
-  public ProcessDefinitionProcessInstanceStatisticsQuery withConvertedSortingField(
+  public ProcessDefinitionInstanceStatisticsQuery withConvertedSortingField(
       final String originalField, final String convertedField) {
     if (sort != null && sort.orderings() != null) {
       final var updatedOrderings =
@@ -50,14 +50,14 @@ public record ProcessDefinitionProcessInstanceStatisticsQuery(
                           ? new FieldSorting(convertedField, ordering.order())
                           : ordering)
               .toList();
-      final var newSort = new ProcessDefinitionProcessInstanceStatisticsSort(updatedOrderings);
-      return new ProcessDefinitionProcessInstanceStatisticsQuery(filter, newSort, page);
+      final var newSort = new ProcessDefinitionInstanceStatisticsSort(updatedOrderings);
+      return new ProcessDefinitionInstanceStatisticsQuery(filter, newSort, page);
     }
     return this;
   }
 
-  public ProcessDefinitionProcessInstanceStatisticsQuery withUnlimitedPage() {
-    return ProcessDefinitionProcessInstanceStatisticsQuery.of(
+  public ProcessDefinitionInstanceStatisticsQuery withUnlimitedPage() {
+    return ProcessDefinitionInstanceStatisticsQuery.of(
         b ->
             b.filter(filter)
                 .sort(sort)
@@ -65,21 +65,20 @@ public record ProcessDefinitionProcessInstanceStatisticsQuery(
   }
 
   public static final class Builder
-      extends SearchQueryBase.AbstractQueryBuilder<
-          ProcessDefinitionProcessInstanceStatisticsQuery.Builder>
+      extends SearchQueryBase.AbstractQueryBuilder<ProcessDefinitionInstanceStatisticsQuery.Builder>
       implements TypedSearchQueryBuilder<
-          ProcessDefinitionProcessInstanceStatisticsQuery,
-          ProcessDefinitionProcessInstanceStatisticsQuery.Builder,
+          ProcessDefinitionInstanceStatisticsQuery,
+          ProcessDefinitionInstanceStatisticsQuery.Builder,
           ProcessInstanceFilter,
-          ProcessDefinitionProcessInstanceStatisticsSort> {
+          ProcessDefinitionInstanceStatisticsSort> {
 
     private static final ProcessInstanceFilter EMPTY_FILTER =
         FilterBuilders.processInstance().build();
-    private static final ProcessDefinitionProcessInstanceStatisticsSort EMPTY_SORT =
-        SortOptionBuilders.processDefinitionProcessInstanceStatistics().build();
+    private static final ProcessDefinitionInstanceStatisticsSort EMPTY_SORT =
+        SortOptionBuilders.processDefinitionInstanceStatistics().build();
 
     private ProcessInstanceFilter filter;
-    private ProcessDefinitionProcessInstanceStatisticsSort sort;
+    private ProcessDefinitionInstanceStatisticsSort sort;
 
     @Override
     public Builder filter(final ProcessInstanceFilter value) {
@@ -88,22 +87,22 @@ public record ProcessDefinitionProcessInstanceStatisticsQuery(
     }
 
     @Override
-    public Builder sort(final ProcessDefinitionProcessInstanceStatisticsSort value) {
+    public Builder sort(final ProcessDefinitionInstanceStatisticsSort value) {
       sort = value;
       return this;
     }
 
-    public ProcessDefinitionProcessInstanceStatisticsQuery.Builder filter(
+    public ProcessDefinitionInstanceStatisticsQuery.Builder filter(
         final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
       return filter(FilterBuilders.processInstance(fn));
     }
 
-    public ProcessDefinitionProcessInstanceStatisticsQuery.Builder sort(
+    public ProcessDefinitionInstanceStatisticsQuery.Builder sort(
         final Function<
-                ProcessDefinitionProcessInstanceStatisticsSort.Builder,
-                ObjectBuilder<ProcessDefinitionProcessInstanceStatisticsSort>>
+                ProcessDefinitionInstanceStatisticsSort.Builder,
+                ObjectBuilder<ProcessDefinitionInstanceStatisticsSort>>
             fn) {
-      return sort(SortOptionBuilders.processDefinitionProcessInstanceStatistics(fn));
+      return sort(SortOptionBuilders.processDefinitionInstanceStatistics(fn));
     }
 
     @Override
@@ -112,10 +111,10 @@ public record ProcessDefinitionProcessInstanceStatisticsQuery(
     }
 
     @Override
-    public ProcessDefinitionProcessInstanceStatisticsQuery build() {
+    public ProcessDefinitionInstanceStatisticsQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      return new ProcessDefinitionProcessInstanceStatisticsQuery(filter, sort, page());
+      return new ProcessDefinitionInstanceStatisticsQuery(filter, sort, page());
     }
   }
 }

@@ -11,7 +11,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public record ProcessDefinitionProcessInstanceStatisticsSort(List<FieldSorting> orderings)
+public record ProcessDefinitionInstanceStatisticsSort(List<FieldSorting> orderings)
     implements SortOption {
 
   @Override
@@ -19,14 +19,14 @@ public record ProcessDefinitionProcessInstanceStatisticsSort(List<FieldSorting> 
     return orderings;
   }
 
-  public static ProcessDefinitionProcessInstanceStatisticsSort of(
-      final Function<Builder, ObjectBuilder<ProcessDefinitionProcessInstanceStatisticsSort>> fn) {
-    return SortOptionBuilders.processDefinitionProcessInstanceStatistics(fn);
+  public static ProcessDefinitionInstanceStatisticsSort of(
+      final Function<Builder, ObjectBuilder<ProcessDefinitionInstanceStatisticsSort>> fn) {
+    return SortOptionBuilders.processDefinitionInstanceStatistics(fn);
   }
 
   public static final class Builder
-      extends SortOption.AbstractBuilder<ProcessDefinitionProcessInstanceStatisticsSort.Builder>
-      implements ObjectBuilder<ProcessDefinitionProcessInstanceStatisticsSort> {
+      extends SortOption.AbstractBuilder<ProcessDefinitionInstanceStatisticsSort.Builder>
+      implements ObjectBuilder<ProcessDefinitionInstanceStatisticsSort> {
 
     public Builder processDefinitionId() {
       currentOrdering = new FieldSorting("processDefinitionId", null);
@@ -49,8 +49,8 @@ public record ProcessDefinitionProcessInstanceStatisticsSort(List<FieldSorting> 
     }
 
     @Override
-    public ProcessDefinitionProcessInstanceStatisticsSort build() {
-      return new ProcessDefinitionProcessInstanceStatisticsSort(orderings);
+    public ProcessDefinitionInstanceStatisticsSort build() {
+      return new ProcessDefinitionInstanceStatisticsSort(orderings);
     }
   }
 }

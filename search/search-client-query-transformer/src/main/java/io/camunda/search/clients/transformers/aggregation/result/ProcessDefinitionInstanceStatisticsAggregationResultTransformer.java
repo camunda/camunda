@@ -7,35 +7,34 @@
  */
 package io.camunda.search.clients.transformers.aggregation.result;
 
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_NAME_BY_PROCESS_ID;
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_NAME_LATEST_PROCESS_DEFINITION;
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT;
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITH_INCIDENT;
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_NAME_VERSION_COUNT;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_BY_PROCESS_ID;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_LATEST_PROCESS_DEFINITION;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITH_INCIDENT;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_VERSION_COUNT;
 
-import io.camunda.search.aggregation.result.ProcessDefinitionProcessInstanceStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.ProcessDefinitionInstanceStatisticsAggregationResult;
 import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.transformers.entity.ProcessInstanceEntityTransformer;
-import io.camunda.search.entities.ProcessDefinitionProcessInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.util.List;
 import java.util.Map;
 
-public class ProcessDefinitionProcessInstanceStatisticsAggregationResultTransformer
-    implements AggregationResultTransformer<
-        ProcessDefinitionProcessInstanceStatisticsAggregationResult> {
+public class ProcessDefinitionInstanceStatisticsAggregationResultTransformer
+    implements AggregationResultTransformer<ProcessDefinitionInstanceStatisticsAggregationResult> {
 
   @Override
-  public ProcessDefinitionProcessInstanceStatisticsAggregationResult apply(
+  public ProcessDefinitionInstanceStatisticsAggregationResult apply(
       final Map<String, AggregationResult> value) {
 
     final AggregationResult byProcessIdAgg = value.get(AGGREGATION_NAME_BY_PROCESS_ID);
     final Map<String, AggregationResult> perProcessAggregations = byProcessIdAgg.aggregations();
     final int totalItems = perProcessAggregations.size();
 
-    final List<ProcessDefinitionProcessInstanceStatisticsEntity> items =
+    final List<ProcessDefinitionInstanceStatisticsEntity> items =
         perProcessAggregations.entrySet().stream()
             .map(
                 entry -> {
@@ -70,7 +69,7 @@ public class ProcessDefinitionProcessInstanceStatisticsAggregationResultTransfor
                   final boolean hasMultipleVersions =
                       agg.aggregations().get(AGGREGATION_NAME_VERSION_COUNT).docCount() > 1;
 
-                  return new ProcessDefinitionProcessInstanceStatisticsEntity(
+                  return new ProcessDefinitionInstanceStatisticsEntity(
                       processId,
                       latestProcessDefinitionName,
                       hasMultipleVersions,
@@ -78,6 +77,6 @@ public class ProcessDefinitionProcessInstanceStatisticsAggregationResultTransfor
                       withIncidents);
                 })
             .toList();
-    return new ProcessDefinitionProcessInstanceStatisticsAggregationResult(items, totalItems);
+    return new ProcessDefinitionInstanceStatisticsAggregationResult(items, totalItems);
   }
 }

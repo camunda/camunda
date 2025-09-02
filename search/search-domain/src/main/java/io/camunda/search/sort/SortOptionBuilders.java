@@ -208,17 +208,16 @@ public final class SortOptionBuilders {
     return fn.apply(correlatedMessage()).build();
   }
 
-  public static ProcessDefinitionProcessInstanceStatisticsSort.Builder
-      processDefinitionProcessInstanceStatistics() {
-    return new ProcessDefinitionProcessInstanceStatisticsSort.Builder();
+  public static ProcessDefinitionInstanceStatisticsSort.Builder
+  processDefinitionInstanceStatistics() {
+    return new ProcessDefinitionInstanceStatisticsSort.Builder();
   }
 
-  public static ProcessDefinitionProcessInstanceStatisticsSort
-      processDefinitionProcessInstanceStatistics(
-          final Function<
-                  ProcessDefinitionProcessInstanceStatisticsSort.Builder,
-                  ObjectBuilder<ProcessDefinitionProcessInstanceStatisticsSort>>
-              fn) {
-    return fn.apply(processDefinitionProcessInstanceStatistics()).build();
+  public static ProcessDefinitionInstanceStatisticsSort processDefinitionInstanceStatistics(
+      final Function<
+          ProcessDefinitionInstanceStatisticsSort.Builder,
+          ObjectBuilder<ProcessDefinitionInstanceStatisticsSort>>
+          fn) {
+    return fn.apply(processDefinitionInstanceStatistics()).build();
   }
 }
