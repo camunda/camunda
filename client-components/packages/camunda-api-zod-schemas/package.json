@@ -18,7 +18,6 @@
 	"type": "module",
 	"private": false,
 	"scripts": {
-		"lint": "eslint .",
 		"dev": "vite",
 		"build": "vite build",
 		"format": "prettier --write .",
