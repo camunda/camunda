@@ -19,7 +19,17 @@
     <module>acceptance-tests</module>
     <module>archunit-tests</module>
     <module>util</module>
+    <!--
+    We don't add the load-tests project here on purpose.
+    In several cases we want to exclude the QA code to not being build, fex. on releases
+    or running unit-tests. But the load-test/project code need to build in all cases, can be
+    seen as production code that needs to be released as well (and docker images have been created).
+
+    While we could move the load-tests out of the qa folder, it fits semantically here, which is
+    why we took this approach. This obviously can always be reconsidered.
+
     <module>load-tests/project</module>
+-->
   </modules>
 
   <build>
