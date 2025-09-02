@@ -13,10 +13,10 @@
   <name>Camunda Spring Boot Starter (Deprecated)</name>
   <distributionManagement>
     <relocation>
-      <artifactId>spring-boot-camunda-starter</artifactId>
-      <message>The artifact 'spring-boot-starter-camunda-sdk' has been relocated to 'spring-boot-camunda-starter'.
+      <artifactId>camunda-spring-boot-starter</artifactId>
+      <message>The artifact 'spring-boot-starter-camunda-sdk' has been relocated to 'camunda-spring-boot-starter'.
         Note: Relocation for 'spring-boot-starter-camunda-sdk' will be removed starting from the 8.10 release.
-        Please update your dependencies to use 'spring-boot-camunda-starter' to avoid build issues.</message>
+        Please update your dependencies to use 'camunda-spring-boot-starter' to avoid build issues.</message>
     </relocation>
   </distributionManagement>
   <build>

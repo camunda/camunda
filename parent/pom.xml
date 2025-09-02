@@ -927,7 +927,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>spring-boot-camunda-starter</artifactId>
+        <artifactId>camunda-spring-boot-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
 
