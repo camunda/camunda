@@ -21,7 +21,7 @@ test.describe.parallel('Login Tests', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Basic Login on TaskList', async ({
+  test('Basic Login on TaskList test', async ({
     taskListLoginPage,
     taskPanelPage,
   }) => {
