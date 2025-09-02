@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.descriptors;
 
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.index.CorrelatedMessageIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
@@ -53,6 +54,7 @@ public class IndexDescriptors {
         Stream.of(
                 new AuthorizationIndex(indexPrefix, isElasticsearch),
                 new BatchOperationTemplate(indexPrefix, isElasticsearch),
+                new CorrelatedMessageIndex(indexPrefix, isElasticsearch),
                 new DecisionIndex(indexPrefix, isElasticsearch),
                 new DecisionInstanceTemplate(indexPrefix, isElasticsearch),
                 new DecisionRequirementsIndex(indexPrefix, isElasticsearch),
