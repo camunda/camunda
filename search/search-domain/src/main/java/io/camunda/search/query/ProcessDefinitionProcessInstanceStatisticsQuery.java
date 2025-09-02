@@ -11,7 +11,7 @@ import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStat
 
 import io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.ProcessDefinitionProcessInstanceStatisticsFilter;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.ProcessDefinitionProcessInstanceStatisticsSort;
 import io.camunda.search.sort.SortOption.FieldSorting;
@@ -21,11 +21,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record ProcessDefinitionProcessInstanceStatisticsQuery(
-    ProcessDefinitionProcessInstanceStatisticsFilter filter,
+    ProcessInstanceFilter filter,
     ProcessDefinitionProcessInstanceStatisticsSort sort,
     SearchQueryPage page)
     implements TypedSearchAggregationQuery<
-        ProcessDefinitionProcessInstanceStatisticsFilter,
+        ProcessInstanceFilter,
         ProcessDefinitionProcessInstanceStatisticsSort,
         ProcessDefinitionProcessInstanceStatisticsAggregation> {
 
@@ -70,19 +70,19 @@ public record ProcessDefinitionProcessInstanceStatisticsQuery(
       implements TypedSearchQueryBuilder<
           ProcessDefinitionProcessInstanceStatisticsQuery,
           ProcessDefinitionProcessInstanceStatisticsQuery.Builder,
-          ProcessDefinitionProcessInstanceStatisticsFilter,
+          ProcessInstanceFilter,
           ProcessDefinitionProcessInstanceStatisticsSort> {
 
-    private static final ProcessDefinitionProcessInstanceStatisticsFilter EMPTY_FILTER =
-        FilterBuilders.processDefinitionProcessInstanceStatistics().build();
+    private static final ProcessInstanceFilter EMPTY_FILTER =
+        FilterBuilders.processInstance().build();
     private static final ProcessDefinitionProcessInstanceStatisticsSort EMPTY_SORT =
         SortOptionBuilders.processDefinitionProcessInstanceStatistics().build();
 
-    private ProcessDefinitionProcessInstanceStatisticsFilter filter;
+    private ProcessInstanceFilter filter;
     private ProcessDefinitionProcessInstanceStatisticsSort sort;
 
     @Override
-    public Builder filter(final ProcessDefinitionProcessInstanceStatisticsFilter value) {
+    public Builder filter(final ProcessInstanceFilter value) {
       filter = value;
       return this;
     }
@@ -94,11 +94,8 @@ public record ProcessDefinitionProcessInstanceStatisticsQuery(
     }
 
     public ProcessDefinitionProcessInstanceStatisticsQuery.Builder filter(
-        final Function<
-                ProcessDefinitionProcessInstanceStatisticsFilter.Builder,
-                ObjectBuilder<ProcessDefinitionProcessInstanceStatisticsFilter>>
-            fn) {
-      return filter(FilterBuilders.processDefinitionProcessInstanceStatistics(fn));
+        final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
+      return filter(FilterBuilders.processInstance(fn));
     }
 
     public ProcessDefinitionProcessInstanceStatisticsQuery.Builder sort(
