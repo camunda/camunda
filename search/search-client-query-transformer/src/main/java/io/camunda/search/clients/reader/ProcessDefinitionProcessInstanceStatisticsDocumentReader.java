@@ -12,6 +12,7 @@ import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStat
 
 import io.camunda.search.aggregation.result.ProcessDefinitionProcessInstanceStatisticsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
 import io.camunda.search.entities.ProcessDefinitionProcessInstanceStatisticsEntity;
 import io.camunda.search.query.ProcessDefinitionProcessInstanceStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
