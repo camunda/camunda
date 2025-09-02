@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +30,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.testcontainers.containers.Network;
 
 @ExtendWith(ContainerStateExtension.class)
+@Disabled(
+    "Requires 8.8 artifacts to be published to avoid NPE, see https://github.com/camunda/camunda/issues/37517")
 final class SnapshotTest {
 
   private static Network network;
