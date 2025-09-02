@@ -91,7 +91,7 @@ test.describe.parallel('Group Users API Tests', () => {
   test('Search Users For Group', async ({request}) => {
     const groupId: string = state['groupId2'] as string;
     const expectedBody = CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP(
-      groupId,
+      'groupId2',
       state,
     );
     const requiredFields = Object.keys(expectedBody);
