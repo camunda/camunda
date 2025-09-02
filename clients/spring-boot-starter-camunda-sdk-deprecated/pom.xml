@@ -10,7 +10,7 @@
   </parent>
   <artifactId>spring-boot-starter-camunda-sdk</artifactId>
   <version>8.8.0-SNAPSHOT</version>
-  <name>Camunda Spring Boot Starter (Deprecated)</name>
+  <name>Spring Boot Camunda Starter (Deprecated)</name>
   <distributionManagement>
     <relocation>
       <artifactId>camunda-spring-boot-starter</artifactId>
