@@ -290,6 +290,8 @@ public final class TestStreams {
             Tags.of(
                 PartitionKeyNames.PARTITION.asString(), String.valueOf(stream.getPartitionId())));
 
+    final boolean isReplay = streamProcessorMode == StreamProcessorMode.REPLAY;
+
     final var builder =
         StreamProcessor.builder()
             .logStream(stream)
@@ -303,7 +305,7 @@ public final class TestStreams {
                         wrappedFactory, new EngineConfiguration(), new SecurityConfiguration())))
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
-            .partitionCommandSender(mock(InterPartitionCommandSender.class))
+            .partitionCommandSender(isReplay ? null : mock(InterPartitionCommandSender.class))
             .meterRegistry(meterRegistry)
             .clock(StreamClock.controllable(clock));
 
