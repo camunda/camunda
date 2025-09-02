@@ -7,7 +7,7 @@
  */
 
 import {isForbidden} from './isForbidden';
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
 
 describe('isForbidden', () => {
   const baseUser: CurrentUser = {
