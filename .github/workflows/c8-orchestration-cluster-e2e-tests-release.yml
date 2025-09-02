@@ -77,41 +77,51 @@ jobs:
         run: |
           IMAGE_TAG="${{ steps.image-tag.outputs.image-tag }}"
 
-          # Determine if this is a consolidated (8.8+) or separate services version
-          if [[ "$IMAGE_TAG" =~ ^8\.[0-7](\.|$) ]] || [[ "$IMAGE_TAG" == *"8.7"* ]]; then
-            echo "Using separate services configuration for version: $IMAGE_TAG"
+          echo "Current docker-compose.yml content:"
+          cat qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
+
+          # Determine if this is a separate services version (8.6 or 8.7) or consolidated version (8.8+)
+          if [[ "$IMAGE_TAG" =~ ^8\.[67](\.|$) ]] || [[ "$IMAGE_TAG" =~ ^8\.[67]\. ]]; then
+            echo "Using separate services configuration for version: $IMAGE_TAG (8.6 or 8.7 detected)"
             
-            # Update individual service images for versions < 8.8
-            sed -i "s|image: camunda/zeebe:8\.7-SNAPSHOT|image: camunda/zeebe:$IMAGE_TAG|g" \
+            # Update individual service images for versions 8.6 and 8.7
+            sed -i -E "s|image: camunda/zeebe:[^[:space:]]*|image: camunda/zeebe:$IMAGE_TAG|g" \
               qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
-            sed -i "s|image: camunda/tasklist:8\.7-SNAPSHOT|image: camunda/tasklist:$IMAGE_TAG|g" \
+            sed -i -E "s|image: camunda/tasklist:[^[:space:]]*|image: camunda/tasklist:$IMAGE_TAG|g" \
               qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
-            sed -i "s|image: camunda/operate:8\.7-SNAPSHOT|image: camunda/operate:$IMAGE_TAG|g" \
+            sed -i -E "s|image: camunda/operate:[^[:space:]]*|image: camunda/operate:$IMAGE_TAG|g" \
+              qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
+            sed -i -E "s|image: camunda/identity:[^[:space:]]*|image: camunda/identity:$IMAGE_TAG|g" \
               qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
             
             echo "Updated individual services to use version: $IMAGE_TAG"
             
-            # Verify the changes
+            # Verify individual service images were updated
             echo "Zeebe image:"
-            grep "image: camunda/zeebe:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No zeebe image found"
+            grep -E "image: camunda/zeebe:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No zeebe image found"
             echo "Tasklist image:"
-            grep "image: camunda/tasklist:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No tasklist image found"
+            grep -E "image: camunda/tasklist:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No tasklist image found"
             echo "Operate image:"
-            grep "image: camunda/operate:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No operate image found"
+            grep -E "image: camunda/operate:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No operate image found"
+            echo "Identity image:"
+            grep -E "image: camunda/identity:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No identity image found"
             
           else
-            echo "Using consolidated image configuration for version: $IMAGE_TAG"
+            echo "Using consolidated image configuration for version: $IMAGE_TAG (8.8+ detected)"
             
             # Update consolidated image for versions >= 8.8
-            sed -i "s|image: camunda/camunda:SNAPSHOT|image: camunda/camunda:$IMAGE_TAG|g" \
+            sed -i -E "s|image: camunda/camunda:[^[:space:]]*|image: camunda/camunda:$IMAGE_TAG|g" \
               qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
             
-            echo "Updated docker-compose.yml to use image: camunda/camunda:$IMAGE_TAG"
+            echo "Updated docker-compose.yml to use consolidated image: camunda/camunda:$IMAGE_TAG"
             
-            # Verify the change
-            echo "Consolidated image:"
-            grep "image: camunda/camunda:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No consolidated image found"
+            # Verify consolidated image was updated
+            echo "Camunda consolidated image:"
+            grep -E "image: camunda/camunda:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No camunda consolidated image found"
           fi
+
+          echo "Updated docker-compose.yml content:"
+          cat qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
 
       - name: Start Camunda
         run: |
