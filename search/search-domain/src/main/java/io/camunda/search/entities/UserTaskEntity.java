@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record UserTaskEntity(
@@ -95,7 +96,7 @@ public record UserTaskEntity(
   }
 
   public boolean hasProcessName() {
-    return processName != null && !processName.isBlank();
+    return !StringUtils.isBlank(processName);
   }
 
   public enum UserTaskState {

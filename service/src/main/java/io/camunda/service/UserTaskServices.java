@@ -40,10 +40,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public final class UserTaskServices
     extends SearchQueryService<UserTaskServices, UserTaskQuery, UserTaskEntity> {
+
+  private static final Predicate<UserTaskEntity> NEEDS_CACHE_ENRICHMENT =
+      u -> !u.hasName() || !u.hasProcessName();
 
   private final UserTaskSearchClient userTaskSearchClient;
   private final FormServices formServices;
@@ -103,7 +107,7 @@ public final class UserTaskServices
 
     final var processDefinitionKeys =
         result.items().stream()
-            .filter(u -> !u.hasName() || !u.hasProcessName())
+            .filter(NEEDS_CACHE_ENRICHMENT)
             .map(UserTaskEntity::processDefinitionKey)
             .collect(Collectors.toSet());
 

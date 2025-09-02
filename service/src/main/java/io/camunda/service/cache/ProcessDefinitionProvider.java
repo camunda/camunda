@@ -14,9 +14,11 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,17 +37,22 @@ public class ProcessDefinitionProvider {
           processDefinitionServices
               .withAuthentication(CamundaAuthentication.anonymous())
               .getByKey(processDefinitionKey);
-      return extractProcessData(processDefinition);
+      return buildCacheData(processDefinition);
     } catch (final Exception e) {
       LOG.warn(
           "Could not load process definition with key {} into cache. Skipping element extraction.",
           processDefinitionKey,
           e);
-      return new ProcessCacheData(null, Map.of());
+      return ProcessCacheData.EMPTY;
     }
   }
 
   public Map<Long, ProcessCacheData> extractProcessData(final Set<Long> processDefinitionKeys) {
+    if (processDefinitionKeys.isEmpty()) {
+      LOG.debug("No process definition keys provided. Returning empty result.");
+      return Collections.emptyMap();
+    }
+
     final var keysList = new ArrayList<>(processDefinitionKeys);
     final var result = new HashMap<Long, ProcessCacheData>();
 
@@ -60,13 +67,14 @@ public class ProcessDefinitionProvider {
                               .page(p -> p.size(keysList.size()))));
 
       if (searchResult.total() < processDefinitionKeys.size()) {
-        LOG.warn("Could not load all required process definitions into the cache");
+        LOG.warn(
+            "Could not load all required process definitions into the cache. Expected: {}, Found: {}",
+            processDefinitionKeys.size(),
+            searchResult.total());
       }
 
-      for (final ProcessDefinitionEntity processDefinition : searchResult.items()) {
-        final var processData = extractProcessData(processDefinition);
-        result.put(processDefinition.processDefinitionKey(), processData);
-      }
+      searchResult.items().forEach(pd -> result.put(pd.processDefinitionKey(), buildCacheData(pd)));
+
     } catch (final Exception e) {
       LOG.warn(
           "Could not load process definitions into the cache. Skipping element extraction.", e);
@@ -75,21 +83,29 @@ public class ProcessDefinitionProvider {
     return result;
   }
 
-  private ProcessCacheData extractProcessData(final ProcessDefinitionEntity processDefinition) {
+  private ProcessCacheData buildCacheData(final ProcessDefinitionEntity processDefinition) {
+    if (processDefinition == null) {
+      LOG.warn("Process definition entity is null. Returning empty cache data.");
+      return ProcessCacheData.EMPTY;
+    }
+
     final var elements = new HashMap<String, String>();
     final byte[] bpmnBytes = processDefinition.bpmnXml().getBytes(StandardCharsets.UTF_8);
     ProcessModelReader.of(bpmnBytes, processDefinition.processDefinitionId())
         .ifPresent(
             reader ->
                 reader.extractFlowNodes().stream()
-                    .filter(fn -> fn.getName() != null)
+                    .filter(fn -> !StringUtils.isBlank(fn.getName()))
                     .map(fn -> new ProcessElement(fn.getId(), fn.getName()))
                     .forEach(fn -> elements.put(fn.id(), fn.name())));
 
-    return new ProcessCacheData(processDefinition.name(), elements);
+    return new ProcessCacheData(processDefinition.name(), Collections.unmodifiableMap(elements));
   }
 
   public record ProcessElement(String id, String name) {}
 
-  public record ProcessCacheData(String processName, Map<String, String> elementIdNameMap) {}
+  public record ProcessCacheData(String processName, Map<String, String> elementIdNameMap) {
+
+    public static final ProcessCacheData EMPTY = new ProcessCacheData(null, Collections.emptyMap());
+  }
 }
