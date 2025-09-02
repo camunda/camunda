@@ -15,7 +15,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -83,8 +82,7 @@ public class ProcessCache {
     @Override
     public ProcessCacheItem load(final Long processDefinitionKey) {
       final var processData = processDefinitionProvider.extractProcessData(processDefinitionKey);
-      return new ProcessCacheItem(
-          processData.processName(), Collections.unmodifiableMap(processData.elementIdNameMap()));
+      return ProcessCacheItem.from(processData);
     }
 
     @Override
@@ -94,11 +92,7 @@ public class ProcessCache {
       return processDataMap.entrySet().stream()
           .collect(
               Collectors.toMap(
-                  Map.Entry::getKey,
-                  entry ->
-                      new ProcessCacheItem(
-                          entry.getValue().processName(),
-                          Collections.unmodifiableMap(entry.getValue().elementIdNameMap()))));
+                  Map.Entry::getKey, entry -> ProcessCacheItem.from(entry.getValue())));
     }
   }
 

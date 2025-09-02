@@ -24,7 +24,7 @@ public record ProcessCacheResult(Map<Long, ProcessCacheItem> cachedProcesses) {
 
   public static ProcessCacheResult of(
       final Long processDefinitionKey,
-      String processName,
+      final String processName,
       final String elementId,
       final String cachedName) {
     return new ProcessCacheResult(
