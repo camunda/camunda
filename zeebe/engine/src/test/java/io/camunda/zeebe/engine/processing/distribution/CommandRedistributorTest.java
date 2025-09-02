@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import java.time.Duration;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -60,7 +62,11 @@ public class CommandRedistributorTest {
     routingState.initializeRoutingInfo(2);
 
     final var commandDistributionPaused = false;
-    commandRedistributor = getCommandRedistributor(commandDistributionPaused);
+    commandRedistributor =
+        getCommandRedistributor(
+            commandDistributionPaused,
+            EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL,
+            EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
 
     recordValue =
         new UserRecord()
@@ -112,7 +118,10 @@ public class CommandRedistributorTest {
         .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
   }
 
-  private CommandRedistributor getCommandRedistributor(final boolean commandDistributionPaused) {
+  private CommandRedistributor getCommandRedistributor(
+      final boolean commandDistributionPaused,
+      final Duration redistributionInterval,
+      final Duration maxBackoffDuration) {
     final var fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     final Writers writers =
         new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
@@ -129,7 +138,13 @@ public class CommandRedistributorTest {
             mockCommandSender,
             mockDistributionMetrics);
 
-    return new CommandRedistributor(behavior, routingInfo, commandDistributionPaused);
+    final var config =
+        new EngineConfiguration()
+            .setCommandDistributionPaused(commandDistributionPaused)
+            .setCommandRedistributionInterval(redistributionInterval)
+            .setCommandRedistributionMaxBackoff(maxBackoffDuration);
+
+    return new CommandRedistributor(behavior, routingInfo, config);
   }
 
   @Nested
@@ -195,7 +210,11 @@ public class CommandRedistributorTest {
     void setUp() {
       // Simulate command distribution paused
       final var commandDistributionPaused = true;
-      commandRedistributor = getCommandRedistributor(commandDistributionPaused);
+      commandRedistributor =
+          getCommandRedistributor(
+              commandDistributionPaused,
+              EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL,
+              EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
     }
 
     @Test
@@ -206,6 +225,42 @@ public class CommandRedistributorTest {
 
       // then
       verify(mockContext, never()).getScheduleService();
+    }
+  }
+
+  @Nested
+  class ConfigurableRetryIntervals {
+
+    @BeforeEach
+    void setUp() {
+      // Set up routing state for configuration tests
+      final var customInterval = Duration.ofSeconds(2);
+      final var customMaxBackoff = Duration.ofSeconds(8); // Only 4 cycles until max backoff
+      commandRedistributor = getCommandRedistributor(false, customInterval, customMaxBackoff);
+    }
+
+    @Test
+    void shouldUseConfigurableMaxBackoff() {
+      // given
+      // when - run enough cycles to reach max backoff
+      for (int i = 0; i < 10; i++) {
+        commandRedistributor.runRetryCycle();
+      }
+
+      // then - verify retries occurred based on exponential backoff and then fixed intervals
+      // Cycle 0: no retry
+      // Cycle 1: retry (bitCount(1) == 1)
+      // Cycle 2: retry (bitCount(2) == 1)
+      // Cycle 3: no retry (bitCount(3) == 2)
+      // Cycle 4: retry (4 >= maxRetryCycles=4 and 4 % 4 == 0)
+      // Cycle 5-7: no retry (not multiple of 4)
+      // Cycle 8: retry (8 % 4 == 0)
+      // Cycle 9: no retry
+
+      verify(mockCommandSender, times(4))
+          .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+      verify(mockCommandSender, times(4))
+          .sendCommand(2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
     }
   }
 }
