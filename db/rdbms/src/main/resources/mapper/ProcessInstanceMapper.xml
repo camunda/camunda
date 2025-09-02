@@ -41,6 +41,17 @@
     <!-- TODO: only when definition filters are active -->
     LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchAndAuthFilter"/>
+    <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
+      OR (
+      <foreach collection="filter.orFilters" item="filter" separator=" OR ">
+        <trim prefix="(" suffix=")">
+          <trim prefixOverrides="AND">
+            <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
+          </trim>
+        </trim>
+      </foreach>
+      )
+    </if>
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
@@ -93,7 +104,7 @@
       </if>
       <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
       <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
-        AND (
+        OR (
         <foreach collection="filter.orFilters" item="filter" separator=" OR ">
           <trim prefix="(" suffix=")">
             <trim prefixOverrides="AND">
