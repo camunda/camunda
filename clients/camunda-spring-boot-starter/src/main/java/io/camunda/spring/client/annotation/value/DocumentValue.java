@@ -20,17 +20,17 @@ import io.camunda.spring.client.bean.ParameterInfo;
 public class DocumentValue implements CamundaAnnotationValue<ParameterInfo> {
   private final String name;
   private final ParameterInfo parameterInfo;
-  private final boolean optional;
+  private final boolean required;
   private final ParameterType parameterType;
 
   public DocumentValue(
       final String name,
       final ParameterInfo parameterInfo,
-      final boolean optional,
+      final boolean required,
       final ParameterType parameterType) {
     this.name = name;
     this.parameterInfo = parameterInfo;
-    this.optional = optional;
+    this.required = required;
     this.parameterType = parameterType;
   }
 
@@ -43,8 +43,8 @@ public class DocumentValue implements CamundaAnnotationValue<ParameterInfo> {
     return parameterInfo;
   }
 
-  public boolean isOptional() {
-    return optional;
+  public boolean isRequired() {
+    return required;
   }
 
   public ParameterType getParameterType() {

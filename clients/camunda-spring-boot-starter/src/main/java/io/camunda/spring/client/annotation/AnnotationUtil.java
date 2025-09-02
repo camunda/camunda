@@ -164,10 +164,10 @@ public class AnnotationUtil {
       if (!isVariableLegacy(parameterInfo)) {
         return Optional.of(
             new VariableValue(
-                getVariableName(parameterInfo), parameterInfo, !getVariableRequired(parameterInfo)));
+                getVariableName(parameterInfo), parameterInfo, getVariableRequired(parameterInfo)));
       } else {
         return Optional.of(
-            new VariableValue(getVariableNameLegacy(parameterInfo), parameterInfo, true));
+            new VariableValue(getVariableNameLegacy(parameterInfo), parameterInfo, false));
       }
     }
     return Optional.empty();
@@ -179,7 +179,7 @@ public class AnnotationUtil {
           new DocumentValue(
               getDocumentName(parameterInfo),
               parameterInfo,
-              !getDocumentRequired(parameterInfo),
+              getDocumentRequired(parameterInfo),
               getDocumentParameterType(parameterInfo)));
     }
     return Optional.empty();

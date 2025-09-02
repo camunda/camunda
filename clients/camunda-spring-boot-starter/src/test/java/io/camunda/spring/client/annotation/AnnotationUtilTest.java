@@ -43,7 +43,7 @@ public class AnnotationUtilTest {
       final VariableValue variableValue = AnnotationUtil.getVariableValue(parameterInfo).get();
       // then
       assertThat(variableValue.getName()).isEqualTo("var1");
-      assertThat(variableValue.isOptional()).isFalse();
+      assertThat(variableValue.isRequired()).isTrue();
       assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
@@ -56,7 +56,7 @@ public class AnnotationUtilTest {
       final VariableValue variableValue = AnnotationUtil.getVariableValue(parameterInfo).get();
       // then
       assertThat(variableValue.getName()).isEqualTo("var1");
-      assertThat(variableValue.isOptional()).isFalse();
+      assertThat(variableValue.isRequired()).isTrue();
       assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
@@ -69,7 +69,7 @@ public class AnnotationUtilTest {
       final VariableValue variableValue = AnnotationUtil.getVariableValue(parameterInfo).get();
       // then
       assertThat(variableValue.getName()).isEqualTo("var2");
-      assertThat(variableValue.isOptional()).isFalse();
+      assertThat(variableValue.isRequired()).isTrue();
       assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
@@ -82,7 +82,7 @@ public class AnnotationUtilTest {
       final VariableValue variableValue = AnnotationUtil.getVariableValue(parameterInfo).get();
       // then
       assertThat(variableValue.getName()).isEqualTo("var2");
-      assertThat(variableValue.isOptional()).isFalse();
+      assertThat(variableValue.isRequired()).isTrue();
       assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
@@ -95,7 +95,7 @@ public class AnnotationUtilTest {
       final VariableValue variableValue = AnnotationUtil.getVariableValue(parameterInfo).get();
       // then
       assertThat(variableValue.getName()).isEqualTo("var1");
-      assertThat(variableValue.isOptional()).isTrue();
+      assertThat(variableValue.isRequired()).isFalse();
       assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
@@ -143,7 +143,7 @@ public class AnnotationUtilTest {
       final DocumentValue documentValue = AnnotationUtil.getDocumentValue(parameterInfo).get();
       // then
       assertThat(documentValue.getName()).isEqualTo("document");
-      assertThat(documentValue.isOptional()).isFalse();
+      assertThat(documentValue.isRequired()).isTrue();
     }
 
     @Test
@@ -154,7 +154,7 @@ public class AnnotationUtilTest {
       final DocumentValue documentValue = AnnotationUtil.getDocumentValue(parameterInfo).get();
       // then
       assertThat(documentValue.getName()).isEqualTo("document");
-      assertThat(documentValue.isOptional()).isFalse();
+      assertThat(documentValue.isRequired()).isTrue();
     }
 
     @Test
@@ -165,7 +165,7 @@ public class AnnotationUtilTest {
       final DocumentValue documentValue = AnnotationUtil.getDocumentValue(parameterInfo).get();
       // then
       assertThat(documentValue.getName()).isEqualTo("anotherDocument");
-      assertThat(documentValue.isOptional()).isFalse();
+      assertThat(documentValue.isRequired()).isTrue();
     }
 
     @Test
@@ -176,7 +176,7 @@ public class AnnotationUtilTest {
       final DocumentValue documentValue = AnnotationUtil.getDocumentValue(parameterInfo).get();
       // then
       assertThat(documentValue.getName()).isEqualTo("anotherDocument");
-      assertThat(documentValue.isOptional()).isFalse();
+      assertThat(documentValue.isRequired()).isTrue();
     }
 
     @Test
@@ -187,7 +187,7 @@ public class AnnotationUtilTest {
       final DocumentValue documentValue = AnnotationUtil.getDocumentValue(parameterInfo).get();
       // then
       assertThat(documentValue.getName()).isEqualTo("document");
-      assertThat(documentValue.isOptional()).isFalse();
+      assertThat(documentValue.isRequired()).isTrue();
     }
 
     @Test
@@ -198,7 +198,7 @@ public class AnnotationUtilTest {
       final DocumentValue documentValue = AnnotationUtil.getDocumentValue(parameterInfo).get();
       // then
       assertThat(documentValue.getName()).isEqualTo("document");
-      assertThat(documentValue.isOptional()).isTrue();
+      assertThat(documentValue.isRequired()).isFalse();
     }
 
     public void testNoName(
