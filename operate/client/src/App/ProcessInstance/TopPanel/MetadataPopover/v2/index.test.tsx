@@ -37,7 +37,7 @@ import {labels, renderPopover} from './mocks';
 import {
   type ProcessInstance,
   type ElementInstance,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {init} from 'modules/utils/flowNodeMetadata';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';

@@ -11,7 +11,7 @@ import {
   useQueryClient,
   type UseMutationOptions,
 } from '@tanstack/react-query';
-import {type CreateIncidentResolutionBatchOperationResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type CreateIncidentResolutionBatchOperationResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {getBatchOperation} from 'modules/api/v2/batchOperations/getBatchOperation';
 import {createIncidentResolutionBatchOperation} from 'modules/api/v2/processInstances/createIncidentResolutionBatchOperation';
 

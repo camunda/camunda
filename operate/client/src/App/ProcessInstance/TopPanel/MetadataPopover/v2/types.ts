@@ -12,7 +12,7 @@ import type {
   ProcessInstance,
   Job,
   UserTask,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 // V2 Element Instance Metadata - extends the old structure but with v2 element instance fields will be removed after other components migration
 type V2InstanceMetadata = {

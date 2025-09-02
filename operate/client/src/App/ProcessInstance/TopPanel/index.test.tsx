@@ -41,7 +41,7 @@ import type {
   ElementInstance,
   ProcessInstance,
   SequenceFlow,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {http, HttpResponse} from 'msw';
 import {mockServer} from 'modules/mock-server/node';

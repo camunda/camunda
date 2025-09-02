@@ -8,7 +8,7 @@
 
 import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
 import type {RequestError} from 'modules/request';
-import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {fetchProcessInstance} from 'modules/api/v2/processInstances/fetchProcessInstance';
 import {isInstanceRunning} from 'modules/utils/instance';

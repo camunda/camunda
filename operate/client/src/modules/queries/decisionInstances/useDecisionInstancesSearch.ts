@@ -8,7 +8,7 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {searchDecisionInstances} from 'modules/api/v2/decisionInstances/searchDecisionInstances';
-import type {QueryDecisionInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {QueryDecisionInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const DECISION_INSTANCES_SEARCH_QUERY_KEY = 'decisionInstancesSearch';
 

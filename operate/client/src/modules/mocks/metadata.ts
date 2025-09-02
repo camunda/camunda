@@ -7,7 +7,7 @@
  */
 
 import type {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
-import type {Job} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {Job} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const FLOW_NODE_ID = 'StartEvent_1'; // this need to match the id from mockProcessXML
 const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the id from mockCallActivityProcessXML

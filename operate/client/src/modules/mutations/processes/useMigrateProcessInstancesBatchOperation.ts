@@ -15,7 +15,7 @@ import {migrateProcessInstancesBatchOperation} from 'modules/api/v2/processes/mi
 import type {
   CreateMigrationBatchOperationRequestBody,
   CreateMigrationBatchOperationResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations.ts';
 
 const useMigrateProcessInstancesBatchOperation = (
