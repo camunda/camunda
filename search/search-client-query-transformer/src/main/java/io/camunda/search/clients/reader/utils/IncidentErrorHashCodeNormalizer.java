@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.reader;
+package io.camunda.search.clients.reader.utils;
 
+import io.camunda.search.clients.reader.IncidentDocumentReader;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -26,7 +27,7 @@ public class IncidentErrorHashCodeNormalizer {
     this.incidentReader = incidentReader;
   }
 
-  public ProcessInstanceFilter normalizeProcessInstanceFilter(
+  private ProcessInstanceFilter normalizeProcessInstanceFilter(
       final ProcessInstanceFilter filter, final ResourceAccessChecks resourceAccessChecks) {
     if (filter.incidentErrorHashCodeOperations() == null
         || filter.incidentErrorHashCodeOperations().isEmpty()) {
@@ -39,10 +40,7 @@ public class IncidentErrorHashCodeNormalizer {
 
     if (resolvedErrorMessage == null || resolvedErrorMessage.isBlank()) {
       // If the error hash code cannot be resolved, return a filter that will be detected as invalid
-      return filter.toBuilder()
-          .replaceIncidentErrorHashCodeOperations(List.of())
-          .replaceErrorMessageOperations(List.of())
-          .build();
+      return filter.toBuilder().replaceIncidentErrorHashCodeOperations(List.of()).build();
     }
 
     final var existingOps =
@@ -53,12 +51,12 @@ public class IncidentErrorHashCodeNormalizer {
     existingOps.add(Operation.eq(resolvedErrorMessage));
 
     return filter.toBuilder()
-        .incidentErrorHashCodeOperations(null)
+        .replaceIncidentErrorHashCodeOperations(List.of())
         .replaceErrorMessageOperations(existingOps)
         .build();
   }
 
-  public List<ProcessInstanceFilter> normalizeProcessInstanceOrFilters(
+  private List<ProcessInstanceFilter> normalizeProcessInstanceOrFilters(
       final List<ProcessInstanceFilter> orFilters,
       final ResourceAccessChecks resourceAccessChecks) {
     final List<ProcessInstanceFilter> normalized = new ArrayList<>();
@@ -87,7 +85,7 @@ public class IncidentErrorHashCodeNormalizer {
 
       final var updatedSubFilter =
           subFilter.toBuilder()
-              .incidentErrorHashCodeOperations(null)
+              .replaceIncidentErrorHashCodeOperations(List.of())
               .replaceErrorMessageOperations(existingOps)
               .build();
 
@@ -96,7 +94,7 @@ public class IncidentErrorHashCodeNormalizer {
     return normalized;
   }
 
-  public ProcessDefinitionStatisticsFilter normalizeProcessDefinitionFilter(
+  private ProcessDefinitionStatisticsFilter normalizeProcessDefinitionFilter(
       final ProcessDefinitionStatisticsFilter filter,
       final ResourceAccessChecks resourceAccessChecks) {
     if (filter.incidentErrorHashCodeOperations() == null
@@ -109,7 +107,7 @@ public class IncidentErrorHashCodeNormalizer {
             filter.incidentErrorHashCodeOperations(), resourceAccessChecks);
 
     if (resolvedErrorMessage == null || resolvedErrorMessage.isBlank()) {
-      return filter.toBuilder().incidentErrorHashCodeOperations(List.of()).build();
+      return filter.toBuilder().replaceIncidentErrorHashCodeOperations(List.of()).build();
     }
 
     final var existingOps =
@@ -120,12 +118,12 @@ public class IncidentErrorHashCodeNormalizer {
     existingOps.add(Operation.eq(resolvedErrorMessage));
 
     return filter.toBuilder()
-        .incidentErrorHashCodeOperations(null)
+        .replaceIncidentErrorHashCodeOperations(List.of())
         .replaceErrorMessageOperations(existingOps)
         .build();
   }
 
-  public List<ProcessDefinitionStatisticsFilter> normalizeProcessDefinitionOrFilters(
+  private List<ProcessDefinitionStatisticsFilter> normalizeProcessDefinitionOrFilters(
       final List<ProcessDefinitionStatisticsFilter> orFilters,
       final ResourceAccessChecks resourceAccessChecks) {
     final List<ProcessDefinitionStatisticsFilter> normalized = new ArrayList<>();
@@ -153,7 +151,7 @@ public class IncidentErrorHashCodeNormalizer {
 
       final var updatedSubFilter =
           subFilter.toBuilder()
-              .incidentErrorHashCodeOperations(null)
+              .replaceIncidentErrorHashCodeOperations(List.of())
               .replaceErrorMessageOperations(existingOps)
               .build();
 
@@ -185,7 +183,6 @@ public class IncidentErrorHashCodeNormalizer {
       // error hash codes could not be resolved. Thus, the filter is invalid.
       return null;
     }
-    ;
 
     // Step 2: Normalize OR filters
     if (normalizedFilter.orFilters() != null && !normalizedFilter.orFilters().isEmpty()) {

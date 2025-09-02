@@ -41,19 +41,22 @@ public record SearchBucketSortAggregator(
     }
 
     public Builder sorting(final List<FieldSorting> value) {
-      if (value == null) {
-        throw new IllegalArgumentException("Order must not be null.");
-      }
       sorting = value;
       return this;
     }
 
     public Builder from(final Integer value) {
+      if (value != null && value < 0) {
+        throw new IllegalArgumentException("From must be greater than or equal to 0.");
+      }
       from = value;
       return this;
     }
 
     public Builder size(final Integer value) {
+      if (value != null && value < 0) {
+        throw new IllegalArgumentException("Size must be greater than or equal to 0.");
+      }
       size = value;
       return this;
     }
@@ -61,7 +64,7 @@ public record SearchBucketSortAggregator(
     public SearchBucketSortAggregator build() {
       return new SearchBucketSortAggregator(
           Objects.requireNonNull(name, "Expected non-null field for name."),
-          Objects.requireNonNull(sorting, "non-null field for sorting."),
+          sorting,
           from,
           size,
           aggregations);

@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package io.camunda.search.os.transformers.aggregator;
 
 import io.camunda.search.clients.aggregator.SearchBucketSortAggregator;
@@ -38,18 +45,8 @@ public final class SearchBucketSortAggregationTransformer
     for (final FieldSorting fieldSort : requestedSort) {
       result.add(
           SortOptions.of(
-              s ->
-                  s.field(
-                      f ->
-                          f.field(fieldSort.field() + "._count")
-                              .order(toOrder(fieldSort.order())))));
+              s -> s.field(f -> f.field(fieldSort.field()).order(toOrder(fieldSort.order())))));
     }
-
-    // Add a tiebreaker sort on _key (ascending)
-    if (requestedSort.stream().noneMatch(s -> s.field().equals("processDefinitionId"))) {
-      result.add(SortOptions.of(s -> s.field(f -> f.field("_key").order(SortOrder.Asc))));
-    }
-
     return result;
   }
 

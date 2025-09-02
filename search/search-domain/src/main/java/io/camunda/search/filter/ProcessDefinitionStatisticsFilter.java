@@ -49,7 +49,14 @@ public record ProcessDefinitionStatisticsFilter(
         .hasIncident(hasIncident)
         .tenantIdOperations(tenantIdOperations)
         .variables(variableFilters)
-        .batchOperationIdOperations(batchOperationIdOperations);
+        .errorMessageOperations(errorMessageOperations)
+        .batchOperationIdOperations(batchOperationIdOperations)
+        .hasRetriesLeft(hasRetriesLeft)
+        .flowNodeIdOperations(flowNodeIdOperations)
+        .hasFlowNodeInstanceIncident(hasFlowNodeInstanceIncident)
+        .flowNodeInstanceStateOperations(flowNodeInstanceStateOperations)
+        .incidentErrorHashCodeOperations(incidentErrorHashCodeOperations)
+        .orFilters(orFilters);
   }
 
   public static final class Builder implements ObjectBuilder<ProcessDefinitionStatisticsFilter> {
@@ -88,6 +95,12 @@ public record ProcessDefinitionStatisticsFilter(
 
     public Builder replaceErrorMessageOperations(final List<Operation<String>> operations) {
       errorMessageOperations = new ArrayList<>(operations);
+      return this;
+    }
+
+    public Builder replaceIncidentErrorHashCodeOperations(
+        final List<Operation<Integer>> operations) {
+      incidentErrorHashCodeOperations = new ArrayList<>(operations);
       return this;
     }
 
