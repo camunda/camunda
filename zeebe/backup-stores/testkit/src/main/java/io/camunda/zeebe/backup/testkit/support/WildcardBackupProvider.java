@@ -62,6 +62,21 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                         new BackupIdentifierImpl(1, 2, 1), new BackupIdentifierImpl(2, 1, 3))))),
         Arguments.of(
             Named.of(
+                "Backups matching checkpoint prefix",
+                new WildcardTestParameter(
+                    new BackupIdentifierWildcardImpl(
+                        Optional.of(1), Optional.of(1), CheckpointPattern.of("10*")),
+                    List.of(
+                        new BackupIdentifierImpl(1, 1, 10),
+                        new BackupIdentifierImpl(1, 1, 100),
+                        new BackupIdentifierImpl(1, 1, 101)),
+                    List.of(
+                        new BackupIdentifierImpl(1, 1, 1),
+                        new BackupIdentifierImpl(1, 1, 20),
+                        new BackupIdentifierImpl(2, 1, 10),
+                        new BackupIdentifierImpl(1, 2, 10))))),
+        Arguments.of(
+            Named.of(
                 "Backups of arbitrary partitions and checkpoints",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
