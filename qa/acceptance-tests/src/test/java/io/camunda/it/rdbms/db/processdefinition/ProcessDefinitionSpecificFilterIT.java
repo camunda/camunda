@@ -90,7 +90,7 @@ public class ProcessDefinitionSpecificFilterIT {
                     .name("Sorting Test Process")
                     .resourceName("sorting-test-process.bpmn")
                     .versionTag("Version 1337")
-                    .version(4711)
+                    .version(1)
                     .tenantId("sorting-tenant1")));
 
     createAndSaveProcessDefinition(
@@ -102,7 +102,7 @@ public class ProcessDefinitionSpecificFilterIT {
                     .name("Sorting Test Process")
                     .resourceName("sorting-test-process.bpmn")
                     .versionTag("Version 1337")
-                    .version(4712)
+                    .version(2)
                     .tenantId("sorting-tenant1")));
 
     final var searchResult =
@@ -117,8 +117,9 @@ public class ProcessDefinitionSpecificFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().processDefinitionKey()).isEqualTo(4712L);
-    assertThat(searchResult.items().getFirst().version()).isEqualTo(4712L);
+    assertThat(searchResult.items().getFirst().processDefinitionId())
+        .isEqualTo("sorting-test-process");
+    assertThat(searchResult.items().getFirst().version()).isEqualTo(2L);
   }
 
   static List<ProcessDefinitionFilter> shouldFindProcessDefinitionWithSpecificFilterParameters() {
