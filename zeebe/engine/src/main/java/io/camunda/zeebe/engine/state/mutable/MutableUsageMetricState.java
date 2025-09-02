@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.UsageMetricState;
-import io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics;
 
 public interface MutableUsageMetricState extends UsageMetricState {
 
@@ -19,6 +18,4 @@ public interface MutableUsageMetricState extends UsageMetricState {
   void recordTUMetric(final String tenantId, final String assignee);
 
   void resetActiveBucket(final long fromTime);
-
-  PersistedUsageMetrics getOrCreateActiveBucket();
 }
