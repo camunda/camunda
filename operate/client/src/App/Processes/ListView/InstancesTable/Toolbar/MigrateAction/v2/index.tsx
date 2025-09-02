@@ -33,7 +33,8 @@ const MigrateAction: React.FC = observer(() => {
   const {
     selectedProcessInstanceIds,
     hasSelectedRunningInstances,
-    state: {isAllChecked},
+    excludedProcessInstanceIds,
+    state: {selectionMode},
   } = processInstancesSelectionStore;
 
   const isVersionSelected = version !== undefined && version !== 'all';
@@ -73,8 +74,8 @@ const MigrateAction: React.FC = observer(() => {
 
     const requestFilterParameters = {
       ...getProcessInstancesRequestFilters(),
-      ids: isAllChecked ? [] : selectedProcessInstanceIds,
-      excludeIds: isAllChecked ? selectedProcessInstanceIds : [],
+      ids: selectionMode === 'INCLUDE' ? selectedProcessInstanceIds : [],
+      excludeIds: selectionMode === 'EXCLUDE' ? excludedProcessInstanceIds : [],
     };
 
     processInstanceMigrationStore.setSelectedInstancesCount(
