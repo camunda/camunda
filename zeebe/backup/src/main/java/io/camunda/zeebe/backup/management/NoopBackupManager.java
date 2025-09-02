@@ -42,7 +42,7 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Collection<BackupStatus>> listBackups() {
+  public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));
   }
