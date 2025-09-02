@@ -866,6 +866,10 @@
               <id>task-migration</id>
               <mainClass>io.camunda.application.StandaloneTaskMigration</mainClass>
             </program>
+            <program>
+              <id>data-migration</id>
+              <mainClass>io.camunda.application.StandaloneDataMigration</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
