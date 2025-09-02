@@ -18,8 +18,8 @@ component/operate:
   '(Operate-)'
 component/optimize:
   '(Optimize-)'
-component/spring-sdk:
-  '(Spring SDK-)'
+component/spring-boot-starter:
+  '(Spring Boot Starter-)'
 component/tasklist:
   '(Tasklist-)'
 component/zeebe:
