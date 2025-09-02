@@ -13,15 +13,10 @@ type Props = React.ComponentProps<typeof Select>;
 
 const MultitenancySelect: React.FC<Props> = (props) => {
   const {data: currentUser} = useCurrentUser();
-  const defaultTenant = currentUser?.tenants[0];
   const tenants = currentUser?.tenants ?? [];
 
   return (
-    <Select
-      {...props}
-      defaultValue={defaultTenant}
-      disabled={props.disabled || currentUser === undefined}
-    >
+    <Select {...props} disabled={props.disabled || currentUser === undefined}>
       {tenants.map(({tenantId, name}) => (
         <SelectItem key={tenantId} value={tenantId} text={name} />
       ))}
