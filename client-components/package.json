@@ -4,6 +4,7 @@
 	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
 	"type": "module",
 	"private": true,
+	"license": "LicenseRef-Camunda-1.0",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/camunda/camunda.git"
