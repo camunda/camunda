@@ -882,6 +882,7 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldTriggerNonInterruptingEventSubProcess() {
     // given
+    final var correlationKey = UUID.randomUUID().toString();
     final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
         process(
@@ -892,7 +893,10 @@ public class JobBasedAdHocSubProcessTest {
                   .embeddedSubProcess()
                   .eventSubProcess("event_sub_process")
                   .startEvent("event_sub_start")
-                  .message(m -> m.name("msg").zeebeCorrelationKeyExpression("=\"correlationKey\""))
+                  .message(
+                      m ->
+                          m.name("msg")
+                              .zeebeCorrelationKeyExpression("=\"%s\"".formatted(correlationKey)))
                   .interrupting(false)
                   .endEvent("event_sub_end");
             });
@@ -902,7 +906,7 @@ public class JobBasedAdHocSubProcessTest {
     completeJob(jobType, false, false, activateElement("A"));
 
     // when
-    ENGINE.message().withName("msg").withCorrelationKey("correlationKey").publish();
+    ENGINE.message().withName("msg").withCorrelationKey(correlationKey).publish();
 
     // then
     Assertions.assertThat(
@@ -938,6 +942,7 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldTriggerNonInterruptingEventSubProcessMultipleTimes() {
     // given
+    final var correlationKey = UUID.randomUUID().toString();
     final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
         process(
@@ -948,7 +953,10 @@ public class JobBasedAdHocSubProcessTest {
                   .embeddedSubProcess()
                   .eventSubProcess("event_sub_process")
                   .startEvent("event_sub_start")
-                  .message(m -> m.name("msg").zeebeCorrelationKeyExpression("=\"correlationKey\""))
+                  .message(
+                      m ->
+                          m.name("msg")
+                              .zeebeCorrelationKeyExpression("=\"%s\"".formatted(correlationKey)))
                   .interrupting(false)
                   .endEvent("event_sub_end");
             });
@@ -958,8 +966,8 @@ public class JobBasedAdHocSubProcessTest {
     completeJob(jobType, false, false, activateElement("A"));
 
     // when
-    ENGINE.message().withName("msg").withCorrelationKey("correlationKey").publish();
-    ENGINE.message().withName("msg").withCorrelationKey("correlationKey").publish();
+    ENGINE.message().withName("msg").withCorrelationKey(correlationKey).publish();
+    ENGINE.message().withName("msg").withCorrelationKey(correlationKey).publish();
 
     // then
     Assertions.assertThat(
@@ -980,6 +988,8 @@ public class JobBasedAdHocSubProcessTest {
   @Test
   public void shouldUpdateOutputCollectionOnEventSubProcessCompletion() {
     // given
+    final var correlationKey = UUID.randomUUID().toString();
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
         process(
             UUID.randomUUID().toString(),
@@ -987,12 +997,15 @@ public class JobBasedAdHocSubProcessTest {
               adHocSubProcess
                   .zeebeOutputCollection("results")
                   .zeebeOutputElementExpression("result");
-              adHocSubProcess.serviceTask("A").zeebeJobType("jobType");
+              adHocSubProcess.serviceTask("A").zeebeJobType(jobType);
               adHocSubProcess
                   .embeddedSubProcess()
                   .eventSubProcess("event_sub_process")
                   .startEvent("event_sub_start")
-                  .message(m -> m.name("msg").zeebeCorrelationKeyExpression("=\"correlationKey\""))
+                  .message(
+                      m ->
+                          m.name("msg")
+                              .zeebeCorrelationKeyExpression("=\"%s\"".formatted(correlationKey)))
                   .interrupting(false)
                   .endEvent("event_sub_end");
             });
@@ -1004,7 +1017,7 @@ public class JobBasedAdHocSubProcessTest {
     ENGINE
         .message()
         .withName("msg")
-        .withCorrelationKey("correlationKey")
+        .withCorrelationKey(correlationKey)
         .withVariables(Map.of("result", "foo"))
         .publish();
 

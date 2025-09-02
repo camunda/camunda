@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.junit.ClassRule;
@@ -1194,16 +1195,21 @@ public final class AdHocSubProcessTest {
   @Test
   public void shouldTriggerNonInterruptingEventSubProcess() {
     // given
+    final var correlationKey = UUID.randomUUID().toString();
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
-              adHocSubProcess.serviceTask("A").zeebeJobType("jobType");
+              adHocSubProcess.serviceTask("A").zeebeJobType(jobType);
               adHocSubProcess
                   .embeddedSubProcess()
                   .eventSubProcess("event_sub_process")
                   .startEvent("event_sub_start")
-                  .message(m -> m.name("msg").zeebeCorrelationKeyExpression("=\"correlationKey\""))
+                  .message(
+                      m ->
+                          m.name("msg")
+                              .zeebeCorrelationKeyExpression("=\"%s\"".formatted(correlationKey)))
                   .interrupting(false)
                   .endEvent("event_sub_end");
             });
@@ -1217,7 +1223,7 @@ public final class AdHocSubProcessTest {
             .create();
 
     // when
-    ENGINE.message().withName("msg").withCorrelationKey("correlationKey").publish();
+    ENGINE.message().withName("msg").withCorrelationKey(correlationKey).publish();
 
     // then
     assertThat(
@@ -1242,7 +1248,7 @@ public final class AdHocSubProcessTest {
             tuple("event_sub_process", ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     final var jobKey =
-        ENGINE.jobs().withType("jobType").activate().getValue().getJobKeys().getFirst();
+        ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
     ENGINE.job().withKey(jobKey).complete();
 
     assertThat(
@@ -1256,16 +1262,21 @@ public final class AdHocSubProcessTest {
   @Test
   public void shouldTriggerNonInterruptingEventSubProcessMultipleTimes() {
     // given
+    final var correlationKey = UUID.randomUUID().toString();
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
-              adHocSubProcess.serviceTask("A").zeebeJobType("jobType");
+              adHocSubProcess.serviceTask("A").zeebeJobType(jobType);
               adHocSubProcess
                   .embeddedSubProcess()
                   .eventSubProcess("event_sub_process")
                   .startEvent("event_sub_start")
-                  .message(m -> m.name("msg").zeebeCorrelationKeyExpression("=\"correlationKey\""))
+                  .message(
+                      m ->
+                          m.name("msg")
+                              .zeebeCorrelationKeyExpression("=\"%s\"".formatted(correlationKey)))
                   .interrupting(false)
                   .endEvent("event_sub_end");
             });
@@ -1279,8 +1290,8 @@ public final class AdHocSubProcessTest {
             .create();
 
     // when
-    ENGINE.message().withName("msg").withCorrelationKey("correlationKey").publish();
-    ENGINE.message().withName("msg").withCorrelationKey("correlationKey").publish();
+    ENGINE.message().withName("msg").withCorrelationKey(correlationKey).publish();
+    ENGINE.message().withName("msg").withCorrelationKey(correlationKey).publish();
 
     // then
     assertThat(
@@ -1290,7 +1301,7 @@ public final class AdHocSubProcessTest {
         .hasSize(2);
 
     final var jobKey =
-        ENGINE.jobs().withType("jobType").activate().getValue().getJobKeys().getFirst();
+        ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
     ENGINE.job().withKey(jobKey).complete();
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
@@ -1303,6 +1314,8 @@ public final class AdHocSubProcessTest {
   @Test
   public void shouldUpdateOutputCollectionOnEventSubProcessCompletion() {
     // given
+    final var correlationKey = UUID.randomUUID().toString();
+    final var jobType = UUID.randomUUID().toString();
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
@@ -1310,12 +1323,15 @@ public final class AdHocSubProcessTest {
                   .zeebeActiveElementsCollectionExpression("activateElements")
                   .zeebeOutputCollection("results")
                   .zeebeOutputElementExpression("result");
-              adHocSubProcess.serviceTask("A").zeebeJobType("jobType");
+              adHocSubProcess.serviceTask("A").zeebeJobType(jobType);
               adHocSubProcess
                   .embeddedSubProcess()
                   .eventSubProcess("event_sub_process")
                   .startEvent("event_sub_start")
-                  .message(m -> m.name("msg").zeebeCorrelationKeyExpression("=\"correlationKey\""))
+                  .message(
+                      m ->
+                          m.name("msg")
+                              .zeebeCorrelationKeyExpression("=\"%s\"".formatted(correlationKey)))
                   .interrupting(false)
                   .endEvent("event_sub_end");
             });
@@ -1332,7 +1348,7 @@ public final class AdHocSubProcessTest {
     ENGINE
         .message()
         .withName("msg")
-        .withCorrelationKey("correlationKey")
+        .withCorrelationKey(correlationKey)
         .withVariables(Map.of("result", "foo"))
         .publish();
 
