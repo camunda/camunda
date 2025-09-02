@@ -164,38 +164,28 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
   }
 
   @Override
-  public CorrelatedMessageDbModel copy() {
-    return new CorrelatedMessageDbModel(
-        key,
-        messageKey,
-        messageName,
-        correlationKey,
-        processInstanceKey,
-        flowNodeInstanceKey,
-        startEventId,
-        bpmnProcessId,
-        variables,
-        tenantId,
-        dateTime,
-        partitionId,
-        historyCleanupDate);
+  public CorrelatedMessageDbModel copy(
+      final Function<
+              ObjectBuilder<CorrelatedMessageDbModel>, ObjectBuilder<CorrelatedMessageDbModel>>
+          copyFunction) {
+    return copyFunction.apply(toBuilder()).build();
   }
 
-  @Override
-  public void copyFrom(final CorrelatedMessageDbModel other) {
-    this.key = other.key;
-    this.messageKey = other.messageKey;
-    this.messageName = other.messageName;
-    this.correlationKey = other.correlationKey;
-    this.processInstanceKey = other.processInstanceKey;
-    this.flowNodeInstanceKey = other.flowNodeInstanceKey;
-    this.startEventId = other.startEventId;
-    this.bpmnProcessId = other.bpmnProcessId;
-    this.variables = other.variables;
-    this.tenantId = other.tenantId;
-    this.dateTime = other.dateTime;
-    this.partitionId = other.partitionId;
-    this.historyCleanupDate = other.historyCleanupDate;
+  public Builder toBuilder() {
+    return new Builder()
+        .key(key)
+        .messageKey(messageKey)
+        .messageName(messageName)
+        .correlationKey(correlationKey)
+        .processInstanceKey(processInstanceKey)
+        .flowNodeInstanceKey(flowNodeInstanceKey)
+        .startEventId(startEventId)
+        .bpmnProcessId(bpmnProcessId)
+        .variables(variables)
+        .tenantId(tenantId)
+        .dateTime(dateTime)
+        .partitionId(partitionId)
+        .historyCleanupDate(historyCleanupDate);
   }
 
   public static CorrelatedMessageDbModel of(

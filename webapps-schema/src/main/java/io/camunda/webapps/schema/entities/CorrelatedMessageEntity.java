@@ -11,7 +11,8 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class CorrelatedMessageEntity implements ExporterEntity<CorrelatedMessageEntity>, TenantOwned {
+public class CorrelatedMessageEntity
+    implements ExporterEntity<CorrelatedMessageEntity>, TenantOwned {
 
   private String id;
   private Long key;

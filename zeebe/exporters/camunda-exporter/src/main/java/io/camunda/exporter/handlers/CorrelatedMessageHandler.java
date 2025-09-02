@@ -10,20 +10,25 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.CorrelatedMessageEntity;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-public class CorrelatedMessageHandler implements ExportHandler<CorrelatedMessageEntity, Object> {
+public class CorrelatedMessageHandler
+    implements ExportHandler<CorrelatedMessageEntity, RecordValueWithVariables> {
 
   private static final Set<Intent> CORRELATED_INTENTS =
       Set.of(
@@ -31,9 +36,11 @@ public class CorrelatedMessageHandler implements ExportHandler<CorrelatedMessage
           MessageStartEventSubscriptionIntent.CORRELATED);
 
   private final String indexName;
+  private final ObjectMapper objectMapper;
 
   public CorrelatedMessageHandler(final String indexName) {
     this.indexName = indexName;
+    this.objectMapper = new ObjectMapper();
   }
 
   @Override
@@ -47,14 +54,14 @@ public class CorrelatedMessageHandler implements ExportHandler<CorrelatedMessage
   }
 
   @Override
-  public boolean handlesRecord(final Record<Object> record) {
+  public boolean handlesRecord(final Record<RecordValueWithVariables> record) {
     return CORRELATED_INTENTS.contains(record.getIntent())
         && (record.getValueType() == ValueType.PROCESS_MESSAGE_SUBSCRIPTION
             || record.getValueType() == ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
   }
 
   @Override
-  public List<String> generateIds(final Record<Object> record) {
+  public List<String> generateIds(final Record<RecordValueWithVariables> record) {
     return List.of(String.valueOf(record.getKey()));
   }
 
@@ -64,11 +71,12 @@ public class CorrelatedMessageHandler implements ExportHandler<CorrelatedMessage
   }
 
   @Override
-  public void updateEntity(final Record<Object> record, final CorrelatedMessageEntity entity) {
+  public void updateEntity(
+      final Record<RecordValueWithVariables> record, final CorrelatedMessageEntity entity) {
     entity
         .setId(String.valueOf(record.getKey()))
         .setKey(record.getKey())
-        .setDateTime(toOffsetDateTime(record.getTimestamp()));
+        .setDateTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
 
     if (record.getIntent() == ProcessMessageSubscriptionIntent.CORRELATED) {
       final var processMessageRecord = (ProcessMessageSubscriptionRecordValue) record.getValue();
@@ -89,7 +97,7 @@ public class CorrelatedMessageHandler implements ExportHandler<CorrelatedMessage
         .setFlowNodeInstanceKey(value.getElementInstanceKey()) // flowNodeInstanceKey
         .setStartEventId(null) // not applicable for process message subscriptions
         .setBpmnProcessId(value.getBpmnProcessId())
-        .setVariables(MsgPackConverter.convertToJson(value.getVariables()))
+        .setVariables(convertVariablesToJson(value.getVariables()))
         .setTenantId(tenantOrDefault(value.getTenantId()));
   }
 
@@ -103,8 +111,20 @@ public class CorrelatedMessageHandler implements ExportHandler<CorrelatedMessage
         .setFlowNodeInstanceKey(null) // not applicable for message start events
         .setStartEventId(value.getStartEventId())
         .setBpmnProcessId(value.getBpmnProcessId())
-        .setVariables(MsgPackConverter.convertToJson(value.getVariables()))
+        .setVariables(convertVariablesToJson(value.getVariables()))
         .setTenantId(tenantOrDefault(value.getTenantId()));
+  }
+
+  private String convertVariablesToJson(final Map<String, Object> variables) {
+    if (variables == null || variables.isEmpty()) {
+      return null;
+    }
+    try {
+      return objectMapper.writeValueAsString(variables);
+    } catch (final JsonProcessingException e) {
+      // Log error and return null or empty JSON object
+      return "{}";
+    }
   }
 
   @Override

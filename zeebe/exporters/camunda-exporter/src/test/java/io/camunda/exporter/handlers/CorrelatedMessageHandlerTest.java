@@ -8,7 +8,6 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
@@ -32,8 +31,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CorrelatedMessageHandlerTest {
 
-  private final ProtocolFactory factory = new ProtocolFactory();
   private static final String INDEX_NAME = "test-correlated-message";
+  private final ProtocolFactory factory = new ProtocolFactory();
 
   @Mock private BatchRequest batchRequest;
 
@@ -65,15 +64,17 @@ class CorrelatedMessageHandlerTest {
     assertThat(handlesRecord).isTrue();
     assertThat(ids).hasSize(1);
     assertThat(ids.get(0)).isEqualTo(String.valueOf(record.getKey()));
-    
+
     assertThat(entity.getId()).isEqualTo(String.valueOf(record.getKey()));
     assertThat(entity.getKey()).isEqualTo(record.getKey());
     assertThat(entity.getMessageKey()).isEqualTo(record.getValue().getMessageKey());
     assertThat(entity.getMessageName()).isEqualTo(record.getValue().getMessageName());
     assertThat(entity.getCorrelationKey()).isEqualTo(record.getValue().getCorrelationKey());
     assertThat(entity.getProcessInstanceKey()).isEqualTo(record.getValue().getProcessInstanceKey());
-    assertThat(entity.getFlowNodeInstanceKey()).isEqualTo(record.getValue().getElementInstanceKey());
-    assertThat(entity.getStartEventId()).isNull(); // Not applicable for process message subscriptions
+    assertThat(entity.getFlowNodeInstanceKey())
+        .isEqualTo(record.getValue().getElementInstanceKey());
+    assertThat(entity.getStartEventId())
+        .isNull(); // Not applicable for process message subscriptions
     assertThat(entity.getBpmnProcessId()).isEqualTo(record.getValue().getBpmnProcessId());
     assertThat(entity.getTenantId()).isEqualTo(record.getValue().getTenantId());
 
@@ -99,7 +100,7 @@ class CorrelatedMessageHandlerTest {
     assertThat(handlesRecord).isTrue();
     assertThat(ids).hasSize(1);
     assertThat(ids.get(0)).isEqualTo(String.valueOf(record.getKey()));
-    
+
     assertThat(entity.getId()).isEqualTo(String.valueOf(record.getKey()));
     assertThat(entity.getKey()).isEqualTo(record.getKey());
     assertThat(entity.getMessageKey()).isEqualTo(record.getValue().getMessageKey());

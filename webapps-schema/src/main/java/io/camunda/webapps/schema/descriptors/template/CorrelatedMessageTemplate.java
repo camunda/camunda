@@ -56,7 +56,12 @@ public class CorrelatedMessageTemplate extends AbstractTemplateDescriptor
   }
 
   @Override
-  public String getProcessInstanceDependentField() {
+  public String getProcessInstanceDependantField() {
     return PROCESS_INSTANCE_KEY;
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }

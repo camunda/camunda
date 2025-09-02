@@ -258,8 +258,7 @@ public final class FilterBuilders {
   }
 
   public static CorrelatedMessageFilter correlatedMessage(
-      final Function<CorrelatedMessageFilter.Builder, ObjectBuilder<CorrelatedMessageFilter>>
-          fn) {
+      final Function<CorrelatedMessageFilter.Builder, ObjectBuilder<CorrelatedMessageFilter>> fn) {
     return fn.apply(correlatedMessage()).build();
   }
 }

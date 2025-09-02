@@ -52,6 +52,12 @@ public record CorrelatedMessageFilter(
       return this;
     }
 
+    @SafeVarargs
+    public final Builder messageKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return messageKeyOperations(collectValues(operation, operations));
+    }
+
     public Builder messageNames(final String value, final String... values) {
       return messageNameOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
@@ -59,6 +65,12 @@ public record CorrelatedMessageFilter(
     public Builder messageNameOperations(final List<Operation<String>> operations) {
       messageNameOperations = addValuesToList(messageNameOperations, operations);
       return this;
+    }
+
+    @SafeVarargs
+    public final Builder messageNameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return messageNameOperations(collectValues(operation, operations));
     }
 
     public Builder correlationKeys(final String value, final String... values) {
@@ -70,6 +82,12 @@ public record CorrelatedMessageFilter(
       return this;
     }
 
+    @SafeVarargs
+    public final Builder correlationKeyOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return correlationKeyOperations(collectValues(operation, operations));
+    }
+
     public Builder processInstanceKeys(final Long value, final Long... values) {
       return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
@@ -77,6 +95,12 @@ public record CorrelatedMessageFilter(
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
       return this;
+    }
+
+    @SafeVarargs
+    public final Builder processInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return processInstanceKeyOperations(collectValues(operation, operations));
     }
 
     public Builder flowNodeInstanceKeys(final Long value, final Long... values) {
@@ -88,6 +112,12 @@ public record CorrelatedMessageFilter(
       return this;
     }
 
+    @SafeVarargs
+    public final Builder flowNodeInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return flowNodeInstanceKeyOperations(collectValues(operation, operations));
+    }
+
     public Builder startEventIds(final String value, final String... values) {
       return startEventIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
@@ -95,6 +125,12 @@ public record CorrelatedMessageFilter(
     public Builder startEventIdOperations(final List<Operation<String>> operations) {
       startEventIdOperations = addValuesToList(startEventIdOperations, operations);
       return this;
+    }
+
+    @SafeVarargs
+    public final Builder startEventIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return startEventIdOperations(collectValues(operation, operations));
     }
 
     public Builder bpmnProcessIds(final String value, final String... values) {
@@ -106,6 +142,12 @@ public record CorrelatedMessageFilter(
       return this;
     }
 
+    @SafeVarargs
+    public final Builder bpmnProcessIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return bpmnProcessIdOperations(collectValues(operation, operations));
+    }
+
     public Builder variables(final String value, final String... values) {
       return variablesOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
@@ -113,6 +155,12 @@ public record CorrelatedMessageFilter(
     public Builder variablesOperations(final List<Operation<String>> operations) {
       variablesOperations = addValuesToList(variablesOperations, operations);
       return this;
+    }
+
+    @SafeVarargs
+    public final Builder variablesOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return variablesOperations(collectValues(operation, operations));
     }
 
     public Builder tenantIds(final String value, final String... values) {
@@ -124,6 +172,12 @@ public record CorrelatedMessageFilter(
       return this;
     }
 
+    @SafeVarargs
+    public final Builder tenantIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return tenantIdOperations(collectValues(operation, operations));
+    }
+
     public Builder dateTimes(final OffsetDateTime value, final OffsetDateTime... values) {
       return dateTimeOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
@@ -131,6 +185,12 @@ public record CorrelatedMessageFilter(
     public Builder dateTimeOperations(final List<Operation<OffsetDateTime>> operations) {
       dateTimeOperations = addValuesToList(dateTimeOperations, operations);
       return this;
+    }
+
+    @SafeVarargs
+    public final Builder dateTimeOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return dateTimeOperations(collectValues(operation, operations));
     }
 
     @Override
@@ -147,20 +207,5 @@ public record CorrelatedMessageFilter(
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(dateTimeOperations, Collections.emptyList()));
     }
-  }
-
-  @Override
-  public List<List<Operation<?>>> getFilterOperations() {
-    return List.of(
-        collectValues(messageKeyOperations),
-        collectValues(messageNameOperations),
-        collectValues(correlationKeyOperations),
-        collectValues(processInstanceKeyOperations),
-        collectValues(flowNodeInstanceKeyOperations),
-        collectValues(startEventIdOperations),
-        collectValues(bpmnProcessIdOperations),
-        collectValues(variablesOperations),
-        collectValues(tenantIdOperations),
-        collectValues(dateTimeOperations));
   }
 }

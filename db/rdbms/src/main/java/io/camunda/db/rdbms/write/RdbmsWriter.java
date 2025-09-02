@@ -137,8 +137,7 @@ public class RdbmsWriter {
     usageMetricTUWriter = new UsageMetricTUWriter(executionQueue, usageMetricTUMapper);
     messageSubscriptionWriter =
         new MessageSubscriptionWriter(executionQueue, messageSubscriptionMapper);
-    correlatedMessageWriter =
-        new CorrelatedMessageWriter(executionQueue, correlatedMessageMapper);
+    correlatedMessageWriter = new CorrelatedMessageWriter(executionQueue, correlatedMessageMapper);
 
     historyCleanupService =
         new HistoryCleanupService(
