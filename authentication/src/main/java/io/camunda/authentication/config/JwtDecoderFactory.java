@@ -53,9 +53,11 @@ public class JwtDecoderFactory {
                 algorithms -> algorithms.addAll(List.of(RS256, RS384, RS512, ES256, ES384, ES512)))
             .jwtProcessorCustomizer(
                 // the default implementation supports only JOSEObjectType.JWT and null
-                processor ->
-                    processor.setJWSTypeVerifier(
-                        new DefaultJOSEObjectTypeVerifier<>(JWT, AT_JWT, null)))
+                processor -> {
+                  processor.setJWTClaimsSetAwareJWSKeySelector(new TenantJWSKeySelector(null));
+                  processor.setJWSTypeVerifier(
+                      new DefaultJOSEObjectTypeVerifier<>(JWT, AT_JWT, null));
+                })
             .build();
     decoder.setJwtValidator(getTokenValidator(securityConfiguration));
     return decoder;
