@@ -19,6 +19,9 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
   private Long processInstanceKey;
   private Long flowNodeInstanceKey;
   private String startEventId;
+  private String elementId;
+  private Boolean isInterrupting;
+  private Long processDefinitionKey;
   private String bpmnProcessId;
   private String variables;
   private String tenantId;
@@ -39,6 +42,9 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
       final Long processInstanceKey,
       final Long flowNodeInstanceKey,
       final String startEventId,
+      final String elementId,
+      final Boolean isInterrupting,
+      final Long processDefinitionKey,
       final String bpmnProcessId,
       final String variables,
       final String tenantId,
@@ -52,6 +58,9 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
     this.processInstanceKey = processInstanceKey;
     this.flowNodeInstanceKey = flowNodeInstanceKey;
     this.startEventId = startEventId;
+    this.elementId = elementId;
+    this.isInterrupting = isInterrupting;
+    this.processDefinitionKey = processDefinitionKey;
     this.bpmnProcessId = bpmnProcessId;
     this.variables = variables;
     this.tenantId = tenantId;
@@ -114,6 +123,30 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
 
   public void startEventId(final String startEventId) {
     this.startEventId = startEventId;
+  }
+
+  public String elementId() {
+    return elementId;
+  }
+
+  public void elementId(final String elementId) {
+    this.elementId = elementId;
+  }
+
+  public Boolean isInterrupting() {
+    return isInterrupting;
+  }
+
+  public void isInterrupting(final Boolean isInterrupting) {
+    this.isInterrupting = isInterrupting;
+  }
+
+  public Long processDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void processDefinitionKey(final Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
   }
 
   public String bpmnProcessId() {
@@ -181,6 +214,9 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
         .processInstanceKey(processInstanceKey)
         .flowNodeInstanceKey(flowNodeInstanceKey)
         .startEventId(startEventId)
+        .elementId(elementId)
+        .isInterrupting(isInterrupting)
+        .processDefinitionKey(processDefinitionKey)
         .bpmnProcessId(bpmnProcessId)
         .variables(variables)
         .tenantId(tenantId)
@@ -284,6 +320,9 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
           processInstanceKey,
           flowNodeInstanceKey,
           startEventId,
+          elementId,
+          isInterrupting,
+          processDefinitionKey,
           bpmnProcessId,
           variables,
           tenantId,

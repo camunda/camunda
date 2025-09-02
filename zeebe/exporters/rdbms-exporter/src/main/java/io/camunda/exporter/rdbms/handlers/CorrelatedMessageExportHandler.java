@@ -75,6 +75,9 @@ public class CorrelatedMessageExportHandler
         value.getProcessInstanceKey(),
         value.getElementInstanceKey(), // flowNodeInstanceKey
         null, // startEventId - not applicable for process message subscriptions
+        value.getElementId(), // elementId
+        value.isInterrupting(), // isInterrupting
+        null, // processDefinitionKey - not applicable for process message subscriptions
         value.getBpmnProcessId(),
         convertVariablesToJson(value.getVariables()),
         value.getTenantId(),
@@ -99,6 +102,9 @@ public class CorrelatedMessageExportHandler
         value.getProcessInstanceKey(),
         null, // flowNodeInstanceKey - not applicable for message start events
         value.getStartEventId(), // startEventId
+        null, // elementId - not applicable for message start events
+        null, // isInterrupting - not applicable for message start events
+        value.getProcessDefinitionKey(), // processDefinitionKey
         value.getBpmnProcessId(),
         convertVariablesToJson(value.getVariables()),
         value.getTenantId(),
