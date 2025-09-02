@@ -90,7 +90,7 @@ final class BulkIndexRequest implements ContentProducer {
     return mapper
         .writer()
         // Enhance the serialized record by its sequence number. The sequence number is not a part
-        // of the record itself but a special property for Elasticsearch. It can be used to limit
+        // of the record itself but a special property for Opensearch. It can be used to limit
         // the number of records when reading from the index, for example, by using a range query.
         // Read https://github.com/camunda/camunda/issues/10568 for details.
         .withAttribute(RECORD_SEQUENCE_PROPERTY, recordSequence.sequence())
