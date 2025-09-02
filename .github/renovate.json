@@ -329,7 +329,7 @@
       "/(^|\\/)([\\w-]+\\.)?[Dd]ockerfile$/"
     ],
     "ignorePaths": [
-      "zeebe/benchmarks/**",
+      "zeebe/load-tests/**",
       "clients/go/vendor/**"
     ]
   },

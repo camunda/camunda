@@ -204,7 +204,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl zeebe/benchmarks/project -am install
+      - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl zeebe/load-tests/project -am install
       - name: Build Starter Image
         run: ./mvnw -pl zeebe/load-tests/project jib:build -P starter -P\!include-optimize -D image="gcr.io/zeebe-io/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Build Worker Image
@@ -266,7 +266,7 @@ jobs:
           --set camunda-platform.zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
           --set camunda-platform.zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
-          ${{ inputs.stable-vms && '-f zeebe/benchmarks/setup/default/values-stable.yaml' || '' }}
+          ${{ inputs.stable-vms && '-f zeebe/load-tests/setup/default/values-stable.yaml' || '' }}
           ${{ inputs.realistic && '-f https://raw.githubusercontent.com/zeebe-io/benchmark-helm/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml' || '' }}
           ${{ inputs.benchmark-load }}
       - name: Summarize deployment
