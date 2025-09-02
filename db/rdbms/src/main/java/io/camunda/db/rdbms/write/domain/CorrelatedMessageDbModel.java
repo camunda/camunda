@@ -12,8 +12,8 @@ import java.time.OffsetDateTime;
 import java.util.function.Function;
 
 public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbModel> {
-  private Long key;
   private Long messageKey;
+  private Long subscriptionKey;
   private String messageName;
   private String correlationKey;
   private Long processInstanceKey;
@@ -26,13 +26,14 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
   private int partitionId;
   private OffsetDateTime historyCleanupDate;
 
-  public CorrelatedMessageDbModel(final Long key) {
-    this.key = key;
+  public CorrelatedMessageDbModel(final Long messageKey, final Long subscriptionKey) {
+    this.messageKey = messageKey;
+    this.subscriptionKey = subscriptionKey;
   }
 
   public CorrelatedMessageDbModel(
-      final Long key,
       final Long messageKey,
+      final Long subscriptionKey,
       final String messageName,
       final String correlationKey,
       final Long processInstanceKey,
@@ -44,8 +45,8 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
       final OffsetDateTime dateTime,
       final int partitionId,
       final OffsetDateTime historyCleanupDate) {
-    this.key = key;
     this.messageKey = messageKey;
+    this.subscriptionKey = subscriptionKey;
     this.messageName = messageName;
     this.correlationKey = correlationKey;
     this.processInstanceKey = processInstanceKey;
@@ -59,20 +60,20 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
     this.historyCleanupDate = historyCleanupDate;
   }
 
-  public Long key() {
-    return key;
-  }
-
-  public void key(final Long key) {
-    this.key = key;
-  }
-
   public Long messageKey() {
     return messageKey;
   }
 
   public void messageKey(final Long messageKey) {
     this.messageKey = messageKey;
+  }
+
+  public Long subscriptionKey() {
+    return subscriptionKey;
+  }
+
+  public void subscriptionKey(final Long subscriptionKey) {
+    this.subscriptionKey = subscriptionKey;
   }
 
   public String messageName() {
@@ -173,8 +174,8 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
 
   public Builder toBuilder() {
     return new Builder()
-        .key(key)
         .messageKey(messageKey)
+        .subscriptionKey(subscriptionKey)
         .messageName(messageName)
         .correlationKey(correlationKey)
         .processInstanceKey(processInstanceKey)
@@ -194,8 +195,8 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
   }
 
   public static class Builder implements ObjectBuilder<CorrelatedMessageDbModel> {
-    private Long key;
     private Long messageKey;
+    private Long subscriptionKey;
     private String messageName;
     private String correlationKey;
     private Long processInstanceKey;
@@ -208,13 +209,13 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
     private int partitionId;
     private OffsetDateTime historyCleanupDate;
 
-    public Builder key(final Long key) {
-      this.key = key;
+    public Builder messageKey(final Long messageKey) {
+      this.messageKey = messageKey;
       return this;
     }
 
-    public Builder messageKey(final Long messageKey) {
-      this.messageKey = messageKey;
+    public Builder subscriptionKey(final Long subscriptionKey) {
+      this.subscriptionKey = subscriptionKey;
       return this;
     }
 
@@ -276,8 +277,8 @@ public class CorrelatedMessageDbModel implements Copyable<CorrelatedMessageDbMod
     @Override
     public CorrelatedMessageDbModel build() {
       return new CorrelatedMessageDbModel(
-          key,
           messageKey,
+          subscriptionKey,
           messageName,
           correlationKey,
           processInstanceKey,

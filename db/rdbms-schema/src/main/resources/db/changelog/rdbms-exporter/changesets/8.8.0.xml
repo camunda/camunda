@@ -676,10 +676,12 @@
 
   <changeSet id="create_correlated_message_table" author="copilot">
     <createTable tableName="${prefix}CORRELATED_MESSAGE">
-      <column name="KEY" type="BIGINT">
+      <column name="MESSAGE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
-      <column name="MESSAGE_KEY" type="BIGINT"/>
+      <column name="SUBSCRIPTION_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
       <column name="MESSAGE_NAME" type="VARCHAR(255)"/>
       <column name="CORRELATION_KEY" type="VARCHAR(255)"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>

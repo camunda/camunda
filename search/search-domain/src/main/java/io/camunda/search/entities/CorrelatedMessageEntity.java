@@ -12,8 +12,9 @@ import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record CorrelatedMessageEntity(
-    Long key,
+    String id, // Composite ID of messageKey + "-" + subscriptionKey
     Long messageKey,
+    Long subscriptionKey,
     String messageName,
     String correlationKey,
     Long processInstanceKey,
@@ -30,8 +31,9 @@ public record CorrelatedMessageEntity(
   }
 
   public static class Builder {
-    private Long key;
+    private String id;
     private Long messageKey;
+    private Long subscriptionKey;
     private String messageName;
     private String correlationKey;
     private Long processInstanceKey;
@@ -42,13 +44,18 @@ public record CorrelatedMessageEntity(
     private String tenantId;
     private OffsetDateTime dateTime;
 
-    public Builder key(final Long key) {
-      this.key = key;
+    public Builder id(final String id) {
+      this.id = id;
       return this;
     }
 
     public Builder messageKey(final Long messageKey) {
       this.messageKey = messageKey;
+      return this;
+    }
+
+    public Builder subscriptionKey(final Long subscriptionKey) {
+      this.subscriptionKey = subscriptionKey;
       return this;
     }
 
@@ -99,8 +106,9 @@ public record CorrelatedMessageEntity(
 
     public CorrelatedMessageEntity build() {
       return new CorrelatedMessageEntity(
-          key,
+          id,
           messageKey,
+          subscriptionKey,
           messageName,
           correlationKey,
           processInstanceKey,

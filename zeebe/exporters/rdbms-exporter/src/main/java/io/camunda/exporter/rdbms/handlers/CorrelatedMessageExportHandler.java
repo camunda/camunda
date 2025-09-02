@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class CorrelatedMessageExportHandler
@@ -61,9 +62,14 @@ public class CorrelatedMessageExportHandler
   private CorrelatedMessageDbModel mapFromProcessMessageSubscription(
       final Record<RecordValueWithVariables> record,
       final ProcessMessageSubscriptionRecordValue value) {
+    // For process message subscriptions, the subscription key is derived from
+    // (elementInstanceKey, messageName, tenantId) combination
+    final long subscriptionKey = generateProcessMessageSubscriptionKey(
+        value.getElementInstanceKey(), value.getMessageName(), value.getTenantId());
+    
     return new CorrelatedMessageDbModel(
-        record.getKey(), // Use record key as primary key
         value.getMessageKey(),
+        subscriptionKey,
         value.getMessageName(),
         value.getCorrelationKey(),
         value.getProcessInstanceKey(),
@@ -80,9 +86,14 @@ public class CorrelatedMessageExportHandler
   private CorrelatedMessageDbModel mapFromMessageStartEventSubscription(
       final Record<RecordValueWithVariables> record,
       final MessageStartEventSubscriptionRecordValue value) {
+    // For message start event subscriptions, the subscription key is derived from
+    // (messageName, processDefinitionKey, tenantId) combination
+    final long subscriptionKey = generateMessageStartEventSubscriptionKey(
+        value.getMessageName(), value.getProcessDefinitionKey(), value.getTenantId());
+    
     return new CorrelatedMessageDbModel(
-        record.getKey(), // Use record key as primary key
         value.getMessageKey(),
+        subscriptionKey,
         value.getMessageName(),
         value.getCorrelationKey(),
         value.getProcessInstanceKey(),
@@ -94,6 +105,26 @@ public class CorrelatedMessageExportHandler
         toOffsetDateTime(record.getTimestamp()),
         record.getPartitionId(),
         null); // historyCleanupDate will be set by cleanup service
+  }
+
+  /**
+   * Generate a subscription key for process message subscriptions.
+   * This simulates the key generation logic from DbProcessMessageSubscriptionState.
+   */
+  private long generateProcessMessageSubscriptionKey(
+      final long elementInstanceKey, final String messageName, final String tenantId) {
+    // Create a unique hash based on the subscription's identifying attributes
+    return Objects.hash(elementInstanceKey, messageName, tenantId);
+  }
+
+  /**
+   * Generate a subscription key for message start event subscriptions.
+   * This simulates the key generation logic from DbMessageStartEventSubscriptionState.
+   */
+  private long generateMessageStartEventSubscriptionKey(
+      final String messageName, final long processDefinitionKey, final String tenantId) {
+    // Create a unique hash based on the subscription's identifying attributes
+    return Objects.hash(messageName, processDefinitionKey, tenantId);
   }
 
   private String convertVariablesToJson(final Map<String, Object> variables) {
