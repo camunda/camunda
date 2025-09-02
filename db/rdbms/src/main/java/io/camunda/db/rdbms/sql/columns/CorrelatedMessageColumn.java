@@ -16,7 +16,7 @@ public enum CorrelatedMessageColumn implements SearchColumn<CorrelatedMessageEnt
   CORRELATION_KEY("correlationKey"),
   PROCESS_INSTANCE_KEY("processInstanceKey"),
   FLOW_NODE_INSTANCE_KEY("flowNodeInstanceKey"),
-  START_EVENT_ID("startEventId"),
+  FLOW_NODE_ID("flowNodeId"),
   BPMN_PROCESS_ID("bpmnProcessId"),
   VARIABLES("variables"),
   TENANT_ID("tenantId"),

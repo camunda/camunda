@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.CorrelatedMessageEntity;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -26,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class ProcessMessageSubscriptionCorrelatedHandler
-    implements ExportHandler<CorrelatedMessageEntity, RecordValueWithVariables> {
+    implements ExportHandler<CorrelatedMessageEntity, ProcessMessageSubscriptionRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(ProcessMessageSubscriptionIntent.CORRELATED);
@@ -50,14 +49,14 @@ public class ProcessMessageSubscriptionCorrelatedHandler
   }
 
   @Override
-  public boolean handlesRecord(final Record<RecordValueWithVariables> record) {
+  public boolean handlesRecord(final Record<ProcessMessageSubscriptionRecordValue> record) {
     return SUPPORTED_INTENTS.contains(record.getIntent())
         && record.getValueType() == ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
   }
 
   @Override
-  public List<String> generateIds(final Record<RecordValueWithVariables> record) {
-    final var value = (ProcessMessageSubscriptionRecordValue) record.getValue();
+  public List<String> generateIds(final Record<ProcessMessageSubscriptionRecordValue> record) {
+    final var value = record.getValue();
     // Generate composite ID: messageKey + "-" + subscriptionKey (record.getKey())
     final String compositeId = value.getMessageKey() + "-" + record.getKey();
     return List.of(compositeId);
@@ -70,8 +69,8 @@ public class ProcessMessageSubscriptionCorrelatedHandler
 
   @Override
   public void updateEntity(
-      final Record<RecordValueWithVariables> record, final CorrelatedMessageEntity entity) {
-    final var value = (ProcessMessageSubscriptionRecordValue) record.getValue();
+      final Record<ProcessMessageSubscriptionRecordValue> record, final CorrelatedMessageEntity entity) {
+    final var value = record.getValue();
     final String compositeId = value.getMessageKey() + "-" + record.getKey();
     
     entity
@@ -82,8 +81,7 @@ public class ProcessMessageSubscriptionCorrelatedHandler
         .setCorrelationKey(value.getCorrelationKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setFlowNodeInstanceKey(value.getElementInstanceKey()) // flowNodeInstanceKey
-        .setStartEventId(null) // not applicable for process message subscriptions
-        .setElementId(value.getElementId()) // flowNodeId (was elementId)
+        .setFlowNodeId(value.getElementId()) // flowNodeId (merged from elementId)
         .setIsInterrupting(value.isInterrupting()) // isInterrupting
         .setProcessDefinitionKey(null) // not available in this record type
         .setBpmnProcessId(value.getBpmnProcessId())

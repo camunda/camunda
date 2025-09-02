@@ -30,8 +30,7 @@
     CORRELATION_KEY,
     PROCESS_INSTANCE_KEY,
     FLOW_NODE_INSTANCE_KEY,
-    START_EVENT_ID,
-    ELEMENT_ID,
+    FLOW_NODE_ID,
     IS_INTERRUPTING,
     PROCESS_DEFINITION_KEY,
     BPMN_PROCESS_ID,
@@ -90,9 +89,9 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.startEventIdOperations != null and !filter.startEventIdOperations.isEmpty()">
-      <foreach collection="filter.startEventIdOperations" item="operation">
-        AND START_EVENT_ID
+    <if test="filter.flowNodeIdOperations != null and !filter.flowNodeIdOperations.isEmpty()">
+      <foreach collection="filter.flowNodeIdOperations" item="operation">
+        AND FLOW_NODE_ID
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
@@ -131,8 +130,7 @@
     <result column="CORRELATION_KEY" property="correlationKey" javaType="java.lang.String" />
     <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
     <result column="FLOW_NODE_INSTANCE_KEY" property="flowNodeInstanceKey" javaType="java.lang.Long" />
-    <result column="START_EVENT_ID" property="startEventId" javaType="java.lang.String" />
-    <result column="ELEMENT_ID" property="elementId" javaType="java.lang.String" />
+    <result column="FLOW_NODE_ID" property="flowNodeId" javaType="java.lang.String" />
     <result column="IS_INTERRUPTING" property="isInterrupting" javaType="java.lang.Boolean" />
     <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" javaType="java.lang.Long" />
     <result column="BPMN_PROCESS_ID" property="bpmnProcessId" javaType="java.lang.String" />
@@ -153,8 +151,7 @@
                                              CORRELATION_KEY,
                                              PROCESS_INSTANCE_KEY,
                                              FLOW_NODE_INSTANCE_KEY,
-                                             START_EVENT_ID,
-                                             ELEMENT_ID,
+                                             FLOW_NODE_ID,
                                              IS_INTERRUPTING,
                                              PROCESS_DEFINITION_KEY,
                                              BPMN_PROCESS_ID,
@@ -173,8 +170,7 @@
             #{correlationKey},
             #{processInstanceKey},
             #{flowNodeInstanceKey},
-            #{startEventId},
-            #{elementId},
+            #{flowNodeId},
             #{isInterrupting},
             #{processDefinitionKey},
             #{bpmnProcessId},

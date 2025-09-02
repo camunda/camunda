@@ -15,7 +15,6 @@ import io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel;
 import io.camunda.db.rdbms.write.service.CorrelatedMessageWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
@@ -23,7 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class MessageStartEventSubscriptionCorrelatedExportHandler
-    implements RdbmsExportHandler<RecordValueWithVariables> {
+    implements RdbmsExportHandler<MessageStartEventSubscriptionRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(MessageStartEventSubscriptionIntent.CORRELATED);
@@ -38,18 +37,18 @@ public class MessageStartEventSubscriptionCorrelatedExportHandler
   }
 
   @Override
-  public boolean canExport(final Record<RecordValueWithVariables> record) {
+  public boolean canExport(final Record<MessageStartEventSubscriptionRecordValue> record) {
     return SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
-  public void export(final Record<RecordValueWithVariables> record) {
-    final var value = (MessageStartEventSubscriptionRecordValue) record.getValue();
+  public void export(final Record<MessageStartEventSubscriptionRecordValue> record) {
+    final var value = record.getValue();
     correlatedMessageWriter.create(mapFromRecord(record, value));
   }
 
   private CorrelatedMessageDbModel mapFromRecord(
-      final Record<RecordValueWithVariables> record,
+      final Record<MessageStartEventSubscriptionRecordValue> record,
       final MessageStartEventSubscriptionRecordValue value) {
     
     return new CorrelatedMessageDbModel(
@@ -59,8 +58,7 @@ public class MessageStartEventSubscriptionCorrelatedExportHandler
         value.getCorrelationKey(),
         value.getProcessInstanceKey(),
         null, // flowNodeInstanceKey - not available for message start events in current protocol
-        value.getStartEventId(), // flowNodeId (renamed from startEventId)
-        null, // elementId - not applicable for message start events
+        value.getStartEventId(), // flowNodeId (merged from startEventId)
         null, // isInterrupting - not applicable for message start events
         value.getProcessDefinitionKey(), // processDefinitionKey
         value.getBpmnProcessId(),

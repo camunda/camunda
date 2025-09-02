@@ -19,7 +19,7 @@ public record CorrelatedMessageEntity(
     String correlationKey,
     Long processInstanceKey,
     Long flowNodeInstanceKey,
-    String startEventId,
+    String flowNodeId,
     String bpmnProcessId,
     String variables,
     String tenantId,
@@ -38,7 +38,7 @@ public record CorrelatedMessageEntity(
     private String correlationKey;
     private Long processInstanceKey;
     private Long flowNodeInstanceKey;
-    private String startEventId;
+    private String flowNodeId;
     private String bpmnProcessId;
     private String variables;
     private String tenantId;
@@ -79,8 +79,8 @@ public record CorrelatedMessageEntity(
       return this;
     }
 
-    public Builder startEventId(final String startEventId) {
-      this.startEventId = startEventId;
+    public Builder flowNodeId(final String flowNodeId) {
+      this.flowNodeId = flowNodeId;
       return this;
     }
 
@@ -113,7 +113,7 @@ public record CorrelatedMessageEntity(
           correlationKey,
           processInstanceKey,
           flowNodeInstanceKey,
-          startEventId,
+          flowNodeId,
           bpmnProcessId,
           variables,
           tenantId,

@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class MessageStartEventSubscriptionCorrelatedHandler
-    implements ExportHandler<CorrelatedMessageEntity, RecordValueWithVariables> {
+    implements ExportHandler<CorrelatedMessageEntity, MessageStartEventSubscriptionRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(MessageStartEventSubscriptionIntent.CORRELATED);
@@ -50,14 +50,14 @@ public class MessageStartEventSubscriptionCorrelatedHandler
   }
 
   @Override
-  public boolean handlesRecord(final Record<RecordValueWithVariables> record) {
+  public boolean handlesRecord(final Record<MessageStartEventSubscriptionRecordValue> record) {
     return SUPPORTED_INTENTS.contains(record.getIntent())
         && record.getValueType() == ValueType.MESSAGE_START_EVENT_SUBSCRIPTION;
   }
 
   @Override
-  public List<String> generateIds(final Record<RecordValueWithVariables> record) {
-    final var value = (MessageStartEventSubscriptionRecordValue) record.getValue();
+  public List<String> generateIds(final Record<MessageStartEventSubscriptionRecordValue> record) {
+    final var value = record.getValue();
     // Generate composite ID: messageKey + "-" + subscriptionKey (record.getKey())
     final String compositeId = value.getMessageKey() + "-" + record.getKey();
     return List.of(compositeId);
@@ -70,8 +70,8 @@ public class MessageStartEventSubscriptionCorrelatedHandler
 
   @Override
   public void updateEntity(
-      final Record<RecordValueWithVariables> record, final CorrelatedMessageEntity entity) {
-    final var value = (MessageStartEventSubscriptionRecordValue) record.getValue();
+      final Record<MessageStartEventSubscriptionRecordValue> record, final CorrelatedMessageEntity entity) {
+    final var value = record.getValue();
     final String compositeId = value.getMessageKey() + "-" + record.getKey();
     
     entity
@@ -82,8 +82,7 @@ public class MessageStartEventSubscriptionCorrelatedHandler
         .setCorrelationKey(value.getCorrelationKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setFlowNodeInstanceKey(null) // not available for message start events in current protocol
-        .setStartEventId(value.getStartEventId()) // flowNodeId (renamed from startEventId)
-        .setElementId(null) // not applicable for message start events
+        .setFlowNodeId(value.getStartEventId()) // flowNodeId (merged from startEventId)
         .setIsInterrupting(null) // not applicable for message start events
         .setProcessDefinitionKey(value.getProcessDefinitionKey()) // processDefinitionKey
         .setBpmnProcessId(value.getBpmnProcessId())

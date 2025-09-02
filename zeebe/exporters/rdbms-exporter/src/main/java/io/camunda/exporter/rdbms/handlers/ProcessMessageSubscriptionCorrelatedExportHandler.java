@@ -15,7 +15,6 @@ import io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel;
 import io.camunda.db.rdbms.write.service.CorrelatedMessageWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
@@ -23,7 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class ProcessMessageSubscriptionCorrelatedExportHandler
-    implements RdbmsExportHandler<RecordValueWithVariables> {
+    implements RdbmsExportHandler<ProcessMessageSubscriptionRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(ProcessMessageSubscriptionIntent.CORRELATED);
@@ -38,18 +37,18 @@ public class ProcessMessageSubscriptionCorrelatedExportHandler
   }
 
   @Override
-  public boolean canExport(final Record<RecordValueWithVariables> record) {
+  public boolean canExport(final Record<ProcessMessageSubscriptionRecordValue> record) {
     return SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
-  public void export(final Record<RecordValueWithVariables> record) {
-    final var value = (ProcessMessageSubscriptionRecordValue) record.getValue();
+  public void export(final Record<ProcessMessageSubscriptionRecordValue> record) {
+    final var value = record.getValue();
     correlatedMessageWriter.create(mapFromRecord(record, value));
   }
 
   private CorrelatedMessageDbModel mapFromRecord(
-      final Record<RecordValueWithVariables> record,
+      final Record<ProcessMessageSubscriptionRecordValue> record,
       final ProcessMessageSubscriptionRecordValue value) {
     
     return new CorrelatedMessageDbModel(
@@ -59,8 +58,7 @@ public class ProcessMessageSubscriptionCorrelatedExportHandler
         value.getCorrelationKey(),
         value.getProcessInstanceKey(),
         value.getElementInstanceKey(), // flowNodeInstanceKey
-        null, // startEventId - not applicable for process message subscriptions
-        value.getElementId(), // flowNodeId (was elementId)
+        value.getElementId(), // flowNodeId (merged from elementId/startEventId)
         value.isInterrupting(), // isInterrupting
         null, // processDefinitionKey - not available in this record type
         value.getBpmnProcessId(),

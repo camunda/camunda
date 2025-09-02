@@ -21,8 +21,7 @@ public class CorrelatedMessageEntity
   private String correlationKey;
   private Long processInstanceKey;
   private Long flowNodeInstanceKey;
-  private String startEventId;
-  private String elementId;
+  private String flowNodeId;
   private Boolean isInterrupting;
   private Long processDefinitionKey;
   private String bpmnProcessId;
@@ -97,21 +96,12 @@ public class CorrelatedMessageEntity
     return this;
   }
 
-  public String getStartEventId() {
-    return startEventId;
+  public String getFlowNodeId() {
+    return flowNodeId;
   }
 
-  public CorrelatedMessageEntity setStartEventId(final String startEventId) {
-    this.startEventId = startEventId;
-    return this;
-  }
-
-  public String getElementId() {
-    return elementId;
-  }
-
-  public CorrelatedMessageEntity setElementId(final String elementId) {
-    this.elementId = elementId;
+  public CorrelatedMessageEntity setFlowNodeId(final String flowNodeId) {
+    this.flowNodeId = flowNodeId;
     return this;
   }
 
@@ -204,8 +194,7 @@ public class CorrelatedMessageEntity
         && Objects.equals(correlationKey, that.correlationKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(flowNodeInstanceKey, that.flowNodeInstanceKey)
-        && Objects.equals(startEventId, that.startEventId)
-        && Objects.equals(elementId, that.elementId)
+        && Objects.equals(flowNodeId, that.flowNodeId)
         && Objects.equals(isInterrupting, that.isInterrupting)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
@@ -226,8 +215,7 @@ public class CorrelatedMessageEntity
         correlationKey,
         processInstanceKey,
         flowNodeInstanceKey,
-        startEventId,
-        elementId,
+        flowNodeId,
         isInterrupting,
         processDefinitionKey,
         bpmnProcessId,
@@ -258,11 +246,8 @@ public class CorrelatedMessageEntity
         + processInstanceKey
         + ", flowNodeInstanceKey="
         + flowNodeInstanceKey
-        + ", startEventId='"
-        + startEventId
-        + '\''
-        + ", elementId='"
-        + elementId
+        + ", flowNodeId='"
+        + flowNodeId
         + '\''
         + ", isInterrupting="
         + isInterrupting
