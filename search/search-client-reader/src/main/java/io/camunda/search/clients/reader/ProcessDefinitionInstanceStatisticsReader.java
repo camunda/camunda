@@ -7,10 +7,9 @@
  */
 package io.camunda.search.clients.reader;
 
-import io.camunda.search.entities.ProcessDefinitionProcessInstanceStatisticsEntity;
-import io.camunda.search.query.ProcessDefinitionProcessInstanceStatisticsQuery;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 
-public interface ProcessDefinitionProcessInstanceStatisticsReader
+public interface ProcessDefinitionInstanceStatisticsReader
     extends SearchQueryStatisticsReader<
-        ProcessDefinitionProcessInstanceStatisticsEntity,
-        ProcessDefinitionProcessInstanceStatisticsQuery> {}
+        ProcessDefinitionInstanceStatisticsEntity, ProcessDefinitionInstanceStatisticsQuery> {}

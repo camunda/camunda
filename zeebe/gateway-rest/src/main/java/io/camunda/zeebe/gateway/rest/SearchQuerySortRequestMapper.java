@@ -170,10 +170,9 @@ public class SearchQuerySortRequestMapper {
   }
 
   public static List<
-          SearchQuerySortRequest<
-              ProcessDefinitionProcessInstanceStatisticsQuerySortRequest.FieldEnum>>
-      fromProcessDefinitionProcessInstanceStatisticsQuerySortRequest(
-          final List<ProcessDefinitionProcessInstanceStatisticsQuerySortRequest> requests) {
+          SearchQuerySortRequest<ProcessDefinitionInstanceStatisticsQuerySortRequest.FieldEnum>>
+      fromProcessDefinitionInstanceStatisticsQuerySortRequest(
+          final List<ProcessDefinitionInstanceStatisticsQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 

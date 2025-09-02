@@ -7,24 +7,24 @@
  */
 package io.camunda.search.clients.reader;
 
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_FIELD_KEY;
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_FIELD_PROCESS_DEFINITION_ID;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_FIELD_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_FIELD_PROCESS_DEFINITION_ID;
 
-import io.camunda.search.aggregation.result.ProcessDefinitionProcessInstanceStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.ProcessDefinitionInstanceStatisticsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
-import io.camunda.search.entities.ProcessDefinitionProcessInstanceStatisticsEntity;
-import io.camunda.search.query.ProcessDefinitionProcessInstanceStatisticsQuery;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
-public class ProcessDefinitionProcessInstanceStatisticsDocumentReader extends DocumentBasedReader
-    implements ProcessDefinitionProcessInstanceStatisticsReader {
+public class ProcessDefinitionInstanceStatisticsDocumentReader extends DocumentBasedReader
+    implements ProcessDefinitionInstanceStatisticsReader {
 
   private final IncidentErrorHashCodeNormalizer normalizer;
 
-  public ProcessDefinitionProcessInstanceStatisticsDocumentReader(
+  public ProcessDefinitionInstanceStatisticsDocumentReader(
       final SearchClientBasedQueryExecutor executor,
       final IndexDescriptor indexDescriptor,
       final IncidentErrorHashCodeNormalizer normalizer) {
@@ -33,8 +33,8 @@ public class ProcessDefinitionProcessInstanceStatisticsDocumentReader extends Do
   }
 
   @Override
-  public SearchQueryResult<ProcessDefinitionProcessInstanceStatisticsEntity> aggregate(
-      final ProcessDefinitionProcessInstanceStatisticsQuery query,
+  public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> aggregate(
+      final ProcessDefinitionInstanceStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
 
     final var filter =
@@ -43,10 +43,10 @@ public class ProcessDefinitionProcessInstanceStatisticsDocumentReader extends Do
       return SearchQueryResult.empty();
     }
 
-    final var normalizedQuery =
-        new ProcessDefinitionProcessInstanceStatisticsQuery(filter, query.sort(), query.page());
-
     // Update the query to use the normalized filter
+    final var normalizedQuery =
+        new ProcessDefinitionInstanceStatisticsQuery(filter, query.sort(), query.page());
+
     // Convert sorting field if needed
     final var updatedQuery =
         normalizedQuery.withConvertedSortingField(
@@ -58,18 +58,18 @@ public class ProcessDefinitionProcessInstanceStatisticsDocumentReader extends Do
         getSearchExecutor()
             .aggregateWithQueryResult(
                 unlimitedQuery,
-                ProcessDefinitionProcessInstanceStatisticsAggregationResult.class,
+                ProcessDefinitionInstanceStatisticsAggregationResult.class,
                 resourceAccessChecks,
-                ProcessDefinitionProcessInstanceStatisticsAggregationResult::items);
+                ProcessDefinitionInstanceStatisticsAggregationResult::items);
 
     // Run paginated query to get paginated items
     final var paginatedResult =
         getSearchExecutor()
             .aggregateWithQueryResult(
                 updatedQuery,
-                ProcessDefinitionProcessInstanceStatisticsAggregationResult.class,
+                ProcessDefinitionInstanceStatisticsAggregationResult.class,
                 resourceAccessChecks,
-                ProcessDefinitionProcessInstanceStatisticsAggregationResult::items);
+                ProcessDefinitionInstanceStatisticsAggregationResult::items);
 
     // Return paginated items with total from unlimited query
     return new SearchQueryResult<>(

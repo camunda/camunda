@@ -11,15 +11,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record ProcessDefinitionProcessInstanceStatisticsEntity(
+public record ProcessDefinitionInstanceStatisticsEntity(
     String processDefinitionId,
     String latestProcessDefinitionName,
     Boolean hasMultipleVersions,
     Long activeInstancesWithoutIncidentCount,
     Long activeInstancesWithIncidentCount) {
 
-  public static class Builder
-      implements ObjectBuilder<ProcessDefinitionProcessInstanceStatisticsEntity> {
+  public static class Builder implements ObjectBuilder<ProcessDefinitionInstanceStatisticsEntity> {
     private String processDefinitionId;
     private String latestProcessDefinitionName;
     private Boolean hasMultipleVersions;
@@ -52,8 +51,8 @@ public record ProcessDefinitionProcessInstanceStatisticsEntity(
     }
 
     @Override
-    public ProcessDefinitionProcessInstanceStatisticsEntity build() {
-      return new ProcessDefinitionProcessInstanceStatisticsEntity(
+    public ProcessDefinitionInstanceStatisticsEntity build() {
+      return new ProcessDefinitionInstanceStatisticsEntity(
           processDefinitionId,
           latestProcessDefinitionName,
           hasMultipleVersions,

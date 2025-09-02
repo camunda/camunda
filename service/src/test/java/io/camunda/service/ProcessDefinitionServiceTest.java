@@ -14,8 +14,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
-import io.camunda.search.entities.ProcessDefinitionProcessInstanceStatisticsEntity;
-import io.camunda.search.query.ProcessDefinitionProcessInstanceStatisticsQuery;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
@@ -52,28 +52,28 @@ public class ProcessDefinitionServiceTest {
   }
 
   @Test
-  public void shouldReturnProcessDefinitionProcessInstanceStatistics() {
+  public void shouldReturnProcessDefinitionInstanceStatistics() {
     // given
     final var statsEntity =
-        new ProcessDefinitionProcessInstanceStatisticsEntity(
+        new ProcessDefinitionInstanceStatisticsEntity(
             "complexProcess", "Complex process", true, 5L, 10L);
     final var statsResult =
-        new SearchQueryResult.Builder<ProcessDefinitionProcessInstanceStatisticsEntity>()
+        new SearchQueryResult.Builder<ProcessDefinitionInstanceStatisticsEntity>()
             .total(1L)
             .items(List.of(statsEntity))
             .startCursor(null)
             .endCursor(null)
             .build();
-    when(processDefinitionSearchClient.processDefinitionProcessInstanceStatistics(any()))
+    when(processDefinitionSearchClient.processDefinitionInstanceStatistics(any()))
         .thenReturn(statsResult);
 
-    final var query = new ProcessDefinitionProcessInstanceStatisticsQuery.Builder().build();
+    final var query = new ProcessDefinitionInstanceStatisticsQuery.Builder().build();
 
     // when
-    final var result = services.getProcessDefinitionProcessInstanceStatistics(query);
+    final var result = services.getProcessDefinitionInstanceStatistics(query);
 
     // then
     assertThat(result).isEqualTo(statsResult);
-    verify(processDefinitionSearchClient).processDefinitionProcessInstanceStatistics(query);
+    verify(processDefinitionSearchClient).processDefinitionInstanceStatistics(query);
   }
 }

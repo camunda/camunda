@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.ProcessDefinitionFilter;
@@ -529,17 +530,17 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   public void shouldGetProcessDefinitionInstanceStatisticsWithOrOperator() {
     // given
     final var statsEntity =
-        new io.camunda.search.entities.ProcessDefinitionProcessInstanceStatisticsEntity(
+        new ProcessDefinitionInstanceStatisticsEntity(
             "complexProcess", "Complex process", true, 5L, 10L);
     final var statsResult =
         new io.camunda.search.query.SearchQueryResult.Builder<
-                io.camunda.search.entities.ProcessDefinitionProcessInstanceStatisticsEntity>()
+            ProcessDefinitionInstanceStatisticsEntity>()
             .total(1L)
             .items(List.of(statsEntity))
             .startCursor(null)
             .endCursor(null)
             .build();
-    when(processDefinitionServices.getProcessDefinitionProcessInstanceStatistics(any()))
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any()))
         .thenReturn(statsResult);
 
     final var request =
@@ -589,6 +590,6 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(response, JsonCompareMode.STRICT);
 
-    verify(processDefinitionServices).getProcessDefinitionProcessInstanceStatistics(any());
+    verify(processDefinitionServices).getProcessDefinitionInstanceStatistics(any());
   }
 }

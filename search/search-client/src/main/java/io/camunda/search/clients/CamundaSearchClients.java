@@ -28,7 +28,7 @@ import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessDefinitionProcessInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -62,7 +62,7 @@ import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
-import io.camunda.search.query.ProcessDefinitionProcessInstanceStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -238,10 +238,9 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<ProcessDefinitionProcessInstanceStatisticsEntity>
-      processDefinitionProcessInstanceStatistics(
-          final ProcessDefinitionProcessInstanceStatisticsQuery query) {
-    return doSearchWithReader(readers.processDefinitionProcessInstanceStatisticsReader(), query);
+  public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity>
+      processDefinitionInstanceStatistics(final ProcessDefinitionInstanceStatisticsQuery query) {
+    return doSearchWithReader(readers.processDefinitionInstanceStatisticsReader(), query);
   }
 
   @Override

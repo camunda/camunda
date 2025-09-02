@@ -7,11 +7,11 @@
  */
 package io.camunda.search.clients.transformers.aggregation;
 
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_FIELD_KEY;
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_NAME_LATEST_PROCESS_DEFINITION;
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_NAME_PAGE;
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_NAME_VERSION_COUNT;
-import static io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_FIELD_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_LATEST_PROCESS_DEFINITION;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_PAGE;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_VERSION_COUNT;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_TERMS_SIZE;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.bucketSort;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.cardinality;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filter;
@@ -22,7 +22,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BP
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION;
 
-import io.camunda.search.aggregation.ProcessDefinitionProcessInstanceStatisticsAggregation;
+import io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator.Builder;
@@ -32,13 +32,12 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
-public class ProcessDefinitionProcessInstanceStatisticsAggregationTransformer
-    implements AggregationTransformer<ProcessDefinitionProcessInstanceStatisticsAggregation> {
+public class ProcessDefinitionInstanceStatisticsAggregationTransformer
+    implements AggregationTransformer<ProcessDefinitionInstanceStatisticsAggregation> {
 
   @Override
   public List<SearchAggregator> apply(
-      final Tuple<ProcessDefinitionProcessInstanceStatisticsAggregation, ServiceTransformers>
-          value) {
+      final Tuple<ProcessDefinitionInstanceStatisticsAggregation, ServiceTransformers> value) {
     final var aggregation = value.getLeft();
     final Builder<ProcessInstanceForListViewEntity> topHits = topHits();
 
@@ -56,24 +55,21 @@ public class ProcessDefinitionProcessInstanceStatisticsAggregationTransformer
     final var totalWithIncidentsAgg =
         filter()
             .name(
-                ProcessDefinitionProcessInstanceStatisticsAggregation
-                    .AGGREGATION_NAME_TOTAL_WITH_INCIDENT)
+                ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITH_INCIDENT)
             .query(term(INCIDENT, true))
             .build();
 
     final var totalWithoutIncidentsAgg =
         filter()
             .name(
-                ProcessDefinitionProcessInstanceStatisticsAggregation
+                ProcessDefinitionInstanceStatisticsAggregation
                     .AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT)
             .query(term(INCIDENT, false))
             .build();
 
     final var byProcessDefinitionIdAggBuilder =
         terms()
-            .name(
-                ProcessDefinitionProcessInstanceStatisticsAggregation
-                    .AGGREGATION_NAME_BY_PROCESS_ID)
+            .name(ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_BY_PROCESS_ID)
             .field(BPMN_PROCESS_ID)
             .size(AGGREGATION_TERMS_SIZE)
             .sorting(
@@ -102,7 +98,7 @@ public class ProcessDefinitionProcessInstanceStatisticsAggregationTransformer
   }
 
   private static List<FieldSorting> getCountSuffixSortings(
-      final ProcessDefinitionProcessInstanceStatisticsAggregation aggregation) {
+      final ProcessDefinitionInstanceStatisticsAggregation aggregation) {
     return aggregation.sort().getFieldSortings().stream()
         .map(ordering -> new FieldSorting(ordering.field() + "._count", ordering.order()))
         .toList();
