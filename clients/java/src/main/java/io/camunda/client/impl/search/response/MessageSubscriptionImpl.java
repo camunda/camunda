@@ -20,6 +20,7 @@ import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.MessageSubscriptionResult;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public class MessageSubscriptionImpl implements MessageSubscription {
@@ -31,7 +32,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   private final String elementId;
   private final Long elementInstanceKey;
   private final MessageSubscriptionType messageSubscriptionType;
-  private final String lastUpdatedDate;
+  private final OffsetDateTime lastUpdatedDate;
   private final String messageName;
   private final String correlationKey;
   private final String tenantId;
@@ -45,8 +46,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     messageSubscriptionType =
         EnumUtil.convert(item.getMessageSubscriptionType(), MessageSubscriptionType.class);
-    lastUpdatedDate =
-        item.getLastUpdatedDate() != null ? item.getLastUpdatedDate().toString() : null;
+    lastUpdatedDate = item.getLastUpdatedDate();
     messageName = item.getMessageName();
     correlationKey = item.getCorrelationKey();
     tenantId = item.getTenantId();
@@ -88,7 +88,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   }
 
   @Override
-  public String getLastUpdatedDate() {
+  public OffsetDateTime getLastUpdatedDate() {
     return lastUpdatedDate;
   }
 

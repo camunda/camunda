@@ -570,7 +570,7 @@ public final class CompleteJobTest extends ClientTest {
                         c ->
                             c.assignee("Test")
                                 .dueDate(null)
-                                .followUpDate("")
+                                .followUpDate(null)
                                 .candidateUsers(Arrays.asList("User A", "User B"))
                                 .priority(80)))
         .send()

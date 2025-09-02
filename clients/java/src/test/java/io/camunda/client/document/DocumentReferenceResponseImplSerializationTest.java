@@ -27,6 +27,7 @@ import io.camunda.client.protocol.rest.DocumentReference;
 import io.camunda.client.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 
 public class DocumentReferenceResponseImplSerializationTest {
@@ -56,7 +57,7 @@ public class DocumentReferenceResponseImplSerializationTest {
             .metadata(
                 new DocumentMetadata()
                     .contentType("content-type")
-                    .expiresAt("2025-06-28T07:32:28.93912+02:00")
+                    .expiresAt(OffsetDateTime.parse("2025-06-28T07:32:28.93912+02:00"))
                     .fileName("file-name"));
     final DocumentReferenceResponse response = new DocumentReferenceResponseImpl(documentReference);
     final String json = jsonMapper.toJson(response);
