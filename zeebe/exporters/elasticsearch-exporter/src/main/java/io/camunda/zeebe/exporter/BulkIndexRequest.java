@@ -7,11 +7,22 @@
  */
 package io.camunda.zeebe.exporter;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -30,8 +41,31 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
+  private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
+      new ObjectMapper()
+          .addMixIn(Record.class, Record85Mixin.class)
+          .addMixIn(CommandDistributionRecordValue.class, CommandDistribution85Mixin.class)
+          .addMixIn(DecisionRecordValue.class, Decision85Mixin.class)
+          .addMixIn(DeploymentRecordValue.class, Deployment85Mixin.class)
+          .addMixIn(FormMetadataValue.class, FormMetadata85Mixin.class)
+          .addMixIn(ProcessMetadataValue.class, ProcessMeta85Mixin.class)
+          .addMixIn(UserTaskRecordValue.class, UserTask85Mixin.class)
+          .addMixIn(IncidentRecordValue.class, Incident85Mixin.class)
+          .addMixIn(JobRecordValue.class, Job85Mixin.class)
+          .enable(Feature.ALLOW_SINGLE_QUOTES);
+
   // The property of the ES record template to store the sequence of the record.
   private static final String RECORD_SEQUENCE_PROPERTY = "sequence";
+  private static final String RECORD_OPERATION_REFERENCE_PROPERTY = "operationReference";
+  private static final String QUEUE_ID_PROPERTY = "queueId";
+  private static final String DEPLOYMENT_KEY_PROPERTY = "deploymentKey";
+  private static final String VERSION_TAG_PROPERTY = "versionTag";
+  private static final String PRIORITY_PROPERTY = "priority";
+  private static final String ELEMENT_INSTANCE_PATH_PROPERTY = "elementInstancePath";
+  private static final String PROCESS_DEFINITION_PATH_PROPERTY = "processDefinitionPath";
+  private static final String CALLING_ELEMENT_PATH_PROPERTY = "callingElementPath";
+  private static final String JOB_LISTENER_EVENT_TYPE_PROPERTY = "jobListenerEventType";
+  private static final String CHANGED_ATTRIBUTES_PROPERTY = "changedAttributes";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -76,7 +110,9 @@ final class BulkIndexRequest implements ContentProducer {
 
   private static byte[] serializeRecord(final Record<?> record, final RecordSequence recordSequence)
       throws IOException {
-    return MAPPER
+    final var mapper =
+        isPreviousVersionRecord(record.getBrokerVersion()) ? PREVIOUS_VERSION_MAPPER : MAPPER;
+    return mapper
         .writer()
         // Enhance the serialized record by its sequence number. The sequence number is not a part
         // of the record itself but a special property for Elasticsearch. It can be used to limit
@@ -132,8 +168,76 @@ final class BulkIndexRequest implements ContentProducer {
     }
   }
 
+  private static boolean isPreviousVersionRecord(final String brokerVersion) {
+    final SemanticVersion semanticVersion =
+        SemanticVersion.parse(brokerVersion)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Expected to parse valid semantic version, but got [%s]"
+                            .formatted(brokerVersion)));
+    final int currentMinorVersion =
+        VersionUtil.getSemanticVersion()
+            .map(SemanticVersion::minor)
+            .orElseThrow(
+                () -> new IllegalStateException("Expected to have a valid semantic version"));
+    return semanticVersion.minor() < currentMinorVersion;
+  }
+
   record BulkOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
   private static final class RecordSequenceMixin {}
+
+  @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
+  @JsonIgnoreProperties({
+    RECORD_OPERATION_REFERENCE_PROPERTY,
+  })
+  private static final class Record85Mixin {}
+
+  @JsonIgnoreProperties({
+    QUEUE_ID_PROPERTY,
+  })
+  private static final class CommandDistribution85Mixin {}
+
+  @JsonIgnoreProperties({
+    DEPLOYMENT_KEY_PROPERTY,
+    VERSION_TAG_PROPERTY,
+  })
+  private static final class Decision85Mixin {}
+
+  @JsonIgnoreProperties({
+    DEPLOYMENT_KEY_PROPERTY,
+  })
+  private static final class Deployment85Mixin {}
+
+  @JsonIgnoreProperties({
+    DEPLOYMENT_KEY_PROPERTY,
+    VERSION_TAG_PROPERTY,
+  })
+  private static final class FormMetadata85Mixin {}
+
+  @JsonIgnoreProperties({
+    DEPLOYMENT_KEY_PROPERTY,
+    VERSION_TAG_PROPERTY,
+  })
+  private static final class ProcessMeta85Mixin {}
+
+  @JsonIgnoreProperties({
+    PRIORITY_PROPERTY,
+  })
+  private static final class UserTask85Mixin {}
+
+  @JsonIgnoreProperties({
+    ELEMENT_INSTANCE_PATH_PROPERTY,
+    PROCESS_DEFINITION_PATH_PROPERTY,
+    CALLING_ELEMENT_PATH_PROPERTY,
+  })
+  private static final class Incident85Mixin {}
+
+  @JsonIgnoreProperties({
+    JOB_LISTENER_EVENT_TYPE_PROPERTY,
+    CHANGED_ATTRIBUTES_PROPERTY,
+  })
+  private static final class Job85Mixin {}
 }
