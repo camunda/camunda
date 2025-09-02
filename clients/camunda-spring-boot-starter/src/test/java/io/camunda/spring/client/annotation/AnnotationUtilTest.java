@@ -43,7 +43,7 @@ public class AnnotationUtilTest {
       final VariableValue variableValue = AnnotationUtil.getVariableValue(parameterInfo).get();
       // then
       assertThat(variableValue.getName()).isEqualTo("var1");
-      assertThat(variableValue.isOptional()).isTrue();
+      assertThat(variableValue.isOptional()).isFalse();
       assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
@@ -69,7 +69,7 @@ public class AnnotationUtilTest {
       final VariableValue variableValue = AnnotationUtil.getVariableValue(parameterInfo).get();
       // then
       assertThat(variableValue.getName()).isEqualTo("var2");
-      assertThat(variableValue.isOptional()).isTrue();
+      assertThat(variableValue.isOptional()).isFalse();
       assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
@@ -82,6 +82,19 @@ public class AnnotationUtilTest {
       final VariableValue variableValue = AnnotationUtil.getVariableValue(parameterInfo).get();
       // then
       assertThat(variableValue.getName()).isEqualTo("var2");
+      assertThat(variableValue.isOptional()).isFalse();
+      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+          .isEqualTo(ComplexType.class);
+    }
+
+    @Test
+    void shouldExtractValueOptional() {
+      // given
+      final ParameterInfo parameterInfo = parameterInfo(this, "testOptional");
+      // when
+      final VariableValue variableValue = AnnotationUtil.getVariableValue(parameterInfo).get();
+      // then
+      assertThat(variableValue.getName()).isEqualTo("var1");
       assertThat(variableValue.isOptional()).isTrue();
       assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
@@ -90,7 +103,10 @@ public class AnnotationUtilTest {
     public void testNoName(@io.camunda.spring.client.annotation.Variable final ComplexType var1) {}
 
     public void testNotOptional(
-        @io.camunda.spring.client.annotation.Variable(optional = false) final ComplexType var1) {}
+        @io.camunda.spring.client.annotation.Variable(required = true) final ComplexType var1) {}
+
+    public void testOptional(
+        @io.camunda.spring.client.annotation.Variable(required = false) final ComplexType var1) {}
 
     public void testName(
         @io.camunda.spring.client.annotation.Variable(name = "var2") final ComplexType var1) {}
@@ -127,7 +143,7 @@ public class AnnotationUtilTest {
       final DocumentValue documentValue = AnnotationUtil.getDocumentValue(parameterInfo).get();
       // then
       assertThat(documentValue.getName()).isEqualTo("document");
-      assertThat(documentValue.isOptional()).isTrue();
+      assertThat(documentValue.isOptional()).isFalse();
     }
 
     @Test
@@ -149,7 +165,7 @@ public class AnnotationUtilTest {
       final DocumentValue documentValue = AnnotationUtil.getDocumentValue(parameterInfo).get();
       // then
       assertThat(documentValue.getName()).isEqualTo("anotherDocument");
-      assertThat(documentValue.isOptional()).isTrue();
+      assertThat(documentValue.isOptional()).isFalse();
     }
 
     @Test
@@ -160,13 +176,24 @@ public class AnnotationUtilTest {
       final DocumentValue documentValue = AnnotationUtil.getDocumentValue(parameterInfo).get();
       // then
       assertThat(documentValue.getName()).isEqualTo("anotherDocument");
-      assertThat(documentValue.isOptional()).isTrue();
+      assertThat(documentValue.isOptional()).isFalse();
     }
 
     @Test
     void shouldExtractSingleValue() {
       // given
       final ParameterInfo parameterInfo = parameterInfo(this, "testSingle");
+      // when
+      final DocumentValue documentValue = AnnotationUtil.getDocumentValue(parameterInfo).get();
+      // then
+      assertThat(documentValue.getName()).isEqualTo("document");
+      assertThat(documentValue.isOptional()).isFalse();
+    }
+
+    @Test
+    void shouldExtractValueOptional() {
+      // given
+      final ParameterInfo parameterInfo = parameterInfo(this, "testOptional");
       // when
       final DocumentValue documentValue = AnnotationUtil.getDocumentValue(parameterInfo).get();
       // then
@@ -179,7 +206,11 @@ public class AnnotationUtilTest {
             final List<DocumentReferenceResponse> document) {}
 
     public void testNotOptional(
-        @io.camunda.spring.client.annotation.Document(optional = false)
+        @io.camunda.spring.client.annotation.Document(required = true)
+            final List<DocumentReferenceResponse> document) {}
+
+    public void testOptional(
+        @io.camunda.spring.client.annotation.Document(required = false)
             final List<DocumentReferenceResponse> document) {}
 
     public void testName(

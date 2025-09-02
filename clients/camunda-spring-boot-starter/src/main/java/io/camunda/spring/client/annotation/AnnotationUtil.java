@@ -284,22 +284,22 @@ public class AnnotationUtil {
 
   private static boolean getVariableOptional(final ParameterInfo param) {
     if (param.getParameterInfo().isAnnotationPresent(Variable.class)) {
-      final boolean optional = param.getParameterInfo().getAnnotation(Variable.class).optional();
-      LOG.trace("Extracting optional flag from Variable");
-      return optional;
+      final boolean required = param.getParameterInfo().getAnnotation(Variable.class).required();
+      LOG.trace("Extracting required flag from Variable");
+      return !required; // Invert because we're returning "optional" but annotation uses "required"
     }
-    LOG.trace("No variable annotation found, defaulting to true");
-    return true;
+    LOG.trace("No variable annotation found, defaulting to false");
+    return false; // Default is required=true, so optional=false
   }
 
   private static boolean getDocumentOptional(final ParameterInfo param) {
     if (param.getParameterInfo().isAnnotationPresent(Document.class)) {
-      final boolean optional = param.getParameterInfo().getAnnotation(Document.class).optional();
-      LOG.trace("Extracting optional flag from Document");
-      return optional;
+      final boolean required = param.getParameterInfo().getAnnotation(Document.class).required();
+      LOG.trace("Extracting required flag from Document");
+      return !required; // Invert because we're returning "optional" but annotation uses "required"
     }
-    LOG.trace("No document annotation found, defaulting to true");
-    return true;
+    LOG.trace("No document annotation found, defaulting to false");
+    return false; // Default is required=true, so optional=false
   }
 
   private static String getVariableNameLegacy(final ParameterInfo param) {

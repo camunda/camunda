@@ -27,5 +27,5 @@ public @interface Document {
   @AliasFor("name")
   String value() default "";
 
-  boolean optional() default true;
+  boolean required() default true;
 }
