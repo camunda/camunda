@@ -137,7 +137,11 @@ export async function assignUsersToGroup(
   }
 }
 
-export async function createMappingRule(request: APIRequestContext) {
+export async function createMappingRule(
+  request: APIRequestContext,
+  state?: Record<string, unknown>,
+  key?: string,
+) {
   const body = CREATE_NEW_MAPPING_RULE();
   await expect(async () => {
     const res = await request.post(buildUrl('/mapping-rules'), {
@@ -145,6 +149,13 @@ export async function createMappingRule(request: APIRequestContext) {
       data: body,
     });
     expect(res.status()).toBe(201);
+    if (state && key) {
+      const json = await res.json();
+      state[`mappingRuleId${key}`] = json.mappingRuleId;
+      state[`claimName${key}`] = json.claimName;
+      state[`claimValue${key}`] = json.claimValue;
+      state[`name${key}`] = json.name;
+    }
   }).toPass(defaultAssertionOptions);
   return body;
 }
@@ -161,7 +172,7 @@ export async function createRole(request: APIRequestContext) {
   return body;
 }
 
-export function mappingRuleFromState(
+export function groupMappingRuleFromState(
   group: string,
   state: Record<string, unknown>,
   nth: number = 1,
@@ -191,4 +202,11 @@ export function clientIdFromState(
   nth: number = 1,
 ): string {
   return state[`${state[group]}clientId${nth}`] as string;
+}
+
+export function mappingRuleIdFromState(
+  key: string,
+  state: Record<string, unknown>,
+): string {
+  return state[`mappingRuleId${key}`] as string;
 }
