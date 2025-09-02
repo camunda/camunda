@@ -58,6 +58,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -85,6 +86,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
+import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -95,6 +99,7 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequest
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest.Builder;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
@@ -112,6 +117,8 @@ import org.springframework.security.web.header.writers.CrossOriginEmbedderPolicy
 import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy;
 import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -812,6 +819,27 @@ public class WebSecurityConfig {
       return filterChainBuilder.build();
     }
 
+    @Bean
+    public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest>
+        authorizationCodeAccessTokenResponseClient() {
+      // Adding custom parameter converter to default client for access token request
+      final RestClientAuthorizationCodeTokenResponseClient accessTokenResponseClient =
+          new RestClientAuthorizationCodeTokenResponseClient();
+      accessTokenResponseClient.addParametersConverter(
+          request -> {
+            final List<String> resource =
+                securityConfiguration.getAuthentication().getOidc().getResource();
+            if (resource != null && !resource.isEmpty()) {
+              final MultiValueMap<String, String> parametersToAdd = new LinkedMultiValueMap<>();
+              parametersToAdd.addAll(OAuth2ParameterNames.RESOURCE, resource);
+              return parametersToAdd;
+            }
+            return null;
+          });
+
+      return accessTokenResponseClient;
+    }
+
     private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
         final ClientRegistrationRepository clientRegistrationRepository,
         final SecurityConfiguration securityConfiguration) {
@@ -837,6 +865,12 @@ public class WebSecurityConfig {
 
         if (additionalParameters != null && !additionalParameters.isEmpty()) {
           customizer.additionalParameters(additionalParameters);
+        }
+        final List<String> resource =
+            securityConfiguration.getAuthentication().getOidc().getResource();
+        if (resource != null && !resource.isEmpty()) {
+          // add `resource` parameter to authorization request
+          customizer.additionalParameters(Map.of(OAuth2ParameterNames.RESOURCE, resource));
         }
       };
     }
