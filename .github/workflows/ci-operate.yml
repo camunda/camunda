@@ -51,14 +51,13 @@ jobs:
         include:
           - suite: DataLayer
             suiteName: Data Layer
-            product: Operate
           - suite: CoreFeatures
             suiteName: Core Features
-            product: Operate
     with:
       componentName: "Operate"
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
+
 
   # Checks to see if Operate can properly build itself and a docker image
   build-operate-backend:

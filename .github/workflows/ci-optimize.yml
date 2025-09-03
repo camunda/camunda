@@ -51,14 +51,13 @@ jobs:
         include:
           - suite: DataLayer
             suiteName: Data Layer
-            product: Optimize
           - suite: CoreFeatures
             suiteName: Core Features
-            product: Optimize
     with:
       componentName: "Optimize"
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
+
 
   optimize-frontend-unit-tests:
     name: "Unit / Front End"

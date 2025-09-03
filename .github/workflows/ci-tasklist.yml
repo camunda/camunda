@@ -35,11 +35,12 @@ defaults:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Tasklist
 
 jobs:
   # run this test every time the workflow is triggered
   tasklist-backend-unit-tests:
-    name: "[UT] Back End / ${{matrix.suiteName}}"
+    name: "Unit / Back End"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -56,6 +57,7 @@ jobs:
       componentName: "Tasklist"
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
+
 
   tasklist-frontend-tests:
     name: "[UT] Front End"
