@@ -60,17 +60,17 @@ public class OperateMetricMigrator extends MetricMigrator {
               UsageMetricsEventType.RPI,
               EVENT_DECISION_INSTANCE_EVALUATED,
               UsageMetricsEventType.EDI);
-  private final MigrationRepositoryIndex operateMigrationRepositoryIndex;
-  private final ImportPositionIndex operateImportPositionIndex;
+  private final MigrationRepositoryIndex migrationRepositoryIndex;
+  private final ImportPositionIndex importPositionIndex;
 
   public OperateMetricMigrator(
       final ConnectConfiguration connectConfiguration,
       final MeterRegistry meterRegistry,
       final MigrationProperties properties) {
     super(connectConfiguration, meterRegistry, properties);
-    operateMigrationRepositoryIndex =
+    migrationRepositoryIndex =
         new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), isElasticsearch);
-    operateImportPositionIndex =
+    importPositionIndex =
         new ImportPositionIndex(connectConfiguration.getIndexPrefix(), isElasticsearch);
   }
 
@@ -81,7 +81,7 @@ public class OperateMetricMigrator extends MetricMigrator {
 
   @Override
   protected IndexDescriptor getImportPositionIndex() {
-    return operateImportPositionIndex;
+    return importPositionIndex;
   }
 
   @Override
@@ -127,7 +127,7 @@ public class OperateMetricMigrator extends MetricMigrator {
 
   @Override
   protected MigrationRepositoryIndex getMigrationRepositoryIndex() {
-    return operateMigrationRepositoryIndex;
+    return migrationRepositoryIndex;
   }
 
   public SearchQuery searchQuery(final List<String> events, final OffsetDateTime minEventTime) {

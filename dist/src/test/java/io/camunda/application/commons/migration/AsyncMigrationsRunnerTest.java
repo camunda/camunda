@@ -12,6 +12,7 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.application.commons.migration.AsyncMigrationsRunner.AsyncMigrationsFinishedEvent;
 import io.camunda.migration.api.Migrator;
@@ -56,6 +57,7 @@ class AsyncMigrationsRunnerTest {
 
     // then
     verify(eventPublisher).publishEvent(migrationFinishedAC.capture());
+    verifyNoMoreInteractions(eventPublisher);
     assertThat(started.getCount()).isEqualTo(0);
     assertThat(finished.getCount()).isEqualTo(0);
     assertThat(migrationFinishedAC.getValue().isSuccess()).isTrue();
