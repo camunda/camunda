@@ -15,6 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.config.OidcAccessTokenDecoderFactory;
 import io.camunda.security.auth.CamundaAuthentication;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
@@ -25,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -39,11 +41,13 @@ public class OidcUserAuthenticationConverterTest {
   @Mock private JwtDecoder jwtDecoder;
   @Mock private TokenClaimsConverter tokenClaimsConverter;
   @Mock private HttpServletRequest request;
+  @Mock private OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory;
   @InjectMocks private OidcUserAuthenticationConverter authenticationConverter;
 
   @BeforeEach
   void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
+    when(oidcAccessTokenDecoderFactory.createAccessTokenDecoder(any())).thenReturn(jwtDecoder);
   }
 
   @Test
@@ -85,10 +89,14 @@ public class OidcUserAuthenticationConverterTest {
     final var accessToken = mock(OAuth2AccessToken.class);
     when(accessToken.getTokenValue()).thenReturn(accessTokenValue);
 
+    final var clientRegistration = mock(ClientRegistration.class);
+    when(clientRegistration.getRegistrationId()).thenReturn("bar");
+
     final var authorizedClient = mock(OAuth2AuthorizedClient.class);
     when(authorizedClient.getAccessToken()).thenReturn(accessToken);
     when(authorizedClientRepository.loadAuthorizedClient(any(), any(), any()))
         .thenReturn(authorizedClient);
+    when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
 
     final Map<String, Object> accessTokenClaims =
         Map.of("access_token", "test-access-token", "token_type", "Bearer", "expires_in", 3600);
@@ -146,10 +154,14 @@ public class OidcUserAuthenticationConverterTest {
     final var accessToken = mock(OAuth2AccessToken.class);
     when(accessToken.getTokenValue()).thenReturn(accessTokenValue);
 
+    final var clientRegistration = mock(ClientRegistration.class);
+    when(clientRegistration.getRegistrationId()).thenReturn("bar");
+
     final var authorizedClient = mock(OAuth2AuthorizedClient.class);
     when(authorizedClient.getAccessToken()).thenReturn(accessToken);
     when(authorizedClientRepository.loadAuthorizedClient(any(), any(), any()))
         .thenReturn(authorizedClient);
+    when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
 
     when(jwtDecoder.decode(eq(accessTokenValue))).thenThrow(new JwtException("Failed to decode"));
 

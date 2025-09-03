@@ -19,6 +19,8 @@ public class AuthenticationConfiguration {
       new OidcAuthenticationConfiguration();
   private boolean unprotectedApi = DEFAULT_UNPROTECTED_API;
 
+  private ProvidersConfiguration providers;
+
   public boolean getUnprotectedApi() {
     return unprotectedApi;
   }
@@ -49,5 +51,13 @@ public class AuthenticationConfiguration {
 
   public void setOidc(final OidcAuthenticationConfiguration configuration) {
     oidcAuthenticationConfiguration = configuration;
+  }
+
+  public ProvidersConfiguration getProviders() {
+    return providers;
+  }
+
+  public void setProviders(final ProvidersConfiguration providers) {
+    this.providers = providers;
   }
 }
