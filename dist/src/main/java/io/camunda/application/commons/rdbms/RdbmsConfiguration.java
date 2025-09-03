@@ -27,6 +27,7 @@ import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceStatisticsDbReader;
@@ -67,6 +68,8 @@ import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
+import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.context.annotation.Bean;
@@ -227,6 +230,11 @@ public class RdbmsConfiguration {
   @Bean
   public UsageMetricTUDbReader usageMetricTUReader(final UsageMetricTUMapper usageMetricTUMapper) {
     return new UsageMetricTUDbReader(usageMetricTUMapper);
+  }
+
+  @Bean
+  public ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader() {
+    return new ProcessDefinitionInstanceStatisticsDbReader();
   }
 
   @Bean

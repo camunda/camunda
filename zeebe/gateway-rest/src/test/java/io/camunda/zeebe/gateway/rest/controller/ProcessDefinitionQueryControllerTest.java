@@ -534,7 +534,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             "complexProcess", "Complex process", true, 5L, 10L);
     final var statsResult =
         new io.camunda.search.query.SearchQueryResult.Builder<
-            ProcessDefinitionInstanceStatisticsEntity>()
+                ProcessDefinitionInstanceStatisticsEntity>()
             .total(1L)
             .items(List.of(statsEntity))
             .startCursor(null)
