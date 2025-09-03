@@ -101,7 +101,7 @@ test.describe.parallel('Role Groups API Tests', () => {
   test('Assign Group To Role Unauthorized', async ({request}) => {
     const stateParams: Record<string, string> = {
       groupId: groupIdFromState('roleId1', state) as string,
-      roleId: state['role1'] as string,
+      roleId: state['roleId1'] as string,
     };
 
     await expect(async () => {
