@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.spring.client.annotation.customizer;
 
+import io.camunda.sdk.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 
 /**
- * @deprecated use {@link io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer
- *     instead}
+ * @deprecated use {@link JobWorkerValueCustomizer instead}
  */
 @Deprecated
 public interface ZeebeWorkerValueCustomizer {

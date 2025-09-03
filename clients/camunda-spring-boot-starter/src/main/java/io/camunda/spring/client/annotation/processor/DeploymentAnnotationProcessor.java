@@ -24,7 +24,7 @@ import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCo
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
 import io.camunda.spring.client.bean.ClassInfo;
-import io.camunda.spring.client.event.CamundaPostDeploymentEvent;
+import io.camunda.spring.client.event.CamundaPostDeploymentSpringEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -82,14 +82,14 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
 
     final DeployResourceCommandStep1 command = client.newDeployResourceCommand();
     DeployResourceCommandStep2 commandStep2 = null;
-    for (Resource resource : resources) {
-      try (InputStream inputStream = resource.getInputStream()) {
+    for (final Resource resource : resources) {
+      try (final InputStream inputStream = resource.getInputStream()) {
         if (commandStep2 == null) {
           commandStep2 = command.addResourceStream(inputStream, resource.getFilename());
         } else {
           commandStep2 = commandStep2.addResourceStream(inputStream, resource.getFilename());
         }
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new RuntimeException("Error reading resource: " + e.getMessage(), e);
       }
     }
@@ -105,7 +105,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
                 deploymentEvent.getProcesses().stream()
                     .map(wf -> String.format("<%s:%d>", wf.getBpmnProcessId(), wf.getVersion())))
             .collect(Collectors.joining(",")));
-    publisher.publishEvent(new CamundaPostDeploymentEvent(this, deploymentEvent));
+    publisher.publishEvent(new CamundaPostDeploymentSpringEvent(this, deploymentEvent));
   }
 
   @Override

@@ -20,11 +20,12 @@ import static io.camunda.spring.client.annotation.AnnotationUtil.isJobWorker;
 import static org.springframework.util.ReflectionUtils.doWithMethods;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.sdk.annotation.JobWorker;
+import io.camunda.sdk.annotation.customizer.JobWorkerValueCustomizer;
+import io.camunda.sdk.annotation.value.JobWorkerValue;
+import io.camunda.sdk.jobhandling.JobWorkerManager;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;
-import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ import org.springframework.util.ReflectionUtils;
  * Always created by {@link AnnotationProcessorConfiguration}
  *
  * <p>Triggered by {@link AbstractCamundaAnnotationProcessor#onStart(CamundaClient)} to add Handler
- * subscriptions for {@link io.camunda.spring.client.annotation.JobWorker} method-annotations.
+ * subscriptions for {@link JobWorker} method-annotations.
  *
  * <p>Triggered by {@link AbstractCamundaAnnotationProcessor#onStop(CamundaClient)} to remove all
  * Handler subscriptions.

@@ -19,10 +19,10 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.spring.client.annotation.JobWorker;
-import io.camunda.spring.client.annotation.Variable;
-import io.camunda.spring.client.annotation.VariablesAsType;
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.sdk.annotation.JobWorker;
+import io.camunda.sdk.annotation.Variable;
+import io.camunda.sdk.annotation.VariablesAsType;
+import io.camunda.sdk.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.bean.MethodInfo;
 import java.time.Duration;

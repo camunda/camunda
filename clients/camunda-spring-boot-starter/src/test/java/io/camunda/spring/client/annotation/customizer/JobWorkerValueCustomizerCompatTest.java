@@ -17,6 +17,7 @@ package io.camunda.spring.client.annotation.customizer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.sdk.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.spring.client.configuration.CamundaBeanPostProcessorConfiguration;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
