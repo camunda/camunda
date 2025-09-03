@@ -449,7 +449,8 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final SecurityConfiguration securityConfiguration,
-        final CookieCsrfTokenRepository csrfTokenRepository)
+        final CookieCsrfTokenRepository csrfTokenRepository,
+        final CamundaAuthenticationProvider authenticationProvider)
         throws Exception {
       LOG.info("The API is protected by HTTP Basic authentication.");
       final var filterChainBuilder =
@@ -479,6 +480,10 @@ public class WebSecurityConfig {
                       exceptionHandling
                           .authenticationEntryPoint(authFailureHandler)
                           .accessDeniedHandler(authFailureHandler))
+              .addFilterAfter(
+                  new SessionAuthenticationRefreshFilter(
+                      authenticationProvider, securityConfiguration.getAuthentication()),
+                  SecurityContextHolderFilter.class)
               // do not create a session on api authentication, that's to be done on webapp login
               // only
               .sessionManagement(
@@ -708,7 +713,8 @@ public class WebSecurityConfig {
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final OAuth2AuthorizedClientManager authorizedClientManager)
+        final OAuth2AuthorizedClientManager authorizedClientManager,
+        final CamundaAuthenticationProvider authenticationProvider)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -728,6 +734,10 @@ public class WebSecurityConfig {
                           securityConfiguration.getSaas().isConfigured()))
               .exceptionHandling(
                   (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+              .addFilterAfter(
+                  new SessionAuthenticationRefreshFilter(
+                      authenticationProvider, securityConfiguration.getAuthentication()),
+                  SecurityContextHolderFilter.class)
               .cors(AbstractHttpConfigurer::disable)
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
