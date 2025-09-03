@@ -33,7 +33,7 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
       assertThat(rangeQuery)
           .extracting("field", "gte", "lt")
           .containsExactly(
-              "eventTime", "2021-01-01T00:00:00.000+0000", "2023-01-01T00:00:00.000+0000");
+              "endTime", "2021-01-01T00:00:00.000+0000", "2023-01-01T00:00:00.000+0000");
     };
   }
 

@@ -5,7 +5,11 @@
       "id": {
         "type": "keyword"
       },
-      "eventTime": {
+      "startTime": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "endTime": {
         "format": "date_time || epoch_millis",
         "type": "date"
       },
