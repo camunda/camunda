@@ -16,21 +16,24 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
-public final class OidcClientRegistration {
-  public static final String REGISTRATION_ID = "oidc";
+public final class ClientRegistrationFactory {
 
-  private OidcClientRegistration() {}
+  private ClientRegistrationFactory() {}
 
-  public static ClientRegistration create(final OidcAuthenticationConfiguration configuration) {
+  public static ClientRegistration createClientRegistration(
+      final String registrationId, final OidcAuthenticationConfiguration configuration) {
     final Builder builder;
     if (configuration.getIssuerUri() != null) {
       builder =
           ClientRegistrations.fromIssuerLocation(configuration.getIssuerUri())
-              .registrationId(REGISTRATION_ID);
+              .registrationId(registrationId);
     } else {
-      builder = ClientRegistration.withRegistrationId(REGISTRATION_ID);
+      builder = ClientRegistration.withRegistrationId(registrationId);
     }
 
+    if (configuration.getClientName() != null) {
+      builder.clientName(configuration.getClientName());
+    }
     if (configuration.getClientId() != null) {
       builder.clientId(configuration.getClientId());
     }
