@@ -30,7 +30,7 @@ public class UsageMetricsProcessors {
             ValueType.USAGE_METRIC,
             UsageMetricIntent.EXPORT,
             new UsageMetricsExportProcessor(
-                processingState.getUsageMetricState(), writers, keyGenerator))
+                processingState.getUsageMetricState(), writers, keyGenerator, clock))
         .withListener(new UsageMetricsCheckerScheduler(config, clock));
   }
 }

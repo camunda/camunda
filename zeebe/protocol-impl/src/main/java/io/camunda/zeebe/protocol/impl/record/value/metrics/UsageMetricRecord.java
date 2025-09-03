@@ -51,15 +51,6 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
         .declareProperty(setValuesProp);
   }
 
-  public static UsageMetricRecord copyWithoutValues(final UsageMetricRecord usageMetricRecord) {
-    return new UsageMetricRecord()
-        .setEventType(usageMetricRecord.getEventType())
-        .setIntervalType(usageMetricRecord.getIntervalType())
-        .setResetTime(usageMetricRecord.getResetTime())
-        .setStartTime(usageMetricRecord.getStartTime())
-        .setEndTime(usageMetricRecord.getEndTime());
-  }
-
   @Override
   public IntervalType getIntervalType() {
     return intervalTypeProp.getValue();
@@ -138,5 +129,9 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
   @JsonIgnore
   public DirectBuffer getSetValueBuffer() {
     return setValuesProp.getValue();
+  }
+
+  public boolean hasData() {
+    return !(getCounterValues().isEmpty() && getSetValues().isEmpty());
   }
 }
