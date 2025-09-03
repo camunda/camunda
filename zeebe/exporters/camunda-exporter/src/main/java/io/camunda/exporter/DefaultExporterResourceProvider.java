@@ -87,7 +87,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
-import io.camunda.webapps.schema.descriptors.index.CorrelatedMessageIndex;
+import io.camunda.webapps.schema.descriptors.index.CorrelatedMessageTemplate;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
@@ -320,9 +320,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(UsageMetricIndex.class).getFullQualifiedName(),
                 indexDescriptors.get(UsageMetricTUIndex.class).getFullQualifiedName()),
             new CorrelatedMessageFromMessageStartEventSubscriptionHandler(
-                indexDescriptors.get(CorrelatedMessageIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(CorrelatedMessageTemplate.class).getFullQualifiedName()),
             new CorrelatedMessageFromProcessMessageSubscriptionHandler(
-                indexDescriptors.get(CorrelatedMessageIndex.class).getFullQualifiedName())));
+                indexDescriptors.get(CorrelatedMessageTemplate.class).getFullQualifiedName())));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation

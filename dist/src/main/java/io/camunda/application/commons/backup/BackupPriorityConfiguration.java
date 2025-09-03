@@ -20,7 +20,7 @@ import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
-import io.camunda.webapps.schema.descriptors.index.CorrelatedMessageIndex;
+import io.camunda.webapps.schema.descriptors.index.CorrelatedMessageTemplate;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
@@ -133,6 +133,8 @@ public class BackupPriorityConfiguration {
 
     final List<Prio4Backup> prio4 =
         List.of(
+            // CAMUNDA
+            new CorrelatedMessageTemplate(indexPrefix, isElasticsearch),
             // OPERATE
             new DecisionIndex(indexPrefix, isElasticsearch),
             new DecisionInstanceTemplate(indexPrefix, isElasticsearch),
@@ -154,7 +156,6 @@ public class BackupPriorityConfiguration {
             new DecisionRequirementsIndex(indexPrefix, isElasticsearch),
             new MetricIndex(indexPrefix, isElasticsearch),
             new ProcessIndex(indexPrefix, isElasticsearch),
-            new CorrelatedMessageIndex(indexPrefix, isElasticsearch),
             // TASKLIST
             new FormIndex(indexPrefix, isElasticsearch),
             new TasklistMetricIndex(indexPrefix, isElasticsearch),
