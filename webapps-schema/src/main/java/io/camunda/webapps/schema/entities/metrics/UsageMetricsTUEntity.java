@@ -19,14 +19,15 @@ public class UsageMetricsTUEntity
         TenantOwned {
 
   private String id;
-  private OffsetDateTime eventTime;
+  private OffsetDateTime startTime;
+  private OffsetDateTime endTime;
   private Long assigneeHash;
   private String tenantId;
   private int partitionId;
 
   @Override
   public int hashCode() {
-    return Objects.hash(tenantId, eventTime, assigneeHash, partitionId);
+    return Objects.hash(tenantId, startTime, endTime, assigneeHash, partitionId);
   }
 
   @Override
@@ -38,29 +39,15 @@ public class UsageMetricsTUEntity
     return Objects.equals(id, that.id)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(partitionId, that.partitionId)
-        && Objects.equals(eventTime, that.eventTime)
+        && Objects.equals(startTime, that.startTime)
+        && Objects.equals(endTime, that.endTime)
         && Objects.equals(assigneeHash, that.assigneeHash);
   }
 
   @Override
   public String toString() {
-    return "UsageMetricsTUEntity{"
-        + "id='"
-        + id
-        + '\''
-        + ", tenantId='"
-        + tenantId
-        + '\''
-        + ", partitionId='"
-        + partitionId
-        + '\''
-        + ", eventTime="
-        + eventTime
-        + '\''
-        + ", assigneeHash='"
-        + assigneeHash
-        + '\''
-        + '}';
+    return "UsageMetricsTUEntity{id='%s', startTime=%s, endTime=%s, assigneeHash=%d, tenantId='%s', partitionId=%d}"
+        .formatted(id, startTime, endTime, assigneeHash, tenantId, partitionId);
   }
 
   @Override
@@ -84,12 +71,21 @@ public class UsageMetricsTUEntity
     return this;
   }
 
-  public OffsetDateTime getEventTime() {
-    return eventTime;
+  public OffsetDateTime getStartTime() {
+    return startTime;
   }
 
-  public UsageMetricsTUEntity setEventTime(final OffsetDateTime eventTime) {
-    this.eventTime = eventTime;
+  public UsageMetricsTUEntity setStartTime(final OffsetDateTime startTime) {
+    this.startTime = startTime;
+    return this;
+  }
+
+  public OffsetDateTime getEndTime() {
+    return endTime;
+  }
+
+  public UsageMetricsTUEntity setEndTime(final OffsetDateTime endTime) {
+    this.endTime = endTime;
     return this;
   }
 
