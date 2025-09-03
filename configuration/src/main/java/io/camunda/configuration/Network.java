@@ -85,6 +85,9 @@ public class Network {
    */
   private Duration heartbeatInterval = Duration.ofSeconds(5);
 
+  /** Sets the internal api configuration */
+  private InternalApi internalApi = new InternalApi();
+
   public String getHost() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".host",
@@ -189,6 +192,14 @@ public class Network {
     this.heartbeatInterval = heartbeatInterval;
   }
 
+  public InternalApi getInternalApi() {
+    return internalApi;
+  }
+
+  public void setInternalApi(final InternalApi internalApi) {
+    this.internalApi = internalApi;
+  }
+
   @Override
   public Network clone() {
     final Network copy = new Network();
@@ -200,6 +211,7 @@ public class Network {
     copy.socketReceiveBuffer = socketReceiveBuffer;
     copy.heartbeatTimeout = heartbeatTimeout;
     copy.heartbeatInterval = heartbeatInterval;
+    copy.internalApi = internalApi;
 
     return copy;
   }
