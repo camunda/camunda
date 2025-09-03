@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.FormEntity;
@@ -98,7 +99,7 @@ public class ProcessDefinitionServices
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, PROCESS_DEFINITION_READ_AUTHORIZATION))
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                 .processDefinitionInstanceStatistics(query));
   }
 
