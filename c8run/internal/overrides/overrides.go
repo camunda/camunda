@@ -53,22 +53,13 @@ func AdjustJavaOpts(javaOpts string, settings types.C8RunSettings) string {
 	if settings.Port != 8080 {
 		javaOpts = javaOpts + " -Dserver.port=" + strconv.Itoa(settings.Port)
 	}
-	if settings.Username != "" || settings.Password != "" {
+	if settings.Username != "demo" && settings.Password != "demo" {
 		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.args.createSchema=true"
 		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.className=io.camunda.exporter.CamundaExporter"
-		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].name=Demo"
-		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].email=demo@example.com"
+		javaOpts += " -Dcamunda.security.initialization.users[0].username=" + settings.Username
+		javaOpts += " -Dcamunda.security.initialization.users[0].password=" + settings.Password
+		javaOpts += " -Dcamunda.security.initialization.defaultRoles.admin.users[0]=" + settings.Username
 	}
-	if settings.Username != "" {
-		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].username=" + settings.Username
-		javaOpts = javaOpts + " -Dcamunda.security.initialization.defaultRoles.admin.users[0]=" + settings.Username
-	}
-	if settings.Password != "" {
-		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].password=" + settings.Password
-	}
-	javaOpts = javaOpts + " -Dcamunda.security.authentication.unprotected-api=true"
-	javaOpts = javaOpts + " -Dcamunda.security.authorizations.enabled=false"
-	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity,consolidated-auth"
 	if err := os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.Port)); err != nil {
 		log.Error().Err(err).Msg("failed to set CAMUNDA_OPERATE_ZEEBE_RESTADDRESS")
 	}
