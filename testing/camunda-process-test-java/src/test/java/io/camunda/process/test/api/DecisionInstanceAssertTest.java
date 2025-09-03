@@ -29,6 +29,7 @@ import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
 import io.camunda.client.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.client.protocol.rest.MatchedDecisionRuleItem;
+import io.camunda.process.test.api.assertions.DecisionSelector;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
@@ -174,6 +175,34 @@ public class DecisionInstanceAssertTest {
   }
 
   @Nested
+  public class CombineSelectors {
+    @Test
+    public void canCombineSelectors() {
+      // when
+      mockDecisionInstanceSearch(
+          decisionInstance(d -> d.state(DecisionInstanceStateEnum.EVALUATED)));
+
+      // then
+      final DecisionSelector combined =
+          DecisionSelectors.byName(NAME).and(DecisionSelectors.byProcessInstanceKey(3));
+
+      assertThatDecision(combined).isEvaluated();
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    public void combinedSelectorsRequireAllTestsToPass() {
+      // then
+      final DecisionSelector badCombination =
+          DecisionSelectors.byName("bad_name").and(DecisionSelectors.byProcessInstanceKey(3));
+
+      // then
+      Assertions.assertThatThrownBy(() -> assertThatDecision(badCombination).isEvaluated())
+          .hasMessage("No DecisionInstance [name: bad_name, processInstanceKey: 3] found.");
+    }
+  }
+
+  @Nested
   public class IsEvaluated {
 
     @Test
@@ -195,7 +224,8 @@ public class DecisionInstanceAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).isEvaluated())
-          .hasMessage("Expected DecisionInstance [name] to have been evaluated, but was failed");
+          .hasMessage(
+              "Expected DecisionInstance [name: name] to have been evaluated, but was failed");
     }
   }
 
@@ -242,14 +272,14 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '\"foo\"', but was '\"outputValue\"'");
+              "Expected DecisionInstance [name: name] to have output '\"foo\"', but was '\"outputValue\"'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '\"outputValue\"'");
+              "Expected DecisionInstance [name: name] to have output '{\"a\":\"b\"}', but was '\"outputValue\"'");
     }
 
     @Test
@@ -262,14 +292,14 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '\"foo\"', but was '{\"a\":\"b\",\"v\":2}'");
+              "Expected DecisionInstance [name: name] to have output '\"foo\"', but was '{\"a\":\"b\",\"v\":2}'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '{\"a\":\"b\",\"v\":2}'");
+              "Expected DecisionInstance [name: name] to have output '{\"a\":\"b\"}', but was '{\"a\":\"b\",\"v\":2}'");
     }
 
     @Test
@@ -282,14 +312,14 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '\"foo\"', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
+              "Expected DecisionInstance [name: name] to have output '\"foo\"', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
+              "Expected DecisionInstance [name: name] to have output '{\"a\":\"b\"}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
     }
   }
 
@@ -336,7 +366,7 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasMatchedRules(2))
           .hasMessage(
-              "Expected DecisionInstance [name] to have matched rules [2], but did not. Matches:\n"
+              "Expected DecisionInstance [name: name] to have matched rules [2], but did not. Matches:\n"
                   + "\t- matched: []\n"
                   + "\t- missing: [2]\n"
                   + "\t- unexpected: [1]");
@@ -373,7 +403,7 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasNotMatchedRules(1))
           .hasMessage(
-              "Expected DecisionInstance [name] to not have matched rules [1], but matched [1]");
+              "Expected DecisionInstance [name: name] to not have matched rules [1], but matched [1]");
     }
 
     @Test
@@ -386,7 +416,7 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasNotMatchedRules(4, 1, 5))
           .hasMessage(
-              "Expected DecisionInstance [name] to not have matched rules [4, 1, 5], but matched [1]");
+              "Expected DecisionInstance [name: name] to not have matched rules [4, 1, 5], but matched [1]");
     }
   }
 }

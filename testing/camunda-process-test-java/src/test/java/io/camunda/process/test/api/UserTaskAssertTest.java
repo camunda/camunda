@@ -23,6 +23,7 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.impl.search.response.UserTaskImpl;
 import io.camunda.client.protocol.rest.UserTaskResult;
 import io.camunda.client.protocol.rest.UserTaskStateEnum;
+import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
@@ -68,6 +69,87 @@ public class UserTaskAssertTest {
         .hasElementId("test_element")
         .hasPriority(60)
         .hasAssignee("tester");
+  }
+
+  @Nested
+  public class CombineSelectors {
+    @Test
+    public void canCombineSelectors() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .elementId("test_element")
+                          .state(UserTaskStateEnum.CREATED)
+                          .assignee("tester")
+                          .priority(60))));
+
+      // then
+      final UserTaskSelector combined =
+          UserTaskSelectors.byTaskName("a").and(UserTaskSelectors.byElementId("test_element"));
+
+      assertThatUserTask(combined)
+          .isCreated()
+          .hasElementId("test_element")
+          .hasPriority(60)
+          .hasAssignee("tester");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    public void combinedSelectorsRequireAllTestsToPass() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .elementId("test_element")
+                          .state(UserTaskStateEnum.CREATED)
+                          .assignee("tester")
+                          .priority(60))));
+
+      // then
+      final UserTaskSelector badCombination =
+          UserTaskSelectors.byTaskName("a", 3).and(UserTaskSelectors.byElementId("test_unknown"));
+
+      Assertions.assertThatThrownBy(() -> assertThatUserTask(badCombination).isCreated())
+          .hasMessage(
+              "No user task [taskName: a, processInstanceKey: 3, elementId: test_unknown] found");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    public void describeArbitrarilyNestedCombinations() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .elementId("test_element")
+                          .state(UserTaskStateEnum.CREATED)
+                          .assignee("tester")
+                          .priority(60))));
+
+      // then
+      final UserTaskSelector badCombination =
+          UserTaskSelectors.byTaskName("a")
+              .and(UserTaskSelectors.byElementId("test_unknown"))
+              .and(UserTaskSelectors.byProcessInstanceKey(123));
+
+      Assertions.assertThatThrownBy(() -> assertThatUserTask(badCombination).isCreated())
+          .hasMessage(
+              "No user task [taskName: a, elementId: test_unknown, processInstanceKey: 123] found");
+    }
   }
 
   @Nested
@@ -185,7 +267,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).isCreated())
-          .hasMessage("No user task [a] found");
+          .hasMessage("No user task [taskName: a] found");
     }
 
     @Test
@@ -205,7 +287,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).isCreated())
-          .hasMessage("Expected [a] to be created, but was completed");
+          .hasMessage("Expected [taskName: a] to be created, but was completed");
     }
   }
 
@@ -275,7 +357,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY))
-          .hasMessage("Expected [a] to have priority '60', but was '40'");
+          .hasMessage("Expected [taskName: a] to have priority '60', but was '40'");
     }
   }
 
@@ -345,7 +427,8 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID))
-          .hasMessage("Expected [a] to have element ID 'element_id', but was 'other_element_id'");
+          .hasMessage(
+              "Expected [taskName: a] to have element ID 'element_id', but was 'other_element_id'");
     }
   }
 
@@ -412,7 +495,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThatUserTask(UserTaskSelectors.byTaskName(NAME)).hasName("other_name"))
-          .hasMessage("Expected [name] to have name 'other_name', but was 'name'");
+          .hasMessage("Expected [taskName: name] to have name 'other_name', but was 'name'");
     }
   }
 
@@ -482,7 +565,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE))
-          .hasMessage("Expected [a] to have assignee 'tester', but was 'other'");
+          .hasMessage("Expected [taskName: a] to have assignee 'tester', but was 'other'");
     }
   }
 
@@ -553,7 +636,7 @@ public class UserTaskAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE))
           .hasMessage(
-              "Expected [a] to have due date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
+              "Expected [taskName: a] to have due date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
   }
 
@@ -626,7 +709,7 @@ public class UserTaskAssertTest {
                   assertThatUserTask(UserTaskSelectors.byTaskName("a"))
                       .hasCompletionDate(COMPLETION_DATE))
           .hasMessage(
-              "Expected [a] to have completion date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
+              "Expected [taskName: a] to have completion date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
   }
 
@@ -699,7 +782,7 @@ public class UserTaskAssertTest {
                   assertThatUserTask(UserTaskSelectors.byTaskName("a"))
                       .hasFollowUpDate(FOLLOW_UP_DATE))
           .hasMessage(
-              "Expected [a] to have follow-up date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
+              "Expected [taskName: a] to have follow-up date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
   }
 
@@ -772,7 +855,7 @@ public class UserTaskAssertTest {
                   assertThatUserTask(UserTaskSelectors.byTaskName("a"))
                       .hasCreationDate(CREATION_DATE))
           .hasMessage(
-              "Expected [a] to have creation date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
+              "Expected [taskName: a] to have creation date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
   }
 
@@ -879,7 +962,7 @@ public class UserTaskAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCandidateGroup("foo"))
           .hasMessage(
-              "Expected [a] to have candidate group 'foo', but was [engineering, management]");
+              "Expected [taskName: a] to have candidate group 'foo', but was [engineering, management]");
     }
 
     @Test
@@ -902,7 +985,7 @@ public class UserTaskAssertTest {
                   assertThatUserTask(UserTaskSelectors.byTaskName("a"))
                       .hasCandidateGroups(candidateGroups))
           .hasMessage(
-              "Expected [a] to have candidate groups [engineering, management], but was [marketing]");
+              "Expected [taskName: a] to have candidate groups [engineering, management], but was [marketing]");
     }
   }
 }

@@ -64,6 +64,16 @@ public class UserTaskSelectors {
     return new UserTaskNameSelector(taskName, processInstanceKey);
   }
 
+  /**
+   * Select the BPMN user task by its processInstanceKey.
+   *
+   * @param processInstanceKey the associated process instance
+   * @return the selector
+   */
+  public static UserTaskSelector byProcessInstanceKey(final long processInstanceKey) {
+    return new UserTaskProcessInstanceSelector(processInstanceKey);
+  }
+
   private static final class UserTaskElementIdSelector implements UserTaskSelector {
 
     private final String elementId;
@@ -86,9 +96,10 @@ public class UserTaskSelectors {
     @Override
     public String describe() {
       if (processInstanceKey != null) {
-        return String.format("%s (processInstanceKey: %d)", elementId, processInstanceKey);
+        return String.format(
+            "elementId: %s, processInstanceKey: %d", elementId, processInstanceKey);
       } else {
-        return elementId;
+        return "elementId: " + elementId;
       }
     }
 
@@ -123,9 +134,9 @@ public class UserTaskSelectors {
     @Override
     public String describe() {
       if (processInstanceKey != null) {
-        return String.format("%s (processInstanceKey: %d)", taskName, processInstanceKey);
+        return String.format("taskName: %s, processInstanceKey: %d", taskName, processInstanceKey);
       } else {
-        return taskName;
+        return "taskName: " + taskName;
       }
     }
 
@@ -134,6 +145,30 @@ public class UserTaskSelectors {
       if (processInstanceKey != null) {
         filter.processInstanceKey(processInstanceKey);
       }
+    }
+  }
+
+  private static final class UserTaskProcessInstanceSelector implements UserTaskSelector {
+
+    private final long processInstanceKey;
+
+    private UserTaskProcessInstanceSelector(final long processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+    }
+
+    @Override
+    public boolean test(final UserTask userTask) {
+      return userTask.getProcessInstanceKey().equals(processInstanceKey);
+    }
+
+    @Override
+    public String describe() {
+      return String.format("processInstanceKey: %d", processInstanceKey);
+    }
+
+    @Override
+    public void applyFilter(final UserTaskFilter filter) {
+      filter.processInstanceKey(processInstanceKey);
     }
   }
 }
