@@ -72,7 +72,8 @@ public class UsageMetricsIT {
     usageMetricWriter.create(
         new UsageMetricDbModel.Builder()
             .key(CommonFixtures.nextKey())
-            .eventTime(time)
+            .startTime(time)
+            .endTime(time)
             .tenantId(tenantId)
             .eventType(eventType)
             .value(value)
@@ -88,7 +89,8 @@ public class UsageMetricsIT {
     usageMetricTUWriter.create(
         new UsageMetricTUDbModel.Builder()
             .key(CommonFixtures.nextKey())
-            .eventTime(time)
+            .startTime(time)
+            .endTime(time)
             .tenantId(tenantId)
             .assigneeHash(value)
             .partitionId(PARTITION_ID.intValue())
