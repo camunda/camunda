@@ -57,6 +57,7 @@ import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
+import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.client.api.command.DeleteRoleCommandStep1;
 import io.camunda.client.api.command.DeleteTenantCommandStep1;
@@ -195,6 +196,7 @@ import io.camunda.client.impl.command.CreateUserCommandImpl;
 import io.camunda.client.impl.command.DeleteAuthorizationCommandImpl;
 import io.camunda.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.client.impl.command.DeleteGroupCommandImpl;
+import io.camunda.client.impl.command.DeleteMappingRuleCommandImpl;
 import io.camunda.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.client.impl.command.DeleteRoleCommandImpl;
 import io.camunda.client.impl.command.DeleteTenantCommandImpl;
@@ -1004,6 +1006,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public DeleteGroupCommandStep1 newDeleteGroupCommand(final String groupId) {
     return new DeleteGroupCommandImpl(groupId, httpClient);
+  }
+
+  @Override
+  public DeleteMappingRuleCommandStep1 newDeleteMappingRuleCommand(final String mappingRuleId) {
+    return new DeleteMappingRuleCommandImpl(mappingRuleId, httpClient);
   }
 
   @Override

@@ -49,6 +49,7 @@ import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
+import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.client.api.command.DeleteRoleCommandStep1;
 import io.camunda.client.api.command.DeleteTenantCommandStep1;
@@ -1592,6 +1593,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   DeleteGroupCommandStep1 newDeleteGroupCommand(String groupId);
+
+  /**
+   * Command to delete a mapping rule.
+   *
+   * <pre>
+   * camundaClient
+   *  .newDeleteMappingRuleCommand("mappingRuleId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @param mappingRuleId the ID of the mapping rule to delete
+   * @return a builder for the command
+   */
+  DeleteMappingRuleCommandStep1 newDeleteMappingRuleCommand(String mappingRuleId);
 
   /**
    * Command to assign a user to a group.
