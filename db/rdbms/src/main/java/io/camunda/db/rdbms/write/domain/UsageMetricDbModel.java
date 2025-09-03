@@ -12,7 +12,8 @@ import java.time.OffsetDateTime;
 
 public record UsageMetricDbModel(
     long key,
-    OffsetDateTime eventTime,
+    OffsetDateTime startTime,
+    OffsetDateTime endTime,
     String tenantId,
     EventTypeDbModel eventType,
     Long value,
@@ -29,7 +30,8 @@ public record UsageMetricDbModel(
   public static class Builder implements ObjectBuilder<UsageMetricDbModel> {
 
     private long key;
-    private OffsetDateTime eventTime;
+    private OffsetDateTime startTime;
+    private OffsetDateTime endTime;
     private String tenantId;
     private EventTypeDbModel eventType;
     private Long value;
@@ -40,8 +42,13 @@ public record UsageMetricDbModel(
       return this;
     }
 
-    public Builder eventTime(final OffsetDateTime eventTime) {
-      this.eventTime = eventTime;
+    public Builder startTime(final OffsetDateTime startTime) {
+      this.startTime = startTime;
+      return this;
+    }
+
+    public Builder endTime(final OffsetDateTime endTime) {
+      this.endTime = endTime;
       return this;
     }
 
@@ -67,7 +74,8 @@ public record UsageMetricDbModel(
 
     @Override
     public UsageMetricDbModel build() {
-      return new UsageMetricDbModel(key, eventTime, tenantId, eventType, value, partitionId);
+      return new UsageMetricDbModel(
+          key, startTime, endTime, tenantId, eventType, value, partitionId);
     }
   }
 
