@@ -70,6 +70,8 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -89,6 +91,7 @@ public class SaaSIdentityMigrationIT {
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(SaaSIdentityMigrationIT.class);
   private static final String AUTH_TOKEN_BODY =
       """
       {
@@ -196,6 +199,8 @@ public class SaaSIdentityMigrationIT {
 
     migration.start();
 
+    LOGGER.info("Migration completed, waiting for data to be available");
+
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
@@ -229,6 +234,8 @@ public class SaaSIdentityMigrationIT {
   public void canMigrateRoles() {
     // when
     migration.start();
+
+    LOGGER.info("Migration completed, waiting for data to be available");
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
@@ -273,6 +280,8 @@ public class SaaSIdentityMigrationIT {
   public void canMigratePermissions() throws URISyntaxException, IOException, InterruptedException {
     // when
     migration.start();
+
+    LOGGER.info("Migration completed, waiting for data to be available");
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
@@ -535,6 +544,8 @@ public class SaaSIdentityMigrationIT {
   public void canMigrateClients() throws IOException, URISyntaxException, InterruptedException {
     // when
     migration.start();
+
+    LOGGER.info("Migration completed, waiting for data to be available");
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(10))

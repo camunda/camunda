@@ -52,6 +52,8 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -68,6 +70,8 @@ public class KeycloakIdentityMigrationIT {
           .withAdditionalProfile("identity")
           .withBasicAuth()
           .withAuthorizationsEnabled();
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(KeycloakIdentityMigrationIT.class);
 
   @Container
   private static final ElasticsearchContainer ELASTIC = IdentityMigrationTestUtil.getElastic();
@@ -216,6 +220,8 @@ public class KeycloakIdentityMigrationIT {
     // when
     migration.start();
 
+    LOGGER.info("Migration completed, waiting for data to be available");
+
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
@@ -358,6 +364,8 @@ public class KeycloakIdentityMigrationIT {
     // when
     migration.start();
 
+    LOGGER.info("Migration completed, waiting for data to be available");
+
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
@@ -403,6 +411,8 @@ public class KeycloakIdentityMigrationIT {
     // when
     migration.start();
 
+    LOGGER.info("Migration completed, waiting for data to be available");
+
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
@@ -436,6 +446,8 @@ public class KeycloakIdentityMigrationIT {
   public void canMigrateAuthorizations() {
     // when
     migration.start();
+
+    LOGGER.info("Migration completed, waiting for data to be available");
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
@@ -481,6 +493,8 @@ public class KeycloakIdentityMigrationIT {
   public void canMigrateClients() {
     // when
     migration.start();
+
+    LOGGER.info("Migration completed, waiting for data to be available");
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
@@ -589,6 +603,8 @@ public class KeycloakIdentityMigrationIT {
   public void canMigrateTenants() throws URISyntaxException, IOException, InterruptedException {
     // when
     migration.start();
+
+    LOGGER.info("Migration completed, waiting for data to be available");
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))

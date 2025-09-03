@@ -55,6 +55,8 @@ import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -71,6 +73,8 @@ public class OidcIdentityMigrationIT {
           .withAdditionalProfile("identity")
           .withBasicAuth()
           .withAuthorizationsEnabled();
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OidcIdentityMigrationIT.class);
 
   @Container
   private static final ElasticsearchContainer ELASTIC = IdentityMigrationTestUtil.getElastic();
@@ -182,6 +186,8 @@ public class OidcIdentityMigrationIT {
   public void canMigrateRoles() {
     // when
     migration.start();
+
+    LOGGER.info("Migration completed, waiting for data to be available");
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
@@ -325,6 +331,8 @@ public class OidcIdentityMigrationIT {
     // when
     migration.start();
 
+    LOGGER.info("Migration completed, waiting for data to be available");
+
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
@@ -350,6 +358,8 @@ public class OidcIdentityMigrationIT {
       throws URISyntaxException, IOException, InterruptedException {
     // when
     migration.start();
+
+    LOGGER.info("Migration completed, waiting for data to be available");
 
     final var restAddress = client.getConfiguration().getRestAddress().toString();
     Awaitility.await()

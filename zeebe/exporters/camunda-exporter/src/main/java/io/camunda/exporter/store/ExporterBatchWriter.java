@@ -25,10 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Caches exporter entities of different types and provide the method to flush them in a batch. */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class ExporterBatchWriter {
+  private static final Logger LOG = LoggerFactory.getLogger(ExporterBatchWriter.class);
   private final Map<EntityIdAndEntityType, EntityAndHandlers> cachedEntities = new HashMap<>();
   private final Map<Long, Long> cachedRecordTimestamps = new HashMap<>();
 
@@ -93,6 +96,7 @@ public final class ExporterBatchWriter {
       for (final var handler : entityAndHandler.handlers()) {
         handler.flush(entity, batchRequest);
       }
+      LOG.debug("Flushed entity: {}", entity);
     }
 
     batchRequest.execute(customErrorHandler);
