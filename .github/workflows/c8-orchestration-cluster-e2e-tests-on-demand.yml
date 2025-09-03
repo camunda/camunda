@@ -76,53 +76,19 @@ jobs:
             echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
           fi
 
-      - name: Prepare compose environment
-        shell: bash
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
-        run: |
-          printf 'DATABASE=elasticsearch\n' > .env
-          echo ".env content:"
-          cat .env
-          echo "NON_STANDALONE=$NON_STANDALONE"
-          env | grep DATABASE || true
-
       - name: Start Camunda
         shell: bash
+        run: |
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            DATABASE=elasticsearch docker compose up -d operate tasklist
+          else
+            export DATABASE=elasticsearch
+            echo "Starting Camunda with: ${DATABASE}"
+            docker compose up -d camunda
+          fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
         env:
           DATABASE: elasticsearch
-          ES_URL: http://elasticsearch:9200
-          # Exporter (legacy)
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE: elasticsearch
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: ${{ env.ES_URL }}
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: "100"
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS: "false"
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CREATESCHEMA: "true"
-          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_RETENTION_ENABLED: "false"
-          ZEEBE_BROKER_BACKPRESSURE_ENABLED: "false"
-          # Primary database + per-app URLs
-          CAMUNDA_DATABASE_TYPE: elasticsearch
-          CAMUNDA_DATABASE_URL: ${{ env.ES_URL }}
-          CAMUNDA_TASKLIST_DATABASE: elasticsearch
-          CAMUNDA_TASKLIST_ELASTICSEARCH_URL: ${{ env.ES_URL }}
-          CAMUNDA_OPERATE_DATABASE: elasticsearch
-          CAMUNDA_OPERATE_ELASTICSEARCH_URL: ${{ env.ES_URL }}
-        run: |
-          set -euo pipefail
-          echo "Checking for accidental secondary storage vars (should be none)..."
-          if env | grep -i 'SECONDARY.*STORAGE'; then
-            echo "ERROR: Secondary storage variables still present"; exit 1
-          fi
-          docker compose config > rendered-compose.yml
-          if grep -q localhost:9200 rendered-compose.yml; then
-            echo "ERROR: Found localhost:9200 reference"; grep -n localhost:9200 rendered-compose.yml; exit 1
-          fi
-            if [[ "${NON_STANDALONE:-}" == "true" ]]; then
-              docker compose up -d operate tasklist
-            else
-              docker compose up -d camunda
-            fi
 
       - name: List running Docker containers
         run: docker ps -a
