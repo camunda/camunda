@@ -20,36 +20,36 @@ import {
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertGroupsInResponse,
-  assignGroupsToRole,
+  assignGroupsToTenant,
   createGroupAndStoreResponseFields,
-  createRole,
+  createTenant,
   groupIdFromState,
 } from '../../../../utils/requestHelpers';
 import {GROUPS_EXPECTED_BODY} from '../../../../utils/beans/requestBeans';
 
-test.describe.parallel('Role Groups API Tests', () => {
+test.describe.parallel('Tenant Groups API Tests', () => {
   const state: Record<string, unknown> = {};
 
   test.beforeAll(async ({request}) => {
-    await createRole(request, state, '1');
-    await createRole(request, state, '2');
-    await createRole(request, state, '3');
-    await assignGroupsToRole(request, 2, 'roleId1', state);
-    await assignGroupsToRole(request, 3, 'roleId2', state);
-    await assignGroupsToRole(request, 3, 'roleId3', state);
+    await createTenant(request, state, '1');
+    await createTenant(request, state, '2');
+    await createTenant(request, state, '3');
+    await assignGroupsToTenant(request, 2, 'tenantId1', state);
+    await assignGroupsToTenant(request, 3, 'tenantId2', state);
+    await assignGroupsToTenant(request, 3, 'tenantId3', state);
   });
 
-  test('Assign Group To Role', async ({request}) => {
-    const groupKey = `${state['roleId1']}6`;
+  test('Assign Group To Tenant', async ({request}) => {
+    const groupKey = `${state['tenantId1']}6`;
     await createGroupAndStoreResponseFields(request, 1, state, groupKey);
     const p = {
       groupId: groupIdFromState(groupKey, state, 6) as string,
-      roleId: state['roleId1'] as string,
+      tenantId: state['tenantId1'] as string,
     };
 
     await expect(async () => {
       const res = await request.put(
-        buildUrl('/roles/{roleId}/groups/{groupId}', p),
+        buildUrl('/tenants/{tenantId}/groups/{groupId}', p),
         {
           headers: jsonHeaders(),
         },
@@ -58,16 +58,16 @@ test.describe.parallel('Role Groups API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Assign Group To Role Non Existent Group Not Found', async ({
+  test('Assign Group To Tenant Non Existent Group Not Found', async ({
     request,
   }) => {
     const stateParams: Record<string, string> = {
       groupId: 'invalidGroupId',
-      roleId: state['roleId1'] as string,
+      tenantId: state['tenantId1'] as string,
     };
 
     const res = await request.put(
-      buildUrl('/roles/{roleId}/groups/{groupId}', stateParams),
+      buildUrl('/tenants/{tenantId}/groups/{groupId}', stateParams),
       {
         headers: jsonHeaders(),
       },
@@ -78,16 +78,16 @@ test.describe.parallel('Role Groups API Tests', () => {
     );
   });
 
-  test('Assign Group To Role Non Existent Role Not Found', async ({
+  test('Assign Group To Tenant Non Existent Tenant Not Found', async ({
     request,
   }) => {
     const stateParams: Record<string, string> = {
-      groupId: groupIdFromState('roleId1', state) as string,
-      roleId: 'invalidRoleId',
+      groupId: groupIdFromState('tenantId1', state) as string,
+      tenantId: 'invalidTenantId',
     };
 
     const res = await request.put(
-      buildUrl('/roles/{roleId}/groups/{groupId}', stateParams),
+      buildUrl('/tenants/{tenantId}/groups/{groupId}', stateParams),
       {
         headers: jsonHeaders(),
       },
@@ -98,15 +98,15 @@ test.describe.parallel('Role Groups API Tests', () => {
     );
   });
 
-  test('Assign Group To Role Unauthorized', async ({request}) => {
+  test('Assign Group To Tenant Unauthorized', async ({request}) => {
     const stateParams: Record<string, string> = {
-      groupId: groupIdFromState('roleId1', state) as string,
-      roleId: state['roleId1'] as string,
+      groupId: groupIdFromState('tenantId1', state) as string,
+      tenantId: state['tenantId1'] as string,
     };
 
     await expect(async () => {
       const res = await request.put(
-        buildUrl('/roles/{roleId}/groups/{groupId}', stateParams),
+        buildUrl('/tenants/{tenantId}/groups/{groupId}', stateParams),
         {
           headers: {},
         },
@@ -115,15 +115,15 @@ test.describe.parallel('Role Groups API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Assign Already Added Group To Role Conflict', async ({request}) => {
+  test('Assign Already Added Group To Tenant Conflict', async ({request}) => {
     const stateParams: Record<string, string> = {
-      groupId: groupIdFromState('roleId1', state) as string,
-      roleId: state['roleId1'] as string,
+      groupId: groupIdFromState('tenantId1', state) as string,
+      tenantId: state['tenantId1'] as string,
     };
 
     await expect(async () => {
       const res = await request.put(
-        buildUrl('/roles/{roleId}/groups/{groupId}', stateParams),
+        buildUrl('/tenants/{tenantId}/groups/{groupId}', stateParams),
         {
           headers: jsonHeaders(),
         },
@@ -133,15 +133,15 @@ test.describe.parallel('Role Groups API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Unassign Group From Role', async ({request}) => {
+  test('Unassign Group From Tenant', async ({request}) => {
     const p = {
-      groupId: groupIdFromState('roleId2', state) as string,
-      roleId: state['roleId2'] as string,
+      groupId: groupIdFromState('tenantId2', state) as string,
+      tenantId: state['tenantId2'] as string,
     };
-    await test.step('Unassign Role From Group', async () => {
+    await test.step('Unassign Group From Tenant', async () => {
       await expect(async () => {
         const res = await request.delete(
-          buildUrl('/roles/{roleId}/groups/{groupId}', p),
+          buildUrl('/tenants/{tenantId}/groups/{groupId}', p),
           {
             headers: jsonHeaders(),
           },
@@ -150,10 +150,10 @@ test.describe.parallel('Role Groups API Tests', () => {
       }).toPass(defaultAssertionOptions);
     });
 
-    await test.step('Search Group Roles For Group After Deletion', async () => {
+    await test.step('Search Tenant Groups For Group After Deletion', async () => {
       await expect(async () => {
         const res = await request.post(
-          buildUrl('/groups/{groupId}/roles/search', p),
+          buildUrl('/tenants/{tenantId}/groups/search', p),
           {
             headers: jsonHeaders(),
             data: {},
@@ -168,13 +168,13 @@ test.describe.parallel('Role Groups API Tests', () => {
     });
   });
 
-  test('Unassign Role From Group Unauthorized', async ({request}) => {
+  test('Unassign Group From Tenant Unauthorized', async ({request}) => {
     const p = {
-      groupId: groupIdFromState('roleId2', state) as string,
-      roleId: state['roleId2'] as string,
+      groupId: groupIdFromState('tenantId2', state) as string,
+      tenantId: state['tenantId2'] as string,
     };
     const res = await request.delete(
-      buildUrl('/roles/{roleId}/groups/{groupId}', p),
+      buildUrl('/tenants/{tenantId}/groups/{groupId}', p),
       {
         headers: {},
       },
@@ -182,15 +182,15 @@ test.describe.parallel('Role Groups API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Unassign Role From Group Non Existent Group Not Found', async ({
+  test('Unassign Group From Tenant Non Existent Group Not Found', async ({
     request,
   }) => {
     const p = {
       groupId: 'invalidGroupId',
-      roleId: state['roleId2'] as string,
+      tenantId: state['tenantId2'] as string,
     };
     const res = await request.delete(
-      buildUrl('/roles/{roleId}/groups/{groupId}', p),
+      buildUrl('/tenants/{tenantId}/groups/{groupId}', p),
       {
         headers: jsonHeaders(),
       },
@@ -201,15 +201,15 @@ test.describe.parallel('Role Groups API Tests', () => {
     );
   });
 
-  test('Unassign Role From Group Non Existent Role Not Found', async ({
+  test('Unassign Group From Tenant Non Existent Tenant Not Found', async ({
     request,
   }) => {
     const p = {
-      groupId: groupIdFromState('roleId2', state) as string,
-      roleId: 'invalidRoleId',
+      groupId: groupIdFromState('tenantId2', state) as string,
+      tenantId: 'invalidTenantId',
     };
     const res = await request.delete(
-      buildUrl('/roles/{roleId}/groups/{groupId}', p),
+      buildUrl('/tenants/{tenantId}/groups/{groupId}', p),
       {
         headers: jsonHeaders(),
       },
@@ -220,15 +220,15 @@ test.describe.parallel('Role Groups API Tests', () => {
     );
   });
 
-  test('Search Role Groups', async ({request}) => {
-    const p = {roleId: state['roleId3'] as string};
-    const group1 = groupIdFromState('roleId3', state, 1);
-    const group2 = groupIdFromState('roleId3', state, 2);
-    const group3 = groupIdFromState('roleId3', state, 3);
+  test('Search Tenant Groups', async ({request}) => {
+    const p = {tenantId: state['tenantId3'] as string};
+    const group1 = groupIdFromState('tenantId3', state, 1);
+    const group2 = groupIdFromState('tenantId3', state, 2);
+    const group3 = groupIdFromState('tenantId3', state, 3);
 
     await expect(async () => {
       const res = await request.post(
-        buildUrl('/roles/{roleId}/groups/search', p),
+        buildUrl('/tenants/{tenantId}/groups/search', p),
         {headers: jsonHeaders(), data: {}},
       );
       await assertPaginatedRequest(res, {
@@ -242,15 +242,15 @@ test.describe.parallel('Role Groups API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Role Groups Role With No Assignments Returns Empty', async ({
+  test('Search Tenant Groups Tenant With No Assignments Returns Empty', async ({
     request,
   }) => {
-    const role = await createRole(request);
-    const p = {roleId: role.roleId as string};
+    const tenant = await createTenant(request);
+    const p = {tenantId: tenant.tenantId as string};
 
     await expect(async () => {
       const res = await request.post(
-        buildUrl('/roles/{roleId}/groups/search', p),
+        buildUrl('/tenants/{tenantId}/groups/search', p),
         {headers: jsonHeaders(), data: {}},
       );
       await assertPaginatedRequest(res, {
@@ -260,19 +260,19 @@ test.describe.parallel('Role Groups API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Role Groups Unauthorized', async ({request}) => {
-    const p = {roleId: state['roleId3'] as string};
+  test('Search Tenant Groups Unauthorized', async ({request}) => {
+    const p = {tenantId: state['tenantId3'] as string};
     const res = await request.post(
-      buildUrl('/roles/{roleId}/groups/search', p),
+      buildUrl('/tenants/{tenantId}/groups/search', p),
       {headers: {}, data: {}},
     );
     await assertUnauthorizedRequest(res);
   });
 
-  test('Search Role Groups Role Not Found', async ({request}) => {
-    const p = {roleId: 'invalid-role-id'};
+  test('Search Tenant Groups Tenant Not Found', async ({request}) => {
+    const p = {tenantId: 'invalid-tenant-id'};
     const res = await request.post(
-      buildUrl('/roles/{roleId}/groups/search', p),
+      buildUrl('/tenants/{tenantId}/groups/search', p),
       {headers: jsonHeaders(), data: {}},
     );
     await assertPaginatedRequest(res, {

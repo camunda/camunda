@@ -10,8 +10,10 @@ import {
   CREATE_NEW_GROUP,
   CREATE_NEW_MAPPING_RULE,
   CREATE_NEW_ROLE,
+  CREATE_NEW_TENANT,
   groupRequiredFields,
   roleRequiredFields,
+  tenantRequiredFields,
 } from './beans/requestBeans';
 import {
   assertEqualsForKeys,
@@ -78,6 +80,16 @@ export async function createRoleAndStoreResponseFields(
 ) {
   for (let i = 1; i <= numberOfRoles; i++) {
     await createRole(request, state, `${i}`);
+  }
+}
+
+export async function createTenantAndStoreResponseFields(
+  request: APIRequestContext,
+  numberOfTenants: number,
+  state: Record<string, unknown>,
+) {
+  for (let i = 1; i <= numberOfTenants; i++) {
+    await createTenant(request, state, `${i}`);
   }
 }
 
@@ -162,6 +174,34 @@ export async function assignGroupsToRole(
   }
 }
 
+export async function assignGroupsToTenant(
+  request: APIRequestContext,
+  numberOfGroups: number,
+  tenantIdKey: string,
+  state: Record<string, unknown>,
+) {
+  const tenantId = state[tenantIdKey] as string;
+  await createGroupAndStoreResponseFields(
+    request,
+    numberOfGroups,
+    state,
+    tenantId,
+  );
+  for (let i = 1; i <= numberOfGroups; i++) {
+    const p = {
+      groupId: groupIdFromState(tenantIdKey, state, i) as string,
+      tenantId: tenantId as string,
+    };
+    const res = await request.put(
+      buildUrl('/tenants/{tenantId}/groups/{groupId}', p),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    expect(res.status()).toBe(204);
+  }
+}
+
 export async function assignRolesToMappingRules(
   request: APIRequestContext,
   numberOfRules: number,
@@ -206,6 +246,27 @@ export async function assignRoleToUsers(
   }
 }
 
+export async function assignUsersToTenant(
+  request: APIRequestContext,
+  numberOfUsers: number,
+  tenantId: string,
+  state: Record<string, unknown>,
+) {
+  for (let i = 1; i <= numberOfUsers; i++) {
+    const user = 'user' + generateUniqueId();
+    const p = {
+      userId: user,
+      tenantId: tenantId,
+    };
+    const res = await request.put(
+      buildUrl('/tenants/{tenantId}/users/{userId}', p),
+      {headers: jsonHeaders()},
+    );
+    expect(res.status()).toBe(204);
+    state[`username${tenantId}${i}`] = user;
+  }
+}
+
 export async function assignClientsToRole(
   request: APIRequestContext,
   numberOfClients: number,
@@ -224,6 +285,27 @@ export async function assignClientsToRole(
     );
     expect(res.status()).toBe(204);
     state[`client${roleId}${i}`] = clientId;
+  }
+}
+
+export async function assignClientsToTenant(
+  request: APIRequestContext,
+  numberOfClients: number,
+  tenantId: string,
+  state: Record<string, unknown>,
+) {
+  for (let i = 1; i <= numberOfClients; i++) {
+    const clientId = 'client' + generateUniqueId();
+    const p = {
+      tenantId: tenantId,
+      clientId: clientId,
+    };
+    const res = await request.put(
+      buildUrl('/tenants/{tenantId}/clients/{clientId}', p),
+      {headers: jsonHeaders()},
+    );
+    expect(res.status()).toBe(204);
+    state[`client${tenantId}${i}`] = clientId;
   }
 }
 
@@ -306,6 +388,29 @@ export async function createRole(
   return body;
 }
 
+export async function createTenant(
+  request: APIRequestContext,
+  state?: Record<string, unknown>,
+  key?: string,
+) {
+  const body = CREATE_NEW_TENANT();
+
+  const res = await request.post(buildUrl('/tenants'), {
+    headers: jsonHeaders(),
+    data: body,
+  });
+
+  expect(res.status()).toBe(201);
+  const json = await res.json();
+  assertRequiredFields(json, tenantRequiredFields);
+  if (state && key) {
+    state[`tenantId${key}`] = json.tenantId;
+    state[`tenantName${key}`] = json.name;
+    state[`tenantDescription${key}`] = json.description;
+  }
+  return body;
+}
+
 export function assertUsersInResponse(json: Serializable, user: string) {
   const matchingItem = json.items.find(
     (it: {username: string}) => it.username === user,
@@ -335,6 +440,19 @@ export function assertRoleInResponse(
   expect(matchingItem).toBeDefined();
   assertRequiredFields(matchingItem, roleRequiredFields);
   assertEqualsForKeys(matchingItem, expectedBody, roleRequiredFields);
+}
+
+export function assertTenantInResponse(
+  json: Serializable,
+  expectedBody: Serializable,
+  role: string,
+) {
+  const matchingItem = json.items.find(
+    (it: {tenantId: string}) => it.tenantId === role,
+  );
+  expect(matchingItem).toBeDefined();
+  assertRequiredFields(matchingItem, tenantRequiredFields);
+  assertEqualsForKeys(matchingItem, expectedBody, tenantRequiredFields);
 }
 
 export function assertGroupsInResponse(

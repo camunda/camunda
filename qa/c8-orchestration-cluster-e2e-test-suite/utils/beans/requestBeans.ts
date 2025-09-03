@@ -23,6 +23,11 @@ import {
 import {APIRequestContext} from 'playwright-core';
 
 export const groupRequiredFields: string[] = ['groupId', 'name', 'description'];
+export const tenantRequiredFields: string[] = [
+  'tenantId',
+  'name',
+  'description',
+];
 export const mappingRuleRequiredFields: string[] = [
   'claimName',
   'claimValue',
@@ -116,6 +121,23 @@ export function UPDATE_ROLE() {
   const uid = generateUniqueId();
   return {
     name: `role-updated-${uid}`,
+    description: `Updated description-${uid}`,
+  };
+}
+
+export function CREATE_NEW_TENANT() {
+  const uid = generateUniqueId();
+  return {
+    tenantId: `tenant-${uid}`,
+    name: `Test Tenant ${uid}`,
+    description: `E2E test tenant ${uid}`,
+  };
+}
+
+export function UPDATE_TENANT() {
+  const uid = generateUniqueId();
+  return {
+    name: `tenant-updated-${uid}`,
     description: `Updated description-${uid}`,
   };
 }
@@ -283,7 +305,7 @@ export function CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP(
   };
 }
 
-export function ROLE_GROUP_EXPECTED_BODY(groupId: string) {
+export function GROUPS_EXPECTED_BODY(groupId: string) {
   return {
     groupId: groupId,
   };
