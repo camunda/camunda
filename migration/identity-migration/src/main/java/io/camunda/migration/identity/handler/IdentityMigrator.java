@@ -72,6 +72,13 @@ public class IdentityMigrator implements Migrator {
 
     if (joinedCluster) {
       LOG.info("Successfully connected to Orchestration Cluster, starting migration.");
+      LOG.info(
+          "List of brokers in the cluster: {}", brokerTopologyManager.getTopology().getBrokers());
+      LOG.info(
+          "List of brokers addresses: {}",
+          brokerTopologyManager.getTopology().getBrokers().stream()
+              .map(i -> brokerTopologyManager.getTopology().getBrokerAddress(i))
+              .toList());
     } else {
       final String message =
           "Failed to connect to Orchestration Cluster within %s."
