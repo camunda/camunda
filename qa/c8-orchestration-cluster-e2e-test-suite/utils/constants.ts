@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 export const LOGIN_CREDENTIALS = {username: 'demo', password: 'demo'};
 
 // Generate a simple random alphanumeric string for test isolation
