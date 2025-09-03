@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.sql.MessageCorrelationMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
@@ -36,6 +37,7 @@ import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
+import io.camunda.db.rdbms.write.service.MessageCorrelationWriter;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
@@ -76,6 +78,7 @@ public class RdbmsWriter {
   private final UsageMetricWriter usageMetricWriter;
   private final UsageMetricTUWriter usageMetricTUWriter;
   private final MessageSubscriptionWriter messageSubscriptionWriter;
+  private final MessageCorrelationWriter messageCorrelationWriter;
 
   private final HistoryCleanupService historyCleanupService;
 
@@ -98,7 +101,8 @@ public class RdbmsWriter {
       final UsageMetricMapper usageMetricMapper,
       final UsageMetricTUMapper usageMetricTUMapper,
       final BatchOperationMapper batchOperationMapper,
-      final MessageSubscriptionMapper messageSubscriptionMapper) {
+      final MessageSubscriptionMapper messageSubscriptionMapper,
+      final MessageCorrelationMapper messageCorrelationMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
@@ -133,6 +137,8 @@ public class RdbmsWriter {
     usageMetricTUWriter = new UsageMetricTUWriter(executionQueue, usageMetricTUMapper);
     messageSubscriptionWriter =
         new MessageSubscriptionWriter(executionQueue, messageSubscriptionMapper);
+    messageCorrelationWriter =
+        new MessageCorrelationWriter(executionQueue, messageCorrelationMapper);
 
     historyCleanupService =
         new HistoryCleanupService(
@@ -147,6 +153,7 @@ public class RdbmsWriter {
             sequenceFlowWriter,
             batchOperationWriter,
             messageSubscriptionWriter,
+            messageCorrelationWriter,
             metrics);
   }
 
@@ -236,6 +243,10 @@ public class RdbmsWriter {
 
   public MessageSubscriptionWriter getMessageSubscriptionWriter() {
     return messageSubscriptionWriter;
+  }
+
+  public MessageCorrelationWriter getMessageCorrelationWriter() {
+    return messageCorrelationWriter;
   }
 
   public ExporterPositionService getExporterPositionService() {

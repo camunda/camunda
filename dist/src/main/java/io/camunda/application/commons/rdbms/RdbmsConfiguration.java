@@ -51,6 +51,7 @@ import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
+import io.camunda.db.rdbms.sql.MessageCorrelationMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
@@ -251,7 +252,8 @@ public class RdbmsConfiguration {
       final UsageMetricMapper usageMetricMapper,
       final UsageMetricTUMapper usageMetricTUMapper,
       final BatchOperationMapper batchOperationMapper,
-      final MessageSubscriptionMapper messageSubscriptionMapper) {
+      final MessageSubscriptionMapper messageSubscriptionMapper,
+      final MessageCorrelationMapper messageCorrelationMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -270,7 +272,8 @@ public class RdbmsConfiguration {
         usageMetricMapper,
         usageMetricTUMapper,
         batchOperationMapper,
-        messageSubscriptionMapper);
+        messageSubscriptionMapper,
+        messageCorrelationMapper);
   }
 
   @Bean
