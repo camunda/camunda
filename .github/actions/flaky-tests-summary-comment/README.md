@@ -40,7 +40,10 @@ Creates or updates a PR comment with a comprehensive summary of flaky tests acro
     "jobs": [
       "elasticsearch-integration-tests"
     ],
-    "occurrences": 1
+    "thisRunFailures": 1,
+    "previousRunFailures": 0,
+    "totalFailures": 1,
+    "totalRuns": 1
   }
 ]
 ```
