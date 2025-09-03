@@ -89,6 +89,8 @@ class SchemaUpdateIT {
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withEnv("CAMUNDA_DATABASE_TYPE", databaseType.toString())
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL".formatted(databaseType.name()), url)
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", databaseType.toString())
             .withEnv("CAMUNDA_DATABASE_URL", url)
             .withEnv("CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS", "1")
             .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix)
