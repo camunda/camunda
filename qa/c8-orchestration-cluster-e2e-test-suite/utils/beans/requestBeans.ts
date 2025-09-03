@@ -13,7 +13,6 @@ import {
   roleDescriptionFromState,
   roleNameFromState,
   mappingRuleIdFromState,
-  roleIdValueUsingCount,
   mappingRuleNameFromState,
   mappingRuleClaimNameFromState,
   mappingRuleClaimValueFromState,
@@ -122,10 +121,11 @@ export function UPDATE_ROLE() {
 }
 
 export function PUBLISH_NEW_MESSAGE() {
+  const uid = generateUniqueId();
   return {
-    name: `msg-${Date.now()}`,
-    correlationKey: `corr-${Math.random().toString(36).slice(2, 10)}`,
-    messageId: `corr-${Math.random().toString(36).slice(2, 10)}`,
+    name: `msg-${uid}`,
+    correlationKey: `corr-${uid}`,
+    messageId: `corr-${uid}`,
     timeToLive: 300000,
     variables: {foo: 'bar'},
   };

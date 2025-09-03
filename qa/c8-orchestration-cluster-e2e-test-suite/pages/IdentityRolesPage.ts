@@ -133,8 +133,10 @@ export class IdentityRolesPage {
   }
 
   async deleteRole(roleName: string) {
-    await expect(this.deleteRoleButton(roleName)).toBeVisible({timeout: 20000});
     await expect(async () => {
+      await expect(this.deleteRoleButton(roleName)).toBeVisible({
+        timeout: 20000,
+      });
       await this.deleteRoleButton(roleName).click({timeout: 20000});
     }).toPass(defaultAssertionOptions);
     await expect(this.deleteRoleModal).toBeVisible();
