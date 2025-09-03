@@ -423,7 +423,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
           activateJobsHandler,
           null,
           null,
-          new ApiServicesExecutorProvider(1, 1, 1));
+          new ApiServicesExecutorProvider(1, 1, 1, 1));
     }
   }
 }

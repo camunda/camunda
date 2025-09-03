@@ -429,6 +429,7 @@ public class CamundaServicesConfiguration {
     return new ApiServicesExecutorProvider(
         configuration.getApiExecutor().getCorePoolSizeMultiplier(),
         configuration.getApiExecutor().getMaxPoolSizeMultiplier(),
-        configuration.getApiExecutor().getKeepAliveSeconds());
+        configuration.getApiExecutor().getKeepAliveSeconds(),
+        configuration.getApiExecutor().getQueueCapacity());
   }
 }

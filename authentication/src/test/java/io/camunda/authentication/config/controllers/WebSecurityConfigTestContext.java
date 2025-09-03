@@ -50,7 +50,7 @@ public class WebSecurityConfigTestContext {
 
   @Bean
   public ApiServicesExecutorProvider apiServicesExecutorProvider() {
-    return ApiServicesExecutorProvider.of(ForkJoinPool.commonPool());
+    return new ApiServicesExecutorProvider(ForkJoinPool.commonPool());
   }
 
   @Bean

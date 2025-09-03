@@ -14,17 +14,7 @@ public final class ApiServicesExecutorProvider {
 
   private static final String API_SERVICE_THREAD_NAME = "api-service-thread-";
 
-  // TODO - make it configurable
-  private static final int DEFAULT_QUEUE_CAPACITY = 64;
-
   private final ExecutorService executor;
-
-  public ApiServicesExecutorProvider(
-      final int corePoolSizeMultiplier,
-      final int maxPoolSizeMultiplier,
-      final long keepAliveSeconds) {
-    this(corePoolSizeMultiplier, maxPoolSizeMultiplier, keepAliveSeconds, DEFAULT_QUEUE_CAPACITY);
-  }
 
   public ApiServicesExecutorProvider(
       final int corePoolSizeMultiplier,
