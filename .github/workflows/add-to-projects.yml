@@ -105,11 +105,4 @@ jobs:
         with:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           project-number: "187"
-        if: >
-          contains(github.event.issue.labels.*.name, 'kind/bug') &&
-          (
-              github.event.action == 'opened' ||
-              github.event.action == 'reopened' ||
-              github.event.action == 'transferred' ||
-              (github.event.action == 'labeled' && github.event.label.name == 'kind/bug')
-          )
+        if: contains(github.event.issue.labels.*.name, 'kind/bug')
