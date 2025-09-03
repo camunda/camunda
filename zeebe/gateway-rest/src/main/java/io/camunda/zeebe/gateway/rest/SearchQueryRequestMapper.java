@@ -77,6 +77,7 @@ import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.search.sort.MessageSubscriptionSort;
+import io.camunda.search.sort.ProcessDefinitionInstanceStatisticsSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
@@ -1791,6 +1792,23 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
+  private static List<String> applyProcessDefinitionInstanceStatisticsSortField(
+      final ProcessDefinitionInstanceStatisticsQuerySortRequest.FieldEnum field,
+      final ProcessDefinitionInstanceStatisticsSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case ACTIVE_INSTANCES_WITH_INCIDENT -> builder.activeInstancesWithIncident();
+        case ACTIVE_INSTANCES_WITHOUT_INCIDENT -> builder.activeInstancesWithoutIncident();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
   private static Either<List<String>, List<VariableValueFilter>> toVariableValueFilters(
       final List<VariableValueFilterProperty> filters) {
     if (CollectionUtils.isEmpty(filters)) {
@@ -2020,5 +2038,25 @@ public final class SearchQueryRequestMapper {
     final var filter = toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
+  }
+
+  public static Either<
+          ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery>
+      toProcessDefinitionInstanceStatisticsQuery(
+          final ProcessDefinitionInstanceStatisticsQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.processDefinitionInstanceStatisticsQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromProcessDefinitionInstanceStatisticsQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::processDefinitionInstanceStatistics,
+            SearchQueryRequestMapper::applyProcessDefinitionInstanceStatisticsSortField);
+    final var filter = toProcessInstanceFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, sort, page, SearchQueryBuilders::processDefinitionInstanceStatisticsQuery);
   }
 }

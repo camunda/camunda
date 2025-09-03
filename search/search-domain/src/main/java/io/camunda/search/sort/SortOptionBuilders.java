@@ -198,4 +198,17 @@ public final class SortOptionBuilders {
       final Function<MessageSubscriptionSort.Builder, ObjectBuilder<MessageSubscriptionSort>> fn) {
     return fn.apply(messageSubscription()).build();
   }
+
+  public static ProcessDefinitionInstanceStatisticsSort.Builder
+      processDefinitionInstanceStatistics() {
+    return new ProcessDefinitionInstanceStatisticsSort.Builder();
+  }
+
+  public static ProcessDefinitionInstanceStatisticsSort processDefinitionInstanceStatistics(
+      final Function<
+              ProcessDefinitionInstanceStatisticsSort.Builder,
+              ObjectBuilder<ProcessDefinitionInstanceStatisticsSort>>
+          fn) {
+    return fn.apply(processDefinitionInstanceStatistics()).build();
+  }
 }

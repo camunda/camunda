@@ -25,6 +25,7 @@ public record SearchClientReaders(
     ProcessDefinitionReader processDefinitionReader,
     ProcessDefinitionStatisticsReader processDefinitionStatisticsReader,
     ProcessInstanceReader processInstanceReader,
+    ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader,
     ProcessInstanceStatisticsReader processInstanceStatisticsReader,
     RoleReader roleReader,
     RoleMemberReader roleMemberReader,
