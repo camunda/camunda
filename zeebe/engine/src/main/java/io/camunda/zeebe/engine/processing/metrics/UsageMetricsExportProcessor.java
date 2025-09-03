@@ -55,8 +55,8 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
       bucket = new PersistedUsageMetrics();
     }
 
-    // Copy and update the bucket fromTime as we are exporting it now.
-    // Additionally, ensure the toTime is set. This can happen if metrics were recorded before the
+    // Copy and update the bucket toTime as we are exporting it now.
+    // Additionally, ensure the fromTime is set. This can happen if metrics were recorded before the
     // first applier.
     final PersistedUsageMetrics finalBucket = bucket.close(now);
 
