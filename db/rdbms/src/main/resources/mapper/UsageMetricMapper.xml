@@ -65,10 +65,10 @@
         </foreach>
       </if>
       <if test="filter.startTime != null">
-        AND EVENT_TIME &gt;= #{filter.startTime}
+        AND END_TIME &gt;= #{filter.startTime}
       </if>
       <if test="filter.endTime != null">
-        AND EVENT_TIME &lt; #{filter.endTime}
+        AND END_TIME &lt; #{filter.endTime}
       </if>
       <if test="filter.tenantId != null">
         AND TENANT_ID = #{filter.tenantId}
@@ -78,13 +78,15 @@
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.UsageMetricDbModel">
     INSERT INTO ${prefix}USAGE_METRIC (USAGE_METRIC_KEY,
-                                       EVENT_TIME,
+                                       START_TIME,
+                                       END_TIME,
                                        TENANT_ID,
                                        EVENT_TYPE,
                                        EVENT_VALUE,
                                        PARTITION_ID)
     VALUES (#{key},
-            #{eventTime, jdbcType=TIMESTAMP},
+            #{startTime, jdbcType=TIMESTAMP},
+            #{endTime, jdbcType=TIMESTAMP},
             #{tenantId},
             #{eventType, typeHandler=io.camunda.db.rdbms.sql.typehandler.UsageMetricEventTypeTypeHandler},
             #{value},
@@ -97,7 +99,7 @@
     DELETE
     FROM ${prefix}USAGE_METRIC
     WHERE PARTITION_ID = #{partitionId}
-      AND EVENT_TIME &lt; #{cleanupDate}
+      AND END_TIME &lt; #{cleanupDate}
     LIMIT #{limit}
   </delete>
   <delete flushCache="true"
@@ -109,7 +111,7 @@
     WHERE rowid IN (SELECT rowid
                     FROM ${prefix}USAGE_METRIC
                     WHERE PARTITION_ID = #{partitionId}
-                      AND EVENT_TIME &lt; #{cleanupDate}
+                      AND END_TIME &lt; #{cleanupDate}
                       AND ROWNUM &lt;= #{limit})
   </delete>
   <delete flushCache="true"
@@ -121,7 +123,7 @@
     WHERE ctid IN (SELECT ctid
                    FROM ${prefix}USAGE_METRIC
                    WHERE PARTITION_ID = #{partitionId}
-                     AND EVENT_TIME &lt; #{cleanupDate}
+                     AND END_TIME &lt; #{cleanupDate}
                    LIMIT #{limit})
   </delete>
 
