@@ -76,18 +76,37 @@ jobs:
             echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
           fi
 
+      - name: Prepare compose environment
+        shell: bash
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: |
+          printf 'DATABASE=elasticsearch\n' > .env
+          echo ".env content:"
+          cat .env
+          echo "NON_STANDALONE=$NON_STANDALONE"
+          env | grep DATABASE || true
+
       - name: Start Camunda
         shell: bash
-        run: |
-          if [[ "$NON_STANDALONE" == "true" ]]; then
-            DATABASE=elasticsearch docker compose up -d operate tasklist
-          else
-            export DATABASE=elasticsearch
-            DATABASE=elasticsearch docker compose up -d camunda
-          fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
         env:
           DATABASE: elasticsearch
+        run: |
+          set -euo pipefail
+          echo "DATABASE (env) = $DATABASE"
+          echo "Rendering docker compose (expecting elasticsearch substituted)..."
+          docker compose config > rendered-compose.yml
+          if ! grep -q 'elasticsearch' rendered-compose.yml; then
+            echo "DATABASE not substituted:"
+            sed -n '1,120p' rendered-compose.yml
+            exit 1
+          fi
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            docker compose up -d operate tasklist
+          else
+            echo "Starting Camunda with: ${DATABASE}"
+            docker compose up -d camunda
+          fi
 
       - name: List running Docker containers
         run: docker ps -a
