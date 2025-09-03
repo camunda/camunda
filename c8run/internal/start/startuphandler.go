@@ -158,14 +158,14 @@ func resolveJavaHomeAndBinary() (string, string, error) {
 // ensureDefaultConfig verifies that <parentDir>/configuration/default.yaml exists.
 func ensureDefaultConfig(parentDir string) error {
 	configDir := filepath.Join(parentDir, "configuration")
-	appYAML := filepath.Join(configDir, "default.yaml")
+	appYAML := filepath.Join(configDir, "application.yaml")
 
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create configuration directory: %w", err)
 	}
 	if _, err := os.Stat(appYAML); err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("missing default config at %s (expected /configuration/default.yaml). Please add it to your repo.", appYAML)
+			return fmt.Errorf("missing default config at %s (expected /configuration/application.yaml). Please add it to your repo.", appYAML)
 		}
 		return fmt.Errorf("failed to stat %s: %w", appYAML, err)
 	}
