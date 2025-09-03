@@ -84,7 +84,7 @@ jobs:
           else
             export DATABASE=elasticsearch
             echo "Starting Camunda with: ${DATABASE}"
-            DATABASE=elasticsearch docker compose up -d camunda
+            docker compose up -d camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
         env:
