@@ -51,8 +51,10 @@ jobs:
         include:
           - suite: DataLayer
             suiteName: Data Layer
+            product: Operate
           - suite: CoreFeatures
             suiteName: Core Features
+            product: Operate
     with:
       componentName: "Operate"
       suite: ${{ matrix.suite }}
@@ -68,7 +70,7 @@ jobs:
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
       TEST_OWNER: Core Features
-      TEST_TYPE: Check
+      TEST_TYPE: Build
     steps:
       - name: Log Test Details
         run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
@@ -111,7 +113,7 @@ jobs:
     timeout-minutes: 10
     permissions: { } # GITHUB_TOKEN unused in this job
     env:
-      TEST_TYPE: UT
+      TEST_TYPE: Unit
     defaults:
       run:
         working-directory: operate/client
@@ -144,7 +146,7 @@ jobs:
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
-      TEST_TYPE: Check
+      TEST_TYPE: Tool
     defaults:
       run:
         working-directory: operate/client
@@ -178,7 +180,7 @@ jobs:
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
-      TEST_TYPE: Lint
+      TEST_TYPE: Tool
     defaults:
       run:
         working-directory: operate/client

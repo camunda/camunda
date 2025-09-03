@@ -20,11 +20,15 @@ on:
         description: "Well formatted name of the suite under test. ie, 'Data Layer' or 'Core Features'"
         required: true
         type: string
+      product:
+        description: "The name of the product under test. ie, Operate, Tasklist, Optimize"
+        required: false
+        default: "unknown"
+        type: string
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_OWNER: Core Features
-  TEST_PRODUCT: Operate
   TEST_TYPE: UT
 
 defaults:
@@ -43,7 +47,7 @@ jobs:
     permissions: { }
     steps:
       - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ inputs.product }} owned by ${{ env.TEST_OWNER}}"
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
